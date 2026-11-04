@@ -5,11 +5,6 @@ chooses useful investigations, delegates them to the existing research agent,
 asks a separate reviewer to inspect the evidence, and explains what to try next.
 The human supplies the question and steers the conversation.
 
-For actors, prompts, tools and a measured cloud timeline, open the
-[visual report](reports/research-program-cloud.html). The
-[adapter boundary map](../scripts/cloud/BOUNDARY.md) separates platform code
-from the local core.
-
 ## Start locally
 
 ```bash
@@ -23,12 +18,12 @@ manager MCP server. Workers still use the existing launcher and physics tools.
 The original direct interface remains available:
 
 ```bash
-./hp-sim5-research-agent --codex --name 'One investigation' --viewer none
+./hp-sim5-research-agent --machine hp4 --codex --name 'One investigation' --viewer none
 ```
 
 ## Codex Cloud adapter
 
-The optional [Codex Cloud adapter](../scripts/cloud/RESEARCH.md) uses the current
+The optional [Codex Cloud entry](../scripts/cloud/prompts/research-manager.txt) uses the current
 authenticated conversation as manager. Its prompts, dispatch instructions,
 setup and permission workarounds live under `scripts/cloud/`; the
 [boundary map](../scripts/cloud/BOUNDARY.md) inventories the few core attachment

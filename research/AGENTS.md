@@ -1,22 +1,8 @@
-Use `.venv/bin/python` and keep source changes small. Read `research/README.md`
-for the tools and `research/investigation.md` for the integration rationale.
-
-Before delivering physics, motor, cable transport or scene dynamics changes,
-run `npm run test:physics` and resolve every failure. This bounded headless gate
-rebuilds native/Wasm physics, runs the real HP4 Print Logo prefix at the default
-one substep and checks loaded-state settling. Do not dismiss a stability failure
-as a legacy fixture or substitute an idle run, parity checks or extra substeps.
-Preserve failing evidence. Use headless production backends for experiments;
-browser experiments should be rare and preferably performed by a human.
+Read `research/README.md` for tool documentation as needed. `research/investigation.md` is optional
+background on the integration, not operating instructions.
 
 Before choosing autocal recording and compute budgets, read
-`research/autocal-recording-performance.md`. Its matched HP3 replay measured
-about 4.8/5.0/5.5/15.2 seconds and 0/3.4/11/54 MB RRD for
-`none`/`events`/`sampled`/`full` over 200,000 physics steps. Prefer `none` for
-large numerical sweeps, `events` for routine trials, and sampled/full evidence
-when the hypothesis needs physics inspection. These are recording-workload
-costs, not full-autocal speedups. Later simulations/backends can differ: verify
-actual workloads and numerical evidence before making performance comparisons.
+`research/autocal-recording-performance.md` for measured costs and mode selection.
 
 Before long live collection, call `research_preflight` on the attached supervisor.
 It is a bounded tool check: it never advances/resets the world or runs doctor.
@@ -49,11 +35,8 @@ The repo is full of other tools as well, which you are encouraged to explore to 
 Research runs in an ordinary conversation in the selected coding agent.
 Use the capabilities available in that client, such as Goal mode.
 Keep continuation of an unfinished investigation inside that conversation; do
-not build a prompt-restart loop for it. The research manager implementation in
-`research/program-tasks/MANAGER.md` may orchestrate distinct bounded assignments
-and separate reviews through the existing `hp-sim5-research-agent`, including a
-small worker pool. Its controller owns dispatch, budgets and lifecycle; the
-existing worker supervisors continue owning physics and collection.
+not build a prompt-restart loop for it. Assigned workers stay within their
+assignment; the manager owns dispatch, budgets and separate reviews.
 Keep `research.md` in the supplied session directory current with objective, hypothesis, constraints, movement/experiment/compute budgets, experiment IDs, accepted steering and the next decision.
 Update it when steering changes the experiment choice.
 Preserve the conversation and prior evidence across turns.

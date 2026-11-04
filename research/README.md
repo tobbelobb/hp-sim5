@@ -1,6 +1,6 @@
 # Hangprinter research with Codex or Claude Code
 
-`hp-sim5-research-agent --codex` or `hp-sim5-research-agent --claude` opens an interactive conversation with
+`hp-sim5-research-agent --machine hp4 --codex` or `hp-sim5-research-agent --machine hp4 --claude` opens an interactive conversation with
 native experiment tools and an assigned Rerun Viewer. Conversation, steering,
 interrupts and resume belong to Codex. Goal mode works with both backends. The launcher owns the continuing
 physics world, real RRF planner, production collector bridge, optional browser
@@ -10,36 +10,13 @@ Start with the [execution architecture map](architecture.md) for ownership,
 configuration flow and recording scope across the five research workflows.
 This README contains the operating instructions and tool arguments.
 
-For a manager above this worker, use
-`./hp-sim5-research-program --codex --question 'Your question'` locally. In cloud,
-the current authenticated chat is the manager and opens
-`./hp-sim5-research-program --cloud --question 'Your question'`. Read the
-[program guide](program.md) and [cloud instructions](../scripts/cloud/RESEARCH.md).
-The manager uses ordinary CLI tools, starts no physics world and needs no
-manager MCP server. Workers reuse this existing launcher. Small completed
-research results are saved with `hp-sim5-research-program save PROGRAM_ID --commit`.
-The [historical pilot](cloud-client-pilot/2026-10-24/README.md) records what the
-prototype actually demonstrated; the current local and cloud paths need their
-own live trials.
+For a manager above this worker, use the [program guide](program.md).
 
 The single-agent workflow remains available through
 `research/prompts/research-program.txt`. It connects evidence discovery, one
 bounded investigation, review and a durable handoff in one conversation.
 
 ## Setup and interactive use
-
-### Required physics stability check
-
-Run `npm run test:physics` before delivering physics, motor, cable transport or
-scene dynamics changes. It rebuilds native and browser Wasm engines, replays the
-first 20 seconds of the bundled HP4 **Print Logo** at the default one substep,
-and checks loaded-state settling at one, two and four substeps. The logo checks
-every step for finite body state, bounded motion around the print plane, speed,
-rotation and missed steps. It also covers the JavaScript fallback for two seconds.
-Failures block delivery. `npm test` and CI run this gate automatically. Prefer
-these headless production backends for experiments; browser experiments should
-be rare and preferably performed by a human. This is a stability regression,
-not calibration accuracy or hardware validation.
 
 ### Setup
 
@@ -49,13 +26,13 @@ From the repository root:
 .venv/bin/python -m pip install -r requirements.txt
 npm run build:native               # Rust and C compiler; Node-API headers are bundled
 codex login                       # choose ChatGPT
-./hp-sim5-research-agent --codex
-./hp-sim5-research-agent --codex --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
-./hp-sim5-research-agent --codex --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
+./hp-sim5-research-agent --machine hp4 --codex
+./hp-sim5-research-agent --machine hp4 --codex --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
+./hp-sim5-research-agent --machine hp4 --codex --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --machine hp3 --codex --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --machine hp4 --codex --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
 ./hp-sim5-research-agent --codex --machine hp3 --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
-./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
+./hp-sim5-research-agent --machine hp4 --codex --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
 ```
 
 Choose exactly one of `--codex` and `--claude`; omitting both exits with a usage
@@ -64,8 +41,8 @@ and authenticated (`claude auth login`, or `ANTHROPIC_API_KEY` in the environmen
 or repository `.env`). For example:
 
 ```bash
-./hp-sim5-research-agent --claude --prompt "Investigate HP3 calibration evidence."
-./hp-sim5-research-agent --claude --batch --model haiku --viewer none --prompt "Describe the attached tools." -- --max-budget-usd 0.02
+./hp-sim5-research-agent --machine hp3 --claude --prompt "Investigate HP3 calibration evidence."
+./hp-sim5-research-agent --machine hp4 --claude --batch --model haiku --viewer none --prompt "Describe the attached tools." -- --max-budget-usd 0.02
 ```
 
 Arguments after `--` go unchanged to the selected CLI, including its resume
@@ -121,9 +98,9 @@ and [Goal mode documentation](https://learn.chatgpt.com/docs/long-running-work).
 Put normal Codex arguments after `--`; the launcher forwards them unchanged:
 
 ```bash
-./hp-sim5-research-agent --codex -- --model MODEL --no-alt-screen
-./hp-sim5-research-agent --codex -- --image output/example.png
-./hp-sim5-research-agent --codex -- resume --last
+./hp-sim5-research-agent --machine hp4 --codex -- --model MODEL --no-alt-screen
+./hp-sim5-research-agent --machine hp4 --codex -- --image output/example.png
+./hp-sim5-research-agent --machine hp4 --codex -- resume --last
 ```
 
 Structured clarification questions are enabled by default during interactive
@@ -133,14 +110,14 @@ Use `--dont-ask` before the argument separator to disable these Default-mode
 question prompts:
 
 ```bash
-./hp-sim5-research-agent --codex --dont-ask --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --machine hp4 --codex --dont-ask --prompt-file research/prompts/autocal.txt
 ```
 
 The underlying Codex feature is `default_mode_request_user_input`. You can also
 enable it explicitly with a forwarded Codex option:
 
 ```bash
-./hp-sim5-research-agent --codex -- --enable default_mode_request_user_input
+./hp-sim5-research-agent --machine hp4 --codex -- --enable default_mode_request_user_input
 ```
 
 Forwarded Codex options can override launcher defaults. Codex 0.160.1 labels
@@ -173,8 +150,8 @@ conversation away from its attached tools.
 the worktree instead of the original checkout:
 
 ```bash
-./hp-sim5-research-agent --codex --worktree --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
+./hp-sim5-research-agent --machine hp4 --codex --worktree --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --machine hp4 --codex --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
 ```
 
 It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
@@ -211,7 +188,7 @@ Use the exact conversation ID rather than `--last`, which can select an unrelate
 chat. After releasing the other client, resume with fresh supervised tools:
 
 ```bash
-./hp-sim5-research-agent --codex -- resume CONVERSATION_ID
+./hp-sim5-research-agent --machine hp4 --codex -- resume CONVERSATION_ID
 ```
 
 Read the previous session's `research.md`, experiment manifests and current Git
@@ -267,8 +244,8 @@ and `--model` select another configured provider and model, and forwarded Codex
 `-c model_provider=... -m ...` arguments are detected too:
 
 ```bash
-./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash
-./hp-sim5-research-agent --codex -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
+./hp-sim5-research-agent --machine hp4 --codex --model-provider opencode_go --model deepseek-v4.1-flash
+./hp-sim5-research-agent --machine hp4 --codex -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
 ```
 
 When the selected provider declares an `env_key` in the Codex configuration, the
@@ -297,7 +274,7 @@ provider in its client configuration.
 Start a supervisor in a dedicated worktree and keep its terminal open:
 
 ```bash
-./hp-sim5-research-agent --codex --serve --session-dir output/research/my-chat
+./hp-sim5-research-agent --machine hp4 --codex --serve --session-dir output/research/my-chat
 ```
 
 The directory must be new. The launcher prints the path to `attachment.toml`.
@@ -379,10 +356,10 @@ the topic guide preserves a short account of the existing findings in the repo.
 ## Batch mode and diagnostics
 
 ```bash
-./hp-sim5-research-agent --codex --batch --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --dry-run --prompt "Optimize the HP4 anchor layout"
-./hp-sim5-research-agent --codex --doctor
-./hp-sim5-research-agent --codex --preflight
+./hp-sim5-research-agent --machine hp4 --codex --batch --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --machine hp4 --codex --dry-run --prompt "Optimize the HP4 anchor layout"
+./hp-sim5-research-agent --machine hp4 --codex --doctor
+./hp-sim5-research-agent --machine hp4 --codex --preflight
 ```
 
 Batch mode retains `codex exec`, prompt input, JSONL events and the separate

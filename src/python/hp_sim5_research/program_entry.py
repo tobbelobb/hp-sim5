@@ -27,11 +27,9 @@ def client_plan(root, attachment, backend, *, model=None, model_provider='openai
         adapter.validate_manager(local_client=True)
     session = Path(attachment['session'])
     instructions = ('Bound execution mode: LOCAL. This is a local installed coding-client manager.\n'
-                    'Use local CLI workers and reviewers.\n'
-                    'Never switch transport to recover a controller error.\n'
                     'Bound manager connection: ' + attachment['connection'] +
                     '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
-                    '\nUse hp-sim5-research-program tool with this connection; no manager MCP attachment is needed.\n\n' +
+                    '\n\n' +
                     (root / 'research/prompts/research-manager-workflow.txt').read_text())
     if backend == 'codex':
         forwarded, forwarded_model = coding_client.forwarded_settings(client_args)

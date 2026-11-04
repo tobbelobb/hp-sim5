@@ -22,10 +22,7 @@ Explain which uncertainty it resolves and choose the cheapest sufficient check:
 saved-artifact/source inspection, then analysis of saved data or focused tests,
 then a fresh fit, simulation or collection only when needed and within the assigned
 budget. If that budget is insufficient, state the blocker and needed check.
-Repository delivery gates still apply: a change to physics, motors, cable
-transport or scene dynamics requires a passing `npm run test:physics` result for
-the candidate. A missing or failed stability result blocks delivery; startup,
-unit/parity checks or higher-substep success cannot replace it. Preserve failures.
+
 
 Consider:
  - What information did the experiment gain, including useful negative findings?

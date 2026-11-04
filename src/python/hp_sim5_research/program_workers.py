@@ -134,10 +134,12 @@ class WorkerDispatcher:
                    'dont_ask', 'goal_mode', 'sidebar_section', 'shared_runtime_write'}
         if set(options) - allowed:
             raise ProgramError(f'Unknown worker settings: {sorted(set(options) - allowed)}')
-        result = dict(backend='codex', physics_backend='headless-js', machine='hp4',
+        result = dict(backend='codex', physics_backend='headless-js',
                       viewer='headless', record=True, worktree=False, client_args=[],
                       dont_ask=False, goal_mode=True, shared_runtime_write=False)
         result.update(options)
+        if 'machine' not in result:
+            raise ProgramError('Workers require an explicit machine (hp3/hp4): set execution.machine in commission or settings.machine in worker_start/run_once')
         for name, choices in (('backend', ('codex', 'claude')),
                               ('physics_backend', ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda')),
                               ('machine', ('hp3', 'hp4')), ('viewer', ('none', 'headless', 'window'))):
@@ -171,9 +173,6 @@ class WorkerDispatcher:
             if 'machine' in options and options['machine'] != machine:
                 raise ProgramError('Worker machine conflicts with commissioned execution.machine')
             options['machine'] = machine
-        adapter = client_adapter()
-        if adapter:
-            adapter.validate_machine(options)
         return self._settings(options)
 
     def start(self, program_id, assignment_id, *, settings=None, instructions='', runtime=None):

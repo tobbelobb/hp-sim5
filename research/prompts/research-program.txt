@@ -1,90 +1,26 @@
-Use the research question and constraints supplied in this conversation to carry
-out one useful, bounded research iteration in this repository. Follow the root
-and research AGENTS.md instructions. Preserve the human's goal and accepted
-steering. If the question itself is missing, ask for it; do not invent one.
+Carry out one bounded research iteration for the human's question and constraints.
+If the question is missing, ask for it. This is the single-agent entry; for a
+manager with separate workers and reviewers, use research/program.md.
 
-This is the single-agent workflow. For a separate manager conversation with
-durable graph tools and worker delegation, use research/prompts/research-manager.txt
-and research/program-manager.md. That implementation uses the existing
-hp-sim5-research-agent as its worker and has a separate live release gate.
+Follow the repository research instructions already supplied to this session.
+Search research/catalog.md and relevant prior evidence before choosing work.
+Use research/prompts/next-assignment.txt to prepare an economical assignment.
+That file's briefing-only restriction applies to preparation: this entry also
+authorizes executing the resulting assignment within the human's constraints.
+Choose finite limits when the human supplies none; do not stop at a proposal
+when useful work fits those limits. If existing evidence answers the question,
+close with that scoped decision instead of manufacturing an experiment.
 
-When dispatched with a bounded manager assignment, preserve its program,
-assignment and attempt identities. Keep research.md, report.md and abstract.md
-current in the supplied session. Record actual source/input/configuration and
-usage; preserve partial failures. Return candidate/evidence paths for fixed
-separate review. Do not admit claims, rewrite the manager's route decisions or
-merge/push candidate code merely because execution completed.
-
-Start with research/program.md, research/catalog.md and a targeted search of the
-local research catalog. Read only the abstracts, evidence and current code that
-can change the decision. Use an existing relevant agenda, such as
-research/autocal-agenda.md for autocal work. If there is no relevant agenda,
-create one ordinary Markdown note for this question, linked from the research
-guide. Keep its purpose, credible routes, scoped supporting/conflicting evidence
-and next allocation concise. An unrelated agenda must not replace the question.
-
-Use research/prompts/next-assignment.txt to prepare one economical assignment
-with a leading hypothesis, credible rival, discriminator, decision criteria and
-explicit budget. Its preparation phase ends with a proposal. This entry prompt
-then authorizes executing that assignment within the human's constraints: do not
-stop at a proposal when useful work fits the available budget. If existing
-evidence already answers the question, inspect it and close with that scoped
-decision instead of manufacturing an experiment.
-
-Fresh fits, headless/native physics runs and simulated data collection are
-allowed by default when they resolve a named uncertainty. Follow the targeted
-experimental approach in research/prompts/autocal.txt and the relevant topic
-prompts: reuse useful evidence, then run the smallest informative experiment.
-Prefer several quick, cheap probes over a broad or long sweep. Do not stop at
-an evidence assessment merely because the human did not supply numerical limits.
-
-The human's limits take precedence. Otherwise choose a finite budget suited to
-the question and observed workload costs, record it in research.md before
-numerical work, and proceed without requesting a separate experiment allowance.
-Bound configurations/artifacts, fresh fits, physics steps or simulated time,
-collection sweeps/points or movements, and wall time as applicable. Start with
-a small pilot when costs are uncertain. Stop at those bounds, preserve partial
-evidence and state the next decision. These are work limits, not enforced runtime
-quotas. Required repository delivery checks still apply; an incompatible budget
-blocks that implementation rather than waiving a gate.
-
-Use speedup options to avoid real-time waits: for simulated autocal CLI runs use
---speedup 25 unless a different supported factor is needed for the experiment.
-Prefer the headless native Rust backend. Headless physics already runs as fast
-as possible; record that behavior rather than claiming --speedup makes its
-integration faster. Preserve simulation-time waits/deadlines and the intended
-timestep/substeps. With supervisor tools use their supported acceleration
-settings; do not invent an unsupported speedup parameter. Before choosing autocal
-recording/compute budgets, read research/autocal-recording-performance.md: use
-none for large numerical sweeps, events routinely, and sampled/full when detailed
-physics inspection is necessary. Record the backend, speedup, recording mode and
-actual workload with the result. Follow the existing preflight and command-socket
-checks before long live collection.
-
-Use the supplied session directory when present. In an ordinary coding session,
-create a descriptive directory under output/research/sessions/ for research.md,
-report.md and abstract.md; use research/abstract-template.md. Record actual
-commands, source/input identities, observations and failures. Separate reported,
-inspected and independently recomputed evidence, individual fits and applied
-consensus, numerical metrics and physical accuracy, and simulation and hardware.
-Missing evidence is a limitation, not a negative experiment or automatic rerun.
-Live simulation uses the existing research launcher and supervisor; an archive
-or successful tool check does not establish a running world or accuracy.
+Use the supplied session directory, or create a descriptive directory under
+output/research/sessions/. For autocal experiments consult
+research/prompts/autocal.txt; other topic prompts are optional references.
 
 At the result boundary, apply research/prompts/reviewer.txt to the exact claim,
-report and relevant candidate/checks. In this single conversation, label this a
-self-review. A separately requested reviewer can inspect the same saved evidence;
-another full experiment is justified only by a named gap. Resolve material
-issues within budget or retain an explicit blocked/inconclusive result.
+report and relevant candidate/checks. Label this a self-review in a single
+conversation. Resolve material issues within budget or retain an explicit
+blocked/inconclusive result. Update the relevant agenda without erasing earlier
+findings. Use research/handoffs.md only when a portable copy is needed.
 
-Update the agenda's affected evidence, priorities and next decision without
-erasing earlier scope. Keep the session's abstract and short decision handoff
-current and regenerate the research catalog. Use research/handoffs.md when a
-portable copy is needed; select only the evidence for the claim. Do not require
-an export for every local iteration.
-
-End with the answer or changed understanding, evidence and scope, what remains
-uncertain, session/agenda links and the one next useful decision. Stop after
-this iteration; continuing is the human's next message or an explicitly bounded
-instruction. This single-agent workflow runs in the existing conversation;
-manager implementation is a separate assignment from scientific research.
+End with the answer, evidence and scope, remaining uncertainty, session/agenda
+links and the next useful decision. Stop after this iteration unless the human
+has authorized continued bounded work.

@@ -56,7 +56,9 @@ For each worker or reviewer:
    requests after host loss are historical; never redispatch them automatically.
 3. Read the exact prompt and instructions at the returned paths. Dispatch an
    actual authenticated subagent using this chat's subagent mechanism
-   (collaboration.spawn_agent in Codex). Include the
+   (collaboration.spawn_agent in Codex, with fork_turns="none"). Supply the
+   queued prompt and instructions once in that fresh context; do not inherit
+   the manager's conversation or operating guides. Include the
    requested final_output path; the actor must write its real final response
    there. For workers, include the returned tool_connection_path. The actor
    calls the existing MCP tools through the launcher's private file relay:
@@ -110,14 +112,9 @@ no acknowledgement means shutdown is unconfirmed.
 
 ## Save and continue
 
-Keep the manager chat active through each bounded cycle. Before ending, stop owned
-work, check cleanup, update reports and call `hp-sim5-research-program tool CONNECTION
-save --params '{"commit":true}'`. Include additional small files with a files list.
-The controller saves small results in research/programs and commits only that
-archive; no push occurs. The host still needs Git write permission. Any Git
-failure is reported with its diagnostic rather than treated as a saved commit.
-Continue in a long chat or start a later chat from those committed results.
-Moving an unfinished live program between environments is not a primary workflow.
+The shared manager workflow owns result saving and iteration boundaries.
+Cloud commands that write Git metadata need the platform's supported permission
+mechanism when that access is denied.
 
 The platform's permissions apply to all actors. Read-only review is an instruction
 plus fixed-evidence integrity checks, not a new OS sandbox. This workflow makes no

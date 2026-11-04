@@ -186,7 +186,7 @@ class WorkerTests(unittest.TestCase):
                 if assignment != 'a':
                     self.new_assignment(assignment)
                 dispatcher = self.dispatcher(mode, missing=mode == 'missing')
-                record = dispatcher.start('p', assignment)
+                record = dispatcher.start('p', assignment, settings={'machine': 'hp3'})
                 record = self.finish(dispatcher, record['id'])
                 d = record['details']
                 self.assertEqual(d['state'], 'launch_failed' if mode == 'missing' else 'failed')
@@ -203,7 +203,7 @@ class WorkerTests(unittest.TestCase):
     def test_responsive_partial_logs_and_supervisor_cancellation(self):
         dispatcher = self.dispatcher('partial')
         before = time.monotonic()
-        record = dispatcher.start('p', 'a')
+        record = dispatcher.start('p', 'a', settings={'machine': 'hp3'})
         self.assertLess(time.monotonic() - before, 2)
         self.started(dispatcher, record['id'])
         before = time.monotonic()
@@ -213,7 +213,7 @@ class WorkerTests(unittest.TestCase):
         self.assertTrue(any(a['partial'] and a['path'].endswith('events.jsonl') for a in status['details']['artifacts']))
         with self.assertRaisesRegex(ProgramError, 'already reserved'):
             self.new_assignment('b')
-            self.dispatcher().start('p', 'b')
+            self.dispatcher().start('p', 'b', settings={'machine': 'hp3'})
         self.store.transition('p', 'a', 'failed', 'Controller recorded failure before cleanup')
         before = time.monotonic()
         dispatcher.cancel('p', record['id'])
@@ -233,7 +233,7 @@ class WorkerTests(unittest.TestCase):
                 if mode != 'startup':
                     self.new_assignment(mode)
                 dispatcher = self.dispatcher(mode)
-                record = dispatcher.start('p', 'a' if mode == 'startup' else mode)
+                record = dispatcher.start('p', 'a' if mode == 'startup' else mode, settings={'machine': 'hp3'})
                 if mode == 'startup':
                     self.until(dispatcher, record['id'], lambda r: (Path(r['details']['attempt_dir']) / 'stderr.log').stat().st_size > 0)
                 else:
@@ -248,7 +248,7 @@ class WorkerTests(unittest.TestCase):
 
     def test_partial_and_malformed_manifests_are_diagnostics(self):
         dispatcher = self.dispatcher('hold')
-        record = dispatcher.start('p', 'a')
+        record = dispatcher.start('p', 'a', settings={'machine': 'hp3'})
         status = self.started(dispatcher, record['id'])
         manifest = Path(status['details']['session_dir']) / 'launch.json'
         for content in ('{"runtime_status":', '{"runtime_status": []}', 'x' * (1024 * 1024 + 1)):
@@ -266,7 +266,7 @@ class WorkerTests(unittest.TestCase):
 
     def test_force_stop_reports_detached_cleanup_unknown(self):
         dispatcher = self.dispatcher('ignore')
-        record = dispatcher.start('p', 'a')
+        record = dispatcher.start('p', 'a', settings={'machine': 'hp3'})
         self.started(dispatcher, record['id'])
         dispatcher.cancel('p', record['id'], grace_seconds=0)
         stopped = self.finish(dispatcher, record['id'])['details']
@@ -276,7 +276,7 @@ class WorkerTests(unittest.TestCase):
 
     def test_historical_and_reused_birth_identity_are_never_signalled(self):
         dispatcher = self.dispatcher('hold')
-        record = dispatcher.start('p', 'a')
+        record = dispatcher.start('p', 'a', settings={'machine': 'hp3'})
         self.started(dispatcher, record['id'])
         historical = self.store.workers(self.root)
         with patch('hp_sim5_research.program_workers.os.kill') as kill:
@@ -303,7 +303,7 @@ class WorkerTests(unittest.TestCase):
             # Git inspection also uses Popen, so patch only the spawn after git calls.
             with patch('hp_sim5_research.program_workers.subprocess.run', return_value=subprocess.CompletedProcess([], 0, 'fixture')):
                 with self.assertRaises(KeyboardInterrupt):
-                    dispatcher.start('p', 'a')
+                    dispatcher.start('p', 'a', settings={'machine': 'hp3'})
         records = dispatcher.sessions('p')
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]['details']['state'], 'launch_failed')
@@ -318,7 +318,7 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(dispatcher.sessions('p'), [])
         self.store.transition('p', 'p', 'paused', 'Pause before dispatch')
         with self.assertRaisesRegex(ProgramError, 'active'):
-            dispatcher.start('p', 'a')
+            dispatcher.start('p', 'a', settings={'machine': 'hp3'})
 
     def test_adapter_argv_passes_real_launcher_dry_run_for_both_clients(self):
         for backend in ('codex', 'claude'):

@@ -394,7 +394,8 @@ def main():
                         help='Continuing physics: native Rust by default; native-warp compiles the Python cable solver (CUDA experimental)')
     parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
     parser.add_argument('--wall-deadline', type=float, help='Finite Unix wall deadline; expiration enters normal launcher cleanup')
-    parser.add_argument('--machine', choices=['hp3', 'hp4'], default='hp4', help='Matched scene and RRF configuration')
+    parser.add_argument('--machine', choices=['hp3', 'hp4'], required=True,
+                        help='Required explicit robot choice: matched scene and RRF configuration (no default)')
     parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN,
                         help='Codex model provider; opencode_go reads OPENCODE_GO_API_KEY, falling back to the .env file')
     parser.add_argument('--model', help='Model name for the selected backend')

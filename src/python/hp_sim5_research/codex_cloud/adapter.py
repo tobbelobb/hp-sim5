@@ -43,11 +43,6 @@ def validate_worker_settings(settings):
         raise ProgramError('Cloud workers use parent-authenticated subagents; omit CLI model/provider arguments and use backend codex')
 
 
-def validate_machine(options):
-    if 'machine' not in options:
-        raise ProgramError('Cloud workers require execution.machine at commission or an explicit machine in worker settings (hp3/hp4)')
-
-
 def agent_uses_external_client(args, parser):
     if not (args.batch or args.serve or args.preflight or args.doctor):
         parser.error('Use the current cloud chat as manager with hp-sim5-research-program --cloud; standalone interactive clients are disabled here')

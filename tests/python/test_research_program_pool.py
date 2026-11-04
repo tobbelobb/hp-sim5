@@ -74,7 +74,7 @@ def test_two_routes_real_worktrees_artifacts_worlds_atomic_queue_and_cancel(mana
     configure(a)
     first, second, third = [assignment(a, i) for i in ('one', 'two', 'three')]
     allocation = grant(a)
-    tool(a, 'run_within_allocation', {'allocation_id': allocation['id'], 'assignment_ids': [first['id'], second['id'], third['id']]})
+    tool(a, 'run_within_allocation', {'settings': {'machine': 'hp3'}, 'allocation_id': allocation['id'], 'assignment_ids': [first['id'], second['id'], third['id']]})
     workers = sessions_ready(a, 2)
     workers = tool(a, 'worker_sessions')
     for field in ('session_dir', 'attempt_dir', 'runtime_session_id', 'worktree_id', 'launcher_session_id'):
@@ -91,7 +91,7 @@ def test_two_routes_real_worktrees_artifacts_worlds_atomic_queue_and_cancel(mana
     assert runtime['pool']['store_future_review_obligations'] == 2
     assert len(runtime['allocations'][0]['details']['queue']) == 1
     assert runtime['allocations'][0]['details']['wall_reserved_seconds'] == 132
-    assert tool(a, 'run_once', {'assignment_id': first['id'], 'allocation_id': allocation['id']}, ok=False)['code'] == 'invalid_request'
+    assert tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': first['id'], 'allocation_id': allocation['id']}, ok=False)['code'] == 'invalid_request'
     # Hold selection before cancellation frees a slot.
     tool(a, 'steering', {'text': 'Keep partial evidence and hold queued work', 'intent': 'instruction'})
     tool(a, 'cancel_attempt', {'attempt_id': workers[0]['id']})
@@ -116,13 +116,13 @@ def test_pool_alone_preserves_default_future_review_backpressure(manager):
     configure(a, backlog=1)
     one, two = assignment(a, 'one'), assignment(a, 'two')
     allocation = grant(a, tasks=2, backlog=2)
-    first = tool(a, 'run_once', {'assignment_id': one['id'], 'allocation_id': allocation['id']})
+    first = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': one['id'], 'allocation_id': allocation['id']})
     until(lambda: Path(first['details']['session_dir'], 'ready').exists())
-    error = tool(a, 'run_once', {'assignment_id': two['id'], 'allocation_id': allocation['id']}, ok=False)
+    error = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': two['id'], 'allocation_id': allocation['id']}, ok=False)
     assert 'review backlog' in error['message']
     configure(a, backlog=2)
     # Per-allocation default also remains one, regardless of the store cap.
-    tool(a, 'run_once', {'assignment_id': two['id'], 'allocation_id': allocation['id']})
+    tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': two['id'], 'allocation_id': allocation['id']})
     assert len(tool(a, 'worker_sessions')) == 2
 
 
@@ -139,10 +139,10 @@ def test_global_cap_backlog_and_stop_are_scoped_to_program(manager):
     configure(a)
     wa, wb, extra = assignment(a, 'a'), other_assignment(b), assignment(a, 'extra')
     aa, ab = grant(a, tasks=2), grant(b, tasks=1, workers=1)
-    first = tool(a, 'run_once', {'assignment_id': wa['id'], 'allocation_id': aa['id']})
-    second = tool(b, 'run_once', {'assignment_id': wb['id'], 'allocation_id': ab['id']})
+    first = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': wa['id'], 'allocation_id': aa['id']})
+    second = tool(b, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': wb['id'], 'allocation_id': ab['id']})
     until(lambda: Path(second['details']['session_dir'], 'ready').exists())
-    assert 'pool is full' in tool(a, 'run_once', {'assignment_id': extra['id'], 'allocation_id': aa['id']}, ok=False)['message']
+    assert 'pool is full' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': extra['id'], 'allocation_id': aa['id']}, ok=False)['message']
     assert tool(a, 'cancel_attempt', {'attempt_id': second['id']}, ok=False)['code'] == 'invalid_request'
     tool(a, 'stop_program', {'reason': 'Only this program stops'})
     until(lambda: tool(a, 'worker_status', {'attempt_id': first['id']})['details']['state'] == 'cancelled')
@@ -155,12 +155,12 @@ def test_many_programs_cannot_accumulate_unbounded_reviews(manager):
     isolated_launcher(manager)
     a, b = attach(manager), attach(manager, 'other')
     configure(a, backlog=1)
-    first = tool(a, 'run_once', {'assignment_id': assignment(a)['id']})
+    first = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': assignment(a)['id']})
     sessions_ready(a, 1)
     Path(first['details']['session_dir'], 'finish').touch()
     until(lambda: tool(a, 'worker_status', {'attempt_id': first['id']})['details']['state'] == 'submitted')
     extra = other_assignment(b)
-    assert 'review backlog' in tool(b, 'run_once', {'assignment_id': extra['id']}, ok=False)['message']
+    assert 'review backlog' in tool(b, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': extra['id']}, ok=False)['message']
     assert tool(b, 'runtime_status')['pool']['store_future_review_obligations'] == 1
 
 
@@ -172,7 +172,7 @@ def test_simultaneous_file_requests_preserve_two_charges_and_steering(manager):
     # Raw CLI results permit either admission or backpressure without imposing order.
     def request_work(work):
         from hp_sim5_research.program_host import request
-        return request(a, 'run_once', {'assignment_id': work['id'], 'allocation_id': allocation['id']})
+        return request(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id'], 'allocation_id': allocation['id']})
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         calls = [executor.submit(request_work, work) for work in works]
         note = executor.submit(tool, a, 'steering', {'text': 'Keep this concurrent note'})
@@ -190,9 +190,9 @@ def test_shared_build_writes_need_exclusive_capacity_and_status_documents_bounda
     configure(a)
     one, two = assignment(a, 'one'), assignment(a, 'two')
     allocation = grant(a, tasks=2)
-    first = tool(a, 'run_once', {'assignment_id': one['id'], 'allocation_id': allocation['id'], 'settings': {'shared_runtime_write': True}})
+    first = tool(a, 'run_once', {'assignment_id': one['id'], 'allocation_id': allocation['id'], 'settings': {'machine': 'hp3', 'shared_runtime_write': True}})
     until(lambda: Path(first['details']['session_dir'], 'ready').exists())
-    assert 'Shared runtime' in tool(a, 'run_once', {'assignment_id': two['id'], 'allocation_id': allocation['id']}, ok=False)['message']
+    assert 'Shared runtime' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': two['id'], 'allocation_id': allocation['id']}, ok=False)['message']
     runtime = tool(a, 'runtime_status')
     assert 'RRF/build' in runtime['shared_filesystem']
     assert 'Same-UID' in tool(a, 'overview')['brief']
@@ -221,12 +221,12 @@ def test_unopened_program_saved_worker_and_startup_reservations_hold_global_capa
     assert tool(a, 'runtime_status')['pool']['store_workers_reserved'] == 1
     configure(a, workers=1, backlog=2)
     new = assignment(a)
-    assert 'pool is full' in tool(a, 'run_once', {'assignment_id': new['id']}, ok=False)['message']
+    assert 'pool is full' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': new['id']}, ok=False)['message']
     # Reopen that program with a new controller: it becomes interrupted and
     # still blocks dispatch until the explicit unknown-startup handoff.
     b = attach(manager, 'other')
     assert tool(b, 'runtime_status')['allocations'][0]['details']['state'] == 'interrupted'
-    assert 'handoff' in tool(a, 'run_once', {'assignment_id': new['id']}, ok=False)['message']
+    assert 'handoff' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': new['id']}, ok=False)['message']
     tool(b, 'recover', {'handoff_allocation_id': allocation['id'], 'reason': 'Fixture had no child/world; preserve unknown boundary'})
     assert tool(a, 'runtime_status')['pool']['store_workers_reserved'] == 0
 
@@ -235,14 +235,14 @@ def test_unknown_cleanup_in_other_program_blocks_dispatch_without_signalling(man
     a, b = attach(manager), attach(manager, 'other')
     configure(a)
     work = other_assignment(b)
-    worker = tool(b, 'run_once', {'assignment_id': work['id']})
+    worker = tool(b, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
     os.kill(worker['details']['process']['pid'], signal.SIGKILL)
     until(lambda: tool(b, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'failed')
     extra = assignment(a)
-    assert 'unknown cleanup' in tool(a, 'run_once', {'assignment_id': extra['id']}, ok=False)['message']
+    assert 'unknown cleanup' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': extra['id']}, ok=False)['message']
     tool(b, 'recover', {'handoff_attempt_id': worker['id'], 'reason': 'No real world in fixture, retain partial logs'})
-    assert tool(a, 'run_once', {'assignment_id': extra['id']})['details']['state'] == 'running'
+    assert tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': extra['id']})['details']['state'] == 'running'
 
 
 def test_running_attempt_premise_conflicts_preserve_partial_evidence_and_source_identity(manager):
@@ -257,7 +257,7 @@ def test_running_attempt_premise_conflicts_preserve_partial_evidence_and_source_
         'priority': 1, 'estimated_cost': {'wall_minutes': 1}, 'uncertainty': 'fixture', 'decision_value': 'fixture',
         'novelty': 'fixture', 'observation': 'fixture', 'reopening_condition': 'premise changes', 'reason': 'Fixture', 'dependency_ids': [claim['id']]})
     allocation = grant(a, tasks=2)
-    workers = [tool(a, 'run_once', {'assignment_id': w['id'], 'allocation_id': allocation['id']}) for w in works]
+    workers = [tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': w['id'], 'allocation_id': allocation['id']}) for w in works]
     sessions_ready(a, 2)
     findings = [tool(a, 'assess', {'subject_id': claim['id'], 'outcome': outcome, 'evidence_ids': [shared['id']],
                                  'reason': 'Conflicting synthetic producer report', 'actor': actor})
@@ -292,8 +292,8 @@ def test_pool_defaults_limits_and_host_restart_preserve_store_configuration(mana
     first, second = assignment(a, 'first'), assignment(a, 'second')
     allocation = tool(a, 'allocate', {'task_limit': 2, 'wall_minutes': 4, 'review_minutes': .1, 'review_backlog_limit': 2})
     assert allocation['details']['worker_limit'] == 1
-    worker = tool(a, 'run_once', {'assignment_id': first['id'], 'allocation_id': allocation['id']})
-    assert 'Program worker pool' in tool(a, 'run_once', {'assignment_id': second['id'], 'allocation_id': allocation['id']}, ok=False)['message']
+    worker = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': first['id'], 'allocation_id': allocation['id']})
+    assert 'Program worker pool' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': second['id'], 'allocation_id': allocation['id']}, ok=False)['message']
     tool(a, 'shutdown')
     until(lambda: not process_live(a['process']))
     fresh = attach(manager)
@@ -338,7 +338,7 @@ def test_startup_gap_excludes_workers_reviewers_and_preserves_queued_exclusive_i
         raise OSError('fixture crash in charged startup gap')
     with patch.object(m, '_launch_worker', side_effect=gap):
         with pytest.raises(OSError, match='startup gap'):
-            m.controller.run_once('p', 'writer', allocation_id=allocation['id'], settings={'shared_runtime_write': True})
+            m.controller.run_once('p', 'writer', allocation_id=allocation['id'], settings={'machine': 'hp3', 'shared_runtime_write': True})
     charged = m.controller.current(allocation['id'])
     reservation = charged['details']['reservations'][0]
     assert reservation['state'] == 'interrupted' and reservation['attempt_id'] is None
@@ -353,7 +353,7 @@ def test_startup_gap_excludes_workers_reviewers_and_preserves_queued_exclusive_i
     script.write_text(f'#!{sys.executable}\nimport time\ntime.sleep(30)\n')
     script.chmod(0o755)
     second = m.controller.allocate('p', 2, 3, review_minutes=.1, worker_limit=2, review_backlog_limit=2)
-    worker = m.controller.run_once('p', 'reader', allocation_id=second['id'])
+    worker = m.controller.run_once('p', 'reader', allocation_id=second['id'], settings={'machine': 'hp3'})
     ready(m, 'queued-writer')
     current = m.controller.current(second['id'])
     current['details']['queue'] = [{'assignment_id': 'queued-writer', 'settings': {'shared_runtime_write': True}}]
@@ -375,7 +375,7 @@ def test_unopened_program_saved_attempt_is_not_adopted_or_signalled(manager):
         route = store.add_approach('other', 'other-q', 'Unopened saved worker', 'Fixture')
         work = store.add_assignment('other', route['id'], 'Wait', {'wall_minutes': 1})
         store.transition('other', work['id'], 'ready', 'Fixture')
-        worker = m.workers.start('other', work['id'], settings={'worktree': True})
+        worker = m.workers.start('other', work['id'], settings={'machine': 'hp3', 'worktree': True})
         child = m.workers.children[worker['id']]
         until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
         os.kill(child.pid, signal.SIGKILL)
@@ -388,14 +388,14 @@ def test_unopened_program_saved_attempt_is_not_adopted_or_signalled(manager):
     assert tool(a, 'runtime_status')['pool']['store_workers_reserved'] == 1
     configure(a, workers=1, backlog=2)
     extra = assignment(a)
-    assert 'pool is full' in tool(a, 'run_once', {'assignment_id': extra['id']}, ok=False)['message']
+    assert 'pool is full' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': extra['id']}, ok=False)['message']
     b = attach(manager, 'other')
     saved = tool(b, 'worker_status', {'attempt_id': worker['id']})
     assert saved['details']['state'] == 'interrupted' and saved['owned'] is False
     assert saved['details']['recovery']['adopted'] is False
-    assert 'handoff' in tool(a, 'run_once', {'assignment_id': extra['id']}, ok=False)['message']
+    assert 'handoff' in tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': extra['id']}, ok=False)['message']
     tool(b, 'recover', {'handoff_attempt_id': worker['id'], 'reason': 'Fixture child reaped; no real world existed'})
-    assert tool(a, 'run_once', {'assignment_id': extra['id']})['details']['state'] == 'running'
+    assert tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': extra['id']})['details']['state'] == 'running'
 
 
 @pytest.mark.parametrize('cached_run', [False, True])

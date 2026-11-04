@@ -1,18 +1,5 @@
-Codex Cloud supplement to research/prompts/research-manager-workflow.txt.
+Cloud supplement to research/prompts/research-manager-workflow.txt.
 
-The entry route selects cloud mode explicitly. Use the bound instructions and
-attachment.client_transport; capabilities and overview.manager also report it.
-Keep that choice through recovery. Do not infer mode from environment markers,
-Codex-home paths, available skills or sandbox restrictions.
-
-Call runtime_check before allocating work and fix setup failures before dispatch;
-scripts/cloud/RESEARCH.md explains dependencies and socket permissions.
-Dispatch verified pending bridge requests according to that guide. Each actual
-actor must write its own final_output; only actual completion or interruption
-permits a bridge acknowledgement. Never fabricate child output.
-Pass a worker's returned tool_connection_path to its actor. Use
-scripts/cloud/cloud_tool_bridge.py for the real MCP tools when actor command
-sockets are denied; the existing launcher owns that file relay and supervisor.
-
-For cancellation, also interrupt the actual bound actor and acknowledge it to
-the bridge. Poll launcher cleanup separately.
+Read scripts/cloud/RESEARCH.md for runtime setup, real actor dispatch,
+completion, cancellation and permission recovery. It is the sole operating
+procedure for this adapter.

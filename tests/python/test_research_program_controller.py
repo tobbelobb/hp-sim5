@@ -44,7 +44,7 @@ def test_finite_reservations_concurrency_backlog_pause_and_poll_revision(manager
                  {'task_limit': 2, 'wall_minutes': 10, 'review_minutes': 5}):
         assert tool(a, 'allocate', args, ok=False)['code'] == 'invalid_request'
     allocation = tool(a, 'allocate', {'task_limit': 2, 'wall_minutes': 4, 'review_minutes': .2})
-    worker = tool(a, 'run_once', {'assignment_id': one['id'], 'allocation_id': allocation['id']})
+    worker = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': one['id'], 'allocation_id': allocation['id']})
     until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
     # Wait for initial file inventory, then repeated elapsed observations must
     # leave semantic revisions stable while an unchanged investigation runs.
@@ -52,10 +52,10 @@ def test_finite_reservations_concurrency_backlog_pause_and_poll_revision(manager
     revision = tool(a, 'overview')['program']['revision']
     for _ in range(3):
         assert tool(a, 'overview')['program']['revision'] == revision
-    assert tool(a, 'run_once', {'assignment_id': two['id'], 'allocation_id': allocation['id']}, ok=False)['code'] == 'invalid_request'
+    assert tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': two['id'], 'allocation_id': allocation['id']}, ok=False)['code'] == 'invalid_request'
     tool(a, 'pause', {'reason': 'Reconsider future dispatch'})
     assert tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'running'
-    assert tool(a, 'run_once', {'assignment_id': two['id']}, ok=False)['code'] == 'invalid_request'
+    assert tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': two['id']}, ok=False)['code'] == 'invalid_request'
     tool(a, 'resume', {'reason': 'Keep the bounded allocation'})
     tool(a, 'worker_usage', {'attempt_id': worker['id'], 'report': {'fits': 2, 'claimed_steps': 17}})
     runtime = tool(a, 'runtime_status')['allocations'][0]['details']
@@ -64,9 +64,9 @@ def test_finite_reservations_concurrency_backlog_pause_and_poll_revision(manager
     assert 'shell compute' in runtime['reservations'][0]['usage']['unmetered']
     tool(a, 'cancel_attempt', {'attempt_id': worker['id']})
     until(lambda: tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'cancelled')
-    tool(a, 'run_once', {'assignment_id': two['id'], 'allocation_id': allocation['id']})
+    tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': two['id'], 'allocation_id': allocation['id']})
     assert len(tool(a, 'runtime_status')['allocations'][0]['details']['reservations']) == 2
-    assert tool(a, 'run_once', {'assignment_id': one['id'], 'allocation_id': allocation['id']}, ok=False)['code'] == 'invalid_request'
+    assert tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': one['id'], 'allocation_id': allocation['id']}, ok=False)['code'] == 'invalid_request'
     tool(a, 'stop_program', {'reason': 'Finished controller fixture'})
 
 
@@ -76,7 +76,7 @@ def test_wall_expiry_reaches_existing_cleanup_and_keeps_separate_allowance(manag
     work = tool(a, 'assignment', {'approach_id': route['id'], 'objective': 'Wait briefly', 'allocation': {'wall_minutes': .008}})
     tool(a, 'transition', {'record_id': work['id'], 'target': 'ready', 'reason': 'Deadline fixture'})
     allocation = tool(a, 'allocate', {'task_limit': 1, 'wall_minutes': .1, 'review_minutes': .01, 'cleanup_seconds': 2})
-    worker = tool(a, 'run_once', {'assignment_id': work['id'], 'allocation_id': allocation['id']})
+    worker = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id'], 'allocation_id': allocation['id']})
     ended = until(lambda: (r if (r := tool(a, 'worker_status', {'attempt_id': worker['id']}))['details']['state'] == 'cancelled' else None))
     assert ended['details']['cleanup'] == 'launcher_finally_completed'
     assert any(o['event'] == 'wall_expired' for o in ended['details']['observations'])
@@ -90,7 +90,7 @@ def test_crash_and_cancelled_start_keep_task_charge_and_partial_evidence(manager
     set_launcher(manager, action)
     a = attach(manager)
     work = assignment(a)
-    worker = tool(a, 'run_once', {'assignment_id': work['id']})
+    worker = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     if action.startswith('time'):
         until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
         tool(a, 'cancel_attempt', {'attempt_id': worker['id']})
@@ -99,7 +99,7 @@ def test_crash_and_cancelled_start_keep_task_charge_and_partial_evidence(manager
     assert ended['details']['artifacts']
     new = assignment(a, 'handoff')
     if cleanup == 'unverified':
-        assert tool(a, 'run_once', {'assignment_id': new['id']}, ok=False)['code'] == 'invalid_request'
+        assert tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': new['id']}, ok=False)['code'] == 'invalid_request'
         tool(a, 'recover', {'handoff_attempt_id': worker['id'], 'reason': 'No world in fixture; retain unknown shutdown boundary'})
     assert len(tool(a, 'runtime_status')['allocations'][0]['details']['reservations']) == 1
 
@@ -112,7 +112,7 @@ def test_stale_lease_cancelled_popen_and_restart_never_replay_assignment(context
     allocation['details']['lease_until'] = 0
     m.controller.save(allocation)
     with pytest.raises(ProgramError, match='lease'):
-        m.controller.run_once('p', 'new', allocation_id=allocation['id'])
+        m.controller.run_once('p', 'new', allocation_id=allocation['id'], settings={'machine': 'hp3'})
     allocation['details']['lease_until'] = time.time() + 15
     m.controller.save(allocation)
     original_popen = subprocess.Popen
@@ -122,7 +122,7 @@ def test_stale_lease_cancelled_popen_and_restart_never_replay_assignment(context
         raise KeyboardInterrupt
     with patch('hp_sim5_research.program_workers.subprocess.Popen', side_effect=cancel_start):
         with pytest.raises(KeyboardInterrupt):
-            m.controller.run_once('p', 'new', allocation_id=allocation['id'])
+            m.controller.run_once('p', 'new', allocation_id=allocation['id'], settings={'machine': 'hp3'})
     d = m.controller.current(allocation['id'])['details']
     assert len(d['reservations']) == 1
     attempt = c['store'].get_record('p', d['reservations'][0]['attempt_id'])
@@ -131,7 +131,7 @@ def test_stale_lease_cancelled_popen_and_restart_never_replay_assignment(context
     assert restarted.controller.current(allocation['id'])['details']['state'] == 'interrupted'
     assert not restarted.workers.children
     with pytest.raises(ProgramError):
-        restarted.controller.run_once('p', 'new')
+        restarted.controller.run_once('p', 'new', settings={'machine': 'hp3'})
 
 
 def test_reused_pid_and_live_snapshot_do_not_authorize_adoption_or_signals(context, monkeypatch):
@@ -241,7 +241,7 @@ def test_launcher_deadline_survives_absent_host_and_second_cancel_during_cleanup
     monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     monkeypatch.setattr(launcher, 'write_index', lambda *_: None)
     session = tmp_path / 'deadline-session'
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--batch', '--viewer', 'none', '--sidebar-section', 'none',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--codex', '--batch', '--viewer', 'none', '--sidebar-section', 'none',
                                     '--prompt', 'Bound startup independently of tool host', '--session-dir', str(session),
                                     '--wall-deadline', str(time.time() + .3)])
     assert launcher.main() == 130
@@ -268,11 +268,11 @@ def test_worker_retry_limit_requires_distinct_bounded_assignments(manager):
     a = attach(manager)
     first, second, third = [assignment(a, i) for i in ('first', 'second', 'third')]
     allocation = tool(a, 'allocate', {'task_limit': 3, 'wall_minutes': 5, 'review_minutes': .1, 'retry_limit': 2})
-    w1 = tool(a, 'run_once', {'assignment_id': first['id'], 'allocation_id': allocation['id']})
+    w1 = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': first['id'], 'allocation_id': allocation['id']})
     until(lambda: tool(a, 'worker_status', {'attempt_id': w1['id']})['details']['state'] == 'failed')
-    w2 = tool(a, 'run_once', {'assignment_id': second['id'], 'allocation_id': allocation['id'], 'retry_of': w1['id']})
+    w2 = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': second['id'], 'allocation_id': allocation['id'], 'retry_of': w1['id']})
     until(lambda: tool(a, 'worker_status', {'attempt_id': w2['id']})['details']['state'] == 'failed')
-    error = tool(a, 'run_once', {'assignment_id': third['id'], 'allocation_id': allocation['id'], 'retry_of': w2['id']}, ok=False)
+    error = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': third['id'], 'allocation_id': allocation['id'], 'retry_of': w2['id']}, ok=False)
     assert 'retry limit' in error['message']
     assert len(tool(a, 'runtime_status')['allocations'][0]['details']['reservations']) == 2
 
@@ -316,7 +316,7 @@ Path(sys.argv[sys.argv.index('--output-last-message') + 1]).write_text(json.dump
         invoke('transition', {'record_id': identity, 'target': 'ready', 'reason': 'Manager selected this distinct assignment'})
         transcript['assignments'].append({'id': identity, 'objective': objective})
     funded = invoke('allocate', {'task_limit': 2, 'wall_minutes': 3, 'review_minutes': .2})
-    invoke('run_within_allocation', {'allocation_id': funded['id'], 'assignment_ids': ['membership', 'common-fold']})
+    invoke('run_within_allocation', {'settings': {'machine': 'hp3'}, 'allocation_id': funded['id'], 'assignment_ids': ['membership', 'common-fold']})
     for index, identity in enumerate(('membership', 'common-fold', 'model-scope')):
         if index == 2:
             invoke('shutdown')
@@ -327,7 +327,7 @@ Path(sys.argv[sys.argv.index('--output-last-message') + 1]).write_text(json.dump
             restored = invoke('overview')
             assert len([r for r in restored['records'] if r['kind'] == 'admission']) == 2
             invoke('allocate', {'task_limit': 1, 'wall_minutes': 2, 'review_minutes': .2})
-            invoke('run_once', {'assignment_id': identity})
+            invoke('run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': identity})
         def ended():
             matches = [r for r in tool(a, 'worker_sessions') if r['details']['assignment_id'] == identity]
             return matches[-1] if matches and matches[-1]['details']['state'] == 'submitted' else None
@@ -372,7 +372,7 @@ def test_explicit_steering_holds_finite_queue_without_cancelling_running_worker(
     a = attach(manager)
     first, second = assignment(a, 'running'), assignment(a, 'pending')
     grant = tool(a, 'allocate', {'task_limit': 2, 'wall_minutes': 3, 'review_minutes': .1})
-    tool(a, 'run_within_allocation', {'allocation_id': grant['id'], 'assignment_ids': [first['id'], second['id']]})
+    tool(a, 'run_within_allocation', {'settings': {'machine': 'hp3'}, 'allocation_id': grant['id'], 'assignment_ids': [first['id'], second['id']]})
     worker = until(lambda: (items[0] if (items := tool(a, 'worker_sessions')) else None))
     tool(a, 'steering', {'text': 'Use a shorter pending comparison', 'intent': 'instruction',
                          'next_assignment_id': second['id'], 'allocation': {'wall_minutes': .5}})
@@ -385,7 +385,7 @@ def test_explicit_steering_holds_finite_queue_without_cancelling_running_worker(
 def test_actual_host_crash_reconciles_orphan_without_adoption_or_duplicate_dispatch(manager):
     a = attach(manager)
     work = assignment(a, 'before-crash')
-    child = tool(a, 'run_once', {'assignment_id': work['id']})
+    child = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     until(lambda: Path(child['details']['session_dir'], 'ready').exists())
     try:
         assert process_live(a['process'])
@@ -399,12 +399,12 @@ def test_actual_host_crash_reconciles_orphan_without_adoption_or_duplicate_dispa
         assert reconciled['details']['recovery']['adopted'] is False
         assert process_live(child['details']['process'])
         next_work = assignment(fresh, 'bounded-handoff')
-        assert tool(fresh, 'run_once', {'assignment_id': next_work['id']}, ok=False)['code'] == 'invalid_request'
+        assert tool(fresh, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': next_work['id']}, ok=False)['code'] == 'invalid_request'
         # Cancel does not use exported historical PIDs as authority.
         assert tool(fresh, 'cancel_attempt', {'attempt_id': child['id']})['details']['state'] == 'interrupted'
         assert process_live(child['details']['process'])
         tool(fresh, 'recover', {'handoff_attempt_id': child['id'], 'reason': 'Fixture has no physics; explicitly retain unknown stop boundary'})
-        next_child = tool(fresh, 'run_once', {'assignment_id': next_work['id']})
+        next_child = tool(fresh, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': next_work['id']})
         assert next_child['id'] != child['id']
         assert len(tool(fresh, 'worker_sessions')) == 2
     finally:
@@ -445,7 +445,7 @@ def test_invalid_worker_options_do_not_spend_or_strand_a_startup_reservation(man
     for extra in ({'settings': {'unsupported': True}}, {'instructions': 42}):
         assert tool(a, 'run_once', dict(assignment_id=work['id'], **extra), ok=False)['code'] == 'invalid_request'
     assert tool(a, 'runtime_status')['allocations'] == []
-    child = tool(a, 'run_once', {'assignment_id': work['id']})
+    child = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     assert child['details']['state'] in ('running', 'starting')
 
 

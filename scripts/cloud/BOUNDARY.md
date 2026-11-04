@@ -9,7 +9,7 @@ for actors, prompt text, tools and the measured October 26–27 run. Use
 
 | Location | Responsibility |
 | --- | --- |
-| `src/python/hp_sim5_research/codex_cloud/` | Cloud policy: queue-client argv, inherited authentication, prohibition on nested clients/model overrides, explicit worker machine, runtime readiness before charging attempts, service-only startup and environment reload. |
+| `src/python/hp_sim5_research/codex_cloud/` | Cloud policy: queue-client argv, inherited authentication, prohibition on nested clients/model overrides, runtime readiness before charging attempts, service-only startup and environment reload. |
 | `scripts/cloud/cloud_client_bridge.py` | Wait for a real authenticated subagent, bind its actual identity, verify final-output hash, and acknowledge completion/cancellation. |
 | `scripts/cloud/cloud_tool_bridge.py` | Launcher-owned file relay to actual hp_sim5 and assigned Rerun MCP attachments when actor command sockets are denied; Rerun's legacy initialize handshake. |
 | `scripts/cloud/prompts/` | Cloud manager entry and workflow supplement. The old `research/prompts/research-manager.txt` is a symlink to the entry, preserving its public path. |

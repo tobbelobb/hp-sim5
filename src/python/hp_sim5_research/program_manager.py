@@ -76,7 +76,8 @@ class ProgramManager:
 
     def runtime_check(self, program_id, *, physics_backend='headless-js'):
         """Check dependencies and launcher socket permissions before funding work; no motion."""
-        self.workers._settings({'physics_backend': physics_backend})
+        if physics_backend not in ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'):
+            raise ProgramError(f'Unsupported physics_backend: {physics_backend}')
         return runtime_check(self.root, physics_backend=physics_backend)
 
     def capabilities(self, program_id):
@@ -88,6 +89,7 @@ class ProgramManager:
                 'description': (inspect.getdoc(method) or '').split('\n')[0],
             }
         return {'operations': operations, 'unavailable': UNAVAILABLE, 'client_transport': research_client(),
+                'worker_machine': 'Required hp3/hp4: execution.machine in commission or settings.machine in worker_start/run_once; conflicting choices are rejected',
                 'physics_world': False, 'default_worker_concurrency': 1,
                 'boundary': 'Cooperative same-UID local tools; private files are not adversarial isolation',
                 'worker_allocation': 'Finite task/wall/review reservations; numerical counters remain explicit contracts',

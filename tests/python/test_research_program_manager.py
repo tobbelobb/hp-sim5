@@ -258,14 +258,14 @@ def test_fresh_cli_calls_retain_owned_worker_share_attachment_pause_then_cancel(
     assert overview['next_allocation']['assignment_id'] == work['id']
     assert overview['next_allocation']['allocation']['wall_minutes'] == 1
     started_at = time.monotonic()
-    worker = tool(first, 'worker_start', {'assignment_id': work['id']})
+    worker = tool(first, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     assert time.monotonic() - started_at < 2
     assert worker['details']['state'] == 'running'
     until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
     second = attach(manager)
     assert first == second
     assert tool(second, 'worker_status', {'attempt_id': worker['id']})['owned']
-    error = tool(second, 'worker_start', {'assignment_id': work['id']}, ok=False)
+    error = tool(second, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']}, ok=False)
     assert error['code'] == 'invalid_request'
     assert len(tool(second, 'worker_sessions')) == 1
     paused = tool(second, 'pause', {'reason': 'Human wants to reconsider new work'})
@@ -335,11 +335,11 @@ def test_program_bound_identity_graph_review_and_structured_errors(manager):
 def test_stop_cancels_owned_children_and_prevents_more_dispatch(manager):
     a = attach(manager)
     work = assignment(a)
-    worker = tool(a, 'worker_start', {'assignment_id': work['id']})
+    worker = tool(a, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
     assert tool(a, 'stop', {'reason': 'Human stop'})['program']['state'] == 'stopped'
     until(lambda: tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'cancelled')
-    assert tool(a, 'worker_start', {'assignment_id': work['id']}, ok=False)['code'] == 'invalid_request'
+    assert tool(a, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']}, ok=False)['code'] == 'invalid_request'
     assert tool(a, 'resume', {'reason': 'Stopped is final'}, ok=False)['code'] == 'invalid_request'
 
 
@@ -375,7 +375,7 @@ Path(sys.argv[sys.argv.index('--output-last-message') + 1]).write_text(json.dump
     a = attach(manager)
     work = assignment(a)
     tool(a, 'allocate', {'task_limit': 1, 'wall_minutes': 12, 'review_minutes': 10, 'retry_limit': 2})
-    attempt = tool(a, 'worker_start', {'assignment_id': work['id']})
+    attempt = tool(a, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     until(lambda: tool(a, 'worker_status', {'attempt_id': attempt['id']})['details']['state'] == 'submitted')
     claim = tool(a, 'claim', {'title': fixture['claim'], 'scope': {'evidence_type': 'synthetic', 'configuration': 'fixture'}})
     selected = []
@@ -514,7 +514,7 @@ def test_strategy_funding_steering_and_worker_contract_through_fresh_cli(manager
                                 {'approach_id': 'model', 'explanation': 'Model inadequacy dominates'}],
                   outcomes={'gap': {'observation': 'No shared fair fold found', 'finding': 'inconclusive', 'actions': []}})
     first = tool(a, 'commission', params)
-    worker = tool(a, 'worker_start', {'assignment_id': first['assignment']['id']})
+    worker = tool(a, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': first['assignment']['id']})
     until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
     prompt = Path(worker['details']['attempt_dir'], 'prompt.txt').read_text()
     assert 'source_limit' in prompt and 'Model inadequacy dominates' in prompt
@@ -532,3 +532,15 @@ def test_strategy_funding_steering_and_worker_contract_through_fresh_cli(manager
     assert tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'running'
     tool(a, 'worker_cancel', {'attempt_id': worker['id']})
     until(lambda: tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'cancelled')
+
+
+def test_missing_worker_machine_does_not_charge_or_spawn(manager):
+    a = attach(manager)
+    work = assignment(a)
+    before = tool(a, 'runtime_status')
+    error = tool(a, 'worker_start', {'assignment_id': work['id']}, ok=False)
+    assert error['code'] == 'invalid_request'
+    assert 'execution.machine' in error['message'] and 'settings.machine' in error['message']
+    assert tool(a, 'worker_sessions') == []
+    assert tool(a, 'runtime_status') == before
+    assert 'Required hp3/hp4' in tool(a, 'capabilities')['worker_machine']

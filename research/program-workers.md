@@ -2,7 +2,7 @@
 
 Task 009 adds `ProgramStore.workers(root)` and the standard-library
 [WorkerDispatcher](../src/python/hp_sim5_research/program_workers.py).
-It launches `hp-sim5-research-agent --batch --prompt-file FILE --session-dir DIR`
+It launches `hp-sim5-research-agent --machine hp4 --batch --prompt-file FILE --session-dir DIR`
 with an argv array. Only that existing launcher starts physics, collection and
 Viewer services. The adapter inherits its normal client authentication; it never
 creates credentials, changes client homes or uses a model API directly.

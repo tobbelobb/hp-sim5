@@ -1,5 +1,4 @@
-Manage the research question in this conversation. Read AGENTS.md,
-research/AGENTS.md and research/program.md. Keep this chat as the manager; delegate
+Manage the research question in this conversation. Keep this chat as the manager; delegate
 bounded investigations to hp-sim5-research-agent through the program tools.
 
 Use the bound execution mode and attachment.client_transport throughout recovery.
@@ -23,12 +22,11 @@ pools and combined patch integration are optional advanced tools, not prerequisi
 The manager chooses finite targeted budgets when the human has supplied none.
 Include startup margin, review and cleanup. Do not invent an unrelated fixed
 model timeout. Fresh fits, bounded native/headless physics and simulated collection
-are allowed within the human's constraints. Read the recording-cost guidance
-before numerical budgets; use supported --speedup 25 for simulated autocal CLI.
+are allowed within the human's constraints. Workers own experiment setup and
+recording choices under research/AGENTS.md; consult their measured workload costs
+when sizing numerical budgets.
 
 Use commission or a ready assignment, then worker_start/run_once.
-Set execution.machine in commission (hp3/hp4), or pass machine in
-worker settings; the structured setting must agree with the intended machine.
 Poll actual worker_status and preserve unsuccessful and partial evidence.
 
 An exited worker is unreviewed. Use submit to freeze the claim, report and selected
@@ -60,10 +58,8 @@ mode to work around a commit error. A terminal convenience command is
 Inspect files.json for large or missing evidence and retain essential omissions
 separately. This commits only research/programs/PROGRAM_ID, leaves unrelated
 staged work alone, and never pushes. Commit research source changes separately
-when appropriate; do not automatically merge experimental candidates. Real
-physics/motor/transport/dynamics changes require npm run test:physics.
+when appropriate; do not automatically merge experimental candidates.
 
 Keep the manager conversation useful through bounded cycles and committed
-results. Unattended services and moving unfinished programs across machines are
-not targets. Report missing platform capabilities honestly; fixture checks do not
+results. Report missing platform capabilities honestly; fixture checks do not
 prove live model access or scientific results.

@@ -1,17 +1,15 @@
 # Research manager tools
 
 Start with the [question-first guide](program.md). The current coding chat is the
-manager; ordinary CLI tools connect it to a small persistent controller. Local
-`--codex` or `--claude` opens that manager chat. Cloud `--cloud` uses the existing
-chat's authenticated subagents and never opens another coding CLI.
+manager; ordinary CLI tools connect it to a small persistent controller.
+`--codex` or `--claude` opens a local manager chat. For cloud entry, use the
+[adapter prompt](../scripts/cloud/prompts/research-manager.txt).
 
 ## Open a program
 
 ```bash
 ./hp-sim5-research-program --codex --question 'Your question'
 ./hp-sim5-research-program --claude --program PROGRAM_ID
-# The cloud entry prompt uses this internal command:
-./hp-sim5-research-program --cloud --question 'Your question'
 ```
 
 The response includes program_id, attachment.connection and the overview. Opening
@@ -64,32 +62,22 @@ movement are not hard aggregate quotas. The default is one worker.
 
 The manager uses a private file queue, so it needs no MCP SDK or local socket.
 These Python tools are bookkeeping, not another model session. They can open a
-program with system Python when .venv is absent. Cloud launchers load env.sh and
-check the complete runtime before charging worker attempts; see
-[cloud setup and socket permissions](../scripts/cloud/RESEARCH.md).
-Its former MCP attachment route and --serve option have been removed. Local
-manager clients disable inherited research MCP entries and use CLI tools.
-Workers retain the existing physics supervisor and its MCP attachment. Cloud
-actors receive a launcher-owned tool_connection_path and use
-scripts/cloud/cloud_tool_bridge.py to call the real MCP tools even when their
-command context cannot create sockets. Direct scripts/research_attach.py remains
-available when command sockets are permitted. Both routes use the private
-connection for that attempt; neither grants networking to the actor's commands.
-See [the cloud workflow](../scripts/cloud/RESEARCH.md) for dispatch and cleanup.
+program with system Python when .venv is absent.
+Local manager clients disable inherited research MCP entries and use CLI tools.
+Workers retain the existing physics supervisor and its MCP attachment.
+For the optional cloud transport, use its [operating guide](../scripts/cloud/RESEARCH.md).
 No new physics runtime is introduced.
 
 ## Results and lifecycle
 
 An exited worker is unreviewed. Submit a fixed claim and selected evidence, run
 a separate reviewer, and apply a valid review before treating the finding as
-reviewed. Review does not normally repeat expensive experiments. Physics changes
-still need npm run test:physics. Accepted findings and code readiness are distinct.
+reviewed. Review does not normally repeat expensive experiments.
+Accepted findings and code readiness are distinct.
 
 Pause holds new dispatch while existing work continues. Stop requests owned
 cleanup; poll status to observe completion. Shutdown also retires this program's
 controller. Closing a local manager client alone does not stop the host.
-Cloud cancellation additionally needs the parent to interrupt its actual cloud
-actor and acknowledge that interruption to the bridge.
 
 After cleanup, call the controller as a separate step:
 

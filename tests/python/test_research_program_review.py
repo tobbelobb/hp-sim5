@@ -45,7 +45,7 @@ def context(tmp_path, monkeypatch):
     worker.write_text(f'#!{sys.executable}\nimport sys\n# Success does not self-admit.\nsys.exit(0)\n')
     worker.chmod(0o755)
     workers = store.workers(root, executable=worker)
-    attempt = workers.start('p', 'work')
+    attempt = workers.start('p', 'work', settings={'machine': 'hp3'})
     workers.children[attempt['id']].wait(timeout=5)
     attempt = workers.status('p', attempt['id'])
     controller = store.reviews(root)

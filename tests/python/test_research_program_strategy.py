@@ -55,12 +55,13 @@ def fund(controller, route='saved', record_id=None, **updates):
     params = dict(approach_id=route, objective='Test applied models on a common fold', allocation={'wall_minutes': 17, 'fresh_fits': 2},
                   explanations=[dict(approach_id='saved', explanation='Candidate membership causes the error'),
                                 dict(approach_id='model', explanation='The physical model is inadequate')], outcomes=outcomes,
-                  execution={'physics_backend': 'native-python', 'recording_mode': 'events', 'simulated_autocal_speedup': 25}, record_id=record_id)
+                  execution={'machine': 'hp3', 'physics_backend': 'native-python', 'recording_mode': 'events', 'simulated_autocal_speedup': 25}, record_id=record_id)
     params.update(updates)
     return controller.commission('p', **params)
 
 
-def test_commissioned_machine_controls_launcher_and_rejects_conflicts(strategy, monkeypatch):
+@pytest.mark.parametrize('transport', ['local', 'cloud'])
+def test_commissioned_machine_controls_launcher_and_rejects_conflicts(strategy, monkeypatch, transport):
     store, strategy_controller = strategy
     work = fund(strategy_controller, execution={'machine': 'hp3'})
     context = strategy_controller.test_context
@@ -70,7 +71,7 @@ def test_commissioned_machine_controls_launcher_and_rejects_conflicts(strategy, 
     manager.controller.recover('p', handoff_attempt_id=context['attempt']['id'],
                               reason='Synthetic fixture started no world; retain missing exit manifest')
     identity = work['assignment']['id']
-    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
+    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', transport)
     assert workers.assignment_settings('p', identity)['machine'] == 'hp3'
     attempt = workers.start('p', identity)
     workers.children[attempt['id']].wait(timeout=5)
@@ -80,7 +81,7 @@ def test_commissioned_machine_controls_launcher_and_rejects_conflicts(strategy, 
     assert contract['execution']['machine'] == 'hp3'
     with pytest.raises(ProgramError, match='conflicts'):
         workers.assignment_settings('p', identity, {'machine': 'hp4'})
-    without_machine = fund(strategy_controller)
+    without_machine = fund(strategy_controller, execution={})
     with pytest.raises(ProgramError, match='explicit machine'):
         workers.assignment_settings('p', without_machine['assignment']['id'])
     assert workers.assignment_settings('p', without_machine['assignment']['id'], {'machine': 'hp4'})['machine'] == 'hp4'
@@ -109,7 +110,7 @@ def ended_review(controller, work, finding, *, verdict='keep', failed=False):
         if d['cleanup'].startswith(('unverified', 'failed', 'unknown')):
             d['handoff'] = {'reason': 'Distinct synthetic fixture; no world was started', 'physical_shutdown': 'unknown'}
             workers._save('p', historical['id'], d)
-    attempt = workers.start('p', work['assignment']['id'])
+    attempt = workers.start('p', work['assignment']['id'], settings={'machine': 'hp3'})
     workers.children[attempt['id']].wait(timeout=5)
     c['attempt'] = workers.status('p', attempt['id'])
     submission = submit(c, claim='fixture-' + uuid.uuid4().hex)
@@ -271,7 +272,7 @@ def test_manager_tools_write_cited_brief_and_real_worker_contract(strategy, tmp_
                 execution={'source_limit': 4, 'search_question': 'Do comparable applied models have an unbiased common fold?'})
     manager.controller.recover('p', handoff_attempt_id=controller.test_context['attempt']['id'],
                                reason='Fixture worker started no physics; acknowledge its missing exit manifest')
-    response = manager.call('worker_start', {'assignment_id': work['assignment']['id']})
+    response = manager.call('worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['assignment']['id']})
     contract = response['result']['instructions']
     assert 'literature' in contract and 'source_limit' in contract and 'explanations' in contract
     overview = manager.call('overview')['result']
