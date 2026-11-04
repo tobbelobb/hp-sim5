@@ -3320,6 +3320,57 @@ Hangprinter, CDPR, autocalibration, consensus membership, saved evidence, per-da
 - [Full worker report](/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) and [evidence extract](/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json): individual saved outcomes, sweep IDs, source hashes and structural checks.
 - [Frozen submission manifest](/home/torbjorn/repos/hp-sim5/research/programs/program-e31e5321be5940baacf677409b2579e0/submissions/cm-fixed-submission/manifest.json): exact reviewed bytes and source/base identities.
 
+## [2026-10-27-program-usefulness-audit](sessions/2026-10-27-program-usefulness-audit/)
+
+[abstract.md](sessions/2026-10-27-program-usefulness-audit/abstract.md) · [report.md](sessions/2026-10-27-program-usefulness-audit/report.md) · [research.md](sessions/2026-10-27-program-usefulness-audit/research.md)
+
+### Research Program usefulness versus the direct Research Agent
+
+Status: complete for saved-evidence inspection; no matched agent trial.
+
+#### Abstract
+
+Does the saved record support lower usefulness from Research Programs? Inspection
+of five actual-run program snapshots found nine launched workers, median wall
+allocation eight minutes, six admissions (four report-only, one needs-changes,
+one ready tooling repair), and no integration records. A defined sixteen-session
+direct-agent prompt cohort has twelve completed summaries, including ten reported
+implementation changes. Two timing gains were recomputed from saved measurements.
+Different tasks, dates, platforms and budgets prevent a causal success-rate or
+elapsed-time comparison. Current source emphasizes small reviewed investigations,
+does not automatically select existing topic prompts, and ends integration before
+merging. Longer delivery missions using existing research prompts, clear blocker
+reporting and explicit integration authority are proposed improvements, not tested
+results. No models, simulations, fitting or production services were run.
+
+#### Topics
+
+research program, research agent, usefulness, delivery, cloud, worktrees, review,
+integration, prompts, wall budgets, continuity, goal mode, retrospective audit
+
+#### Tested hypotheses
+
+| Hypothesis | Observation | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Saved managed work delivers less implementation value in the observed tasks | USE-01: five program snapshots and sixteen direct launcher sessions | Supported descriptively; tasks and budgets confounded | [Report](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md) |
+| Managed workers receive short allocations | USE-02: nine saved attempt allocations | Supported: 2–25 minutes; median 8 | [Data](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/data.json) |
+| Goal mode alone explains the difference | No matched trial or complete goal transcripts | Inconclusive | [Source analysis](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md#source-level-explanations) |
+| Proposed longer delivery missions improve outcomes | None | Not tested | [Proposed changes](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md#changes-i-recommend-in-order) |
+
+#### Decision handoff
+
+- Scope: available archived programs and a defined October 8–22 direct prompt cohort at 1360d980.
+- Review: parent inspected source/results and recomputed saved timing arithmetic; no independent actor or scientific reproduction.
+- Decision: use direct agents for substantive implementation until Program demonstrates the full delivery cycle; improve its mission contract before adding coordination layers.
+- Next: a small matched direct/managed implementation trial with equal permissions, allowances and delivery authority.
+
+#### References
+
+- [Full assessment](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md): findings, limits, sources and recommendations.
+- [Audited data](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/data.json): exact inventory, provenance and recomputed arithmetic.
+- [Audit script](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/audit.py): reproduction without model or simulation work.
+- [Notebook](sessions/2026-10-27-program-usefulness-audit/research.md): scope and actions.
+
 ## [architecture-batch](architecture-batch/)
 
 [abstract.md](architecture-batch/abstract.md) · [report.md](architecture-batch/report.md) · [research.md](architecture-batch/research.md)

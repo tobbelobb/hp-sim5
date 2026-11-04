@@ -18,6 +18,21 @@ and evidence in Git; prefer those links when continuing in another environment.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Research Program usefulness versus the direct agent
+
+Status: saved-evidence assessment, 2026-10-27. Five actual-run program snapshots
+contain nine worker attempts with an eight-minute median allocation, six scoped
+admissions and no integration records. A defined sixteen-session direct-agent
+cohort includes twelve completed summaries and ten reported implementation
+changes. Tasks, platforms and budgets differ, so these are not comparative
+success rates. The assessment recommends a delivery-oriented assignment using an
+existing topic prompt, a longer continuing worker, visible runtime blockers and
+an explicit review/integration policy before expanding orchestration.
+
+[Assessment and recommendations](reports/program-usefulness/report.md),
+[counts and source hashes](reports/program-usefulness/data.json),
+[reproduction script](reports/program-usefulness/audit.py).
+
 ## Separately reviewed audit of saved consensus evidence
 
 Status: complete and separately reviewed, 2026-10-26. Topics: CM-E1, consensus

@@ -1,0 +1,674 @@
+{
+  "source_revision": "1360d980fb9054ac619e6762cbbdf27b56b72a56",
+  "method": "Saved-source inspection and arithmetic only. No scientific re-execution or matched agent trial.",
+  "programs": [
+    {
+      "source": {
+        "path": "research/programs/program-7aa80aa18f10499e85cb24ffeae712cb/program.json",
+        "sha256": "95335669f5a62fcf9952ba11e1b6b97f95fed6cc270fa7002ac936fd6a742e38"
+      },
+      "program": {
+        "constraints": {},
+        "created_at": "2026-10-26T20:31:48.406482+00:00",
+        "goal": "Does the cloud environment and all the research agent tools work optimally? Make the full Research Program feature work smoothly on this cloud platform through measured end-to-end trials, bounded simulations, fixes, independent reviews and lifecycle checks.",
+        "id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+        "question_id": "question-53acd24e87eb430bb22f8e8745839d0f",
+        "revision": 143,
+        "state": "paused",
+        "updated_at": "2026-10-27T07:51:12.296346+00:00"
+      },
+      "record_counts": {
+        "question": 1,
+        "steering": 2,
+        "human_input": 2,
+        "approach": 2,
+        "route_plan": 3,
+        "runtime_allocation": 5,
+        "assignment": 4,
+        "investigation": 4,
+        "attempt": 4,
+        "claim": 3,
+        "submission": 3,
+        "review_run": 4,
+        "decision": 7,
+        "review": 3,
+        "admission": 3,
+        "artifact": 1,
+        "relation": 1,
+        "strategy_event": 1
+      },
+      "attempts": [
+        {
+          "id": "attempt-ca404fcaf323469eb35cc37b515ca3a7",
+          "title": "Inventory and exercise the current cloud research tools through the real worker supervisor. Inspect prior evidence, run preflight and isolated integration suites, and retain a tool coverage matrix with exact live observations.",
+          "state": "submitted",
+          "wall_minutes_allocated": 22,
+          "observed_wall_seconds": 901.897137,
+          "allocation": {
+            "collections": 0,
+            "fresh_fits": 0,
+            "physics_steps": 20000,
+            "wall_minutes": 22
+          },
+          "goal_mode_setting": true,
+          "worktree": true,
+          "wall_expired": false
+        },
+        {
+          "id": "attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0",
+          "title": "Validate the patched cloud workflow with an actual actor using the launcher-owned file relay from a socket-denied command context. Exercise remaining production research tools, recording/Viewer, configuration, collection, full-autocal and job cancellation with bounded numerical work.",
+          "state": "failed",
+          "wall_minutes_allocated": 25,
+          "observed_wall_seconds": 4.709393,
+          "allocation": {
+            "autocal_jobs": 2,
+            "collections": 2,
+            "fresh_fits": 8,
+            "physics_steps": 20000,
+            "wall_minutes": 25
+          },
+          "goal_mode_setting": true,
+          "worktree": true,
+          "wall_expired": false
+        },
+        {
+          "id": "attempt-e13302e362f545e39608027dcb85f963",
+          "title": "Validate repaired cloud production tools from an actual actor after the measured Viewer setup fix, using the launcher-owned MCP file relay without actor command networking.",
+          "state": "submitted",
+          "wall_minutes_allocated": 25,
+          "observed_wall_seconds": 752.673654,
+          "allocation": {
+            "autocal_jobs": 2,
+            "collections": 2,
+            "fresh_fits": 8,
+            "physics_steps": 20000,
+            "wall_minutes": 25
+          },
+          "goal_mode_setting": true,
+          "worktree": true,
+          "wall_expired": false
+        },
+        {
+          "id": "attempt-7b5eec5ff1044841ae609b067012e7ec",
+          "title": "Validate the exact remaining autocal nonfinite-status/slot-release and browser-history MCP fixes on fresh source7c0a353e, retaining a compact real recording and confirming recovery and cancellation.",
+          "state": "cancelled",
+          "wall_minutes_allocated": 15,
+          "observed_wall_seconds": 905.674759,
+          "allocation": {
+            "autocal_jobs": 2,
+            "collections": 0,
+            "fresh_fits": 8,
+            "physics_steps": 100,
+            "wall_minutes": 15
+          },
+          "goal_mode_setting": true,
+          "worktree": true,
+          "wall_expired": true
+        }
+      ],
+      "admissions": [
+        {
+          "decision": "keep",
+          "finding": "supported",
+          "code_readiness": "report_only"
+        },
+        {
+          "decision": "keep",
+          "finding": "supported",
+          "code_readiness": "needs_changes"
+        },
+        {
+          "decision": "keep",
+          "finding": "supported",
+          "code_readiness": "ready"
+        }
+      ]
+    },
+    {
+      "source": {
+        "path": "research/programs/program-d71e9395e72e43db97d4e21c0d052f51/program.json",
+        "sha256": "1bd17a7dd056d06bbeba2a01dd24c8a51adc6686cad5fce762eae9868310f666"
+      },
+      "program": {
+        "constraints": {},
+        "created_at": "2026-10-26T11:17:23.775606+00:00",
+        "goal": "Inspect saved Hangprinter research and choose one important uncertainty. Complete one small saved-evidence investigation, obtain a separate review, explain the next decision, and commit the small research results. Run no new numerical experiments for this first trial.",
+        "id": "program-d71e9395e72e43db97d4e21c0d052f51",
+        "question_id": "question-a62575db2e9f49b2944fb7b09d452e91",
+        "revision": 11,
+        "state": "active",
+        "updated_at": "2026-10-26T11:22:36.541571+00:00"
+      },
+      "record_counts": {
+        "question": 1,
+        "steering": 1,
+        "approach": 2,
+        "artifact": 5,
+        "assignment": 1,
+        "decision": 1
+      },
+      "attempts": [],
+      "admissions": []
+    },
+    {
+      "source": {
+        "path": "research/programs/program-e31e5321be5940baacf677409b2579e0/program.json",
+        "sha256": "4083bb55987a743e4a9f6a11b41e8c8d766274b6f107ea098e435d609a7ae952"
+      },
+      "program": {
+        "constraints": {},
+        "created_at": "2026-10-26T11:56:14.670615+00:00",
+        "goal": "Inspect saved Hangprinter research. Complete one small saved-evidence investigation and a separate review, explain the next decision, then commit the small research results. Run no new numerical experiments.",
+        "id": "program-e31e5321be5940baacf677409b2579e0",
+        "question_id": "question-6393dbc8de91499e8ac6b8b4705c567b",
+        "revision": 72,
+        "state": "active",
+        "updated_at": "2026-10-26T12:10:34.266791+00:00"
+      },
+      "record_counts": {
+        "question": 1,
+        "artifact": 6,
+        "approach": 2,
+        "route_plan": 2,
+        "decision": 4,
+        "runtime_allocation": 1,
+        "assignment": 1,
+        "investigation": 1,
+        "attempt": 1,
+        "claim": 1,
+        "submission": 1,
+        "review_run": 1,
+        "review": 1,
+        "admission": 1,
+        "relation": 2,
+        "strategy_event": 1
+      },
+      "attempts": [
+        {
+          "id": "attempt-8cc3e522df934dafbc74a9639e34721e",
+          "title": "Audit four archived CM-E1 sources without numerical replay: determine whether saved measurements reject blanket finite-prediction-only final-consensus nonworsening, distinguish aggregate from per-dataset outcomes, and inspect the precise common-unseen-fold gap and provenance limits. Produce report.md, abstract.md, research.md and a small evidence extract with source hashes and JSON field paths.",
+          "state": "submitted",
+          "wall_minutes_allocated": 8,
+          "observed_wall_seconds": 383.090308,
+          "allocation": {
+            "collections": 0,
+            "fresh_fits": 0,
+            "physics_runs": 0,
+            "physics_steps": 0,
+            "prediction_evaluations": 0,
+            "selection_evaluations": 0,
+            "wall_minutes": 8
+          },
+          "goal_mode_setting": true,
+          "worktree": true,
+          "wall_expired": false
+        }
+      ],
+      "admissions": [
+        {
+          "decision": "keep",
+          "finding": "supported",
+          "code_readiness": "report_only"
+        }
+      ]
+    },
+    {
+      "source": {
+        "path": "research/cloud-client-pilot/2026-10-24/program-export.json",
+        "sha256": "cd6b804acef28e01cceef79536cbc82bfb14a5574cac16479f87fb80978b8817"
+      },
+      "program": {
+        "id": "program-387d94c6067647b6964aa267122d7989",
+        "question_id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+        "goal": "Can cloud agents execute and independently review a bounded HP3 simulation?",
+        "state": "active",
+        "revision": 98,
+        "created_at": "2026-10-24T20:09:39.050096+00:00",
+        "updated_at": "2026-10-24T20:58:29.231063+00:00",
+        "constraints": {
+          "fresh_fits": 0,
+          "hardware_claims": false,
+          "physics_steps": 200,
+          "simulated_seconds": 0.4
+        }
+      },
+      "record_counts": {
+        "question": 1,
+        "approach": 2,
+        "steering": 1,
+        "human_input": 1,
+        "decision": 8,
+        "assignment": 3,
+        "runtime_allocation": 4,
+        "attempt": 3,
+        "claim": 2,
+        "submission": 2,
+        "review_run": 3,
+        "review": 2,
+        "admission": 2,
+        "route_plan": 2,
+        "relation": 2,
+        "strategy_event": 2
+      },
+      "attempts": [
+        {
+          "id": "attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+          "title": "Use the launcher-attached real physics MCP to run at most 100 fresh HP3 native steps, verify telemetry/recording readback, and report exact source/input/engine identities. This is cloud tool feasibility, not calibration accuracy.",
+          "state": "submitted",
+          "wall_minutes_allocated": 3,
+          "observed_wall_seconds": 176.707341,
+          "allocation": {
+            "collections": 0,
+            "fresh_fits": 0,
+            "physics_steps": 100,
+            "wall_minutes": 3
+          },
+          "goal_mode_setting": false,
+          "worktree": false,
+          "wall_expired": false
+        },
+        {
+          "id": "attempt-6aabde30a2df4f20a0e259cc25c52b4b",
+          "title": "Inspect the fixed saved cloud-native production artifacts and determine what they do and do not establish about full autonomous cloud research. No new simulation or fitting. Report an explicitly scoped limitation and a route recommendation.",
+          "state": "submitted",
+          "wall_minutes_allocated": 3,
+          "observed_wall_seconds": 126.282249,
+          "allocation": {
+            "collections": 0,
+            "fresh_fits": 0,
+            "physics_steps": 0,
+            "wall_minutes": 3
+          },
+          "goal_mode_setting": false,
+          "worktree": false,
+          "wall_expired": false
+        },
+        {
+          "id": "attempt-e7bb4a742d144b1eaf33c223c8428d23",
+          "title": "Controlled cloud-worker cancellation check. Zero physics, fits or collection. Write ready-for-cancel and wait for cancellation. Preserve partial evidence.",
+          "state": "cancelled",
+          "wall_minutes_allocated": 2,
+          "observed_wall_seconds": 84.100017,
+          "allocation": {
+            "collections": 0,
+            "fresh_fits": 0,
+            "physics_steps": 0,
+            "wall_minutes": 2
+          },
+          "goal_mode_setting": false,
+          "worktree": false,
+          "wall_expired": false
+        }
+      ],
+      "admissions": [
+        {
+          "decision": "keep",
+          "finding": "supported",
+          "code_readiness": "report_only"
+        },
+        {
+          "decision": "keep",
+          "finding": "supported",
+          "code_readiness": "report_only"
+        }
+      ]
+    },
+    {
+      "source": {
+        "path": "output/research/sessions/2026-10-24-live-manager-release/program-export.json",
+        "sha256": "723bc7ae9a2668f860bc5ea9172f76f81719b53df5b4c4bbea13ec5e26a506ee"
+      },
+      "program": {
+        "id": "program-bbcc825bf93241c3a002bebe76f106bc",
+        "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+        "goal": "Can fixed saved HP3 measurements distinguish a useful calibration-fit improvement from selection-only consensus changes?",
+        "state": "stopped",
+        "revision": 38,
+        "created_at": "2026-10-24T14:43:37.907932+00:00",
+        "updated_at": "2026-10-24T14:49:51.576819+00:00",
+        "constraints": {
+          "automatic_stopping": true,
+          "hardware_claims": false,
+          "same_measurements": true
+        }
+      },
+      "record_counts": {
+        "question": 1,
+        "approach": 2,
+        "route_plan": 2,
+        "assignment": 2,
+        "decision": 5,
+        "runtime_allocation": 2,
+        "attempt": 1,
+        "claim": 1,
+        "submission": 1,
+        "review_run": 1,
+        "steering": 1,
+        "human_input": 1
+      },
+      "attempts": [
+        {
+          "id": "attempt-c4f103629fb948949279aa671a03b84d",
+          "title": "Run one production fit on at most 30 points of autocal/data/references/five_points_bigger_deltas.json, with one restart and max_iterations 25. Record selected-input hash, actual points, cost, nfev and termination. This is bounded integration evidence; do not claim calibration accuracy or improvement without a fair comparator.",
+          "state": "failed",
+          "wall_minutes_allocated": 2,
+          "observed_wall_seconds": 3.896247,
+          "allocation": {
+            "collections": 0,
+            "fresh_fits": 1,
+            "max_fit_evaluations": 25,
+            "physics_steps": 0,
+            "points": 30,
+            "wall_minutes": 2
+          },
+          "goal_mode_setting": true,
+          "worktree": true,
+          "wall_expired": false
+        }
+      ],
+      "admissions": []
+    }
+  ],
+  "direct_prompt_cohort": [
+    {
+      "session": "2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/abstract.md",
+        "sha256": "e4cbf256d74466e06230afdad0aa20d4a6572d0293bf40867015ecc4f5f5d037"
+      },
+      "title": "Faster encoder autocalibration through exact spool-model dataset reuse",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "exact spool-model transformation cache",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2c84dbc6",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2c84dbc6/abstract.md",
+        "sha256": "e0a384f20bb9202aa4e3ebb3a9da56076dfa49d2dca1a8eb0af429f6141d0bd5"
+      },
+      "title": "Faster repeated encoder autocalibration with persistent JAX compilation",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "persistent JAX compilation cache",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b4c1444b",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b4c1444b/abstract.md",
+        "sha256": "66ae5c41f66831a9d03166b0f1596b8c887afc725a65b8119fa16d41fec07928"
+      },
+      "title": "Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can",
+      "status": "Status: not yet summarized.",
+      "outcome": "unsummarized",
+      "retained_change": null,
+      "summarized_complete": false,
+      "batch": false
+    },
+    {
+      "session": "2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9/abstract.md",
+        "sha256": "b287de61d603bbeee92fce046a03c08aa11a57ad5b6dfcf44cac95bfa18a9124"
+      },
+      "title": "Faster encoder-only CDPR calibration collection with guarded settling windows",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "guarded recent encoder settling window",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/abstract.md",
+        "sha256": "1bcac5dc8909e5a8dc3dcee0b8c113414aa0bd7aa2aec53fa0e8e05af675632a"
+      },
+      "title": "Independently testable encoder calibration stages",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "independently testable stages and metadata-copy optimization",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-f5e17805",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-f5e17805/abstract.md",
+        "sha256": "66ae5c41f66831a9d03166b0f1596b8c887afc725a65b8119fa16d41fec07928"
+      },
+      "title": "Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can",
+      "status": "Status: not yet summarized.",
+      "outcome": "unsummarized",
+      "retained_change": null,
+      "summarized_complete": false,
+      "batch": false
+    },
+    {
+      "session": "2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-1687b8ed",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-1687b8ed/abstract.md",
+        "sha256": "a5feddc673c897277bbd2988b948d24dba1c45f4ae37c4506c5a4e253d9c3402"
+      },
+      "title": "HP3 encoder autocalibration: reference failure and runtime bottlenecks",
+      "status": "Status: complete for the supplied reference; no source change justified.",
+      "outcome": "no source change justified",
+      "retained_change": null,
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/abstract.md",
+        "sha256": "d00d1f6e3fe1cc4ea7b275bf457a6027133f55b46bf549b6b42b8315d93af3ec"
+      },
+      "title": "Faster HP3 encoder autocalibration by reusing settled measurements",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "settling reuse and endpoint/geometry corrections",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-76802a07",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-76802a07/abstract.md",
+        "sha256": "9592fab2e0254c41785cda18cabf5f9802578a9648f7b5833dfbe0245ef7975d"
+      },
+      "title": "Covariance metrics for encoder based CDPR autocalibration",
+      "status": "Status: complete; no production calibration algorithm change was justified.",
+      "outcome": "tooling repair only",
+      "retained_change": null,
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/abstract.md",
+        "sha256": "4b85a75c7ef8b83ceafea570464af1f623f1edd240e4a07d360a7f0cc15d23b1"
+      },
+      "title": "Stable encoder averaging and numerical fragility in HP3 autocalibration",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "centered encoder averaging",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-76fad208",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-76fad208/abstract.md",
+        "sha256": "66ae5c41f66831a9d03166b0f1596b8c887afc725a65b8119fa16d41fec07928"
+      },
+      "title": "Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can",
+      "status": "Status: not yet summarized.",
+      "outcome": "unsummarized",
+      "retained_change": null,
+      "summarized_complete": false,
+      "batch": false
+    },
+    {
+      "session": "2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-881b7eb9",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-881b7eb9/abstract.md",
+        "sha256": "66ae5c41f66831a9d03166b0f1596b8c887afc725a65b8119fa16d41fec07928"
+      },
+      "title": "Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can",
+      "status": "Status: not yet summarized.",
+      "outcome": "unsummarized",
+      "retained_change": null,
+      "summarized_complete": false,
+      "batch": false
+    },
+    {
+      "session": "2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b65aa69c",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b65aa69c/abstract.md",
+        "sha256": "0b28b8b6ab17b4fc9b417004cdc5a88ef7943bdfd10eb24cfccb8df5a07dba83"
+      },
+      "title": "Faster, more robust encoder-only autocalibration for a Hangprinter 3: a shorter encoder-quiet window plus a bracketed geometric consensus of fitted anchors",
+      "status": "Status: complete (all planned runs finished or reported; evidence is simulated).",
+      "outcome": "retained implementation reported",
+      "retained_change": "shorter quiet window and geometric consensus",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-267d719f",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-267d719f/abstract.md",
+        "sha256": "602186ff37ca5476fe1afc6073b12f1902655a4de76ff655b168ac7896134dcc"
+      },
+      "title": "History-seeded fit variants for robust encoder autocalibration (HP3, no buildup)",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "history-seeded fit variant",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/abstract.md",
+        "sha256": "a5c1b457ef19ebb9f138ef14f21237e308b8f61e70e67ac6e5245d16f9a87fc3"
+      },
+      "title": "Warm-starting the HP3 encoder autocalibration anchor solve (and a negative result on point thinning)",
+      "status": "Status: complete for the simulated evidence in this session.",
+      "outcome": "retained implementation reported",
+      "retained_change": "warm-started anchor solve",
+      "summarized_complete": true,
+      "batch": false
+    },
+    {
+      "session": "2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37",
+      "abstract": {
+        "path": "output/research/sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/abstract.md",
+        "sha256": "44d84f6034da01124b72b20fcb161a4dc0bccd26e23cc52f385efd686ba66da2"
+      },
+      "title": "Faster failure handling for encoder-only CDPR autocalibration",
+      "status": "Status: complete.",
+      "outcome": "retained implementation reported",
+      "retained_change": "constant-objective compilation shortcut",
+      "summarized_complete": true,
+      "batch": false
+    }
+  ],
+  "summary": {
+    "program_snapshots": 5,
+    "worker_attempts": 9,
+    "worker_states": {
+      "submitted": 5,
+      "failed": 2,
+      "cancelled": 2
+    },
+    "worker_wall_caps_minutes": [
+      2,
+      2,
+      3,
+      3,
+      8,
+      15,
+      22,
+      25,
+      25
+    ],
+    "median_worker_wall_cap_minutes": 8,
+    "observed_worker_wall_minutes_total": 55.650518416666664,
+    "observed_worker_wall_minutes_max": 15.094579316666666,
+    "admissions": 6,
+    "admission_readiness": {
+      "report_only": 4,
+      "needs_changes": 1,
+      "ready": 1
+    },
+    "integration_records": 0,
+    "direct_cohort_sessions": 16,
+    "direct_cohort_complete_summaries": 12,
+    "direct_cohort_unsummarized": 4,
+    "direct_producer_outcomes": {
+      "retained implementation reported": 10,
+      "unsummarized": 4,
+      "no source change justified": 1,
+      "tooling repair only": 1
+    }
+  },
+  "arithmetic_checks": {
+    "cache_source": {
+      "path": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/E06-isolated-summary.json",
+      "sha256": "05ee3b15b1d7dc039cb9004ca685b5cef503751170985ba5bfe4594a210a7dea"
+    },
+    "cache": [
+      {
+        "dataset": "layered_manual_some_bad_points",
+        "baseline_median_seconds": 48.865942727999936,
+        "candidate_median_seconds": 47.62623519999761,
+        "saving_percent": 2.5369561268936316
+      },
+      {
+        "dataset": "seventh_hp3_dataset",
+        "baseline_median_seconds": 32.76963537800111,
+        "candidate_median_seconds": 29.375957077001658,
+        "saving_percent": 10.356167414904151
+      }
+    ],
+    "constant_objective_source": {
+      "path": "output/research/sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E26-regression-timing/summary.json",
+      "sha256": "378d734db641d181eb2d0660772ae0895dccd6ab440aae9ed172947064c0752a"
+    },
+    "constant_objective_means": {
+      "baseline": {
+        "wall_s": 276.0138384990005,
+        "child_cpu_s": 955.718065
+      },
+      "patched": {
+        "wall_s": 268.2526674665023,
+        "child_cpu_s": 914.548783
+      }
+    },
+    "constant_objective_saving_percent": {
+      "wall_s": 2.811877503934019,
+      "child_cpu_s": 4.307680633827934
+    }
+  },
+  "historical_commits_are_ancestors_of_current_head": {
+    "54e88492": true,
+    "854430c6": true,
+    "9422620c": true,
+    "294e24c8": true,
+    "79e53cbb": true
+  },
+  "limitations": [
+    "Task, platform, dates and budgets differ; no causal success-rate estimate.",
+    "Direct completed labels and retained changes are producer reports, not fresh verification.",
+    "Several direct sessions overlap; they are not independent improvements.",
+    "No reliable complete direct-session elapsed-time or token-cost records were found.",
+    "Controlled cancellation and report-only assignments are intentional, not failed science.",
+    "These snapshots cover available saved runs, not every conversation the human has had."
+  ]
+}
