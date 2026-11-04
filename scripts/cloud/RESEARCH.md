@@ -1,17 +1,7 @@
 # Research in the current cloud chat
-
-The current authenticated chat is the research manager. It delegates bounded
-investigations and separate reviews to real cloud subagents. It does not start a
-second Codex/Claude CLI, request another login or require a model API key.
+The current chat is the research manager.
 
 ## Start
-
-Prepare dependencies with `bash scripts/cloud/install_research.sh`. This installs
-Python packages (including usd-core), locked npm dependencies, Rust with LLVM
-tools, and the native/firmware builds. Saving these scripts in Git does not
-install them in an existing cloud environment; configure its setup step or run
-the installer there. No research-client installation or PATH wrapper is required.
-
 Use the cloud entry prompt:
 
 ```text

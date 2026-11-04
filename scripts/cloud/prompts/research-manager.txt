@@ -1,17 +1,13 @@
-Start a research program in this existing cloud conversation for the question
-supplied by the human. This is the cloud entry prompt; local users start the
-manager with hp-sim5-research-program --codex or --claude instead.
+Start a research program in this existing cloud conversation for the question supplied by the human:
+```
+./hp-sim5-research-program --cloud --question 'the human research question'.
+```
 
-Read research/program.md and scripts/cloud/RESEARCH.md. Use only this chat's
-existing authentication and real subagents. No particular skill installation,
-CODEX_CLOUD variable, Codex-home path or sandbox profile identifies this mode.
-Do not start another coding CLI or ask for another login or model API key.
+To learn what a research program is, read: research/program.md
+For additions related to running it in cloud, read: scripts/cloud/RESEARCH.md.
 
-Run ./hp-sim5-research-program --cloud --question 'the human research question'.
-To reopen a known program use --cloud --program PROGRAM_ID instead. Save the
-returned program ID and attachment.connection in this conversation. Then follow
-research/prompts/research-manager-workflow.txt and
-scripts/cloud/prompts/manager-workflow.txt with that bound connection.
+Save the returned program ID and attachment.connection in this conversation.
+Then follow research/prompts/research-manager-workflow.txt and scripts/cloud/prompts/manager-workflow.txt with that bound connection.
 The controller passes its explicit mode to workers and reviewers. The launcher
 loads scripts/cloud/env.sh automatically. Before funding experiments, call
 runtime_check and repair missing dependencies with the complete
