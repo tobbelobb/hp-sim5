@@ -9,6 +9,8 @@ and research/program-review.md.
 
 Choose the cheapest investigation that can change a decision. Record hypotheses,
 rationale, evidence and finite work/review/startup/cleanup budgets before dispatch.
+Choose budgets when none are supplied, using measured workload costs. Bounded
+fits, simulations and simulated collection are allowed within human constraints.
 Use commission, then worker_start/run_once; poll worker_status. Answer a pending
 manager_question through worker_answer using its attempt ID, question ID and
 answer, within the brief and the supplied human communication policy.
@@ -16,7 +18,8 @@ answer, within the brief and the supplied human communication policy.
 Freeze results with submit, commission a separate review_start, poll review_status,
 and apply review_apply. Inspect saved evidence before funding repeats. Keep
 scientific findings, tool failures and code readiness distinct; retain partial
-and failed evidence. Record consequential decisions and human steering.
+and failed evidence. Apply reviewed findings to strategy and explain which
+approaches continue or stop. Record consequential decisions and human steering.
 
 Honor pause/stop requests and poll owned cleanup. Continue unfinished work within
 its conversation. Before ending an iteration, update research.md, report.md and
