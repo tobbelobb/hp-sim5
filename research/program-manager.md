@@ -3,7 +3,7 @@
 Start with the [question-first guide](program.md). The current coding chat is the
 manager; ordinary CLI tools connect it to a small persistent controller.
 `--codex` or `--claude` opens a local manager chat. For cloud entry, use the
-[adapter prompt](../scripts/cloud/prompts/research-manager.txt).
+[cloud skill](../.agents/skills/cloud-research-client/SKILL.md).
 
 ## Open a program
 
@@ -65,7 +65,8 @@ These Python tools are bookkeeping, not another model session. They can open a
 program with system Python when .venv is absent.
 Local manager clients disable inherited research MCP entries and use CLI tools.
 Workers retain the existing physics supervisor and its MCP attachment.
-For the optional cloud transport, use its [operating guide](../scripts/cloud/RESEARCH.md).
+The optional [cloud skill](../.agents/skills/cloud-research-client/SKILL.md) owns
+its transport procedures.
 No new physics runtime is introduced.
 
 ## Results and lifecycle

@@ -13,7 +13,7 @@ case "${1:-vite}" in
       --server -p "${HP_SIM5_RRF_PORT:-8080}"
     ;;
   *)
-    echo 'Usage: bash scripts/cloud/start.sh [vite|rrf]' >&2
+    echo 'Usage: bash .agents/skills/cloud-research-client/scripts/start.sh [vite|rrf]' >&2
     exit 2
     ;;
 esac

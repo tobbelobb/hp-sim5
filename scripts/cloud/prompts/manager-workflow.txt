@@ -1,5 +1,0 @@
-Cloud supplement to research/prompts/research-manager-workflow.txt.
-
-Read scripts/cloud/RESEARCH.md for runtime setup, real actor dispatch,
-completion, cancellation and permission recovery. It is the sole operating
-procedure for this adapter.

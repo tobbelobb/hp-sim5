@@ -12,8 +12,8 @@ import pytest
 
 from hp_sim5_research.services import RuntimeService
 
-ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location('cloud_tool_bridge', ROOT / 'scripts/cloud/cloud_tool_bridge.py')
+ROOT = Path(__file__).resolve().parents[4]
+spec = importlib.util.spec_from_file_location('cloud_tool_bridge', ROOT / '.agents/skills/cloud-research-client/scripts/cloud_tool_bridge.py')
 bridge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
 
@@ -113,7 +113,7 @@ def test_hard_bridge_owner_loss_closes_real_mcp_relay(relay, tmp_path):
     _, connection, _, runtime = relay
     session = Path(bridge.read(connection)['session'])
     queue = tmp_path / 'model-queue'
-    process = subprocess.Popen([sys.executable, str(ROOT / 'scripts/cloud/cloud_client_bridge.py'), 'client',
+    process = subprocess.Popen([sys.executable, str(ROOT / '.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py'), 'client',
                                 '--cd', str(ROOT), '--session-dir', str(session),
                                 '--output-last-message', str(session / 'final-message.md')],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,

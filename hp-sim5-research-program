@@ -10,7 +10,7 @@ for argument in "$@"; do
     esac
 done
 if [[ "$client" == cloud ]]; then
-    source "$repo_dir/scripts/cloud/env.sh"
+    source "$repo_dir/.agents/skills/cloud-research-client/scripts/env.sh"
 fi
 # Program bookkeeping uses only the standard library. Worker physics still
 # requires the fully installed project environment.

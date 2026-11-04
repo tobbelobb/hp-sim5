@@ -19,11 +19,11 @@ def test_local_core_opens_and_plans_without_cloud_files(tmp_path):
         shutil.copy2(ROOT / 'scripts' / name, target)
     package = Path('src/python/hp_sim5_research')
     shutil.copytree(ROOT / package, tmp_path / package,
-                    ignore=shutil.ignore_patterns('codex_cloud', '__pycache__'))
+                    ignore=shutil.ignore_patterns('__pycache__'))
     prompt = Path('research/prompts/research-manager-workflow.txt')
     (tmp_path / prompt).parent.mkdir(parents=True)
     shutil.copy2(ROOT / prompt, tmp_path / prompt)
-    assert not (tmp_path / 'scripts/cloud').exists()
+    assert not (tmp_path / '.agents/skills/cloud-research-client').exists()
     environment = dict(os.environ, HP_SIM5_RESEARCH_CLIENT='local')
     command = [sys.executable, str(tmp_path / 'scripts/research_program.py')]
 
@@ -40,7 +40,11 @@ def test_local_core_opens_and_plans_without_cloud_files(tmp_path):
         for backend in ('codex', 'claude'):
             plan = run('--' + backend, '--program', attachment['program_id'], '--dry-run')['result']['client']
             assert plan['argv'][0] == backend
-            assert 'scripts/cloud/' not in plan['instructions']
+            assert '.agents/skills/cloud-research-client' not in plan['instructions']
+        cloud = subprocess.run([*command, '--cloud', '--program', attachment['program_id'], '--dry-run'],
+                               env=environment, capture_output=True, text=True, timeout=10)
+        assert cloud.returncode == 2
+        assert 'requires the cloud-research-client skill' in cloud.stdout
     finally:
         request(attachment, 'shutdown')
         until(lambda: not live(attachment))

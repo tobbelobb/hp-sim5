@@ -11,7 +11,7 @@ import pytest
 
 from hp_sim5_research.program_workers import runtime_check
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 
 
 @pytest.mark.parametrize('launcher,arguments,cloud', [
@@ -20,9 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
     ('hp-sim5-research-agent', ['--codex', '--batch'], True),
 ])
 def test_entry_loads_cloud_environment_without_parent_sourcing(tmp_path, launcher, arguments, cloud):
-    (tmp_path / 'scripts/cloud').mkdir(parents=True)
+    (tmp_path / '.agents/skills/cloud-research-client/scripts').mkdir(parents=True)
+    (tmp_path / 'scripts').mkdir(exist_ok=True)
     shutil.copy2(ROOT / launcher, tmp_path / launcher)
-    shutil.copy2(ROOT / 'scripts/cloud/env.sh', tmp_path / 'scripts/cloud/env.sh')
+    shutil.copy2(ROOT / '.agents/skills/cloud-research-client/scripts/env.sh', tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh')
     script = 'research_program.py' if launcher.endswith('program') else 'research_agent.py'
     (tmp_path / 'scripts' / script).write_text('import json, os; print(json.dumps(dict(path=os.environ["PATH"])))')
     if launcher.endswith('agent'):
@@ -38,8 +39,9 @@ def test_entry_loads_cloud_environment_without_parent_sourcing(tmp_path, launche
 
 
 def test_runtime_check_reloads_environment_of_existing_host(tmp_path, monkeypatch):
-    (tmp_path / 'scripts/cloud').mkdir(parents=True)
-    (tmp_path / 'scripts/cloud/env.sh').write_text('export HP_SIM5_SETUP_FIX=loaded\n')
+    (tmp_path / '.agents/skills/cloud-research-client/scripts').mkdir(parents=True)
+    (tmp_path / 'scripts').mkdir(exist_ok=True)
+    (tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh').write_text('export HP_SIM5_SETUP_FIX=loaded\n')
     (tmp_path / 'scripts/research_runtime_check.py').write_text(
         'import json, os; print(json.dumps({"ok": os.environ.get("HP_SIM5_SETUP_FIX") == "loaded"}))')
     monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')

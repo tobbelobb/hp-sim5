@@ -23,11 +23,12 @@ The original direct interface remains available:
 
 ## Codex Cloud adapter
 
-The optional [Codex Cloud entry](../scripts/cloud/prompts/research-manager.txt) uses the current
-authenticated conversation as manager. Its prompts, dispatch instructions,
-setup and permission workarounds live under `scripts/cloud/`; the
-[boundary map](../scripts/cloud/BOUNDARY.md) inventories the few core attachment
-points. Both routes use the shared `research/prompts/research-manager-workflow.txt`.
+In a cloud chat, say “Launch a Research Program on this question: …”. The
+[cloud skill](../.agents/skills/cloud-research-client/SKILL.md) owns its entry,
+dispatch, setup scripts and adapter. Opening a cloud program returns the same
+shared manager instructions that the local launcher injects. The optional
+[boundary map](../.agents/skills/cloud-research-client/references/boundary.md)
+documents the core attachment points.
 
 ## Continue and steer
 

@@ -9,7 +9,7 @@ import urllib.request
 
 
 def install(destination):
-    manifest = json.loads(Path(__file__).with_name('playwright-skill.json').read_text())
+    manifest = json.loads((Path(__file__).resolve().parent.parent / 'assets/playwright-skill.json').read_text())
     expected = manifest['files']
 
     def matches(directory):
@@ -50,5 +50,5 @@ def install(destination):
 
 
 if __name__ == '__main__':
-    default = Path(__file__).resolve().parents[2] / '.agents/skills/playwright-cli'
+    default = Path(__file__).resolve().parents[4] / '.agents/skills/playwright-cli'
     install(Path(sys.argv[1]) if len(sys.argv) > 1 else default)

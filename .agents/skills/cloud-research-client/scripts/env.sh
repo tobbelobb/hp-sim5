@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Source this file in each shell; exported settings do not survive new tasks.
-export HP_SIM5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+export HP_SIM5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 export HP_SIM5_CLOUD_TOOLS="${HP_SIM5_CLOUD_TOOLS:-/workspace/.tools}"
 export HP_SIM5_CLOUD_CACHE="${HP_SIM5_CLOUD_CACHE:-/workspace/.cache}"
 export HP_SIM5_NODE_VERSION=23.11.1

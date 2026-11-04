@@ -13,7 +13,7 @@ process cleanup; SQLite holds questions, evidence, reviews and decisions. The
 existing launcher continues owning worker physics services. Save completed small
 results in Git with `hp-sim5-research-program save PROGRAM_ID --commit`.
 See the [current architecture](program-tasks/MANAGER.md) and
-[cloud transport](../scripts/cloud/RESEARCH.md). Parallel pools and patch integration
+[cloud transport](../.agents/skills/cloud-research-client/SKILL.md). Parallel pools and patch integration
 are advanced optional tools. Historical verification below describes the worker
 execution layer, not a live validation of the current manager transport.
 

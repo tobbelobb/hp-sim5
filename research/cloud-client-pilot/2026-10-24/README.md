@@ -75,6 +75,6 @@ than a separate OS read-only sandbox. Only single-worker production was tested.
 This pilot does not complete the original task 016 release contract.
 
 The live pilot used the original adapter preserved inside its fixed submission.
-The versioned adapter in `scripts/cloud/` relocates that implementation and adds
+The versioned adapter in `.agents/skills/cloud-research-client/scripts/` relocates that implementation and adds
 request-ID validation. Its process/transport checks are separate from this live
-evidence. See [cloud research setup](../../../scripts/cloud/RESEARCH.md).
+evidence. See [cloud research setup](../../../.agents/skills/cloud-research-client/SKILL.md).

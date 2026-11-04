@@ -7,11 +7,11 @@ import json
 from pathlib import Path
 import subprocess
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 ARCHIVE = Path('research/programs/program-7aa80aa18f10499e85cb24ffeae712cb')
 AUDIT = ARCHIVE / 'selected/output/research/sessions/2026-10-26-cloud-platform-audit'
 PRODUCTION = ARCHIVE / 'selected/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963'
-OUTPUT = ROOT / 'research/reports/research-program-cloud.html'
+OUTPUT = ROOT / '.agents/skills/cloud-research-client/assets/research-program-cloud.html'
 
 
 def read(path):
@@ -66,9 +66,7 @@ def build():
         timeline.append(item)
     prompts = [
         prompt('All roles · repository instructions', 'AGENTS.md'),
-        prompt('Manager · cloud entry', 'scripts/cloud/prompts/research-manager.txt'),
         prompt('Manager · shared workflow', 'research/prompts/research-manager-workflow.txt'),
-        prompt('Manager · cloud supplement', 'scripts/cloud/prompts/manager-workflow.txt'),
         prompt('Manager / broker · discoverable cloud skill', '.agents/skills/cloud-research-client/SKILL.md'),
         prompt('Worker · research instructions', 'research/AGENTS.md'),
         prompt('Worker · assignment envelope (source template)', 'src/python/hp_sim5_research/program_workers.py', assignments=('contract', 'prompt')),
@@ -88,7 +86,7 @@ def build():
             'source_revision': subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                 capture_output=True, text=True, check=True).stdout.strip(),
             'snapshot_sha256': hashlib.sha256(read(ARCHIVE / 'program.json').encode()).hexdigest()}
-    template = read('scripts/cloud/report_template.html')
+    template = read('.agents/skills/cloud-research-client/assets/report_template.html')
     # Safe even when future prompts contain HTML/script tags.
     encoded = json.dumps(data, ensure_ascii=False).replace('<', '\\u003c').replace('&', '\\u0026')
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

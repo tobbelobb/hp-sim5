@@ -119,7 +119,7 @@ caused the difference is established by this archive.
 Current local managers and default workers enable the client's Goal feature.
 The five October 26–27 actual attempts record `goal_mode: true`; the earlier
 three pilot attempts deliberately record false. In cloud, the
-[adapter](../../../src/python/hp_sim5_research/codex_cloud/adapter.py) uses the
+[adapter](../../../.agents/skills/cloud-research-client/scripts/codex_cloud/adapter.py) uses the
 parent's actors: CLI Goal/model settings do not configure them. A settings flag
 also does not prove an explicit goal was established or continued. The archive
 therefore supports a continuity/budget explanation much more directly than a

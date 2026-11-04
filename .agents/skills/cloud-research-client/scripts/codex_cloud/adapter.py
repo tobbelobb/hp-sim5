@@ -1,13 +1,13 @@
 """Codex Cloud client policy, commands and startup workarounds.
 
 The existing launcher/controller still own execution. The active authenticated
-chat brokers actual model actors through scripts/cloud/cloud_client_bridge.py.
+chat brokers actual model actors through .agents/skills/cloud-research-client/scripts/cloud_client_bridge.py.
 """
 import os
 import sys
 
 from .environment import activate
-from ..program import ProgramError, _json
+from hp_sim5_research.program import ProgramError, _json
 
 
 def codex_command(root, session, *, batch=False, codex_args=(), model=None,
@@ -16,7 +16,7 @@ def codex_command(root, session, *, batch=False, codex_args=(), model=None,
         raise ValueError('The current cloud chat is the manager. Use --cloud --question TEXT or --cloud --program ID, without --codex')
     if model or model_provider not in (None, 'openai') or codex_args:
         raise ValueError('Cloud subagents inherit the parent client configuration; do not supply CLI model/provider arguments')
-    return [sys.executable, str(root / 'scripts/cloud/cloud_client_bridge.py'), 'client',
+    return [sys.executable, str(root / '.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py'), 'client',
             '--cd', str(root), '--session-dir', str(session),
             '--output-last-message', str(session / 'final-message.md'), '--sandbox', sandbox]
 
@@ -32,7 +32,7 @@ def claude_command(*_, **__):
 
 def validate_manager(*, model=None, model_provider='openai', local_client=False):
     if local_client:
-        raise ValueError('The current cloud chat is the manager. Use --cloud without --codex or --claude; read scripts/cloud/RESEARCH.md')
+        raise ValueError('The current cloud chat is the manager. Use --cloud without --codex or --claude; read .agents/skills/cloud-research-client/SKILL.md')
     if model or model_provider != 'openai':
         raise ValueError('The current cloud chat is the manager. Use --cloud without a coding CLI, model or provider override')
 
@@ -51,7 +51,7 @@ def agent_uses_external_client(args, parser):
 
 def runtime_check_command(root, argv):
     # Reload even when the retained host predates installation.
-    return ['bash', '-c', 'source "$1/scripts/cloud/env.sh" && shift && exec "$@"',
+    return ['bash', '-c', 'source "$1/.agents/skills/cloud-research-client/scripts/env.sh" && shift && exec "$@"',
             'research-runtime-check', str(root), *argv]
 
 
@@ -59,7 +59,7 @@ def runtime_check_result(result):
     if not result['ok']:
         result['next_step'] = (
             'Repair blocked checks before dispatch. For missing dependencies/artifacts run '
-            'bash scripts/cloud/install_research.sh; socket permissions require a permitted launcher context.')
+            'bash .agents/skills/cloud-research-client/scripts/install.sh; socket permissions require a permitted launcher context.')
     return result
 
 

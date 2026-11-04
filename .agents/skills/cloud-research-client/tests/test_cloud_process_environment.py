@@ -4,23 +4,26 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+from unittest.mock import patch
 
 import pytest
 
-from hp_sim5_research.codex_cloud.environment import SETTINGS
 from hp_sim5_research.client_transport import activate
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 
 
+@patch.dict(os.environ)
 def test_activation_preserves_auth_and_local_mode(tmp_path, monkeypatch):
+    # Activation writes exports directly. delenv on an already absent key does
+    # not register an undo, so isolate the complete mapping for this test.
     monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'local')
     before = dict(os.environ)
     activate(tmp_path)  # Local installs do not require any cloud setup files.
     assert dict(os.environ) == before
-    script = tmp_path / 'scripts/cloud/env.sh'
+    script = tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh'
     script.parent.mkdir(parents=True)
-    shutil.copy2(ROOT / 'scripts/cloud/env.sh', script)
+    shutil.copy2(ROOT / '.agents/skills/cloud-research-client/scripts/env.sh', script)
     monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
     monkeypatch.setenv('HP_SIM5_CLOUD_TOOLS', str(tmp_path / 'tools with spaces'))
     monkeypatch.setenv('PATH', '/usr/bin:/bin')
@@ -29,13 +32,8 @@ def test_activation_preserves_auth_and_local_mode(tmp_path, monkeypatch):
     monkeypatch.setenv('VK_ICD_FILENAMES', '/fixture/custom-vulkan.json')
     for key in ('CARGO_HOME', 'RUSTUP_HOME'):
         monkeypatch.delenv(key, raising=False)
-    # Restore every changed export after this test.
-    for key in SETTINGS:
-        if key in os.environ:
-            monkeypatch.setenv(key, os.environ[key])
-        else:
-            monkeypatch.delenv(key, raising=False)
     activate(tmp_path)
+    assert os.environ['HP_SIM5_ROOT'] == str(tmp_path)
     assert os.environ['PATH'].startswith(str(tmp_path / 'tools with spaces/node'))
     assert os.environ['CARGO_HOME'] == str(tmp_path / 'tools with spaces/cargo')
     assert os.environ['OPENAI_API_KEY'] == 'fixture-value'
@@ -50,13 +48,17 @@ def test_activation_preserves_auth_and_local_mode(tmp_path, monkeypatch):
 ])
 def test_direct_python_from_stale_parent_loads_setup(tmp_path, script, arguments):
     # The real dispatcher invokes Python directly, bypassing the shell wrapper.
-    (tmp_path / 'scripts/cloud').mkdir(parents=True)
+    (tmp_path / '.agents/skills/cloud-research-client/scripts').mkdir(parents=True)
+    (tmp_path / 'scripts').mkdir(exist_ok=True)
     shutil.copy2(ROOT / 'scripts' / script, tmp_path / 'scripts' / script)
     (tmp_path / 'src').mkdir()
     (tmp_path / 'src/python').symlink_to(ROOT / 'src/python', target_is_directory=True)
+    prompt = Path('research/prompts/research-manager-workflow.txt')
+    (tmp_path / prompt).parent.mkdir(parents=True)
+    shutil.copy2(ROOT / prompt, tmp_path / prompt)
     marker = tmp_path / 'loaded'
-    (tmp_path / 'scripts/cloud/env.sh').write_text(
-        f'printf loaded > "{marker}"\n' + (ROOT / 'scripts/cloud/env.sh').read_text())
+    (tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh').write_text(
+        f'printf loaded > "{marker}"\n' + (ROOT / '.agents/skills/cloud-research-client/scripts/env.sh').read_text())
     env = dict(os.environ, PATH='/usr/bin:/bin', HP_SIM5_RESEARCH_CLIENT='cloud')
     result = subprocess.run([sys.executable, str(tmp_path / 'scripts' / script), *arguments],
                             env=env, capture_output=True, text=True, timeout=15)

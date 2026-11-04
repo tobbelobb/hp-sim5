@@ -188,7 +188,7 @@ def start(root, session, owner_request):
 
 def stop(process):
     if process is not None:
-        root = Path(__file__).resolve().parents[2]
+        root = Path(__file__).resolve().parents[4]
         sys.path.insert(0, str(root / 'src/python'))
         from hp_sim5_research.services import stop_process
         stop_process(process)

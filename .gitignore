@@ -28,7 +28,10 @@ RRF/run/vsd/logs/
 autocal/data/*.png
 autocal/tests/data/*.png
 autocal/old_data
-.agents
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/cloud-research-client/
 autocal/logo_work
 autocal/data/old_data/
 human_docs/old_debugging_conversations/

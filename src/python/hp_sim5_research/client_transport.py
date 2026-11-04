@@ -3,6 +3,8 @@
 Local research never imports or needs the Codex Cloud adapter.
 """
 import os
+from pathlib import Path
+import sys
 
 
 def research_client():
@@ -14,7 +16,12 @@ def research_client():
 
 def client_adapter():
     if research_client() == 'cloud':
-        from .codex_cloud import adapter
+        scripts = Path(__file__).resolve().parents[3] / '.agents/skills/cloud-research-client/scripts'
+        if not (scripts / 'codex_cloud/adapter.py').is_file():
+            raise ValueError('Cloud research requires the cloud-research-client skill in .agents/skills')
+        if str(scripts) not in sys.path:
+            sys.path.insert(0, str(scripts))
+        from codex_cloud import adapter
         return adapter
     return None
 

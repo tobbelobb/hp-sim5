@@ -57,7 +57,7 @@ cmake -S RRF -B RRF/build
 cmake --build RRF/build --target rrf_simulator -j "${HP_SIM5_BUILD_JOBS:-4}"
 
 # Other project skills are maintained in the repository, not restored by setup.
-.venv/bin/python scripts/cloud/install_playwright_skill.py
+.venv/bin/python .agents/skills/cloud-research-client/scripts/install_playwright_skill.py
 npm install --prefix "$HP_SIM5_CLOUD_TOOLS/playwright-cli" --no-audit --no-fund @playwright/cli@0.1.22
 .venv/bin/python - <<'PY'
 import json
@@ -78,4 +78,4 @@ config = {
 }
 Path(os.environ['PLAYWRIGHT_MCP_CONFIG']).write_text(json.dumps(config, indent=2) + '\n')
 PY
-echo 'Setup complete. Source scripts/cloud/env.sh in each development shell.'
+echo 'Setup complete. Source .agents/skills/cloud-research-client/scripts/env.sh in each development shell.'

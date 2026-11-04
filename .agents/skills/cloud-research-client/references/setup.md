@@ -1,19 +1,11 @@
 # Cloud development environment
 
-For the removable Research Program adapter's code/prompt inventory, see
-[the boundary map](BOUNDARY.md). For an illustrated explanation and saved-run
-timeline, open the [HTML report](../../research/reports/research-program-cloud.html).
+Use [the skill](../SKILL.md) to launch or resume a cloud Research Program.
+Read this setup reference only when dependencies or optional development services
+are needed. The [boundary map](boundary.md) describes ownership; the optional
+[offline report](../assets/research-program-cloud.html) includes historical trials.
 
-For research workers and reviewers using only the current cloud chat's login,
-see [cloud research](RESEARCH.md). Prepare dependencies with
-`bash scripts/cloud/install_research.sh` when needed, then use
-`./hp-sim5-research-program --cloud --question 'Your question'` in the current
-authenticated chat. It uses actual subagents without a PATH wrapper or another CLI login.
-The explicit cloud entry and its workers load env.sh automatically. Check the
-complete research setup with `./hp-sim5-research-program runtime-check --cloud`
-before spending an experiment allocation.
-
-This directory preserves the setup and startup steps validated during Codex
+This package preserves the setup and startup steps validated during Codex
 cloud onboarding. Use the existing checkout: cloud tasks are already isolated,
 so a separate Git worktree is unnecessary unless explicitly requested.
 
@@ -27,8 +19,8 @@ Set `PUPPETEER_EXECUTABLE_PATH` if Chromium is not `/usr/bin/chromium`.
 From the repository root:
 
 ```bash
-bash scripts/cloud/install.sh
-source scripts/cloud/env.sh
+bash .agents/skills/cloud-research-client/scripts/install.sh
+source .agents/skills/cloud-research-client/scripts/env.sh
 ```
 
 The installer prepares:
@@ -43,7 +35,7 @@ The installer prepares:
 - A native physics addon without PGO, a Wasm build in Cargo's ignored target
   directory, and the RRF simulator with four build jobs.
 - Microsoft's `playwright-cli` skill and CLI **0.1.22**. The skill's upstream
-  commit and all file checksums are recorded in [playwright-skill.json](playwright-skill.json).
+  commit and all file checksums are recorded in [playwright-skill.json](../assets/playwright-skill.json).
 
 Setup leaves tracked source files and lockfiles unchanged, including the tracked
 browser Wasm. The other project skills are maintained in the repository and are
@@ -71,13 +63,13 @@ original onboarding; retry separately if that workflow is needed.
 ## Start services in a new task
 
 Files and dependencies can survive an environment snapshot; processes do not.
-Source `scripts/cloud/env.sh` in every new shell. Start each required service in
+Source `.agents/skills/cloud-research-client/scripts/env.sh` in every new shell. Start each required service in
 its own terminal or a task-managed background process:
 
 ```bash
-bash scripts/cloud/start.sh vite
+bash .agents/skills/cloud-research-client/scripts/start.sh vite
 # Another terminal, only when the firmware service is needed:
-bash scripts/cloud/start.sh rrf
+bash .agents/skills/cloud-research-client/scripts/start.sh rrf
 ```
 
 Vite listens on loopback port 5173 and RRF on 8080. Override with
@@ -130,7 +122,7 @@ remain separate.
 
 `npm test`, `npm run test:physics` and `scripts/run_ci_tests.sh` rebuild the
 **tracked** `public/wasm/cable_solver.wasm`. Run the required physics checks when
-changing physics as directed by `AGENTS.md`; inspect generated changes before
+changing physics through the normal test pipeline; inspect generated changes before
 committing. Setup itself uses Cargo directly so it does not replace that file.
 The native source-contract test requires byte equality with the fresh Wasm build.
 Check hashes first: formatting a large mismatched Buffer assertion consumed
@@ -163,7 +155,7 @@ one Flipper 3D failure (score 9, expected 7). The 36 headless-autocal checks had
 one HTTP 400 during initialization; that case passed on a targeted rerun. No
 physics code or test expectations were changed to obtain passing setup checks.
 
-For a managed environment, use `bash scripts/cloud/install.sh` as the saved
+For a managed environment, use `bash .agents/skills/cloud-research-client/scripts/install.sh` as the saved
 installation script and this document as the startup reference. Save/review
 configuration and publish through the product to retain the prepared filesystem.
 Committing these files alone does not update or publish an environment.

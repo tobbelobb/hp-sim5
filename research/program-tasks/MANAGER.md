@@ -23,8 +23,8 @@ what to try next. Human steering, explanations and continuation stay in that cha
 
 Use ordinary CLI calls from the manager. Local users launch
 hp-sim5-research-program --codex/--claude. The optional platform adapter and its
-operating rules live in [scripts/cloud/RESEARCH.md](../../scripts/cloud/RESEARCH.md);
-its [boundary map](../../scripts/cloud/BOUNDARY.md) identifies removable code,
+operating rules live in [.agents/skills/cloud-research-client/SKILL.md](../../.agents/skills/cloud-research-client/SKILL.md);
+its [boundary map](../../.agents/skills/cloud-research-client/references/boundary.md) identifies removable code,
 prompts and the explicit transport selection seam. The shared controller retains
 that choice through recovery.
 
@@ -62,5 +62,5 @@ Check the original direct research-agent launcher independently.
 
 Repeat the same cycle for each supported adapter with its actual authenticated
 actors. No fixture transcript substitutes for model/tool use. See
-[the visual audit](../reports/research-program-cloud.html) for the current cloud
+[the visual audit](../../.agents/skills/cloud-research-client/assets/research-program-cloud.html) for the current cloud
 path's measured scope and remaining verification gap.

@@ -1,8 +1,0 @@
-Start a research program in this existing cloud conversation for the question supplied by the human:
-```
-./hp-sim5-research-program --cloud --question 'the human research question'
-```
-
-Keep the returned program ID and attachment.connection. Follow
-research/prompts/research-manager-workflow.txt for the shared manager workflow,
-then scripts/cloud/prompts/manager-workflow.txt for cloud operation.

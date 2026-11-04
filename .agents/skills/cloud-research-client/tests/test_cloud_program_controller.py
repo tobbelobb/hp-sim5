@@ -4,8 +4,8 @@ import time
 import pytest
 
 from hp_sim5_research.program import ProgramError
-from .test_research_program_review import context
-from .test_research_program_controller import local_manager, ready
+from python.test_research_program_review import context
+from python.test_research_program_controller import local_manager, ready
 
 
 def test_cloud_setup_failure_does_not_allocate_or_charge_attempt(context, monkeypatch):

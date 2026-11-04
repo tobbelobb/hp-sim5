@@ -2,7 +2,7 @@
 set -e
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 if [[ "${HP_SIM5_RESEARCH_CLIENT:-local}" == cloud ]]; then
-    source "$repo_dir/scripts/cloud/env.sh"
+    source "$repo_dir/.agents/skills/cloud-research-client/scripts/env.sh"
 fi
 if [ ! -x "$repo_dir/.venv/bin/python" ]; then
     echo 'Create .venv and install requirements.txt first. See research/README.md.' >&2

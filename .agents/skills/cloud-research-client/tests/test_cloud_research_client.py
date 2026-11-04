@@ -11,8 +11,8 @@ import time
 import pytest
 
 
-ROOT = Path(__file__).resolve().parents[2]
-BRIDGE = ROOT / 'scripts/cloud/cloud_client_bridge.py'
+ROOT = Path(__file__).resolve().parents[4]
+BRIDGE = ROOT / '.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py'
 
 
 def wait_for(predicate):
@@ -230,6 +230,7 @@ def test_cloud_mode_survives_fresh_cli_shells(tmp_path):
     attachment = opened['attachment']
     try:
         assert opened['client'] is None
+        assert opened['manager_instructions'] == (ROOT / 'research/prompts/research-manager-workflow.txt').read_text()
         assert opened['client_transport'] == attachment['client_transport'] == 'cloud'
         state = request(attachment, 'capabilities')
         assert state['ok']

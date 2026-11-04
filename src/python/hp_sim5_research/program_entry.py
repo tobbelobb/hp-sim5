@@ -123,6 +123,11 @@ def main(argv, root):
             (session / 'launch.json').write_text(_json(plan) + '\n')
         result = {'ok': True, 'result': dict(opened, client=plan, client_transport=transport,
                                             dry_run=args.dry_run, physics_world=False)}
+        if adapter:
+            # Cloud keeps the current chat; deliver its shared role instructions
+            # here instead of sending the skill through another mandatory read.
+            result['result']['manager_instructions'] = (
+                root / 'research/prompts/research-manager-workflow.txt').read_text()
         if not args.backend or args.dry_run:
             print(_json(result))
             return 0

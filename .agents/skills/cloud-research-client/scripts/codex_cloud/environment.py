@@ -16,7 +16,7 @@ SETTINGS = (
 
 
 def activate(root):
-    script = Path(root) / 'scripts/cloud/env.sh'
+    script = Path(root) / '.agents/skills/cloud-research-client/scripts/env.sh'
     result = subprocess.run(
         ['bash', '-c', 'set -e; source "$1"; shift; '
          'for name in "$@"; do printf "%s\\0%s\\0" "$name" "${!name}"; done',

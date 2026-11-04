@@ -101,7 +101,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
 
 ## Quick Start
 
-For a Codex cloud machine, use the reusable [cloud setup and startup instructions](scripts/cloud/README.md).
+For a Codex cloud machine, use the reusable [cloud setup and startup instructions](.agents/skills/cloud-research-client/references/setup.md).
 
 ### Running Demos Locally
 1. Install Node.js. Run for example:
