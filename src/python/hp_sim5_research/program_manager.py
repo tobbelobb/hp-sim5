@@ -54,6 +54,7 @@ class ProgramManager:
             'route_decide': self.strategy.decide, 'commission': self.strategy.commission,
             'strategy_result': self.strategy.result,
             'worker_start': self.worker_start, 'worker_status': self.workers.status,
+            'worker_answer': self.workers.answer,
             'worker_cancel': self.controller.cancel_attempt, 'cancel_attempt': self.controller.cancel_attempt,
             'worker_sessions': self.workers.sessions,
             'configure_pool': self.controller.configure_pool,

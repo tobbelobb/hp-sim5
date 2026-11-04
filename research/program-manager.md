@@ -46,7 +46,7 @@ unknown outcome: inspect state before retrying it.
 | Purpose | Operations |
 | --- | --- |
 | Strategy and memory | overview, query, question, approach, route_plan, route_decide, commission, assignment, decision, steering |
-| Worker | worker_start, worker_status, worker_cancel, worker_sessions |
+| Worker | worker_start, worker_status, worker_answer, worker_cancel, worker_sessions |
 | Runtime setup | runtime_check (dependencies and launcher socket permissions; no motion) |
 | Evidence and review | artifact, claim, derive, relate, submit, submission_verify, review_start, review_status, review_cancel, review_apply, strategy_result |
 | Budgets and stopping | allocate, run_once, run_within_allocation, runtime_status, worker_usage, fund_review, pause, resume, stop_program, recover, shutdown |

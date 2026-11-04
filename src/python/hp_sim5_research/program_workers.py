@@ -410,6 +410,27 @@ class WorkerDispatcher:
             record.update(self.store.get_record(program_id, attempt_id, 'attempt'))
         return dict(record, owned=self._owned(attempt_id, details), observation='observed child')
 
+    def answer(self, program_id, attempt_id, question_id, answer):
+        """Answer a pending worker question by ID; validate and write its mailbox atomically."""
+        _text(question_id, 'question_id')
+        _text(answer, 'answer')
+        payload = (_json({'id': question_id, 'answer': answer}) + '\n').encode('utf-8')
+        if len(payload) > 16384:
+            raise ProgramError('Worker answer exceeds the 16 KiB mailbox limit')
+        record = self.status(program_id, attempt_id)
+        if not record['owned'] or record['details']['state'] not in ('starting', 'running'):
+            raise ProgramError('Worker answer requires an owned active attempt')
+        if not record['manager_question'] or record['manager_question']['id'] != question_id:
+            raise ProgramError('question_id does not match a pending worker question; inspect worker_status')
+        destination = Path(record['manager_answer_path'])
+        temporary = destination.with_suffix('.tmp')
+        try:
+            temporary.write_bytes(payload)
+            temporary.replace(destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return self.status(program_id, attempt_id)
+
     def cancel(self, program_id, attempt_id, *, grace_seconds=190):
         """Request launcher cleanup, then return. Poll until exit, including on failure.
 

@@ -1,72 +1,29 @@
-Manage the research question in this conversation. Keep this chat as the manager; delegate
-bounded investigations to hp-sim5-research-agent through the program tools.
+Manage the human's question here; delegate bounded investigations through the
+bound program controller. Keep its program ID and attachment.connection.
 
-Use the bound execution mode and attachment.client_transport throughout recovery.
-
-Keep the program ID and attachment.connection supplied by the entry route. Later commands use:
-
-./hp-sim5-research-program tool CONNECTION capabilities
-./hp-sim5-research-program tool CONNECTION overview
 ./hp-sim5-research-program tool CONNECTION OPERATION --params 'JSON object'
 
-Use capabilities for actual parameter names; read research/program-manager.md
-when needed. No second terminal, server attachment or manual work board is needed.
-Report the program ID, notes/results paths, what changed our understanding and
-the next useful decision. Opening the program alone is not an investigation.
+Start with overview and capabilities. Consult research/program-manager.md only
+when needed; strategy and review details are in research/program-strategy.md
+and research/program-review.md.
 
-Start small: inspect useful prior work, identify credible alternatives, and
-choose the cheapest observation that could change a decision. Record scope,
-rationale, competing explanations, evidence links and finite budgets before
-commissioning work. Use one worker and a separate reviewer initially. Parallel
-pools and combined patch integration are optional advanced tools, not prerequisites.
-The manager chooses finite targeted budgets when the human has supplied none.
-Include startup margin, review and cleanup. Do not invent an unrelated fixed
-model timeout. Fresh fits, bounded native/headless physics and simulated collection
-are allowed within the human's constraints. Workers own experiment setup and
-recording choices under research/AGENTS.md; consult their measured workload costs
-when sizing numerical budgets.
+Choose the cheapest investigation that can change a decision. Record hypotheses,
+rationale, evidence and finite work/review/startup/cleanup budgets before dispatch.
+Use commission, then worker_start/run_once; poll worker_status. Answer a pending
+manager_question through worker_answer using its attempt ID, question ID and
+answer, within the brief and the supplied human communication policy.
 
-Use commission or a ready assignment, then worker_start/run_once.
-Poll actual worker_status and preserve unsuccessful and partial evidence.
-Check worker_status.manager_question on every poll. You answer worker clarification,
-not the human. Resolve it from the brief, evidence and established authority; only
-escalate a consequential human decision under the human communication policy.
-Write {"id":"question id","answer":"your decision and rationale"} atomically to
-worker_status.manager_answer_path (write a sibling temporary file, then rename).
-Preserve consequential answers as decisions and human input as steering. Keep polling
-while a worker waits; waiting consumes its existing allocation. Never invent consent.
+Freeze results with submit, commission a separate review_start, poll review_status,
+and apply review_apply. Inspect saved evidence before funding repeats. Keep
+scientific findings, tool failures and code readiness distinct; retain partial
+and failed evidence. Record consequential decisions and human steering.
 
-An exited worker is unreviewed. Use submit to freeze the claim, report and selected
-evidence, then a separate review_start, review_status and review_apply. Review
-inspects the saved evidence first; repeat numerical work only for a named gap.
-A successful command is not scientific acceptance. Scientific findings, tool
-failures and code readiness are distinct. Apply reviewed findings to strategy,
-record why an approach continues or is parked, and cite evidence in explanations.
-Read research/program-strategy.md and research/program-review.md as needed.
-
-Accept human steering without repeated approval requests. Use steering and
-decision to preserve it. Pause holds new dispatch while running work continues;
-worker_cancel stops one attempt; stop_program stops owned work. Poll cleanup.
-Never signal historical PIDs or claim memory restored a physics checkpoint.
-Continue an unfinished investigation in its conversation, without prompt-restart
-loops. Scope multiple investigations as distinct assignments.
-
-After a useful completed iteration, update research.md, report.md and abstract.md,
-regenerate the research catalog and finish owned cleanup. Save small relevant
-results as a separate Git step:
+Honor pause/stop requests and poll owned cleanup. Continue unfinished work within
+its conversation. Before ending an iteration, update research.md, report.md and
+abstract.md, regenerate the research catalog, and finish cleanup. Save results:
 
 ./hp-sim5-research-program tool CONNECTION save --params '{"commit":true}'
 
-Include needed analysis scripts/configuration/inputs with a files list in that
-JSON object. The controller performs the scoped Git step in its own execution
-context, outside the manager's command sandbox. Do not run git directly or switch
-mode to work around a commit error. A terminal convenience command is
-`hp-sim5-research-program save PROGRAM_ID --commit`.
-Inspect files.json for large or missing evidence and retain essential omissions
-separately. This commits only research/programs/PROGRAM_ID, leaves unrelated
-staged work alone, and never pushes. Commit research source changes separately
-when appropriate; do not automatically merge experimental candidates.
-
-Keep the manager conversation useful through bounded cycles and committed
-results. Report missing platform capabilities honestly; fixture checks do not
-prove live model access or scientific results.
+Inspect reported evidence omissions; use files for additional small inputs/scripts.
+Code commits and candidate integration require their own authority. Report the
+answer, evidence, limitations, result paths and next useful decision.

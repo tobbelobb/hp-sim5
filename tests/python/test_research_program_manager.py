@@ -570,3 +570,19 @@ def test_missing_worker_machine_does_not_charge_or_spawn(manager):
     assert tool(a, 'worker_sessions') == []
     assert tool(a, 'runtime_status') == before
     assert 'Required hp3/hp4' in tool(a, 'capabilities')['worker_machine']
+
+
+def test_manager_answers_worker_question_through_bound_cli(manager):
+    a = attach(manager)
+    work = assignment(a)
+    worker = tool(a, 'worker_start', {'assignment_id': work['id'], 'settings': {'machine': 'hp4'}})
+    session = Path(worker['details']['session_dir'])
+    until(lambda: (session / 'ready').exists())
+    (session / 'manager-question.json').write_text(json.dumps({'id': 'baseline', 'question': 'Which baseline?'}))
+    status = tool(a, 'worker_status', {'attempt_id': worker['id']})
+    assert status['manager_question']['id'] == 'baseline'
+    answer = 'Use the "saved" baseline.\nDo not refit.'
+    response = tool(a, 'worker_answer', {'attempt_id': worker['id'], 'question_id': 'baseline', 'answer': answer})
+    assert response['manager_question'] is None
+    assert response['details']['runtime']['wall_deadline'] == worker['details']['runtime']['wall_deadline']
+    assert json.loads(Path(status['manager_answer_path']).read_text()) == {'id': 'baseline', 'answer': answer}

@@ -136,20 +136,26 @@ class WorkerTests(unittest.TestCase):
         started = dispatcher.start('p', 'a', settings={'machine': 'hp4'})
         record = self.until(dispatcher, started['id'], lambda r: r.get('manager_question'))
         self.assertEqual(record['manager_question'], {'id': 'q1', 'question': 'Which baseline?'})
-        session = Path(record['details']['session_dir'])
         prompt = (Path(record['details']['attempt_dir']) / 'prompt.txt').read_text()
         self.assertIn('research manager, never the human', prompt)
         # A stale answer must not dismiss the worker's new question.
         answer = Path(record['manager_answer_path'])
         answer.write_text(json.dumps({'id': 'older', 'answer': 'old baseline'}))
         self.assertIsNotNone(dispatcher.status('p', started['id'])['manager_question'])
-        temporary = session / 'answer.tmp'
-        temporary.write_text(json.dumps({'id': 'q1', 'answer': 'Use the recorded baseline'}))
-        temporary.replace(answer)
+        for question_id, text in [('older', 'wrong question'), ('q1', ''), ('q1', 'é' * 16384)]:
+            with self.subTest(question_id=question_id, size=len(text)), self.assertRaises(ProgramError):
+                dispatcher.answer('p', started['id'], question_id, text)
+            self.assertEqual(json.loads(answer.read_text())['id'], 'older')
+        other = self.store.workers(self.root)
+        with self.assertRaisesRegex(ProgramError, 'owned active'):
+            other.answer('p', started['id'], 'q1', 'Unowned answer')
+        dispatcher.answer('p', started['id'], 'q1', 'Use the recorded baseline')
         final = self.finish(dispatcher, started['id'])
         self.assertEqual(final['details']['state'], 'submitted')
         self.assertIsNone(final['manager_question'])
         self.assertTrue(any(a['path'] == str(answer) for a in final['details']['artifacts']))
+        with self.assertRaisesRegex(ProgramError, 'owned active'):
+            dispatcher.answer('p', started['id'], 'q1', 'Already finished')
 
     def test_incomplete_or_invalid_mailbox_does_not_break_status(self):
         question = self.directory / 'manager-question.json'
