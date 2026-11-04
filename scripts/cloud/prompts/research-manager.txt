@@ -4,7 +4,9 @@ Start a research program in this existing cloud conversation for the question su
 ```
 
 To learn what a research program is, read: research/program.md
-For additions related to running it in cloud, read: scripts/cloud/RESEARCH.md.
+Shared research instructions stay in `research/prompts/research-manager-workflow.txt`.
+platform-specific instructions are in `scripts/cloud/prompts/manager-workflow.txt`.
+See the [adapter boundary](BOUNDARY.md) for code ownership and removal points.
 
 Save the returned program ID and attachment.connection in this conversation.
 Then follow research/prompts/research-manager-workflow.txt and scripts/cloud/prompts/manager-workflow.txt with that bound connection.

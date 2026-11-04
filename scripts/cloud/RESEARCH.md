@@ -2,70 +2,22 @@
 The current chat is the research manager.
 
 ## Start
-Use the cloud entry prompt:
+Ordinary development commands need to source scripts/cloud/env.sh themselves.
 
-```text
-Read scripts/cloud/prompts/research-manager.txt and manage this question: [question].
-```
-
-The former `research/prompts/research-manager.txt` path remains a symlink to
-this cloud-owned entry. Shared research instructions stay in
-`research/prompts/research-manager-workflow.txt`; platform-specific instructions
-are in `scripts/cloud/prompts/manager-workflow.txt`. See the
-[adapter boundary](BOUNDARY.md) for code ownership and removal points.
-
-That prompt opens the controller with:
-
-```bash
-./hp-sim5-research-program --cloud --question 'Your research question'
-# Or reopen in the same checkout:
-./hp-sim5-research-program --cloud --program PROGRAM_ID
-```
-
---cloud selects the client transport for the retained controller. Later tool
-calls need only its returned CONNECTION path. The controller passes the mode to
-its children through HP_SIM5_RESEARCH_CLIENT. There is no automatic cloud
-detection or dependency on Codex-home paths, platform environment markers,
-available skills or a particular sandbox. --cloud and local --codex/--claude
-are mutually exclusive. CLI model/provider options do not configure cloud actors.
-The original direct research-agent interface remains available locally.
-
-The cloud program entry and each cloud worker automatically source
-scripts/cloud/env.sh, including direct Python launches used by the controller.
-New workers reload it even when their controller predates installation. Sourcing
-it in a new terminal cannot change the environment of an already running host.
-Ordinary development commands still need to source it themselves.
-The program helper uses system Python when .venv is absent; opening a durable
-program alone does not establish that physics dependencies are installed. This
-Python helper/controller is not a separate Codex manager session.
-
-An existing controller also keeps its imported Python code until it exits.
-After updating controller code, inspect its owned work and drain/cancel through
-the documented operations, then use `tool CONNECTION shutdown` and wait for
-cleanup before reopening the program. Never delete controller locks, kill saved
-PIDs or change stores simply to hide a recovery error. A stale native addon
-means its source/build fingerprint changed; it does not by itself prove a stale
-controller or require discarding research history.
+An existing controller keeps its imported Python code until it exits.
 
 Before allocating experiments, run:
 
-```bash
+```
 ./hp-sim5-research-program runtime-check --cloud
 # From an open program, the same check in its controller context:
 ./hp-sim5-research-program tool CONNECTION runtime_check
 ```
 
-The check imports dependencies, loads the native addon and probes local sockets
-without starting physics or moving a world. Cloud dispatch repeats it before
-charging an attempt. Repair setup failures before commissioning retries.
+The check imports dependencies, loads the native addon and probes local sockets.
+Repair setup failures before commissioning retries.
 For a stale native addon with dependencies already installed, source env.sh and
-run `npm run build:native -- --no-pgo`. headless-js still uses the Rust native
-engine; it is not a fallback that avoids the native build.
-
-Record `execution: {"machine":"hp3"}` (or hp4) in commission. It sets the actual
-launcher machine; conflicting worker settings are rejected. Alternatively pass
-`settings: {"machine":"hp3"}` to worker_start/run_once. Cloud workers require an
-explicit machine rather than silently defaulting to HP4.
+run `npm run build:native -- --no-pgo`.
 
 If launcher_sockets is blocked with EPERM, the launcher cannot start its own
 supervisor in that command context. Dependency installation, sourcing env.sh,
