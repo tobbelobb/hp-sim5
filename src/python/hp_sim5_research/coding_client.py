@@ -152,7 +152,7 @@ def claude_command(session, *, batch=False, dont_ask=False, goal_mode=False,
                '--append-system-prompt-file', str(session / 'instructions.md'),
                '--allowedTools', allowed_tools,
                '--settings', json.dumps({'modelProposedGoals': 'auto' if goal_mode else 'disabled'})]
-    if dont_ask:
+    if dont_ask or batch:
         command += ['--disallowedTools', 'AskUserQuestion']
     if batch:
         command += ['--print', '--output-format', 'stream-json', '--verbose']

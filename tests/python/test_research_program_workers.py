@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'src/python'))
 from hp_sim5_research.program import ProgramError, ProgramStore
 from hp_sim5_research.program_workers import ACTIVE, WorkerDispatcher, process_identity
+from hp_sim5_research.program_communication import pending_question
 
 
 FIXTURE = '''
@@ -37,6 +38,16 @@ if mode == 'startup':
     print('partial startup', file=sys.stderr, flush=True)
     time.sleep(60)
     sys.exit(1)
+if mode == 'question':
+    (session / 'manager-question.json').write_text(json.dumps({'id': 'q1', 'question': 'Which baseline?'}))
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        answer = session / 'manager-answer.json'
+        if answer.exists() and json.loads(answer.read_text()).get('id') == 'q1':
+            break
+        time.sleep(.02)
+    else:
+        sys.exit(4)
 def stopped(signum, frame):
     if mode == 'ignore':
         return
@@ -119,6 +130,38 @@ class WorkerTests(unittest.TestCase):
 
     def started(self, dispatcher, identity):
         return self.until(dispatcher, identity, lambda r: 'runtime_session_id' in r['details'])
+
+    def test_worker_asks_manager_and_receives_answer(self):
+        dispatcher = self.dispatcher('question')
+        started = dispatcher.start('p', 'a', settings={'machine': 'hp4'})
+        record = self.until(dispatcher, started['id'], lambda r: r.get('manager_question'))
+        self.assertEqual(record['manager_question'], {'id': 'q1', 'question': 'Which baseline?'})
+        session = Path(record['details']['session_dir'])
+        prompt = (Path(record['details']['attempt_dir']) / 'prompt.txt').read_text()
+        self.assertIn('research manager, never the human', prompt)
+        # A stale answer must not dismiss the worker's new question.
+        answer = Path(record['manager_answer_path'])
+        answer.write_text(json.dumps({'id': 'older', 'answer': 'old baseline'}))
+        self.assertIsNotNone(dispatcher.status('p', started['id'])['manager_question'])
+        temporary = session / 'answer.tmp'
+        temporary.write_text(json.dumps({'id': 'q1', 'answer': 'Use the recorded baseline'}))
+        temporary.replace(answer)
+        final = self.finish(dispatcher, started['id'])
+        self.assertEqual(final['details']['state'], 'submitted')
+        self.assertIsNone(final['manager_question'])
+        self.assertTrue(any(a['path'] == str(answer) for a in final['details']['artifacts']))
+
+    def test_incomplete_or_invalid_mailbox_does_not_break_status(self):
+        question = self.directory / 'manager-question.json'
+        self.assertIsNone(pending_question(self.directory))
+        for raw in (b'{', b'null', b'[]', b'{"id":1,"question":"why?"}',
+                    b'{"id":"q","question":""}', b'\xff', b'x' * 16385):
+            with self.subTest(raw=raw[:80]):
+                question.write_bytes(raw)
+                self.assertIsNone(pending_question(self.directory))
+        question.write_text('{"id":"q","question":"why?"}')
+        (self.directory / 'manager-answer.json').write_text('{')
+        self.assertEqual(pending_question(self.directory)['id'], 'q')
 
     def test_exact_assignment_prompt_argv_artifacts_and_no_admission(self):
         dispatcher = self.dispatcher()

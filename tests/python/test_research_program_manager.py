@@ -41,6 +41,33 @@ def cli(*arguments, ok=True):
     return result.get('result') if ok else result['error']
 
 
+@pytest.mark.parametrize('backend', ['codex', 'claude', None])
+@pytest.mark.parametrize('flags,grill,questions', [
+    ([], False, False), (['--grill-me'], True, False),
+    (['--ask-questions'], False, True),
+    (['--grill-me', '--ask-questions-along-the-way'], True, True),
+    (['--grill-me', '--no-grill-me', '--no-ask-questions'], False, False),
+    (['--dont-ask'], False, False),
+])
+def test_manager_communication_policy(tmp_path, backend, flags, grill, questions):
+    opened = cli('--store', tmp_path / 'unused', '--question', 'Worth doing?', '--dry-run',
+                 *(['--' + backend] if backend else []), *flags)
+    assert not (tmp_path / 'unused').exists()
+    assert opened['communication'] == {'grill_me': grill, 'ask_questions': questions}
+    plan = opened['client']
+    instructions = plan['instructions'] if plan else opened['manager_instructions']
+    assert ('Startup grill session:' in instructions) is grill
+    assert ('During research, ask the human' in instructions) is questions
+    assert 'Never treat silence' in instructions
+    if backend == 'codex':
+        assert f'features.default_mode_request_user_input={str(grill or questions).lower()}' in plan['argv']
+        injected = next(a for a in plan['argv'] if a.startswith('developer_instructions='))
+        assert json.loads(injected.split('=', 1)[1]) == instructions
+    elif backend == 'claude':
+        assert ('--disallowedTools' not in plan['argv']) is (grill or questions)
+        assert '--append-system-prompt-file' in plan['argv']
+
+
 def tool(attachment, operation, parameters=None, ok=True):
     return cli('tool', attachment['connection'], operation, '--params', json.dumps(parameters or {}), ok=ok)
 

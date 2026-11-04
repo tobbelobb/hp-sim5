@@ -17,6 +17,7 @@ import time
 from .program import ProgramError, _allocation, _identity, _json, _now, _object, _text
 from . import program_pool as pool
 from .client_transport import client_adapter
+from .program_communication import pending_question, worker_policy
 
 
 ACTIVE = ('starting', 'running', 'cancelling', 'ownership_lost')
@@ -24,6 +25,7 @@ TERMINAL = ('submitted', 'failed', 'cancelled', 'launch_failed', 'interrupted')
 FILES = ('session.json', 'launch.json', 'exit.json', 'prompt.txt', 'events.jsonl',
          'final-message.md', 'research.md', 'report.md', 'abstract.md',
          'instructions.md', 'attachment.toml', 'attachment.json', 'connection.json',
+         'manager-question.json', 'manager-answer.json',
          'native/runtime.log', 'viewer.log')
 
 
@@ -215,7 +217,8 @@ class WorkerDispatcher:
                         'shared_runtime_write': options['shared_runtime_write']}
             prompt = ('# Bounded research assignment\n\n' + json.dumps(contract, indent=2, ensure_ascii=False) +
                       '\n\nRespect the recorded allocation. Preserve unsuccessful and partial evidence. '
-                      'Execution success does not accept a scientific claim.\n\n' + pool.SHARED_BOUNDARY + '\n\n' + instructions)
+                      'Execution success does not accept a scientific claim.\n\n' + pool.SHARED_BOUNDARY +
+                      worker_policy(session) + '\n\n' + instructions)
             prompt_path = directory / 'prompt.txt'
             prompt_path.write_bytes(prompt.encode('utf-8'))
             (directory / 'assignment.json').write_text(json.dumps(contract, indent=2, ensure_ascii=False) + '\n')
@@ -353,13 +356,16 @@ class WorkerDispatcher:
     def status(self, program_id, attempt_id):
         record = self.store.get_record(program_id, attempt_id, 'attempt')
         details = record['details']
+        clarification = pending_question(details['session_dir'])
+        record = dict(record, manager_question=clarification,
+                      manager_answer_path=str(Path(details['session_dir']) / 'manager-answer.json'))
         process = self.children.get(attempt_id)
         if process is None:
             before = _json(details)
             self._inventory(details)
             if _json(details) != before:
                 self._save(program_id, attempt_id, details)
-                record = self.store.get_record(program_id, attempt_id, 'attempt')
+                record.update(self.store.get_record(program_id, attempt_id, 'attempt'))
             return dict(record, observation='historical; not adopted', owned=False)
         before = _json(details)
         returncode = process.poll()
@@ -401,7 +407,7 @@ class WorkerDispatcher:
             details['observed_wall_seconds'] = max(0, end - datetime.fromisoformat(details['started_at']).timestamp())
         if _json(details) != before:
             self._save(program_id, attempt_id, details, assignment_state=assignment_state)
-            record = self.store.get_record(program_id, attempt_id, 'attempt')
+            record.update(self.store.get_record(program_id, attempt_id, 'attempt'))
         return dict(record, owned=self._owned(attempt_id, details), observation='observed child')
 
     def cancel(self, program_id, attempt_id, *, grace_seconds=190):

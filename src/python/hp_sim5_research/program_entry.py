@@ -12,6 +12,7 @@ from .client_transport import activate, client_adapter
 from .program import ProgramStore, _json
 from .program_host import open_manager, read_json, request
 from .program_manager import failure
+from .program_communication import manager_policy
 
 
 class Parser(argparse.ArgumentParser):
@@ -20,7 +21,7 @@ class Parser(argparse.ArgumentParser):
 
 
 def client_plan(root, attachment, backend, *, model=None, model_provider='openai',
-                dont_ask=False, client_args=()):
+                dont_ask=False, client_args=(), grill_me=False, ask_questions=False):
     """Local managers use ordinary program CLI calls, without a manager MCP."""
     adapter = client_adapter()
     if adapter:
@@ -30,7 +31,9 @@ def client_plan(root, attachment, backend, *, model=None, model_provider='openai
                     'Bound manager connection: ' + attachment['connection'] +
                     '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
                     '\n\n' +
-                    (root / 'research/prompts/research-manager-workflow.txt').read_text())
+                    (root / 'research/prompts/research-manager-workflow.txt').read_text() +
+                    manager_policy(grill_me=grill_me, ask_questions=ask_questions and not dont_ask))
+    dont_ask = not (grill_me or (ask_questions and not dont_ask))
     if backend == 'codex':
         forwarded, forwarded_model = coding_client.forwarded_settings(client_args)
         command = coding_client.codex_command(
@@ -78,7 +81,13 @@ def main(argv, root):
     parser.add_argument('--dry-run', action='store_true', help='Plan without creating files, host, clients or workers')
     parser.add_argument('--model')
     parser.add_argument('--model-provider', default='openai')
-    parser.add_argument('--dont-ask', action='store_true')
+    parser.add_argument('--grill-me', action=argparse.BooleanOptionalAction, default=False,
+                        help='Interview the human before dispatch (default: --no-grill-me)')
+    questions = parser.add_mutually_exclusive_group()
+    questions.add_argument('--ask-questions', '--ask-questions-along-the-way',
+                           action=argparse.BooleanOptionalAction, default=False,
+                           help='Ask about consequential decisions during research (default: off)')
+    questions.add_argument('--dont-ask', action='store_true', help='Legacy alias for --no-ask-questions')
     split = argv.index('--') if '--' in argv else len(argv)
     args = parser.parse_args(argv[:split])
     client_args = argv[split + 1:]
@@ -115,19 +124,22 @@ def main(argv, root):
             opened = response['result']
             attachment = opened['attachment']
         plan = client_plan(root, attachment, args.backend, model=args.model, model_provider=args.model_provider,
-                           dont_ask=args.dont_ask, client_args=client_args) if args.backend else None
+                           dont_ask=args.dont_ask, client_args=client_args,
+                           grill_me=args.grill_me, ask_questions=args.ask_questions) if args.backend else None
         if not args.dry_run and plan:
             session = Path(attachment['session'])
             (session / 'attachment.json').write_text('{"mcpServers":{}}\n')
             (session / 'instructions.md').write_text(plan['instructions'])
             (session / 'launch.json').write_text(_json(plan) + '\n')
         result = {'ok': True, 'result': dict(opened, client=plan, client_transport=transport,
-                                            dry_run=args.dry_run, physics_world=False)}
-        if adapter:
-            # Cloud keeps the current chat; deliver its shared role instructions
-            # here instead of sending the skill through another mandatory read.
+                                            dry_run=args.dry_run, physics_world=False,
+                                            communication={'grill_me': args.grill_me,
+                                                           'ask_questions': args.ask_questions and not args.dont_ask})}
+        if not plan:
+            # Current-chat managers receive the same policy as installed clients.
             result['result']['manager_instructions'] = (
-                root / 'research/prompts/research-manager-workflow.txt').read_text()
+                (root / 'research/prompts/research-manager-workflow.txt').read_text() +
+                manager_policy(grill_me=args.grill_me, ask_questions=args.ask_questions and not args.dont_ask))
         if not args.backend or args.dry_run:
             print(_json(result))
             return 0

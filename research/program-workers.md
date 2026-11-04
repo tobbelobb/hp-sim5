@@ -1,15 +1,12 @@
 # Dispatch through the existing research worker
 
-Task 009 adds `ProgramStore.workers(root)` and the standard-library
+`ProgramStore.workers(root)` uses the standard-library
 [WorkerDispatcher](../src/python/hp_sim5_research/program_workers.py).
 It launches `hp-sim5-research-agent --machine hp4 --batch --prompt-file FILE --session-dir DIR`
 with an argv array. Only that existing launcher starts physics, collection and
 Viewer services. The adapter inherits its normal client authentication; it never
 creates credentials, changes client homes or uses a model API directly.
-The full manager is still subject to [task 016's live gate](program-tasks/016-live-manager-release.md).
-
-The API is for a retained controller in one Python process. The chat commands
-and lifecycle controller are subsequent tasks. For an existing ready assignment:
+The API is for a retained controller in one Python process. For an existing ready assignment:
 
 ```python
 from pathlib import Path
@@ -33,9 +30,25 @@ one slot transactionally across the entire store, records the attempt and marks
 the assignment running before spawning. The exact UTF-8 prompt file contains the
 assignment snapshot, program constraints, IDs, allocation, source revision and
 session path, followed by additional instructions without shell interpolation.
-`assignment.json` and the prompt SHA-256 retain that contract. These allocations
-are recorded worker instructions; hard elapsed-time and workload enforcement is
-task 013. No automatic restart or continuation loop is included.
+`assignment.json` and the prompt SHA-256 retain that contract. The retained
+controller enforces wall deadlines. No automatic restart or continuation loop is included.
+
+## Clarification
+
+Workers ask the manager, never the human. The assignment includes a file-mailbox
+protocol using the absolute session directory, also shared with worktrees/cloud.
+The worker atomically writes `manager-question.json` with string `id` and
+`question` fields. `worker_status` exposes it as `manager_question` until a
+nonempty matching answer exists. The manager atomically writes JSON with the
+same `id` and an `answer` to the returned `manager_answer_path`. Use a new id
+for each question and answer one question at a time. Mailboxes are limited to
+16 KiB per file; partial/invalid JSON is ignored until a later poll.
+
+The manager must keep polling while a worker waits. The worker accepts only a
+matching answer, keeps independent work moving and respects its original wall
+deadline. This is a shared-filesystem exchange, with no live conversation resume
+or deadline extension. The notebook records consequential answers; status also
+inventories both mailbox files. Human question tools stay disabled in batch mode.
 
 Settings preserve launcher defaults unless supplied: `backend` (`codex`/`claude`),
 `model_provider` (Codex only), `model`, `worktree`, `worktree_dir`, `physics_backend`,
@@ -66,8 +79,9 @@ It never reads the bearer token in `connection.json` into program memory.
 
 Status inventories launcher manifests, raw events, final message, report/notebook,
 abstract, attachment/connection files and runtime/Viewer logs alongside controller
-stdout/stderr. It records paths and byte counts, and reads only three manifests,
-bounded to 1 MiB each. It does not hash growing recordings or ingest telemetry.
+stdout/stderr. It records paths and byte counts, reads three manifests bounded
+to 1 MiB each and the small clarification mailbox. It does not hash growing
+recordings or ingest telemetry.
 Partial manifests become diagnostics; incomplete JSONL does not block inspection.
 Files remain provisional/partial for running, failed or cancelled attempts.
 Their presence, finalized size or a worker success token is not scientific review.

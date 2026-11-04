@@ -28,6 +28,13 @@ when sizing numerical budgets.
 
 Use commission or a ready assignment, then worker_start/run_once.
 Poll actual worker_status and preserve unsuccessful and partial evidence.
+Check worker_status.manager_question on every poll. You answer worker clarification,
+not the human. Resolve it from the brief, evidence and established authority; only
+escalate a consequential human decision under the human communication policy.
+Write {"id":"question id","answer":"your decision and rationale"} atomically to
+worker_status.manager_answer_path (write a sibling temporary file, then rename).
+Preserve consequential answers as decisions and human input as steering. Keep polling
+while a worker waits; waiting consumes its existing allocation. Never invent consent.
 
 An exited worker is unreviewed. Use submit to freeze the claim, report and selected
 evidence, then a separate review_start, review_status and review_apply. Review

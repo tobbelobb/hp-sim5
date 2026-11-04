@@ -23,7 +23,8 @@ def main(argv=None):
         return manager_main(argv, ROOT)
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         'Manager chat/tools: --question TEXT or --program ID; add --codex/--claude '
-        'for a local manager chat, --cloud for the current cloud chat. Use tool CONNECTION '
+        'for a local manager chat, --cloud for the current cloud chat. Add --grill-me '
+        'for a startup interview and --ask-questions for ongoing clarification. Use tool CONNECTION '
         'OPERATION --params JSON for existing-chat calls. See research/program-manager.md.'))
     parser.add_argument('--store', type=Path, default=ROOT / '.research-programs', help='Manager-owned store directory')
     commands = parser.add_subparsers(dest='command', required=True)

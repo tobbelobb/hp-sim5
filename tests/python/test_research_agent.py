@@ -447,20 +447,24 @@ def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp
     assert not session.exists()
 
 
+@pytest.mark.parametrize('backend', ['--codex', '--claude'])
 @pytest.mark.parametrize('options, enabled', [
     ([], True), (['--dont-ask'], False), (['--batch'], False),
     (['--batch', '--dont-ask'], False), (['--serve'], True),
     (['--serve', '--dont-ask'], False),
 ])
-def test_launcher_clarification_setting(options, enabled):
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--viewer', 'none', *options]
+def test_launcher_clarification_setting(backend, options, enabled):
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', backend, '--dry-run', '--viewer', 'none', *options]
     if '--serve' not in options:
         command += ['--prompt', 'Research check']
     result = subprocess.run(command, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
     argv = json.loads(result.stdout)['argv']
-    assert f'features.default_mode_request_user_input={str(enabled).lower()}' in argv
-    assert 'sandbox_workspace_write.network_access=true' in argv
+    if backend == '--codex':
+        assert f'features.default_mode_request_user_input={str(enabled).lower()}' in argv
+        assert 'sandbox_workspace_write.network_access=true' in argv
+    else:
+        assert ('--disallowedTools' not in argv) is enabled
     assert '--dont-ask' not in argv
 
 
