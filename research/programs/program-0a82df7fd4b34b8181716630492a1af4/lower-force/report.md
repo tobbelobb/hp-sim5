@@ -9,7 +9,7 @@ Topics: HP3, autocalibration, sensor force, motor friction, encoder noise, WebSo
 | Hypothesis | Experiments | Outcome | Evidence |
 | --- | --- | --- | --- |
 | Fixed 4mid improves accuracy across the frozen worlds without new failure or excess effort | n-default, n-candidate, d-default, d-candidate, e-default, e-candidate | Rejected for production; nominal candidate workflow failure remains | [Measurements](measurements.json) |
-| Explicit encoder reply budgets can be honored while preserving bounded failures and routing | Fresh-process real WebSocket contrast and regression checks | Supported within software transport scope | [Report](report.md) |
+| Explicit encoder reply budgets can be honored while preserving bounded failures and routing | Fresh-process real WebSocket contrast and regression checks | Supported within software transport scope | [Transport evidence](evidence/transport-summary.json) |
 
 ## Decision handoff
 
@@ -20,7 +20,6 @@ Topics: HP3, autocalibration, sensor force, motor friction, encoder noise, WebSo
 
 ## References
 
-- [Full report](report.md) separates applied geometry, intermediate fits, effort and transport evidence.
 - [Research notebook](research.md) records the frozen protocol and manager decisions.
 - [Frozen policy](policy-frozen.json) and [budget ledger](budget-ledger.json) preserve source/native identities and hard caps.
 - The original independently reviewed four-attempt partial remains at Git commit 57658240.
@@ -46,29 +45,17 @@ Errors are Euclidean distances in millimetres. RMSE is sqrt(mean of the four squ
 
 | Run | Geometry | A mm | B mm | C mm | D mm | Max mm | RMSE mm | Every <5 | Any >20 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-
 | n-default | M669 command | 2.7594 | 4.5472 | 1.1648 | 1.7423 | 4.5472 | 2.8585 | True | False |
-
 | n-default | Firmware readback | 2.7594 | 4.5472 | 1.1648 | 1.7423 | 4.5472 | 2.8585 | True | False |
-
 | n-candidate | M669 command | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-
 | n-candidate | Firmware readback | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-
 | d-default | M669 command | 2.4993 | 3.6959 | 3.3660 | 2.8206 | 3.6959 | 3.1302 | True | False |
-
 | d-default | Firmware readback | 2.4993 | 3.6959 | 3.3660 | 2.8206 | 3.6959 | 3.1302 | True | False |
-
 | d-candidate | M669 command | 2.5599 | 2.8529 | 2.2228 | 2.4605 | 2.8529 | 2.5341 | True | False |
-
 | d-candidate | Firmware readback | 2.5599 | 2.8529 | 2.2228 | 2.4605 | 2.8529 | 2.5341 | True | False |
-
 | e-default | M669 command | 3.1262 | 1.1409 | 3.4116 | 3.0716 | 3.4116 | 2.8350 | True | False |
-
 | e-default | Firmware readback | 3.1262 | 1.1409 | 3.4116 | 3.0716 | 3.4116 | 2.8350 | True | False |
-
 | e-candidate | M669 command | 1.5485 | 2.4098 | 2.7518 | 1.7723 | 2.7518 | 2.1748 | True | False |
-
 | e-candidate | Firmware readback | 1.5485 | 2.4098 | 2.7518 | 1.7723 | 2.7518 | 2.1748 | True | False |
 
 
@@ -78,17 +65,11 @@ Persisted pairs count dataset entries. Completed physical sub-sweeps count final
 
 | Run | Outcome and stop | Points | Pairs | Completed/started sub-sweeps | Fits/iterations | Steps | Sim s | Wall s |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-
 | n-default | accepted_below20; spread-consensus | 140 | 7 | 14/14 | 9/5 | 2156688 | 4313.3760 | 739.4405 |
-
 | n-candidate | workflow_failure; None | 50 | 0 | 5/6 | 0/0 | 1347144 | 2694.2880 | 406.4474 |
-
 | d-default | accepted_below20; spread-consensus | 140 | 7 | 14/14 | 9/5 | 2161548 | 4323.0960 | 643.4076 |
-
 | d-candidate | accepted_below20; spread-consensus | 140 | 7 | 14/14 | 9/5 | 2300140 | 4600.2800 | 913.0880 |
-
 | e-default | accepted_below20; spread-consensus | 140 | 7 | 14/14 | 9/5 | 2226664 | 4453.3280 | 707.4829 |
-
 | e-candidate | accepted_below20; spread-consensus | 140 | 7 | 14/14 | 11/5 | 2384425 | 4768.8500 | 627.2917 |
 
 
@@ -112,17 +93,11 @@ These fits are diagnostic evidence, separate from final applied geometry. Produc
 
 | Run | Max-error min/median/p90/tail mm | Fits with any >20 | Invalid flags | Underconstrained penalty |
 | --- | --- | ---: | ---: | ---: |
-
 | n-default | 3.2830/5.4355/3508.8813/3508.8813 | 2 | 0 | 2 |
-
 | n-candidate | n/a | 0 | 0 | 0 |
-
 | d-default | 3.6132/6.1612/1911.6000/1911.6000 | 1 | 0 | 1 |
-
 | d-candidate | 2.6076/2.8588/2200.8463/2200.8463 | 1 | 1 | 0 |
-
 | e-default | 3.2649/3.4500/5264.4607/5264.4607 | 2 | 0 | 2 |
-
 | e-candidate | 2.6782/2.8270/4483.8195/4534.5786 | 2 | 0 | 1 |
 
 
@@ -143,13 +118,6 @@ The first pending-disconnect test assumed immediate rejection and failed. Its co
 The invalid-path-startup imported the prior session intervention module after a rebasing-order error. The ECS component identities did not match and motor selection was empty. It was interrupted before any fit or point, at 71,980 steps and 143.96 simulated seconds. It is excluded from physical-policy inference and counted as collection 5. The archive retains the original service/runner snapshots, actual imported old module, invocation hashes and invalid-setup record. Its harness-source copy is the later corrected setup, explicitly distinguished from the actual snapshots. The manager removed the optional full-autocal transport confirmation. No eighth collection or full-autocal-with-fix success is claimed.
 
 Aggregate use is 7 collections, 47 fresh fits, 12651622 physics steps including the prior 3003-step probe and bounded headless verification steps, and 750 physical points. The exact ledger records the hard caps and invalid setup.
-
-## Tested hypotheses
-
-| Hypothesis | Experiments | Outcome |
-| --- | --- | --- |
-| Fixed 4mid improves applied accuracy across the frozen worlds without a new workflow failure | Six primary attempts | Rejected for production because nominal candidate failed; evaluation quantified separately |
-| Explicit encoder budget can be honored while preserving bounded failure and routing | Real WebSocket stock/fixed discriminator and regression checks | Supported within tested software transport scope |
 
 ## Evidence and limits
 

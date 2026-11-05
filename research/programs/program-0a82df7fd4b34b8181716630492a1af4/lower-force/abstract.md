@@ -9,7 +9,7 @@ Topics: HP3, autocalibration, sensor force, motor friction, encoder noise, WebSo
 | Hypothesis | Experiments | Outcome | Evidence |
 | --- | --- | --- | --- |
 | Fixed 4mid improves accuracy across the frozen worlds without new failure or excess effort | n-default, n-candidate, d-default, d-candidate, e-default, e-candidate | Rejected for production; nominal candidate workflow failure remains | [Measurements](measurements.json) |
-| Explicit encoder reply budgets can be honored while preserving bounded failures and routing | Fresh-process real WebSocket contrast and regression checks | Supported within software transport scope | [Report](report.md) |
+| Explicit encoder reply budgets can be honored while preserving bounded failures and routing | Fresh-process real WebSocket contrast and regression checks | Supported within software transport scope | [Transport evidence](evidence/transport-summary.json) |
 
 ## Decision handoff
 

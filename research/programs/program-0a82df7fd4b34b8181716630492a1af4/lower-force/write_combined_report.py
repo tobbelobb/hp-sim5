@@ -1,5 +1,5 @@
 from pathlib import Path
-import json,math,statistics,shutil,subprocess,datetime
+import json,math,statistics,shutil,subprocess,datetime,re
 S=Path(__file__).resolve().parent;R=Path.cwd();D=R/'research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force'
 M=json.loads((S/'evidence/measurements.json').read_text());names=['n-default','n-candidate','d-default','d-candidate','e-default','e-candidate'];primary={n:M[n] for n in names if n in M};done=len(primary)==6
 fmt=lambda x: 'n/a' if x is None else f'{x:.4f}' if isinstance(x,(float,int)) and not isinstance(x,bool) else str(x)
@@ -29,7 +29,7 @@ abstract+='''
 | Hypothesis | Experiments | Outcome | Evidence |
 | --- | --- | --- | --- |
 | Fixed 4mid improves accuracy across the frozen worlds without new failure or excess effort | n-default, n-candidate, d-default, d-candidate, e-default, e-candidate | Rejected for production; nominal candidate workflow failure remains | [Measurements](measurements.json) |
-| Explicit encoder reply budgets can be honored while preserving bounded failures and routing | Fresh-process real WebSocket contrast and regression checks | '''+('Supported within software transport scope' if transport.get('tested') and transport.get('passed') else 'Not tested yet')+''' | [Report](report.md) |
+| Explicit encoder reply budgets can be honored while preserving bounded failures and routing | Fresh-process real WebSocket contrast and regression checks | '''+('Supported within software transport scope' if transport.get('tested') and transport.get('passed') else 'Not tested yet')+''' | [Transport evidence](evidence/transport-summary.json) |
 
 ## Decision handoff
 
@@ -60,6 +60,15 @@ for n,x in primary.items():
  lines.append('| '+' | '.join([n,q,str(x['iteration_any_anchor_over20']),str(x['invalid_fits']),str(x['underconstrained_penalty_fits'])])+' |')
 lines+=['\nEvery fit and per-iteration selection/validity/tail metric remains in measurements.json and the raw archives. The original nominal candidate failed after 50 points on M569.3 request 10812 at step 1,347,144, without an applied answer. Its valid finite same-step late reply does not prove the original host-delay cause. That failure remains in the primary matrix.','## Separate transport result\n\n'+transport.get('report','Not tested yet. No transport fix result is claimed.'),'## Invalid setup and budgets\n\nThe invalid-path-startup imported the prior session intervention module after a rebasing-order error. The ECS component identities did not match and motor selection was empty. It was interrupted before any fit or point, at 71,980 steps and 143.96 simulated seconds. It is excluded from physical-policy inference and counted as collection 5. The archive retains the original service/runner snapshots, actual imported old module, invocation hashes and invalid-setup record. Its harness-source copy is the later corrected setup, explicitly distinguished from the actual snapshots. The manager removed the optional full-autocal transport confirmation. No eighth collection or full-autocal-with-fix success is claimed.\n\nAggregate use is '+str(ledger['completed_or_failed_collections'])+' collections, '+str(ledger['fresh_fits'])+' fresh fits, '+str(ledger['physics_steps'])+' physics steps including the prior 3003-step probe and bounded headless verification steps, and '+str(ledger['physical_points'])+' physical points. The exact ledger records the hard caps and invalid setup.','## Tested hypotheses\n\n| Hypothesis | Experiments | Outcome |\n| --- | --- | --- |\n| Fixed 4mid improves applied accuracy across the frozen worlds without a new workflow failure | Six primary attempts | Rejected for production because nominal candidate failed; evaluation quantified separately |\n| Explicit encoder budget can be honored while preserving bounded failure and routing | Real WebSocket stock/fixed discriminator and regression checks | '+('Supported within tested software transport scope' if transport.get('tested') and transport.get('passed') else 'Not tested or unresolved')+' |','## Evidence and limits\n\nEach durable per-run archive has all command/noise journals, datasets and partial points, fits and selection, source/native/input hashes, candidate diff and passive snapshots. SHA256 readback verifies every member. Each completed or failed collection was committed and pushed before the next. Prior four raw archives are immutable, and the independently reviewed partial report is preserved at Git commit 57658240. A compact review bundle omits only duplicate events.jsonl files and cites full raw archive hashes for every omission.\n\nThree hypothetical worlds with one seed each do not establish hardware reliability. Motor friction factors are not hardware-characterized. No claims cover guide friction, changed layouts, stiffness, payload, unknown radii or buildup. Seeded random streams share prefixes, but adaptive workloads consume later values at different times. Controlled software reply delays do not establish the cause of the historical timeout.\n\nReferences: [frozen policy](policy-frozen.json), [all measurements](measurements.json), [pair decisions](pairs.json), [budget ledger](budget-ledger.json), [research notebook](research.md), [continuation handoff](CONTINUE.md), and the per-run raw-artifact-manifest.json files. The native activation probe and call-site audit are included in evidence. research/autocal-recording-performance.md supports the recording choice only.']
 report='\n\n'.join(lines)+'\n'
+report=re.sub(r'(?m)^(\|.*\|)\n\n(?=\|)',r'\1\n',report)
+report=re.sub(r'(?m)^- \[Full report\]\(report\.md\).*\n','',report)
+first=report.find('## Tested hypotheses')
+second=report.find('## Tested hypotheses',first+1)
+if second>=0:
+ end=report.find('## Evidence and limits',second)
+ assert end>=0
+ report=report[:second]+report[end:]
+
 for folder in [S,D]:
  (folder/'abstract.md').write_text(abstract);(folder/'report.md').write_text(report)
 for f in ['policy-frozen.json','budget-ledger.json']:shutil.copyfile(S/f,D/f)

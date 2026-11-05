@@ -481,5 +481,21 @@
       "invalid-path-startup"
     ],
     "original_partial_review_commit": "57658240"
+  },
+  "recomputed_bundle_sha256": "3a874fb83c658892e1855992871bd47a1818730e9d34ed232919ba13662af9a4",
+  "presentation_only_followup": {
+    "final_bundle_sha256": "c015b06839f6cfb9cb03682b54405eb3f8b3be4d11811a3f764a5a550b5c35c2",
+    "final_bundle_files_hash_verified": 515,
+    "changed_members": [
+      "report.md",
+      "abstract.md",
+      "write_combined_report.py"
+    ],
+    "added_members": [
+      "evidence/presentation-checks.json"
+    ],
+    "all_scientific_evidence_member_hashes_unchanged": true,
+    "final_archive_readback_hash_verified": true,
+    "numerical_checks_reused_without_rerun": true
   }
 }
