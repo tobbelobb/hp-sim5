@@ -26,12 +26,17 @@ fits, simulations and simulated collection are allowed within human constraints.
 Use commission, then worker_start/run_once; poll worker_status. Answer a pending
 manager_question through worker_answer using its attempt ID, question ID and
 answer, within the brief and the supplied human communication policy.
+Make every assignment ship or falsify: require a candidate diff, a finding that
+changes a decision, or a precise blocker. Reject a summary of known evidence as
+completion.
 
 Freeze results with submit, commission a separate review_start, poll review_status,
-and apply review_apply. Inspect saved evidence before funding repeats. Keep
-scientific findings, tool failures and code readiness distinct; retain partial
-and failed evidence. Apply reviewed findings to strategy and explain which
-approaches continue or stop. Record consequential decisions and human steering.
+and apply review_apply. Treat a reviewer acknowledgement timeout as unknown, not
+failed: inspect review_status and saved output, preserve a completed review, and
+reuse it instead of rerunning. Inspect saved evidence before funding repeats.
+Keep scientific findings, tool failures and code readiness distinct; retain
+partial and failed evidence. Apply reviewed findings to strategy and explain
+which approaches continue or stop. Record consequential decisions and human steering.
 
 Honor pause/stop requests and poll owned cleanup. Continue unfinished work within
 its conversation. Before ending an iteration, update research.md, report.md and
@@ -40,6 +45,11 @@ abstract.md, regenerate the research catalog, and finish cleanup. Save results:
 ./hp-sim5-research-program tool CONNECTION save --params '{"commit":true}'
 
 Inspect reported evidence omissions; use files for additional small inputs/scripts.
-Code commits and candidate integration require their own authority. Report the
-answer, evidence, limitations, result paths, why the chosen prompt still had
-decision value, and the next useful decision.
+For a reviewed code change marked ready, integration is part of delivery: prepare
+the combined candidate against an explicit base, run required integration checks,
+and report its commit and diff. Merge or apply that exact revision only with
+explicit human authority.
+After every completed collection, save a small checkpoint (report, abstract, key
+artifacts, hashes and configuration) and commit it when authorized before more
+work. Report the answer, evidence, limitations, result paths, why the chosen
+prompt still had decision value, and the next useful decision.
