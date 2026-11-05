@@ -30,8 +30,8 @@ This is the most critical new view. Once the batch is done, the user is presente
 ### Visual Sketches
 I have created a set of low-fidelity wireframes to demonstrate this flow using the code interpreter.
 
-![ux_setup_wireframe.png ux_dashboard_wireframe.png](ux_setup_wireframe.png ux_dashboard_wireframe.png)
-![ux_setup_wireframe.png ux_dashboard_wireframe.png](ux_setup_wireframe.png ux_dashboard_wireframe.png)
+![UX setup wireframe](../human_docs/ux_setup_wireframe.png)
+![UX dashboard wireframe](../human_docs/ux_dashboard_wireframe.png)
 
 ### The "Batch & Analyze" Workflow
 

@@ -203,6 +203,20 @@ fails loaded-state settling and is deferred. Matched native Squares prefixes
 still pull B out at finer steps; coarse zero-loss behavior is unreliable evidence
 of accuracy. [Review, measurements and integration decision](hp4-squares-substeps.md).
 
+## Experimental HP4 pinhole-gate topology
+
+Status: implemented; structural and short-run checks passed. Topics: HP4,
+machine model, pinhole gates, CableJoints, Native Rust, Wasm, JavaScript.
+
+The experimental HP4 scene replaces the ABC effector's long
+pinhole-wheel-wheel-pinhole chain with six stateful two-port gates, reducing the
+topology from 51 to 33 cable joints. Native Rust, Wasm and JavaScript implement
+the same gate-flow law; the independent Python backend rejects the scene. Gate
+parameters and visual bottom-wheel scaling remain provisional synthetic values,
+not hardware calibration.
+
+[Mechanical model, checks and limitations](pinhole-gate.md).
+
 ## Autocal flag audit and experiment handoff
 
 Status: static investigation complete, 2026-10-22; numerical experiments not run.
