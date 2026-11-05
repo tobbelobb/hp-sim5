@@ -10,13 +10,14 @@
     "wall_minutes": 100,
     "report_reserve_minutes": 10
   },
-  "completed_or_failed_collections": 2,
-  "fresh_fits": 9,
-  "physics_steps": 3506835,
-  "physical_points": 190,
+  "completed_or_failed_collections": 3,
+  "fresh_fits": 18,
+  "physics_steps": 5668383,
+  "physical_points": 330,
   "torque_probe_steps": 3003,
   "runs": [
     "n-default",
-    "n-candidate"
+    "n-candidate",
+    "d-default"
   ]
 }

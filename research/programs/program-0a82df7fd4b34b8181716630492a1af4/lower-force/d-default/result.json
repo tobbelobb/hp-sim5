@@ -1,0 +1,2246 @@
+{
+  "run_id": "d-default",
+  "world": "development",
+  "split": "development",
+  "category": "accepted_below20",
+  "status": "complete",
+  "stop_reason": "spread-consensus",
+  "normal_automatic_acceptance": true,
+  "applied": {
+    "anchors": [
+      [
+        0.0,
+        -1902.48,
+        -279.69
+      ],
+      [
+        1648.65,
+        951.82,
+        -279.69
+      ],
+      [
+        -1648.36,
+        951.66,
+        -279.69
+      ],
+      [
+        0.0,
+        -0.06,
+        1902.82
+      ]
+    ],
+    "per_anchor_error_mm": {
+      "A": 2.499299901972569,
+      "B": 3.695888659558299,
+      "C": 3.36598989218654,
+      "D": 2.820638225650294
+    },
+    "max_mm": 3.695888659558299,
+    "rmse_mm": 3.1301749527044542,
+    "anchors_over20": 0,
+    "all_below5": true
+  },
+  "iterations": [
+    {
+      "iteration": 1,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1902.4643372625742,
+            -279.8489948512896
+          ],
+          [
+            1648.7538719908464,
+            951.8443285317551,
+            -279.8489948512896
+          ],
+          [
+            -1648.5622312415867,
+            951.8017860516038,
+            -279.8489948512896
+          ],
+          [
+            -0.02176132203834805,
+            -0.07350812395379049,
+            1903.3994361130276
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 2.4689594364121707,
+          "B": 3.7883206549197785,
+          "C": 3.60083429812618,
+          "D": 3.4003004111372706
+        },
+        "max_mm": 3.7883206549197785,
+        "rmse_mm": 3.353177023797084,
+        "anchors_over20": 0,
+        "all_below5": true
+      },
+      "success": true,
+      "cost": 0.190589902478102,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 17.810717109000052,
+      "artifact": "runs/d-default/stages/fit-001-default.json",
+      "production_metrics": {
+        "primary_cost": 0.190589902478102,
+        "raw_fit_score_ui": 0.190589902478102,
+        "score_ui": 0.190589902478102,
+        "rank_score": 0.190589902478102,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.190589902478102,
+        "chi2_red": 0.2242234146802735,
+        "J": 0.19058990247823246,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 473.1587825191157,
+        "rel_std": 0.2737728564708456,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": 0.0,
+        "rank_effective_obs": 60.0,
+        "rank_total_obs": 60.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.0,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 2,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1900.687576866053,
+            -278.6549745331876
+          ],
+          [
+            1648.3963172912047,
+            951.5033535223602,
+            -278.6549745331876
+          ],
+          [
+            -1648.5782054553654,
+            951.7101481249033,
+            -278.6549745331876
+          ],
+          [
+            0.023689936967902607,
+            -0.006517603859263004,
+            1899.0542735490412
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 1.5105811640243227,
+          "B": 3.572137275668477,
+          "C": 3.8118517360680872,
+          "D": 0.946045565666203
+        },
+        "max_mm": 3.8118517360680872,
+        "rmse_mm": 2.7598567009632613,
+        "anchors_over20": 0,
+        "all_below5": true
+      },
+      "success": true,
+      "cost": 0.24427615093706945,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 26.08838314600007,
+      "artifact": "runs/d-default/stages/fit-002-default.json",
+      "production_metrics": {
+        "primary_cost": 0.24427615093706945,
+        "raw_fit_score_ui": 0.24427615093706945,
+        "score_ui": 0.24427615093706945,
+        "rank_score": 0.24427615093706945,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.24427615093706945,
+        "chi2_red": 0.2752407334493479,
+        "J": 0.2442761509362963,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 524.0985092438041,
+        "rel_std": 0.30324692523696595,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": -0.08630462173553426,
+        "rank_effective_obs": 80.0,
+        "rank_total_obs": 80.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.08630462173553426,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 2,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1900.6869406428887,
+            -278.6549165624429
+          ],
+          [
+            1648.396763924589,
+            951.5035651761788,
+            -278.6549165624429
+          ],
+          [
+            -1648.5785094772264,
+            951.7102432867864,
+            -278.6549165624429
+          ],
+          [
+            0.02368830118198818,
+            -0.006533183187583914,
+            1899.053784104193
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 1.5103433056238207,
+          "B": 3.572616783861751,
+          "C": 3.812164520060874,
+          "D": 0.9465349119674572
+        },
+        "max_mm": 3.812164520060874,
+        "rmse_mm": 2.7601292656666265,
+        "anchors_over20": 0,
+        "all_below5": true
+      },
+      "success": true,
+      "cost": 0.24427615349863965,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 2.273242069999924,
+      "artifact": "runs/d-default/stages/fit-002-default.warm.json",
+      "production_metrics": {
+        "primary_cost": 0.24427615349863965,
+        "raw_fit_score_ui": 0.24427615349863965,
+        "score_ui": 0.24427615349863965,
+        "rank_score": 0.24427615349863965,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.24427615349863965,
+        "chi2_red": 0.27524073633480467,
+        "J": 0.24427615349713916,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 524.0985116227304,
+        "rel_std": 0.3032469266134287,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": -0.08630462173553426,
+        "rank_effective_obs": 80.0,
+        "rank_total_obs": 80.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.08630462173553426,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 3,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1907.3127684192102,
+            -278.6318375470871
+          ],
+          [
+            1651.2396777600743,
+            954.8896166712727,
+            -278.6318375470871
+          ],
+          [
+            -1654.1723437043108,
+            951.8774050143261,
+            -278.6318375470871
+          ],
+          [
+            1.4329897392141928,
+            0.6767787665100047,
+            1888.6912892248718
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 7.439653920079809,
+          "B": 7.7019903970135735,
+          "C": 9.028068957720322,
+          "D": 11.419213129064266
+        },
+        "max_mm": 11.419213129064266,
+        "rmse_mm": 9.035673247171392,
+        "anchors_over20": 0,
+        "all_below5": false
+      },
+      "success": true,
+      "cost": 0.1880938687400076,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 21.01984326999991,
+      "artifact": "runs/d-default/stages/fit-003-default.json",
+      "production_metrics": {
+        "primary_cost": 0.1880938687400076,
+        "raw_fit_score_ui": 0.1880938687400076,
+        "score_ui": 0.1880938687400076,
+        "rank_score": 0.1880938687400076,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.1880938687400076,
+        "chi2_red": 0.22128690439943344,
+        "J": 0.18809386873951842,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 469.8034017542826,
+        "rel_std": 0.2718314105747239,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": 0.0,
+        "rank_effective_obs": 60.0,
+        "rank_total_obs": 60.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.0,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 3,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1907.3127684192102,
+            -278.6318375470871
+          ],
+          [
+            1651.2396777600743,
+            954.8896166712727,
+            -278.6318375470871
+          ],
+          [
+            -1654.1723437043108,
+            951.8774050143261,
+            -278.6318375470871
+          ],
+          [
+            1.4329897392141928,
+            0.6767787665100047,
+            1888.6912892248718
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 7.439653920079809,
+          "B": 7.7019903970135735,
+          "C": 9.028068957720322,
+          "D": 11.419213129064266
+        },
+        "max_mm": 11.419213129064266,
+        "rmse_mm": 9.035673247171392,
+        "anchors_over20": 0,
+        "all_below5": false
+      },
+      "success": true,
+      "cost": 0.1880938687400076,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 5.28130229899989,
+      "artifact": "runs/d-default/stages/fit-003-default.warm.json",
+      "production_metrics": {
+        "primary_cost": 0.1880938687400076,
+        "raw_fit_score_ui": 0.1880938687400076,
+        "score_ui": 0.1880938687400076,
+        "rank_score": 0.1880938687400076,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.1880938687400076,
+        "chi2_red": 0.22128690439943344,
+        "J": 0.18809386873951842,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 469.8034017542826,
+        "rel_std": 0.2718314105747239,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": 0.0,
+        "rank_effective_obs": 60.0,
+        "rank_total_obs": 60.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.0,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 4,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1901.928310850067,
+            -279.41683664969185
+          ],
+          [
+            1650.5072080922598,
+            953.4680343066428,
+            -279.41683664969185
+          ],
+          [
+            -1646.7585935964335,
+            949.9819831370108,
+            -279.41683664969185
+          ],
+          [
+            0.32615598510475063,
+            0.13192431475759545,
+            1901.9373568741398
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 2.0145625400142357,
+          "B": 6.161186938679889,
+          "C": 1.4343498146386202,
+          "D": 1.9690437804225527
+        },
+        "max_mm": 6.161186938679889,
+        "rmse_mm": 3.4624117144326894,
+        "anchors_over20": 0,
+        "all_below5": false
+      },
+      "success": true,
+      "cost": 0.23143477176140845,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 28.79225767900016,
+      "artifact": "runs/d-default/stages/fit-004-default.json",
+      "production_metrics": {
+        "primary_cost": 0.23143477176140845,
+        "raw_fit_score_ui": 0.23143477176140845,
+        "score_ui": 0.23143477176140845,
+        "rank_score": 0.23143477176140845,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.23143477176140845,
+        "chi2_red": 0.2525863179049331,
+        "J": 0.22865708778762364,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 501.82689983239214,
+        "rel_std": 0.29036042211785945,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": -0.13785969881353202,
+        "rank_effective_obs": 95.0,
+        "rank_total_obs": 95.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.13785969881353202,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 4,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1901.928310850067,
+            -279.41683664969185
+          ],
+          [
+            1650.5072080922598,
+            953.4680343066428,
+            -279.41683664969185
+          ],
+          [
+            -1646.7585935964335,
+            949.9819831370108,
+            -279.41683664969185
+          ],
+          [
+            0.32615598510475063,
+            0.13192431475759545,
+            1901.9373568741398
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 2.0145625400142357,
+          "B": 6.161186938679889,
+          "C": 1.4343498146386202,
+          "D": 1.9690437804225527
+        },
+        "max_mm": 6.161186938679889,
+        "rmse_mm": 3.4624117144326894,
+        "anchors_over20": 0,
+        "all_below5": false
+      },
+      "success": true,
+      "cost": 0.23143477176140845,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 3.4786775330003366,
+      "artifact": "runs/d-default/stages/fit-004-default.warm.json",
+      "production_metrics": {
+        "primary_cost": 0.23143477176140845,
+        "raw_fit_score_ui": 0.23143477176140845,
+        "score_ui": 0.23143477176140845,
+        "rank_score": 0.23143477176140845,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.23143477176140845,
+        "chi2_red": 0.2525863179049331,
+        "J": 0.22865708778762364,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 501.82689983239214,
+        "rel_std": 0.29036042211785945,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": -0.13785969881353202,
+        "rank_effective_obs": 95.0,
+        "rank_total_obs": 95.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.13785969881353202,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 5,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -2330.4720753745996,
+            -265.399899592678
+          ],
+          [
+            2220.5827991598344,
+            1044.977286653876,
+            -265.399899592678
+          ],
+          [
+            -2035.6613575026886,
+            1178.43466680645,
+            -265.399899592678
+          ],
+          [
+            -192.59397526285605,
+            84.39322089069621,
+            1e-06
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 430.7195962679419,
+          "B": 583.1068322149017,
+          "C": 452.3956407636101,
+          "D": 1911.6000238647873
+        },
+        "max_mm": 1911.6000238647873,
+        "rmse_mm": 1046.9490693685498,
+        "anchors_over20": 4,
+        "all_below5": false
+      },
+      "success": true,
+      "cost": 100.0,
+      "info_rank": 0,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 20.581597149000117,
+      "artifact": "runs/d-default/stages/fit-005-default.json",
+      "production_metrics": {
+        "primary_cost": 100.0,
+        "raw_fit_score_ui": 100.0,
+        "score_ui": 100.0,
+        "rank_score": 100.0,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 100.0,
+        "chi2_red": null,
+        "J": null,
+        "info_rank": 0,
+        "info_rank_deficient": true,
+        "max_std_mm": 1000.0,
+        "rel_std": 0.5786067311553814,
+        "covariance_ok": true,
+        "underconstrained_penalty": true,
+        "rank_coverage_adjust": 0.0,
+        "rank_effective_obs": null,
+        "rank_total_obs": null,
+        "rank_filtered_ratio": null,
+        "rank_obs_bonus": null,
+        "rank_filtered_penalty": null,
+        "warnings": [
+          "underconstrained_penalty"
+        ],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    },
+    {
+      "iteration": 5,
+      "errors": {
+        "anchors": [
+          [
+            0.0,
+            -1902.4883446286215,
+            -279.521894323099
+          ],
+          [
+            1648.5436572318988,
+            951.8014789032594,
+            -279.521894323099
+          ],
+          [
+            -1648.1534886710328,
+            951.5170774713388,
+            -279.521894323099
+          ],
+          [
+            0.027615619040480092,
+            -0.03734619234769572,
+            1902.233118919177
+          ]
+        ],
+        "per_anchor_error_mm": {
+          "A": 2.533859512497537,
+          "B": 3.613218895385759,
+          "C": 3.1382052755391285,
+          "D": 2.2336019044772453
+        },
+        "max_mm": 3.613218895385759,
+        "rmse_mm": 2.92886943350813,
+        "anchors_over20": 0,
+        "all_below5": true
+      },
+      "success": true,
+      "cost": 0.24925330732832957,
+      "info_rank": 10,
+      "info_rank_deficient": true,
+      "warnings": [],
+      "fit_seconds": 1.4299437479999142,
+      "artifact": "runs/d-default/stages/fit-005-default.warm.json",
+      "production_metrics": {
+        "primary_cost": 0.24925330732832957,
+        "raw_fit_score_ui": 0.24925330732832957,
+        "score_ui": 0.24925330732832957,
+        "rank_score": 0.24925330732832957,
+        "score_basis": "standard-noise",
+        "cost_noise_normalized": 0.24925330732832957,
+        "chi2_red": 0.28084879698898524,
+        "J": 0.2492533073277244,
+        "info_rank": 10,
+        "info_rank_deficient": true,
+        "max_std_mm": 529.0370332235602,
+        "rel_std": 0.30610438845362514,
+        "covariance_ok": true,
+        "underconstrained_penalty": false,
+        "rank_coverage_adjust": -0.08630462173553426,
+        "rank_effective_obs": 80.0,
+        "rank_total_obs": 80.0,
+        "rank_filtered_ratio": 0.0,
+        "rank_obs_bonus": 0.08630462173553426,
+        "rank_filtered_penalty": 0.0,
+        "warnings": [],
+        "valid": true,
+        "line_model_prefit": null
+      },
+      "production_valid": true
+    }
+  ],
+  "fit_count": 9,
+  "iteration_count": 5,
+  "invalid_fits": 0,
+  "underconstrained_penalty_fits": 1,
+  "iteration_tail_max_mm": 1911.6000238647873,
+  "iteration_any_anchor_over20": 1,
+  "decisions": [
+    {
+      "iteration": 1,
+      "decision": "collect",
+      "score_ui": 0.190589902478102,
+      "best_iteration": 1,
+      "consensus_spread_mm": null,
+      "warnings": [],
+      "recovery": null,
+      "runs": [
+        {
+          "id": "default",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.190589902478102,
+            "raw_fit_score_ui": 0.190589902478102,
+            "score_ui": 0.190589902478102,
+            "rank_score": 0.190589902478102,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.190589902478102,
+            "chi2_red": 0.2242234146802735,
+            "J": 0.19058990247823246,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 473.1587825191157,
+            "rel_std": 0.2737728564708456,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": 0.0,
+            "rank_effective_obs": 60.0,
+            "rank_total_obs": 60.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.0,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 268.8454361251397,
+              "success": true,
+              "nit": 192,
+              "nfev": 879,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 17485371.28363565,
+              "success": true,
+              "nit": 6,
+              "nfev": 15,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.18982762211807916,
+              "success": true,
+              "nit": 261,
+              "nfev": 334,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 383.36131168051566,
+              "success": true,
+              "nit": 217,
+              "nfev": 1002,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 0.1815759720057733,
+              "success": true,
+              "nit": 22,
+              "nfev": 145,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.190589902478102,
+              "success": true,
+              "nit": 31,
+              "nfev": 35,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "decision": "collect",
+      "score_ui": 0.24427615093706945,
+      "best_iteration": 1,
+      "consensus_spread_mm": null,
+      "warnings": [],
+      "recovery": null,
+      "runs": [
+        {
+          "id": "default",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.24427615093706945,
+            "raw_fit_score_ui": 0.24427615093706945,
+            "score_ui": 0.24427615093706945,
+            "rank_score": 0.24427615093706945,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.24427615093706945,
+            "chi2_red": 0.2752407334493479,
+            "J": 0.2442761509362963,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 524.0985092438041,
+            "rel_std": 0.30324692523696595,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": -0.08630462173553426,
+            "rank_effective_obs": 80.0,
+            "rank_total_obs": 80.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.08630462173553426,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 7886.637876732233,
+              "success": true,
+              "nit": 74,
+              "nfev": 199,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 19012574.03049265,
+              "success": true,
+              "nit": 25,
+              "nfev": 71,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.2433106314131636,
+              "success": true,
+              "nit": 247,
+              "nfev": 422,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 10971.438982826101,
+              "success": true,
+              "nit": 156,
+              "nfev": 709,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 0.2333535594709916,
+              "success": true,
+              "nit": 63,
+              "nfev": 363,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.24427615093706945,
+              "success": true,
+              "nit": 94,
+              "nfev": 104,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        },
+        {
+          "id": "default.warm",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.24427615349863965,
+            "raw_fit_score_ui": 0.24427615349863965,
+            "score_ui": 0.24427615349863965,
+            "rank_score": 0.24427615349863965,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.24427615349863965,
+            "chi2_red": 0.27524073633480467,
+            "J": 0.24427615349713916,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 524.0985116227304,
+            "rel_std": 0.3032469266134287,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": -0.08630462173553426,
+            "rank_effective_obs": 80.0,
+            "rank_total_obs": 80.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.08630462173553426,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.24330642579154454,
+              "success": true,
+              "nit": 120,
+              "nfev": 201,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 19012574.03049265,
+              "success": true,
+              "nit": 25,
+              "nfev": 71,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.2433106314131636,
+              "success": true,
+              "nit": 247,
+              "nfev": 422,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 10971.438982826101,
+              "success": true,
+              "nit": 156,
+              "nfev": 709,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 0.23372216292398637,
+              "success": true,
+              "nit": 23,
+              "nfev": 156,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.24427615349863965,
+              "success": true,
+              "nit": 67,
+              "nfev": 78,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "decision": "collect",
+      "score_ui": 0.1880938687400076,
+      "best_iteration": 3,
+      "consensus_spread_mm": null,
+      "warnings": [],
+      "recovery": null,
+      "runs": [
+        {
+          "id": "default",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.1880938687400076,
+            "raw_fit_score_ui": 0.1880938687400076,
+            "score_ui": 0.1880938687400076,
+            "rank_score": 0.1880938687400076,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.1880938687400076,
+            "chi2_red": 0.22128690439943344,
+            "J": 0.18809386873951842,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 469.8034017542826,
+            "rel_std": 0.2718314105747239,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": 0.0,
+            "rank_effective_obs": 60.0,
+            "rank_total_obs": 60.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.0,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.538500045537919,
+              "success": true,
+              "nit": 267,
+              "nfev": 675,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 15753200.281191364,
+              "success": true,
+              "nit": 10,
+              "nfev": 83,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.5374470279370609,
+              "success": true,
+              "nit": 157,
+              "nfev": 367,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 26965.056298319636,
+              "success": true,
+              "nit": 134,
+              "nfev": 500,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 0.4501857671189418,
+              "success": true,
+              "nit": 2,
+              "nfev": 40,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.1880938687400076,
+              "success": true,
+              "nit": 140,
+              "nfev": 152,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        },
+        {
+          "id": "default.warm",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.1880938687400076,
+            "raw_fit_score_ui": 0.1880938687400076,
+            "score_ui": 0.1880938687400076,
+            "rank_score": 0.1880938687400076,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.1880938687400076,
+            "chi2_red": 0.22128690439943344,
+            "J": 0.18809386873951842,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 469.8034017542826,
+            "rel_std": 0.2718314105747239,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": 0.0,
+            "rank_effective_obs": 60.0,
+            "rank_total_obs": 60.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.0,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.5645904895640703,
+              "success": true,
+              "nit": 91,
+              "nfev": 500,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 15753200.281191364,
+              "success": true,
+              "nit": 10,
+              "nfev": 83,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 0.5374470279370609,
+              "success": true,
+              "nit": 157,
+              "nfev": 367,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 26965.056298319636,
+              "success": true,
+              "nit": 134,
+              "nfev": 500,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 0.4501857671189418,
+              "success": true,
+              "nit": 2,
+              "nfev": 40,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.1880938687400076,
+              "success": true,
+              "nit": 140,
+              "nfev": 152,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "decision": "collect",
+      "score_ui": 0.23143477176140845,
+      "best_iteration": 3,
+      "consensus_spread_mm": 3.9273312083016,
+      "warnings": [],
+      "recovery": null,
+      "runs": [
+        {
+          "id": "default",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.23143477176140845,
+            "raw_fit_score_ui": 0.23143477176140845,
+            "score_ui": 0.23143477176140845,
+            "rank_score": 0.23143477176140845,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.23143477176140845,
+            "chi2_red": 0.2525863179049331,
+            "J": 0.22865708778762364,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 501.82689983239214,
+            "rel_std": 0.29036042211785945,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": -0.13785969881353202,
+            "rank_effective_obs": 95.0,
+            "rank_total_obs": 95.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.13785969881353202,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 58145.30112653482,
+              "success": true,
+              "nit": 139,
+              "nfev": 349,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 17387227.20784405,
+              "success": true,
+              "nit": 13,
+              "nfev": 98,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 368.49848285963344,
+              "success": true,
+              "nit": 249,
+              "nfev": 1034,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 119.9565360939871,
+              "success": true,
+              "nit": 220,
+              "nfev": 827,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 41.839943414249,
+              "success": true,
+              "nit": 1,
+              "nfev": 25,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.23143477176140845,
+              "success": true,
+              "nit": 141,
+              "nfev": 158,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        },
+        {
+          "id": "default.warm",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.23143477176140845,
+            "raw_fit_score_ui": 0.23143477176140845,
+            "score_ui": 0.23143477176140845,
+            "rank_score": 0.23143477176140845,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.23143477176140845,
+            "chi2_red": 0.2525863179049331,
+            "J": 0.22865708778762364,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 501.82689983239214,
+            "rel_std": 0.29036042211785945,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": -0.13785969881353202,
+            "rank_effective_obs": 95.0,
+            "rank_total_obs": 95.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.13785969881353202,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 126.64658725003056,
+              "success": true,
+              "nit": 22,
+              "nfev": 258,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 17387227.20784405,
+              "success": true,
+              "nit": 13,
+              "nfev": 98,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 368.49848285963344,
+              "success": true,
+              "nit": 249,
+              "nfev": 1034,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 119.9565360939871,
+              "success": true,
+              "nit": 220,
+              "nfev": 827,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 41.839943414249,
+              "success": true,
+              "nit": 1,
+              "nfev": 25,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.23143477176140845,
+              "success": true,
+              "nit": 141,
+              "nfev": 158,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "decision": "accept",
+      "score_ui": 0.24925330732832957,
+      "best_iteration": 3,
+      "consensus_spread_mm": 1.4070387289383899,
+      "warnings": [],
+      "recovery": null,
+      "runs": [
+        {
+          "id": "default",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 100.0,
+            "raw_fit_score_ui": 100.0,
+            "score_ui": 100.0,
+            "rank_score": 100.0,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 100.0,
+            "chi2_red": null,
+            "J": null,
+            "info_rank": 0,
+            "info_rank_deficient": true,
+            "max_std_mm": 1000.0,
+            "rel_std": 0.5786067311553814,
+            "covariance_ok": true,
+            "underconstrained_penalty": true,
+            "rank_coverage_adjust": 0.0,
+            "rank_effective_obs": null,
+            "rank_total_obs": null,
+            "rank_filtered_ratio": null,
+            "rank_obs_bonus": null,
+            "rank_filtered_penalty": null,
+            "warnings": [
+              "underconstrained_penalty"
+            ],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 75771.16382286194,
+              "success": true,
+              "nit": 80,
+              "nfev": 234,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 16196694.727153823,
+              "success": true,
+              "nit": 38,
+              "nfev": 225,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 100.0,
+              "success": true,
+              "nit": 102,
+              "nfev": 195,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 100.0,
+              "success": true,
+              "nit": 187,
+              "nfev": 346,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 100.0,
+              "success": true,
+              "nit": 0,
+              "nfev": 1,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 100.0,
+              "success": true,
+              "nit": 0,
+              "nfev": 1,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        },
+        {
+          "id": "default.warm",
+          "flags": "",
+          "settings": {
+            "solve_restarts": 4,
+            "solve_iterations": 400,
+            "solve_optimizer": "lbfgsb",
+            "optimizer_mode": "fast",
+            "pointwise_residual_mode": "sampson",
+            "pointwise_filtering": true,
+            "pointwise_global_mad": true,
+            "sweep_wise_filtering": true,
+            "sweep_metric": "outlier_ratio",
+            "use_noise_mean": true,
+            "sigma_source": "auto",
+            "robust_debug": true,
+            "generate_report": false,
+            "find_radii": "off",
+            "find_buildup_factor": "off",
+            "base_radii": [
+              30.0
+            ],
+            "buildup_factor": 0.0,
+            "r0_bounds": null,
+            "b_bounds": null,
+            "r0_prior_sigma_mm": null,
+            "b_prior_sigma": null,
+            "spool_outer_iters": 3,
+            "theta0_mode": "zero",
+            "filter_schedule": [
+              "warmup",
+              "warmup",
+              "warmup",
+              "dynamic"
+            ],
+            "objective_schedule": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "fit_structure": [
+              3
+            ],
+            "line_width": 1.0,
+            "sigma_floor_mm": null,
+            "low_anchor_z": null
+          },
+          "metrics": {
+            "primary_cost": 0.24925330732832957,
+            "raw_fit_score_ui": 0.24925330732832957,
+            "score_ui": 0.24925330732832957,
+            "rank_score": 0.24925330732832957,
+            "score_basis": "standard-noise",
+            "cost_noise_normalized": 0.24925330732832957,
+            "chi2_red": 0.28084879698898524,
+            "J": 0.2492533073277244,
+            "info_rank": 10,
+            "info_rank_deficient": true,
+            "max_std_mm": 529.0370332235602,
+            "rel_std": 0.30610438845362514,
+            "covariance_ok": true,
+            "underconstrained_penalty": false,
+            "rank_coverage_adjust": -0.08630462173553426,
+            "rank_effective_obs": 80.0,
+            "rank_total_obs": 80.0,
+            "rank_filtered_ratio": 0.0,
+            "rank_obs_bonus": 0.08630462173553426,
+            "rank_filtered_penalty": 0.0,
+            "warnings": [],
+            "valid": true,
+            "line_model_prefit": null
+          },
+          "optimizer_runs": [
+            {
+              "stage": 0,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 56.53336955921828,
+              "success": true,
+              "nit": 9,
+              "nfev": 94,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 0,
+              "restart": 1,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 16196694.727153823,
+              "success": true,
+              "nit": 38,
+              "nfev": 225,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 2,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 100.0,
+              "success": true,
+              "nit": 102,
+              "nfev": 195,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 0,
+              "restart": 3,
+              "method": "lbfgsb",
+              "max_iterations": 400,
+              "cost": 100.0,
+              "success": true,
+              "nit": 187,
+              "nfev": 346,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": false
+            },
+            {
+              "stage": 1,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 240,
+              "cost": 17.705297075758708,
+              "success": true,
+              "nit": 1,
+              "nfev": 30,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            },
+            {
+              "stage": 2,
+              "restart": 0,
+              "method": "lbfgsb",
+              "max_iterations": 160,
+              "cost": 0.24925330732832957,
+              "success": true,
+              "nit": 100,
+              "nfev": 110,
+              "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+              "trf_fallback_attempted": false,
+              "trf_fallback_used": false,
+              "selected": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sweeps": 7,
+  "dataset_points": 140,
+  "physical_collected_points": 140,
+  "total_steps": 2161548,
+  "simulated_s": 4323.0960000000005,
+  "wall_s": 643.4076395029999,
+  "service_wall_s": 642.555134983,
+  "noise_observations": 37360,
+  "noise_empirical_sigma_deg": 0.030089128552828685,
+  "noise_seed": 4101,
+  "physics_engine": "rust-native",
+  "artifact_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+  "authored_scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "source_sha256": "d687909d16a02dcfb6f07fe9d9850f87d6a2964d5bcd3b8452d821572f4091ec",
+  "autocal_source_sha256": "97131c276452d7fd74bb967429e11a9847a2032a8aff33286556f3a92cee7ba3",
+  "source_revision": "ddc0e91a753721f7642c197879f9fe88af55e2e4",
+  "manifest": "runs/d-default/sweeps.headless/manifest.json",
+  "invocation": "runs/d-default/invocation.json",
+  "firmware_final_M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1902.48, -279.69\nB:1648.65, 951.82, -279.69\nC:-1648.36, 951.66, -279.69\nD:0.00, -0.06, 1902.82\nP:Print radius: 1500.0",
+  "readback_applied": {
+    "anchors": [
+      [
+        0.0,
+        -1902.48,
+        -279.69
+      ],
+      [
+        1648.65,
+        951.82,
+        -279.69
+      ],
+      [
+        -1648.36,
+        951.66,
+        -279.69
+      ],
+      [
+        0.0,
+        -0.06,
+        1902.82
+      ]
+    ],
+    "per_anchor_error_mm": {
+      "A": 2.499299901972569,
+      "B": 3.695888659558299,
+      "C": 3.36598989218654,
+      "D": 2.820638225650294
+    },
+    "max_mm": 3.695888659558299,
+    "rmse_mm": 3.1301749527044542,
+    "anchors_over20": 0,
+    "all_below5": true
+  },
+  "readback_max_coordinate_delta_mm": 0.0,
+  "readback_agrees_at_print_precision": true,
+  "readback_note": "M669 reply prints coordinates to0.01mm. Agreement permits0.005mm per coordinate. Command-rounded applied geometry and reply-rounded geometry retained separately.",
+  "dataset_sweep_pairs": 7,
+  "bidirectional_physical_sub_sweeps": 14,
+  "dataset_direction_entries": 14,
+  "physical_sub_sweeps_with_points": 14,
+  "physical_sub_sweeps_started": 14,
+  "sub_sweep_count_definition": "Dataset pairs and direction entries count persisted dataset metadata. Physical completed sub-sweeps count final step_index in all point journals, including failures/retries. Started sub-sweeps count collector log headings.",
+  "primary_process_wall_s": 643.5208878517151
+}

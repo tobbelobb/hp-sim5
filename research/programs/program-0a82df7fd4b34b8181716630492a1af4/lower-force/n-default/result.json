@@ -2242,5 +2242,9 @@
   "readback_note": "M669 reply prints coordinates to0.01mm. Agreement permits0.005mm per coordinate. Command-rounded applied geometry and reply-rounded geometry retained separately.",
   "dataset_sweep_pairs": 7,
   "bidirectional_physical_sub_sweeps": 14,
-  "primary_process_wall_s": 739.6202025413513
+  "primary_process_wall_s": 739.6202025413513,
+  "dataset_direction_entries": 14,
+  "physical_sub_sweeps_with_points": 14,
+  "physical_sub_sweeps_started": 14,
+  "sub_sweep_count_definition": "Completed physical sub-sweeps counted by final point index, started by collector log headings. Dataset direction entries separate."
 }

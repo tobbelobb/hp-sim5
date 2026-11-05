@@ -2,7 +2,7 @@
 
 Status: in progress.
 
-We compare the fixed4×midpoint sensor measurement force with the current5×midpoint rule in six fresh paired HP3 autocalibrations. The nominal and development worlds precede a heldout evaluation pair. All worlds use known30mm radii, zero buildup, no layering or guide friction, native Rust, and seeded Gaussian encoder-read noise. Motor Coulomb and smoothed-stiction factors vary by axis. 2 of six primary collections have completed or failed. No adoption decision yet. Complete the frozen matrix without retuning. A small hypothetical three-world simulation cannot establish hardware reliability or a lower failure rate. Applied anchor errors come from the rounded M669 command and a checked firmware readback. Every intermediate fit, failure and full command/noise journal is preserved separately from final applied geometry.
+We compare the fixed4×midpoint sensor measurement force with the current5×midpoint rule in six fresh paired HP3 autocalibrations. The nominal and development worlds precede a heldout evaluation pair. All worlds use known30mm radii, zero buildup, no layering or guide friction, native Rust, and seeded Gaussian encoder-read noise. Motor Coulomb and smoothed-stiction factors vary by axis. 3 of six primary collections have completed or failed. No adoption decision yet. Complete the frozen matrix without retuning. A small hypothetical three-world simulation cannot establish hardware reliability or a lower failure rate. Applied anchor errors come from the rounded M669 command and a checked firmware readback. Every intermediate fit, failure and full command/noise journal is preserved separately from final applied geometry.
 
 Topics: HP3, autocalibration, measurement force, motor friction, encoder noise, applied anchors.
 
@@ -22,14 +22,15 @@ Fresh loaded effective defaults were0.001Nm Coulomb and0.0015Nm stiction. The100
 
 ## Applied results
 
-Errors are Euclidean anchor distances in millimetres. RMSE is sqrt(mean of the four squared Euclidean distances). The four-decimal presentation does not increase the precision of M669's0.01mm coordinate rounding. Firmware query and applied command agreement is checked to0.005mm per coordinate, and both geometries are preserved. Sweep counts distinguish dataset sweep pairs from bidirectional physical sub-sweeps.
+Errors are Euclidean anchor distances in millimetres. RMSE is sqrt(mean of the four squared Euclidean distances). The four-decimal presentation does not increase the precision of M669's0.01mm coordinate rounding. Firmware query and applied command agreement is checked to0.005mm per coordinate, and both geometries are preserved. Sweep counts distinguish persisted dataset pairs from completed bidirectional physical sub-sweeps, counted by final point index in all point journals. Started sub-sweeps are separate result fields.
 
 | Run | Outcome | A mm | B mm | C mm | D mm | Max mm | RMSE mm | Every<5 | Anchors>20 | Points | Pair/sub sweeps | Fits | Steps | Sim s | Wall s |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | n-default | accepted_below20 | 2.7594 | 4.5472 | 1.1648 | 1.7423 | 4.5472 | 2.8585 | True | 0 | 140 | 7/14 | 9 | 2156688 | 4313.3760 | 739.4405 |
-| n-candidate | workflow_failure | None | None | None | None | None | None | None | None | 50 | 0/0 | 0 | 1347144 | 2694.2880 | 406.4474 |
+| n-candidate | workflow_failure | not comparable | not comparable | not comparable | not comparable | not comparable | not comparable | None | None | 50 | 0/5 | 0 | 1347144 | 2694.2880 | 406.4474 |
+| d-default | accepted_below20 | 2.4993 | 3.6959 | 3.3660 | 2.8206 | 3.6959 | 3.1302 | True | 0 | 140 | 7/14 | 9 | 2161548 | 4323.0960 | 643.4076 |
 
-nominal: max improvement Nonemm, None%; candidate/default effort 0.6246. Both normal completion=False; both readback checks=False.
+nominal: max improvement not comparablemm, not comparable%; candidate/default effort not comparable. Both normal completion=False; both readback checks=False.
 
 Wall time includes fitting and host scheduling. Jobs run sequentially under a2CPU allocation. Use steps and simulated time for the effort criterion; do not interpret wall-time differences as policy speed effects. Matched seeds share a random-stream prefix, while adaptive workloads consume later noise values at different physical times.
 
@@ -38,7 +39,8 @@ Wall time includes fitting and host scheduling. Jobs run sequentially under a2CP
 Final accepted geometry and intermediate fit accuracy are separate endpoints. Production-valid or solver-success flags do not establish accuracy.
 
 - n-default: 9 fits across 5 iterations, tail maximum 3508.8813mm, 2 fits with any anchor>20mm, 0 invalid-flagged fits, 2 underconstrained-penalty fits; stop=spread-consensus, normal acceptance=True.
-- n-candidate: 0 fits across 0 iterations, tail maximum Nonemm, 0 fits with any anchor>20mm, 0 invalid-flagged fits, 0 underconstrained-penalty fits; stop=None, normal acceptance=False.
+- n-candidate: 0 fits across 0 iterations, tail maximum not comparablemm, 0 fits with any anchor>20mm, 0 invalid-flagged fits, 0 underconstrained-penalty fits; stop=None, normal acceptance=False.
+- d-default: 9 fits across 5 iterations, tail maximum 1911.6000mm, 1 fits with any anchor>20mm, 0 invalid-flagged fits, 1 underconstrained-penalty fits; stop=spread-consensus, normal acceptance=True.
 
 ## Evidence and limits
 

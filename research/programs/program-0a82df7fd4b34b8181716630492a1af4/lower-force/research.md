@@ -31,3 +31,25 @@ Applied per-anchor error mm: None. Maximum None, sqrt(mean of four squared ancho
 50 physical points, 0 sweeps, 0 fits, 1347144 steps, 2694.288 simulated seconds, 406.4474101080002 wall seconds. Wall time depends on host load. Intermediate max tail None mm, invalid fits 0.
 
 Full raw archive includes all fits, dataset, selection log, command/noise journals, initial/terminal native snapshots, invocation, candidate patch, policy/source hashes. SHA256 readback verified every archived file. No omissions.
+
+## Manager steering after nominal transport failure
+
+The nominal candidate failed after50points with M569.3 encoder reply timeout5000ms before fitting. Native error was null, physics exited0, both owned children were absent at17:58:08UTC. No OOM/kill event was observed. Shell reads also stalled, but cumulative throttling and host stalls do not establish cause. Preserve workflow failure and uncertainty. Manager agreed to finish development/evaluation four first, keep report reserve, change no timeout or policy. A seventh unchanged nominal confirmation may be funded separately if useful and cannot fit current launcher deadline. No silent budget extension.
+
+## Reporting count clarification
+
+After the nominal transport failure, the evaluator now counts completed physical sub-sweeps from final step_index in all partial point journals and separately keeps dataset direction entries and started headings. Nominal candidate has5completed of6started physical sub-sweeps despite no finalized dataset. Old raw archives stay immutable. This changes reporting only, with no measurement/force/solver/stopping change.
+
+## Separate follow-up authorized before its execution
+
+Manager decision decision-f6e3ee17d877459b915ada44a1b7944c authorizes at most5worker minutes after all6primary jobs and only with report reserve remaining. Hypothesis: the shared M569.3 bridge silently caps an explicitly longer configured encoder budget at5seconds, causing a recoverable valid delayed response to fail. Bounded discriminator is real-WebSocket stock-vs-fix delayed reply plus effective-default5s, shorter command deadline, missing/disconnected failure and numerical-payload regressions. No extra collection, no primary source changes, no failure removal or hardware-accuracy claim. Primary transport cause remains unestablished.
+
+## d-default
+
+accepted_below20; stop=spread-consensus; normal acceptance=True.
+
+Applied per-anchor error mm: {'A': 2.499299901972569, 'B': 3.695888659558299, 'C': 3.36598989218654, 'D': 2.820638225650294}. Maximum 3.695888659558299, sqrt(mean of four squared anchor distances) 3.1301749527044542. Every<5: True; anchors>20: 0.
+
+140 physical points, 7 sweeps, 9 fits, 2161548 steps, 4323.0960000000005 simulated seconds, 643.4076395029999 wall seconds. Wall time depends on host load. Intermediate max tail 1911.6000238647873 mm, invalid fits 0.
+
+Full raw archive includes all fits, dataset, selection log, command/noise journals, initial/terminal native snapshots, invocation, candidate patch, policy/source hashes. SHA256 readback verified every archived file. No omissions.

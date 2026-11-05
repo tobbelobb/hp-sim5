@@ -5,7 +5,7 @@
     "candidate_max_mm": null,
     "max_improvement_mm": null,
     "max_improvement_percent": null,
-    "effort_ratio": 0.6246355522912911,
+    "effort_ratio": null,
     "completed_both": false,
     "readback_both": false
   }
