@@ -1,5 +1,5 @@
-# Research session catalog
+# Lower-force and encoder reply-budget results
 
-Short abstracts and tested hypotheses from local sessions. Missing or pending summaries are not evidence of completed experiments.
+[Report](report.md), [abstract](abstract.md), [measurements](measurements.json), [budget](budget-ledger.json), [source candidate](source-candidate.json), [combined evidence manifest](combined-review-evidence-manifest.json), [offline recomputation](combined-fixed-checks.json), and [catalog entry](catalog-entry.md).
 
-Regenerate with `.venv/bin/python scripts/research_index.py`.
+Six primary attempts are complete. Force5mid is retained. The separate transport candidate95a0af8f is ready for manager fixed review and integration. The prior four-attempt partial and independent review remain at57658240.

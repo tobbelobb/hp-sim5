@@ -1,0 +1,31 @@
+{
+  "all_owned_test_services_retired": true,
+  "services": [
+    {
+      "manifest": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/manifest.json",
+      "pid": 5518,
+      "pid_exists_now": false
+    },
+    {
+      "manifest": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/manifest.json",
+      "pid": 5522,
+      "pid_exists_now": false
+    },
+    {
+      "manifest": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/manifest.json",
+      "pid": 5534,
+      "pid_exists_now": false
+    },
+    {
+      "manifest": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/manifest.json",
+      "pid": 5538,
+      "pid_exists_now": false
+    }
+  ],
+  "launcher_idle_world_untouched": true,
+  "temporary_worktree_removed": true,
+  "temporary_worktree": "/workspace/hp-sim5-worktrees/encoder-budget-check-b46f63c3",
+  "cleanup_wall_s": 0.7704268169982242,
+  "cleanup_budget_s": 190,
+  "source_candidates_preserved_in_git": true
+}

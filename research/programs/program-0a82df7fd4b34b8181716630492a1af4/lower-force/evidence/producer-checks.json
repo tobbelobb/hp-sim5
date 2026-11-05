@@ -1,0 +1,14 @@
+{
+  "source_candidate": "95a0af8f63f4d0d257629ea7eaaa295c2638f276",
+  "actual_checked_commit": "903b00d47c579bda68425e6000ed16a7341b2813",
+  "documentation_only_after_checks": true,
+  "production_test_blobs_identical": true,
+  "jest_suites_passed": 6,
+  "jest_tests_passed": 45,
+  "headless_tests_passed": 2,
+  "noncollection_verification_steps": 30,
+  "full_autocal_with_fix_tested": false,
+  "force_default_changed": false,
+  "raw_check_logs": "evidence/transport/",
+  "initial_failures_preserved": true
+}

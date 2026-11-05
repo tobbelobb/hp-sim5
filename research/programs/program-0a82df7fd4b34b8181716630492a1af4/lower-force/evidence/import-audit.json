@@ -1,0 +1,260 @@
+{
+  "passed": true,
+  "imports": [
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/harness/proposed_motor_perturbation.mjs",
+      "sha256": "8383b8569be17146559ef73a3c17f40453061bc837e2e00b4210f8b8d395fdf1"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/src/js/cable_joints_3d/ecs.js",
+      "sha256": "08da2eefc2ea519abb662aac7083867832ecd0bcbfccbc8562f12186e70fa702"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/physics-substeps.js",
+      "sha256": "581347f9ee66f5683dd9233c5547fb254ff838cfea541a32c026479020f06ac8"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/node_modules/ws/wrapper.mjs",
+      "sha256": "e37bddaf6d40a3b2ee107906f792cc5117e543cba776fa25f7aeeb3908637f7c"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/headlessWorld.js",
+      "sha256": "5f45f31ca0c0ad69573d4ddaaaf74575c064de01ebd9f01928c3c06c48f71b59"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/line-layering-flags.js",
+      "sha256": "781bcc48027013d70550eecb5ce4f8769645904b6bcd320073b028520d44ed8e"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/closed-loop-flags.js",
+      "sha256": "09b6b7d1e3aba16e37ccbc907955c64b14b0f9a342212a53d3ce72e0db326068"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/externalCommandSocket.js",
+      "sha256": "3c3c0c74ac53ff28999b3cf7460671b81ad7aacd1da9995fdeb8c980fe72e31d"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/rrf/rrfSimulatorBridge.mjs",
+      "sha256": "300791fa6fc2b6f9d1651e6ef1255fa67d74e5f3029eec512e0009f01c30729f"
+    },
+    {
+      "importer": "harness/autocal_headless.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/flightRecorder.js",
+      "sha256": "15b9175540244b43ea8e4094fc716ff7089dd6b59fd53968702e80f3391a68bf"
+    },
+    {
+      "importer": "harness/proposed_motor_perturbation.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/src/js/cable_joints_3d/ecs.js",
+      "sha256": "08da2eefc2ea519abb662aac7083867832ecd0bcbfccbc8562f12186e70fa702"
+    },
+    {
+      "importer": "harness/proposed_motor_perturbation.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/hangprinter_stepper_motor.js",
+      "sha256": "9fbcd8d5d4ae44ce1c984e2dfb4b488de90310c0d0bd7b4ceca4d5bbca108e35"
+    },
+    {
+      "importer": "harness/motor_probe.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/headlessWorld.js",
+      "sha256": "5f45f31ca0c0ad69573d4ddaaaf74575c064de01ebd9f01928c3c06c48f71b59"
+    },
+    {
+      "importer": "harness/motor_probe.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/src/js/cable_joints_3d/ecs.js",
+      "sha256": "08da2eefc2ea519abb662aac7083867832ecd0bcbfccbc8562f12186e70fa702"
+    },
+    {
+      "importer": "harness/motor_probe.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/hp-sim-3d/app/hangprinter_stepper_motor.js",
+      "sha256": "9fbcd8d5d4ae44ce1c984e2dfb4b488de90310c0d0bd7b4ceca4d5bbca108e35"
+    },
+    {
+      "importer": "harness/default/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_utils.mjs",
+      "sha256": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610"
+    },
+    {
+      "importer": "harness/default/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_noise.mjs",
+      "sha256": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f"
+    },
+    {
+      "importer": "harness/default/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/debug_trace.mjs",
+      "sha256": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684"
+    },
+    {
+      "importer": "harness/default/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/simulation_deadline.mjs",
+      "sha256": "72ebc6804a3e7b4ac300b0adb453f14a693a6d3fd6b04d9ddb4f87c10c02bf06"
+    },
+    {
+      "importer": "harness/default/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_utils.mjs",
+      "sha256": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610"
+    },
+    {
+      "importer": "harness/default/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/klipper/klipperMotorAddressConfig.js",
+      "sha256": "dd09a3c2c30aa089cb25f5a981dcd8a06ca080af3c916ae8cc24d4513996bb35"
+    },
+    {
+      "importer": "harness/default/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/klipper/klippy_api_cli_config.mjs",
+      "sha256": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9"
+    },
+    {
+      "importer": "harness/default/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_noise.mjs",
+      "sha256": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f"
+    },
+    {
+      "importer": "harness/default/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/behaviors/slip_recovery.mjs",
+      "sha256": "22732af60c5ade219693eec43ee6c99969fe02d815d9814898ff8de995f7d1fd"
+    },
+    {
+      "importer": "harness/default/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/debug_trace.mjs",
+      "sha256": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684"
+    },
+    {
+      "importer": "harness/default/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/behaviors/force_tuning.mjs",
+      "sha256": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec"
+    },
+    {
+      "importer": "harness/default/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/extended_reference.mjs",
+      "sha256": "9f569720f88397e6ceedcfa873c826f5699c84d4a0d80615c5ed44c7bba25b6f"
+    },
+    {
+      "importer": "harness/default/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/bridge_factory.mjs",
+      "sha256": "f8c1cb2209bf8e8d2e052d42547c34e21d7c5b95cfc44a07145a55a0e7476380"
+    },
+    {
+      "importer": "harness/default/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/debug_trace.mjs",
+      "sha256": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684"
+    },
+    {
+      "importer": "harness/default/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_utils.mjs",
+      "sha256": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610"
+    },
+    {
+      "importer": "harness/default/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/machine_type.mjs",
+      "sha256": "6b926f7944087eac1df65ea2e77938edd869fce18aae541567545736e4f7d5b0"
+    },
+    {
+      "importer": "harness/default/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/klipper/klippy_api_cli_config.mjs",
+      "sha256": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9"
+    },
+    {
+      "importer": "harness/default/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/behaviors/force_tuning.mjs",
+      "sha256": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec"
+    },
+    {
+      "importer": "harness/candidate/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_utils.mjs",
+      "sha256": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610"
+    },
+    {
+      "importer": "harness/candidate/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_noise.mjs",
+      "sha256": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f"
+    },
+    {
+      "importer": "harness/candidate/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/debug_trace.mjs",
+      "sha256": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684"
+    },
+    {
+      "importer": "harness/candidate/uncalibrated_actions.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/simulation_deadline.mjs",
+      "sha256": "72ebc6804a3e7b4ac300b0adb453f14a693a6d3fd6b04d9ddb4f87c10c02bf06"
+    },
+    {
+      "importer": "harness/candidate/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_utils.mjs",
+      "sha256": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610"
+    },
+    {
+      "importer": "harness/candidate/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/klipper/klipperMotorAddressConfig.js",
+      "sha256": "dd09a3c2c30aa089cb25f5a981dcd8a06ca080af3c916ae8cc24d4513996bb35"
+    },
+    {
+      "importer": "harness/candidate/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/klipper/klippy_api_cli_config.mjs",
+      "sha256": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9"
+    },
+    {
+      "importer": "harness/candidate/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_noise.mjs",
+      "sha256": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f"
+    },
+    {
+      "importer": "harness/candidate/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/behaviors/slip_recovery.mjs",
+      "sha256": "22732af60c5ade219693eec43ee6c99969fe02d815d9814898ff8de995f7d1fd"
+    },
+    {
+      "importer": "harness/candidate/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/debug_trace.mjs",
+      "sha256": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684"
+    },
+    {
+      "importer": "harness/candidate/sweep_data_collection.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/behaviors/force_tuning.mjs",
+      "sha256": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec"
+    },
+    {
+      "importer": "harness/candidate/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/extended_reference.mjs",
+      "sha256": "9f569720f88397e6ceedcfa873c826f5699c84d4a0d80615c5ed44c7bba25b6f"
+    },
+    {
+      "importer": "harness/candidate/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/bridge_factory.mjs",
+      "sha256": "f8c1cb2209bf8e8d2e052d42547c34e21d7c5b95cfc44a07145a55a0e7476380"
+    },
+    {
+      "importer": "harness/candidate/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/debug_trace.mjs",
+      "sha256": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684"
+    },
+    {
+      "importer": "harness/candidate/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/encoder_utils.mjs",
+      "sha256": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610"
+    },
+    {
+      "importer": "harness/candidate/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/primitives/machine_type.mjs",
+      "sha256": "6b926f7944087eac1df65ea2e77938edd869fce18aae541567545736e4f7d5b0"
+    },
+    {
+      "importer": "harness/candidate/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/klipper/klippy_api_cli_config.mjs",
+      "sha256": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9"
+    },
+    {
+      "importer": "harness/candidate/collect_sweep_data.mjs",
+      "target": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/autocal/control/behaviors/force_tuning.mjs",
+      "sha256": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec"
+    }
+  ]
+}

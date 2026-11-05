@@ -1,0 +1,94 @@
+{
+  "label": "before",
+  "node_version": "v23.11.1",
+  "fresh_node_process": true,
+  "pid": 5249,
+  "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/integrations/rrf/rrfSimulatorBridge.mjs",
+  "source_sha256": "300791fa6fc2b6f9d1651e6ef1255fa67d74e5f3029eec512e0009f01c30729f",
+  "firmware_http": "local stub, returns ok; no real firmware or physics",
+  "real_websocket": true,
+  "command": "M569.3 P40.0:41.0:42.0:43.0",
+  "command_timeout_ms": 120000,
+  "encoderTimeoutMs": 120000,
+  "delay_ms": 6000,
+  "raw_reply": {
+    "type": "encoder_response",
+    "requestId": 1,
+    "anglesDeg": [
+      12.34,
+      -56.78,
+      90.12,
+      -34.56
+    ]
+  },
+  "result": {
+    "reply": "Error: M569.3: Browser simulator did not answer encoder request (A, B, C, D) within 5000 ms; the browser may be busy or suspended",
+    "motion": [],
+    "rawMotionLines": []
+  },
+  "elapsed_ms": 5009.345351,
+  "events": [
+    {
+      "type": "encoder_request",
+      "elapsed_ms": 67.97102900000002,
+      "payload": {
+        "type": "encoder_request",
+        "requestId": 1,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "type": "encoder_values_captured",
+      "elapsed_ms": 67.98594300000002,
+      "payload": {
+        "type": "encoder_response",
+        "requestId": 1,
+        "anglesDeg": [
+          12.34,
+          -56.78,
+          90.12,
+          -34.56
+        ]
+      },
+      "delay_ms": 6000,
+      "physics_advanced": false
+    },
+    {
+      "type": "firmware_http_stub",
+      "elapsed_ms": 79.21221,
+      "method": "POST",
+      "url": "/machine/code",
+      "body": "M569.3 P40.0:41.0:42.0:43.0",
+      "response": "ok"
+    },
+    {
+      "type": "command_result",
+      "elapsed_ms": 5064.867345000001,
+      "result": {
+        "reply": "Error: M569.3: Browser simulator did not answer encoder request (A, B, C, D) within 5000 ms; the browser may be busy or suspended",
+        "motion": [],
+        "rawMotionLines": []
+      },
+      "command_elapsed_ms": 5009.345351
+    },
+    {
+      "type": "encoder_reply_sent",
+      "elapsed_ms": 6069.528609999999,
+      "payload": {
+        "type": "encoder_response",
+        "requestId": 1,
+        "anglesDeg": [
+          12.34,
+          -56.78,
+          90.12,
+          -34.56
+        ]
+      }
+    }
+  ]
+}

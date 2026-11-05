@@ -1,0 +1,11 @@
+{
+  "started_unix": 1793915976.5614274,
+  "started_utc": "2026-11-05T21:59:36.561432+00:00",
+  "focused_budget_s": 300,
+  "protocol": "Fresh Node process each arm, real WebSocket, local firmware HTTP stub returns ok, same M569.3 command/120000ms configured and command budgets, exact same finite payload, 6000ms controlled response delay after values captured, zero physics. Stock should time out at5000ms. Fixed should return payload at6000ms. No original host-cause claim; no full-autocal confirmation.",
+  "focused_checks_completed_within_s": 262.5,
+  "checks_complete": true,
+  "receipt_written_unix": 1793916292.419639,
+  "receipt_elapsed_s": 315.85821175575256,
+  "focus_elapsed_upper_bound_s": 262.5
+}

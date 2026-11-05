@@ -18,5 +18,15 @@
     "effort_ratio": 1.0641170124373829,
     "completed_both": true,
     "readback_both": true
+  },
+  {
+    "world": "evaluation",
+    "default_max_mm": 3.4115644622382355,
+    "candidate_max_mm": 2.7517842429905643,
+    "max_improvement_mm": 0.6597802192476712,
+    "max_improvement_percent": 19.33952081370924,
+    "effort_ratio": 1.0708508333542914,
+    "completed_both": true,
+    "readback_both": true
   }
 ]

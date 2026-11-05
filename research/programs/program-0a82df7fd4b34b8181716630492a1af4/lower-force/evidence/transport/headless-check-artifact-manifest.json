@@ -1,0 +1,151 @@
+{
+  "gzip_sha256": "6460449d08c7bf72a79dba2240be165b6ae779a6d232bbe79274c16a835d97ee",
+  "files": [
+    {
+      "path": "checks/headless/test_headless_geometry_and_con0/sweeps.headless/firmware-config.g",
+      "bytes": 4727,
+      "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8"
+    },
+    {
+      "path": "checks/headless/test_headless_geometry_and_con0/sweeps.headless/manifest.json",
+      "bytes": 1463,
+      "sha256": "1b8a7a464b5c59157e245bc4a127871f3ba2ba4a6c6d1374c434ebeb0fc5cf55"
+    },
+    {
+      "path": "checks/headless/test_headless_geometry_and_con0/sweeps.headless/physics.log",
+      "bytes": 1506,
+      "sha256": "87828e9daf7c2a57b856220546a947ebdeedffca17135cee22a1b137c1f1100d"
+    },
+    {
+      "path": "checks/headless/test_headless_geometry_and_con0/sweeps.headless/rrf.log",
+      "bytes": 535,
+      "sha256": "2b70cca8135fd605ee8191f467a0e212c2cac57b385683e2736a7ac9d67d81f7"
+    },
+    {
+      "path": "checks/headless/test_headless_geometry_and_con0/sweeps.headless/scene.usda",
+      "bytes": 22837,
+      "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+    },
+    {
+      "path": "checks/headless/test_headless_recording_modes_0/sweeps.headless/firmware-config.g",
+      "bytes": 4727,
+      "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8"
+    },
+    {
+      "path": "checks/headless/test_headless_recording_modes_0/sweeps.headless/manifest.json",
+      "bytes": 1463,
+      "sha256": "2d0551a4b2039f7011394f078b05f2d29e43ed2fc48b95c73e79e570c6f10bd4"
+    },
+    {
+      "path": "checks/headless/test_headless_recording_modes_0/sweeps.headless/physics.log",
+      "bytes": 1506,
+      "sha256": "87828e9daf7c2a57b856220546a947ebdeedffca17135cee22a1b137c1f1100d"
+    },
+    {
+      "path": "checks/headless/test_headless_recording_modes_0/sweeps.headless/rrf.log",
+      "bytes": 758,
+      "sha256": "e276141f0c9ca02802ac883946d0155ca1110752a8f30d2387590d872fd27638"
+    },
+    {
+      "path": "checks/headless/test_headless_recording_modes_0/sweeps.headless/scene.usda",
+      "bytes": 22837,
+      "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/baked-scene-1.usda",
+      "bytes": 23767,
+      "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/baked-scene-2.usda",
+      "bytes": 23780,
+      "sha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/baked-scene.usda",
+      "bytes": 23767,
+      "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/clock.json",
+      "bytes": 2979,
+      "sha256": "29ac8beb10e8c316f4ca758abd1a129a38b4605d265bca6dbe44a4ac60daccb2"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/events.jsonl",
+      "bytes": 4016,
+      "sha256": "861ae151b2101d1ed88c5bda61c6baa5b016d40c09bee2037bbb8a4744af99c3"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/firmware-config.g",
+      "bytes": 4727,
+      "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/manifest.json",
+      "bytes": 5065,
+      "sha256": "0a8087402b2357404a0bfea7565de5aa669cd90731dbee1cd2de3ba794290b67"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/physics.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/rrf.log",
+      "bytes": 1093,
+      "sha256": "01a7853bb64a9f880f6bca17af5163073d562781122de241806f2a7ca5d1292f"
+    },
+    {
+      "path": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/scene.usda",
+      "bytes": 22837,
+      "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/baked-scene-1.usda",
+      "bytes": 23767,
+      "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/baked-scene.usda",
+      "bytes": 23767,
+      "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/clock.json",
+      "bytes": 3005,
+      "sha256": "f4055eb4659ff7e2a1f8b7b18258fca628dba2a405f82fb0f613db6a7b822a82"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/events.jsonl",
+      "bytes": 4510,
+      "sha256": "367aacd0e24921abdd9dafe7a9cd27f25e0e375c4ca608d70b215f9caaca2fef"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/firmware-config.g",
+      "bytes": 4727,
+      "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/manifest.json",
+      "bytes": 5091,
+      "sha256": "267eccd9e00c507f6d32e0ef08a9e460ed2e10b57793675b97175345aab3bb3c"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/physics.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/rrf.log",
+      "bytes": 1322,
+      "sha256": "6a7d77838a7c491b75ae730ea52afd59a3153f59bd506c628dac2496c2a7a955"
+    },
+    {
+      "path": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/scene.usda",
+      "bytes": 22837,
+      "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+    }
+  ],
+  "verified_by_readback": true
+}

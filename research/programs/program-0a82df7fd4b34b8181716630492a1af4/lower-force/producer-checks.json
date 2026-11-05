@@ -1,64 +1,14 @@
 {
-  "passed": true,
-  "utc": "2026-11-05T18:36:46.710977+00:00",
-  "base_commit": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
-  "code_candidate_commit": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
-  "code_readiness": "report_only",
-  "production_diff_empty": true,
-  "offline_fixed_evidence_recomputation": "passed",
-  "compact_gzip_sha256": "7c72ee22754dae632c50f905e5409ce616032480eaaf3666b2dbdb68682da973",
-  "compact_gzip_bytes": 3028191,
-  "compact_files_verified": 285,
-  "guard_suite": "4passed/4total",
-  "calibration_worlds_tested": 2,
-  "activation_probe_plants": 3,
-  "evaluation_calibration_pair": "NOT TESTED",
-  "transport_discriminator": "NOT TESTED",
-  "force_default_adoption": "blocked by preserved nominal workflow failure",
-  "cleanup": [
-    {
-      "run": "n-default",
-      "owned_children_present": [],
-      "physics_returncode": 0
-    },
-    {
-      "run": "n-candidate",
-      "owned_children_present": [],
-      "physics_returncode": 0
-    },
-    {
-      "run": "d-default",
-      "owned_children_present": [],
-      "physics_returncode": 0
-    },
-    {
-      "run": "d-candidate",
-      "owned_children_present": [],
-      "physics_returncode": 0
-    }
-  ],
-  "budget": {
-    "limit": {
-      "collections": 7,
-      "fresh_fits": 80,
-      "physics_steps": 28000000,
-      "physical_points": 2000,
-      "steps_per_collection": 4000000,
-      "sim_s_per_collection": 8000,
-      "max_auto_iterations": 6,
-      "wall_minutes": 100,
-      "report_reserve_minutes": 10
-    },
-    "completed_or_failed_collections": 4,
-    "fresh_fits": 27,
-    "physics_steps": 7968523,
-    "physical_points": 470,
-    "torque_probe_steps": 3003,
-    "runs": [
-      "n-default",
-      "n-candidate",
-      "d-default",
-      "d-candidate"
-    ]
-  }
+  "source_candidate": "95a0af8f63f4d0d257629ea7eaaa295c2638f276",
+  "actual_checked_commit": "903b00d47c579bda68425e6000ed16a7341b2813",
+  "documentation_only_after_checks": true,
+  "production_test_blobs_identical": true,
+  "jest_suites_passed": 6,
+  "jest_tests_passed": 45,
+  "headless_tests_passed": 2,
+  "noncollection_verification_steps": 30,
+  "full_autocal_with_fix_tested": false,
+  "force_default_changed": false,
+  "raw_check_logs": "evidence/transport/",
+  "initial_failures_preserved": true
 }

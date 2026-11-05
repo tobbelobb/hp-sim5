@@ -3,22 +3,25 @@
     "collections": 7,
     "fresh_fits": 80,
     "physics_steps": 28000000,
-    "physical_points": 2000,
-    "steps_per_collection": 4000000,
-    "sim_s_per_collection": 8000,
-    "max_auto_iterations": 6,
-    "wall_minutes": 100,
-    "report_reserve_minutes": 10
+    "physical_points": 2000
   },
-  "completed_or_failed_collections": 4,
-  "fresh_fits": 27,
-  "physics_steps": 7968523,
-  "physical_points": 470,
+  "completed_or_failed_collections": 7,
+  "primary_attempts": 6,
+  "invalid_setup_collections": 1,
+  "fresh_fits": 47,
+  "physics_steps": 12651622,
+  "verification_physics_steps": 30,
+  "physical_points": 750,
   "torque_probe_steps": 3003,
   "runs": [
     "n-default",
     "n-candidate",
     "d-default",
-    "d-candidate"
-  ]
+    "d-candidate",
+    "invalid-path-startup",
+    "e-default",
+    "e-candidate"
+  ],
+  "remaining_optional_confirmation": false,
+  "allocation_decision": "Manager counted invalid setup as collection 5. Corrected evaluation pair use remaining slots 6 and 7. Full-autocal transport confirmation removed; no eighth collection."
 }

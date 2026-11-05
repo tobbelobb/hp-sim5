@@ -1,0 +1,13 @@
+PASS tests/js/rrf/rrfSimulatorBridge.test.js (14.961 s)
+PASS tests/js/sweep_data_collection.test.js
+PASS autocal/control/tests/primitives/uncalibrated_actions.test.mjs
+PASS autocal/control/tests/primitives/wait_for_stable_encoders.test.mjs
+PASS autocal/control/tests/primitives/fixed_anchor_guard.test.mjs
+PASS autocal/control/tests/primitives/headless_bridge.test.mjs
+
+Test Suites: 6 passed, 6 total
+Tests:       45 passed, 45 total
+Snapshots:   0 total
+Time:        15.618 s, estimated 22 s
+Ran all test suites matching /tests\/js\/rrf\/rrfSimulatorBridge.test.js|tests\/js\/sweep_data_collection.test.js|autocal\/control\/tests\/primitives\/headless_bridge.test.mjs|autocal\/control\/tests\/primitives\/uncalibrated_actions.test.mjs|autocal\/control\/tests\/primitives\/fixed_anchor_guard.test.mjs|autocal\/control\/tests\/primitives\/wait_for_stable_encoders.test.mjs/i.
+Test results written to: ../../hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/evidence/transport/jest-results.json

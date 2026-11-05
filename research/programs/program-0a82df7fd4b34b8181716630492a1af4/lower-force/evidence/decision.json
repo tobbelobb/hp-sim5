@@ -1,18 +1,18 @@
 {
   "supported": false,
-  "finding": "inconclusive",
-  "production_force_adoption": "blocked",
-  "decision": "Default force adoption is blocked by the preserved nominal candidate workflow failure. Evaluation pair NOT TESTED. The manager will fund only the two unrun evaluation jobs and focused transport follow-up in a fresh bounded continuation. No successful run will be repeated.",
+  "finding": "rejected",
+  "production_force_adoption": "rejected",
+  "decision": "Keep the production 5mid measurement-force default. The preserved nominal 4mid workflow failure violates the no-new-failure gate. No later pass can erase it.",
   "tested_primary_runs": [
     "n-default",
     "n-candidate",
     "d-default",
-    "d-candidate"
-  ],
-  "unrun_primary_runs": [
+    "d-candidate",
     "e-default",
     "e-candidate"
   ],
+  "unrun_primary_runs": [],
+  "evaluation_meaningful_margin_met": true,
   "pairs": [
     {
       "world": "nominal",
@@ -33,20 +33,36 @@
       "effort_ratio": 1.0641170124373829,
       "completed_both": true,
       "readback_both": true
+    },
+    {
+      "world": "evaluation",
+      "default_max_mm": 3.4115644622382355,
+      "candidate_max_mm": 2.7517842429905643,
+      "max_improvement_mm": 0.6597802192476712,
+      "max_improvement_percent": 19.33952081370924,
+      "effort_ratio": 1.0708508333542914,
+      "completed_both": true,
+      "readback_both": true
     }
   ],
-  "partial_control": {
-    "assessed_utc": "2026-11-05T18:29:40.720987+00:00",
-    "manager_instruction": "Controlled four-primary partial if both evaluation jobs plus pushes and10minreportreserve cannot fit conservatively; no deadline extension. Manager funds only unrun eval pair and focused transport follow-up.",
-    "observed_slowest_completed_job_wall_s": 913.0879748390003,
-    "conservative_required_remaining_minutes": 48.43626582796668,
-    "approximate_live_remaining_minutes": 40,
-    "unrun_primary_runs": [
-      "e-default",
-      "e-candidate"
-    ],
-    "optional_transport_followup": "NOT TESTED; requires allsixprimary jobs first",
-    "seventh_collection": "unused; confirmation cannot erase nominalfailure",
-    "production_force_adoption": "blocked; nominalworkflowfailure retained"
-  }
+  "transport": {
+    "tested": true,
+    "passed": true,
+    "before_elapsed_ms": 5009.345351,
+    "after_elapsed_ms": 6018.729039,
+    "same_raw_reply": true,
+    "fresh_processes": true,
+    "firmware_http_stub": true,
+    "real_websocket": true,
+    "physics_steps": 0,
+    "full_autocal_confirmation": false,
+    "candidate_commit": "95a0af8f63f4d0d257629ea7eaaa295c2638f276",
+    "base_commit": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+    "report": "The real WebSocket M569.3 contrast used separate fresh Node processes, a local firmware HTTP stub returning ok, and explicit 120000 ms encoder and command budgets. Both arms received the exact same finite A/B/C/D response, delayed 6000 ms after its values were captured. Stock source 300791fa failed after 5009.345 ms with a 5000 ms timeout. Patched source bbc06bf8 returned the unchanged payload after 6018.729 ms. No physics ran. This controlled delay does not establish the historical nominal timeout's host cause.\n\nThe patch honors the configured encoder reply budget, bounded by any shorter command deadline. The command default remains effectively 5000 ms, and the direct helper retains its separate 2000 ms default. Tests cover delayed numeric replies, the five-second default, shorter command and encoder budgets, missing replies, disconnected clients and concurrent request IDs. A new query with no connected client fails immediately. An in-flight disconnect retains the existing behavior of failing at its configured pending-request deadline.\n\nAll 45 JavaScript checks and two noncollection headless checks passed on exact code-only commit 903b00d47c579bda68425e6000ed16a7341b2813, directly based on a68d6adf. The final candidate 95a0af8f63f4d0d257629ea7eaaa295c2638f276 changes only README wording after those checks. Its production and regression-test blobs are byte-identical to the checked commit. The first after-contrast ran on c8aa142a, whose production bridge blob is also identical. The receipts record the actual commits rather than attributing earlier tests to a later commit.\n\nThe first pending-disconnect test assumed immediate rejection and failed. Its corrected assertion preserves the existing configured-deadline behavior. Two headless setup errors, a missing artifact parent directory and missing native build metadata in the verification checkout, are preserved with their raw logs. No native rebuild occurred. Final headless checks used 30 physics steps and no calibration fits or points. The focused development and checks completed within 262.5 seconds of the 300-second budget. No full-autocal-with-fix confirmation ran because the invalid startup consumed the optional collection slot. No force, motor, physics or physical guard change is included.",
+    "tested_candidate_commit": "903b00d47c579bda68425e6000ed16a7341b2813"
+  },
+  "invalid_setup_runs": [
+    "invalid-path-startup"
+  ],
+  "original_partial_review_commit": "57658240"
 }

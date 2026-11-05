@@ -1,0 +1,264 @@
+{
+  "session": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52",
+  "source_revision": "131acef1f7d1ddee22b657d920231a32d60e6c6f",
+  "omitted": [],
+  "groups": [
+    {
+      "name": "invalid-path-startup",
+      "uncompressed_bytes": 1195406,
+      "gzip_sha256": "2d559244080de912eb94c134e65bb2bfe172330fe563b0991fecd019009b846c",
+      "files": [
+        {
+          "path": "runs/invalid-path-startup/actual-imported-old-motor-module.mjs",
+          "bytes": 2052,
+          "sha256": "4d70734cb761106fb1f17bd0d7b1885001d967bf4af25fcecf50a1cc2c2f81ae"
+        },
+        {
+          "path": "runs/invalid-path-startup/candidate.patch",
+          "bytes": 742,
+          "sha256": "3556ce11a367d5c60662c1e71e5d441f799bdd7c8e1ce950bd41f4b3afc1ce8b"
+        },
+        {
+          "path": "runs/invalid-path-startup/collector-policy/collect_sweep_data.mjs",
+          "bytes": 29208,
+          "sha256": "52ed892b29afa3c7941af877be10216ebc3cd9dee81665d38e25f2a85025c9e6"
+        },
+        {
+          "path": "runs/invalid-path-startup/collector-policy/sweep_data_collection.mjs",
+          "bytes": 65075,
+          "sha256": "d3602d643d20d508f09fe4f085efd2bcd364aaf5637b9d1983a5d6914462fd1c"
+        },
+        {
+          "path": "runs/invalid-path-startup/collector-policy/uncalibrated_actions.mjs",
+          "bytes": 25282,
+          "sha256": "8248a1a95ce1010a1b3dd617096ea8152e05bd7ebff51135968f48bdd9fb7129"
+        },
+        {
+          "path": "runs/invalid-path-startup/command.stdout.log",
+          "bytes": 2131,
+          "sha256": "29223a49670d3e584d7459b65fa6484ce05b87ab8fc274fdcae2628b43ead191"
+        },
+        {
+          "path": "runs/invalid-path-startup/failure.json",
+          "bytes": 44,
+          "sha256": "3902cd2849e7df76a4af57e9fbaac8f4c24c7f62b8419dbddc834eb8e47eb7b1"
+        },
+        {
+          "path": "runs/invalid-path-startup/fit-ledger.json",
+          "bytes": 2488,
+          "sha256": "1bfcfb7fe3669d48f8879cdcbbc024f474ca981e926c8ca2c9e15b6dc8c4fef3"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/analyze.py",
+          "bytes": 6051,
+          "sha256": "b601822425ead251286c4a5ac3b43f889477e7311ca9adb60980f74379f45ee4"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/autocal_headless.mjs",
+          "bytes": 16337,
+          "sha256": "e1281a5317c294393a661952ba00f70d97604b9e67ecae6d5b0a0870fd98f60f"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/candidate/collect_sweep_data.mjs",
+          "bytes": 29208,
+          "sha256": "52ed892b29afa3c7941af877be10216ebc3cd9dee81665d38e25f2a85025c9e6"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/candidate/sweep_data_collection.mjs",
+          "bytes": 65075,
+          "sha256": "d3602d643d20d508f09fe4f085efd2bcd364aaf5637b9d1983a5d6914462fd1c"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/candidate/uncalibrated_actions.mjs",
+          "bytes": 25282,
+          "sha256": "1640d68508f8688f4cc6029ed528fa2c181cd1e50298928dcb62a74fe0fee542"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/default/collect_sweep_data.mjs",
+          "bytes": 29208,
+          "sha256": "52ed892b29afa3c7941af877be10216ebc3cd9dee81665d38e25f2a85025c9e6"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/default/sweep_data_collection.mjs",
+          "bytes": 65075,
+          "sha256": "d3602d643d20d508f09fe4f085efd2bcd364aaf5637b9d1983a5d6914462fd1c"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/default/uncalibrated_actions.mjs",
+          "bytes": 25282,
+          "sha256": "8248a1a95ce1010a1b3dd617096ea8152e05bd7ebff51135968f48bdd9fb7129"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/development.json",
+          "bytes": 713,
+          "sha256": "d1b4e9ce348798084962500372824eca4824f35327e6880f243922b008ca24ee"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/evaluation.json",
+          "bytes": 714,
+          "sha256": "905f65cd9576b662578400e3446039a67b88dc6199249cc3acebe13c0a780188"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/hp3-stock.usda",
+          "bytes": 22837,
+          "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/motor_probe.mjs",
+          "bytes": 3565,
+          "sha256": "8928a4779130f0ff5b84eb8ddce3ddf4c3c7964c9b6cf48e32b04bb835fcd971"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/nominal.json",
+          "bytes": 697,
+          "sha256": "d378c54d89a7084f64e440f51570744b356249d794037eb2393f91503971bb3e"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/proposed_motor_perturbation.mjs",
+          "bytes": 2052,
+          "sha256": "8383b8569be17146559ef73a3c17f40453061bc837e2e00b4210f8b8d395fdf1"
+        },
+        {
+          "path": "runs/invalid-path-startup/harness-source/run.py",
+          "bytes": 3926,
+          "sha256": "e3655aaa645265b658fd90854a43f19f50c63539f77dc1e3efc160dd8a20b79b"
+        },
+        {
+          "path": "runs/invalid-path-startup/invalid-setup.json",
+          "bytes": 241,
+          "sha256": "3a4aa415c1d817c90ac8d705d04a6ca795fbef2586eaf277029e223ab82e5482"
+        },
+        {
+          "path": "runs/invalid-path-startup/invocation.json",
+          "bytes": 2242,
+          "sha256": "3978703d7473cae495c0def7c76383282854443b797b38de51ad87ce7dcedfe7"
+        },
+        {
+          "path": "runs/invalid-path-startup/policy-frozen.json",
+          "bytes": 8738,
+          "sha256": "4779b00bc1e60ca2296e6ba50c0f4fee793f088aa7b231f2882596c0dc6baac5"
+        },
+        {
+          "path": "runs/invalid-path-startup/runner-snapshot.py",
+          "bytes": 3926,
+          "sha256": "e3655aaa645265b658fd90854a43f19f50c63539f77dc1e3efc160dd8a20b79b"
+        },
+        {
+          "path": "runs/invalid-path-startup/service-snapshot.mjs",
+          "bytes": 16222,
+          "sha256": "3ff385a1ea7c98590041892da1091dee1e63e446ffcbdc37c355f385f7bb8924"
+        },
+        {
+          "path": "runs/invalid-path-startup/setup-evidence/callsite-audit.md",
+          "bytes": 1728,
+          "sha256": "bd273a497ca3550caafd37d80e8b6a1fa9b9e15c4ba82b6ac77f35077a338998"
+        },
+        {
+          "path": "runs/invalid-path-startup/setup-evidence/motor-probe.json",
+          "bytes": 21407,
+          "sha256": "4be140b9a873bb1873ca8b52c23ee66d5b46ede83f58c4524a9310107260c70e"
+        },
+        {
+          "path": "runs/invalid-path-startup/setup-evidence/package_run.py",
+          "bytes": 4804,
+          "sha256": "89da65e40b9a87de947749a90b6274dd5618e6111d7d9db4375799d1dea1f2c1"
+        },
+        {
+          "path": "runs/invalid-path-startup/setup-evidence/preflight.json",
+          "bytes": 12833,
+          "sha256": "6caabf2de753c1ff6c027c00dd53521f488521711aa8501f4d0f72b1decb7c40"
+        },
+        {
+          "path": "runs/invalid-path-startup/setup-evidence/socket-probe.json",
+          "bytes": 306,
+          "sha256": "7d93f75056ba09073b9e8f4bf3d0808d2a58b90e210405384a15952a82db1a45"
+        },
+        {
+          "path": "runs/invalid-path-startup/setup-evidence/verify_result.py",
+          "bytes": 3023,
+          "sha256": "81b95be91325d01f5d5c29d08e152b8b49238248cdb29a45c77b4ac8c64a2afa"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.bootstrap_cfg.txt",
+          "bytes": 30,
+          "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.full_auto.log",
+          "bytes": 1543,
+          "sha256": "96b7959db805eb241cb5325af6dad65774cabedf458dd8619c60959e5e39c7ee"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/baked-scene.usda",
+          "bytes": 23767,
+          "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/clock.json",
+          "bytes": 3016,
+          "sha256": "be82888e28123d74bc068f0a3b30576c2d6ee5cdf01b80c1fda81485a919e1f2"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/events.jsonl",
+          "bytes": 586762,
+          "sha256": "df85202cc1285eb4b056410fa77883ea292efc4a6e2fe9da3c318132ad267467"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/firmware-config.g",
+          "bytes": 4727,
+          "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/initial-native.json",
+          "bytes": 7440,
+          "sha256": "e322518f5c1fa48ba9ec3f754396dd28a95fce921b2007158466ec8f18d9fd52"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/intervention-native.json",
+          "bytes": 6790,
+          "sha256": "ffbf753716dc9168aba5d547d2edcf00e38fe653c2e7cdf22378080b2186417b"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/manifest.json",
+          "bytes": 5934,
+          "sha256": "b5014d775ca7c262c083229688d45c9646e72883ad3fa2278f695c6c370a0526"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/motor-selection.json",
+          "bytes": 2,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/physics.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/rrf.log",
+          "bytes": 5007,
+          "sha256": "3f7d529edcf73235d0fca6c76f4b4ccfd22812f23878d7a8c573058b5512cf3e"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/scene.usda",
+          "bytes": 22837,
+          "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+        },
+        {
+          "path": "runs/invalid-path-startup/sweeps.headless/terminal-native.json",
+          "bytes": 29037,
+          "sha256": "3fff53ecd4d23ae1c4b1ab0649be51ba6ef4cc50f1410a989b58094e970c6809"
+        }
+      ],
+      "parts": [
+        {
+          "path": "raw-run.tar.gz",
+          "bytes": 214487,
+          "sha256": "2d559244080de912eb94c134e65bb2bfe172330fe563b0991fecd019009b846c"
+        }
+      ]
+    }
+  ],
+  "verified_by_readback": true,
+  "implementation_base": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+  "metadata_correction": "source_revision corrected from inherited implementation-base label to actual manifest Git revision; raw archive bytes unchanged."
+}

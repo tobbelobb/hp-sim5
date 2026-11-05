@@ -1,0 +1,128 @@
+{
+  "passed": true,
+  "table_rows_contiguous": true,
+  "one_hypothesis_section": true,
+  "report_self_links_removed": true,
+  "relative_links_resolve": [
+    {
+      "source": "report.md",
+      "target": "measurements.json"
+    },
+    {
+      "source": "report.md",
+      "target": "evidence/transport-summary.json"
+    },
+    {
+      "source": "report.md",
+      "target": "research.md"
+    },
+    {
+      "source": "report.md",
+      "target": "policy-frozen.json"
+    },
+    {
+      "source": "report.md",
+      "target": "budget-ledger.json"
+    },
+    {
+      "source": "report.md",
+      "target": "policy-frozen.json"
+    },
+    {
+      "source": "report.md",
+      "target": "measurements.json"
+    },
+    {
+      "source": "report.md",
+      "target": "pairs.json"
+    },
+    {
+      "source": "report.md",
+      "target": "budget-ledger.json"
+    },
+    {
+      "source": "report.md",
+      "target": "research.md"
+    },
+    {
+      "source": "report.md",
+      "target": "CONTINUE.md"
+    },
+    {
+      "source": "abstract.md",
+      "target": "measurements.json"
+    },
+    {
+      "source": "abstract.md",
+      "target": "evidence/transport-summary.json"
+    },
+    {
+      "source": "abstract.md",
+      "target": "report.md"
+    },
+    {
+      "source": "abstract.md",
+      "target": "research.md"
+    },
+    {
+      "source": "abstract.md",
+      "target": "policy-frozen.json"
+    },
+    {
+      "source": "abstract.md",
+      "target": "budget-ledger.json"
+    },
+    {
+      "source": "README.md",
+      "target": "report.md"
+    },
+    {
+      "source": "README.md",
+      "target": "measurements.json"
+    },
+    {
+      "source": "README.md",
+      "target": "budget-ledger.json"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "./"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "abstract.md"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "report.md"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "research.md"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "measurements.json"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "report.md"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "report.md"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "research.md"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "policy-frozen.json"
+    },
+    {
+      "source": "catalog-entry.md",
+      "target": "budget-ledger.json"
+    }
+  ]
+}

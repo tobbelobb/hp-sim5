@@ -1,0 +1,32 @@
+FAIL tests/js/rrf/rrfSimulatorBridge.test.js (19.681 s)
+  ● M569.3 encoder reply budgets › disconnecting a client retires a pending long-budget request
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      229 |   });
+      230 |
+    > 231 |   test('disconnecting a client retires a pending long-budget request', async () => {
+          |   ^
+      232 |     await withCommandFixture({ encoderTimeoutMs: 120000 }, (_request, socket, later) => {
+      233 |       later(() => socket.close(), 20);
+      234 |     }, async context => {
+
+      at test (tests/js/rrf/rrfSimulatorBridge.test.js:231:3)
+      at Object.describe (tests/js/rrf/rrfSimulatorBridge.test.js:196:1)
+
+PASS autocal/control/tests/primitives/uncalibrated_actions.test.mjs
+PASS autocal/control/tests/primitives/wait_for_stable_encoders.test.mjs
+PASS tests/js/sweep_data_collection.test.js
+PASS autocal/control/tests/primitives/fixed_anchor_guard.test.mjs
+PASS autocal/control/tests/primitives/headless_bridge.test.mjs
+
+Test Suites: 1 failed, 5 passed, 6 total
+Tests:       1 failed, 44 passed, 45 total
+Snapshots:   0 total
+Time:        21.314 s
+Ran all test suites matching /tests\/js\/rrf\/rrfSimulatorBridge.test.js|tests\/js\/sweep_data_collection.test.js|autocal\/control\/tests\/primitives\/headless_bridge.test.mjs|autocal\/control\/tests\/primitives\/uncalibrated_actions.test.mjs|autocal\/control\/tests\/primitives\/fixed_anchor_guard.test.mjs|autocal\/control\/tests\/primitives\/wait_for_stable_encoders.test.mjs/i.
+Test results written to: ../../hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/evidence/transport/jest-results.json
+Jest did not exit one second after the test run has completed.
+
+'This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.

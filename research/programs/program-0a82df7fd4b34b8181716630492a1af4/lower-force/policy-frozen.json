@@ -32,7 +32,7 @@
       },
       "sigma_deg": 0.03,
       "noise_seed": 4001,
-      "scene": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/harness/hp3-stock.usda",
+      "scene": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/harness/hp3-stock.usda",
       "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
     },
     {
@@ -64,7 +64,7 @@
       },
       "sigma_deg": 0.03,
       "noise_seed": 4101,
-      "scene": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/harness/hp3-stock.usda",
+      "scene": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/harness/hp3-stock.usda",
       "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
     },
     {
@@ -96,7 +96,7 @@
       },
       "sigma_deg": 0.05,
       "noise_seed": 4201,
-      "scene": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/harness/hp3-stock.usda",
+      "scene": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/harness/hp3-stock.usda",
       "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
     }
   ],
@@ -138,7 +138,39 @@
     "scripts/autocal_headless.mjs": "6948f07ffd4bfd566f24bf5d1669f99200372903056ce49c4856b0f4e4ad1959",
     "autocal/autocal.py": "c360119fa34159cd34365a646f669bbefcb6c455c6e7b48f7a39f48cb98903b5",
     "autocal/headless_sim.py": "36b3df64ee939bca133ff87fd9d0c8edabdf8415fe7cbd0e89171f4ba2d595fa",
-    "src/wasm/cable_solver/target/native/physics.node": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+    "src/wasm/cable_solver/target/native/physics.node": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+    "integrations/rrf/rrfSimulatorBridge.mjs": "300791fa6fc2b6f9d1651e6ef1255fa67d74e5f3029eec512e0009f01c30729f"
   },
-  "harness_reconciliation": "Rebuilt collector copies from current a68d6adf. Rebased every import to current worktree for component identity. Reapplied only motor/noise and passive snapshot instrumentation to current upstream service, retaining nonfatal recorder behavior. Old prepare.py never run."
+  "harness_reconciliation": "Path-only rebasing of saved current a68d6adf harness to this worktree and session. Production upstream files and native bytes equal original primary source. ECS imports all point into current worktree. Existing 3003-step probe reused. No prepare.",
+  "continuation_frozen_utc": "2026-11-05T21:32:50.331481+00:00",
+  "continuation_source_revision": "131acef1f7d1ddee22b657d920231a32d60e6c6f",
+  "continuation_session": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52",
+  "remaining_budget": {
+    "collections": 3,
+    "fresh_fits": 53,
+    "physics_steps": 20031477,
+    "physical_points": 1530,
+    "wall_minutes": 80,
+    "report_reserve_minutes": 10
+  },
+  "prior_partial_review_commit": "57658240",
+  "continuation_hashes": {
+    "harness/evaluation.json": "905f65cd9576b662578400e3446039a67b88dc6199249cc3acebe13c0a780188",
+    "harness/hp3-stock.usda": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "harness/run.py": "e3655aaa645265b658fd90854a43f19f50c63539f77dc1e3efc160dd8a20b79b",
+    "harness/nominal.json": "d378c54d89a7084f64e440f51570744b356249d794037eb2393f91503971bb3e",
+    "harness/autocal_headless.mjs": "e1281a5317c294393a661952ba00f70d97604b9e67ecae6d5b0a0870fd98f60f",
+    "harness/proposed_motor_perturbation.mjs": "8383b8569be17146559ef73a3c17f40453061bc837e2e00b4210f8b8d395fdf1",
+    "harness/development.json": "d1b4e9ce348798084962500372824eca4824f35327e6880f243922b008ca24ee",
+    "harness/motor_probe.mjs": "8928a4779130f0ff5b84eb8ddce3ddf4c3c7964c9b6cf48e32b04bb835fcd971",
+    "harness/analyze.py": "b601822425ead251286c4a5ac3b43f889477e7311ca9adb60980f74379f45ee4",
+    "harness/default/uncalibrated_actions.mjs": "8248a1a95ce1010a1b3dd617096ea8152e05bd7ebff51135968f48bdd9fb7129",
+    "harness/default/sweep_data_collection.mjs": "d3602d643d20d508f09fe4f085efd2bcd364aaf5637b9d1983a5d6914462fd1c",
+    "harness/default/collect_sweep_data.mjs": "52ed892b29afa3c7941af877be10216ebc3cd9dee81665d38e25f2a85025c9e6",
+    "harness/candidate/uncalibrated_actions.mjs": "1640d68508f8688f4cc6029ed528fa2c181cd1e50298928dcb62a74fe0fee542",
+    "harness/candidate/sweep_data_collection.mjs": "d3602d643d20d508f09fe4f085efd2bcd364aaf5637b9d1983a5d6914462fd1c",
+    "harness/candidate/collect_sweep_data.mjs": "52ed892b29afa3c7941af877be10216ebc3cd9dee81665d38e25f2a85025c9e6"
+  },
+  "continuation_refrozen_utc": "2026-11-05T21:33:44.432434+00:00",
+  "startup_correction": "Invalid startup preserved separately. Corrected old session segment in local imports and added motorSelection.length===4 fail-fast assertion. No model/control changes."
 }

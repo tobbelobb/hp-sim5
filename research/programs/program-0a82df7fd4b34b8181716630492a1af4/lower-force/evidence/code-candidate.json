@@ -1,0 +1,33 @@
+{
+  "base_commit": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+  "candidate_commit": "95a0af8f63f4d0d257629ea7eaaa295c2638f276",
+  "files": [
+    {
+      "path": "integrations/rrf/rrfSimulatorBridge.mjs",
+      "sha256": "bbc06bf86d669e3d8fcfec3e6cf6dd659a5f577859a4062fcb9bd86d3f387696"
+    },
+    {
+      "path": "tests/js/rrf/rrfSimulatorBridge.test.js",
+      "sha256": "f2dd52b1d82ff88bc9455819d9e7a48e200807de2c64d1e1157257c99078db67"
+    },
+    {
+      "path": "integrations/rrf/README.md",
+      "sha256": "a28a264972f9af5b42e99d4129a490c57e7158733e571aae1caa95d28114691f"
+    }
+  ],
+  "test_status": "passed",
+  "superseded_candidate_commit": "c8aa142a589fab876ea32405cc36b268dc8fbcca",
+  "test_correction": "Initial test assumed immediate retirement on an in-flight disconnect; current implementation expires pending requests at their configured budget. Corrected test preserves that behavior with an80ms budget. Initial failure receipt retained.",
+  "checked_commit": "903b00d47c579bda68425e6000ed16a7341b2813",
+  "checked_worktree": "/workspace/hp-sim5-worktrees/encoder-budget-check-b46f63c3",
+  "jest_passed": 45,
+  "headless_passed": 2,
+  "bridge_after_contrast_source_commit": "c8aa142a589fab876ea32405cc36b268dc8fbcca",
+  "after_contrast_bridge_blob_equals_final_candidate": true,
+  "checks_notes": "All final code and regression checks passed at checked_commit903b00d4. Final95a0af8f differs only in README wording. Initial wrong disconnect assertion and headless artifact setup failures are preserved; no native rebuild.",
+  "tested_candidate_commit": "903b00d47c579bda68425e6000ed16a7341b2813",
+  "documentation_only_after_checks": true,
+  "changed_after_checks": [
+    "integrations/rrf/README.md"
+  ]
+}
