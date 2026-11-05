@@ -1,8 +1,8 @@
 # Autocal robustness: results and recovery
 
 **Production improvement adopted so far: none.** The first experiment rejected a
-preload prototype. A separate lower-measurement-force candidate is now running;
-its paired numerical results are pending.
+preload prototype. A separate lower-measurement-force candidate has frozen setup;
+its worker was interrupted before any calibration. Paired numerical results are pending.
 
 ## First experiment: preload under guide friction
 
@@ -41,8 +41,10 @@ evaluation pair, no new calibration failure, and at most 20% extra simulated
 collection effort. These hypothetical worlds cannot establish hardware reliability.
 
 Assignment: `assignment-a64d3f287c374d4e8b0e697ee33afe68`.
-Status: worker dispatched; no new numerical results yet. Checkpoints will be
-committed and pushed after each collection, including unsuccessful trials.
+Status: cancelled after worker account usage limit, before any collection or fit.
+Setup is preserved in [continuation-setup](continuation-setup/README.md).
+The [next-agent prompt](CONTINUE.md) records the exact continuation and new upstream
+commits to reconcile. Checkpoints must be pushed after each collection.
 
 ## What happened to the workspace
 

@@ -1,6 +1,6 @@
 # Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?
 
-Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 78 · active
+Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 102 · paused
 
 Reviewed findings are recorded in scoped admission history.
 
@@ -11,10 +11,10 @@ Reviewed findings are recorded in scoped admission history.
   "id": "program-0a82df7fd4b34b8181716630492a1af4",
   "question_id": "question-e4c608b6f4d04b0cbf37decfea93e9c0",
   "goal": "Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?",
-  "state": "active",
-  "revision": 78,
+  "state": "paused",
+  "revision": 102,
   "created_at": "2026-11-05T08:48:29.407994+00:00",
-  "updated_at": "2026-11-05T11:56:57.700120+00:00",
+  "updated_at": "2026-11-05T17:08:40.123523+00:00",
   "constraints": {}
 }
 ```
@@ -1796,9 +1796,9 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
   "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
   "kind": "assignment",
   "title": "Implement and evaluate a narrowly scoped lower-sensor-force autocal improvement: fixed 4*forceMid against current 5*forceMid, unchanged guards, preloads, solver and automatic stopping. Reuse recovered harness safely in own session; run fresh paired nominal/development/evaluation worlds. Report per-anchor applied geometry, all failures and effort, and retain a production candidate only when supported.",
-  "revision": 1,
+  "revision": 3,
   "created_at": "2026-11-05T11:56:57.703193+00:00",
-  "updated_at": "2026-11-05T11:56:57.703193+00:00",
+  "updated_at": "2026-11-05T13:38:50.992043+00:00",
   "details": {
     "allocation": {
       "collections": 7,
@@ -1809,7 +1809,7 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
       "wall_minutes": 100
     },
     "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
-    "execution_state": "ready",
+    "execution_state": "cancelled",
     "knowledge_state": "unassessed",
     "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
     "review_state": "unreviewed"
@@ -1881,6 +1881,357 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
       "route_plan-33be6158a51741b0933ff22eb9ba0094",
       "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
     ]
+  }
+}
+```
+
+## runtime_allocation: Finite manager allocation
+
+```json
+{
+  "id": "runtime_allocation-aaf676ff4d7b4d67824723d28ba8a61b",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "runtime_allocation",
+  "title": "Finite manager allocation",
+  "revision": 7,
+  "created_at": "2026-11-05T11:58:32.970638+00:00",
+  "updated_at": "2026-11-05T14:03:33.056193+00:00",
+  "details": {
+    "cleanup_deadline": 1793887602.9632277,
+    "cleanup_seconds": 190,
+    "deadline": 1793887412.9632277,
+    "events": [],
+    "lease_until": 1793887427.6027346,
+    "owner": {
+      "id": "controller-d223d36fb4f340a5ba0305c2ffc89297",
+      "process": {
+        "birth": "10638",
+        "boot_id": "f7d52d5b-7ad1-4788-8f0c-2e0c21c98a12",
+        "group": 702,
+        "host": "e4eed99f14b4",
+        "pid": 702,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "assignment_id": "assignment-a64d3f287c374d4e8b0e697ee33afe68",
+        "attempt_id": "attempt-11d12ea8033e4ba291598eb250d6e416",
+        "charged_at": "2026-11-05T11:58:44.072618+00:00",
+        "retry_root": null,
+        "review_pending": false,
+        "review_seconds": 900,
+        "reviews": [],
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": true,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": true,
+          "viewer": "none",
+          "worktree": true
+        },
+        "state": "cancelled",
+        "usage": {
+          "estimates": {
+            "collections": 7,
+            "fresh_fits": 80,
+            "physical_points": 2000,
+            "physics_steps": 28000000,
+            "review_minutes": 15,
+            "wall_minutes": 100
+          },
+          "observed_worker_wall_seconds": 6006.78652215004,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": []
+        },
+        "worker_seconds": 6000
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 900,
+    "started_at": "2026-11-05T11:58:32.963233+00:00",
+    "state": "expired",
+    "task_limit": 1,
+    "wall_reserved_seconds": 6900,
+    "wall_seconds": 7500,
+    "worker_limit": 1
+  }
+}
+```
+
+## attempt: Implement and evaluate a narrowly scoped lower-sensor-force autocal improvement: fixed 4*forceMid against current 5*forceMid, unchanged guards, preloads, solver and automatic stopping. Reuse recovered harness safely in own session; run fresh paired nominal/development/evaluation worlds. Report per-anchor applied geometry, all failures and effort, and retain a production candidate only when supported.
+
+```json
+{
+  "id": "attempt-11d12ea8033e4ba291598eb250d6e416",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "attempt",
+  "title": "Implement and evaluate a narrowly scoped lower-sensor-force autocal improvement: fixed 4*forceMid against current 5*forceMid, unchanged guards, preloads, solver and automatic stopping. Reuse recovered harness safely in own session; run fresh paired nominal/development/evaluation worlds. Report per-anchor applied geometry, all failures and effort, and retain a production candidate only when supported.",
+  "revision": 15,
+  "created_at": "2026-11-05T11:58:44.196628+00:00",
+  "updated_at": "2026-11-05T17:06:50.951366+00:00",
+  "details": {
+    "allocation": {
+      "collections": 7,
+      "fresh_fits": 80,
+      "physical_points": 2000,
+      "physics_steps": 28000000,
+      "review_minutes": 15,
+      "wall_minutes": 100
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-11d12ea8033e4ba291598eb250d6e416/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1793885924.0824666",
+      "--worktree",
+      "--dont-ask",
+      "--no-record"
+    ],
+    "artifacts": [
+      {
+        "bytes": 432,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/session.json"
+      },
+      {
+        "bytes": 17394,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/launch.json"
+      },
+      {
+        "bytes": 79,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/exit.json"
+      },
+      {
+        "bytes": 18189,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/prompt.txt"
+      },
+      {
+        "bytes": 84,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/events.jsonl"
+      },
+      {
+        "bytes": 2636,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/research.md"
+      },
+      {
+        "bytes": 1405,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/report.md"
+      },
+      {
+        "bytes": 1405,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/abstract.md"
+      },
+      {
+        "bytes": 5459,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/instructions.md"
+      },
+      {
+        "bytes": 514,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/attachment.toml"
+      },
+      {
+        "bytes": 391,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/attachment.json"
+      },
+      {
+        "bytes": 284,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/connection.json"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/native/runtime.log"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-11d12ea8033e4ba291598eb250d6e416/stdout.log"
+      },
+      {
+        "bytes": 296,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-11d12ea8033e4ba291598eb250d6e416/stderr.log"
+      },
+      {
+        "bytes": 18189,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-11d12ea8033e4ba291598eb250d6e416/prompt.txt"
+      },
+      {
+        "bytes": 2228,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-11d12ea8033e4ba291598eb250d6e416/assignment.json"
+      }
+    ],
+    "assignment_id": "assignment-a64d3f287c374d4e8b0e697ee33afe68",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-11d12ea8033e4ba291598eb250d6e416",
+    "cancel_deadline": 1793886114.1407678,
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-11-05T13:38:50.990678+00:00",
+    "launcher_exit": {
+      "returncode": 130,
+      "wall_deadline": 1793885924.0824666,
+      "wall_expired": true
+    },
+    "launcher_session_id": "38747b3aacc14cc187caf17d315e2a93",
+    "observations": [
+      {
+        "at": "2026-11-05T11:58:44.194917+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-11-05T11:58:44.204168+00:00",
+        "event": "spawned",
+        "pid": 10402
+      },
+      {
+        "at": "2026-11-05T13:38:44.135009+00:00",
+        "event": "wall_expired"
+      },
+      {
+        "at": "2026-11-05T13:38:44.140771+00:00",
+        "event": "cancel_requested"
+      },
+      {
+        "at": "2026-11-05T13:38:50.990696+00:00",
+        "event": "exited",
+        "returncode": 130
+      }
+    ],
+    "observed_wall_seconds": 6006.78652215004,
+    "owner": {
+      "id": "dispatcher-17a42915ee274be1b9eebe32f0144aab",
+      "process": {
+        "birth": "10638",
+        "boot_id": "f7d52d5b-7ad1-4788-8f0c-2e0c21c98a12",
+        "group": 702,
+        "host": "e4eed99f14b4",
+        "pid": 702,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [],
+    "premise_plan_ids": [
+      "route_plan-33be6158a51741b0933ff22eb9ba0094",
+      "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
+    ],
+    "process": {
+      "birth": "1152116",
+      "boot_id": "f7d52d5b-7ad1-4788-8f0c-2e0c21c98a12",
+      "group": 10402,
+      "host": "e4eed99f14b4",
+      "pid": 10402,
+      "uid": 1000
+    },
+    "prompt_sha256": "489818a31b33256325de2e643a73331f79b99193fe4f229653308c86d5c72b62",
+    "returncode": 130,
+    "runtime": {
+      "allocation_id": "runtime_allocation-aaf676ff4d7b4d67824723d28ba8a61b",
+      "assignment_id": "assignment-a64d3f287c374d4e8b0e697ee33afe68",
+      "cleanup_seconds": 190,
+      "expired": true,
+      "wall_deadline": 1793885924.0824666
+    },
+    "runtime_session_id": "32854fd8d3e94a0bb094664d243cc696",
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": true,
+      "goal_mode": true,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": true,
+      "viewer": "none",
+      "worktree": true
+    },
+    "source_dirty": false,
+    "source_revision": "76395fac528fc194dfb31eac4fc6274123f91448",
+    "started_at": "2026-11-05T11:58:44.204156+00:00",
+    "state": "cancelled",
+    "worktree": {
+      "branch": "research/bounded-research-assignment-b6928f45",
+      "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-b6928f45",
+      "source_revision": "76395fac528fc194dfb31eac4fc6274123f91448"
+    },
+    "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-b6928f45"
+  }
+}
+```
+
+## decision: Human requested handoff after pushing newer commits. Lower-force worker hit account usage limit before any calibration collection or fit; only frozen harness, preflight outputs and 1001-step-per-world motor probe exist. Cancelled attempt attempt-11d12ea8033e4ba291598eb250d6e416; observed returncode130 and launcher_finally_completed, bridge cancellation acknowledged. Preserve59setupfiles and exact candidate/worlds without claiming a numerical improvement. Current upstream main fbd2c744 includes all recovery commits plus newer workflow and recorder changes; next agent must reconcile them before a fresh finite continuation.
+
+```json
+{
+  "id": "decision-52970d8c1d68489fb01cd9fb5e75b835",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Human requested handoff after pushing newer commits. Lower-force worker hit account usage limit before any calibration collection or fit; only frozen harness, preflight outputs and 1001-step-per-world motor probe exist. Cancelled attempt attempt-11d12ea8033e4ba291598eb250d6e416; observed returncode130 and launcher_finally_completed, bridge cancellation acknowledged. Preserve59setupfiles and exact candidate/worlds without claiming a numerical improvement. Current upstream main fbd2c744 includes all recovery commits plus newer workflow and recorder changes; next agent must reconcile them before a fresh finite continuation.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:08:39.903791+00:00",
+  "updated_at": "2026-11-05T17:08:39.903791+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": null
+  }
+}
+```
+
+## decision: Human requested another agent finish; current worker cancelled and cleaned. Frozen partial setup and full continuation prompt preserved.
+
+```json
+{
+  "id": "decision-bea843cd682844b6ad3a4e9854a126bf",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Human requested another agent finish; current worker cancelled and cleaned. Frozen partial setup and full continuation prompt preserved.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:08:40.124454+00:00",
+  "updated_at": "2026-11-05T17:08:40.124454+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "program-0a82df7fd4b34b8181716630492a1af4"
   }
 }
 ```

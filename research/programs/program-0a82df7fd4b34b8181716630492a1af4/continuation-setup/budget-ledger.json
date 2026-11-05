@@ -1,0 +1,16 @@
+{
+  "started_utc": "2026-11-05T12:03:03.972065+00:00",
+  "deadline_basis": "100 worker minutes from initial task at about 11:59 UTC; report reserve by 13:29 UTC",
+  "limits": {
+    "collections": 7,
+    "primary_runs": 6,
+    "fresh_fits": 80,
+    "physics_steps": 28000000,
+    "physical_points": 2000,
+    "steps_per_collection": 4000000,
+    "max_auto_iterations": 6,
+    "wall_minutes": 100,
+    "report_reserve_minutes": 10
+  },
+  "jobs": []
+}
