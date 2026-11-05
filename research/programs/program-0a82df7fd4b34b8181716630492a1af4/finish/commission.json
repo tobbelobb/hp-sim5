@@ -1,0 +1,87 @@
+{
+  "ok": true,
+  "result": {
+    "assignment": {
+      "created_at": "2026-11-05T17:29:51.542495+00:00",
+      "details": {
+        "allocation": {
+          "collections": 7,
+          "fresh_fits": 80,
+          "physical_points": 2000,
+          "physics_steps": 28000000,
+          "review_minutes": 15,
+          "wall_minutes": 100
+        },
+        "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+        "execution_state": "ready",
+        "knowledge_state": "unassessed",
+        "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
+        "review_state": "unreviewed"
+      },
+      "id": "assignment-a07108777f25435f9f3065148f9a8e49",
+      "kind": "assignment",
+      "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+      "revision": 1,
+      "title": "Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.",
+      "updated_at": "2026-11-05T17:29:51.542495+00:00"
+    },
+    "investigation": {
+      "created_at": "2026-11-05T17:29:51.542626+00:00",
+      "details": {
+        "assignment_id": "assignment-a07108777f25435f9f3065148f9a8e49",
+        "citation_ids": [
+          "admission-22c5d2de62e841e9bd8b77c2b3ae4811",
+          "decision-52970d8c1d68489fb01cd9fb5e75b835"
+        ],
+        "execution": {
+          "machine": "hp3",
+          "recording_mode": "none",
+          "simulated_autocal_speedup": 25
+        },
+        "explanations": [
+          {
+            "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+            "explanation": "Lower measurement force reduces equilibrium bias within collection-effort allowance."
+          },
+          {
+            "approach_id": "approach-4efeaafb10e946d68b589da1124f50ad",
+            "explanation": "Motor friction/noise defeats benefit or raises effort beyond allowance."
+          }
+        ],
+        "kind": "experiment",
+        "outcomes": {
+          "improved": {
+            "actions": [],
+            "finding": "supported",
+            "observation": "Meaningful final applied accuracy gain transfers to held-out pair, no new failure, <=1.20x completed-pair effort and scope-safe production checks pass."
+          },
+          "inconclusive": {
+            "actions": [],
+            "finding": "inconclusive",
+            "observation": "Incomplete valid pairs prevent decision."
+          },
+          "mixed": {
+            "actions": [],
+            "finding": "mixed",
+            "observation": "Pair-specific benefit fails general adoption; retain scoped evidence."
+          },
+          "not_improved": {
+            "actions": [],
+            "finding": "rejected",
+            "observation": "Frozen candidate fails accuracy, transfer, failure or effort criterion. Preserve negative evidence; no unsupported default change."
+          }
+        },
+        "route_plan_ids": [
+          "route_plan-840bac1ba79e4be6b15e716c7d973664",
+          "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
+        ]
+      },
+      "id": "investigation-9aa438f611094e7280d113775d435bea",
+      "kind": "investigation",
+      "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+      "revision": 1,
+      "title": "Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.",
+      "updated_at": "2026-11-05T17:29:51.542626+00:00"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "ok": true,
+  "result": {
+    "created_at": "2026-11-05T17:29:51.313067+00:00",
+    "details": {
+      "cleanup_deadline": 1793907481.312921,
+      "cleanup_seconds": 190,
+      "deadline": 1793907291.312921,
+      "events": [],
+      "lease_until": 1793899806.312921,
+      "owner": {
+        "id": "controller-8de04df8e8d540b58256a18c6905a6db",
+        "process": {
+          "birth": "12885",
+          "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+          "group": 776,
+          "host": "4e127f450d90",
+          "pid": 776,
+          "uid": 1000
+        }
+      },
+      "queue": [],
+      "reservations": [],
+      "retry_limit": 1,
+      "review_backlog_limit": 1,
+      "review_seconds": 900,
+      "started_at": "2026-11-05T17:29:51.312925+00:00",
+      "state": "active",
+      "task_limit": 1,
+      "wall_reserved_seconds": 0,
+      "wall_seconds": 7500,
+      "worker_limit": 1
+    },
+    "id": "runtime_allocation-48e08fe7f58f449a95191ed0df8eecf5",
+    "kind": "runtime_allocation",
+    "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+    "revision": 1,
+    "title": "Finite manager allocation",
+    "updated_at": "2026-11-05T17:29:51.313067+00:00"
+  }
+}

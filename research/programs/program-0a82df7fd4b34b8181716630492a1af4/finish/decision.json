@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "result": {
+    "created_at": "2026-11-05T17:33:37.663112+00:00",
+    "details": {
+      "actor": "manager",
+      "evidence_ids": [],
+      "subject_id": "assignment-a07108777f25435f9f3065148f9a8e49"
+    },
+    "id": "decision-bd64118167cf4c29bea05a402a2f070d",
+    "kind": "decision",
+    "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+    "revision": 1,
+    "title": "Before any primary collection results, operationalize meaningful applied accuracy as evaluation maximum anchor error improving by at least10 percent AND0.5mm versus its fresh baseline, with development maximum also improving; no new failure in any pair and every completed pair effort<=1.20x steps/sim time. This margin interprets handoff criteria, not a force retune. Worker must freeze it before primary runs and disclose any nominal regression. No new numerical result exists yet.",
+    "updated_at": "2026-11-05T17:33:37.663112+00:00"
+  }
+}

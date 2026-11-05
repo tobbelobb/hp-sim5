@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "result": {
+    "created_at": "2026-11-05T17:29:50.915874+00:00",
+    "details": {
+      "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+      "citation_ids": [
+        "decision-570ae430f6c4401cba5c83ccaa261f21",
+        "admission-22c5d2de62e841e9bd8b77c2b3ae4811"
+      ],
+      "decision_value": "Adopt a small supported collector improvement with fresh paired geometry, or reject it explicitly and retain all counterexamples.",
+      "dependency_ids": [],
+      "estimated_cost": {
+        "collections": 7,
+        "fresh_fits": 80,
+        "physical_points": 2000,
+        "physics_steps": 28000000,
+        "review_minutes": 15,
+        "wall_minutes": 100
+      },
+      "hypothesis": "Lower measurement force reduces equilibrium stretch/model bias across varied drag/noise while preserving completion and automatic stopping.",
+      "novelty": "First frozen lower-sensor-force production candidate paired across motor Coulomb/stiction and noisy encoders. Distinct from failed guide preload experiment.",
+      "objections": [],
+      "observation": "Paired lower-force and default fresh completed calibrations improve applied per-anchor errors without new failure and with <=20 percent extra collection effort.",
+      "priority": 1,
+      "prompt": {
+        "id": "autocal-parameter-variation",
+        "path": "research/prompts/autocal_parameter_variation_focus.txt",
+        "sha256": "c2255a3036a41919e4e2b13dc3d68f04dac26e233fed140573231d08da719e46",
+        "title": "HP3 autocalibration across physical variation"
+      },
+      "reason": "Physical-variation mission matches frozen friction/noise candidate. Broad scouting, recording optimization and tooling repeat completed work or delay decision. Fresh current-code pairs remain untested. Current main a68d6adf includes recovered setup; archives verified 59/407 files.",
+      "reopening_condition": "A different encoder-observable force rule, materially different measured drag, or independently corrected model.",
+      "retry_key": "081d59eb5d1f8aa300b282528851baf62a4ae73be067a730485d901fe3a5f968",
+      "retry_limit": 2,
+      "scope": {
+        "buildup": 0,
+        "candidate": "sensor measurement force min(forceMax,4*forceMid); all pullout/preload/settling/stopping/solver rules unchanged",
+        "effort_limit": "1.20 times paired completed baseline simulated time/steps",
+        "failure": "any anchor >20 mm or no completed calibration",
+        "good": "every anchor <5 mm",
+        "guides_mu": 0,
+        "layering": false,
+        "machine": "hp3",
+        "radii": "known 30 mm",
+        "worlds": "nominal noise .03 seed4001; dev motor factors [.5,2,1.5,1]/[2,.5,1,1.5] sigma .03 seed4101; eval [.5,1.5,2,.75]/[1.5,2,.5,1] sigma .05 seed4201"
+      },
+      "tradeoffs": [
+        "At most twenty percent extra completed-pair simulated collection effort.",
+        "No hardware reliability claim from three hypothetical simulated worlds."
+      ],
+      "uncertainty": "The force-valley result used another solver/source revision and only one world; transfer is unproven. Motor factors are hypothetical, not hardware-characterized."
+    },
+    "id": "route_plan-840bac1ba79e4be6b15e716c7d973664",
+    "kind": "route_plan",
+    "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+    "revision": 1,
+    "title": "Physical-variation mission matches frozen friction/noise candidate. Broad scouting, recording optimization and tooling repeat completed work or delay decision. Fresh current-code pairs remain untested. Current main a68d6adf includes recovered setup; archives verified 59/407 files.",
+    "updated_at": "2026-11-05T17:29:50.915874+00:00"
+  }
+}
