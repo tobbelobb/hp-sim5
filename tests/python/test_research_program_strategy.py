@@ -268,6 +268,10 @@ def test_manager_tools_write_cited_brief_and_real_worker_contract(strategy, tmp_
     manager = ProgramManager(store, ROOT, 'p', 'test-controller', tmp_path / 'manager', workers=Workers(store, ROOT))
     assert 'strategy' not in manager.capabilities('p')['unavailable']
     assert {'route_plan', 'commission', 'strategy_result', 'route_decide'} <= manager.operations.keys()
+    assert 'prompt_portfolio' in manager.capabilities('p')['operations']
+    assert manager.call('prompt_portfolio')['result']['prompts']
+    selected = manager.call('prompt_portfolio', {'prompt_id': 'autocal-parameter-variation', 'include_text': True})
+    assert selected['result']['prompt']['text'].startswith('Improve encoder-only HP3 autocalibration')
     work = fund(controller, kind='literature', allocation={'wall_minutes': 9, 'fresh_fits': 0, 'collections': 0},
                 execution={'source_limit': 4, 'search_question': 'Do comparable applied models have an unbiased common fold?'})
     manager.controller.recover('p', handoff_attempt_id=controller.test_context['attempt']['id'],

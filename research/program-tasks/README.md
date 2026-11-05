@@ -111,9 +111,10 @@ eligibility and release scope are in tasks.json and MANAGER.md above.
   wider physical variation matters, but collection is expensive and physical
   ground truth is unavailable to a real calibration algorithm. Keep scope limits
   visible; do not turn every task into a world-variation matrix.
-- [Existing reviewer](../prompts/reviewer.txt): its questions about relevance,
-  reproduction, confounds and maintainability survived task 001, which fixed the
-  assumption that the latest commit is necessarily the result under review.
+- [Existing reviewer](../../src/python/hp_sim5_research/program_instructions/reviewer.md):
+  its questions about relevance, reproduction, confounds and maintainability
+  survived task 001, which fixed the assumption that the latest commit is
+  necessarily the result under review.
 - [Lane 04 integration](../autocal-ranking-lane04-integration.md): saved histories
   already contain useful noise metrics and support selection-only comparisons.
   Changes that affect the fitting trajectory still need appropriate replay.

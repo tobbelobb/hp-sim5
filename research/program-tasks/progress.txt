@@ -12,7 +12,8 @@ only immediately eligible item. All numerical budgets are zero. git diff --check
 passed. Queue setup is documentation, not completion of any queued task.
 
 2026-10-23 task 001: evidence-first review prompt
-Changed research/prompts/reviewer.txt and this queue's tasks.json/progress.txt.
+Changed src/python/hp_sim5_research/program_instructions/reviewer.md and this
+queue's tasks.json/progress.txt (the reviewer contract later moved here).
 The prompt names the claim, report, candidate revision/diff and evidence; checks
 provenance before choosing more work; distinguishes reported, inspected and
 independently recomputed evidence; and separates finding quality from code
@@ -70,9 +71,10 @@ acceptance criteria are met.
 Next: task 003 is eligible; turn a broad question into one economical assignment.
 
 2026-10-23 task 003: one economical research assignment
-Added research/prompts/next-assignment.txt, linked it from research/README.md,
-and added a worked Lane 04 brief to this queue's task 003 file. Updated the queue
-README and tasks.json. The prompt uses the conversation or supplied notes,
+Added src/python/hp_sim5_research/program_instructions/assignment.md, linked it
+from research/README.md, and added a worked Lane 04 brief to this queue's task
+003 file. Updated the queue README and tasks.json. The contract uses the
+conversation or supplied notes,
 preserves the human's goal, consults a small set of abstracts and relevant linked
 evidence, and returns one proposal with rival explanations, bounded cost,
 decision criteria, guardrails and reviewable provenance. It allows retiring a
@@ -177,10 +179,11 @@ Next: development queue complete; scientific assignment remains proposed and
 requires its own bounded invocation, not automatic execution.
 
 2026-10-23 follow-up: question-first usage and offline smoke checks
-Added research/prompts/research-program.txt and research/program.md, linked from
-research/README.md. The entry connects briefing to one bounded investigation,
-self-review and agenda/handoff updates; default saved-evidence work, no fresh
-experiments. Existing briefing-only use stays available.
+Added src/python/hp_sim5_research/program_instructions/single_agent.md and
+research/program.md, linked from research/README.md. The entry connects briefing
+to one bounded investigation, self-review and agenda/handoff updates; default
+saved-evidence work, no fresh experiments. Existing briefing-only use stays
+available.
 Evidence: output/research/sessions/2026-10-23-research-program-smoke/. Four
 standard-library smoke tests passed once (14 CLI calls): catalog/search and
 pending states; relocation after source deletion; partial/corrupt evidence and
@@ -193,12 +196,14 @@ validation. Development tasks remain done. Next: use the entry with a real
 question and explicit constraints/budget when fresh experiments are wanted.
 
 2026-10-23 follow-up: targeted fresh experiments allowed by default
-Updated research-program.txt, next-assignment.txt and research/program.md to
-follow the user's autocal prompt policies: fresh fits, native/headless physics
-and simulated collection are allowed when useful. With no supplied limits the
-agent records a finite targeted budget and proceeds; removed the zero-experiment
-and fixed 30-minute defaults. Require supported --speedup 25 (or a justified
-factor), native Rust, suitable recording modes and preserved simulation clocks.
+Updated src/python/hp_sim5_research/program_instructions/single_agent.md,
+src/python/hp_sim5_research/program_instructions/assignment.md and
+research/program.md to follow the user's autocal prompt policies: fresh fits,
+native/headless physics and simulated collection are allowed when useful. With
+no supplied limits the agent records a finite targeted budget and proceeds;
+removed the zero-experiment and fixed 30-minute defaults. Require supported
+--speedup 25 (or a justified factor), native Rust, suitable recording modes and
+preserved simulation clocks.
 The guide marks earlier smoke defaults historical; explicit user limits and
 briefing-only mode remain effective. Read the typical autocal/variation/recording
 prompts, reference speedup commands and current headless-clock/recording guidance.
@@ -386,7 +391,8 @@ proof. No SDK changes, new keys, environment overrides or network installs.
 
 Checks/transcripts, SDK wire/wrapper, historical question and fixed-review fixture
 snapshots, client plans and limits: output/research/sessions/2026-10-24-manager-chat-entry/.
-Guide: research/program-manager.md; saved prompt: research/prompts/research-manager.txt.
+Guide: research/program-manager.md; saved manager contract:
+src/python/hp_sim5_research/program_instructions/manager.md.
 Compilation, catalog regeneration preserving historical entries, source/queue/docs
 integrity and diff checks are recorded there. Fits/replays/physics/steps/movements/
 collections: zero. No dynamics changes, so no physics delivery gate applies.
@@ -431,8 +437,9 @@ that source exercise; fixture reviews are not live scientific review. Initial
 citation/helper/import/closure issues were fixed before the passing checks.
 
 Guide/prompt: research/program-strategy.md, research/program-manager.md and
-research/prompts/research-manager.txt. Exact argv/stdout/JUnit, restored program,
-source hashes, worked citations, checks and limits are retained in
+src/python/hp_sim5_research/program_instructions/manager.md. Exact
+argv/stdout/JUnit, restored program, source hashes, worked citations, checks and
+limits are retained in
 output/research/sessions/2026-10-24-manager-strategy/. Compilation, source/queue/docs
 integrity, catalog regeneration preserving published historical entries and diff
 check passed. All test hosts drained. Numerical budget/use: zero fits, predictions,

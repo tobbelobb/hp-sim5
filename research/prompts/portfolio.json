@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "selection_policy": "Before commissioning new work, compare registered mission prompts with current evidence, unresolved decisions, tool readiness and bounded cost. Prefer a prompt expected to produce a new decision or reviewable delivery over one likely to repeat reviewed work. State why the selected prompt dominates the alternatives, or why none fits. Do not select a prompt merely because it is listed.",
+  "prompts": [
+    {
+      "id": "autocal",
+      "path": "autocal.txt",
+      "title": "Improve encoder-based autocalibration",
+      "kind": "experiment",
+      "intent": "implementation",
+      "machines": ["hp3", "hp4"],
+      "expected_deliverables": [
+        "reviewable code change or a supported decision not to change code",
+        "measured prediction, applied-anchor and failure evidence",
+        "relevant autocal regression results"
+      ],
+      "decision_value": "Determines whether a proposed calibration change improves applied physical accuracy without degrading reliability or collection effort.",
+      "novelty": "Broadest autocal implementation brief. Use when the question does not fit a narrower current prompt and the choice follows a fresh gap analysis.",
+      "readiness": "General-purpose. Read the current agenda and recent admissions first so established profiling, stopping and ranking work is not repeated.",
+      "last_reviewed": "2026-11-05",
+      "related_evidence": [
+        "research/autocal-agenda.md",
+        "research/autocal-recording-performance.md"
+      ]
+    },
+    {
+      "id": "autocal-broader",
+      "path": "autocal_broader.txt",
+      "title": "Generate and test broader autocal ideas",
+      "kind": "scouting",
+      "intent": "exploration",
+      "machines": ["hp3", "hp4"],
+      "expected_deliverables": [
+        "short ranked idea set grounded in prior art",
+        "bounded tests of the strongest novel ideas",
+        "reviewable implementation when one idea survives"
+      ],
+      "decision_value": "Opens new calibration directions when the existing candidate set is exhausted or a structural assumption needs challenge.",
+      "novelty": "High only when it requires an explicit prior-art search and names ideas not already tested. Otherwise it can duplicate the research corpus.",
+      "readiness": "Use for an explicitly exploratory assignment, not as a default when a narrower unresolved hypothesis already exists.",
+      "last_reviewed": "2026-11-05",
+      "related_evidence": [
+        "research/autocal-agenda.md",
+        "output/research/sessions"
+      ]
+    },
+    {
+      "id": "autocal-parameter-variation",
+      "path": "autocal_parameter_variation_focus.txt",
+      "title": "HP3 autocalibration across physical variation",
+      "kind": "experiment",
+      "intent": "implementation",
+      "machines": ["hp3"],
+      "expected_deliverables": [
+        "per-anchor and maximum-error evidence across a bounded physical-variation matrix",
+        "reviewable code change or a scoped negative decision",
+        "failure-rate and collection-cost comparison"
+      ],
+      "decision_value": "Tests whether a calibration improvement survives friction, perturbation and sensor-noise variation instead of fitting one nominal world.",
+      "novelty": "Targets unresolved cross-machine failure and per-anchor accuracy. It explicitly supersedes general collection profiling unless new evidence identifies another bottleneck.",
+      "readiness": "Ready for a bounded matrix. The prompt was refreshed after prior reports, human priorities and the completed guide-friction investigation.",
+      "last_reviewed": "2026-11-05",
+      "related_evidence": [
+        "research/autocal-agenda.md",
+        "research/autocal-recording-performance.md",
+        "research/autocal-physical-model-cleanup/report.md"
+      ]
+    },
+    {
+      "id": "autocal-recording-focused",
+      "path": "autocal_recording_focused.txt",
+      "title": "Reduce autocal recording cost",
+      "kind": "experiment",
+      "intent": "diagnosis",
+      "machines": ["hp3"],
+      "expected_deliverables": [
+        "bottleneck profile tied to concrete code paths",
+        "bounded candidate optimization with before/after measurements",
+        "autocal regression and user-experience evidence"
+      ],
+      "decision_value": "Determines whether recording or runtime overhead is the current practical constraint and whether a change preserves calibration quality.",
+      "novelty": "Useful when new evidence names a recording bottleneck. General profiling is already mature, so a repeat without a new hypothesis has low value.",
+      "readiness": "Conditional on a current bottleneck or cost claim. Verify it against the latest recording-performance evidence before commissioning.",
+      "last_reviewed": "2026-11-05",
+      "related_evidence": [
+        "research/autocal-recording-performance.md",
+        "output/extended-autocal/no-buildup-reference-003"
+      ]
+    },
+    {
+      "id": "researcher-tooling",
+      "path": "researcher-tooling-wish-list.md",
+      "title": "Resolve the highest-cost researcher tooling gaps",
+      "kind": "tooling",
+      "intent": "tooling",
+      "machines": ["any"],
+      "expected_deliverables": [
+        "verified list of tooling gaps that still exist in current code",
+        "one bounded implementation with regression evidence",
+        "explicit deferred items and their cost consequences"
+      ],
+      "decision_value": "Reduces lost runs or repeated manual work when the selected gap currently blocks reproducible research.",
+      "novelty": "The wish list records historical failures, not proof that every gap remains. Select only an unmet item after inspecting current code and recent fixes.",
+      "readiness": "Needs a verification pass before implementation. Prioritize durable jobs, supervisor parity and resumable checkpoints only if they are still missing.",
+      "last_reviewed": "2026-11-05",
+      "related_evidence": [
+        "research/program-worker-reference.md",
+        "research/autocal-recording-performance.md",
+        "research/bug-reports"
+      ]
+    }
+  ]
+}

@@ -13,8 +13,9 @@ This README contains the operating instructions and tool arguments.
 For a manager above this worker, use the [program guide](program.md).
 
 The single-agent workflow remains available through
-`research/prompts/research-program.txt`. It connects evidence discovery, one
-bounded investigation, review and a durable handoff in one conversation.
+`src/python/hp_sim5_research/program_instructions/single_agent.md`. It connects
+evidence discovery, one bounded investigation, review and a durable handoff in
+one conversation.
 
 ## Setup and interactive use
 
@@ -310,9 +311,16 @@ For the next autocal research allocation, start with the
 [living autocal agenda](autocal-agenda.md): scoped evidence, competing routes,
 one bounded next assignment and an example of reconsidering withdrawn evidence.
 
-Use the [next-assignment prompt](prompts/next-assignment.txt) with a broad research
-question, notes and constraints to get one bounded proposal from saved evidence.
-The prompt prepares a brief for the existing agent; execution is a separate step.
+Use the [assignment role contract](../src/python/hp_sim5_research/program_instructions/assignment.md)
+with a broad research question, notes and constraints to get one bounded proposal
+from saved evidence. The contract prepares a brief for the existing agent;
+execution is a separate step.
+
+`research/prompts/` contains only reusable research missions. Its
+[`portfolio.json`](prompts/portfolio.json) registry drives the Research
+Program's prompt triage and records each prompt's intent, expected delivery,
+novelty, readiness and related evidence. Role and workflow instructions are
+packaged under `src/python/hp_sim5_research/program_instructions/`.
 
 Open the [research topic guide](catalog.md) for the main investigations and
 the local [session catalog](../output/research/index.md) for short abstracts,

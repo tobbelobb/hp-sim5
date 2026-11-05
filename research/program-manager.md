@@ -45,7 +45,7 @@ unknown outcome: inspect state before retrying it.
 
 | Purpose | Operations |
 | --- | --- |
-| Strategy and memory | overview, query, question, approach, route_plan, route_decide, commission, assignment, decision, steering |
+| Strategy and memory | overview, prompt_portfolio, query, question, approach, route_plan, route_decide, commission, assignment, decision, steering |
 | Worker | worker_start, worker_status, worker_answer, worker_cancel, worker_sessions |
 | Runtime setup | runtime_check (dependencies and launcher socket permissions; no motion) |
 | Evidence and review | artifact, claim, derive, relate, submit, submission_verify, review_start, review_status, review_cancel, review_apply, strategy_result |
@@ -57,6 +57,29 @@ The manager normally handles these arguments. Read [strategy](program-strategy.m
 Choose one finite investigation plus review and startup margin. Keep numerical
 workload, wall time and cleanup limits explicit. Arbitrary shell spend and
 movement are not hard aggregate quotas. The default is one worker.
+
+## Triage mission prompts
+
+`research/prompts/` is the reusable mission portfolio; its
+[`portfolio.json`](prompts/portfolio.json) registry records intent, machine
+scope, expected delivery, decision value, novelty, readiness and related
+evidence for every prompt. The manager calls `prompt_portfolio` before creating
+new work and compares those candidates with the current question, program
+evidence and unresolved decisions. It must state why the selected prompt
+dominates the alternatives, or why a custom assignment is better.
+
+```bash
+./hp-sim5-research-program tool CONNECTION prompt_portfolio --params '{}'
+./hp-sim5-research-program tool CONNECTION prompt_portfolio --params '{"prompt_id":"autocal-parameter-variation","include_text":true}'
+```
+
+The second form returns the exact prompt text for `worker_start` or
+`run_once`. Pass its `prompt_id` to `route_plan`; the route then retains the
+prompt path and SHA-256 for audit even if the prompt later changes. Every file
+directly under `research/prompts/` must be registered, which prevents Manager,
+Reviewer or other role plumbing from silently entering the research portfolio.
+Executable role contracts live in
+`src/python/hp_sim5_research/program_instructions/`.
 
 ## Program tools and worker MCP
 

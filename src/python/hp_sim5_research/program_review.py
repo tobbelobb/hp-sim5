@@ -17,6 +17,7 @@ import time
 from . import coding_client
 from .program import ProgramError, _identity, _json, _now, _object, _text
 from .program_graph import identities
+from .program_prompts import role_instructions
 from .program_workers import process_identity, TERMINAL
 
 LEGACY_CONTRACT = 'hp-sim5-evidence-review-v1'
@@ -310,7 +311,7 @@ class ReviewController:
         identity = _identity('review-run')
         directory = self.store.directory / 'reviews' / identity
         target = self.store.directory / 'submissions' / submission_id
-        instructions = (self.root / 'research/prompts/reviewer.txt').read_text()
+        instructions = role_instructions('reviewer')
         response = {'submission_id': submission_id, 'submission_sha256': submission['details']['sha256'],
                     'finding': 'supported|rejected|mixed|inconclusive|not_tested', 'verdict': 'keep|revise|block',
                     'reason': 'scoped reason', 'practical_value': 'decision value',

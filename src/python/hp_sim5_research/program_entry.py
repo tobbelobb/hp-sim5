@@ -12,6 +12,7 @@ from .client_transport import activate, client_adapter
 from .program import ProgramStore, _json
 from .program_host import open_manager, read_json, request
 from .program_manager import failure
+from .program_prompts import role_instructions
 from .program_communication import manager_policy
 
 
@@ -31,7 +32,7 @@ def client_plan(root, attachment, backend, *, model=None, model_provider='openai
                     'Bound manager connection: ' + attachment['connection'] +
                     '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
                     '\n\n' +
-                    (root / 'research/prompts/research-manager-workflow.txt').read_text() +
+                    role_instructions('manager') +
                     manager_policy(grill_me=grill_me, ask_questions=ask_questions and not dont_ask))
     dont_ask = not (grill_me or (ask_questions and not dont_ask))
     if backend == 'codex':
@@ -138,7 +139,7 @@ def main(argv, root):
         if not plan:
             # Current-chat managers receive the same policy as installed clients.
             result['result']['manager_instructions'] = (
-                (root / 'research/prompts/research-manager-workflow.txt').read_text() +
+                role_instructions('manager') +
                 manager_policy(grill_me=args.grill_me, ask_questions=args.ask_questions and not args.dont_ask))
         if not args.backend or args.dry_run:
             print(_json(result))

@@ -59,6 +59,7 @@ def test_manager_communication_policy(tmp_path, backend, flags, grill, questions
     assert ('Startup grill session:' in instructions) is grill
     assert ('During research, ask the human' in instructions) is questions
     assert 'Never treat silence' in instructions
+    assert 'prompt_portfolio' in instructions
     if backend == 'codex':
         assert f'features.default_mode_request_user_input={str(grill or questions).lower()}' in plan['argv']
         injected = next(a for a in plan['argv'] if a.startswith('developer_instructions='))
@@ -89,9 +90,6 @@ def manager(tmp_path):
     root = tmp_path / 'repo'
     root.mkdir()
     (root / 'scripts').symlink_to(ROOT / 'scripts', target_is_directory=True)
-    (root / 'research/prompts').mkdir(parents=True)
-    (root / 'research/prompts/research-manager-workflow.txt').write_bytes((ROOT / 'research/prompts/research-manager-workflow.txt').read_bytes())
-    (root / 'research/prompts/reviewer.txt').write_bytes((ROOT / 'research/prompts/reviewer.txt').read_bytes())
     worker = root / 'hp-sim5-research-agent'
     worker.write_text(f'#!{sys.executable}\n' + '''import json, signal, sys, time
 from pathlib import Path

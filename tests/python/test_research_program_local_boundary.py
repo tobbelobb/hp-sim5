@@ -20,9 +20,6 @@ def test_local_core_opens_and_plans_without_cloud_files(tmp_path):
     package = Path('src/python/hp_sim5_research')
     shutil.copytree(ROOT / package, tmp_path / package,
                     ignore=shutil.ignore_patterns('__pycache__'))
-    prompt = Path('research/prompts/research-manager-workflow.txt')
-    (tmp_path / prompt).parent.mkdir(parents=True)
-    shutil.copy2(ROOT / prompt, tmp_path / prompt)
     assert not (tmp_path / '.agents/skills/cloud-research-client').exists()
     environment = dict(os.environ, HP_SIM5_RESEARCH_CLIENT='local')
     command = [sys.executable, str(tmp_path / 'scripts/research_program.py')]

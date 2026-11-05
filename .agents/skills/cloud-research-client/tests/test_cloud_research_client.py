@@ -10,6 +10,8 @@ import time
 
 import pytest
 
+from hp_sim5_research.program_prompts import role_instructions
+
 
 ROOT = Path(__file__).resolve().parents[4]
 BRIDGE = ROOT / '.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py'
@@ -230,7 +232,7 @@ def test_cloud_mode_survives_fresh_cli_shells(tmp_path):
     attachment = opened['attachment']
     try:
         assert opened['client'] is None
-        assert opened['manager_instructions'] == (ROOT / 'research/prompts/research-manager-workflow.txt').read_text()
+        assert opened['manager_instructions'].startswith(role_instructions('manager'))
         assert opened['client_transport'] == attachment['client_transport'] == 'cloud'
         state = request(attachment, 'capabilities')
         assert state['ok']

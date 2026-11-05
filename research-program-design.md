@@ -558,7 +558,7 @@ context. Do not ask the human to choose routine worktree names or recording mode
 Milestone 1 should replay known failures too: better fitting score with worse
 physical accuracy, incorrect reference interpretation, and startup checks that
 miss a failing real motion. The current corpus and
-[reviewer prompt](research/prompts/reviewer.txt) provide starting cases and
+[reviewer prompt](src/python/hp_sim5_research/program_instructions/reviewer.md) provide starting cases and
 questions. Review the evidence rather than treating a historical reviewer grade
 as ground truth. Judge evidence validity, practical value and code readiness
 separately instead of collapsing them into a single score.

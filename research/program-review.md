@@ -69,8 +69,9 @@ environment and a read-only tool sandbox. The hp-sim5 and Rerun MCP servers are
 disabled. Claude uses its existing authentication, an empty strict MCP attachment,
 and saved-evidence reading/shell tools. There is no new model API or credential
 provisioning. Provider/model metadata and argv are retained, never environment
-values. `research/prompts/reviewer.txt` supplies the evidence-first instructions;
-the dispatched prompt hash and contract `hp-sim5-evidence-review-v2` are recorded.
+values. `src/python/hp_sim5_research/program_instructions/reviewer.md` supplies
+the evidence-first instructions; the dispatched prompt hash and contract
+`hp-sim5-evidence-review-v2` are recorded.
 Historical version-1 submissions retain their original contract and semantics.
 
 The reviewer returns a strict JSON assessment naming the submission ID/hash. It

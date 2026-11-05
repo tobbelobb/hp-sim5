@@ -39,7 +39,7 @@ No new CLI, services, reviewer agents or numerical trial is needed.
 
 ## Implemented prompt and worked desk check
 
-Prompt: [next-assignment.txt](../prompts/next-assignment.txt).
+Contract: [assignment.md](../../src/python/hp_sim5_research/program_instructions/assignment.md).
 
 Example input: "Can autocal choose more accurate anchors without collecting more
 points? My hunch is that held-out scoring could fix ranking." In this example,

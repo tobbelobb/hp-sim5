@@ -4,12 +4,14 @@ Benefit: independent criticism without paying for the same simulation again.
 Budget: zero simulations, fresh fits or collections. One prompt edit and a short
 desk check; no review-of-review loop.
 
-Read [the reviewer](../prompts/reviewer.txt), the cost rules in [README](README.md),
-and [Lane 02's attribution correction](../autocal-filtering-lane02-integration.md).
+Read [the reviewer](../../src/python/hp_sim5_research/program_instructions/reviewer.md),
+the cost rules in [README](README.md), and
+[Lane 02's attribution correction](../autocal-filtering-lane02-integration.md).
 
-Change `research/prompts/reviewer.txt` to accept an explicit report, candidate
-revision/diff and evidence references from the conversation. Find the relevant
-work from context if necessary; the latest commit is not necessarily that work.
+Change `src/python/hp_sim5_research/program_instructions/reviewer.md` to accept
+an explicit report, candidate revision/diff and evidence references from the
+conversation. Find the relevant work from context if necessary; the latest
+commit is not necessarily that work.
 Keep the existing questions about information gained, confounds, reproducibility,
 practical improvement and maintainability, and retain the familiar grade if useful.
 

@@ -53,9 +53,6 @@ def test_direct_python_from_stale_parent_loads_setup(tmp_path, script, arguments
     shutil.copy2(ROOT / 'scripts' / script, tmp_path / 'scripts' / script)
     (tmp_path / 'src').mkdir()
     (tmp_path / 'src/python').symlink_to(ROOT / 'src/python', target_is_directory=True)
-    prompt = Path('research/prompts/research-manager-workflow.txt')
-    (tmp_path / prompt).parent.mkdir(parents=True)
-    shutil.copy2(ROOT / prompt, tmp_path / prompt)
     marker = tmp_path / 'loaded'
     (tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh').write_text(
         f'printf loaded > "{marker}"\n' + (ROOT / '.agents/skills/cloud-research-client/scripts/env.sh').read_text())

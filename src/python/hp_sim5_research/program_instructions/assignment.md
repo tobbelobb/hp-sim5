@@ -74,8 +74,9 @@ Return one brief, marked "Proposed; not tested", with:
   relevant code revisions/hashes, measurements with units and output stage, check
   results, failures and scope limits. Keep the existing research.md, report.md and
   abstract.md current, including hypothesis outcomes and a short decision handoff.
-  Link reusable producer checks for evidence-first review with reviewer.txt;
-  independent duplicate collection is not a default requirement.
+  Link reusable producer checks for evidence-first review with
+  src/python/hp_sim5_research/program_instructions/reviewer.md; independent
+  duplicate collection is not a default requirement.
 
 Keep the assignment small enough for one useful result. End at the decision this
 probe can inform; broader Hangprinter questions can remain open.

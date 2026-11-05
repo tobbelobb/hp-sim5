@@ -66,7 +66,8 @@ def build():
         timeline.append(item)
     prompts = [
         prompt('All roles · repository instructions', 'AGENTS.md'),
-        prompt('Manager · shared workflow', 'research/prompts/research-manager-workflow.txt'),
+        prompt('Manager · shared workflow', 'src/python/hp_sim5_research/program_instructions/manager.md'),
+        prompt('Manager · mission prompt portfolio', 'research/prompts/portfolio.json'),
         prompt('Manager / broker · discoverable cloud skill', '.agents/skills/cloud-research-client/SKILL.md'),
         prompt('Worker · research instructions', 'research/AGENTS.md'),
         prompt('Worker · assignment envelope (source template)', 'src/python/hp_sim5_research/program_workers.py', assignments=('contract', 'prompt')),
@@ -74,7 +75,7 @@ def build():
         prompt('Worker · injected strategy contract (source template)', 'src/python/hp_sim5_research/program_manager.py', function='_worker_contract'),
         prompt('Worker · session suffix (source template)', 'scripts/research_agent.py',
                excerpt=("        instructions = (ROOT / 'research/AGENTS.md').read_text()", "        full_prompt = prompt or ''")),
-        prompt('Reviewer · shared review instructions', 'research/prompts/reviewer.txt'),
+        prompt('Reviewer · shared review instructions', 'src/python/hp_sim5_research/program_instructions/reviewer.md'),
         prompt('Reviewer · fixed assignment and response schema (source template)', 'src/python/hp_sim5_research/program_review.py',
                excerpt=("        response = {'submission_id':", "        if backend == 'codex':")),
         prompt('Reviewer · instructions.md (source template)', 'src/python/hp_sim5_research/program_review.py',

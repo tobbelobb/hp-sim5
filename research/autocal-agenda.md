@@ -106,8 +106,8 @@ Return one decision with exact commands, input hashes, training/content overlap,
 settings and source revisions, cost/count/invalid measurements, failures and
 scope limits in the existing research.md/report.md/abstract.md. Use
 [explicit handoff export](handoffs.md) for selected portable inputs and
-[evidence-first review](prompts/reviewer.txt). Do not schedule duplicate fitting
-or collection to create review independence.
+[evidence-first review](../src/python/hp_sim5_research/program_instructions/reviewer.md).
+Do not schedule duplicate fitting or collection to create review independence.
 
 ## Withdrawal exercise: what if CM-E1 is unavailable?
 
@@ -138,8 +138,9 @@ conditions. Before repeating an experiment, state which relevant input,
 hypothesis or scope changed. Then update its session abstract and regenerate
 the catalog with `.venv/bin/python scripts/research_index.py`.
 
-Use the [next-assignment prompt](prompts/next-assignment.txt) with this note and
-the human's latest steering; it proposes one assignment without launching it.
+Use the [assignment contract](../src/python/hp_sim5_research/program_instructions/assignment.md)
+with this note and the human's latest steering; it proposes one assignment
+without launching it.
 The [agenda exercise record](../output/research/sessions/2026-10-23-autocal-agenda/report.md)
 states what was actually checked. No graph parser, registry or automatic
 dependency invalidation is needed for the two decisions exercised here.

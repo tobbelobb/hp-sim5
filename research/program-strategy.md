@@ -13,9 +13,11 @@ Use `approach` to name each route, then `route_plan` to record its hypothesis,
 exact scope, priority reason, practical tradeoffs, objections, estimated cost,
 uncertainty, novelty, expected decision value, discriminating observation and
 reopening condition. Supply `dependency_ids` for supporting claims or artifacts
-and `citation_ids` for other records actually used. A lower integer `priority`
-allocates first. Each version is append-only; append order chooses the current
-plan even if timestamps tie or the clock moves backwards.
+and `citation_ids` for other records actually used. When a portfolio mission
+drives the route, pass its `prompt_id`; the plan retains the prompt title, path
+and SHA-256 as provenance. A lower integer `priority` allocates first. Each
+version is append-only; append order chooses the current plan even if timestamps
+tie or the clock moves backwards.
 
 `commission` creates a ready assignment and its fixed investigation contract.
 It requires a recorded plan for at least two distinct rival approaches,

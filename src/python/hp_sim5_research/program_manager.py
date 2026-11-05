@@ -6,6 +6,7 @@ import subprocess
 import traceback
 
 from .program import ProgramError, _json, _object, render_markdown
+from .program_prompts import PromptPortfolio
 from .program_workers import ACTIVE, runtime_check
 from .program_strategy import ProgramStrategy
 from .program_controller import ProgramController
@@ -36,7 +37,8 @@ class ProgramManager:
         self.workers = workers or store.workers(self.root)
         self.reviews = reviews or store.reviews(self.root)
         self.integrations = IntegrationController(store, self.root, self.reviews)
-        self.strategy = ProgramStrategy(store)
+        self.prompts = PromptPortfolio(self.root)
+        self.strategy = ProgramStrategy(store, self.prompts)
         self.stopping = False
         self.cleanup_errors = []
         self.controller = ProgramController(self)
@@ -50,6 +52,7 @@ class ProgramManager:
             'relate': store.graph().add_relation, 'assess': store.graph().add_assessment,
             'review_event': store.graph().review_event, 'transition': self.transition,
             'steering': self.steering, 'decision': self.decision,
+            'prompt_portfolio': self.prompt_portfolio,
             'strategy': self.strategy.reconcile, 'route_plan': self.strategy.route,
             'route_decide': self.strategy.decide, 'commission': self.strategy.commission,
             'strategy_result': self.strategy.result,
@@ -81,6 +84,14 @@ class ProgramManager:
             raise ProgramError(f'Unsupported physics_backend: {physics_backend}')
         return runtime_check(self.root, physics_backend=physics_backend)
 
+    def prompt_portfolio(self, program_id, *, prompt_id=None, include_text=False):
+        """List mission prompts, or load one selected prompt for worker assignment."""
+        if prompt_id is None:
+            if include_text:
+                raise ProgramError('include_text requires a selected prompt_id')
+            return self.prompts.inventory()
+        return self.prompts.resolve(prompt_id, include_text=include_text)
+
     def capabilities(self, program_id):
         operations = {}
         for name, method in self.operations.items():
@@ -107,7 +118,7 @@ class ProgramManager:
                 return failure('unknown_operation', 'Unknown manager operation; call capabilities')
             if 'program_id' in parameters:
                 raise ProgramError('Program identity is bound by the attachment; it cannot be overridden')
-            if self.stopping and operation not in ('overview', 'status', 'capabilities', 'worker_status',
+            if self.stopping and operation not in ('overview', 'status', 'capabilities', 'prompt_portfolio', 'worker_status',
                                                    'worker_sessions', 'review_status', 'integration_status',
                                                    'integration_recover', 'integration_release', 'shutdown'):
                 raise ProgramError('Controller is shutting down; inspect status until cleanup completes')

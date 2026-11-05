@@ -3,6 +3,10 @@
 A manager chat investigates a continuing question through bounded workers and
 separate evidence reviews. The human supplies the question and steering.
 
+Before commissioning work, the manager triages the registered mission prompts
+in `research/prompts/` against current evidence and the unresolved decision.
+See [prompt portfolio triage](program-manager.md#triage-mission-prompts).
+
 ## Start locally
 
 ```bash

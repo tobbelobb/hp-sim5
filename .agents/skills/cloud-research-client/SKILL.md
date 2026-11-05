@@ -29,6 +29,17 @@ runtime_check` before allocating experiments. If setup is incomplete, read
 The explicit cloud entry loads the skill's `scripts/env.sh` automatically.
 Ordinary development commands need to source it in their own shell.
 
+## Triage a mission prompt
+
+Before commissioning new work, call `prompt_portfolio` and compare the
+registered missions in `research/prompts/` with the current evidence,
+unresolved decision, tool readiness and bounded cost. Reject prompts likely to
+repeat reviewed work. When one wins, load it with `prompt_id` and
+`include_text:true`, pass the exact text to the worker, and record that
+`prompt_id` on `route_plan`. If none fits, state why a custom assignment is
+better. Do not put Manager, Reviewer or other role plumbing back in the mission
+portfolio.
+
 ## Dispatch workers and reviewers
 
 The controller and existing research launcher own assignments, deadlines,

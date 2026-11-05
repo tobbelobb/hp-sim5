@@ -1,5 +1,6 @@
 """Recorded strategy actions for the existing manager conversation, with cited history."""
 import hashlib
+import re
 
 from .program import ProgramError, TRANSITIONS, _allocation, _json, _now, _object, _text
 from .program_graph import identities
@@ -48,6 +49,16 @@ def validate_strategy(records):
             if type(d.get('retry_limit')) is not int or d['retry_limit'] < 1:
                 raise ProgramError('retry_limit must be a positive integer')
             refs(d.get('dependency_ids'), 'dependency_ids', ('claim', 'artifact'))
+            prompt = d.get('prompt')
+            if prompt is not None:
+                _object(prompt, 'prompt reference')
+                prompt_id = _text(prompt.get('id'), 'prompt id')
+                prompt_path = _text(prompt.get('path'), 'prompt path')
+                _text(prompt.get('title'), 'prompt title')
+                if (not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,63}', prompt_id) or
+                        not re.fullmatch(r'research/prompts/[A-Za-z0-9_.-]+\.(md|txt)', prompt_path) or
+                        not re.fullmatch(r'[0-9a-f]{64}', str(prompt.get('sha256', '')))):
+                    raise ProgramError('Invalid prompt reference')
         elif kind == 'investigation':
             assignment = require(d.get('assignment_id'), ('assignment',))
             if d.get('kind') not in WORK:
@@ -140,8 +151,8 @@ def validate_strategy(records):
 
 
 class ProgramStrategy:
-    def __init__(self, store):
-        self.store = store
+    def __init__(self, store, portfolio=None):
+        self.store, self.portfolio = store, portfolio
 
     def records(self, program_id):
         return self.store.graph()._records(program_id)
@@ -164,8 +175,13 @@ class ProgramStrategy:
     def route(self, program_id, approach_id, hypothesis, scope, priority, estimated_cost, uncertainty,
               decision_value, novelty, observation, reopening_condition, reason, *, tradeoffs=None,
               objections=None, dependency_ids=None, citation_ids=None, retry_limit=2,
-              record_id=None, expected_revision=None):
-        """Record a versioned route rationale; lower priority numbers allocate first."""
+              prompt_id=None, record_id=None, expected_revision=None):
+        """Record a versioned route rationale and optional selected mission prompt."""
+        prompt = None
+        if prompt_id is not None:
+            if self.portfolio is None:
+                raise ProgramError('Prompt selection requires the Research Program prompt portfolio')
+            prompt = self.portfolio.reference(prompt_id)
         details = dict(approach_id=approach_id, hypothesis=hypothesis, scope=scope, priority=priority,
                        estimated_cost=estimated_cost, uncertainty=uncertainty, decision_value=decision_value,
                        novelty=novelty, observation=observation, reopening_condition=reopening_condition,
@@ -174,6 +190,8 @@ class ProgramStrategy:
                        dependency_ids=[] if dependency_ids is None else dependency_ids,
                        citation_ids=[] if citation_ids is None else citation_ids, retry_limit=retry_limit,
                        retry_key=hashlib.sha256(_json([approach_id, hypothesis, scope, observation]).encode()).hexdigest())
+        if prompt is not None:
+            details['prompt'] = prompt
         with self.store.transaction():
             self.store._touch(program_id, expected_revision)
             self.store.get_record(program_id, approach_id, 'approach')
