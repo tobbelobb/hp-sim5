@@ -1,10 +1,29 @@
 # HP3 lower sensor measurement force under motor drag and encoder noise
 
-Status: in progress.
+Status: controlled partial.
 
-We compare the fixed4×midpoint sensor measurement force with the current5×midpoint rule in six fresh paired HP3 autocalibrations. The nominal and development worlds precede a heldout evaluation pair. All worlds use known30mm radii, zero buildup, no layering or guide friction, native Rust, and seeded Gaussian encoder-read noise. Motor Coulomb and smoothed-stiction factors vary by axis. 4 of six primary collections have completed or failed. No adoption decision yet. Complete the frozen matrix without retuning. A small hypothetical three-world simulation cannot establish hardware reliability or a lower failure rate. Applied anchor errors come from the rounded M669 command and a checked firmware readback. Every intermediate fit, failure and full command/noise journal is preserved separately from final applied geometry.
+We compare the fixed4×midpoint sensor measurement force with the current5×midpoint rule in six fresh paired HP3 autocalibrations. The nominal and development worlds precede a heldout evaluation pair. All worlds use known30mm radii, zero buildup, no layering or guide friction, native Rust, and seeded Gaussian encoder-read noise. Motor Coulomb and smoothed-stiction factors vary by axis. 4 of six primary collections have completed or failed. Default force adoption is blocked by the preserved nominal candidate workflow failure. Evaluation pair NOT TESTED. The manager will fund only the two unrun evaluation jobs and focused transport follow-up in a fresh bounded continuation. No successful run will be repeated. A small hypothetical three-world simulation cannot establish hardware reliability or a lower failure rate. Applied anchor errors come from the rounded M669 command and a checked firmware readback. Every intermediate fit, failure and full command/noise journal is preserved separately from final applied geometry.
 
 Topics: HP3, autocalibration, measurement force, motor friction, encoder noise, applied anchors.
+
+## Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Lower sensor force improves applied accuracy across the frozen worlds without new failure or >20% extra effort | n-default, n-candidate, d-default, d-candidate | Inconclusive for transfer; development max improves22.81% with6.41% extra simulated effort; nominal candidate workflow failed | [Applied results](evidence/measurements.json) |
+| An explicit encoder deadline is silently capped at5s in the shared transport | source and nominal failed trace only | Not tested by the authorized real-WebSocket discriminator yet | [Failure excerpt](evidence/n-candidate-transport-excerpt.jsonl) |
+
+## Decision handoff
+
+- Scope: four fresh simulated HP3 attempts at basea68d6adf, known30mm radii, zero buildup/guide friction, layering off and the fixed nominal/development motors and noise.
+- Review: producer hash/readback and offline geometry checks; independent fixed-evidence review pending.
+- Decision: keep production5mid force default. The nominal failure stays in every denominator. Evaluation pair NOT TESTED in the controlled partial.
+- Next: only the two frozen evaluation jobs and the separate bounded transport follow-up. Do not repeat successful jobs, retune policy, restore an old world or erase the failed trial.
+
+## References
+
+- [Research notebook](research.md) records the frozen decision, manager steering and reporting corrections.
+- [Frozen policy](policy-frozen.json) preserves exact worlds, code/native hashes and pre-result adoption margin.
 
 ## Frozen decision and method
 
@@ -49,7 +68,7 @@ Final accepted geometry and intermediate fit accuracy are separate endpoints. Pr
 
 Each run directory contains a readable result, frozen policy, candidate diff and raw-artifact-manifest.json. The compact gzip raw archive retains dataset, every fit and selection state, full auto log, complete command/noise journals, passive initial/terminal/native snapshots, input/invocation and exact harness. Every file was verified by SHA256 after archive readback. Each completed or failed collection was committed and pushed before the next collection. No raw evidence is omitted. The compact review copy, when present, excludes duplicate events.jsonl only and points to each full raw archive and hash.
 
-Only three hypothetical worlds and one seed per world were tested. No hardware data, guide-friction intervention, layout, stiffness, payload, spool-radius or buildup generalization is claimed. The motor model uses smooth friction and does not represent ideal static breakaway. A baseline with no final>20mm placement cannot support a claim of fewer such failures.
+Calibration was attempted in TWO hypothetical worlds with one seed per world. The motor activation probe covered THREE declared plants. The heldout evaluation calibration pair is NOT TESTED in this controlled partial. No hardware data, guide-friction intervention, layout, stiffness, payload, spool-radius or buildup generalization is claimed. The motor model uses smooth friction and does not represent ideal static breakaway. A baseline with no final>20mm placement cannot support a claim of fewer such failures.
 
 The nominal timeout trace preserves request10812 with valid finite A/B/C/D response followed by the5000ms timeout at the same simulator step1,347,144. The event journal lacks wall timestamps per response, so exact reply latency and original delay cause remain unestablished. Source inspection finds createGcodeBridge caps command encoder resolution at5000ms despite explicit120000ms configuration. A separate real-WebSocket stock-vs-fix check is authorized only after allsix primary jobs; it is NOT TESTED in a controlled four-attempt partial. The timeout remains in every denominator and cannot be erased by confirmation or source inspection.
 

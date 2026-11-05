@@ -1,0 +1,120 @@
+{"type":"bridge_payload","epoch":0,"step":1344144,"sim_time_s":2688.288,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1249.77, -1469.12, 963.74, -0.02, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1344144,"sim_time_s":2688.288,"payload":{"type":"encoder_request","requestId":10789,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1344144,"sim_time_s":2688.288,"request_id":10789,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1344144,"sim_time_s":2688.288,"request_id":10789,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1344394,"sim_time_s":2688.788,"command_id":"1896:1344394:1793901248771","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1344394,"sim_time_s":2688.788,"payload":{"type":"encoder_request","requestId":10790,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1344394,"sim_time_s":2688.788,"request_id":10790,"axes":["A","B","C","D"],"clean_angles_deg":[1254.6207040191698,-1470.446999936507,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1254.6004033871445,-1470.4123644150993,963.797214215604,0.05679267870847467],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1344394,"sim_time_s":2688.788,"request_id":10790,"axes":["A","B","C","D"],"angles_deg":[1254.6004033871445,-1470.4123644150993,963.797214215604,0.05679267870847467]}
+{"type":"gcode_reply","epoch":0,"step":1344394,"sim_time_s":2688.788,"command_id":"1896:1344394:1793901248771","result":{"reply":"[1254.60, -1470.41, 963.80, 0.06, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1344394,"sim_time_s":2688.788,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1254.60, -1470.41, 963.80, 0.06, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1344394,"sim_time_s":2688.788,"payload":{"type":"encoder_request","requestId":10791,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1344394,"sim_time_s":2688.788,"request_id":10791,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1344394,"sim_time_s":2688.788,"request_id":10791,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1344644,"sim_time_s":2689.288,"command_id":"1896:1344644:1793901248800","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1344644,"sim_time_s":2689.288,"payload":{"type":"encoder_request","requestId":10792,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1344644,"sim_time_s":2689.288,"request_id":10792,"axes":["A","B","C","D"],"clean_angles_deg":[1259.2963131354522,-1471.7570865262892,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1259.3420406959106,-1471.8022558550865,963.8260962282676,0.02646707847844838],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1344644,"sim_time_s":2689.288,"request_id":10792,"axes":["A","B","C","D"],"angles_deg":[1259.3420406959106,-1471.8022558550865,963.8260962282676,0.02646707847844838]}
+{"type":"gcode_reply","epoch":0,"step":1344644,"sim_time_s":2689.288,"command_id":"1896:1344644:1793901248800","result":{"reply":"[1259.34, -1471.80, 963.83, 0.03, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1344644,"sim_time_s":2689.288,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1259.34, -1471.80, 963.83, 0.03, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1344644,"sim_time_s":2689.288,"payload":{"type":"encoder_request","requestId":10793,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1344644,"sim_time_s":2689.288,"request_id":10793,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1344644,"sim_time_s":2689.288,"request_id":10793,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1344894,"sim_time_s":2689.788,"command_id":"1896:1344894:1793901248830","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1344894,"sim_time_s":2689.788,"payload":{"type":"encoder_request","requestId":10794,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1344894,"sim_time_s":2689.788,"request_id":10794,"axes":["A","B","C","D"],"clean_angles_deg":[1263.2550106090891,-1472.9258646445455,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1263.2640576754147,-1472.9442585009226,963.7329709146103,-0.02864802801048437],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1344894,"sim_time_s":2689.788,"request_id":10794,"axes":["A","B","C","D"],"angles_deg":[1263.2640576754147,-1472.9442585009226,963.7329709146103,-0.02864802801048437]}
+{"type":"gcode_reply","epoch":0,"step":1344894,"sim_time_s":2689.788,"command_id":"1896:1344894:1793901248830","result":{"reply":"[1263.26, -1472.94, 963.73, -0.03, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1344894,"sim_time_s":2689.788,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1263.26, -1472.94, 963.73, -0.03, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1344894,"sim_time_s":2689.788,"payload":{"type":"encoder_request","requestId":10795,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1344894,"sim_time_s":2689.788,"request_id":10795,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1344894,"sim_time_s":2689.788,"request_id":10795,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1345144,"sim_time_s":2690.288,"command_id":"1896:1345144:1793901248876","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1345144,"sim_time_s":2690.288,"payload":{"type":"encoder_request","requestId":10796,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1345144,"sim_time_s":2690.288,"request_id":10796,"axes":["A","B","C","D"],"clean_angles_deg":[1268.7958778731975,-1474.48273891303,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1268.8239822049977,-1474.5034972515211,963.736419522374,-0.0016588820490090685],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345144,"sim_time_s":2690.288,"request_id":10796,"axes":["A","B","C","D"],"angles_deg":[1268.8239822049977,-1474.5034972515211,963.736419522374,-0.0016588820490090685]}
+{"type":"gcode_reply","epoch":0,"step":1345144,"sim_time_s":2690.288,"command_id":"1896:1345144:1793901248876","result":{"reply":"[1268.82, -1474.50, 963.74, -0.00, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1345144,"sim_time_s":2690.288,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1268.82, -1474.50, 963.74, -0.00, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1345144,"sim_time_s":2690.288,"payload":{"type":"encoder_request","requestId":10797,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1345144,"sim_time_s":2690.288,"request_id":10797,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345144,"sim_time_s":2690.288,"request_id":10797,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1345394,"sim_time_s":2690.788,"command_id":"1896:1345394:1793901249087","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1345394,"sim_time_s":2690.788,"payload":{"type":"encoder_request","requestId":10798,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1345394,"sim_time_s":2690.788,"request_id":10798,"axes":["A","B","C","D"],"clean_angles_deg":[1273.934407646573,-1475.806375931613,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1273.963939586309,-1475.8198945375475,963.7160518151258,0.002230684450614826],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345394,"sim_time_s":2690.788,"request_id":10798,"axes":["A","B","C","D"],"angles_deg":[1273.963939586309,-1475.8198945375475,963.7160518151258,0.002230684450614826]}
+{"type":"gcode_reply","epoch":0,"step":1345394,"sim_time_s":2690.788,"command_id":"1896:1345394:1793901249087","result":{"reply":"[1273.96, -1475.82, 963.72, 0.00, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1345394,"sim_time_s":2690.788,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1273.96, -1475.82, 963.72, 0.00, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1345394,"sim_time_s":2690.788,"payload":{"type":"encoder_request","requestId":10799,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1345394,"sim_time_s":2690.788,"request_id":10799,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345394,"sim_time_s":2690.788,"request_id":10799,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1345644,"sim_time_s":2691.288,"command_id":"1896:1345644:1793901249161","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1345644,"sim_time_s":2691.288,"payload":{"type":"encoder_request","requestId":10800,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1345644,"sim_time_s":2691.288,"request_id":10800,"axes":["A","B","C","D"],"clean_angles_deg":[1277.2697926254684,-1476.673314611881,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1277.283094800155,-1476.6234858827763,963.7556882372414,0.0677472446481548],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345644,"sim_time_s":2691.288,"request_id":10800,"axes":["A","B","C","D"],"angles_deg":[1277.283094800155,-1476.6234858827763,963.7556882372414,0.0677472446481548]}
+{"type":"gcode_reply","epoch":0,"step":1345644,"sim_time_s":2691.288,"command_id":"1896:1345644:1793901249161","result":{"reply":"[1277.28, -1476.62, 963.76, 0.07, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1345644,"sim_time_s":2691.288,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1277.28, -1476.62, 963.76, 0.07, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1345644,"sim_time_s":2691.288,"payload":{"type":"encoder_request","requestId":10801,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1345644,"sim_time_s":2691.288,"request_id":10801,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345644,"sim_time_s":2691.288,"request_id":10801,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1345894,"sim_time_s":2691.788,"command_id":"1896:1345894:1793901249192","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1345894,"sim_time_s":2691.788,"payload":{"type":"encoder_request","requestId":10802,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1345894,"sim_time_s":2691.788,"request_id":10802,"axes":["A","B","C","D"],"clean_angles_deg":[1282.0644890111323,-1477.906785571818,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1282.0321179069874,-1477.9013669552478,963.825786315161,-0.023492256629809007],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345894,"sim_time_s":2691.788,"request_id":10802,"axes":["A","B","C","D"],"angles_deg":[1282.0321179069874,-1477.9013669552478,963.825786315161,-0.023492256629809007]}
+{"type":"gcode_reply","epoch":0,"step":1345894,"sim_time_s":2691.788,"command_id":"1896:1345894:1793901249192","result":{"reply":"[1282.03, -1477.90, 963.83, -0.02, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1345894,"sim_time_s":2691.788,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1282.03, -1477.90, 963.83, -0.02, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1345894,"sim_time_s":2691.788,"payload":{"type":"encoder_request","requestId":10803,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1345894,"sim_time_s":2691.788,"request_id":10803,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1345894,"sim_time_s":2691.788,"request_id":10803,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1346144,"sim_time_s":2692.288,"command_id":"1896:1346144:1793901249229","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1346144,"sim_time_s":2692.288,"payload":{"type":"encoder_request","requestId":10804,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1346144,"sim_time_s":2692.288,"request_id":10804,"axes":["A","B","C","D"],"clean_angles_deg":[1284.580167882573,-1478.578072399482,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1284.5691020706709,-1478.5571756714578,963.7877386963468,0.0787719433397735],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346144,"sim_time_s":2692.288,"request_id":10804,"axes":["A","B","C","D"],"angles_deg":[1284.5691020706709,-1478.5571756714578,963.7877386963468,0.0787719433397735]}
+{"type":"gcode_reply","epoch":0,"step":1346144,"sim_time_s":2692.288,"command_id":"1896:1346144:1793901249229","result":{"reply":"[1284.57, -1478.56, 963.79, 0.08, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1346144,"sim_time_s":2692.288,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1284.57, -1478.56, 963.79, 0.08, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1346144,"sim_time_s":2692.288,"payload":{"type":"encoder_request","requestId":10805,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1346144,"sim_time_s":2692.288,"request_id":10805,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346144,"sim_time_s":2692.288,"request_id":10805,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1346394,"sim_time_s":2692.788,"command_id":"1896:1346394:1793901249418","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1346394,"sim_time_s":2692.788,"payload":{"type":"encoder_request","requestId":10806,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1346394,"sim_time_s":2692.788,"request_id":10806,"axes":["A","B","C","D"],"clean_angles_deg":[1289.4123070176604,-1479.8764546162129,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1289.4318536769736,-1479.8270104137048,963.7830796015112,0.0020172328949824452],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346394,"sim_time_s":2692.788,"request_id":10806,"axes":["A","B","C","D"],"angles_deg":[1289.4318536769736,-1479.8270104137048,963.7830796015112,0.0020172328949824452]}
+{"type":"gcode_reply","epoch":0,"step":1346394,"sim_time_s":2692.788,"command_id":"1896:1346394:1793901249418","result":{"reply":"[1289.43, -1479.83, 963.78, 0.00, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1346394,"sim_time_s":2692.788,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1289.43, -1479.83, 963.78, 0.00, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1346394,"sim_time_s":2692.788,"payload":{"type":"encoder_request","requestId":10807,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1346394,"sim_time_s":2692.788,"request_id":10807,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346394,"sim_time_s":2692.788,"request_id":10807,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1346644,"sim_time_s":2693.288,"command_id":"1896:1346644:1793901249746","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1346644,"sim_time_s":2693.288,"payload":{"type":"encoder_request","requestId":10808,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1346644,"sim_time_s":2693.288,"request_id":10808,"axes":["A","B","C","D"],"clean_angles_deg":[1292.637640000589,-1480.7240414753578,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1292.5797046746168,-1480.764082103884,963.7414021592685,0.012681525153119292],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346644,"sim_time_s":2693.288,"request_id":10808,"axes":["A","B","C","D"],"angles_deg":[1292.5797046746168,-1480.764082103884,963.7414021592685,0.012681525153119292]}
+{"type":"gcode_reply","epoch":0,"step":1346644,"sim_time_s":2693.288,"command_id":"1896:1346644:1793901249746","result":{"reply":"[1292.58, -1480.76, 963.74, 0.01, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1346644,"sim_time_s":2693.288,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1292.58, -1480.76, 963.74, 0.01, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1346644,"sim_time_s":2693.288,"payload":{"type":"encoder_request","requestId":10809,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1346644,"sim_time_s":2693.288,"request_id":10809,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346644,"sim_time_s":2693.288,"request_id":10809,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1346894,"sim_time_s":2693.788,"command_id":"1896:1346894:1793901255701","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1346894,"sim_time_s":2693.788,"payload":{"type":"encoder_request","requestId":10810,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1346894,"sim_time_s":2693.788,"request_id":10810,"axes":["A","B","C","D"],"clean_angles_deg":[1297.4894503653195,-1481.9636059542177,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1297.4369053618886,-1481.939664783745,963.8054257512414,0.0029953857131655073],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346894,"sim_time_s":2693.788,"request_id":10810,"axes":["A","B","C","D"],"angles_deg":[1297.4369053618886,-1481.939664783745,963.8054257512414,0.0029953857131655073]}
+{"type":"gcode_reply","epoch":0,"step":1346894,"sim_time_s":2693.788,"command_id":"1896:1346894:1793901255701","result":{"reply":"[1297.44, -1481.94, 963.81, 0.00, ]","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1346894,"sim_time_s":2693.788,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"[1297.44, -1481.94, 963.81, 0.00, ]"}}
+{"type":"bridge_payload","epoch":0,"step":1346894,"sim_time_s":2693.788,"payload":{"type":"encoder_request","requestId":10811,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1346894,"sim_time_s":2693.788,"request_id":10811,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1346894,"sim_time_s":2693.788,"request_id":10811,"axes":[],"angles_deg":[]}
+{"type":"gcode_send","epoch":0,"step":1347144,"sim_time_s":2694.288,"command_id":"1896:1347144:1793901261208","line":"M569.3 P40.0:41.0:42.0:43.0"}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"encoder_request","requestId":10812,"axes":["A","B","C","D"]}}
+{"type":"sensor_noise","epoch":0,"step":1347144,"sim_time_s":2694.288,"request_id":10812,"axes":["A","B","C","D"],"clean_angles_deg":[1301.2929111697601,-1482.851292754039,963.7875000029298,-4.170409011157262e-15],"noisy_angles_deg":[1301.338733940639,-1482.8360334245442,963.7866293685506,0.0538059804513122],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1347144,"sim_time_s":2694.288,"request_id":10812,"axes":["A","B","C","D"],"angles_deg":[1301.338733940639,-1482.8360334245442,963.7866293685506,0.0538059804513122]}
+{"type":"gcode_reply","epoch":0,"step":1347144,"sim_time_s":2694.288,"command_id":"1896:1347144:1793901261208","result":{"reply":"Error: M569.3: Browser simulator did not answer encoder request (A, B, C, D) within 5000 ms; the browser may be busy or suspended","motion":[],"rawMotionLines":[]}}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"reply","gcode":"M569.3 P40.0:41.0:42.0:43.0","reply":"Error: M569.3: Browser simulator did not answer encoder request (A, B, C, D) within 5000 ms; the browser may be busy or suspended"}}
+{"type":"gcode_send","epoch":0,"step":1347144,"sim_time_s":2694.288,"command_id":"1896:1347144:1793901280131","line":"M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"}
+{"type":"gcode_reply","epoch":0,"step":1347144,"sim_time_s":2694.288,"command_id":"1896:1347144:1793901280131","result":{"reply":"pos_mode, pos_mode, pos_mode, pos_mode,","motion":[{"type":"TorqueMode","can_address":40,"driver":0,"motorId":40,"torqueNm":0,"positionMode":true},{"type":"TorqueMode","can_address":41,"driver":0,"motorId":41,"torqueNm":0,"positionMode":true},{"type":"TorqueMode","can_address":42,"driver":0,"motorId":42,"torqueNm":0,"positionMode":true},{"type":"TorqueMode","can_address":43,"driver":0,"motorId":43,"torqueNm":0,"positionMode":true}],"rawMotionLines":["{\"capture_version\":1}","T,40,0","T,41,0","T,42,0","T,43,0"]}}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"command","command":{"type":"SetPositionMode","axis":"A","driver":40,"torqueNm":0,"timestamp":1793901280146},"gcode":"M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"}}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"command","command":{"type":"SetPositionMode","axis":"B","driver":41,"torqueNm":0,"timestamp":1793901280146},"gcode":"M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"}}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"command","command":{"type":"SetPositionMode","axis":"C","driver":42,"torqueNm":0,"timestamp":1793901280146},"gcode":"M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"}}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"command","command":{"type":"SetPositionMode","axis":"D","driver":43,"torqueNm":0,"timestamp":1793901280146},"gcode":"M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"}}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"reply","gcode":"M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0","reply":"pos_mode, pos_mode, pos_mode, pos_mode,"}}
+{"type":"bridge_payload","epoch":0,"step":1347144,"sim_time_s":2694.288,"payload":{"type":"encoder_request","requestId":10813,"axes":[]}}
+{"type":"sensor_noise","epoch":0,"step":1347144,"sim_time_s":2694.288,"request_id":10813,"axes":[],"clean_angles_deg":[],"noisy_angles_deg":[],"sigma_deg":0.03,"seed":4001}
+{"type":"encoder_response","epoch":0,"step":1347144,"sim_time_s":2694.288,"request_id":10813,"axes":[],"angles_deg":[]}
+{"type":"service_stopped","epoch":0,"step":1347144,"sim_time_s":2694.288}

@@ -75,3 +75,7 @@ Applied per-anchor error mm: {'A': 2.559882809817639, 'B': 2.8528975546135613, '
 140 physical points, 7 sweeps, 9 fits, 2300140 steps, 4600.28 simulated seconds, 913.0879748390003 wall seconds. Wall time depends on host load. Intermediate max tail 2200.8462674411935 mm, invalid fits 1.
 
 Full raw archive includes all fits, dataset, selection log, command/noise journals, initial/terminal native snapshots, invocation, candidate patch, policy/source hashes. SHA256 readback verified every archived file. No omissions.
+
+## Controlled partial boundary
+
+At18:28:35UTC, d-candidate completed in913.09s. A conservative evaluation-pair estimate2*(15.22+2)min plus4minpushes and10minreportreserve is48.44min, exceeding roughly41minremaining. Per manager instruction neither evaluation arm starts. Four primary attempts are sealed. Evaluation pair and separate transport experiment are NOT TESTED. Only these unrun jobs move to a fresh finite continuation. The lower-force production default remains unadopted, and nominalfailure remains in the denominator.

@@ -1,0 +1,882 @@
+{
+  "kind": "bounded torque-mode physical/readback probe",
+  "node_version": "v23.11.1",
+  "steps_per_world": 1001,
+  "worlds": [
+    {
+      "id": "nominal",
+      "dt": 0.002,
+      "selected": [
+        {
+          "entity": 0,
+          "name": "SpoolA",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 5,
+          "name": "SpoolB",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 9,
+          "name": "SpoolC",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 12,
+          "name": "SpoolD",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        }
+      ],
+      "native": [
+        {
+          "entity": 0,
+          "name": "SpoolA",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.001,
+          "stictionTorque": 0.0015,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 5,
+          "name": "SpoolB",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.001,
+          "stictionTorque": 0.0015,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 9,
+          "name": "SpoolC",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.001,
+          "stictionTorque": 0.0015,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 12,
+          "name": "SpoolD",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.001,
+          "stictionTorque": 0.0015,
+          "stictionSpeed": 1
+        }
+      ],
+      "guides": [
+        {
+          "name": "AnchorAL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorAR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorBL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorBR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorCL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorCR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD0",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD1",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD2",
+          "ecs_mu": 0,
+          "native_mu": 0
+        }
+      ],
+      "before": {
+        "encoder_rad": 0,
+        "omega_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "target_torque_nm": 0,
+        "torque_mode": 0
+      },
+      "after": {
+        "encoder_rad": 18.318467860566205,
+        "omega_rad_s": [
+          0,
+          0,
+          9.575378267532002
+        ],
+        "target_torque_nm": 0.01,
+        "torque_mode": 1
+      },
+      "samples": [
+        {
+          "encoder_rad": 1.3467633474122156,
+          "omega_rad_s": [
+            0,
+            0,
+            9.332791439031224
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 3.225444803950215,
+          "omega_rad_s": [
+            0,
+            0,
+            9.433024922363447
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 5.111968823958006,
+          "omega_rad_s": [
+            0,
+            0,
+            9.45308450291172
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 6.998600008351853,
+          "omega_rad_s": [
+            0,
+            0,
+            9.47196526070637
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 8.885235925171811,
+          "omega_rad_s": [
+            0,
+            0,
+            9.490587047498062
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 10.771875292210517,
+          "omega_rad_s": [
+            0,
+            0,
+            9.508828677388982
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 12.658518148919786,
+          "omega_rad_s": [
+            0,
+            0,
+            9.526557002503028
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 14.545164528078985,
+          "omega_rad_s": [
+            0,
+            0,
+            9.543641572891405
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 16.4318144377059,
+          "omega_rad_s": [
+            0,
+            0,
+            9.559955855654382
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 18.318467860566205,
+          "omega_rad_s": [
+            0,
+            0,
+            9.575378267532002
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        }
+      ],
+      "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+      "native_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+      "physics_engine": "rust-native",
+      "delta_encoder_rad": 0,
+      "delta_omega_rad_s": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "development",
+      "dt": 0.002,
+      "selected": [
+        {
+          "entity": 0,
+          "name": "SpoolA",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.0005,
+            "stictionTorque": 0.003,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 5,
+          "name": "SpoolB",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.002,
+            "stictionTorque": 0.00075,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 9,
+          "name": "SpoolC",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.0015,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 12,
+          "name": "SpoolD",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0022500000000000003,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        }
+      ],
+      "native": [
+        {
+          "entity": 0,
+          "name": "SpoolA",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.0005,
+          "stictionTorque": 0.003,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 5,
+          "name": "SpoolB",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.002,
+          "stictionTorque": 0.00075,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 9,
+          "name": "SpoolC",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.0015,
+          "stictionTorque": 0.0015,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 12,
+          "name": "SpoolD",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.001,
+          "stictionTorque": 0.0022500000000000003,
+          "stictionSpeed": 1
+        }
+      ],
+      "guides": [
+        {
+          "name": "AnchorAL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorAR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorBL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorBR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorCL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorCR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD0",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD1",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD2",
+          "ecs_mu": 0,
+          "native_mu": 0
+        }
+      ],
+      "before": {
+        "encoder_rad": 0,
+        "omega_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "target_torque_nm": 0,
+        "torque_mode": 0
+      },
+      "after": {
+        "encoder_rad": 19.2305057756036,
+        "omega_rad_s": [
+          0,
+          0,
+          10.064495054260892
+        ],
+        "target_torque_nm": 0.01,
+        "torque_mode": 1
+      },
+      "samples": [
+        {
+          "encoder_rad": 1.411979443786444,
+          "omega_rad_s": [
+            0,
+            0,
+            9.63794855495216
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 3.383955027646313,
+          "omega_rad_s": [
+            0,
+            0,
+            10.116982918088516
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 5.3643972241007525,
+          "omega_rad_s": [
+            0,
+            0,
+            9.939112470660357
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 7.3457289058328845,
+          "omega_rad_s": [
+            0,
+            0,
+            9.697078247766212
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 9.326863287824672,
+          "omega_rad_s": [
+            0,
+            0,
+            9.833285824649348
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 11.307174613736812,
+          "omega_rad_s": [
+            0,
+            0,
+            10.102008646554681
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 13.287558383699057,
+          "omega_rad_s": [
+            0,
+            0,
+            10.004129797342632
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 15.268774032913152,
+          "omega_rad_s": [
+            0,
+            0,
+            9.72361388083761
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 17.25005016290283,
+          "omega_rad_s": [
+            0,
+            0,
+            9.773824307886903
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 19.2305057756036,
+          "omega_rad_s": [
+            0,
+            0,
+            10.064495054260892
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        }
+      ],
+      "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+      "native_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+      "physics_engine": "rust-native",
+      "delta_encoder_rad": 0.912037915037395,
+      "delta_omega_rad_s": [
+        0,
+        0,
+        0.48911678672888925
+      ]
+    },
+    {
+      "id": "evaluation",
+      "dt": 0.002,
+      "selected": [
+        {
+          "entity": 0,
+          "name": "SpoolA",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.0005,
+            "stictionTorque": 0.0022500000000000003,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 5,
+          "name": "SpoolB",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.0015,
+            "stictionTorque": 0.003,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 9,
+          "name": "SpoolC",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.002,
+            "stictionTorque": 0.00075,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        },
+        {
+          "entity": 12,
+          "name": "SpoolD",
+          "baseline": {
+            "coulombFriction": 0.001,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          },
+          "selected": {
+            "coulombFriction": 0.00075,
+            "stictionTorque": 0.0015,
+            "stictionSpeed": 1,
+            "windageCoeff": 0.000011
+          }
+        }
+      ],
+      "native": [
+        {
+          "entity": 0,
+          "name": "SpoolA",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.0005,
+          "stictionTorque": 0.0022500000000000003,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 5,
+          "name": "SpoolB",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.0015,
+          "stictionTorque": 0.003,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 9,
+          "name": "SpoolC",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.002,
+          "stictionTorque": 0.00075,
+          "stictionSpeed": 1
+        },
+        {
+          "entity": 12,
+          "name": "SpoolD",
+          "holdingTorque": 0.5,
+          "dampingCoeff": 0.011,
+          "windageCoeff": 0.000011,
+          "coulombFriction": 0.00075,
+          "stictionTorque": 0.0015,
+          "stictionSpeed": 1
+        }
+      ],
+      "guides": [
+        {
+          "name": "AnchorAL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorAR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorBL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorBR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorCL",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorCR",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD0",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD1",
+          "ecs_mu": 0,
+          "native_mu": 0
+        },
+        {
+          "name": "AnchorD2",
+          "ecs_mu": 0,
+          "native_mu": 0
+        }
+      ],
+      "before": {
+        "encoder_rad": 0,
+        "omega_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "target_torque_nm": 0,
+        "torque_mode": 0
+      },
+      "after": {
+        "encoder_rad": 19.238090668428914,
+        "omega_rad_s": [
+          0,
+          0,
+          10.000692035700995
+        ],
+        "target_torque_nm": 0.01,
+        "torque_mode": 1
+      },
+      "samples": [
+        {
+          "encoder_rad": 1.4191730422245838,
+          "omega_rad_s": [
+            0,
+            0,
+            9.577429222344382
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 3.391490870012388,
+          "omega_rad_s": [
+            0,
+            0,
+            10.094744939762128
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 5.371754777040048,
+          "omega_rad_s": [
+            0,
+            0,
+            10.013694718435367
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 7.352953272320791,
+          "omega_rad_s": [
+            0,
+            0,
+            9.729628326042583
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 9.334254872393899,
+          "omega_rad_s": [
+            0,
+            0,
+            9.765417434715875
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 11.3147444942858,
+          "omega_rad_s": [
+            0,
+            0,
+            10.056816897286083
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 13.294997172527717,
+          "omega_rad_s": [
+            0,
+            0,
+            10.066951564132513
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 15.276031269827413,
+          "omega_rad_s": [
+            0,
+            0,
+            9.776905079488463
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 17.257418134681803,
+          "omega_rad_s": [
+            0,
+            0,
+            9.721590141096533
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        },
+        {
+          "encoder_rad": 19.238090668428914,
+          "omega_rad_s": [
+            0,
+            0,
+            10.000692035700995
+          ],
+          "target_torque_nm": 0.01,
+          "torque_mode": 1
+        }
+      ],
+      "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+      "native_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+      "physics_engine": "rust-native",
+      "delta_encoder_rad": 0.9196228078627087,
+      "delta_omega_rad_s": [
+        0,
+        0,
+        0.42531376816899247
+      ]
+    }
+  ],
+  "command": "after ordinary first update, A torque mode target +.01Nm for1000 steps/2s; BCD unchanged position mode",
+  "manual_prepare": false
+}

@@ -8,7 +8,10 @@
       "title": "Improve encoder-based autocalibration",
       "kind": "experiment",
       "intent": "implementation",
-      "machines": ["hp3", "hp4"],
+      "machines": [
+        "hp3",
+        "hp4"
+      ],
       "expected_deliverables": [
         "reviewable code change or a supported decision not to change code",
         "measured prediction, applied-anchor and failure evidence",
@@ -29,7 +32,10 @@
       "title": "Generate and test broader autocal ideas",
       "kind": "scouting",
       "intent": "exploration",
-      "machines": ["hp3", "hp4"],
+      "machines": [
+        "hp3",
+        "hp4"
+      ],
       "expected_deliverables": [
         "short ranked idea set grounded in prior art",
         "bounded tests of the strongest novel ideas",
@@ -50,7 +56,9 @@
       "title": "HP3 autocalibration across physical variation",
       "kind": "experiment",
       "intent": "implementation",
-      "machines": ["hp3"],
+      "machines": [
+        "hp3"
+      ],
       "expected_deliverables": [
         "per-anchor and maximum-error evidence across a bounded physical-variation matrix",
         "reviewable code change or a scoped negative decision",
@@ -58,12 +66,13 @@
       ],
       "decision_value": "Tests whether a calibration improvement survives friction, perturbation and sensor-noise variation instead of fitting one nominal world.",
       "novelty": "Targets unresolved cross-machine failure and per-anchor accuracy. It explicitly supersedes general collection profiling unless new evidence identifies another bottleneck.",
-      "readiness": "Ready for a bounded matrix. The prompt was refreshed after prior reports, human priorities and the completed guide-friction investigation.",
+      "readiness": "Frozen sensor-4mid-v1 continuation has four pushed primary attempts. Development accuracy improved, but nominal transport failure blocks adoption. Only the two unrun heldout evaluation jobs and separately bounded transport follow-up remain; do not restart completed jobs or rejected preload work.",
       "last_reviewed": "2026-11-05",
       "related_evidence": [
         "research/autocal-agenda.md",
         "research/autocal-recording-performance.md",
-        "research/autocal-physical-model-cleanup/report.md"
+        "research/autocal-physical-model-cleanup/report.md",
+        "research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md"
       ]
     },
     {
@@ -72,7 +81,9 @@
       "title": "Reduce autocal recording cost",
       "kind": "experiment",
       "intent": "diagnosis",
-      "machines": ["hp3"],
+      "machines": [
+        "hp3"
+      ],
       "expected_deliverables": [
         "bottleneck profile tied to concrete code paths",
         "bounded candidate optimization with before/after measurements",
@@ -93,7 +104,9 @@
       "title": "Resolve the highest-cost researcher tooling gaps",
       "kind": "tooling",
       "intent": "tooling",
-      "machines": ["any"],
+      "machines": [
+        "any"
+      ],
       "expected_deliverables": [
         "verified list of tooling gaps that still exist in current code",
         "one bounded implementation with regression evidence",

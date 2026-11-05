@@ -1,0 +1,12 @@
+PASS autocal/control/tests/primitives/fixed_anchor_guard.test.mjs
+  fixed-anchor protection
+    ✓ caps collection preload without importing a geometry-specific edge force (4 ms)
+    ✓ allows drive/sensor movement and small held-motor load deflections (1 ms)
+    ✓ rejects an encoder that is quiet after slipping to another motor detent (78 ms)
+    ✓ rejects trial-004 held B drift and invalid fixed-angle conversion (5 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        2.092 s
+Ran all test suites matching /autocal\/control\/tests\/primitives\/fixed_anchor_guard.test.mjs/i.

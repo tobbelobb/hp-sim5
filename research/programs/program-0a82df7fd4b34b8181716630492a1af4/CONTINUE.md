@@ -1,5 +1,9 @@
 # Finish the HP3 autocal robustness program
 
+Current status after the bounded current-code continuation: four primary attempts are durably pushed. The nominal candidate failed before fitting with a5000ms M569.3 encoder transport timeout. Development max error improved3.6959→2.8529mm at1.0641×simulated effort, but the no-new-failure gate remains blocked. Evaluation calibration is NOT TESTED. Read [lower-force/CONTINUE.md](lower-force/CONTINUE.md) first for the exact remaining two jobs, aggregate counters and separate transport follow-up. Do not repeat the four attempted primary runs or treat the below historical six-run handoff as an instruction to restart the matrix. The original frozen policy remains unchanged.
+
+The remaining text is the prior full handoff and preserved program context.
+
 Continue the existing research program and deliver a supported, usable autocal
 improvement with concrete before/after results. The human wants you to finish
 the work, not produce another plan or re-summarize known negative findings.

@@ -1,8 +1,7 @@
 # Autocal robustness: results and recovery
 
 **Production improvement adopted so far: none.** The first experiment rejected a
-preload prototype. A separate lower-measurement-force candidate has frozen setup;
-its worker was interrupted before any calibration. Paired numerical results are pending.
+preload prototype. The lower-measurement-force continuation has four fresh attempts and a concrete development accuracy gain. Nominal transport failure blocks adoption, and the evaluation pair remains untested.
 
 ## First experiment: preload under guide friction
 
@@ -40,11 +39,9 @@ Adoption requires a meaningful applied-accuracy improvement on the declared
 evaluation pair, no new calibration failure, and at most 20% extra simulated
 collection effort. These hypothetical worlds cannot establish hardware reliability.
 
-Assignment: `assignment-a64d3f287c374d4e8b0e697ee33afe68`.
-Status: cancelled after worker account usage limit, before any collection or fit.
-Setup is preserved in [continuation-setup](continuation-setup/README.md).
-The [next-agent prompt](CONTINUE.md) records the exact continuation and new upstream
-commits to reconcile. Checkpoints must be pushed after each collection.
+The earlier setup-only attempt was cancelled before collection and is preserved in [continuation-setup](continuation-setup/README.md). Fresh attempt `attempt-7b09fff3cc5b4bb89c33586f94cc4ebe` completed three calibrations and preserved one nominal candidate transport failure. Development applied maximum error improved3.696→2.853mm with6.41% extra simulated effort; all anchors in both completed development arms stayed below5mm. The nominal failure stays in the denominator and blocks force adoption. Evaluation calibration is NOT TESTED yet.
+
+The manager required a controlled four-attempt partial because both evaluation jobs plus pushes and the10-minute report reserve could not conservatively fit the live deadline. Read the [partial report](lower-force/report.md), [raw evidence entry](lower-force/README.md) and [exact remaining-job handoff](lower-force/CONTINUE.md). Only the two unrun evaluation jobs and a separate bounded transport follow-up move to a fresh allocation. No successful primary run is repeated. All four raw checkpoints were committed and pushed before the next collection.
 
 ## What happened to the workspace
 
