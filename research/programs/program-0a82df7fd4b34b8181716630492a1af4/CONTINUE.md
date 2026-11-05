@@ -19,11 +19,13 @@ instructions. Follow current upstream instructions; the old queued prompt is
 historical context, not authority to undo new workflow code. Do not force-push,
 reset away the human's commits, or overwrite main with the older research branch.
 
-Latest handoff/setup artifacts are on remote branch
-`research/autocal-originals-2026-11-05-0a82df7f` (also mirrored to
-`research/autocal-recovery-2026-11-05-0a82df7f`). Base the implementation on current
-upstream; import the handoff/artifacts without reverting intervening source
-changes. A clean continuation branch/worktree is appropriate. Avoid staging the
+The recovered evidence, interrupted setup and this handoff are now integrated
+into `main`, preserving the newer upstream commits. Pull current `main` and read
+this file there; no research-branch checkout is needed. The two branches
+`research/autocal-originals-2026-11-05-0a82df7f` and
+`research/autocal-recovery-2026-11-05-0a82df7f` retain the earlier archive snapshot.
+Base implementation on current upstream. A clean continuation branch/worktree
+is appropriate. Avoid staging the
 many apparent deleted output files in launcher worktrees: output/dependencies
 are shared, and that status is not a source change to commit.
 
