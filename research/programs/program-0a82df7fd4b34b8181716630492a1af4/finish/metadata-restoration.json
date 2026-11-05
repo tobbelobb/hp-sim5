@@ -1,0 +1,38 @@
+[
+  {
+    "path": "output/research/sessions/attempt-939c073f49004eb6949910600200be51/abstract.md",
+    "source_archive": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/session-record.tar.gz",
+    "sha256": "5e66942ce4919e94deefae4b5e5ddbac6f99c95cfca00504c67fcf04972db2c8",
+    "scope": "saved metadata only, no physics world or execution restored"
+  },
+  {
+    "path": "output/research/sessions/attempt-939c073f49004eb6949910600200be51/report.md",
+    "source_archive": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/session-record.tar.gz",
+    "sha256": "0c6d015d86981ca97092a5da8eaf57b7eaa78a541c740b5cbdea57a02bd71290",
+    "scope": "saved metadata only, no physics world or execution restored"
+  },
+  {
+    "path": "output/research/sessions/attempt-939c073f49004eb6949910600200be51/research.md",
+    "source_archive": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/session-record.tar.gz",
+    "sha256": "5ece129f2ea5115e95ee32f6161624d34c7eecabf836069d5ebf6c4f734b3f62",
+    "scope": "saved metadata only, no physics world or execution restored"
+  },
+  {
+    "path": "output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/abstract.md",
+    "source_archive": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/continuation-setup/session-record.tar.gz",
+    "sha256": "010d22648b8218f2ce67d3285fe713e950fff1d051b9f09b498f3c6be7d0a033",
+    "scope": "saved metadata only, no physics world or execution restored"
+  },
+  {
+    "path": "output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/report.md",
+    "source_archive": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/continuation-setup/session-record.tar.gz",
+    "sha256": "010d22648b8218f2ce67d3285fe713e950fff1d051b9f09b498f3c6be7d0a033",
+    "scope": "saved metadata only, no physics world or execution restored"
+  },
+  {
+    "path": "output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/research.md",
+    "source_archive": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/continuation-setup/session-record.tar.gz",
+    "sha256": "62887bc187d8682b97e2bef648d8aeb4f693f1229ccc4644299bcc8155a79c21",
+    "scope": "saved metadata only, no physics world or execution restored"
+  }
+]

@@ -2561,21 +2561,17 @@ robustness, candidate tails, native model validation, recovery.
 
 [abstract.md](attempt-11d12ea8033e4ba291598eb250d6e416/abstract.md) · [report.md](attempt-11d12ea8033e4ba291598eb250d6e416/report.md) · [research.md](attempt-11d12ea8033e4ba291598eb250d6e416/research.md)
 
-### Lower sensor measurement force with motor drag and encoder noise
+### Lower measurement force: interrupted setup
 
-Status: in progress.
+Status: interrupted before the first calibration collection. No applied anchor result or production improvement is available.
 
-#### Abstract
+The authenticated worker hit an account usage limit. The human then requested handoff after pushing other commits. The manager cancelled the launcher, acknowledged the actor cancellation, and observed state=cancelled, returncode=130, cleanup=launcher_finally_completed. The exit file marks wall_expired=true as part of its cancellation path; this was not exhaustion of the100-minute scientific budget.
 
-This study compares the fixed sensor measurement force min(forceMax,4*forceMid) with the existing 5*forceMid default in three declared HP3 worlds. All use zero guide friction, known 30 mm radii, zero buildup and no layering. The development and evaluation worlds change motor Coulomb and smoothed stiction terms, with Gaussian encoder noise. Preloads, pullouts, guards, solver and automatic stopping stay unchanged. The objective is better applied per-anchor geometry with no new failure and at most 20 percent extra simulated collection effort. No calibration result is available yet. These motor/noise worlds are hypothetical simulations, not measured hardware conditions.
+A frozen default/candidate harness, three declared worlds, preflight/socket outputs and a bounded1001-step-per-world motor probe were saved. They are partial setup, not reviewed calibration evidence. The budget ledger has no collection jobs or fit calls. Candidate patch changes only the isolated helper default5 to4; it has not been applied to production and its global machine scope needs review before adoption.
 
-#### Topics
+Do not automatically restart the cancelled attempt. Inspect current upstream changes and issue a fresh bounded continuation under the current workflow. New collection must use a fresh current-code paired baseline after reconciling source changes.
 
-autocalibration, HP3, measurement force, motor friction, stiction, encoder noise, applied anchor geometry
-
-#### Tested hypotheses
-
-H1 is not tested yet.
+See policy-frozen.json, candidate.patch, harness/, evidence/ and budget-ledger.json. The previous guide-preload study remains a separately reviewed negative result.
 
 ## [attempt-6aabde30a2df4f20a0e259cc25c52b4b](attempt-6aabde30a2df4f20a0e259cc25c52b4b/)
 
@@ -2614,6 +2610,38 @@ cloud agents, existing login, HP3, rust-native, MCP, Rerun, calibration evidence
 - [Research notebook](attempt-6aabde30a2df4f20a0e259cc25c52b4b/research.md) records allocation and steering.
 - [Validation](attempt-6aabde30a2df4f20a0e259cc25c52b4b/validation.json) records checked hashes and zero numerical work.
 - [Previous cloud worker](attempt-6aabde30a2df4f20a0e259cc25c52b4b/../attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/report.md) supports transport feasibility and identifies untested release behavior.
+
+## [attempt-7b09fff3cc5b4bb89c33586f94cc4ebe](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/)
+
+[abstract.md](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/abstract.md) · [report.md](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/report.md) · [research.md](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/research.md)
+
+### HP3 lower sensor measurement force under motor drag and encoder noise
+
+Status: controlled partial.
+
+We compare the fixed4×midpoint sensor measurement force with the current5×midpoint rule in six fresh paired HP3 autocalibrations. The nominal and development worlds precede a heldout evaluation pair. All worlds use known30mm radii, zero buildup, no layering or guide friction, native Rust, and seeded Gaussian encoder-read noise. Motor Coulomb and smoothed-stiction factors vary by axis. 4 of six primary collections have completed or failed. Default force adoption is blocked by the preserved nominal candidate workflow failure. Evaluation pair NOT TESTED. The manager will fund only the two unrun evaluation jobs and focused transport follow-up in a fresh bounded continuation. No successful run will be repeated. A small hypothetical three-world simulation cannot establish hardware reliability or a lower failure rate. Applied anchor errors come from the rounded M669 command and a checked firmware readback. Every intermediate fit, failure and full command/noise journal is preserved separately from final applied geometry.
+
+Topics: HP3, autocalibration, measurement force, motor friction, encoder noise, applied anchors.
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Lower sensor force improves applied accuracy across the frozen worlds without new failure or >20% extra effort | n-default, n-candidate, d-default, d-candidate | Inconclusive for transfer; development max improves22.81% with6.41% extra simulated effort; nominal candidate workflow failed | [Applied results](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/evidence/measurements.json) |
+| An explicit encoder deadline is silently capped at5s in the shared transport | source and nominal failed trace only | Not tested by the authorized real-WebSocket discriminator yet | [Failure excerpt](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/evidence/n-candidate-transport-excerpt.jsonl) |
+
+#### Decision handoff
+
+- Scope: four fresh simulated HP3 attempts at basea68d6adf, known30mm radii, zero buildup/guide friction, layering off and the fixed nominal/development motors and noise.
+- Review: producer hash/readback and offline geometry checks; independent fixed-evidence review pending.
+- Decision: keep production5mid force default. The nominal failure stays in every denominator. Evaluation pair NOT TESTED in the controlled partial.
+- Next: only the two frozen evaluation jobs and the separate bounded transport follow-up. Do not repeat successful jobs, retune policy, restore an old world or erase the failed trial.
+
+#### References
+
+- [Full report](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/report.md) gives per-anchor geometry, effort and intermediate tails.
+- [Research notebook](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/research.md) records the frozen decision, manager steering and reporting corrections.
+- [Frozen policy](attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/policy-frozen.json) preserves exact worlds, code/native hashes and pre-result adoption margin.
 
 ## [attempt-939c073f49004eb6949910600200be51](attempt-939c073f49004eb6949910600200be51/)
 
