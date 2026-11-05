@@ -1,3 +1,13 @@
+# Paused before final review and integration
+
+All six frozen primary attempts and one invalid startup are finished and pushed.
+The lower-force default is not adopted because the nominal candidate failed.
+The producer-tested encoder reply-budget patch is candidate `95a0af8f`; final
+independent review and integration are pending at the human's request.
+
+Read [resume state](CONTINUE.md) and [complete results](lower-force/report.md).
+No more collection is authorized under the seven-attempt budget.
+
 # Autocal robustness: results and recovery
 
 Production force remains 5mid. The preload prototype and fixed 4mid adoption were rejected. All six lower-force primary attempts are complete. Development/evaluation accuracy gains did not overcome the original nominal workflow failure. A supported encoder reply-budget transport candidate is ready for manager fixed review and integration. No production merge is claimed here.

@@ -1,6 +1,6 @@
 # Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?
 
-Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 171 · active
+Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 214 · paused
 
 Reviewed findings are recorded in scoped admission history.
 
@@ -11,10 +11,10 @@ Reviewed findings are recorded in scoped admission history.
   "id": "program-0a82df7fd4b34b8181716630492a1af4",
   "question_id": "question-e4c608b6f4d04b0cbf37decfea93e9c0",
   "goal": "Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?",
-  "state": "active",
-  "revision": 171,
+  "state": "paused",
+  "revision": 214,
   "created_at": "2026-11-05T08:48:29.407994+00:00",
-  "updated_at": "2026-11-05T21:28:42.270204+00:00",
+  "updated_at": "2026-11-05T22:16:54.686549+00:00",
   "constraints": {}
 }
 ```
@@ -3269,9 +3269,9 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
   "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
   "kind": "assignment",
   "title": "Finish ONLY frozen evaluation e-default then e-candidate, preserving four prior attempts. Keep force4mid unadopted while no-new-failure gate fails. After six primary attempts, independently reproduce and fix the explicit encoder reply-budget bug with bounded realWebSocket evidence, preserving effective5s default and shorter deadlines. Use seventh slot only for stock5mid nominal full-autocal confirmation of supported transport fix with predeclared one-time6s delayed reply. Deliver minimal supported production transport patch, all raw checkpoints pushed after each collection, complete combined reports, tests and code-only commit for fixed review/integration.",
-  "revision": 1,
+  "revision": 3,
   "created_at": "2026-11-05T21:21:34.982335+00:00",
-  "updated_at": "2026-11-05T21:21:34.982335+00:00",
+  "updated_at": "2026-11-05T22:16:13.398202+00:00",
   "details": {
     "allocation": {
       "collections": 3,
@@ -3282,7 +3282,7 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
       "wall_minutes": 80
     },
     "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
-    "execution_state": "ready",
+    "execution_state": "completed",
     "knowledge_state": "unassessed",
     "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
     "review_state": "unreviewed"
@@ -3356,15 +3356,15 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
   "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
   "kind": "runtime_allocation",
   "title": "Reserved saved-evidence review",
-  "revision": 6,
+  "revision": 7,
   "created_at": "2026-11-05T21:23:05.227138+00:00",
-  "updated_at": "2026-11-05T21:28:42.038442+00:00",
+  "updated_at": "2026-11-05T21:33:05.235964+00:00",
   "details": {
     "cleanup_deadline": 1793914575.8266673,
     "cleanup_seconds": 190,
     "deadline": 1793914385.8266673,
     "events": [],
-    "lease_until": 1793914154.345106,
+    "lease_until": 1793914396.9565434,
     "owner": {
       "id": "controller-8de04df8e8d540b58256a18c6905a6db",
       "process": {
@@ -3412,7 +3412,7 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
     "review_backlog_limit": 1,
     "review_seconds": 600,
     "started_at": "2026-11-05T21:23:05.226673+00:00",
-    "state": "exhausted",
+    "state": "expired",
     "task_limit": 1,
     "wall_reserved_seconds": 600,
     "wall_seconds": 600.6
@@ -3666,15 +3666,21 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
   "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
   "kind": "runtime_allocation",
   "title": "Finite manager allocation",
-  "revision": 1,
+  "revision": 6,
   "created_at": "2026-11-05T21:28:42.270300+00:00",
-  "updated_at": "2026-11-05T21:28:42.270300+00:00",
+  "updated_at": "2026-11-05T22:16:54.693566+00:00",
   "details": {
     "cleanup_deadline": 1793920912.2701585,
     "cleanup_seconds": 190,
     "deadline": 1793920722.2701585,
-    "events": [],
-    "lease_until": 1793914152.4003763,
+    "events": [
+      {
+        "at": "2026-11-05T22:16:54.686485+00:00",
+        "event": "allocation_stopped",
+        "reason": "Human pause. All numerical work finished and pushed, actorfinalresponseacknowledged. Stopunusedwallgrant; keepcompleteevidence and code95 pending futurefixedreview/integration with freshbudgets."
+      }
+    ],
+    "lease_until": 1793917028.8146913,
     "owner": {
       "id": "controller-8de04df8e8d540b58256a18c6905a6db",
       "process": {
@@ -3687,16 +3693,441 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
       }
     },
     "queue": [],
-    "reservations": [],
+    "reservations": [
+      {
+        "assignment_id": "assignment-75a29344551b4d1e96b3acb643eced4d",
+        "attempt_id": "attempt-b46f63c3e41b42338c0e719a9837ce52",
+        "charged_at": "2026-11-05T21:30:10.064632+00:00",
+        "retry_root": null,
+        "review_pending": true,
+        "review_seconds": 900,
+        "reviews": [],
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": true,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": true,
+          "viewer": "none",
+          "worktree": true
+        },
+        "state": "submitted",
+        "usage": {
+          "estimates": {
+            "collections": 3,
+            "fresh_fits": 53,
+            "physical_points": 1530,
+            "physics_steps": 20031477,
+            "review_minutes": 15,
+            "wall_minutes": 80
+          },
+          "observed_worker_wall_seconds": 2763.237672805786,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": []
+        },
+        "worker_seconds": 4800
+      }
+    ],
     "retry_limit": 1,
     "review_backlog_limit": 1,
     "review_seconds": 900,
     "started_at": "2026-11-05T21:28:42.270162+00:00",
-    "state": "active",
+    "state": "stopped",
     "task_limit": 1,
-    "wall_reserved_seconds": 0,
+    "wall_reserved_seconds": 5700,
     "wall_seconds": 6600,
     "worker_limit": 1
+  }
+}
+```
+
+## attempt: Finish ONLY frozen evaluation e-default then e-candidate, preserving four prior attempts. Keep force4mid unadopted while no-new-failure gate fails. After six primary attempts, independently reproduce and fix the explicit encoder reply-budget bug with bounded realWebSocket evidence, preserving effective5s default and shorter deadlines. Use seventh slot only for stock5mid nominal full-autocal confirmation of supported transport fix with predeclared one-time6s delayed reply. Deliver minimal supported production transport patch, all raw checkpoints pushed after each collection, complete combined reports, tests and code-only commit for fixed review/integration.
+
+```json
+{
+  "id": "attempt-b46f63c3e41b42338c0e719a9837ce52",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "attempt",
+  "title": "Finish ONLY frozen evaluation e-default then e-candidate, preserving four prior attempts. Keep force4mid unadopted while no-new-failure gate fails. After six primary attempts, independently reproduce and fix the explicit encoder reply-budget bug with bounded realWebSocket evidence, preserving effective5s default and shorter deadlines. Use seventh slot only for stock5mid nominal full-autocal confirmation of supported transport fix with predeclared one-time6s delayed reply. Deliver minimal supported production transport patch, all raw checkpoints pushed after each collection, complete combined reports, tests and code-only commit for fixed review/integration.",
+  "revision": 32,
+  "created_at": "2026-11-05T21:30:10.152359+00:00",
+  "updated_at": "2026-11-05T22:16:13.398111+00:00",
+  "details": {
+    "allocation": {
+      "collections": 3,
+      "fresh_fits": 53,
+      "physical_points": 1530,
+      "physics_steps": 20031477,
+      "review_minutes": 15,
+      "wall_minutes": 80
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-b46f63c3e41b42338c0e719a9837ce52/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1793919010.067854",
+      "--worktree",
+      "--dont-ask",
+      "--no-record"
+    ],
+    "artifacts": [
+      {
+        "bytes": 431,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/session.json"
+      },
+      {
+        "bytes": 17391,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/launch.json"
+      },
+      {
+        "bytes": 77,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/exit.json"
+      },
+      {
+        "bytes": 33171,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/prompt.txt"
+      },
+      {
+        "bytes": 234,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/events.jsonl"
+      },
+      {
+        "bytes": 1325,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/final-message.md"
+      },
+      {
+        "bytes": 43655,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/research.md"
+      },
+      {
+        "bytes": 14256,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/report.md"
+      },
+      {
+        "bytes": 2816,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/abstract.md"
+      },
+      {
+        "bytes": 5459,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/instructions.md"
+      },
+      {
+        "bytes": 514,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/attachment.toml"
+      },
+      {
+        "bytes": 391,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/attachment.json"
+      },
+      {
+        "bytes": 284,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/connection.json"
+      },
+      {
+        "bytes": 440,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/manager-question.json"
+      },
+      {
+        "bytes": 914,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/manager-answer.json"
+      },
+      {
+        "bytes": 0,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/native/runtime.log"
+      },
+      {
+        "bytes": 0,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-b46f63c3e41b42338c0e719a9837ce52/stdout.log"
+      },
+      {
+        "bytes": 282,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-b46f63c3e41b42338c0e719a9837ce52/stderr.log"
+      },
+      {
+        "bytes": 33171,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-b46f63c3e41b42338c0e719a9837ce52/prompt.txt"
+      },
+      {
+        "bytes": 2488,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-b46f63c3e41b42338c0e719a9837ce52/assignment.json"
+      }
+    ],
+    "assignment_id": "assignment-75a29344551b4d1e96b3acb643eced4d",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-b46f63c3e41b42338c0e719a9837ce52",
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-11-05T22:16:13.396432+00:00",
+    "launcher_exit": {
+      "returncode": 0,
+      "wall_deadline": 1793919010.067854,
+      "wall_expired": false
+    },
+    "launcher_session_id": "5b9cd6ae6d5c4cf48ed5c192e52f395b",
+    "observations": [
+      {
+        "at": "2026-11-05T21:30:10.151138+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-11-05T21:30:10.158769+00:00",
+        "event": "spawned",
+        "pid": 3943
+      },
+      {
+        "at": "2026-11-05T22:16:13.396497+00:00",
+        "event": "exited",
+        "returncode": 0
+      }
+    ],
+    "observed_wall_seconds": 2763.237672805786,
+    "owner": {
+      "id": "dispatcher-9ab4d5beeeb3410a8a081fef571ee612",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [],
+    "premise_plan_ids": [
+      "route_plan-8fa009f70b534bd5baca577073f587cb",
+      "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
+    ],
+    "process": {
+      "birth": "1462890",
+      "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+      "group": 3943,
+      "host": "4e127f450d90",
+      "pid": 3943,
+      "uid": 1000
+    },
+    "prompt_sha256": "5f2d566f0ea2e370c881053932385efc3a37921ae4bc1def1eba8e0acec8630e",
+    "returncode": 0,
+    "runtime": {
+      "allocation_id": "runtime_allocation-725f4e09a495434696135e881a8d854b",
+      "assignment_id": "assignment-75a29344551b4d1e96b3acb643eced4d",
+      "cleanup_seconds": 190,
+      "wall_deadline": 1793919010.067854
+    },
+    "runtime_session_id": "f05562b57dfb46dfa696f140c64ace09",
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": true,
+      "goal_mode": true,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": true,
+      "viewer": "none",
+      "worktree": true
+    },
+    "source_dirty": false,
+    "source_revision": "131acef1f7d1ddee22b657d920231a32d60e6c6f",
+    "started_at": "2026-11-05T21:30:10.158759+00:00",
+    "state": "submitted",
+    "worktree": {
+      "branch": "research/bounded-research-assignment-ca60a579",
+      "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579",
+      "source_revision": "131acef1f7d1ddee22b657d920231a32d60e6c6f"
+    },
+    "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-ca60a579"
+  }
+}
+```
+
+## approach: Honor explicit encoder reply budgets during simulated calibration
+
+```json
+{
+  "id": "approach-6c857194c0624dd9bcc532cfec2d2fe3",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "approach",
+  "title": "Honor explicit encoder reply budgets during simulated calibration",
+  "revision": 1,
+  "created_at": "2026-11-05T21:33:13.211823+00:00",
+  "updated_at": "2026-11-05T21:33:13.211823+00:00",
+  "details": {
+    "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
+    "reason": "Actual nominal candidate aborted at shared5sM569.3deadline despite configured120s. Savedvalidsame-stepresponse and sourcecap identify a testable software boundary; fix must remainfinite and preserve guards/requestidentity.",
+    "state": "live"
+  }
+}
+```
+
+## route_plan: Custom five-minute sourcebug discriminator dominates broadtooling prompts because exactcap/caller and realcounterexample are already identified. Sixprimaryforcejobs remain frozen; no extra exploratorywork.
+
+```json
+{
+  "id": "route_plan-9bc0691b16f44f398b484494bd450e39",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "route_plan",
+  "title": "Custom five-minute sourcebug discriminator dominates broadtooling prompts because exactcap/caller and realcounterexample are already identified. Sixprimaryforcejobs remain frozen; no extra exploratorywork.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:33:28.264135+00:00",
+  "updated_at": "2026-11-05T21:33:28.264135+00:00",
+  "details": {
+    "approach_id": "approach-6c857194c0624dd9bcc532cfec2d2fe3",
+    "citation_ids": [
+      "admission-410f1328caf0460aa2142d5339f7ccc2",
+      "decision-f6e3ee17d877459b915ada44a1b7944c"
+    ],
+    "decision_value": "Minimal production fix for observed lostcollection with real delayed-reply before/after evidence and fullauto confirmation.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 1,
+      "development_minutes": 5,
+      "wall_minutes": 25
+    },
+    "hypothesis": "Honoring the explicit finite reply budget permits valid delayed encoders without weakening physical guards or accepting stale/missing responses.",
+    "novelty": "Named actualfailure during currentfrozenmatrix, not another generic profiling or infrastructureproject.",
+    "objections": [],
+    "observation": "Stock5s failure versus explicit longer-budget successful identical encoderreply; shorter deadline/disconnect/missing/stale protections and fullautocal checks retained.",
+    "priority": 2,
+    "reason": "Custom five-minute sourcebug discriminator dominates broadtooling prompts because exactcap/caller and realcounterexample are already identified. Sixprimaryforcejobs remain frozen; no extra exploratorywork.",
+    "reopening_condition": "Concrete regression, unsupported payload/timing change or failure of endtoendconfirmation.",
+    "retry_key": "76e03f9e8a44c76f09b3ee73384ea1e2a4b92cd579baca3b1b47b640f66018ab",
+    "retry_limit": 2,
+    "scope": {
+      "confirmation": "originalseventhslotstock5midnominalfirstnonemptyresponseafter1.3Mstepsdelayed6s",
+      "hardware_claim": false,
+      "kind": "shared simulated encoder transport",
+      "measurement_default": "unchanged5mid",
+      "primary_matrix": "unchangedoriginalsource/timeouts",
+      "software_probe": "realWS6s reply stockfails5s versusfixfiniteconfiguredsuccess"
+    },
+    "tradeoffs": [],
+    "uncertainty": "Original host delaycauseunknown; longer budget could conceal disconnect or stale observations unless bounded regressiontests pass."
+  }
+}
+```
+
+## decision: Actualmanageranswer invalid-path-startup-slot-20261105T2134 counts wrong-import startup as collection5,71980steps/143.96simseconds/0points/0fits; checkpointf8d4fd0 preserves it. Remaininge-default/e-candidate use last2slots. Optionalfullautocal transportconfirmation withdrawn to keepaggregate7. Transportproductionfix must be supported by realWScontrast and noncollectionregressions, with explicit nofixedfullautocal limitation. This is invalidplantsetup, not scientificnegative friction evidence.
+
+```json
+{
+  "id": "decision-f74f4664b4784efdadcc9c992c5b1993",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Actualmanageranswer invalid-path-startup-slot-20261105T2134 counts wrong-import startup as collection5,71980steps/143.96simseconds/0points/0fits; checkpointf8d4fd0 preserves it. Remaininge-default/e-candidate use last2slots. Optionalfullautocal transportconfirmation withdrawn to keepaggregate7. Transportproductionfix must be supported by realWScontrast and noncollectionregressions, with explicit nofixedfullautocal limitation. This is invalidplantsetup, not scientificnegative friction evidence.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:35:18.365693+00:00",
+  "updated_at": "2026-11-05T21:35:18.365693+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "assignment-75a29344551b4d1e96b3acb643eced4d"
+  }
+}
+```
+
+## route_plan: Invalid71980stepstartup counted as collection5. Lasttwo slots are reserved for corrected frozen evaluation pair, so transport fullautocal confirmation withdrawn. Use only controlled realWScontrast and focused noncollectionregressions; explicitly limit deliveryclaim to measured transport behavior, not fresh fixedfullautocal accuracy.
+
+```json
+{
+  "id": "route_plan-3569e65fced2449cb8857eb29bb78ff0",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "route_plan",
+  "title": "Invalid71980stepstartup counted as collection5. Lasttwo slots are reserved for corrected frozen evaluation pair, so transport fullautocal confirmation withdrawn. Use only controlled realWScontrast and focused noncollectionregressions; explicitly limit deliveryclaim to measured transport behavior, not fresh fixedfullautocal accuracy.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:44:23.213395+00:00",
+  "updated_at": "2026-11-05T21:44:23.213395+00:00",
+  "details": {
+    "approach_id": "approach-6c857194c0624dd9bcc532cfec2d2fe3",
+    "citation_ids": [
+      "admission-410f1328caf0460aa2142d5339f7ccc2",
+      "decision-f6e3ee17d877459b915ada44a1b7944c"
+    ],
+    "decision_value": "Minimal production fix for observed lostcollection with real delayed-reply before/after evidence and fullauto confirmation.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 0,
+      "wall_minutes": 5
+    },
+    "hypothesis": "Honoring the explicit finite reply budget permits valid delayed encoders without weakening physical guards or accepting stale/missing responses.",
+    "novelty": "Named actualfailure during currentfrozenmatrix, not another generic profiling or infrastructureproject.",
+    "objections": [],
+    "observation": "Stock5s failure versus explicit longer-budget successful identical encoderreply; shorter deadline/disconnect/missing/stale protections and fullautocal checks retained.",
+    "priority": 2,
+    "reason": "Invalid71980stepstartup counted as collection5. Lasttwo slots are reserved for corrected frozen evaluation pair, so transport fullautocal confirmation withdrawn. Use only controlled realWScontrast and focused noncollectionregressions; explicitly limit deliveryclaim to measured transport behavior, not fresh fixedfullautocal accuracy.",
+    "reopening_condition": "Concrete regression, unsupported payload/timing change or failure of endtoendconfirmation.",
+    "retry_key": "da55bf16a117fcd81537231fe6340f0902e92069dbf6b35bca34c28d8c2b547a",
+    "retry_limit": 2,
+    "scope": {
+      "confirmation": "WITHDRAWN; invalidsetupconsumedspareslot; nofixedfullautocal run",
+      "hardware_claim": false,
+      "kind": "shared simulated encoder transport",
+      "measurement_default": "unchanged5mid",
+      "primary_matrix": "unchangedoriginalsource/timeouts",
+      "software_probe": "realWS6s reply stockfails5s versusfixfiniteconfiguredsuccess"
+    },
+    "tradeoffs": [],
+    "uncertainty": "Original host delaycauseunknown; longer budget could conceal disconnect or stale observations unless bounded regressiontests pass."
+  }
+}
+```
+
+## decision: Human explicitly requests pause and push soon due time/tokens. No new research, review or integration. Preserve completed six-primary experiment plus invalidstartup and supported producer-tested transport candidate; finalreview/integration pending. Worker finishing only current reportwrite/push, then cleanup.
+
+```json
+{
+  "id": "decision-a4fffe8cc6ea492ab4ff1251d8d8ba24",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Human explicitly requests pause and push soon due time/tokens. No new research, review or integration. Preserve completed six-primary experiment plus invalidstartup and supported producer-tested transport candidate; finalreview/integration pending. Worker finishing only current reportwrite/push, then cleanup.",
+  "revision": 1,
+  "created_at": "2026-11-05T22:14:56.691188+00:00",
+  "updated_at": "2026-11-05T22:14:56.691188+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "program-0a82df7fd4b34b8181716630492a1af4"
   }
 }
 ```

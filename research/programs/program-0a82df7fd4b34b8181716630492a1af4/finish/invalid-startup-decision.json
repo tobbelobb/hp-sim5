@@ -1,0 +1,14 @@
+{
+  "created_at": "2026-11-05T21:35:18.365693+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "assignment-75a29344551b4d1e96b3acb643eced4d"
+  },
+  "id": "decision-f74f4664b4784efdadcc9c992c5b1993",
+  "kind": "decision",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "revision": 1,
+  "title": "Actualmanageranswer invalid-path-startup-slot-20261105T2134 counts wrong-import startup as collection5,71980steps/143.96simseconds/0points/0fits; checkpointf8d4fd0 preserves it. Remaininge-default/e-candidate use last2slots. Optionalfullautocal transportconfirmation withdrawn to keepaggregate7. Transportproductionfix must be supported by realWScontrast and noncollectionregressions, with explicit nofixedfullautocal limitation. This is invalidplantsetup, not scientificnegative friction evidence.",
+  "updated_at": "2026-11-05T21:35:18.365693+00:00"
+}

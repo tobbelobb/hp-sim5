@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-11-05T21:28:42.034190+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "claim-a2c1c9c97fab423099085fa39b817cfd",
+    "code_readiness": "report_only",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "Retain the partial as a useful local accuracy and effort result plus a preserved workflow failure. It supports keeping the production 5mid default and retaining the completed evidence for any bounded continuation, without repeating successful calibrations. Large intermediate errors also show why solver success or a fit score cannot replace final applied-geometry checks.",
+    "required_checks": [],
+    "review_id": "review-6d368c8db8d14e0e9166b495cee60436",
+    "submission_id": "submission-1b4de3c98dfd474abb162d80f5aa8fcf",
+    "submission_sha256": "05b61f9929d6d56dcd5f679466b0e758e7b14c7d57f255a062203aa2a9168fed"
+  },
+  "id": "admission-410f1328caf0460aa2142d5339f7ccc2",
+  "kind": "admission",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "revision": 1,
+  "title": "Keep the exact report-only claim at a68d6adffec3aea86a55a17d6b4d65a27badd42a. Saved evidence supports three accepted calibrations with all applied anchor errors below 5 mm and a development maximum reduction from 3.6959 to 2.8529 mm at 1.0641 times simulated effort. The nominal candidate aborted on encoder transport before fitting, so the frozen no-new-failure condition did not pass. The report preserves that failure and intermediate tails, and correctly leaves evaluation and the transport intervention untested. These results support retaining the partial report and provide no basis to adopt a production force change. No additional check is needed to retain this scoped report.",
+  "updated_at": "2026-11-05T21:28:42.034190+00:00"
+}

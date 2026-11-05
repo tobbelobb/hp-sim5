@@ -1,5 +1,15 @@
-# Lower measurement force across HP3 friction and encoder noise
+# Paused before final review and integration
 
-Keywords: HP3, autocalibration, motor friction, encoder noise, measurement force
+All six frozen primary attempts are complete and pushed. Development maximum
+anchor error improved 3.6959 to 2.8529 mm at 1.064117 times simulated effort.
+Evaluation improved 3.4116 to 2.7518 mm at 1.070853 times effort. The nominal
+candidate failed before fitting, so the 4mid force default is not adopted.
 
-The program is testing the frozen four-times-midpoint measurement force against the current five-times default on three declared simulated worlds. Six sequential fresh paired calibrations are pending. The previous guide-preload candidate remains rejected and report only. No production improvement is claimed yet. Known 30 mm radii, zero buildup and guide friction, no layering, native Rust and automatic stopping are fixed. A supported change needs a final applied accuracy gain transferring to the evaluation pair, no new failure, and at most 1.20 times paired baseline effort. No hardware result is available.
+A minimal encoder reply-budget patch passed producer checks and is pushed as
+95a0af8f. A valid six-second WebSocket reply failed under stock code at about
+five seconds and succeeded with the patch. Firmware HTTP was stubbed; no
+full-autocal run used the patch. Final separate review and integration remain
+pending because the human requested pause. All raw failures are retained.
+
+See [complete experiment report](../lower-force/report.md) and
+[resume state](../CONTINUE.md). No more collection is authorized.

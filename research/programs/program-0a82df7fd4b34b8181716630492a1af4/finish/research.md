@@ -11,3 +11,5 @@ Hypothesis: 4mid reduces applied geometry bias under noisy encoder/motor frictio
 Worker uses own worktree/branch and must commit/push all raw evidence after each collection. Pending decision: meaningful final applied accuracy improvement on evaluation pair, no new failure, effort<=1.20x. No improvement or reduced-failure claim yet. Manager will seal separate review and integrate only supported exact code, as explicitly authorized by user.
 
 Pre-result interpretation decision-bd64118167cf4c29bea05a402a2f070d freezes meaningful accuracy as >=10% AND>=0.5mm reduction in held-out maximum, development maximum also improved, no new failure, and each completed pair<=1.20x steps/simtime. Nominal regression must be disclosed. Worker confirmed no primary results before this decision.
+
+Human requested pause and push on2026-11-05. Sixprimary attempts complete; invalidstartup counts as seventh. All5completed calibrations everyanchor<5mm. Force4mid unadopted due preservednominalworkflowfailure. Transportcandidate95a0af8f producerchecked45JS+2headless; finalreview/integrationNOTDONE. See CONTINUE.md for exact IDs/source/evidence and no-more-collection rule.
