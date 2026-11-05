@@ -45,7 +45,9 @@ concern, so they cannot establish hardware reliability or impossibility.
 That reviewer finished successfully, but the controller client timed out during
 the execution outage before acknowledgement. The review response must not be
 represented as an applied controller admission. A separately funded live review
-receipt is being recovered through the normal controller workflow.
+completed and its supported/report-only verdict was applied by the controller
+as admission-22c5d2de62e841e9bd8b77c2b3ae4811. The actual replacement response
+and admission are preserved alongside the original response.
 
 ## Durability correction
 

@@ -1,5 +1,5 @@
 Improve encoder-only HP3 autocalibration across physically different machines.
-Updated 2026-11-05 after inspecting prior reports and completing the human interview.
+Updated 2026-11-05 after inspecting prior reports, the human interview and the completed guide-friction investigation.
 
 The goal is accurate, reliable anchors with less collection effort, preserving
 one-click operation and automatic stopping. Use known spool radii, zero buildup
@@ -19,9 +19,7 @@ practical calibration failure. Good performance requires less than 5 mm on EVERY
 anchor. Report all per-anchor errors and their maximum; RMSE alone is insufficient.
 Emphasize unpredictable friction, modest scene perturbations and simulated sensor
 noise. Up to 20% more collection time is worthwhile if it substantially reduces
-large errors. Challenge transfer to real machines by looking for reproducible
-failures under modest perturbations. A small simulation matrix can falsify a
-robustness claim; it cannot establish hardware reliability.
+large errors. A small simulation matrix cannot establish hardware reliability.
 
 What earlier runs have already established
 
@@ -68,6 +66,18 @@ What earlier runs have already established
   of the actual applied anchor-plus-spool model. See research/autocal-agenda.md
   and output/research/sessions/2026-10-23-consensus-membership/report.md.
 
+- The 2026-11-05 guide-friction study tested a bounded preload change in an
+  isolated harness. It preserved nominal accuracy but did not recover collection.
+  Three completed calibrations had all anchors below5mm; four active-guide
+  trials failed before fitting. A matched zero-guide/noise-only control passed.
+  A constructed probe found load torque with macroscopic local cable slack.
+  The independent reviewer kept the scoped report-only result. No production
+  change was adopted, and hardware robustness remains unresolved.
+  The original workspace files were recovered after an execution-attachment
+  failure. The full original evidence and raw journals are committed in
+  research/programs/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/README.md.
+  Do not repeat the same preload/guide matrix as an untested improvement.
+
 These are inspected historical reports, not fresh replications at current HEAD.
 Check that linked raw inputs and harnesses exist before budgeting a replay.
 Several older reports refer to external worktrees or absent artifacts.
@@ -75,9 +85,9 @@ Several older reports refer to external worktrees or absent artifacts.
 Remaining promising questions
 
 1. Which force and measurement choices avoid large errors across machines?
-   Start with independently varied motor or routing friction where modeled and
-   simulated sensor noise. Extend beyond mass/gravity to cable stiffness,
-   asymmetric anchor layouts and payload when they resolve a specific gap.
+   Start with existing motor Coulomb/stiction variation and noisy encoder reads,
+   keeping guide friction zero until its transport/load model is validated.
+   Extend to stiffness, layouts and payload when they resolve a specific gap.
    First verify each intervention changes the intended physical property in the
    baked native world. Distinguish unsupported parameters from negative results.
    Screen a small declared design, then reserve different worlds for evaluation.
@@ -144,3 +154,8 @@ Execution and reporting
   outcomes, references, limitations and next decision. Regenerate the catalog
   with .venv/bin/python scripts/research_index.py. Research Programs use the
   controller's fixed submission, separate review and result-saving workflow.
+
+Durability: preserve and push small datasets, results, source snapshots and failed
+trial records after each completed experiment. End-of-turn saving alone is not
+sufficient protection against workspace interruption. Keep large journals in a
+separate durable artifact store and record any omission explicitly.
