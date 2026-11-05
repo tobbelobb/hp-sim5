@@ -1,0 +1,133 @@
+Improve encoder-only HP3 autocalibration across physically different machines.
+Updated 2026-11-05 after inspecting the research catalog and reports below.
+
+The goal is accurate, reliable anchors with less collection effort, preserving
+one-click operation and automatic stopping. Use known spool radii, zero buildup
+and disabled simulator line layering. Use HP3, not HP4. Real calibration has no
+ground-truth anchors. Truth may construct and evaluate a simulated plant, but
+must not choose measurements, fit seeds, thresholds or the applied answer.
+
+The historical reference is output/extended-autocal/no-buildup-reference-003.
+Also use a fresh current-code baseline for any live comparison. Physics, motor,
+collector and fitting changes since that reference can change its results.
+
+What earlier runs have already established
+
+- Collection profiling is complete enough to guide a new experiment. Settling,
+  pull-outs, force tuning and travel all matter. Native Rust, headless collection
+  and cheaper recording modes are available. Do not start another general
+  profiling or engine-rewrite project without identifying a new bottleneck.
+  See research/autocal-recording-performance.md and
+  output/research/sessions/2026-10-15-native-optimization/abstract.md.
+- Earlier warm-start work improved simulated HP3 fits without new measurements.
+  Blind point thinning, more restarts and simply collecting at half density did
+  not reliably preserve accuracy. Offline thinning and fresh coarse collection
+  are different interventions. See
+  output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/report.md.
+- A distinct-fit consensus-spread stopping rule has been investigated and
+  implemented. Agreement can still reflect two biased fits. A new stopping rule
+  needs evidence beyond remeasuring convergence on the same nominal world. See
+  output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b75b3bdf/report.md.
+- It is no longer true that every experiment used one physical setup. A paired
+  ten-world study varied mover mass 0.80-1.25x and gravity 8.5-11.0 m/s^2, keeping
+  anchor layout, friction and stiffness fixed. Mean applied anchor RMSE was
+  2.967 mm for L-BFGS-B and 2.874 mm for TRF. Neither solver had a candidate
+  above 20 mm. These mild load changes do not establish robustness to large
+  failures or other machine properties. See section 10 of
+  output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md.
+- TRF is available, but a global solver switch and per-restart fallback were
+  rejected after legacy-data regressions. Better intermediate fits can create a
+  tight biased consensus and worsen the final answer. Keep final applied error,
+  per-iteration errors and extreme failures separate. The same report's sections
+  9-11 document the distinction. Disagreement-driven fresh collection remains
+  proposed, not demonstrated.
+- Force sensitivity is measured on the nominal world and is not monotonic.
+  A lower sensor force helped some runs but cost time; no robust force policy
+  across different line properties or layouts was established. See sections
+  4.4 and 4.7 of that report. Do not claim that weaker forces always help.
+- Moving the encoder reference toward the anchor centroid has also been tested.
+  Fresh centered collection slightly improved final RMSE, 4.588 to 4.277 mm,
+  while increasing points from 140 to 180. An asymmetric reference was worse.
+  Retrospective rebasing changes reference/noise assumptions and is not an
+  equivalent substitute for fresh collection. See
+  output/research/sessions/2026-10-20-interactive-research-ae0174ce/report.md.
+- Generic ranking and finite-prediction-only consensus membership have mixed
+  results. Validation must use compatible whole sweeps unseen by every member
+  of the actual applied anchor-plus-spool model. See research/autocal-agenda.md
+  and output/research/sessions/2026-10-23-consensus-membership/report.md.
+
+These are inspected historical reports, not fresh replications at current HEAD.
+Check that linked raw inputs and harnesses exist before budgeting a replay.
+Several older reports refer to external worktrees or absent artifacts.
+
+Remaining promising questions
+
+1. Can force-varied measurements resolve solver disagreement?
+   Freeze L-BFGS-B and TRF candidates from the same encoder prefix. Use their
+   predicted measurements and observable noise to choose a feasible extra sweep,
+   potentially at a different sensor force. Compare both frozen candidates on
+   exactly the same fresh whole sweep before refitting. Compare with the existing
+   planner and a matched extra-sweep control. Measure whether the decision also
+   improves applied geometry, rather than assuming prediction cost proves it.
+   If solvers agree but are both biased, can a force change expose model error?
+
+2. Which force choices remain useful across plausible physical variation?
+   Extend beyond mass/gravity to independently varied cable stiffness, motor or
+   routing friction where modeled, asymmetric anchor layouts and payload.
+   First verify each intervention changes the intended physical property in the
+   baked native world. Distinguish unsupported parameters from negative results.
+   Screen a small declared design, then reserve different worlds for evaluation.
+   Compare current automatic force tuning with a bounded encoder-based policy.
+   Do not let simulated truth set per-world forces or select the winning rule.
+
+3. Which missing measurement would constrain the weak geometry directions?
+   Known radii supply a metric length-change reference; joint unknown radii and
+   geometry introduce additional scale ambiguity. Distinguish gauge freedoms,
+   weak numerical conditioning and systematic model bias. Use local Jacobian
+   checks, controlled synthetic cases and fresh held-out sweeps to find which
+   feasible encoder-only experiment adds independent information. Do not repeat
+   the failed retrospective origin shift or add unidentifiable nuisance terms.
+
+4. Can smaller calibration experiments isolate a useful model error first?
+   For example, test bidirectional hysteresis or force-dependent apparent length
+   at repeated encoder configurations before fitting geometry. Treat commanded
+   forces as commands, not calibrated tension measurements. Test whether a
+   correction transfers to unseen sweeps/worlds and improves actual anchors.
+   Pointwise fixed-encoder variation was ignored in an older objective audit,
+   but was negligible on a later nominal reference. Establish its size in the
+   target regime before implementing a larger objective model.
+
+Choose one bounded discriminator first. Record the main explanation, a credible
+rival, the cheapest falsifying observation and what result changes the next
+decision. Expand only after a useful result. A wider budget is permission to
+resolve uncertainty, not a reason to repeat settled studies.
+
+Execution and reporting
+
+- Read research/AGENTS.md, research/README.md and
+  research/autocal-recording-performance.md. Use the local .venv/bin/python.
+- Start with saved/synthetic evidence, then collect when the question requires
+  fresh data. Use native Rust, supported --speedup 25, events for routine live
+  work and none for fit-only matrices. Keep detailed recordings for motion
+  questions. Run the supervisor research_preflight and a separate command-context
+  scripts/research_socket_probe.py before long live collection.
+- Declare finite worker/review time, fits, collections, points, physical steps,
+  simulated time and cleanup budgets. Preserve unsuccessful and partial trials.
+- Verify plant settings, encoder reference, coordinate frame, dataset lineage,
+  source and native artifact hashes. Stock configure_session currently rejects
+  custom anchor layouts; use an isolated documented research harness if needed.
+- Report anchor RMSE with its precise definition, final applied error,
+  per-iteration distribution/tail errors, invalid fits, automatic acceptance,
+  points, sweeps, simulated seconds, steps and wall time. Separate selection-only,
+  fit-only, synthetic, fresh simulated and hardware evidence. Do not pool repeated
+  datasets as independent physical worlds.
+- Freeze measurement/selection rules without test-world truth. State development
+  versus evaluation worlds and every exception. No large-error reliability claim
+  follows from a matrix containing no large errors.
+- Implement only a supported change and run relevant autocal checks. Physics,
+  motor or dynamics changes require npm run test:physics. No automatic merge or
+  push. Preserve one-click operation and automatic stopping.
+- Maintain research.md, abstract.md and report.md with experiment IDs, measured
+  outcomes, references, limitations and next decision. Regenerate the catalog
+  with .venv/bin/python scripts/research_index.py. Research Programs use the
+  controller's fixed submission, separate review and result-saving workflow.
