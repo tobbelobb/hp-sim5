@@ -2051,517 +2051,6 @@ HP4, Print Squares, missed steps, physics substeps, open-loop torque balance, ro
 
 - [Commit patch](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.patch) and [bundle](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.bundle): packaged commit `838133d4`; original `.git` is read-only and source edits remain in the working tree.
 
-## [2026-10-22-autocal-cli-orchestration](sessions/2026-10-22-autocal-cli-orchestration/)
-
-[abstract.md](sessions/2026-10-22-autocal-cli-orchestration/abstract.md) · [report.md](sessions/2026-10-22-autocal-cli-orchestration/report.md) · [research.md](sessions/2026-10-22-autocal-cli-orchestration/research.md)
-
-### Everyday autocal help and extracted recovery/stopping
-
-Status: complete.
-
-#### Abstract
-
-Ordinary autocal help now shows routine settings and a short usage line; extended
-`--help-research` lists every control by topic. At an 80-column terminal, ordinary
-help shrinks from 243 to 72 lines. All existing flags remain parseable without an
-extra enable switch. Representative parser namespaces match the starting revision
-exactly. Recovery orchestration and stopping state move into dedicated modules,
-reducing `autocal.py` from 1,836 to 1,434 lines. Recovery ordering, sparse seeding,
-patience, consensus and stopping precedence retain their behavior. The non-slow
-Python suite passes 538 tests, and four recorded calibration regressions preserve
-parameter comparisons and totals of 27 sweeps / 470 points. These are interface,
-refactoring and compatibility results, not an accuracy or speed improvement.
-No physics, motor, cable transport or scene dynamics implementation changed.
-
-#### Topics
-
-autocalibration, CLI help, research controls, recovery, stopping, refactoring,
-compatibility, parser defaults
-
-#### Tested hypotheses
-
-| Hypothesis | ID | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Help views preserve existing defaults and acceptance of tuning options | P01 | Supported on representative namespaces and parser tests | [Parser comparison](sessions/2026-10-22-autocal-cli-orchestration/parser-equivalence.json), [tests](sessions/2026-10-22-autocal-cli-orchestration/tests.log) |
-| Recovery/stopping extraction preserves recorded calibration behavior | R01 | Supported on four fixtures | [Regressions](sessions/2026-10-22-autocal-cli-orchestration/regressions.log) |
-| Ordinary help is substantially shorter | H01 | Supported at 80 columns, 243 → 72 lines | [Before](sessions/2026-10-22-autocal-cli-orchestration/help-before.txt), [after](sessions/2026-10-22-autocal-cli-orchestration/help.txt), [summary](sessions/2026-10-22-autocal-cli-orchestration/summary.json) |
-
-#### References
-
-- [Report](sessions/2026-10-22-autocal-cli-orchestration/report.md), [notebook](sessions/2026-10-22-autocal-cli-orchestration/research.md).
-- [Full help](sessions/2026-10-22-autocal-cli-orchestration/help-research.txt), [parser comparison](sessions/2026-10-22-autocal-cli-orchestration/parser-equivalence.json).
-
-## [2026-10-22-autocal-filtering-integration](sessions/2026-10-22-autocal-filtering-integration/)
-
-[abstract.md](sessions/2026-10-22-autocal-filtering-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-filtering-integration/report.md) · [research.md](sessions/2026-10-22-autocal-filtering-integration/research.md)
-
-### Autocal Lane 02 cleanup and reference-comparison audit
-
-Status: complete.
-
-#### Abstract
-
-Lane 02 found an unused anchor-fit threshold and a sigma override that did not
-control per-point normalization. Four bounded frozen-fit replays confirmed that
-changing threshold 250 to 0.01 preserves anchors, radii and both costs exactly;
-the 1 mm sigma override preserved parameters and normalized cost but changed raw
-cost. The cleanup removes both options and their plumbing, consolidates paired
-filter booleans, clarifies filtering/noise help and preserves old stage-artifact
-replay. A post-change replay exactly matches the control. Three complete fixture
-regressions preserve final and iteration parameters, scores and collection counts;
-267 targeted tests pass. A provenance check also resolves the reported layered
-accuracy gap: Lane 02's own final consensus is 1.58 mm anchor RMSE, matching the
-later October reference; its 7.68 mm result is an individual fit. No filtering,
-solver or stopping default was changed, and no accuracy or speed gain is claimed.
-Evidence is recorded simulation and source tracing, not new hardware or collection.
-
-
-#### Topics
-
-autocalibration, filtering, noise sigma, dead flags, threshold, parser inheritance,
-stage artifacts, reference provenance, consensus, solver fallback
-
-#### Tested hypotheses
-
-| Hypothesis | IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Anchor-fit threshold changes the frozen fit | T1 | Rejected | [Before checks](sessions/2026-10-22-autocal-filtering-integration/before-checks.json) |
-| Sigma override is entirely inert | S1 | Rejected for raw cost; parameters unchanged | [Before checks](sessions/2026-10-22-autocal-filtering-integration/before-checks.json) |
-| Default numerics survive cleanup | C1/R1 | Supported on tested replay/fixtures | [After checks](sessions/2026-10-22-autocal-filtering-integration/after-checks.json), [regressions](sessions/2026-10-22-autocal-filtering-integration/regression.log) |
-| Layered comparison establishes fallback regression | H1 | Rejected as inference | [Summary comparison](sessions/2026-10-22-autocal-filtering-integration/summary-comparison.json), [history](sessions/2026-10-22-autocal-filtering-integration/fallback-history.json) |
-
-#### References
-
-- [Report](sessions/2026-10-22-autocal-filtering-integration/report.md): implementation and evidence.
-- [Notebook](sessions/2026-10-22-autocal-filtering-integration/research.md): decisions and commands.
-
-## [2026-10-22-autocal-flags-06-planning-stopping](sessions/2026-10-22-autocal-flags-06-planning-stopping/)
-
-[abstract.md](sessions/2026-10-22-autocal-flags-06-planning-stopping/abstract.md) · [report.md](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md) · [research.md](sessions/2026-10-22-autocal-flags-06-planning-stopping/research.md)
-
-### Autocal planning, recovery and stopping flags: candidate grid, ridge, stop rules and sparse recovery
-
-Status: complete for the bounded initial screen (lane 06). No fresh collection, movement, browser or hardware evidence.
-
-#### Abstract
-
-Question: which of the 16 planning, recovery, stopping and candidate-count options in `autocal.py` are used, and which could be removed, hard-coded, redesigned or retained? Method: three lane-local full-auto replays on the development fixtures (no collection); 12 `replay_stage plan` executions (four variants: baseline, grid 21/81, ridge 1e-8 on each of three iteration-3 fits); three sparse-recovery replays; counterfactual stop rules on the logged prefixes; non-ranking information and candidate-feasibility diagnostics. Measured results: the default ridge (1e-6) is the same order as the observed information (about 1e-7 to 2e-6) and changes the HP3 choice when lowered to 1e-8; the chosen sweep on two fixtures moves with the grid (938, 990 and 1016 mm); `--fd-eps-mm` in 0.1–10 mm changes candidate information negligibly, and exact-repeat exclusion is redundant at the default 20 mm spacing; `--stop-std-mm` and `--stop-cost` are not usable thresholds on these fixtures; sparse recovery is mixed. Main limitations: each replay ran five iterations and stopped with one to three reference sweeps unused, so stop rules are judged only inside that prefix; the independent error is simulation truth, not held-out prediction; no planner choice was validated by a new measurement.
-
-#### Topics
-
-autocalibration, Hangprinter, CDPR, D-optimal sweep planning, Fisher information ridge, candidate grid density, duplicate exclusion, underconstrained recovery, sparse seed, patience, consensus stopping, uncertainty stop thresholds, replay counterfactuals.
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| H1. The chosen sweep is stable when the candidate grid density changes 21/41/81 | 06-P-{five,layered,hp3}-{baseline,grid21,grid81} | Rejected: sweep changes (five and layered delta 938/990/1016 mm; HP3 different fixed anchors at grid 21) | [trials.json](sessions/2026-10-22-autocal-flags-06-planning-stopping/trials.json), [report §3](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#3-planning-screen) |
-| H2. The default ridge 1e-6 is a negligible numerical stabilizer | 06-P-*-ridge1e-8, 06-D-hp3-* | Rejected: same order as observed information; HP3 choice changes at 1e-8 | [report §3.2](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#32-ridge-and-information-scale) |
-| H3. `--fd-eps-mm` between 0.1 and 10 mm does not change candidate information | 06-D-*-eps0.1, 06-D-*-eps10.0 | Supported (information-level; ranking not re-run) | [diag_eps_exclusion.json](sessions/2026-10-22-autocal-flags-06-planning-stopping/diag_eps_exclusion.json) |
-| H4. Existing-sweep exclusion is redundant at default spacing | 06-D-*-spacing20.0, 06-D-*-spacing0.0 | Supported at 20 mm; false at 0 mm (removes 5 exact repeats per fixture) | [diag_eps_exclusion.json](sessions/2026-10-22-autocal-flags-06-planning-stopping/diag_eps_exclusion.json) |
-| H5. Patience 1/3/5 changes the final result on the development replays | 06-S-* (counterfactual on 06-B1..B3) | Mixed and inconclusive: patience 1 would have chosen a better prefix on five-point (7.04 vs 11.78 mm) and saved two sweeps on HP3 with the same error; patience 2 and 5 are unobserved beyond iteration 5 | [report §5.4](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#54-patience) |
-| H6. A stop threshold on `max_std_mm` or `cost` can be chosen without fixture-specific tuning | 06-B1..B3, 06-R1..R3 | Rejected: std 7,000–29,000 mm; cost 46–248 with the lowest cost at 262 mm error | [report §5.2](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#52-threshold-rules) |
-| H7. Sparse recovery improves underconstrained recovery | 06-R1..R3 | Mixed: repaired HP3 iteration 1 from no candidate to 229 mm; five-point iteration 1 worsened 6.75 → 13.48 mm; HP3 final worsened 202 → 236 mm | [report §6](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#6-sparse-recovery) |
-| H8. The spread-consensus stop indicates convergence | 06-B1, 06-B2 (stops at iteration 5 with 1 and 2 sweeps unused) | Not supported: two agreeing fits (spread 0.98 mm and 4.26 mm) gave applied errors of 11.2 and 7.0 mm | [report §5.3](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#53-consensus-stop) |
-| H9. `--top-k` changes which sweep is collected | code trace only | Rejected by code trace (`ranked[0]` alone sets the collection hint) | [report §4](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#4-flag-by-flag-assessment) |
-
-#### References
-
-- [Full report](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md): analysis, measurements, dispositions and limitations.
-- [Research notebook](sessions/2026-10-22-autocal-flags-06-planning-stopping/research.md): decisions, budget and steering.
-- [Trial table](sessions/2026-10-22-autocal-flags-06-planning-stopping/trials.json) and [CSV](sessions/2026-10-22-autocal-flags-06-planning-stopping/trials.csv): one row per trial with overrides and outcomes.
-- [Commands and overrides](sessions/2026-10-22-autocal-flags-06-planning-stopping/commands.md) and [provenance](sessions/2026-10-22-autocal-flags-06-planning-stopping/provenance.json): revision `4f175079`, fixture SHA-256, package versions.
-- [Handoff](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../research/autocal-flag-audit/handoffs/06-planning-stopping.md) and [audit](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../research/autocal-flag-audit/report.md) that defined the screen.
-- [Reference provenance](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../autocal/data/references/README.md) and [regression runner](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../autocal/tools/regress_calibration_logs.py): ground truth (`DatasetSpec.true_anchors`, `true_radii`) and `error_to_true`.
-- [Recording performance note](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../research/autocal-recording-performance.md): recording costs; not used for timing here (recording none).
-
-## [2026-10-22-autocal-lane04-cleanup](sessions/2026-10-22-autocal-lane04-cleanup/)
-
-[abstract.md](sessions/2026-10-22-autocal-lane04-cleanup/abstract.md) · [report.md](sessions/2026-10-22-autocal-lane04-cleanup/report.md) · [research.md](sessions/2026-10-22-autocal-lane04-cleanup/research.md)
-
-### Autocal lane 04 integration and history selection replay
-
-Status: complete.
-
-#### Abstract
-
-This integration removes an unused histogram CLI option and extracts final history
-selection into a function shared by full-auto and offline replay. The standalone
-histogram utility remains supported. Three saved simulated histories reproduce
-the previous inline selection exactly. All 14 saved candidate plans contain 83
-noise-metric fields, correcting the earlier report's claim that those metrics
-were missing. Offline rank artifacts now distinguish the best-ranked single fit
-from applied consensus anchors. No numerical defaults changed and no fitting,
-collection or hardware experiment was run. Focused validation passed 88 tests;
-the results establish refactor equivalence, not improved calibration accuracy.
-
-#### Topics
-
-autocalibration, ranking, consensus, CLI cleanup, frozen replay, noise metrics
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Extraction preserves selection on the three saved histories | I04-1 | Supported | [Checks](sessions/2026-10-22-autocal-lane04-cleanup/checks.json) |
-| Saved history candidate plans lack noise metrics | I04-2 | Rejected for inspected artifacts | [Counts](sessions/2026-10-22-autocal-lane04-cleanup/checks.json) |
-| Validated-only consensus or penalty 2 improves general calibration | None | Not tested | [Integration report](sessions/2026-10-22-autocal-lane04-cleanup/report.md) |
-
-#### References
-
-- [Report](sessions/2026-10-22-autocal-lane04-cleanup/report.md): decisions and source evidence.
-- [Notebook](sessions/2026-10-22-autocal-lane04-cleanup/research.md): scope and budgets.
-- [Checks](sessions/2026-10-22-autocal-lane04-cleanup/checks.json), [script](sessions/2026-10-22-autocal-lane04-cleanup/check_histories.py): artifact hashes and reproduction.
-
-## [2026-10-22-autocal-lane06-integration](sessions/2026-10-22-autocal-lane06-integration/)
-
-[abstract.md](sessions/2026-10-22-autocal-lane06-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-lane06-integration/report.md) · [research.md](sessions/2026-10-22-autocal-lane06-integration/research.md)
-
-### Lane 06 integration: planning CLI cleanup and stop attribution
-
-Status: complete.
-
-#### Abstract
-
-This investigation asks which lane 06 findings justify changes to autocal.
-Six current-source, no-collection replays compare default and disabled spread
-stopping with an eight-iteration ceiling. Two fixtures retain identical applied
-parameters; the outlier fixture's combined truth error improves from 7.009 to
-6.705 mm while its anchor error worsens. This mixed simulation evidence does not
-justify a default stopping-policy change. Replaying the saved HP3 history explains
-the alleged final-anchor discrepancy: held-out ranking selects iteration 4,
-while the running training best is iteration 2. The implementation removes seven
-CLI controls, fixes one-sided ranges and repeat-exclusion fallback, and makes
-final selection explicit. The focused suite passes 140 tests; the broader suite
-passes 533 with seven slow tests deselected. All four selected calibration
-regression fixtures pass with unchanged parameters, iteration comparisons and
-replay sweep/point totals. No hardware, fresh collection or physics changes are
-involved.
-
-#### Topics
-
-autocalibration, planning, CLI simplification, stopping, spread consensus,
-range resolution, duplicate sweeps, held-out selection, regression
-
-#### Tested hypotheses
-
-| Hypothesis | IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Disabling spread stopping improves physical calibration generally | I02, six paired replay controls | Mixed, no default change | [Paired results](sessions/2026-10-22-autocal-lane06-integration/paired-results.json) |
-| HP3 final output disagrees with the actual selected model | I01 | Rejected on saved history | [Report](sessions/2026-10-22-autocal-lane06-integration/report.md) |
-| Cleanup preserves tested contracts and fixes range/exclusion bugs | T01/T02 | Supported tool checks, not accuracy evidence | [Tests](sessions/2026-10-22-autocal-lane06-integration/tests.log) |
-
-#### References
-
-- [Report](sessions/2026-10-22-autocal-lane06-integration/report.md), [notebook](sessions/2026-10-22-autocal-lane06-integration/research.md), [provenance](sessions/2026-10-22-autocal-lane06-integration/provenance.json).
-- [Preceding lane](sessions/2026-10-22-autocal-lane06-integration/../2026-10-22-autocal-flags-06-planning-stopping/report.md).
-- [Replay harness](sessions/2026-10-22-autocal-lane06-integration/replay.py), [paired results](sessions/2026-10-22-autocal-lane06-integration/paired-results.json).
-
-## [2026-10-22-autocal-physical-model-cleanup](sessions/2026-10-22-autocal-physical-model-cleanup/)
-
-[abstract.md](sessions/2026-10-22-autocal-physical-model-cleanup/abstract.md) · [report.md](sessions/2026-10-22-autocal-physical-model-cleanup/report.md) · [research.md](sessions/2026-10-22-autocal-physical-model-cleanup/research.md)
-
-### Autocal ellipse flex removal and zero-tension validation
-
-Status: complete, 2026-10-22.
-
-#### Abstract
-
-Lane 05 found that ellipse flex correction never applied on the reference corpus
-because the collector writes no per-point tensions. This integration removes its
-two CLI switches and ellipse fitting/validation plumbing, preserving independent
-legacy point and plotting consumers. Failed zero-tension extrapolation now stops
-collection, and explicit projected fits require projected angle fields. Fit-free
-before/after comparisons match exactly in 72 checks across twelve fixtures. Two
-full recorded-data replays preserve reference results and collection counts.
-Python and collector checks pass. A small saved-geometry probe finds no valid
-sweeps and a zero numerical gradient in two cost-100 production failures, even
-with sweep rejection disabled. That narrows the next solver investigation without
-changing solver or filtering policy. Calibration evidence is recorded simulation;
-no new movement, hardware measurement or accuracy/speed gain was established.
-
-#### Topics
-
-autocalibration, physical models, flex removal, zero-tension projection, CLI cleanup,
-reference regression, invalid geometry, underconstrained sentinel, solver stagnation
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Removing inert ellipse flex preserves current objective and replays | C05-01, C05-02 | Supported on tested data | [Report](sessions/2026-10-22-autocal-physical-model-cleanup/../../../../research/autocal-physical-model-cleanup/report.md) |
-| Invalid projection can be rejected before recording/fitting | C05-03, C05-04 | Supported by code checks | [Report](sessions/2026-10-22-autocal-physical-model-cleanup/../../../../research/autocal-physical-model-cleanup/report.md) |
-| Turning off sweep rejection makes saved sentinel geometries valid | C05-05 | Rejected for two checked production failures | [Report](sessions/2026-10-22-autocal-physical-model-cleanup/../../../../research/autocal-physical-model-cleanup/report.md) |
-| Different solver starts cure the original failure trajectory | None | Not tested | [Next investigation](sessions/2026-10-22-autocal-physical-model-cleanup/../../../../research/autocal-physical-model-cleanup/report.md#solver-follow-up) |
-
-#### References
-
-- [Report](sessions/2026-10-22-autocal-physical-model-cleanup/../../../../research/autocal-physical-model-cleanup/report.md): changes, metrics, source links and raw evidence.
-- [Notebook](sessions/2026-10-22-autocal-physical-model-cleanup/../../../../research/autocal-physical-model-cleanup/research.md): scope, decisions and failure preservation.
-- [Verification script](sessions/2026-10-22-autocal-physical-model-cleanup/../../../../research/autocal-physical-model-cleanup/verify.py): fit-free before/after and saved-geometry checks.
-
-## [2026-10-22-autocal-solver-integration](sessions/2026-10-22-autocal-solver-integration/)
-
-[abstract.md](sessions/2026-10-22-autocal-solver-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-solver-integration/report.md) · [research.md](sessions/2026-10-22-autocal-solver-integration/research.md)
-
-### HP3 nominal truth verification and lane 01 solver integration
-
-Status: complete.
-
-#### Abstract
-
-The lane 01 report inferred a seventh-fixture scene mismatch from poor fits and
-agreement with an older fitted reference. Static reconstruction from the scene at
-first data commit `0a5a0f6d` and today's HP3 scene instead reproduces the existing
-nominal effective-anchor truth within 0.002 mm rounding. Rescored saved fits have
-63.84–65.05 mm anchor RMSE against that truth; the lane's smaller distances describe
-reference-fit agreement. Five bounded frozen-fit replays preserve the lane's
-numerical results while new traces establish actual solver methods and termination.
-A separate scalar control exercises the production TRF retry; function-level tests
-expose and fix an enabled-fallback bug that skipped finite but invalid converged
-primary fits. Three full replay regressions pass without parameter or collection
-changes. No physical-accuracy improvement, hardware result or new default is
-claimed; original unrecorded browser settings remain a provenance limitation.
-
-
-#### Topics
-
-autocalibration, HP3, effective anchors, simulation truth, solver diagnostics,
-TRF fallback, restarts, iteration budgets, calibration bias
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Nominal scene matches existing truth | T1 | Supported | [Derivation](sessions/2026-10-22-autocal-solver-integration/truth-verification.json) |
-| Diagnostic propagation preserves fitted numerics | D1 | Supported on measured replays | [Controls](sessions/2026-10-22-autocal-solver-integration/replay-checks.json), [variants](sessions/2026-10-22-autocal-solver-integration/followup-checks.json) |
-| Reduced iteration budget is non-binding | I1 | Rejected on measured seventh trajectory | [Variant trace](sessions/2026-10-22-autocal-solver-integration/followup-checks.json) |
-| TRF retry can activate without being selected | F1 | Supported tool control | [Scalar result](sessions/2026-10-22-autocal-solver-integration/forced-fallback.json) |
-| Retry correctly handles converged invalid primary fits | F2 | Fixed and verified by targeted test | [Tests](sessions/2026-10-22-autocal-solver-integration/pytest.log) |
-
-#### References
-
-- [Report](sessions/2026-10-22-autocal-solver-integration/report.md): findings, code changes, source provenance and limits.
-- [Notebook](sessions/2026-10-22-autocal-solver-integration/research.md): budget, intermediate hypothesis and outcome.
-- [Tracked integration report](sessions/2026-10-22-autocal-solver-integration/../../../../research/autocal-solver-lane01-integration.md).
-
-## [2026-10-22-autocal-spool-simplification](sessions/2026-10-22-autocal-spool-simplification/)
-
-[abstract.md](sessions/2026-10-22-autocal-spool-simplification/abstract.md) · [report.md](sessions/2026-10-22-autocal-spool-simplification/report.md) · [research.md](sessions/2026-10-22-autocal-spool-simplification/research.md)
-
-### Integrating spool scale policy and removing two autocal controls
-
-Status: complete.
-
-#### Abstract
-
-Lane 03 identified per-pass scale polish and the default inner spool cap as
-simplification candidates. Twelve sequential fits on three additional simulated
-fixture prefixes compared default/off/inner60 before simplification and defaults
-afterward, with the final three sweeps held out. The cap of 60 exactly reproduced
-30, with all-pass iteration maxima 19, 16 and 11. Removing polish worsened physical
-error from 108.4 to 776.1 mm on flexible lines and from 8.24 to 301.3 mm on the
-ten-point fixture; the pressure fixture was unchanged. Fixing the previous
-default policy exactly preserved anchors, radii, costs, held-out statistics and
-iteration counts. Two CLI/API controls and their obsolete paths were removed.
-The flexible prefix still has a pre-existing cost sentinel; no general accuracy,
-speed or hardware claim follows. All twelve recorded regression fixtures exactly preserve the compared summaries,
-iteration parameters and collection counts.
-
-#### Topics
-
-autocalibration, CLI simplification, scale polish, spool refinement, coordinate
-descent, validation, held-out sweeps, default equivalence
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Cap 60 improves the tested validation prefixes over 30 | V01–V09 | Rejected: identical outputs and counts | [Before trials](sessions/2026-10-22-autocal-spool-simplification/before.log) |
-| Removing polish preserves the two additional scale-sensitive fits | V01–V09 | Rejected: physical/held-out errors worsen | [Before trials](sessions/2026-10-22-autocal-spool-simplification/before.log) |
-| Fixed policy preserves the default validation outputs | V10–V12 | Supported exactly on the three prefixes | [After trials](sessions/2026-10-22-autocal-spool-simplification/after.log), [trials](sessions/2026-10-22-autocal-spool-simplification/trials.json) |
-
-#### References
-
-- [Notebook](sessions/2026-10-22-autocal-spool-simplification/research.md): objective, budgets and constraints.
-- [Report](sessions/2026-10-22-autocal-spool-simplification/report.md): integration scope and evidence.
-- [Validation harness](sessions/2026-10-22-autocal-spool-simplification/harness/validate.py): frozen input selection and measurements.
-- [Tracked integration report](sessions/2026-10-22-autocal-spool-simplification/../../../../research/autocal-spool-lane03-integration.md).
-
-## [2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/)
-
-[abstract.md](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/abstract.md) · [report.md](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/report.md) · [research.md](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/research.md)
-
-### Faster failure handling for encoder-only CDPR autocalibration
-
-Status: complete.
-
-#### Abstract
-
-Can encoder-only CDPR autocalibration become faster without degrading geometry or changing one-click stopping? We audited the supplied zero-buildup HP3 reference, tested recorded-data solver and thinning changes, twelve varied kinematic worlds, and three production native HP3 runs. The reference's lowest training score has 8.00 mm anchor RMSE versus 2.53 mm for its last fit. Several proposed estimator changes fail controls. The retained machine-independent change bypasses L-BFGS-B compilation when fixed point counts make every geometry underconstrained. Two matched, reversed-order pairs of the complete twelve-fixture regression reduce mean wall time from 276.01 to 268.25 seconds (2.81%) and child CPU from 955.72 to 914.55 seconds (4.31%). All 48 fixture executions pass, with identical numerical diagnostics and stopping decisions. The shortcut occurs in 48 of 4014 scalar solves per suite, across eight fixtures including Slideprinter and Hangprinter recordings. A paired native HP3 collection preserves all 160 points, 4503.840 simulated seconds, 3.204 mm anchor RMSE and automatic stopping exactly. This is a conditional compute saving in the shared ellipse L-BFGS-B path; TRF/LM are unchanged. No collection-time or accuracy gain is established. Evidence is recorded, simulated or synthetic, not hardware.
-
-#### Topics
-
-HP3, HP4, Slideprinter, CDPR, encoder-only autocalibration, regression benchmark, CPU time, constant objective, JAX compilation, underconstrained fits, candidate ranking, fewer points, synthetic worlds, automatic stopping
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Lower fit score identifies better anchors | E01 | Rejected on reference | [Audit](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E01-reference-audit.json) |
-| Within-sweep fixed encoder drift explains this reference | E01 | Rejected: range exactly zero; fixed deltas match observations | [Audit](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E01-reference-audit.json) |
-| Common future sweeps repair the individual-candidate ranking | E24 | Rejected on this pool: still selects iteration 4 over more accurate 6 | [Common validation](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E24-common-validation.json) |
-| Endpoint-preserving 40% thinning preserves robust fits | E02 | Rejected: two of three sparse prefixes return sentinels | [Baseline fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E02-baseline/results.json) |
-| Centered squared-length arithmetic improves robustness | E03 | Rejected: dense nine-sweep fit fails | [Paired fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E03-centered/results.json) |
-| TRF resolves sparse fitting failures | E04 | Mixed: rescues 108 points, still fails at 36 points | [TRF fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E04-trf/results.json) |
-| Resetting an invalid recovery seed produces useful sparse geometry | E06–E07 | Mixed: avoids boundary trap, but about 41 mm error remains | [L-BFGS-B](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E06-recovery/results.json), [TRF](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E07-recovery-trf/results.json) |
-| Favoring constrained restarts improves the applied calibration safely | E08, E12–E14 | Rejected as a general default: seventh fixture worsens | [Regression evidence](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E13-regressions.log), [live comparison](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E22-live-comparison.json) |
-| Lowering the minimum points per sweep to three fixes sparse calibration | E11 | Rejected: one sentinel removed with worse geometry; another remains | [Fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E11-min3/results.json) |
-| Structurally constant L-BFGS-B objectives can skip compilation exactly | E16–E23 | Supported within tested scope | [Timing](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E19-benchmark/summary.json), [regressions](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E20-final-regressions.log), [live equality](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E22-live-comparison.json), [synthetic controls](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E23-final-synthetic/results.json) |
-| The shared guard measurably reduces complete regression compute without changing results | E26 | Supported: 2.81% wall and 4.31% child CPU reduction in two pairs | [Timing report](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/regression-timing.md), [audited measurements](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E26-regression-timing/summary.json) |
-| Reusing quiet samples, force-isolation experiments, cost-aware movement or task-space uncertainty improves acquisition | none | Not tested | [Notebook](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/research.md) |
-
-#### References
-
-- [Full report](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/report.md): interpretation, reproduction and limitations.
-- [E26 complete regression timing](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/regression-timing.md), [manifest](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E26-regression-timing/manifest.json), [audited summary](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E26-regression-timing/summary.json): four full suites at revision `79e53cbb562a9e139c6a23b73e91b8c69bbaca85` quantify total cost and machine scope.
-- [Notebook](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/research.md): hypotheses, budgets, failures and decisions.
-- [Supplied HP3 reference](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../extended-autocal/no-buildup-reference-003/sweeps.json) and [saved candidates](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../extended-autocal/no-buildup-reference-003/sweeps.stages/history-007.json): ranking and thinning inputs.
-- [Reference event extraction from the October 12 session](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/E01-events.jsonl): original recording events used for the timing audit; the original RRD is absent here.
-- [Final source patch](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/final-source.diff), [provenance](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/provenance.json): implementation based on revision `9e40f995da14102612f4a7f57c3fc0a0665bbdf5`.
-- [Prior solver/force study](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md), [prior thinning/roundoff study](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/report.md), [prior warm-start study](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-267d719f/report.md): existing gains and negative results that informed the pilots.
-- Caverly, R. J.; Cheah, S. K.; Bunker, K. R.; Patel, S.; Sexton, N.; Nguyen, V. L. (2025), “Online Self-Calibration of Cable-Driven Parallel Robots Using Covariance-Based Data Quality Assessment Metrics,” DOI [10.1115/1.4065236](https://experts.umn.edu/en/publications/online-self-calibration-of-cable-driven-parallel-robots-using-cov/): joint pose/bias estimation and data-quality stopping motivate future experiments; these methods were not implemented here.
-- Wang, H.; Gao, T.; Kinugawa, J.; Kosuge, K. (2017), “Finding Measurement Configurations for Accurate Robot Calibration: Validation with a Cable-Driven Robot,” DOI [10.1109/TRO.2017.2707562](https://scholars.cityu.edu.hk/en/publications/finding-measurement-configurations-for-accurate-robot-calibration/): observability-based configuration selection motivates targeted acquisition.
-- Alexandre dit Sandretto, J.; Daney, D.; Gouttefarde, M. (2012), “Calibration of a Fully-Constrained Parallel Cable-Driven Robot,” [author PDF](https://www-sop.inria.fr/coprin/PDF/a_romansy2012.pdf): redundant internal length constraints and joint nuisance-pose estimation motivate encoder-only alternatives. Its eight-cable, six-DOF embodiment differs from HP3.
-- [Algorithm overview](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../autocal/optimization_algorithm_overview), [objective overview](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../autocal/objective_functions_overview), [stage API](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../autocal/README.md), [recording workload costs](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../research/autocal-recording-performance.md): current workflow and budget contracts actually consulted.
-
-## [2026-10-22-interactive-research-49c8bfde](sessions/2026-10-22-interactive-research-49c8bfde/)
-
-[abstract.md](sessions/2026-10-22-interactive-research-49c8bfde/abstract.md) · [report.md](sessions/2026-10-22-interactive-research-49c8bfde/report.md) · [research.md](sessions/2026-10-22-interactive-research-49c8bfde/research.md)
-
-### Can cable-flex compensation improve HP3 autocalibration?
-
-Status: complete, 2026-10-22.
-
-#### Abstract
-
-I tested why the removed autocal `--flex` flag was inactive and whether a repaired flex correction can improve Hangprinter 3 calibration. Saved HP3 fixtures have no drive or fixed-cable tension fields, so flex-on and flex-off fits are necessarily identical. Native HP3 fixed-pose tests show repeatable material extension up to 0.382 mm from 0.256 to 3.817 N, but the deterministic solver uses constant joint stiffness, so it cannot establish material length dependence, hysteresis or creep. In a controlled 12-fit synthetic HP3 matrix, the exact old correction recovered anchors to numerical precision only when fixed cables were rigid and origin extension was zero. With all cables compliant and nonzero origin extension, the old path was worse than no correction (6.632 versus 6.452 mm anchor RMSE), while an all-role delta correction reached zero. With 0.1 mm noise, all-role correction reduced RMSE from 10.825 to 6.125 mm and held-out error from 0.200 to 0.097 mm. Halving stiffness removed the benefit. This supports the physical idea conditionally, not the removed implementation or a hardware gain.
-
-#### Topics
-
-autocalibration, Hangprinter 3, cable elasticity, flex compensation, encoder deltas, measurement origin, tension, synthetic identification, held-out sweeps, native Rust simulation
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| The removed flag is inactive on saved data because tension inputs are absent | Lane 05 activation probe; 2026-10-22 existing-data check | Supported | All fixtures lack drive/fixed tension; on/off objectives are identical |
-| Correct flex compensation is identifiable and improves anchor recovery under a matched model | Synthetic fit matrix in this session | Mixed | Correct all-role model reaches zero error; exact old path succeeds only in the favorable zero-origin rigid-fixed case; wrong stiffness fails |
-| Native HP3 has repeatable load-dependent extension | Native IDs `6b50bde7...`, `40508c31...` | Supported in simulation | Extension 0.02543-0.38159 mm over four loads; revisits below `2e-15 m`; no physical hysteresis test |
-| Elastic extension is too small to affect calibration in the measured range | None | Inconclusive | 0.526 mm synthetic strain produced 10.8-13.1 mm anchor error; native law and real-hardware scale are unresolved |
-
-#### References
-
-- [Full report](sessions/2026-10-22-interactive-research-49c8bfde/report.md): methods, results, limitations and decision.
-- [Research notebook](sessions/2026-10-22-interactive-research-49c8bfde/research.md): hypotheses, budgets, experiment IDs and steering.
-- [Synthetic fit matrix](sessions/2026-10-22-interactive-research-49c8bfde/synthetic-flex-results.json): 12 analytic fits, held-out residuals and generated cases.
-- [Synthetic harness](sessions/2026-10-22-interactive-research-49c8bfde/harness/synthetic_flex.py): truth model and exact correction variants.
-- [Native HP3 load summary](sessions/2026-10-22-interactive-research-49c8bfde/high-load-summary.json): fixed-pose force/extension measurements.
-- [Longer-line native control](sessions/2026-10-22-interactive-research-49c8bfde/high-load-longer-summary.json): length-invariance limitation.
-- [Failed optimizer pilot](sessions/2026-10-22-interactive-research-49c8bfde/synthetic-flex-optimizer-pilot.json): preserved non-truth local-minimum result.
-- [Invalid zero-buildup fixture fit](sessions/2026-10-22-interactive-research-49c8bfde/existing-fifth-uncorrected.json): existing-data configuration mismatch.
-- Git revision `06bc6c41`: removal of `--flex` and `--spring-k-multiplier`.
-
-## [2026-10-22-interactive-research-7345527c](sessions/2026-10-22-interactive-research-7345527c/)
-
-[abstract.md](sessions/2026-10-22-interactive-research-7345527c/abstract.md) · [research.md](sessions/2026-10-22-interactive-research-7345527c/research.md)
-
-### interactive research
-
-Status: not yet summarized.
-
-#### Abstract
-
-The session has started. No research result has been summarized yet.
-
-#### Topics
-
-interactive research
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| None recorded yet | None | Not tested | None |
-
-#### References
-
-- [Original task](sessions/2026-10-22-interactive-research-7345527c/prompt.txt)
-- [Research notebook](sessions/2026-10-22-interactive-research-7345527c/research.md)
-
-## [2026-10-22-interactive-research-a430536f](sessions/2026-10-22-interactive-research-a430536f/)
-
-[abstract.md](sessions/2026-10-22-interactive-research-a430536f/abstract.md) · [report.md](sessions/2026-10-22-interactive-research-a430536f/report.md) · [research.md](sessions/2026-10-22-interactive-research-a430536f/research.md)
-
-### HP3 encoder autocal: where simulated collection time goes, and feed rate as a speed lever
-
-Status: complete for the bounded scope; no production change accepted.
-
-#### Abstract
-
-Can encoder-only autocal collect data faster without losing robustness? We profiled the user's HP3 no-buildup reference run (9 sweeps, 180 points, 6,756 s simulated) from its saved per-point timestamps and ran three native headless single-sweep collections (20 points each) at feed 700, 1400 and 2800 mm/min. Sampling is only about 6% of simulated time; the rest is motion plus settling, roughly proportional to travel. Feed 1400, the current default, gave the shortest collection of the three (51.6 s vs 62.9 s and 62.2 s from sweeps.json). Faster feeds did not shorten collection because settle time grew with move speed. No anchor accuracy was scored: the reference has no authored point-anchor ground truth, and each experiment is a single sweep.
-
-#### Topics
-
-autocalibration, HP3, encoder-only calibration, collection time, settling, feed rate, native Rust headless collection, reference run profiling, ground truth limits
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Per-point collection cost is dominated by sampling | Reference profile | Rejected: sampling is 410 s of 6,756 s (about 6%) | [reference sweeps](sessions/2026-10-22-interactive-research-a430536f/../../../extended-autocal/no-buildup-reference-003/sweeps.json), [notebook](sessions/2026-10-22-interactive-research-a430536f/research.md) |
-| Per-point cost has a large fixed settle constant | Reference profile, E01–E03 | Rejected for the reference (intercept ≈ 0); native intercepts 0.15–0.73 s | [research notes](sessions/2026-10-22-interactive-research-a430536f/research.md) |
-| A higher drive feed shortens collection | E01, E02, E03 | Rejected: 2800 mm/min took 62.2 s vs 51.6 s at 1400; 700 mm/min took 62.9 s | [E01](sessions/2026-10-22-interactive-research-a430536f/native/ab74bf4b36fc4bf2a00375f3a2234055/5452996a02a3490ea37ead50a55f7eb1/sweeps.json), [E02](sessions/2026-10-22-interactive-research-a430536f/native/ab74bf4b36fc4bf2a00375f3a2234055/c45535d5062240c28aa37fad1b59df1e/sweeps.json), [E03](sessions/2026-10-22-interactive-research-a430536f/native/ab74bf4b36fc4bf2a00375f3a2234055/42f64ae035934f56968ac5ff84657b95/sweeps.json) |
-| Settle time per mm of travel grows with feed | E01–E03 gap fits | Supported within this native sweep: 0.235 s/mm (1400), 0.296 (700), 0.393 (2800) | [research notes](sessions/2026-10-22-interactive-research-a430536f/research.md) |
-| Anchor-selection disagreement with geometry can be fixed by a cheaper selector | Not tested | Not tested | None |
-| Reference fit anchors are within a known error of truth | Not tested | Not tested: no authored point-anchor truth available | [native-collection guide](sessions/2026-10-22-interactive-research-a430536f/../../../../research/native-collection.md) |
-
-#### References
-
-- [Full report](sessions/2026-10-22-interactive-research-a430536f/report.md): analysis, measurements and limitations.
-- [Research notebook](sessions/2026-10-22-interactive-research-a430536f/research.md): experiment decisions and accepted steering.
-- [Reference run](sessions/2026-10-22-interactive-research-a430536f/../../../extended-autocal/no-buildup-reference-003/sweeps.json): HP3 no-buildup run used for the profile.
-- [Native collection guide](sessions/2026-10-22-interactive-research-a430536f/../../../../research/native-collection.md): authored-scene ground truth limits.
-- [Recording-mode cost](sessions/2026-10-22-interactive-research-a430536f/../2026-10-15-autocal-recording-modes/abstract.md): earlier recording-cost measurements, relevant to choosing `none` for sweeps.
-- [HP4 timing and transit budget](sessions/2026-10-22-interactive-research-a430536f/../2026-10-19-interactive-research-8d7a82a2/abstract.md): earlier HP4 collection-duration work; not re-tested here.
-
-## [2026-10-22-interactive-research-d1d37c7f](sessions/2026-10-22-interactive-research-d1d37c7f/)
-
-[abstract.md](sessions/2026-10-22-interactive-research-d1d37c7f/abstract.md) · [research.md](sessions/2026-10-22-interactive-research-d1d37c7f/research.md)
-
-### interactive research
-
-Status: not yet summarized.
-
-#### Abstract
-
-The session has started. No research result has been summarized yet.
-
-#### Topics
-
-interactive research
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| None recorded yet | None | Not tested | None |
-
-#### References
-
-- [Original task](sessions/2026-10-22-interactive-research-d1d37c7f/prompt.txt)
-- [Research notebook](sessions/2026-10-22-interactive-research-d1d37c7f/research.md)
-
 ## [2026-10-23-autocal-agenda](sessions/2026-10-23-autocal-agenda/)
 
 [abstract.md](sessions/2026-10-23-autocal-agenda/abstract.md) · [report.md](sessions/2026-10-23-autocal-agenda/report.md) · [research.md](sessions/2026-10-23-autocal-agenda/research.md)
@@ -2772,55 +2261,6 @@ consensus membership, provenance, required premises, withdrawal, HP4 scope
 - [Notebook](sessions/2026-10-23-program-evidence-graph/research.md): objective, budget and next decision.
 - [Graph guide and seed](sessions/2026-10-23-program-evidence-graph/../../../../research/program-graph/README.md): commands, sources, hashes and real-data exercise.
 - [CM-E1 report](sessions/2026-10-23-program-evidence-graph/../2026-10-23-consensus-membership/report.md): scoped retirement evidence, inspected without replay.
-
-## [2026-10-23-program-task-sanity](sessions/2026-10-23-program-task-sanity/)
-
-[abstract.md](sessions/2026-10-23-program-task-sanity/abstract.md) · [report.md](sessions/2026-10-23-program-task-sanity/report.md) · [research.md](sessions/2026-10-23-program-task-sanity/research.md)
-
-### Research-program sanity check: a useful consensus lead and larger task outcomes
-
-Status: complete.
-
-#### Abstract
-
-Reviewed the three committed workflow changes and independently recomputed the
-finite-held-out-only consensus comparison proposed by task 003. On two recorded
-Slideprinter histories and one HP3 history, all input hashes and baseline errors
-matched saved producer evidence. Restricting consensus membership improved summed
-per-anchor Euclidean error from 10.893581 to 6.988852 mm on five-points and from
-4.670121 to 2.552240 mm on layered. HP3 remained at 197.407724 mm because both
-policies rejected their candidate pairs and retained the same single fit. Six
-selection evaluations used no fitting, prediction reevaluation, physics or
-collection. This supports a larger saved-history investigation, not a default
-change or hardware claim. Archive tests passed. Remaining tasks now cover a real
-research decision, a durable evidence handoff and a living research agenda.
-These are workflow decisions from inspection, not a controlled productivity study.
-
-#### Topics
-
-research workflow, consensus, held-out validation, applied anchors, evidence reuse,
-program agenda, artifact portability, task granularity, negative results.
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Finite-prediction-only consensus is nonworse on the three specified histories | H1, six selection evaluations | Supported on this screen | [Exact metrics and inputs](sessions/2026-10-23-program-task-sanity/results.json) |
-| New prompt structure causally improves research productivity | None | Not tested; task revisions are practical judgments | [Inspection and limits](sessions/2026-10-23-program-task-sanity/report.md) |
-
-#### Decision handoff
-
-- Scope: three frozen simulated histories from 4f175079; selection functions at ea2b7d7a; no changed trajectories or hardware.
-- Review: current agent recomputed selection/anchor errors and matched saved baselines; no independent physics reproduction or consensus prediction check.
-- Decision: retain production defaults; make task 004 a broader research-and-integration decision. Improve evidence handoff before building generic graph tooling.
-- Next: test independent histories and the applied anchors with their actual spool model; this can expose membership regressions not seen in the initial screen.
-
-#### References
-
-- [Report](sessions/2026-10-23-program-task-sanity/report.md), [notebook](sessions/2026-10-23-program-task-sanity/research.md), [reproduction script](sessions/2026-10-23-program-task-sanity/probe.py), [results](sessions/2026-10-23-program-task-sanity/results.json).
-- [Task-003 proposal](sessions/2026-10-23-program-task-sanity/../../../../research/program-tasks/003-one-next-question.md): predeclared comparison and success rule.
-- [Producer checks](sessions/2026-10-23-program-task-sanity/../2026-10-22-autocal-lane04-cleanup/checks.json): hashes and recorded equivalence.
-- [Copied inputs](sessions/2026-10-23-program-task-sanity/inputs/): history inputs and producer policy results retained locally.
 
 ## [2026-10-23-program-worker-dispatch](sessions/2026-10-23-program-worker-dispatch/)
 
@@ -3034,6 +2474,16 @@ recovery, process ownership, pause, cancellation, controller interruption
 - [Research notebook](sessions/2026-10-24-bounded-controller/research.md): budget and decisions.
 - [Controller guide](sessions/2026-10-24-bounded-controller/../../../../research/program-controller.md): current operations and recovery workflow.
 - [Source hashes](sessions/2026-10-24-bounded-controller/source-hashes.json): exact source and task documentation reviewed.
+
+## [2026-10-24-cloud-research-runtime](sessions/2026-10-24-cloud-research-runtime/)
+
+[abstract.md](sessions/2026-10-24-cloud-research-runtime/abstract.md) · [report.md](sessions/2026-10-24-cloud-research-runtime/report.md) · [research.md](sessions/2026-10-24-cloud-research-runtime/research.md)
+
+### Keyless research workers and separate reviews in a cloud chat
+
+Keywords: research manager, cloud agents, existing login, MCP, native physics, independent review, cancellation, durable memory
+
+The standalone Codex CLI could not reuse this cloud task's supplied authentication. Native prerequisites and stock MCP worked after loading the repository cloud environment. A local explicit client transport then connected the existing manager/controller/launcher to actual authenticated cloud subagents. Two managed investigations and separate fixed-evidence reviews produced two scoped report-only admissions without another login or API key. One worker ran 100 native HP3 steps and verified all 101 telemetry/RRD samples. A third actor was cancelled with confirmed interruption and launcher cleanup. A fresh host retained two admissions with no active or duplicate workers. This is an active-chat prototype, not an unattended broker, enforced read-only reviewer sandbox, calibration improvement or formal task 016 release.
 
 ## [2026-10-24-live-manager-release](sessions/2026-10-24-live-manager-release/)
 
@@ -3282,94 +2732,60 @@ research manager, worker pool, SQLite reservations, review backlog, worktree iso
 - [Controller guide](sessions/2026-10-24-worker-pool/../../../../research/program-controller.md): commands and ownership boundaries.
 - [Preceding bounded-controller report](sessions/2026-10-24-worker-pool/../2026-10-24-bounded-controller/report.md): task 013 foundations reused here.
 
-## [2026-10-26-cm-saved-evidence-review](sessions/2026-10-26-cm-saved-evidence-review/)
+## [2026-11-05-force-disagreement-program-startup](sessions/2026-11-05-force-disagreement-program-startup/)
 
-[abstract.md](sessions/2026-10-26-cm-saved-evidence-review/abstract.md) · [report.md](sessions/2026-10-26-cm-saved-evidence-review/report.md) · [research.md](sessions/2026-10-26-cm-saved-evidence-review/research.md)
+[abstract.md](sessions/2026-11-05-force-disagreement-program-startup/abstract.md) · [report.md](sessions/2026-11-05-force-disagreement-program-startup/report.md) · [research.md](sessions/2026-11-05-force-disagreement-program-startup/research.md)
 
-### Saved consensus evidence rejects blanket nonworsening adoption
+### Force and measurement robustness across HP3 friction and noise variation
 
-Status: complete; separately reviewed and admitted.
-
-#### Abstract
-
-This iteration asks whether saved CM-E1 evidence justifies unconditional finite-prediction-only final-consensus adoption. One bounded local worker inspected four archived sources; a fresh local reviewer checked the frozen claim, report and nine selected assets. The archived additional cohort contains one improvement, two regressions and five unchanged outcomes. Its summed per-anchor error falls from 401.100276 to 400.797031 mm, but individual datasets worsen by 0.502998 and 0.094156 mm. All three changed selections lack a common unseen validation sweep. The reviewer returned supported/keep, and the controller admitted the scoped finding. Retire the blanket nonworsening proposal in this archived scope and preserve current defaults. These are inspected producer simulation measurements, with 91 passing structural consistency checks and no new numerical experiments. The review does not establish numerical correctness, hardware accuracy, stopping behavior or current-code equivalence. The next useful observation is provenance of compatible later sweeps unseen by both applied models.
-
-#### Topics
-
-Hangprinter, CDPR, autocalibration, consensus membership, saved evidence, per-dataset regression, common unseen sweeps, separate review
-
-#### Tested hypotheses
-
-| Hypothesis | Investigation | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Saved CM-E1 records warrant withholding unconditional adoption while common-unseen predictive superiority remains unresolved | CM-SAVED-A1; historical CM-E1 | Supported by separate review | [Report](sessions/2026-10-26-cm-saved-evidence-review/report.md), [review](sessions/2026-10-26-cm-saved-evidence-review/review.json) |
-| Blanket finite-only final consensus never worsens an additional dataset | Historical CM-E1 inspected by CM-SAVED-A1 | Rejected within archived scope | [Frozen producer results](/home/torbjorn/repos/hp-sim5/research/programs/program-e31e5321be5940baacf677409b2579e0/submissions/cm-fixed-submission/source-results-json) |
-| Changed selections establish predictive superiority on common unseen data | Historical CM-E1 inspected by CM-SAVED-A1 | Inconclusive | [Frozen training coverage](/home/torbjorn/repos/hp-sim5/research/programs/program-e31e5321be5940baacf677409b2579e0/submissions/cm-fixed-submission/source-audit-json) |
-| A narrower rule improves fresh fits or hardware | None | Not tested | Outside this iteration |
-
-#### Decision handoff
-
-- Scope: eleven archived simulated final-selection histories, eight names beyond the motivating screen; summed per-anchor Euclidean distance in mm.
-- Review: fresh local Codex context `review-run-beb299c90c6441278e176474b7f72fee`; supported/keep/report_only. Evidence inspected, not numerically reproduced.
-- Decision: retire only the unconditional nonworsening proposal; preserve current defaults. No production change.
-- Next: separately scope a saved-source compatibility search for later whole sweeps unseen by every member and chosen spool fit in both arms, prioritizing the two regressions. No further work is funded.
-
-#### References
-
-- [Manager report](sessions/2026-10-26-cm-saved-evidence-review/report.md), [notebook](sessions/2026-10-26-cm-saved-evidence-review/research.md) and [review receipt](sessions/2026-10-26-cm-saved-evidence-review/review.json): scope, decisions, cleanup and reviewer limitations.
-- [Full worker report](/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) and [evidence extract](/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json): individual saved outcomes, sweep IDs, source hashes and structural checks.
-- [Frozen submission manifest](/home/torbjorn/repos/hp-sim5/research/programs/program-e31e5321be5940baacf677409b2579e0/submissions/cm-fixed-submission/manifest.json): exact reviewed bytes and source/base identities.
-
-## [2026-10-27-program-usefulness-audit](sessions/2026-10-27-program-usefulness-audit/)
-
-[abstract.md](sessions/2026-10-27-program-usefulness-audit/abstract.md) · [report.md](sessions/2026-10-27-program-usefulness-audit/report.md) · [research.md](sessions/2026-10-27-program-usefulness-audit/research.md)
-
-### Research Program usefulness versus the direct Research Agent
-
-Status: complete for saved-evidence inspection; no matched agent trial.
+Status: in progress, first bounded worker running.
 
 #### Abstract
 
-Does the saved record support lower usefulness from Research Programs? Inspection
-of five actual-run program snapshots found nine launched workers, median wall
-allocation eight minutes, six admissions (four report-only, one needs-changes,
-one ready tooling repair), and no integration records. A defined sixteen-session
-direct-agent prompt cohort has twelve completed summaries, including ten reported
-implementation changes. Two timing gains were recomputed from saved measurements.
-Different tasks, dates, platforms and budgets prevent a causal success-rate or
-elapsed-time comparison. Current source emphasizes small reviewed investigations,
-does not automatically select existing topic prompts, and ends integration before
-merging. Longer delivery missions using existing research prompts, clear blocker
-reporting and explicit integration authority are proposed improvements, not tested
-results. No models, simulations, fitting or production services were run.
+This program asks whether force and measurement choices can prevent large
+encoder-only HP3 calibration errors across friction and noise variation.
+The startup audit found completed profiling, warm-start and
+early-stopping work, mixed solver/default results, a ten-world mass/gravity
+comparison, and an origin-shift study. It replaced stale starting questions in
+the parameter-variation prompt with narrower unresolved directions. Program
+runtime setup and independent command socket checks passed. These are tool
+checks. The human ended the interview and prioritized robustness, with any anchor
+above 20 mm a failure and every anchor below 5 mm good performance. Friction is
+the primary variation, and up to 20% additional collection time is acceptable for
+substantially fewer large errors. A bounded worker has begun fresh collection.
+The first nominal run stopped automatically with maximum applied anchor error
+3.841 mm and all four anchors below 5 mm. The first active-friction/noise run
+failed settling before collecting any points. Its clean encoder drift was much
+larger than injected noise. One bounded preload policy is under development;
+no policy improvement or separate evidence review is available yet.
 
 #### Topics
 
-research program, research agent, usefulness, delivery, cloud, worktrees, review,
-integration, prompts, wall budgets, continuity, goal mode, retrospective audit
+Autocalibration, HP3, force tuning, solver disagreement, parameter variation,
+encoder-only calibration, research program, startup interview.
 
 #### Tested hypotheses
 
-| Hypothesis | Observation | Outcome | Evidence |
+| Hypothesis | Experiment IDs | Outcome | Evidence |
 | --- | --- | --- | --- |
-| Saved managed work delivers less implementation value in the observed tasks | USE-01: five program snapshots and sixteen direct launcher sessions | Supported descriptively; tasks and budgets confounded | [Report](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md) |
-| Managed workers receive short allocations | USE-02: nine saved attempt allocations | Supported: 2–25 minutes; median 8 | [Data](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/data.json) |
-| Goal mode alone explains the difference | No matched trial or complete goal transcripts | Inconclusive | [Source analysis](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md#source-level-explanations) |
-| Proposed longer delivery missions improve outcomes | None | Not tested | [Proposed changes](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md#changes-i-recommend-in-order) |
+| A bounded preload improves completion across friction/noise worlds | None completed | Not tested | Worker experiment in progress |
+| Current default completes the first active-friction/noise world | dev1-active-default | Rejected for this simulated collection, unreviewed | [Worker evidence](sessions/2026-11-05-force-disagreement-program-startup/../attempt-939c073f49004eb6949910600200be51/evidence/measurements.json) |
 
 #### Decision handoff
 
-- Scope: available archived programs and a defined October 8–22 direct prompt cohort at 1360d980.
-- Review: parent inspected source/results and recomputed saved timing arithmetic; no independent actor or scientific reproduction.
-- Decision: use direct agents for substantive implementation until Program demonstrates the full delivery cycle; improve its mission contract before adding coordination layers.
-- Next: a small matched direct/managed implementation trial with equal permissions, allowances and delivery authority.
+- Scope: known spool radii, zero buildup, no line layering, HP3 simulation.
+- Review: manager inspected the historical reports; no separate review yet.
+- Decision: preserve current defaults pending a paired robustness experiment.
+- Next: verify active friction/noise interventions, then compare a frozen policy
+  on held-out worlds. Initial results remain unreviewed.
 
 #### References
 
-- [Full assessment](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/report.md): findings, limits, sources and recommendations.
-- [Audited data](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/data.json): exact inventory, provenance and recomputed arithmetic.
-- [Audit script](sessions/2026-10-27-program-usefulness-audit/../../../../research/reports/program-usefulness/audit.py): reproduction without model or simulation work.
-- [Notebook](sessions/2026-10-27-program-usefulness-audit/research.md): scope and actions.
+- [Research notebook](sessions/2026-11-05-force-disagreement-program-startup/research.md): objective, candidate experiment, budgets and pending interview.
+- [Startup report](sessions/2026-11-05-force-disagreement-program-startup/report.md): audit and tool checks.
+- [Updated prompt](sessions/2026-11-05-force-disagreement-program-startup/../../../../research/prompts/autocal_parameter_variation_focus.txt): scoped questions and historical evidence links.
+- [Ten-world and fallback report](sessions/2026-11-05-force-disagreement-program-startup/../2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md): existing simulated solver and force evidence.
+- [Fresh reference study](sessions/2026-11-05-force-disagreement-program-startup/../2026-10-20-interactive-research-ae0174ce/report.md): limits of origin-shift approaches.
 
 ## [architecture-batch](architecture-batch/)
 
@@ -3607,98 +3023,123 @@ integration verification, partial session summary
 - [Original saved artifact](architecture-viewer-validation/prompt.txt)
 - [Tracked account of route, resume and Viewer checks; consult this for outcomes](architecture-viewer-validation/../../../research/architecture-verification.md)
 
-## [attempt-8cc3e522df934dafbc74a9639e34721e](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/)
+## [attempt-6aabde30a2df4f20a0e259cc25c52b4b](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/)
 
-[abstract.md](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/abstract.md) · [report.md](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) · [research.md](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/research.md)
+[abstract.md](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/abstract.md) · [report.md](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/report.md) · [research.md](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/research.md)
 
-### CM-E1 saved-source audit: aggregate improvement fails per-dataset nonworsening
-
-Status: complete; inspection finished, fresh review pending.
-
-#### Abstract
-
-Do four archived CM-E1 sources support unconditional finite-prediction-only final-consensus nonworsening? This audit inspected their bytes and JSON, copied 219,323 bytes of immutable source evidence, and checked hashes, cross-file identities, stored summary arithmetic and saved training/fold sets. Among eight dataset names beyond the motivating screen, the inspected producer evidence records one improvement, two regressions and five unchanged outcomes. Summed anchor error decreases from 401.100276 to 400.797031 mm, while flexible_lines_2000 and ten_points_w_buildup worsen by 0.502998 and 0.094156 mm. Thus the aggregate gain does not satisfy per-dataset nonworsening. For all three changed selections, the baseline trained on every available sweep; each variant leaves one terminal sweep unseen, but none is unseen by both models. Predictive superiority remains unresolved. All 91 structural consistency checks pass. These are inspected historical simulation measurements, with no independent numerical replay, fresh fits, physics, collection or hardware validation. Source identities and internal agreement do not validate the producer's numerical implementation or current-code equivalence.
-
-#### Topics
-
-CM-E1, consensus membership, autocalibration, finite prediction, final selection, per-dataset nonworsening, aggregate error, common unseen sweeps, training overlap, simulated fixtures, provenance audit, scoped-holdout.
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Finite-only final consensus never worsens each additional archived dataset | CM-SAVED-A1; historical CM-E1 | Rejected within archived scope | [Rows 6 and 9](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json) |
-| The additional cohort's aggregate error decreases | CM-SAVED-A1; historical CM-E1 | Supported as inspected producer evidence | [Saved summary](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/results.json) |
-| Changed cases establish common-unseen predictive superiority | CM-SAVED-A1; historical CM-E1 | Inconclusive | [Empty folds and saved training coverage](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json) |
-| Archived regressions warrant withholding unconditional adoption | CM-SAVED-A1 | Supported within archived scope | [Report](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) |
-| A narrower rule improves fresh fits, stopping or hardware | None | Not tested | Outside allocation |
-
-#### Decision handoff
-
-- Scope: CM-E1's eleven archived simulated histories, including eight additional dataset names; unconditional finite-prediction-only final consensus; sum of per-anchor distances in mm.
-- Review: this worker inspected four producer sources and 91 structural checks. Numerical correctness was not independently replayed; a fresh reviewer is pending.
-- Decision: retire only the unconditional nonworsening default-change proposal in this scope. Do not infer broader solver/model inadequacy or change production defaults.
-- Next: separately inspect whether compatible saved later whole sweeps exist outside training of all members and the chosen spool fit in both arms for rows 6, 9 and 10. No search or evaluation was performed here.
-
-#### References
-
-- [Report](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) and [notebook](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/research.md): reasoning, constraints and handoff.
-- [CM-E1 report, preceding session 2026-10-23-consensus-membership](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/report.md): archived method and interpretation; outgoing sources not followed.
-- [CM-E1 results](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/results.json): exact saved outcomes and fold IDs.
-- [CM-E1 audit](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/audit.json): saved training coverage and observation identities.
-- [CM-E1 input manifest](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/inputs.json): cohorts, simulation truth and producer provenance.
-- [Evidence extract](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json) and [extractor](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/extract.py): exact source hashes, JSON pointers and consistency checks.
-
-## [autocal-candidate-model-validation-and-throughput-fdb616a4](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/)
-
-[abstract.md](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/abstract.md) · [report.md](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/report.md) · [research.md](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/research.md)
-
-### Autocal validation, collection throughput and compiled Python physics
+### Small cloud runtime tests leave autonomous research unverified
 
 Status: complete.
 
-Saved autocal and throughput evidence plus compiled-solver follow-up, updated 2026-10-08.
-
 #### Abstract
 
-Recorded and synthetic HP3 experiments tested candidate validation, bounded adjustments and informative movements. A guarded veto and tie-breaker rejected impossible candidates in 15/15 deliberate counterexamples without changing the eleven recorded selections; no recorded HP3 accuracy gain was established. Bounded updates failed under winding mismatch and poor recorded starts. A production HP4 collection took 1693.12 seconds for twelve observations. Headless JS subsequently improved matched short recorded workloads by 19.03× and retained frozen-replay encoder agreement. A double-precision Warp CPU solver passed 99 fixtures and accelerated complete HP4 updates by 1.96×. Longer controlled comparisons used 20 simulated seconds per trial, three repetitions per HP3 backend and one per HP4 backend. CUDA took 37.24/168.61 seconds on HP3/HP4, versus CPU 26.87/105.95 and JS 1.27/6.63 seconds. Maximum sampled CUDA-to-JS encoder difference was 0.002161°, below the 0.01° comparison bound. Profiling identifies costly serial CUDA execution/readbacks and remaining Python systems. CUDA was slower for these single-world workloads. Fresh complete collection throughput, independent-world GPU batching and hardware accuracy remain unestablished. CPU-only JAX remains a deliberate prior performance choice.
+This saved-evidence review asks whether bounded cloud-native runtime tests establish calibration improvement or an unattended research release. No new experiments were run. The runtime summary records two 100-step rust-native calls of 0.2 simulated seconds each. A separate launcher-attached HP3 run records 100 steps, 101 telemetry samples and 101 RRD samples with a readable blueprint. This review checked the latter run's six saved artifact hashes against its validation record. These observations support bounded production-tool and recording feasibility. They contain no fitted candidate comparison, held-out prediction evaluation or hardware measurement. Calibration improvement remains inconclusive and was not tested. The separate run's report explicitly leaves platform dispatch relayed by the parent chat and excludes interruption/recovery and separate review. Full unattended release therefore remains unverified. Continue the existing-login cloud adapter route with a bounded lifecycle and independent-review gate before any scientific calibration study.
 
 #### Topics
 
-autocalibration, HP3, HP4, candidate-owned spool models, winding mismatch, elasticity, bounded updates, D-optimal movement, sentinel rejection, headless JS, Python parity, Rerun throughput, Warp CPU, CUDA, sequential XPBD, compact state arrays
+cloud agents, existing login, HP3, rust-native, MCP, Rerun, calibration evidence, unattended release
 
 #### Tested hypotheses
 
 | Hypothesis | Experiment IDs | Outcome | Evidence |
 | --- | --- | --- | --- |
-| A common unseen sweep fixes history ranking | E01 / E03 | Not consistently supported | [Corrected audit](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/E03-selection-audit-corrected.json) |
-| Candidate-owned models and complete coverage reject false validation | E07 | Supported on 15 counterexamples; recorded accuracy unchanged | [Stress results](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/E07-ranking-stress.json), [regressions](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/final-regressions.json) |
-| Bounded residual updates improve geometry under model mismatch | E02 / E04 | Mixed; winding and poor starts defeat validation | [Synthetic](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/E02-E04-synthetic-results.json), [recorded](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/E04-recorded-results.json) |
-| D-optimal selection chooses the best physical movement | E06 | Mixed; best in 2/3 starts | [Movement results](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/E06-movement-results.json) |
-| Native production collection yields ingestible measurements | E05 | Supported for 12 HP4 observations; accuracy unestablished | [Collection summary](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/E05-native-summary.json) |
-| Headless JS reduces runtime while retaining encoder parity | P01 / P02 / P03 | Supported on controlled workloads and frozen replay; fresh collection unmeasured | [Matrix](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/P02-matrix.json), [recorded replay](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/P03-final-recorded/replay.json) |
-| Compiling the ordered solver accelerates full native physics | C02 / C03 | Supported; HP4 solver 7.90×, whole world 1.96×, still below realtime | [Repeated timing](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/compiled-solver/C03-timing.json), [fixture checks](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/compiled-solver/C02-final-focused.txt) |
-| CUDA matches compiled CPU or JS speed | L01 / L02 | Rejected on the tested 20-s workload: 38.6% / 59.1% slower than CPU | [Complete timing](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/results.json) |
-| CUDA solver matches targeted reference fixtures | C04B | Supported on five short fixtures; longer runs measured separately below | [CUDA comparisons](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/compiled-solver/C04-cuda-parity.txt) |
-| Longer sampled encoder agreement stays within 0.01° | L01 / L02 | Supported at all 201 sampled observations; hardware accuracy unestablished | [Comparisons](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/results.json), [coverage](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/validation.json) |
-| Serial CUDA execution/readbacks add cost | L03 | Supported by instrumented profiles; individual timings overlap | [CPU](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/L03-native-warp.txt), [CUDA](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/L03-native-warp-cuda.txt), [GPU intervals](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/L03-kernel-events.json) |
+| Bounded production calls and recording are feasible | 8fd9086bb97e40df815b9236ece792e5; a5a83009ee5a4079a1da693294ddd8aa; 8f977de942c64d7391f63c3198ba0c9d | Supported within saved test scope | [Runtime summary](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/../2026-10-24-cloud-research-runtime/production-validation.json), [production result](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/../attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/production-result.json) |
+| Calibration improves | None | Not tested; inconclusive | No fit or held-out comparison in the cited tests |
+| Full unattended research release works | None for full lifecycle | Not tested; inconclusive | [Prior report](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/../attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/report.md) identifies remaining dispatch and lifecycle limits |
+
+#### Decision handoff
+
+- Scope: saved simulated runtime tests at recorded revision 8acde0c21d5b9db8893115e3e79d82d9e41f98ca. No hardware inference.
+- Review: this cloud worker inspected saved records and checked artifact and available native source hashes. No numerical recomputation or new RRD decoding.
+- Decision: keep the existing-login cloud adapter as a feasible bounded route. Block claims of calibration improvement or full release pending matching evidence.
+- Next: a proposed, untested manager-to-launcher-to-cloud-worker-to-separate-reviewer lifecycle gate with durable completion, cancellation and recovery evidence. Then separately authorize a calibration comparison with independent held-out evaluation.
 
 #### References
 
-- [Guarded validation and performance follow-up with limitations](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/report.md)
-- [H1–H4, E01–E07 and P01–P04 budgets and decisions](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/research.md)
-- [Separate physical and prediction errors](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/prediction-metrics.json)
-- [Benchmark method, timings and reproducible replay commands](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/../../../../research/collection-performance.md)
+- [Full report](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/report.md) explains inference limits.
+- [Research notebook](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/research.md) records allocation and steering.
+- [Validation](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/validation.json) records checked hashes and zero numerical work.
+- [Previous cloud worker](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/../attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/report.md) supports transport feasibility and identifies untested release behavior.
 
-- [Compiled Python solver methods, API, numerical and GPU limits](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/../../../../research/compiled-python-solver.md)
-- [Warp CPU implementation](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/../../../../src/python/cable_joints_3d/warp_solver.py): the typed double-precision core and ECS adapter.
+## [attempt-939c073f49004eb6949910600200be51](sessions/attempt-939c073f49004eb6949910600200be51/)
 
-- [GPU visibility diagnosis](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/compiled-solver/C04-device-visibility.json): host RTX 3070 Ti exists; isolated `/dev` prevents this process from accessing it.
+[abstract.md](sessions/attempt-939c073f49004eb6949910600200be51/abstract.md) · [report.md](sessions/attempt-939c073f49004eb6949910600200be51/report.md) · [research.md](sessions/attempt-939c073f49004eb6949910600200be51/research.md)
 
-- [Unsandboxed CUDA detection](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/compiled-solver/C04-unsandboxed-diagnostic.txt): Warp access restored; JAX still lacks its CUDA plugin packages.
+### HP3 autocalibration under asymmetric friction and sensor noise
 
-- [Long-run benchmark](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/benchmark.py), [measurement manifest](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/results.json), [repeatability](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/cuda-long-run/repeatability.json): frozen inputs, software/device provenance, timing and sampled consistency.
-- [CPU-only JAX setup](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/../../../../autocal/README.md): existing dependency choice; user supplied its prior profiling rationale, not re-benchmarked here.
+Status: report-only research handoff; updated 2026-11-05T10:26:20.544791+00:00.
+
+#### Abstract
+
+Nominal defaults and the frozen bounded-preload policy both accepted all four anchors below 5 mm. With verified added guide friction and modest encoder noise, the development default failed before its first point; both development policy versions failed after 20 points. A held-out default failed after 40 points, before fitting. A native diagnostic shows load torque transmitted to a spool with macroscopic local cable slack. The findings expose a boundary of the current guide-friction model and collection workflow; they do not establish a force policy that improves calibration robustness or a hardware failure rate. The posthoc matched zero-guide/noise-only control ended as `accepted_below20` after 140 points and 4278.630 simulated seconds. Its applied maximum anchor error was 4.3495 mm.
+
+#### Topics
+
+HP3, autocalibration, capstan friction, encoder noise, bounded preload, native load transfer, simulation validity
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Nominal defaults reach every anchor below 5 mm | nominal-numeric | Supported for one run | [Measurements](sessions/attempt-939c073f49004eb6949910600200be51/evidence/measurements.json) |
+| One bounded preload law preserves nominal quality | nominal-consistent-preload | Supported for one run; all anchors below 5 mm | [Frozen policy](sessions/attempt-939c073f49004eb6949910600200be51/policy-frozen.json) |
+| Bounded preload recovers the development friction/noise workflow | dev1-active-default, dev1-bounded-preload, dev1-consistent-preload | Not demonstrated: all failed before fitting | [Measurements](sessions/attempt-939c073f49004eb6949910600200be51/evidence/measurements.json) |
+| The collection failure is confined to the development world | eval0-default | Rejected within this model: held-out run also failed | [Failure windows](sessions/attempt-939c073f49004eb6949910600200be51/evidence/failure-windows.json) |
+| Spool load torque respects local slack under active guide friction | torque-slack-active, torque-slack-zero | Counterexample in a constructed native state; full root cause unresolved | [Active arm](sessions/attempt-939c073f49004eb6949910600200be51/evidence/torque-slack-active.json) |
+| Noise alone explains the held-out difference | eval0-noise-only-default | accepted_below20; posthoc diagnostic | [Measurements](sessions/attempt-939c073f49004eb6949910600200be51/evidence/measurements.json) |
+
+#### Decision handoff
+
+Retain the evidence and do not advance the preload policy as a robustness improvement. Review frictional-guide transport and spool torque coupling before making broader simulated or hardware claims. No production physics edit, merge, push, or code candidate is delivered. Held-out policy arms and eval1 remain untested.
+
+#### References
+
+- [Report](sessions/attempt-939c073f49004eb6949910600200be51/report.md)
+- [Notebook](sessions/attempt-939c073f49004eb6949910600200be51/research.md)
+- [Declared worlds](sessions/attempt-939c073f49004eb6949910600200be51/design.json)
+- [Frozen policy](sessions/attempt-939c073f49004eb6949910600200be51/policy-frozen.json)
+- [Review manifest](sessions/attempt-939c073f49004eb6949910600200be51/review-manifest.json)
+
+## [attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f](sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/)
+
+[abstract.md](sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/abstract.md) · [report.md](sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/report.md) · [research.md](sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/research.md)
+
+### Keyless cloud worker ran the launcher-attached native MCP
+
+An authenticated cloud agent completed one bounded HP3 experiment through the existing launcher's attachment MCP without another login or API key. The real rust-native run executed 100 fixed 2 ms steps. Telemetry and the saved Rerun recording each contain 101 samples covering steps 0 through 100, and the recording blueprint is readable. This supports this cloud-client transport's production-tool feasibility. It does not establish calibration accuracy, automatic background dispatch, separate review or completion of task 016.
+
+Topics: cloud agents, HP3, native physics, MCP, Rerun, existing login.
+
+## [attempt-e7bb4a742d144b1eaf33c223c8428d23](sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/)
+
+[abstract.md](sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/abstract.md) · [research.md](sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/research.md)
+
+### # Bounded research assignment
+
+Status: not yet summarized.
+
+#### Abstract
+
+The session has started. No research result is available yet.
+
+#### Topics
+
+### Bounded research assignment
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| None recorded yet | None | Not tested | None |
+
+#### Decision handoff
+
+No research decision yet. Scope, review and the next observation have not been recorded.
+
+#### References
+
+- [Original task](sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/prompt.txt)
+- [Research notebook](sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/research.md)
 
 ## [autocal-comfortable-force-20261010](autocal-comfortable-force-20261010/)
 
@@ -3767,69 +3208,6 @@ autocalibration, JAX, jaxlib, XLA, protobuf, SIGSEGV, SIGABRT, compiler lifetime
 
 - [Isolation decisions and budgets](autocal-crash-fix-20261007/research.md)
 - [Tracked findings and compiler reduction results](autocal-crash-fix-20261007/../../../research/bug-reports/autocal-native-crashes-october-7-2026/autocal-crash-compiler-update.md)
-
-## [autocal-held-out-history-ranking-7ec4260f](sessions/autocal-held-out-history-ranking-7ec4260f/)
-
-[abstract.md](sessions/autocal-held-out-history-ranking-7ec4260f/abstract.md) · [report.md](sessions/autocal-held-out-history-ranking-7ec4260f/report.md) · [research.md](sessions/autocal-held-out-history-ranking-7ec4260f/research.md)
-
-### Autocal history ranking with held-out sweeps
-
-Status: complete.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-This investigation reproduced disagreement between calibration ranking and known physical geometry, then tested synthetic sweep selection and whole-sweep prediction. On seventh HP3, the selected fit had 100.737 mm more summed anchor error than another candidate. A synthetic held-out scorer separated exact and perturbed geometry by 40.55x in robust prediction cost, but poor starts still produced physically bad fits. The archived implementation added future-sweep history selection with the existing rank as fallback. Its static regression replays did not measure an accuracy gain from that gate. Native HP4 collection was cancelled before a complete sweep after tracking losses. The report supports ranking diagnostics and a synthetic discriminator; it does not establish reliable calibration accuracy.
-
-#### Topics
-
-autocalibration, HP4, HP3, Slideprinter, candidate ranking, held-out sweeps, D-optimal selection, outliers, poor starts
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| History ranking can select worse known anchors | E1 | Supported on recorded fixtures | [Measurements](sessions/autocal-held-out-history-ranking-7ec4260f/report.md#measurements) |
-| Held-out prediction distinguishes exact and perturbed geometry | E2b | Supported in one synthetic test; integrated accuracy unmeasured | [Notebook](sessions/autocal-held-out-history-ranking-7ec4260f/research.md) |
-| D-opt ranking remains reliable from poor starts | E2a | Not supported; all poor-start fits physically bad | [Measurements](sessions/autocal-held-out-history-ranking-7ec4260f/report.md#measurements) |
-| Production HP4 collection yields a usable sweep | E3 / 4b4d1aeb4eed4f3fafe9c45393c02f52 | Inconclusive; cancelled before sweep completion | [Notebook](sessions/autocal-held-out-history-ranking-7ec4260f/research.md) |
-
-#### References
-
-- [Archived implementation, measurements and limits](sessions/autocal-held-out-history-ranking-7ec4260f/report.md)
-- [Hypotheses, E0–E3 decisions and retained collection path](sessions/autocal-held-out-history-ranking-7ec4260f/research.md)
-
-## [autocal-history-ranking-baseline-incomplete-a71aec03](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/)
-
-[abstract.md](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/abstract.md) · [research.md](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/research.md)
-
-### Autocal history-ranking baseline, unfinished record
-
-Status: incomplete record; final research outcome not documented.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-The notebook records a baseline audit of historical Slideprinter histories. Repeated ten_points_bigger_deltas runs selected physically worse candidates with 10.96–14.90 mm parameter regret. It proposes whole-sweep prediction and bounded residual updates, and records a native HP4 collection job plus a running regression baseline. The last saved decision still awaits those results. There is no final report or documented completion of the proposed selector experiments. Although exit.json records a successful process exit, that does not resolve the unfinished research record. Treat this as useful baseline evidence and a record of intended experiments, rather than a completed assessment of a new algorithm.
-
-#### Topics
-
-autocalibration, Slideprinter, history ranking, ground-truth regret, proposed held-out validation, HP4 collection
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| History ranking can prefer physically worse fits | Historical baseline audit in notebook | Supported in saved audit | [Notebook](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/research.md) |
-| Held-out prediction improves selection under noise and winding | None completed in saved record | Not tested to completion in this record | [Proposed hypotheses](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/research.md) |
-| Bounded residual updates improve robustness | None completed in saved record | Not tested to completion in this record | [Proposed hypotheses](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/research.md) |
-| Native collection supports follow-up validation | d2e98d4fa0f7491cbaaede24521eecfa | Started; final outcome not summarized | [Notebook](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/research.md) |
-
-#### References
-
-- [Saved hypotheses, baseline measurements and outstanding decisions](sessions/autocal-history-ranking-baseline-incomplete-a71aec03/research.md)
 
 ## [autocal-jax-cache-20261010](autocal-jax-cache-20261010/)
 
@@ -3916,41 +3294,6 @@ cache transfer, shapes, static arguments, replay, numerical reproducibility
 - [Provenance](autocal-jax-reference-cache-20261010/provenance.json): source SHA-256, revision 9422620c, original battery cache manifest.
 - [Preceding cache battery investigation](autocal-jax-reference-cache-20261010/../autocal-jax-cache-20261010/report.md): eleven-dataset timings and cache provenance.
 - [JAX persistent cache documentation](https://docs.jax.dev/en/latest/persistent_compilation_cache.html): compiled-program reuse and key inputs.
-
-## [autocal-ranking-bounded-updates-negative-results-b7deb1bc](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/)
-
-[abstract.md](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/abstract.md) · [report.md](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/report.md)
-
-### Autocal ranking, bounded updates and identifiability
-
-Status: complete.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-Seven hypotheses were investigated using recorded histories, controlled replay, synthetic bounded updates and native radius sensitivity. Ranking disagreed with physical accuracy in 22 adjacent transitions across seven of eleven datasets. Whole-sweep prediction selected worse physical results on five datasets. Removing the iteration-age bonus improved one case but increased aggregate selected parameter error by 200.701 mm over the full matrix. Bounded residual updates and informative movement selection worked in some synthetic conditions and failed under others. No tested solver or selection patch met the acceptance criteria. The retained change added ranking/ground-truth diagnostics. This session has a detailed report and experiment registry despite lacking a research.md notebook; online collection accuracy remained unvalidated.
-
-#### Topics
-
-autocalibration, HP3, Slideprinter, history age bonus, held-out prediction, bounded updates, D-optimal movements, radius uncertainty, negative results
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Ranking agrees with physical accuracy | Recorded ranking audit | Rejected | [Audit](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/recorded_ranking_audit.json) |
-| Whole-sweep prediction repairs ranking generally | Held-out audit | Rejected; worse in 5/11 fixtures | [Predictions](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/heldout_audit.json) |
-| Objective guard, TRF or reconstruction objective improves replay | ten_points_objective_guard / ten_points_trf / ten_points_reconstruction | Rejected | [Controlled trials](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/report.md#controlled-replay-trials) |
-| Removing history age bonus improves the full matrix | ten_points_no_age; paired regression runs | Rejected; aggregate error +200.701 mm | [Paired results](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/paired_regressions.json) |
-| Bounded joint fitting and D-opt movements repair poor starts | Synthetic and recorded joint trials | Mixed; rejected for production | [Synthetic results](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/synthetic_results.json), [recorded results](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/recorded_joint_results.json), [movement results](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/active_results_v2.json) |
-| Good motor tracking makes radius uncertainty negligible | Native sensitivity comparison | Rejected | [Comparison](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/native_comparison.json) |
-
-#### References
-
-- [Seven hypotheses, accuracy criteria and negative findings](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/report.md)
-- [Experiment inputs and log paths](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/experiment_registry.json)
-- [Frozen source, dataset and evidence hashes](sessions/autocal-ranking-bounded-updates-negative-results-b7deb1bc/artifact_hashes.json)
 
 ## [fifth-hp3-reference-audit](fifth-hp3-reference-audit/)
 
@@ -4073,125 +3416,6 @@ acknowledgements, source clocks, interruption, process ownership.
 - [Extended reference guide](headless-extended-autocal-validation/../../../autocal/data/references/extended-reference.md): protocol and clocks.
 - [Earlier headless verification](headless-extended-autocal-validation/../../../research/headless-autocal-verification.md): default calibration and matched-input parity contract.
 
-## [hp4-baseline-a-axis-tool-check-93c49db4](sessions/hp4-baseline-a-axis-tool-check-93c49db4/)
-
-[abstract.md](sessions/hp4-baseline-a-axis-tool-check-93c49db4/abstract.md) · [report.md](sessions/hp4-baseline-a-axis-tool-check-93c49db4/report.md)
-
-### HP4 baseline and A-axis motion tool check
-
-Status: complete.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-Two 200-step native experiments completed. The candidate used a 0.01 rad A-axis target and ended 0.157217 mm from the baseline effector position. Numerical tools passed; Viewer inspection was blocked by the approval policy. This tests tool execution and readback rather than calibration improvement.
-
-#### Topics
-
-integration verification, HP4, native experiment, A-axis motion, Rerun approval
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Native tools execute and compare a controlled motion | 59de4042e3e747bf910dc9957c710dc9 / 22f857e8987149ab93220cfc18f568a6 | Supported as a tool check | [Report](sessions/hp4-baseline-a-axis-tool-check-93c49db4/report.md) |
-| Viewer inspection completes in this session | Candidate recording | Blocked; not completed | [Report](sessions/hp4-baseline-a-axis-tool-check-93c49db4/report.md) |
-
-#### References
-
-- [Saved numeric check](sessions/hp4-baseline-a-axis-tool-check-93c49db4/report.md)
-- [Actual tool calls](sessions/hp4-baseline-a-axis-tool-check-93c49db4/events.jsonl)
-- [Tracked verification details and experiment IDs](sessions/hp4-baseline-a-axis-tool-check-93c49db4/../../../../research/verification.md)
-
-## [hp4-motion-check-no-results-3c944b0c](sessions/hp4-motion-check-no-results-3c944b0c/)
-
-[abstract.md](sessions/hp4-motion-check-no-results-3c944b0c/abstract.md)
-
-### Planned HP4 motion check with no recorded results
-
-Status: no research result documented.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
-
-#### Topics
-
-incomplete archive, no summarized experiments
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
-
-#### References
-
-- [Original saved artifact](sessions/hp4-motion-check-no-results-3c944b0c/prompt.txt)
-
-## [hp4-saved-recording-viewer-check-338606b1](sessions/hp4-saved-recording-viewer-check-338606b1/)
-
-[abstract.md](sessions/hp4-saved-recording-viewer-check-338606b1/abstract.md) · [report.md](sessions/hp4-saved-recording-viewer-check-338606b1/report.md)
-
-### Saved HP4 recording Viewer inspection
-
-Status: complete.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-The existing HP4 candidate recording was opened at step 200. All six blueprint views rendered and no Viewer warnings or errors were reported. Physics was not rerun. This verifies recording inspection and screenshot capture.
-
-#### Topics
-
-integration verification, Rerun, HP4, recording inspection, sim_step 200
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Viewer can inspect a saved recording at its final step | 22f857e8987149ab93220cfc18f568a6 | Supported as a tool check | [Screenshot](sessions/hp4-saved-recording-viewer-check-338606b1/sim_step_200.png) |
-
-#### References
-
-- [Saved inspection result](sessions/hp4-saved-recording-viewer-check-338606b1/report.md)
-- [Actual tool calls](sessions/hp4-saved-recording-viewer-check-338606b1/events.jsonl)
-- [Tracked validation account](sessions/hp4-saved-recording-viewer-check-338606b1/../../../../research/verification.md)
-
-## [native-and-viewer-mcp-check-3725e1e9](sessions/native-and-viewer-mcp-check-3725e1e9/)
-
-[abstract.md](sessions/native-and-viewer-mcp-check-3725e1e9/abstract.md) · [report.md](sessions/native-and-viewer-mcp-check-3725e1e9/report.md)
-
-### Native and Viewer MCP round-trip check
-
-Status: complete.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-A fresh three-step HP4 numerical experiment returned finite telemetry at 0.006 seconds. The existing candidate recording was then inspected at step 200 with zero Viewer warnings or errors. This checks both MCP servers; it makes no calibration-accuracy claim.
-
-#### Topics
-
-integration verification, MCP, HP4, numeric telemetry, Rerun
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Both numerical and Viewer MCP servers work in one session | Fresh three-step check; 22f857e8987149ab93220cfc18f568a6 | Supported as a tool check | [Report](sessions/native-and-viewer-mcp-check-3725e1e9/report.md) |
-
-#### References
-
-- [Saved results](sessions/native-and-viewer-mcp-check-3725e1e9/report.md)
-- [Actual MCP calls](sessions/native-and-viewer-mcp-check-3725e1e9/events.jsonl)
-- [Tracked SDK and route verification](sessions/native-and-viewer-mcp-check-3725e1e9/../../../../research/verification.md)
-
 ## [reference-refresh-october-7-2026](reference-refresh-october-7-2026/)
 
 [abstract.md](reference-refresh-october-7-2026/abstract.md) · [report.md](reference-refresh-october-7-2026/report.md) · [research.md](reference-refresh-october-7-2026/research.md)
@@ -4224,9 +3448,9 @@ autocalibration, HP3, Slideprinter, whole-sweep prediction, history selection, r
 - [Machine-readable branch comparison](reference-refresh-october-7-2026/comparison.json)
 - [Source, runtime and scheduling controls](reference-refresh-october-7-2026/provenance.json)
 
-## [unassigned-research-no-results-1cb5b420](sessions/unassigned-research-no-results-1cb5b420/)
+## [1cb5b4201a2c4545bc76b323721bca29](sessions/1cb5b4201a2c4545bc76b323721bca29/)
 
-[abstract.md](sessions/unassigned-research-no-results-1cb5b420/abstract.md) · [research.md](sessions/unassigned-research-no-results-1cb5b420/research.md)
+[abstract.md](sessions/1cb5b4201a2c4545bc76b323721bca29/abstract.md) · [research.md](sessions/1cb5b4201a2c4545bc76b323721bca29/research.md)
 
 ### Unassigned research session with no summarized result
 
@@ -4250,13 +3474,314 @@ incomplete archive, no summarized experiments
 
 #### References
 
-- [Original saved artifact](sessions/unassigned-research-no-results-1cb5b420/research.md)
-- [Original saved artifact](sessions/unassigned-research-no-results-1cb5b420/prompt.txt)
-- [Original saved artifact](sessions/unassigned-research-no-results-1cb5b420/exit.json)
+- [Original saved artifact](sessions/1cb5b4201a2c4545bc76b323721bca29/research.md)
+- [Original saved artifact](sessions/1cb5b4201a2c4545bc76b323721bca29/prompt.txt)
+- [Original saved artifact](sessions/1cb5b4201a2c4545bc76b323721bca29/exit.json)
 
-## [unassigned-research-unsuccessful-exit-f9120c9b](sessions/unassigned-research-unsuccessful-exit-f9120c9b/)
+## [32819264e12440d7b49abc9d4cfae1d3](sessions/32819264e12440d7b49abc9d4cfae1d3/)
 
-[abstract.md](sessions/unassigned-research-unsuccessful-exit-f9120c9b/abstract.md) · [research.md](sessions/unassigned-research-unsuccessful-exit-f9120c9b/research.md)
+[abstract.md](sessions/32819264e12440d7b49abc9d4cfae1d3/abstract.md)
+
+### Unsuccessful launch with no research record
+
+Status: no research result documented.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
+
+#### Topics
+
+incomplete archive, no summarized experiments
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
+
+#### References
+
+- [Original saved artifact](sessions/32819264e12440d7b49abc9d4cfae1d3/exit.json)
+
+## [338606b11fde452bb3886bb861a7e96c](sessions/338606b11fde452bb3886bb861a7e96c/)
+
+[abstract.md](sessions/338606b11fde452bb3886bb861a7e96c/abstract.md) · [report.md](sessions/338606b11fde452bb3886bb861a7e96c/report.md)
+
+### Saved HP4 recording Viewer inspection
+
+Status: complete.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+The existing HP4 candidate recording was opened at step 200. All six blueprint views rendered and no Viewer warnings or errors were reported. Physics was not rerun. This verifies recording inspection and screenshot capture.
+
+#### Topics
+
+integration verification, Rerun, HP4, recording inspection, sim_step 200
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Viewer can inspect a saved recording at its final step | 22f857e8987149ab93220cfc18f568a6 | Supported as a tool check | [Screenshot](sessions/338606b11fde452bb3886bb861a7e96c/sim_step_200.png) |
+
+#### References
+
+- [Saved inspection result](sessions/338606b11fde452bb3886bb861a7e96c/report.md)
+- [Actual tool calls](sessions/338606b11fde452bb3886bb861a7e96c/events.jsonl)
+- [Tracked validation account](sessions/338606b11fde452bb3886bb861a7e96c/../../../../research/verification.md)
+
+## [3725e1e99f2b4fa7a989ddd70b91aaa7](sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/)
+
+[abstract.md](sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/abstract.md) · [report.md](sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/report.md)
+
+### Native and Viewer MCP round-trip check
+
+Status: complete.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+A fresh three-step HP4 numerical experiment returned finite telemetry at 0.006 seconds. The existing candidate recording was then inspected at step 200 with zero Viewer warnings or errors. This checks both MCP servers; it makes no calibration-accuracy claim.
+
+#### Topics
+
+integration verification, MCP, HP4, numeric telemetry, Rerun
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Both numerical and Viewer MCP servers work in one session | Fresh three-step check; 22f857e8987149ab93220cfc18f568a6 | Supported as a tool check | [Report](sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/report.md) |
+
+#### References
+
+- [Saved results](sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/report.md)
+- [Actual MCP calls](sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/events.jsonl)
+- [Tracked SDK and route verification](sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/../../../../research/verification.md)
+
+## [3c944b0c262846759249b38a586fe26a](sessions/3c944b0c262846759249b38a586fe26a/)
+
+[abstract.md](sessions/3c944b0c262846759249b38a586fe26a/abstract.md)
+
+### Planned HP4 motion check with no recorded results
+
+Status: no research result documented.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
+
+#### Topics
+
+incomplete archive, no summarized experiments
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
+
+#### References
+
+- [Original saved artifact](sessions/3c944b0c262846759249b38a586fe26a/prompt.txt)
+
+## [4d08c2cfd01744a7b37248916a27c55a](sessions/4d08c2cfd01744a7b37248916a27c55a/)
+
+[abstract.md](sessions/4d08c2cfd01744a7b37248916a27c55a/abstract.md)
+
+### Unsuccessful launch with no research record
+
+Status: no research result documented.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
+
+#### Topics
+
+incomplete archive, no summarized experiments
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
+
+#### References
+
+- [Original saved artifact](sessions/4d08c2cfd01744a7b37248916a27c55a/exit.json)
+
+## [7ec4260f7410499a96f6b6bfe9c3de59](sessions/7ec4260f7410499a96f6b6bfe9c3de59/)
+
+[abstract.md](sessions/7ec4260f7410499a96f6b6bfe9c3de59/abstract.md) · [report.md](sessions/7ec4260f7410499a96f6b6bfe9c3de59/report.md) · [research.md](sessions/7ec4260f7410499a96f6b6bfe9c3de59/research.md)
+
+### Autocal history ranking with held-out sweeps
+
+Status: complete.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+This investigation reproduced disagreement between calibration ranking and known physical geometry, then tested synthetic sweep selection and whole-sweep prediction. On seventh HP3, the selected fit had 100.737 mm more summed anchor error than another candidate. A synthetic held-out scorer separated exact and perturbed geometry by 40.55x in robust prediction cost, but poor starts still produced physically bad fits. The archived implementation added future-sweep history selection with the existing rank as fallback. Its static regression replays did not measure an accuracy gain from that gate. Native HP4 collection was cancelled before a complete sweep after tracking losses. The report supports ranking diagnostics and a synthetic discriminator; it does not establish reliable calibration accuracy.
+
+#### Topics
+
+autocalibration, HP4, HP3, Slideprinter, candidate ranking, held-out sweeps, D-optimal selection, outliers, poor starts
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| History ranking can select worse known anchors | E1 | Supported on recorded fixtures | [Measurements](sessions/7ec4260f7410499a96f6b6bfe9c3de59/report.md#measurements) |
+| Held-out prediction distinguishes exact and perturbed geometry | E2b | Supported in one synthetic test; integrated accuracy unmeasured | [Notebook](sessions/7ec4260f7410499a96f6b6bfe9c3de59/research.md) |
+| D-opt ranking remains reliable from poor starts | E2a | Not supported; all poor-start fits physically bad | [Measurements](sessions/7ec4260f7410499a96f6b6bfe9c3de59/report.md#measurements) |
+| Production HP4 collection yields a usable sweep | E3 / 4b4d1aeb4eed4f3fafe9c45393c02f52 | Inconclusive; cancelled before sweep completion | [Notebook](sessions/7ec4260f7410499a96f6b6bfe9c3de59/research.md) |
+
+#### References
+
+- [Archived implementation, measurements and limits](sessions/7ec4260f7410499a96f6b6bfe9c3de59/report.md)
+- [Hypotheses, E0–E3 decisions and retained collection path](sessions/7ec4260f7410499a96f6b6bfe9c3de59/research.md)
+
+## [8225a40faa8e43ba873b2099b191b1d2](sessions/8225a40faa8e43ba873b2099b191b1d2/)
+
+[abstract.md](sessions/8225a40faa8e43ba873b2099b191b1d2/abstract.md)
+
+### Unsuccessful launch with no research record
+
+Status: no research result documented.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
+
+#### Topics
+
+incomplete archive, no summarized experiments
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
+
+#### References
+
+- [Original saved artifact](sessions/8225a40faa8e43ba873b2099b191b1d2/exit.json)
+
+## [93c49db478ae4885aae10d8d4205eaa8](sessions/93c49db478ae4885aae10d8d4205eaa8/)
+
+[abstract.md](sessions/93c49db478ae4885aae10d8d4205eaa8/abstract.md) · [report.md](sessions/93c49db478ae4885aae10d8d4205eaa8/report.md)
+
+### HP4 baseline and A-axis motion tool check
+
+Status: complete.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+Two 200-step native experiments completed. The candidate used a 0.01 rad A-axis target and ended 0.157217 mm from the baseline effector position. Numerical tools passed; Viewer inspection was blocked by the approval policy. This tests tool execution and readback rather than calibration improvement.
+
+#### Topics
+
+integration verification, HP4, native experiment, A-axis motion, Rerun approval
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Native tools execute and compare a controlled motion | 59de4042e3e747bf910dc9957c710dc9 / 22f857e8987149ab93220cfc18f568a6 | Supported as a tool check | [Report](sessions/93c49db478ae4885aae10d8d4205eaa8/report.md) |
+| Viewer inspection completes in this session | Candidate recording | Blocked; not completed | [Report](sessions/93c49db478ae4885aae10d8d4205eaa8/report.md) |
+
+#### References
+
+- [Saved numeric check](sessions/93c49db478ae4885aae10d8d4205eaa8/report.md)
+- [Actual tool calls](sessions/93c49db478ae4885aae10d8d4205eaa8/events.jsonl)
+- [Tracked verification details and experiment IDs](sessions/93c49db478ae4885aae10d8d4205eaa8/../../../../research/verification.md)
+
+## [a71aec03021f470796a789ba7382e28a](sessions/a71aec03021f470796a789ba7382e28a/)
+
+[abstract.md](sessions/a71aec03021f470796a789ba7382e28a/abstract.md) · [research.md](sessions/a71aec03021f470796a789ba7382e28a/research.md)
+
+### Autocal history-ranking baseline, unfinished record
+
+Status: incomplete record; final research outcome not documented.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+The notebook records a baseline audit of historical Slideprinter histories. Repeated ten_points_bigger_deltas runs selected physically worse candidates with 10.96–14.90 mm parameter regret. It proposes whole-sweep prediction and bounded residual updates, and records a native HP4 collection job plus a running regression baseline. The last saved decision still awaits those results. There is no final report or documented completion of the proposed selector experiments. Although exit.json records a successful process exit, that does not resolve the unfinished research record. Treat this as useful baseline evidence and a record of intended experiments, rather than a completed assessment of a new algorithm.
+
+#### Topics
+
+autocalibration, Slideprinter, history ranking, ground-truth regret, proposed held-out validation, HP4 collection
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| History ranking can prefer physically worse fits | Historical baseline audit in notebook | Supported in saved audit | [Notebook](sessions/a71aec03021f470796a789ba7382e28a/research.md) |
+| Held-out prediction improves selection under noise and winding | None completed in saved record | Not tested to completion in this record | [Proposed hypotheses](sessions/a71aec03021f470796a789ba7382e28a/research.md) |
+| Bounded residual updates improve robustness | None completed in saved record | Not tested to completion in this record | [Proposed hypotheses](sessions/a71aec03021f470796a789ba7382e28a/research.md) |
+| Native collection supports follow-up validation | d2e98d4fa0f7491cbaaede24521eecfa | Started; final outcome not summarized | [Notebook](sessions/a71aec03021f470796a789ba7382e28a/research.md) |
+
+#### References
+
+- [Saved hypotheses, baseline measurements and outstanding decisions](sessions/a71aec03021f470796a789ba7382e28a/research.md)
+
+## [b7deb1bcc9cb418388273e2b7b9adc8c](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/)
+
+[abstract.md](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/abstract.md) · [report.md](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/report.md)
+
+### Autocal ranking, bounded updates and identifiability
+
+Status: complete.
+
+Retrospective summary of saved evidence, written 2026-10-08.
+
+#### Abstract
+
+Seven hypotheses were investigated using recorded histories, controlled replay, synthetic bounded updates and native radius sensitivity. Ranking disagreed with physical accuracy in 22 adjacent transitions across seven of eleven datasets. Whole-sweep prediction selected worse physical results on five datasets. Removing the iteration-age bonus improved one case but increased aggregate selected parameter error by 200.701 mm over the full matrix. Bounded residual updates and informative movement selection worked in some synthetic conditions and failed under others. No tested solver or selection patch met the acceptance criteria. The retained change added ranking/ground-truth diagnostics. This session has a detailed report and experiment registry despite lacking a research.md notebook; online collection accuracy remained unvalidated.
+
+#### Topics
+
+autocalibration, HP3, Slideprinter, history age bonus, held-out prediction, bounded updates, D-optimal movements, radius uncertainty, negative results
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Ranking agrees with physical accuracy | Recorded ranking audit | Rejected | [Audit](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/recorded_ranking_audit.json) |
+| Whole-sweep prediction repairs ranking generally | Held-out audit | Rejected; worse in 5/11 fixtures | [Predictions](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/heldout_audit.json) |
+| Objective guard, TRF or reconstruction objective improves replay | ten_points_objective_guard / ten_points_trf / ten_points_reconstruction | Rejected | [Controlled trials](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/report.md#controlled-replay-trials) |
+| Removing history age bonus improves the full matrix | ten_points_no_age; paired regression runs | Rejected; aggregate error +200.701 mm | [Paired results](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/paired_regressions.json) |
+| Bounded joint fitting and D-opt movements repair poor starts | Synthetic and recorded joint trials | Mixed; rejected for production | [Synthetic results](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/synthetic_results.json), [recorded results](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/recorded_joint_results.json), [movement results](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/active_results_v2.json) |
+| Good motor tracking makes radius uncertainty negligible | Native sensitivity comparison | Rejected | [Comparison](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/native_comparison.json) |
+
+#### References
+
+- [Seven hypotheses, accuracy criteria and negative findings](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/report.md)
+- [Experiment inputs and log paths](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/experiment_registry.json)
+- [Frozen source, dataset and evidence hashes](sessions/b7deb1bcc9cb418388273e2b7b9adc8c/artifact_hashes.json)
+
+## [f9120c9b4bda4eaaa8eacff2cb00ece7](sessions/f9120c9b4bda4eaaa8eacff2cb00ece7/)
+
+[abstract.md](sessions/f9120c9b4bda4eaaa8eacff2cb00ece7/abstract.md) · [research.md](sessions/f9120c9b4bda4eaaa8eacff2cb00ece7/research.md)
 
 ### Unassigned research session with unsuccessful exit
 
@@ -4280,122 +3805,57 @@ incomplete archive, no summarized experiments
 
 #### References
 
-- [Original saved artifact](sessions/unassigned-research-unsuccessful-exit-f9120c9b/research.md)
-- [Original saved artifact](sessions/unassigned-research-unsuccessful-exit-f9120c9b/prompt.txt)
-- [Original saved artifact](sessions/unassigned-research-unsuccessful-exit-f9120c9b/exit.json)
+- [Original saved artifact](sessions/f9120c9b4bda4eaaa8eacff2cb00ece7/research.md)
+- [Original saved artifact](sessions/f9120c9b4bda4eaaa8eacff2cb00ece7/prompt.txt)
+- [Original saved artifact](sessions/f9120c9b4bda4eaaa8eacff2cb00ece7/exit.json)
 
-## [unsuccessful-launch-no-record-32819264](sessions/unsuccessful-launch-no-record-32819264/)
+## [fdb616a454af4a6d9c1db074fbdc207d](sessions/fdb616a454af4a6d9c1db074fbdc207d/)
 
-[abstract.md](sessions/unsuccessful-launch-no-record-32819264/abstract.md)
+[abstract.md](sessions/fdb616a454af4a6d9c1db074fbdc207d/abstract.md) · [report.md](sessions/fdb616a454af4a6d9c1db074fbdc207d/report.md) · [research.md](sessions/fdb616a454af4a6d9c1db074fbdc207d/research.md)
 
-### Unsuccessful launch with no research record
+### Autocal validation, collection throughput and compiled Python physics
 
-Status: no research result documented.
+Status: complete.
 
-Retrospective summary of saved evidence, written 2026-10-08.
+Saved autocal and throughput evidence plus compiled-solver follow-up, updated 2026-10-08.
 
 #### Abstract
 
-The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
+Recorded and synthetic HP3 experiments tested candidate validation, bounded adjustments and informative movements. A guarded veto and tie-breaker rejected impossible candidates in 15/15 deliberate counterexamples without changing the eleven recorded selections; no recorded HP3 accuracy gain was established. Bounded updates failed under winding mismatch and poor recorded starts. A production HP4 collection took 1693.12 seconds for twelve observations. Headless JS subsequently improved matched short recorded workloads by 19.03× and retained frozen-replay encoder agreement. A double-precision Warp CPU solver passed 99 fixtures and accelerated complete HP4 updates by 1.96×. Longer controlled comparisons used 20 simulated seconds per trial, three repetitions per HP3 backend and one per HP4 backend. CUDA took 37.24/168.61 seconds on HP3/HP4, versus CPU 26.87/105.95 and JS 1.27/6.63 seconds. Maximum sampled CUDA-to-JS encoder difference was 0.002161°, below the 0.01° comparison bound. Profiling identifies costly serial CUDA execution/readbacks and remaining Python systems. CUDA was slower for these single-world workloads. Fresh complete collection throughput, independent-world GPU batching and hardware accuracy remain unestablished. CPU-only JAX remains a deliberate prior performance choice.
 
 #### Topics
 
-incomplete archive, no summarized experiments
+autocalibration, HP3, HP4, candidate-owned spool models, winding mismatch, elasticity, bounded updates, D-optimal movement, sentinel rejection, headless JS, Python parity, Rerun throughput, Warp CPU, CUDA, sequential XPBD, compact state arrays
 
 #### Tested hypotheses
 
 | Hypothesis | Experiment IDs | Outcome | Evidence |
 | --- | --- | --- | --- |
-| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
+| A common unseen sweep fixes history ranking | E01 / E03 | Not consistently supported | [Corrected audit](sessions/fdb616a454af4a6d9c1db074fbdc207d/E03-selection-audit-corrected.json) |
+| Candidate-owned models and complete coverage reject false validation | E07 | Supported on 15 counterexamples; recorded accuracy unchanged | [Stress results](sessions/fdb616a454af4a6d9c1db074fbdc207d/E07-ranking-stress.json), [regressions](sessions/fdb616a454af4a6d9c1db074fbdc207d/final-regressions.json) |
+| Bounded residual updates improve geometry under model mismatch | E02 / E04 | Mixed; winding and poor starts defeat validation | [Synthetic](sessions/fdb616a454af4a6d9c1db074fbdc207d/E02-E04-synthetic-results.json), [recorded](sessions/fdb616a454af4a6d9c1db074fbdc207d/E04-recorded-results.json) |
+| D-optimal selection chooses the best physical movement | E06 | Mixed; best in 2/3 starts | [Movement results](sessions/fdb616a454af4a6d9c1db074fbdc207d/E06-movement-results.json) |
+| Native production collection yields ingestible measurements | E05 | Supported for 12 HP4 observations; accuracy unestablished | [Collection summary](sessions/fdb616a454af4a6d9c1db074fbdc207d/E05-native-summary.json) |
+| Headless JS reduces runtime while retaining encoder parity | P01 / P02 / P03 | Supported on controlled workloads and frozen replay; fresh collection unmeasured | [Matrix](sessions/fdb616a454af4a6d9c1db074fbdc207d/P02-matrix.json), [recorded replay](sessions/fdb616a454af4a6d9c1db074fbdc207d/P03-final-recorded/replay.json) |
+| Compiling the ordered solver accelerates full native physics | C02 / C03 | Supported; HP4 solver 7.90×, whole world 1.96×, still below realtime | [Repeated timing](sessions/fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/C03-timing.json), [fixture checks](sessions/fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/C02-final-focused.txt) |
+| CUDA matches compiled CPU or JS speed | L01 / L02 | Rejected on the tested 20-s workload: 38.6% / 59.1% slower than CPU | [Complete timing](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/results.json) |
+| CUDA solver matches targeted reference fixtures | C04B | Supported on five short fixtures; longer runs measured separately below | [CUDA comparisons](sessions/fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/C04-cuda-parity.txt) |
+| Longer sampled encoder agreement stays within 0.01° | L01 / L02 | Supported at all 201 sampled observations; hardware accuracy unestablished | [Comparisons](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/results.json), [coverage](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/validation.json) |
+| Serial CUDA execution/readbacks add cost | L03 | Supported by instrumented profiles; individual timings overlap | [CPU](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/L03-native-warp.txt), [CUDA](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/L03-native-warp-cuda.txt), [GPU intervals](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/L03-kernel-events.json) |
 
 #### References
 
-- [Original saved artifact](sessions/unsuccessful-launch-no-record-32819264/exit.json)
+- [Guarded validation and performance follow-up with limitations](sessions/fdb616a454af4a6d9c1db074fbdc207d/report.md)
+- [H1–H4, E01–E07 and P01–P04 budgets and decisions](sessions/fdb616a454af4a6d9c1db074fbdc207d/research.md)
+- [Separate physical and prediction errors](sessions/fdb616a454af4a6d9c1db074fbdc207d/prediction-metrics.json)
+- [Benchmark method, timings and reproducible replay commands](sessions/fdb616a454af4a6d9c1db074fbdc207d/../../../../research/collection-performance.md)
 
-## [unsuccessful-launch-no-record-4d08c2cf](sessions/unsuccessful-launch-no-record-4d08c2cf/)
+- [Compiled Python solver methods, API, numerical and GPU limits](sessions/fdb616a454af4a6d9c1db074fbdc207d/../../../../research/compiled-python-solver.md)
+- [Warp CPU implementation](sessions/fdb616a454af4a6d9c1db074fbdc207d/../../../../src/python/cable_joints_3d/warp_solver.py): the typed double-precision core and ECS adapter.
 
-[abstract.md](sessions/unsuccessful-launch-no-record-4d08c2cf/abstract.md)
+- [GPU visibility diagnosis](sessions/fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/C04-device-visibility.json): host RTX 3070 Ti exists; isolated `/dev` prevents this process from accessing it.
 
-### Unsuccessful launch with no research record
+- [Unsandboxed CUDA detection](sessions/fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/C04-unsandboxed-diagnostic.txt): Warp access restored; JAX still lacks its CUDA plugin packages.
 
-Status: no research result documented.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
-
-#### Topics
-
-incomplete archive, no summarized experiments
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
-
-#### References
-
-- [Original saved artifact](sessions/unsuccessful-launch-no-record-4d08c2cf/exit.json)
-
-## [unsuccessful-launch-no-record-8225a40f](sessions/unsuccessful-launch-no-record-8225a40f/)
-
-[abstract.md](sessions/unsuccessful-launch-no-record-8225a40f/abstract.md)
-
-### Unsuccessful launch with no research record
-
-Status: no research result documented.
-
-Retrospective summary of saved evidence, written 2026-10-08.
-
-#### Abstract
-
-The saved artifacts contain no completed research report or updated experiment summary. No tested hypothesis can be established from this record. Startup notebook text and process status are not evidence that an experiment ran.
-
-#### Topics
-
-incomplete archive, no summarized experiments
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| No completed hypothesis test documented | None recorded | Not tested in the saved summary | Original artifacts below |
-
-#### References
-
-- [Original saved artifact](sessions/unsuccessful-launch-no-record-8225a40f/exit.json)
-
-## [2026-10-26-cloud-platform-audit](sessions/2026-10-26-cloud-platform-audit/)
-
-[abstract.md](sessions/2026-10-26-cloud-platform-audit/abstract.md) · [report.md](sessions/2026-10-26-cloud-platform-audit/report.md) · [research.md](sessions/2026-10-26-cloud-platform-audit/research.md)
-
-### Cloud Research Program audit and repairs
-
-Status: complete within tested scope; final production regression interrupted.
-
-#### Abstract
-
-The managed CPU cloud could perform useful research, but its original setup and tools did not work smoothly. Actual authenticated workers and separate reviewers tested native experiments, telemetry, recordings, collection, autocalibration, Rerun, browser tools and cleanup. A production actor invoked all 23 supervisor tools through a launcher-owned MCP file relay while its command sockets were denied. A recorded/unrecorded 500-step native pair produced identical 501-row telemetry; six collection points validated; bounded full-auto produced 1,305,459 steps. Repairs address shared-output paths, test caches, review launch paths, CPU rendering/protocol setup and invalid status/history responses. The final delivery pass at the repaired runtime source passed 333 tests and 34 subtests. A fresh full-auto/browser regression reached its deadline during a stalled parent permission request, leaving final live verification incomplete. These results support the tested repairs, not optimal performance or calibration accuracy.
-
-#### Topics
-
-Research Program, managed cloud, MCP, file relay, native simulation, Rerun, SwiftShader, autocalibration, lifecycle, strict JSON, review, cleanup.
-
-#### Tested hypotheses
-
-See the [full report](sessions/2026-10-26-cloud-platform-audit/report.md) for hypotheses, experiment IDs and measured outcomes.
-
-#### Decision handoff
-
-- Scope: current CPU cloud, HP3/HP4 supported paths, runtime fixes through `7c0a353e`.
-- Review: baseline and production evidence separately reviewed; final repaired-source review retained with the archive.
-- Decision: publish tested repairs with the final live verification gap explicit.
-- Next: bounded terminal full-auto, next-job cancellation and real browser history using a pre-permitted launcher/browser context.
-
-#### References
-
-- [Full report](sessions/2026-10-26-cloud-platform-audit/report.md) records measurements and limits.
-- [Notebook](sessions/2026-10-26-cloud-platform-audit/research.md) retains budgets and accepted steering.
+- [Long-run benchmark](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/benchmark.py), [measurement manifest](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/results.json), [repeatability](sessions/fdb616a454af4a6d9c1db074fbdc207d/cuda-long-run/repeatability.json): frozen inputs, software/device provenance, timing and sampled consistency.
+- [CPU-only JAX setup](sessions/fdb616a454af4a6d9c1db074fbdc207d/../../../../autocal/README.md): existing dependency choice; user supplied its prior profiling rationale, not re-benchmarked here.
