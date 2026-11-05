@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "motor_expected": {
+    "SpoolA": [
+      0.0005,
+      0.00225
+    ],
+    "SpoolB": [
+      0.0015,
+      0.003
+    ],
+    "SpoolC": [
+      0.002,
+      0.00075
+    ],
+    "SpoolD": [
+      0.00075,
+      0.0015
+    ]
+  },
+  "native_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+  "radii_mm": [
+    30,
+    30,
+    30,
+    30
+  ],
+  "guide_mu": 0,
+  "layering": false,
+  "buildup": 0,
+  "ecs_guide_note": "No coefficient component means the stock zero coefficient; packed native value verified zero."
+}

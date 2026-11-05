@@ -1,27 +1,26 @@
-# HP3 lower sensor measurement force under motor drag and encoder noise
+# HP3 lower sensor force and encoder reply budgets
 
-Status: controlled partial.
+Status: complete. Six frozen primary attempts compare 4mid with stock 5mid sensor measurement force under declared motor drag and Gaussian encoder noise. 6 primary attempts are recorded. Keep the production 5mid measurement-force default. The preserved nominal 4mid workflow failure violates the no-new-failure gate. No later pass can erase it. Development applied maximum error was 3.6959 to 2.8529 mm at 1.0641 times simulated effort. Evaluation applied maximum error was 3.4116 to 2.7518 mm at 1.0709 times simulated effort. Evaluation remains separate from development. The separately tested WebSocket transport patch honors explicit encoder budgets while preserving the effective 5-second command default and shorter deadlines. One invalid path-rebasing startup is preserved and counted in the hard seven-collection allocation. No full-autocal run with the transport patch was authorized after that startup consumed the optional slot. These hypothetical simulated worlds and software transport checks do not establish hardware reliability.
 
-We compare the fixed4×midpoint sensor measurement force with the current5×midpoint rule in six fresh paired HP3 autocalibrations. The nominal and development worlds precede a heldout evaluation pair. All worlds use known30mm radii, zero buildup, no layering or guide friction, native Rust, and seeded Gaussian encoder-read noise. Motor Coulomb and smoothed-stiction factors vary by axis. 4 of six primary collections have completed or failed. Default force adoption is blocked by the preserved nominal candidate workflow failure. Evaluation pair NOT TESTED. The manager will fund only the two unrun evaluation jobs and focused transport follow-up in a fresh bounded continuation. No successful run will be repeated. A small hypothetical three-world simulation cannot establish hardware reliability or a lower failure rate. Applied anchor errors come from the rounded M669 command and a checked firmware readback. Every intermediate fit, failure and full command/noise journal is preserved separately from final applied geometry.
-
-Topics: HP3, autocalibration, measurement force, motor friction, encoder noise, applied anchors.
+Topics: HP3, autocalibration, sensor force, motor friction, encoder noise, WebSocket, reply timeout.
 
 ## Tested hypotheses
 
-| Hypothesis | Experiment IDs | Outcome | Evidence |
+| Hypothesis | Experiments | Outcome | Evidence |
 | --- | --- | --- | --- |
-| Lower sensor force improves applied accuracy across the frozen worlds without new failure or >20% extra effort | n-default, n-candidate, d-default, d-candidate | Inconclusive for transfer; development max improves22.81% with6.41% extra simulated effort; nominal candidate workflow failed | [Applied results](evidence/measurements.json) |
-| An explicit encoder deadline is silently capped at5s in the shared transport | source and nominal failed trace only | Not tested by the authorized real-WebSocket discriminator yet | [Failure excerpt](evidence/n-candidate-transport-excerpt.jsonl) |
+| Fixed 4mid improves accuracy across the frozen worlds without new failure or excess effort | n-default, n-candidate, d-default, d-candidate, e-default, e-candidate | Rejected for production; nominal candidate workflow failure remains | [Measurements](measurements.json) |
+| Explicit encoder reply budgets can be honored while preserving bounded failures and routing | Fresh-process real WebSocket contrast and regression checks | Supported within software transport scope | [Report](report.md) |
 
 ## Decision handoff
 
-- Scope: four fresh simulated HP3 attempts at basea68d6adf, known30mm radii, zero buildup/guide friction, layering off and the fixed nominal/development motors and noise.
-- Review: producer hash/readback and offline geometry checks; independent fixed-evidence review pending.
-- Decision: keep production5mid force default. The nominal failure stays in every denominator. Evaluation pair NOT TESTED in the controlled partial.
-- Next: only the two frozen evaluation jobs and the separate bounded transport follow-up. Do not repeat successful jobs, retune policy, restore an old world or erase the failed trial.
+- Scope: hypothetical HP3 motors and noisy encoders, known 30 mm radii, zero guide friction/buildup, layering off. Real WebSocket tests use a declared firmware HTTP stub.
+- Review: producer hash/readback and numerical recomputation; manager owns independent fixed review and integration.
+- Decision: retain 5mid. Deliver only the supported encoder reply-budget patch after software checks pass.
+- Next: fixed review of the exact source candidate and evidence. No further primary or confirmation collections are authorized in this attempt.
 
 ## References
 
-- [Full report](report.md) gives per-anchor geometry, effort and intermediate tails.
-- [Research notebook](research.md) records the frozen decision, manager steering and reporting corrections.
-- [Frozen policy](policy-frozen.json) preserves exact worlds, code/native hashes and pre-result adoption margin.
+- [Full report](report.md) separates applied geometry, intermediate fits, effort and transport evidence.
+- [Research notebook](research.md) records the frozen protocol and manager decisions.
+- [Frozen policy](policy-frozen.json) and [budget ledger](budget-ledger.json) preserve source/native identities and hard caps.
+- The original independently reviewed four-attempt partial remains at Git commit 57658240.

@@ -1,7 +1,6 @@
 # Autocal robustness: results and recovery
 
-**Production improvement adopted so far: none.** The first experiment rejected a
-preload prototype. The lower-measurement-force continuation has four fresh attempts and a concrete development accuracy gain. Nominal transport failure blocks adoption, and the evaluation pair remains untested.
+Production force remains 5mid. The preload prototype and fixed 4mid adoption were rejected. All six lower-force primary attempts are complete. Development/evaluation accuracy gains did not overcome the original nominal workflow failure. A supported encoder reply-budget transport candidate is ready for manager fixed review and integration. No production merge is claimed here.
 
 ## First experiment: preload under guide friction
 
@@ -39,9 +38,9 @@ Adoption requires a meaningful applied-accuracy improvement on the declared
 evaluation pair, no new calibration failure, and at most 20% extra simulated
 collection effort. These hypothetical worlds cannot establish hardware reliability.
 
-The earlier setup-only attempt was cancelled before collection and is preserved in [continuation-setup](continuation-setup/README.md). Fresh attempt `attempt-7b09fff3cc5b4bb89c33586f94cc4ebe` completed three calibrations and preserved one nominal candidate transport failure. Development applied maximum error improved3.696→2.853mm with6.41% extra simulated effort; all anchors in both completed development arms stayed below5mm. The nominal failure stays in the denominator and blocks force adoption. Evaluation calibration is NOT TESTED yet.
+The earlier setup-only attempt was cancelled before collection and is preserved in [continuation-setup](continuation-setup/README.md). The first bounded continuation produced the four-attempt partial, independently reviewed as report only and preserved at commit 57658240. The fresh continuation then completed only the two unrun evaluation jobs. All six primary attempts are now recorded, and every raw checkpoint was pushed before the next collection.
 
-The manager required a controlled four-attempt partial because both evaluation jobs plus pushes and the10-minute report reserve could not conservatively fit the live deadline. Read the [partial report](lower-force/report.md), [raw evidence entry](lower-force/README.md) and [exact remaining-job handoff](lower-force/CONTINUE.md). Only the two unrun evaluation jobs and a separate bounded transport follow-up move to a fresh allocation. No successful primary run is repeated. All four raw checkpoints were committed and pushed before the next collection.
+Development applied maximum error improved from 3.6959 to 2.8529 mm at 1.0641 times simulated effort. Evaluation improved from 3.4116 to 2.7518 mm at 1.0709 times effort. All five completed calibrations kept every anchor below 5 mm. The nominal candidate's transport failure remains in the denominator and blocks force adoption. The separate encoder reply-budget patch has bounded real-WebSocket before/after evidence and relevant software checks, with no full-autocal-with-fix confirmation. Read the [combined report](lower-force/report.md), [raw evidence entry](lower-force/README.md) and [completed handoff](lower-force/CONTINUE.md).
 
 ## What happened to the workspace
 

@@ -1,0 +1,21 @@
+{
+  "physics_steps": 30,
+  "collections": 0,
+  "fresh_fits": 0,
+  "physical_points": 0,
+  "kind": "two noncollection headless regression checks; earlier setup-error invocations advanced zero steps",
+  "world_manifests": [
+    {
+      "manifest": "checks/headless-final/test_headless_recording_modes_0/sweeps.headless/manifest.json",
+      "total_steps": 30,
+      "status": "complete",
+      "physics_artifact_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+    },
+    {
+      "manifest": "checks/headless-final/test_headless_geometry_and_con0/sweeps.headless/manifest.json",
+      "total_steps": 0,
+      "status": "complete",
+      "physics_artifact_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+    }
+  ]
+}

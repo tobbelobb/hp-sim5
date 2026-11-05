@@ -1,6 +1,6 @@
 {
   "session": "/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52",
-  "source_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+  "source_revision": "131acef1f7d1ddee22b657d920231a32d60e6c6f",
   "omitted": [],
   "groups": [
     {
@@ -258,5 +258,7 @@
       ]
     }
   ],
-  "verified_by_readback": true
+  "verified_by_readback": true,
+  "implementation_base": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+  "metadata_correction": "source_revision corrected from inherited implementation-base label to actual manifest Git revision; raw archive bytes unchanged."
 }

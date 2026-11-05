@@ -1,0 +1,138 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_headless_recording_modes_preserve_events_resets_and_finalization[none] __
+
+tmp_path = PosixPath('/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/checks/headless/test_headless_recording_modes_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f78d4274fe0>
+mode = 'none'
+
+    @pytest.mark.parametrize('mode', [None, 'none', 'events', 'sampled', 'full'])
+    def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_path, monkeypatch, mode):
+        from argparse import Namespace
+        from autocal import extended_reference
+        monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
+        args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                         rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+                         keep_sim_alive=False, extended_reference=mode is None, recording_mode=mode)
+>       with HeadlessSimulation(args, []) as service:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+autocal/tests/test_headless_sim.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <autocal.headless_sim.HeadlessSimulation object at 0x7f78d4576660>
+
+    def __enter__(self):
+        try:
+            for sig in (signal.SIGTERM, signal.SIGHUP):
+                self.signal_handlers[sig] = signal.getsignal(sig)
+                signal.signal(sig, self.interrupt)
+            self._start_owned_recorder()
+            if self.reference_url:
+                self.manifest.update(extended_reference_ws=self.reference_url, owned_recorder=self.recorder is not None)
+            from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server, _send_rrf_gcode
+            rrf_url, explicit, port = _resolve_rrf_target(self.collector_args)
+            if not explicit:
+                port = port if _arg_value(self.collector_args, "--port") else free_port()
+                rrf_url = f"http://127.0.0.1:{port}"
+            cfg_path = REPO_ROOT / RRF_SIM_VSD_PATH / self.config
+            for label, path in (("scene", self.scene), ("firmware_config", cfg_path), ("rrf", RRF_SIM_BINARY)):
+                self.manifest[f"{label}_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+            shutil.copyfile(self.scene, self.directory / "scene.usda")
+            shutil.copyfile(cfg_path, self.directory / "firmware-config.g")
+            owns_rrf = not explicit and not _arg_has_flag(self.collector_args, "--no-spawn-rrf-simulator")
+            if owns_rrf:
+                self.spawn("rrf", [str(RRF_SIM_BINARY), "--vsd", RRF_SIM_VSD_PATH, "-c", self.config,
+                                   "--server", "-p", str(port)])
+            _wait_for_rrf_server(rrf_url)
+            buildup = getattr(self.args, 'buildup_factor', None)
+            if buildup is None:
+                initial_q = re.search(r'\bQ([-+\d.eE]+)', _send_rrf_gcode(rrf_url, 'M666'))
+                buildup = float(initial_q[1]) if initial_q else 0
+            layering = _arg_has_flag(self.collector_args, '--line-layering') or buildup != 0
+            ws_port, api_port = free_port(), free_port()
+            self.url = f"http://127.0.0.1:{api_port}"
+            service = self.physics = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
+                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower(),
+                                            self.recording_mode])
+            deadline = time.monotonic() + 30
+            while True:
+                try:
+                    status = self.request("status")
+                    self.manifest.update(physics_engine=status['physics_engine'], physics_artifact=status['physics_artifact'])
+                    break
+                except OSError:
+                    if service.poll() is not None or time.monotonic() > deadline:
+>                       raise RuntimeError(f"Headless service did not start; see {self.directory / 'physics.log'}") from None
+E                       RuntimeError: Headless service did not start; see /workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/checks/headless/test_headless_recording_modes_0/sweeps.headless/physics.log
+
+autocal/headless_sim.py:184: RuntimeError
+_______ test_headless_geometry_and_control_settings_survive_reset[False] _______
+
+tmp_path = PosixPath('/workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/checks/headless/test_headless_geometry_and_con0')
+layering = False
+
+    @pytest.mark.parametrize('layering', [False, True])
+    def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering):
+        from argparse import Namespace
+        args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                         rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+                         buildup_factor=0, keep_sim_alive=False)
+        collector_args = ['--line-layering'] if layering else []
+>       with HeadlessSimulation(args, collector_args) as service:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+autocal/tests/test_headless_sim.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <autocal.headless_sim.HeadlessSimulation object at 0x7f78d4277470>
+
+    def __enter__(self):
+        try:
+            for sig in (signal.SIGTERM, signal.SIGHUP):
+                self.signal_handlers[sig] = signal.getsignal(sig)
+                signal.signal(sig, self.interrupt)
+            self._start_owned_recorder()
+            if self.reference_url:
+                self.manifest.update(extended_reference_ws=self.reference_url, owned_recorder=self.recorder is not None)
+            from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server, _send_rrf_gcode
+            rrf_url, explicit, port = _resolve_rrf_target(self.collector_args)
+            if not explicit:
+                port = port if _arg_value(self.collector_args, "--port") else free_port()
+                rrf_url = f"http://127.0.0.1:{port}"
+            cfg_path = REPO_ROOT / RRF_SIM_VSD_PATH / self.config
+            for label, path in (("scene", self.scene), ("firmware_config", cfg_path), ("rrf", RRF_SIM_BINARY)):
+                self.manifest[f"{label}_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+            shutil.copyfile(self.scene, self.directory / "scene.usda")
+            shutil.copyfile(cfg_path, self.directory / "firmware-config.g")
+            owns_rrf = not explicit and not _arg_has_flag(self.collector_args, "--no-spawn-rrf-simulator")
+            if owns_rrf:
+                self.spawn("rrf", [str(RRF_SIM_BINARY), "--vsd", RRF_SIM_VSD_PATH, "-c", self.config,
+                                   "--server", "-p", str(port)])
+            _wait_for_rrf_server(rrf_url)
+            buildup = getattr(self.args, 'buildup_factor', None)
+            if buildup is None:
+                initial_q = re.search(r'\bQ([-+\d.eE]+)', _send_rrf_gcode(rrf_url, 'M666'))
+                buildup = float(initial_q[1]) if initial_q else 0
+            layering = _arg_has_flag(self.collector_args, '--line-layering') or buildup != 0
+            ws_port, api_port = free_port(), free_port()
+            self.url = f"http://127.0.0.1:{api_port}"
+            service = self.physics = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
+                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower(),
+                                            self.recording_mode])
+            deadline = time.monotonic() + 30
+            while True:
+                try:
+                    status = self.request("status")
+                    self.manifest.update(physics_engine=status['physics_engine'], physics_artifact=status['physics_artifact'])
+                    break
+                except OSError:
+                    if service.poll() is not None or time.monotonic() > deadline:
+>                       raise RuntimeError(f"Headless service did not start; see {self.directory / 'physics.log'}") from None
+E                       RuntimeError: Headless service did not start; see /workspace/hp-sim5/output/research/sessions/attempt-b46f63c3e41b42338c0e719a9837ce52/checks/headless/test_headless_geometry_and_con0/sweeps.headless/physics.log
+
+autocal/headless_sim.py:184: RuntimeError
+=========================== short test summary info ============================
+FAILED autocal/tests/test_headless_sim.py::test_headless_recording_modes_preserve_events_resets_and_finalization[none]
+FAILED autocal/tests/test_headless_sim.py::test_headless_geometry_and_control_settings_survive_reset[False]
+2 failed in 6.81s

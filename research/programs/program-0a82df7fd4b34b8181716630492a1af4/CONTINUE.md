@@ -1,8 +1,10 @@
-# Finish the HP3 autocal robustness program
+# Completed HP3 autocal robustness continuation
 
-Current status after the bounded current-code continuation: four primary attempts are durably pushed. The nominal candidate failed before fitting with a5000ms M569.3 encoder transport timeout. Development max error improved3.6959→2.8529mm at1.0641×simulated effort, but the no-new-failure gate remains blocked. Evaluation calibration is NOT TESTED. Read [lower-force/CONTINUE.md](lower-force/CONTINUE.md) first for the exact remaining two jobs, aggregate counters and separate transport follow-up. Do not repeat the four attempted primary runs or treat the below historical six-run handoff as an instruction to restart the matrix. The original frozen policy remains unchanged.
+The six frozen primary attempts are complete and durably pushed. Evaluation max error improved 3.4116 to 2.7518 mm at 1.0709 times simulated effort. The original nominal candidate timeout remains a practical workflow failure, so force4mid is rejected for adoption and production5mid remains. The exact matrix must not be restarted.
 
-The remaining text is the prior full handoff and preserved program context.
+A separate bounded real-WebSocket discriminator supports only the minimal encoder reply-budget transport patch. Code-only candidate95a0af8f descends directly from a68d6adf. The production and test blobs passed45JavaScript and2noncollection headless checks at903b00d4; the final candidate differs only in README wording. No full-autocal-with-fix confirmation was run. Manager owns fixed review and integration. Read [lower-force/report.md](lower-force/report.md), [lower-force/CONTINUE.md](lower-force/CONTINUE.md), the combined evidence manifest and source candidate receipt. All prior raw archives and the original partial review at57658240 remain preserved.
+
+The remaining text is the historical full handoff and preserved program context. Its old remaining-job instructions are completed and do not authorize repeated collections.
 
 Continue the existing research program and deliver a supported, usable autocal
 improvement with concrete before/after results. The human wants you to finish

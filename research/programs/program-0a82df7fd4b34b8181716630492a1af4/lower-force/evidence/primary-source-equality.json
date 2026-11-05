@@ -1,0 +1,31 @@
+{
+  "primary_base": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+  "path_changes_only_in_harness": true,
+  "files": [
+    {
+      "path": "integrations/rrf/rrfSimulatorBridge.mjs",
+      "sha256": "300791fa6fc2b6f9d1651e6ef1255fa67d74e5f3029eec512e0009f01c30729f",
+      "equal_to_base": true
+    },
+    {
+      "path": "autocal/control/primitives/uncalibrated_actions.mjs",
+      "sha256": "621e86228a5ef5e68b0ebc72df86768473d444833998034d622b93fc6142bb58",
+      "equal_to_base": true
+    },
+    {
+      "path": "autocal/control/behaviors/sweep_data_collection.mjs",
+      "sha256": "ac74b217f22db37ef0f4481a336358641ae5a786be2a81ac94951fa21f1db20f",
+      "equal_to_base": true
+    },
+    {
+      "path": "autocal/headless_sim.py",
+      "sha256": "36b3df64ee939bca133ff87fd9d0c8edabdf8415fe7cbd0e89171f4ba2d595fa",
+      "equal_to_base": true
+    },
+    {
+      "path": "autocal/autocal.py",
+      "sha256": "c360119fa34159cd34365a646f669bbefcb6c455c6e7b48f7a39f48cb98903b5",
+      "equal_to_base": true
+    }
+  ]
+}
