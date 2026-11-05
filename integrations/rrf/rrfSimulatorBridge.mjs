@@ -5,6 +5,7 @@ import { RrfHttpBridge } from './rrfHttpBridge.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_ENCODER_TIMEOUT_MS = 2000;
+const DEFAULT_COMMAND_ENCODER_TIMEOUT_MS = 5000;
 
 function buildWsHelpers({ wsPort, quiet = false, onClientChange }) {
   const wss = wsPort ? new WebSocketServer({ port: wsPort }) : null;
@@ -236,7 +237,7 @@ export function createGcodeBridge({
   wsPort = 8790,
   quiet = false,
   onClientChange = null,
-  encoderTimeoutMs = DEFAULT_ENCODER_TIMEOUT_MS,
+  encoderTimeoutMs = DEFAULT_COMMAND_ENCODER_TIMEOUT_MS,
   driverToAxis = null,
   sim = false,
 } = {}) {
@@ -249,7 +250,7 @@ export function createGcodeBridge({
   const encoderResolver = helpers.wss
     ? async ({ axes, timeoutMs }) => {
       const timeout = Number.isFinite(timeoutMs)
-        ? Math.max(1, Math.min(timeoutMs, 5000))
+        ? Math.max(1, Math.min(timeoutMs, encoderTimeoutMs))
         : encoderTimeoutMs;
       const response = await helpers.sendEncoderRequest(axes, timeout);
       simulationClock?.observe(response.simulationClock);
