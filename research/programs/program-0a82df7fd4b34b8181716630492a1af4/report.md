@@ -1,6 +1,6 @@
 # Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?
 
-Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 102 · paused
+Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 171 · active
 
 Reviewed findings are recorded in scoped admission history.
 
@@ -11,10 +11,10 @@ Reviewed findings are recorded in scoped admission history.
   "id": "program-0a82df7fd4b34b8181716630492a1af4",
   "question_id": "question-e4c608b6f4d04b0cbf37decfea93e9c0",
   "goal": "Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?",
-  "state": "paused",
-  "revision": 102,
+  "state": "active",
+  "revision": 171,
   "created_at": "2026-11-05T08:48:29.407994+00:00",
-  "updated_at": "2026-11-05T17:08:40.123523+00:00",
+  "updated_at": "2026-11-05T21:28:42.270204+00:00",
   "constraints": {}
 }
 ```
@@ -2232,6 +2232,1471 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
     "actor": "manager",
     "evidence_ids": [],
     "subject_id": "program-0a82df7fd4b34b8181716630492a1af4"
+  }
+}
+```
+
+## decision: Continue from committed handoff on current upstream a68d6adf. Imported controller history only; no prior physics world restored. Interview finished; complete frozen matrix, checkpoints, review and authorized integration.
+
+```json
+{
+  "id": "decision-188d00ce40df4c79a7d0957dd01c6f19",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Continue from committed handoff on current upstream a68d6adf. Imported controller history only; no prior physics world restored. Interview finished; complete frozen matrix, checkpoints, review and authorized integration.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:29:29.214264+00:00",
+  "updated_at": "2026-11-05T17:29:29.214264+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "program-0a82df7fd4b34b8181716630492a1af4"
+  }
+}
+```
+
+## steering: Finish frozen lower-force experiment per CONTINUE.md on current main. Work autonomously. Commit and push after each completed or failed collection, with raw evidence. User authorizes supported production delivery, fixed-evidence review, integration, documentation and cleanup. No unsupported force adoption.
+
+```json
+{
+  "id": "steering-0d92d2780e22433394248c37471caf5b",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "steering",
+  "title": "Finish frozen lower-force experiment per CONTINUE.md on current main. Work autonomously. Commit and push after each completed or failed collection, with raw evidence. User authorizes supported production delivery, fixed-evidence review, integration, documentation and cleanup. No unsupported force adoption.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:29:29.608171+00:00",
+  "updated_at": "2026-11-05T17:29:29.608171+00:00",
+  "details": {
+    "actor": "human",
+    "evidence_ids": [],
+    "subject_id": null
+  }
+}
+```
+
+## human_input: Finish frozen lower-force experiment per CONTINUE.md on current main. Work autonomously. Commit and push after each completed or failed collection, with raw evidence. User authorizes supported production delivery, fixed-evidence review, integration, documentation and cleanup. No unsupported force adoption.
+
+```json
+{
+  "id": "human_input-446c12d0517c4b69bc85271932036d90",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "human_input",
+  "title": "Finish frozen lower-force experiment per CONTINUE.md on current main. Work autonomously. Commit and push after each completed or failed collection, with raw evidence. User authorizes supported production delivery, fixed-evidence review, integration, documentation and cleanup. No unsupported force adoption.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:29:29.608262+00:00",
+  "updated_at": "2026-11-05T17:29:29.608262+00:00",
+  "details": {
+    "citation_ids": [
+      "steering-0d92d2780e22433394248c37471caf5b"
+    ],
+    "intent": "instruction",
+    "links": [],
+    "next_assignment_id": null,
+    "provenance": {
+      "source": "2026-11-05 current user request"
+    },
+    "steering_id": "steering-0d92d2780e22433394248c37471caf5b"
+  }
+}
+```
+
+## route_plan: Physical-variation mission matches frozen friction/noise candidate. Broad scouting, recording optimization and tooling repeat completed work or delay decision. Fresh current-code pairs remain untested. Current main a68d6adf includes recovered setup; archives verified 59/407 files.
+
+```json
+{
+  "id": "route_plan-840bac1ba79e4be6b15e716c7d973664",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "route_plan",
+  "title": "Physical-variation mission matches frozen friction/noise candidate. Broad scouting, recording optimization and tooling repeat completed work or delay decision. Fresh current-code pairs remain untested. Current main a68d6adf includes recovered setup; archives verified 59/407 files.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:29:50.915874+00:00",
+  "updated_at": "2026-11-05T17:29:50.915874+00:00",
+  "details": {
+    "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+    "citation_ids": [
+      "decision-570ae430f6c4401cba5c83ccaa261f21",
+      "admission-22c5d2de62e841e9bd8b77c2b3ae4811"
+    ],
+    "decision_value": "Adopt a small supported collector improvement with fresh paired geometry, or reject it explicitly and retain all counterexamples.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 7,
+      "fresh_fits": 80,
+      "physical_points": 2000,
+      "physics_steps": 28000000,
+      "review_minutes": 15,
+      "wall_minutes": 100
+    },
+    "hypothesis": "Lower measurement force reduces equilibrium stretch/model bias across varied drag/noise while preserving completion and automatic stopping.",
+    "novelty": "First frozen lower-sensor-force production candidate paired across motor Coulomb/stiction and noisy encoders. Distinct from failed guide preload experiment.",
+    "objections": [],
+    "observation": "Paired lower-force and default fresh completed calibrations improve applied per-anchor errors without new failure and with <=20 percent extra collection effort.",
+    "priority": 1,
+    "prompt": {
+      "id": "autocal-parameter-variation",
+      "path": "research/prompts/autocal_parameter_variation_focus.txt",
+      "sha256": "c2255a3036a41919e4e2b13dc3d68f04dac26e233fed140573231d08da719e46",
+      "title": "HP3 autocalibration across physical variation"
+    },
+    "reason": "Physical-variation mission matches frozen friction/noise candidate. Broad scouting, recording optimization and tooling repeat completed work or delay decision. Fresh current-code pairs remain untested. Current main a68d6adf includes recovered setup; archives verified 59/407 files.",
+    "reopening_condition": "A different encoder-observable force rule, materially different measured drag, or independently corrected model.",
+    "retry_key": "081d59eb5d1f8aa300b282528851baf62a4ae73be067a730485d901fe3a5f968",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "candidate": "sensor measurement force min(forceMax,4*forceMid); all pullout/preload/settling/stopping/solver rules unchanged",
+      "effort_limit": "1.20 times paired completed baseline simulated time/steps",
+      "failure": "any anchor >20 mm or no completed calibration",
+      "good": "every anchor <5 mm",
+      "guides_mu": 0,
+      "layering": false,
+      "machine": "hp3",
+      "radii": "known 30 mm",
+      "worlds": "nominal noise .03 seed4001; dev motor factors [.5,2,1.5,1]/[2,.5,1,1.5] sigma .03 seed4101; eval [.5,1.5,2,.75]/[1.5,2,.5,1] sigma .05 seed4201"
+    },
+    "tradeoffs": [
+      "At most twenty percent extra completed-pair simulated collection effort.",
+      "No hardware reliability claim from three hypothetical simulated worlds."
+    ],
+    "uncertainty": "The force-valley result used another solver/source revision and only one world; transfer is unproven. Motor factors are hypothetical, not hardware-characterized."
+  }
+}
+```
+
+## runtime_allocation: Finite manager allocation
+
+```json
+{
+  "id": "runtime_allocation-48e08fe7f58f449a95191ed0df8eecf5",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "runtime_allocation",
+  "title": "Finite manager allocation",
+  "revision": 11,
+  "created_at": "2026-11-05T17:29:51.313067+00:00",
+  "updated_at": "2026-11-05T21:23:05.228022+00:00",
+  "details": {
+    "cleanup_deadline": 1793907481.312921,
+    "cleanup_seconds": 190,
+    "deadline": 1793907291.312921,
+    "events": [],
+    "lease_until": 1793907302.7089553,
+    "owner": {
+      "id": "controller-8de04df8e8d540b58256a18c6905a6db",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "assignment_id": "assignment-a07108777f25435f9f3065148f9a8e49",
+        "attempt_id": "attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+        "charged_at": "2026-11-05T17:30:19.962180+00:00",
+        "retry_root": null,
+        "review_pending": true,
+        "review_seconds": 900,
+        "reviews": [
+          {
+            "charge_id": "f23d8a7954a64aa9b65cf4b7c4e64479",
+            "reserved_seconds": 300,
+            "run_id": "review-run-4aaefd918dc748b8a0519f69eeee8066",
+            "state": "timed_out"
+          }
+        ],
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": true,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": true,
+          "viewer": "none",
+          "worktree": true
+        },
+        "state": "submitted",
+        "superseded_by": "runtime_allocation-a6ee48da15cb45ff8940581a448df3b7",
+        "usage": {
+          "estimates": {
+            "collections": 7,
+            "fresh_fits": 80,
+            "physical_points": 2000,
+            "physics_steps": 28000000,
+            "review_minutes": 15,
+            "wall_minutes": 100
+          },
+          "observed_worker_wall_seconds": 4099.199935913086,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": [
+            {
+              "at": "2026-11-05T17:48:33.959916+00:00",
+              "report": {
+                "checkpoint": "53a6a9baad583afd0979d4330d9aa0f2160602b4",
+                "collections": 1,
+                "fresh_fits": 9,
+                "outcome": "nominal baseline spread-consensus accepted; max4.5472mm;all anchors<5mm",
+                "physical_points": 140,
+                "physics_steps": 2156688,
+                "raw_archive_sha256": "dae7d09825a553d2a43092867d28a541148d5c5b500c50da9475298a4c09e6aa",
+                "simulated_s": 4313.376
+              },
+              "source": "worker_report"
+            }
+          ]
+        },
+        "worker_seconds": 6000
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 900,
+    "started_at": "2026-11-05T17:29:51.312925+00:00",
+    "state": "expired",
+    "task_limit": 1,
+    "wall_reserved_seconds": 6900,
+    "wall_seconds": 7500,
+    "worker_limit": 1
+  }
+}
+```
+
+## assignment: Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.
+
+```json
+{
+  "id": "assignment-a07108777f25435f9f3065148f9a8e49",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "assignment",
+  "title": "Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.",
+  "revision": 3,
+  "created_at": "2026-11-05T17:29:51.542495+00:00",
+  "updated_at": "2026-11-05T18:38:39.245205+00:00",
+  "details": {
+    "allocation": {
+      "collections": 7,
+      "fresh_fits": 80,
+      "physical_points": 2000,
+      "physics_steps": 28000000,
+      "review_minutes": 15,
+      "wall_minutes": 100
+    },
+    "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+    "execution_state": "completed",
+    "knowledge_state": "unassessed",
+    "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
+    "review_state": "unreviewed"
+  }
+}
+```
+
+## investigation: Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.
+
+```json
+{
+  "id": "investigation-9aa438f611094e7280d113775d435bea",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "investigation",
+  "title": "Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:29:51.542626+00:00",
+  "updated_at": "2026-11-05T17:29:51.542626+00:00",
+  "details": {
+    "assignment_id": "assignment-a07108777f25435f9f3065148f9a8e49",
+    "citation_ids": [
+      "admission-22c5d2de62e841e9bd8b77c2b3ae4811",
+      "decision-52970d8c1d68489fb01cd9fb5e75b835"
+    ],
+    "execution": {
+      "machine": "hp3",
+      "recording_mode": "none",
+      "simulated_autocal_speedup": 25
+    },
+    "explanations": [
+      {
+        "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+        "explanation": "Lower measurement force reduces equilibrium bias within collection-effort allowance."
+      },
+      {
+        "approach_id": "approach-4efeaafb10e946d68b589da1124f50ad",
+        "explanation": "Motor friction/noise defeats benefit or raises effort beyond allowance."
+      }
+    ],
+    "kind": "experiment",
+    "outcomes": {
+      "improved": {
+        "actions": [],
+        "finding": "supported",
+        "observation": "Meaningful final applied accuracy gain transfers to held-out pair, no new failure, <=1.20x completed-pair effort and scope-safe production checks pass."
+      },
+      "inconclusive": {
+        "actions": [],
+        "finding": "inconclusive",
+        "observation": "Incomplete valid pairs prevent decision."
+      },
+      "mixed": {
+        "actions": [],
+        "finding": "mixed",
+        "observation": "Pair-specific benefit fails general adoption; retain scoped evidence."
+      },
+      "not_improved": {
+        "actions": [],
+        "finding": "rejected",
+        "observation": "Frozen candidate fails accuracy, transfer, failure or effort criterion. Preserve negative evidence; no unsupported default change."
+      }
+    },
+    "route_plan_ids": [
+      "route_plan-840bac1ba79e4be6b15e716c7d973664",
+      "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
+    ]
+  }
+}
+```
+
+## attempt: Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.
+
+```json
+{
+  "id": "attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "attempt",
+  "title": "Finish frozen sensor-4mid-v1 six fresh paired nominal/development/evaluation autocal runs on current code. Deliver applied before/after anchors, all failures and effort, raw evidence checkpointed and pushed after each collection, and a minimal HP3-scoped production change only if supported. Preserve counterexamples otherwise. Complete tests and reproducible reports.",
+  "revision": 32,
+  "created_at": "2026-11-05T17:30:20.039276+00:00",
+  "updated_at": "2026-11-05T18:38:39.245120+00:00",
+  "details": {
+    "allocation": {
+      "collections": 7,
+      "fresh_fits": 80,
+      "physical_points": 2000,
+      "physics_steps": 28000000,
+      "review_minutes": 15,
+      "wall_minutes": 100
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1793905819.9671798",
+      "--worktree",
+      "--dont-ask",
+      "--no-record"
+    ],
+    "artifacts": [
+      {
+        "bytes": 430,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/session.json"
+      },
+      {
+        "bytes": 17391,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/launch.json"
+      },
+      {
+        "bytes": 78,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/exit.json"
+      },
+      {
+        "bytes": 27774,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/prompt.txt"
+      },
+      {
+        "bytes": 229,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/events.jsonl"
+      },
+      {
+        "bytes": 3592,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/final-message.md"
+      },
+      {
+        "bytes": 8172,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/research.md"
+      },
+      {
+        "bytes": 10851,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/report.md"
+      },
+      {
+        "bytes": 2876,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/abstract.md"
+      },
+      {
+        "bytes": 5459,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/instructions.md"
+      },
+      {
+        "bytes": 514,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/attachment.toml"
+      },
+      {
+        "bytes": 391,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/attachment.json"
+      },
+      {
+        "bytes": 284,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/connection.json"
+      },
+      {
+        "bytes": 0,
+        "partial": false,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/native/runtime.log"
+      },
+      {
+        "bytes": 0,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/stdout.log"
+      },
+      {
+        "bytes": 282,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/stderr.log"
+      },
+      {
+        "bytes": 27774,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/prompt.txt"
+      },
+      {
+        "bytes": 2193,
+        "partial": false,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe/assignment.json"
+      }
+    ],
+    "assignment_id": "assignment-a07108777f25435f9f3065148f9a8e49",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-11-05T18:38:39.242118+00:00",
+    "launcher_exit": {
+      "returncode": 0,
+      "wall_deadline": 1793905819.9671798,
+      "wall_expired": false
+    },
+    "launcher_session_id": "f9a494d8cf7843a38a03e19b4535badd",
+    "observations": [
+      {
+        "at": "2026-11-05T17:30:20.038580+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-11-05T17:30:20.042193+00:00",
+        "event": "spawned",
+        "pid": 932
+      },
+      {
+        "at": "2026-11-05T18:38:39.242143+00:00",
+        "event": "exited",
+        "returncode": 0
+      }
+    ],
+    "observed_wall_seconds": 4099.199935913086,
+    "owner": {
+      "id": "dispatcher-9ab4d5beeeb3410a8a081fef571ee612",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [],
+    "premise_plan_ids": [
+      "route_plan-840bac1ba79e4be6b15e716c7d973664",
+      "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
+    ],
+    "process": {
+      "birth": "23879",
+      "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+      "group": 932,
+      "host": "4e127f450d90",
+      "pid": 932,
+      "uid": 1000
+    },
+    "prompt_sha256": "8cf3e93935fe66a45c40bc02fa0028d48d41d6e1a43f1ae9bf87eb46048378a4",
+    "returncode": 0,
+    "runtime": {
+      "allocation_id": "runtime_allocation-48e08fe7f58f449a95191ed0df8eecf5",
+      "assignment_id": "assignment-a07108777f25435f9f3065148f9a8e49",
+      "cleanup_seconds": 190,
+      "wall_deadline": 1793905819.9671798
+    },
+    "runtime_session_id": "cb87d8e5f1d74ed49afc94053374571e",
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": true,
+      "goal_mode": true,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": true,
+      "viewer": "none",
+      "worktree": true
+    },
+    "source_dirty": false,
+    "source_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+    "started_at": "2026-11-05T17:30:20.042182+00:00",
+    "state": "submitted",
+    "worktree": {
+      "branch": "research/bounded-research-assignment-6e3fa45a",
+      "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a",
+      "source_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a"
+    },
+    "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a"
+  }
+}
+```
+
+## decision: Before any primary collection results, operationalize meaningful applied accuracy as evaluation maximum anchor error improving by at least10 percent AND0.5mm versus its fresh baseline, with development maximum also improving; no new failure in any pair and every completed pair effort<=1.20x steps/sim time. This margin interprets handoff criteria, not a force retune. Worker must freeze it before primary runs and disclose any nominal regression. No new numerical result exists yet.
+
+```json
+{
+  "id": "decision-bd64118167cf4c29bea05a402a2f070d",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Before any primary collection results, operationalize meaningful applied accuracy as evaluation maximum anchor error improving by at least10 percent AND0.5mm versus its fresh baseline, with development maximum also improving; no new failure in any pair and every completed pair effort<=1.20x steps/sim time. This margin interprets handoff criteria, not a force retune. Worker must freeze it before primary runs and disclose any nominal regression. No new numerical result exists yet.",
+  "revision": 1,
+  "created_at": "2026-11-05T17:33:37.663112+00:00",
+  "updated_at": "2026-11-05T17:33:37.663112+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "assignment-a07108777f25435f9f3065148f9a8e49"
+  }
+}
+```
+
+## decision: Source/failed journal inspection identified a separate focused production candidate after frozen six-run matrix: M569.3 resolver hardcaps finite command budgets at5000ms despite headless explicit encoderTimeoutMs120000; failed run generated validlate encoder response10812 atunchangedstep. Originalhostdelaycause remains unknown. Authorize max5worker minutes after all sixprimaryjobs, only if reporting reserve remains, for realWebSocket delayed-M569.3 before/after probe and minimal honoring-explicit-budget fix while preserving effective default5s, shorter-command deadlines, disconnect/missingreply failures and numericalpayloads. No freshcollection or retuning; no change to primaryruns. Distinct hypothesis and evidence must be reported separately; do not use fix to erase nominalfailure or assert hardware accuracy. This directly addresses observed lostcollection, not broadinfrastructure work.
+
+```json
+{
+  "id": "decision-f6e3ee17d877459b915ada44a1b7944c",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Source/failed journal inspection identified a separate focused production candidate after frozen six-run matrix: M569.3 resolver hardcaps finite command budgets at5000ms despite headless explicit encoderTimeoutMs120000; failed run generated validlate encoder response10812 atunchangedstep. Originalhostdelaycause remains unknown. Authorize max5worker minutes after all sixprimaryjobs, only if reporting reserve remains, for realWebSocket delayed-M569.3 before/after probe and minimal honoring-explicit-budget fix while preserving effective default5s, shorter-command deadlines, disconnect/missingreply failures and numericalpayloads. No freshcollection or retuning; no change to primaryruns. Distinct hypothesis and evidence must be reported separately; do not use fix to erase nominalfailure or assert hardware accuracy. This directly addresses observed lostcollection, not broadinfrastructure work.",
+  "revision": 1,
+  "created_at": "2026-11-05T18:05:40.637082+00:00",
+  "updated_at": "2026-11-05T18:05:40.637082+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "assignment-a07108777f25435f9f3065148f9a8e49"
+  }
+}
+```
+
+## claim: In four frozen HP3 attempts, three calibrations accepted every anchor below5mm. Lower4mid improved development applied maximum from3.6959to2.8529mm at1.0641x simulated effort, but nominal candidate aborted on encoder transport before fitting. No force default change is supported by this partial; held-out evaluation and delayed-transport discriminator are not tested.
+
+```json
+{
+  "id": "claim-a2c1c9c97fab423099085fa39b817cfd",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "claim",
+  "title": "In four frozen HP3 attempts, three calibrations accepted every anchor below5mm. Lower4mid improved development applied maximum from3.6959to2.8529mm at1.0641x simulated effort, but nominal candidate aborted on encoder transport before fitting. No force default change is supported by this partial; held-out evaluation and delayed-transport discriminator are not tested.",
+  "revision": 1,
+  "created_at": "2026-11-05T18:38:02.123703+00:00",
+  "updated_at": "2026-11-05T18:38:02.123703+00:00",
+  "details": {
+    "claim_key": "claim-a2c1c9c97fab423099085fa39b817cfd",
+    "knowledge_state": "unassessed",
+    "scope": {
+      "activation_probe_worlds": 3,
+      "buildup": 0,
+      "calibration_worlds": 2,
+      "evaluation": "NOT TESTED",
+      "guide_friction": 0,
+      "hardware_claim": false,
+      "known_radii_mm": 30,
+      "layering": false,
+      "machine": "hp3",
+      "production_force_adoption": "blocked",
+      "runs": [
+        "n-default",
+        "n-candidate",
+        "d-default",
+        "d-candidate"
+      ],
+      "source_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+      "worlds": [
+        "nominal sigma.03 seed4001",
+        "development asymmetricmotor sigma.03 seed4101"
+      ]
+    },
+    "version": 1
+  }
+}
+```
+
+## submission: In four frozen HP3 attempts, three calibrations accepted every anchor below5mm. Lower4mid improved development applied maximum from3.6959to2.8529mm at1.0641x simulated effort, but nominal candidate aborted on encoder transport before fitting. No force default change is supported by this partial; held-out evaluation and delayed-transport discriminator are not tested.
+
+```json
+{
+  "id": "submission-1b4de3c98dfd474abb162d80f5aa8fcf",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "submission",
+  "title": "In four frozen HP3 attempts, three calibrations accepted every anchor below5mm. Lower4mid improved development applied maximum from3.6959to2.8529mm at1.0641x simulated effort, but nominal candidate aborted on encoder transport before fitting. No force default change is supported by this partial; held-out evaluation and delayed-transport discriminator are not tested.",
+  "revision": 1,
+  "created_at": "2026-11-05T18:39:22.816323+00:00",
+  "updated_at": "2026-11-05T18:39:22.816323+00:00",
+  "details": {
+    "manifest": {
+      "assets": [
+        {
+          "artifact_id": null,
+          "id": "report",
+          "missing": false,
+          "role": "report",
+          "sha256": "f5c3f70ca77231a84517672a3a6c5bea7119a8d96e985a07276bb3d652ec7aba",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "abstract",
+          "missing": false,
+          "role": "abstract",
+          "sha256": "f53ee7a4b53686855b6d0fd338762bb77a26d45d812f9119e6589cf88297f8c9",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/abstract.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "notebook",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "70fe85fd2659c7bca44b54860b63f60418d378545b93984835f4b14965b66542",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/research.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "compact-evidence",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "7c72ee22754dae632c50f905e5409ce616032480eaaf3666b2dbdb68682da973",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/review-evidence.tar.gz"
+        },
+        {
+          "artifact_id": null,
+          "id": "compact-manifest",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "ebed787c2a110c6a155e2afd129299ca49b2d4b5de716f3c5a1300152f7f58b6",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/review-evidence-manifest.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "measurements",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "106b04a6fa539b439380d0a40f801e4b9a2914b38e142573d41457b4b9ecf482",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/measurements.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "policy",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "ebd49eefed003775e9dd3098db74641adc1565d5681cac58b2dc92c6ff20bdcb",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/policy-frozen.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "offline-checks",
+          "missing": false,
+          "role": "check",
+          "sha256": "55f7ac10f9c48c1da877fd6381e391a9c9f47fd8d6922146811b2f0e1c0a6d37",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/fixed-evidence-checks.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "offline-extractor",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "3cb9c46618928f8afb73f04b4db385eec3f442567598b733cdd18abb8cb9bb0d",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/check_evidence.py"
+        },
+        {
+          "artifact_id": null,
+          "id": "guard-tests",
+          "missing": false,
+          "role": "check",
+          "sha256": "9f77e95b7698fb526a83a2d2796c7b4a4600e4677d614dddf3f2bb7f3b86f7b3",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/evidence/focused-guard-tests.log"
+        },
+        {
+          "artifact_id": null,
+          "id": "budget",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "14f6a854ca2423f7d73b90806fff5d783eeb836ef78fe82b97dae5002d33a788",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/budget-ledger.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "handoff",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "4f6249273b54563e6320e6bbc687496bb4560afe9621761fe23ac1da53204795",
+          "source": "/workspace/hp-sim5-worktrees/bounded-research-assignment-6e3fa45a/research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/CONTINUE.md"
+        }
+      ],
+      "assignment_id": "assignment-a07108777f25435f9f3065148f9a8e49",
+      "attempt_id": "attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+      "base_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+      "candidate_revision": null,
+      "changed_paths": [],
+      "claim": {
+        "created_at": "2026-11-05T18:38:02.123703+00:00",
+        "details": {
+          "claim_key": "claim-a2c1c9c97fab423099085fa39b817cfd",
+          "knowledge_state": "unassessed",
+          "scope": {
+            "activation_probe_worlds": 3,
+            "buildup": 0,
+            "calibration_worlds": 2,
+            "evaluation": "NOT TESTED",
+            "guide_friction": 0,
+            "hardware_claim": false,
+            "known_radii_mm": 30,
+            "layering": false,
+            "machine": "hp3",
+            "production_force_adoption": "blocked",
+            "runs": [
+              "n-default",
+              "n-candidate",
+              "d-default",
+              "d-candidate"
+            ],
+            "source_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+            "worlds": [
+              "nominal sigma.03 seed4001",
+              "development asymmetricmotor sigma.03 seed4101"
+            ]
+          },
+          "version": 1
+        },
+        "id": "claim-a2c1c9c97fab423099085fa39b817cfd",
+        "kind": "claim",
+        "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+        "revision": 1,
+        "title": "In four frozen HP3 attempts, three calibrations accepted every anchor below5mm. Lower4mid improved development applied maximum from3.6959to2.8529mm at1.0641x simulated effort, but nominal candidate aborted on encoder transport before fitting. No force default change is supported by this partial; held-out evaluation and delayed-transport discriminator are not tested.",
+        "updated_at": "2026-11-05T18:38:02.123703+00:00"
+      },
+      "config": {
+        "candidate": "frozen4mid vs5mid",
+        "machine": "hp3",
+        "scope": "controlled four-attempt partial; evaluation not tested; report only"
+      },
+      "contract": "hp-sim5-evidence-review-v2",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_state": "submitted",
+      "input_identities": [
+        "sha256:ebd49eefed003775e9dd3098db74641adc1565d5681cac58b2dc92c6ff20bdcb",
+        "sha256:7c72ee22754dae632c50f905e5409ce616032480eaaf3666b2dbdb68682da973",
+        "sha256:106b04a6fa539b439380d0a40f801e4b9a2914b38e142573d41457b4b9ecf482"
+      ],
+      "physics_gate_required": false,
+      "producer_checks": [],
+      "source_dirty": false,
+      "source_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a"
+    },
+    "sha256": "05b61f9929d6d56dcd5f679466b0e758e7b14c7d57f255a062203aa2a9168fed"
+  }
+}
+```
+
+## review_run: Separate saved-evidence review
+
+```json
+{
+  "id": "review-run-4aaefd918dc748b8a0519f69eeee8066",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "review_run",
+  "title": "Separate saved-evidence review",
+  "revision": 3,
+  "created_at": "2026-11-05T18:39:23.017891+00:00",
+  "updated_at": "2026-11-05T18:44:23.024838+00:00",
+  "details": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-4aaefd918dc748b8a0519f69eeee8066",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-4aaefd918dc748b8a0519f69eeee8066/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793904263.015685,
+    "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-4aaefd918dc748b8a0519f69eeee8066",
+    "error": "Review wall allocation expired",
+    "guard_argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+      "1793904263.015685",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-4aaefd918dc748b8a0519f69eeee8066/wall-expired",
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-4aaefd918dc748b8a0519f69eeee8066",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-4aaefd918dc748b8a0519f69eeee8066/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "owner": {
+      "id": "review-controller-3d42db9adfb94011aea1b8e04dd2a35f",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "438177",
+      "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+      "group": 3140,
+      "host": "4e127f450d90",
+      "pid": 3140,
+      "uid": 1000
+    },
+    "prompt_sha256": "4116227b1c6c571126df0f0deda537edc709e52343a0d06d029685d4c746e6ca",
+    "returncode": -9,
+    "review_id": null,
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-4aaefd918dc748b8a0519f69eeee8066",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-48e08fe7f58f449a95191ed0df8eecf5",
+      "assignment-a07108777f25435f9f3065148f9a8e49",
+      "f23d8a7954a64aa9b65cf4b7c4e64479"
+    ],
+    "started_at": "2026-11-05T18:39:23.015668+00:00",
+    "state": "timed_out",
+    "submission_id": "submission-1b4de3c98dfd474abb162d80f5aa8fcf",
+    "submission_sha256": "05b61f9929d6d56dcd5f679466b0e758e7b14c7d57f255a062203aa2a9168fed",
+    "wall_minutes": 5
+  }
+}
+```
+
+## route_plan: Continue only the two frozen, unrun evaluation jobs after observed host delays made the pair unsafe in first100min deadline. Fourattempts remain immutable; no repeat of successful jobs. A focused explicit-encoder-budget fix addresses actuallostcollection; bounded realWS contrast and optional seventh stock5mid confirmation have concrete delivery value. No force-default adoption while original no-new-failure gate fails.
+
+```json
+{
+  "id": "route_plan-8fa009f70b534bd5baca577073f587cb",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "route_plan",
+  "title": "Continue only the two frozen, unrun evaluation jobs after observed host delays made the pair unsafe in first100min deadline. Fourattempts remain immutable; no repeat of successful jobs. A focused explicit-encoder-budget fix addresses actuallostcollection; bounded realWS contrast and optional seventh stock5mid confirmation have concrete delivery value. No force-default adoption while original no-new-failure gate fails.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:21:34.346036+00:00",
+  "updated_at": "2026-11-05T21:21:34.346036+00:00",
+  "details": {
+    "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+    "citation_ids": [
+      "decision-570ae430f6c4401cba5c83ccaa261f21",
+      "admission-22c5d2de62e841e9bd8b77c2b3ae4811"
+    ],
+    "decision_value": "Adopt a small supported collector improvement with fresh paired geometry, or reject it explicitly and retain all counterexamples.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 3,
+      "fresh_fits": 53,
+      "physical_points": 1530,
+      "physics_steps": 20031477,
+      "review_minutes": 15,
+      "wall_minutes": 80
+    },
+    "hypothesis": "Lower measurement force reduces equilibrium stretch/model bias across varied drag/noise while preserving completion and automatic stopping.",
+    "novelty": "First frozen lower-sensor-force production candidate paired across motor Coulomb/stiction and noisy encoders. Distinct from failed guide preload experiment.",
+    "objections": [],
+    "observation": "Paired lower-force and default fresh completed calibrations improve applied per-anchor errors without new failure and with <=20 percent extra collection effort.",
+    "priority": 1,
+    "prompt": {
+      "id": "autocal-parameter-variation",
+      "path": "research/prompts/autocal_parameter_variation_focus.txt",
+      "sha256": "1361ac15505cd6f58f45e61c93f5bdeaf3fb3836e4c3bdcb8e9fb4300749e47f",
+      "title": "HP3 autocalibration across physical variation"
+    },
+    "reason": "Continue only the two frozen, unrun evaluation jobs after observed host delays made the pair unsafe in first100min deadline. Fourattempts remain immutable; no repeat of successful jobs. A focused explicit-encoder-budget fix addresses actuallostcollection; bounded realWS contrast and optional seventh stock5mid confirmation have concrete delivery value. No force-default adoption while original no-new-failure gate fails.",
+    "reopening_condition": "A different encoder-observable force rule, materially different measured drag, or independently corrected model.",
+    "retry_key": "081d59eb5d1f8aa300b282528851baf62a4ae73be067a730485d901fe3a5f968",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "candidate": "sensor measurement force min(forceMax,4*forceMid); all pullout/preload/settling/stopping/solver rules unchanged",
+      "effort_limit": "1.20 times paired completed baseline simulated time/steps",
+      "failure": "any anchor >20 mm or no completed calibration",
+      "good": "every anchor <5 mm",
+      "guides_mu": 0,
+      "layering": false,
+      "machine": "hp3",
+      "radii": "known 30 mm",
+      "worlds": "nominal noise .03 seed4001; dev motor factors [.5,2,1.5,1]/[2,.5,1,1.5] sigma .03 seed4101; eval [.5,1.5,2,.75]/[1.5,2,.5,1] sigma .05 seed4201"
+    },
+    "tradeoffs": [
+      "At most twenty percent extra completed-pair simulated collection effort.",
+      "No hardware reliability claim from three hypothetical simulated worlds."
+    ],
+    "uncertainty": "The force-valley result used another solver/source revision and only one world; transfer is unproven. Motor factors are hypothetical, not hardware-characterized."
+  }
+}
+```
+
+## decision: Explicit finite continuation after four-attempt controlled partial. Original attempt ended clean before deadline; source/native/frozenforce/worlds unchanged. Fund80worker minutes includinglast10reports,15review,15manager/startup and190s cleanup. This is additional wall allocation justified by host delays, two unrun heldoutcases and actual5sreplybudgetbug. Aggregate limits remain7collections/80fits/28Msteps/2000points across attempts. Remaining3collections/53fits/20,031,477steps/1530points. Required jobs are evaluation default then candidate with original source/timeouts. Afterwards test/fix only explicit transportbudget, preserving effective default5s and finite shorter deadlines. Seventh is justified only as stock5mid nominal fullautocal transport confirmation with predeclared one-time6s encoder reply delay; no force4 repeat to erase failednominal. Do not adopt4mid default because original no-new-failure criterion is not met. Finish supported transport change, exact review, integration/docs/cleanup.
+
+```json
+{
+  "id": "decision-ef206a59b06141dfa38ab30722290a33",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "Explicit finite continuation after four-attempt controlled partial. Original attempt ended clean before deadline; source/native/frozenforce/worlds unchanged. Fund80worker minutes includinglast10reports,15review,15manager/startup and190s cleanup. This is additional wall allocation justified by host delays, two unrun heldoutcases and actual5sreplybudgetbug. Aggregate limits remain7collections/80fits/28Msteps/2000points across attempts. Remaining3collections/53fits/20,031,477steps/1530points. Required jobs are evaluation default then candidate with original source/timeouts. Afterwards test/fix only explicit transportbudget, preserving effective default5s and finite shorter deadlines. Seventh is justified only as stock5mid nominal fullautocal transport confirmation with predeclared one-time6s encoder reply delay; no force4 repeat to erase failednominal. Do not adopt4mid default because original no-new-failure criterion is not met. Finish supported transport change, exact review, integration/docs/cleanup.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:21:34.587435+00:00",
+  "updated_at": "2026-11-05T21:21:34.587435+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "assignment-a07108777f25435f9f3065148f9a8e49"
+  }
+}
+```
+
+## runtime_allocation: Finite manager allocation
+
+```json
+{
+  "id": "runtime_allocation-f2ced8a4d82f4f2c8fbfd02e4d5afb68",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "runtime_allocation",
+  "title": "Finite manager allocation",
+  "revision": 2,
+  "created_at": "2026-11-05T21:21:34.816612+00:00",
+  "updated_at": "2026-11-05T21:23:02.937025+00:00",
+  "details": {
+    "cleanup_deadline": 1793920484.8164012,
+    "cleanup_seconds": 190,
+    "deadline": 1793920294.8164012,
+    "events": [
+      {
+        "at": "2026-11-05T21:23:02.936716+00:00",
+        "event": "allocation_stopped",
+        "reason": "Unused continuation grant superseded before dispatch: earlier review expired while actual actor was still pending_init, with no finaloutput. Renew only retained fixedreview first, then reallocate remainingjobs. No calibration rerun or worldrestore."
+      }
+    ],
+    "lease_until": 1793913795.2811933,
+    "owner": {
+      "id": "controller-8de04df8e8d540b58256a18c6905a6db",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 900,
+    "started_at": "2026-11-05T21:21:34.816405+00:00",
+    "state": "stopped",
+    "task_limit": 1,
+    "wall_reserved_seconds": 0,
+    "wall_seconds": 6600,
+    "worker_limit": 1
+  }
+}
+```
+
+## assignment: Finish ONLY frozen evaluation e-default then e-candidate, preserving four prior attempts. Keep force4mid unadopted while no-new-failure gate fails. After six primary attempts, independently reproduce and fix the explicit encoder reply-budget bug with bounded realWebSocket evidence, preserving effective5s default and shorter deadlines. Use seventh slot only for stock5mid nominal full-autocal confirmation of supported transport fix with predeclared one-time6s delayed reply. Deliver minimal supported production transport patch, all raw checkpoints pushed after each collection, complete combined reports, tests and code-only commit for fixed review/integration.
+
+```json
+{
+  "id": "assignment-75a29344551b4d1e96b3acb643eced4d",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "assignment",
+  "title": "Finish ONLY frozen evaluation e-default then e-candidate, preserving four prior attempts. Keep force4mid unadopted while no-new-failure gate fails. After six primary attempts, independently reproduce and fix the explicit encoder reply-budget bug with bounded realWebSocket evidence, preserving effective5s default and shorter deadlines. Use seventh slot only for stock5mid nominal full-autocal confirmation of supported transport fix with predeclared one-time6s delayed reply. Deliver minimal supported production transport patch, all raw checkpoints pushed after each collection, complete combined reports, tests and code-only commit for fixed review/integration.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:21:34.982335+00:00",
+  "updated_at": "2026-11-05T21:21:34.982335+00:00",
+  "details": {
+    "allocation": {
+      "collections": 3,
+      "fresh_fits": 53,
+      "physical_points": 1530,
+      "physics_steps": 20031477,
+      "review_minutes": 15,
+      "wall_minutes": 80
+    },
+    "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+    "execution_state": "ready",
+    "knowledge_state": "unassessed",
+    "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
+    "review_state": "unreviewed"
+  }
+}
+```
+
+## investigation: Finish ONLY frozen evaluation e-default then e-candidate, preserving four prior attempts. Keep force4mid unadopted while no-new-failure gate fails. After six primary attempts, independently reproduce and fix the explicit encoder reply-budget bug with bounded realWebSocket evidence, preserving effective5s default and shorter deadlines. Use seventh slot only for stock5mid nominal full-autocal confirmation of supported transport fix with predeclared one-time6s delayed reply. Deliver minimal supported production transport patch, all raw checkpoints pushed after each collection, complete combined reports, tests and code-only commit for fixed review/integration.
+
+```json
+{
+  "id": "investigation-9c47eb67dea64e8bbf63ce30f7f1d4e3",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "investigation",
+  "title": "Finish ONLY frozen evaluation e-default then e-candidate, preserving four prior attempts. Keep force4mid unadopted while no-new-failure gate fails. After six primary attempts, independently reproduce and fix the explicit encoder reply-budget bug with bounded realWebSocket evidence, preserving effective5s default and shorter deadlines. Use seventh slot only for stock5mid nominal full-autocal confirmation of supported transport fix with predeclared one-time6s delayed reply. Deliver minimal supported production transport patch, all raw checkpoints pushed after each collection, complete combined reports, tests and code-only commit for fixed review/integration.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:21:34.982482+00:00",
+  "updated_at": "2026-11-05T21:21:34.982482+00:00",
+  "details": {
+    "assignment_id": "assignment-75a29344551b4d1e96b3acb643eced4d",
+    "citation_ids": [
+      "claim-a2c1c9c97fab423099085fa39b817cfd",
+      "decision-f6e3ee17d877459b915ada44a1b7944c"
+    ],
+    "execution": {
+      "machine": "hp3",
+      "recording_mode": "none",
+      "simulated_autocal_speedup": 25
+    },
+    "explanations": [
+      {
+        "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+        "explanation": "Fixed lower force may reduce applied geometry bias in heldoutmotor/noise world, but original nominal failure remains a barrier to default adoption."
+      },
+      {
+        "approach_id": "approach-4efeaafb10e946d68b589da1124f50ad",
+        "explanation": "Motor drag or noise erases development accuracy gain or effort exceedsallowance."
+      }
+    ],
+    "kind": "experiment",
+    "outcomes": {
+      "completed": {
+        "actions": [],
+        "finding": "mixed",
+        "observation": "Both remaining primary attempts completed or failed honestly; original adoptioncriteria assessed; separate realWS/productionchecks support minimal bounded transport fix with fullauto confirmation if justified."
+      },
+      "force_rejected": {
+        "actions": [],
+        "finding": "rejected",
+        "observation": "Forcecandidate doesnotmeet frozenaccuracy/failure/effortgates. Preservecounterexamples and keep5mid while separately assessing transport fix."
+      },
+      "inconclusive": {
+        "actions": [],
+        "finding": "inconclusive",
+        "observation": "Namedruntimeproblem preventsremainingvalidpair or supportedproductionfix; retainpreciseblocker."
+      }
+    },
+    "route_plan_ids": [
+      "route_plan-8fa009f70b534bd5baca577073f587cb",
+      "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
+    ]
+  }
+}
+```
+
+## runtime_allocation: Reserved saved-evidence review
+
+```json
+{
+  "id": "runtime_allocation-a6ee48da15cb45ff8940581a448df3b7",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "runtime_allocation",
+  "title": "Reserved saved-evidence review",
+  "revision": 6,
+  "created_at": "2026-11-05T21:23:05.227138+00:00",
+  "updated_at": "2026-11-05T21:28:42.038442+00:00",
+  "details": {
+    "cleanup_deadline": 1793914575.8266673,
+    "cleanup_seconds": 190,
+    "deadline": 1793914385.8266673,
+    "events": [],
+    "lease_until": 1793914154.345106,
+    "owner": {
+      "id": "controller-8de04df8e8d540b58256a18c6905a6db",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "admission_id": "admission-410f1328caf0460aa2142d5339f7ccc2",
+        "assignment_id": "assignment-a07108777f25435f9f3065148f9a8e49",
+        "attempt_id": "attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+        "charged_at": "2026-11-05T21:23:05.226699+00:00",
+        "review_pending": false,
+        "review_seconds": 600,
+        "reviews": [
+          {
+            "charge_id": "1af2d7795f424cc18ea0df79414c71f3",
+            "reserved_seconds": 600,
+            "run_id": "review-run-1a7c30f918574acb9c4b37a513dccd02",
+            "state": "completed"
+          }
+        ],
+        "state": "submitted",
+        "usage": {
+          "estimates": {},
+          "observed_worker_wall_seconds": 4099.199935913086,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": []
+        },
+        "worker_seconds": 0
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 600,
+    "started_at": "2026-11-05T21:23:05.226673+00:00",
+    "state": "exhausted",
+    "task_limit": 1,
+    "wall_reserved_seconds": 600,
+    "wall_seconds": 600.6
+  }
+}
+```
+
+## review_run: Separate saved-evidence review
+
+```json
+{
+  "id": "review-run-1a7c30f918574acb9c4b37a513dccd02",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "review_run",
+  "title": "Separate saved-evidence review",
+  "revision": 3,
+  "created_at": "2026-11-05T21:23:05.640437+00:00",
+  "updated_at": "2026-11-05T21:28:35.781802+00:00",
+  "details": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-1a7c30f918574acb9c4b37a513dccd02",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-1a7c30f918574acb9c4b37a513dccd02/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793914385.638238,
+    "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-1a7c30f918574acb9c4b37a513dccd02",
+    "error": null,
+    "guard_argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+      "1793914385.638238",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-1a7c30f918574acb9c4b37a513dccd02/wall-expired",
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-1a7c30f918574acb9c4b37a513dccd02",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-1a7c30f918574acb9c4b37a513dccd02/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "owner": {
+      "id": "review-controller-3d42db9adfb94011aea1b8e04dd2a35f",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "1420439",
+      "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+      "group": 3470,
+      "host": "4e127f450d90",
+      "pid": 3470,
+      "uid": 1000
+    },
+    "prompt_sha256": "96fff5448bf055153ceb48364b3d0d33d53974314fd964db51cf3ea67608ba4a",
+    "returncode": 0,
+    "review_id": "review-6d368c8db8d14e0e9166b495cee60436",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-1a7c30f918574acb9c4b37a513dccd02",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-a6ee48da15cb45ff8940581a448df3b7",
+      "assignment-a07108777f25435f9f3065148f9a8e49",
+      "1af2d7795f424cc18ea0df79414c71f3"
+    ],
+    "started_at": "2026-11-05T21:23:05.638214+00:00",
+    "state": "completed",
+    "submission_id": "submission-1b4de3c98dfd474abb162d80f5aa8fcf",
+    "submission_sha256": "05b61f9929d6d56dcd5f679466b0e758e7b14c7d57f255a062203aa2a9168fed",
+    "wall_minutes": 10
+  }
+}
+```
+
+## review: Keep the exact report-only claim at a68d6adffec3aea86a55a17d6b4d65a27badd42a. Saved evidence supports three accepted calibrations with all applied anchor errors below 5 mm and a development maximum reduction from 3.6959 to 2.8529 mm at 1.0641 times simulated effort. The nominal candidate aborted on encoder transport before fitting, so the frozen no-new-failure condition did not pass. The report preserves that failure and intermediate tails, and correctly leaves evaluation and the transport intervention untested. These results support retaining the partial report and provide no basis to adopt a production force change. No additional check is needed to retain this scoped report.
+
+```json
+{
+  "id": "review-6d368c8db8d14e0e9166b495cee60436",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "review",
+  "title": "Keep the exact report-only claim at a68d6adffec3aea86a55a17d6b4d65a27badd42a. Saved evidence supports three accepted calibrations with all applied anchor errors below 5 mm and a development maximum reduction from 3.6959 to 2.8529 mm at 1.0641 times simulated effort. The nominal candidate aborted on encoder transport before fitting, so the frozen no-new-failure condition did not pass. The report preserves that failure and intermediate tails, and correctly leaves evaluation and the transport intervention untested. These results support retaining the partial report and provide no basis to adopt a production force change. No additional check is needed to retain this scoped report.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:28:35.785070+00:00",
+  "updated_at": "2026-11-05T21:28:35.785070+00:00",
+  "details": {
+    "contract": "hp-sim5-evidence-review-v2",
+    "response": {
+      "checks": [
+        {
+          "asset_ids": [
+            "report",
+            "abstract",
+            "notebook",
+            "policy",
+            "handoff"
+          ],
+          "description": "Inspected the exact four-attempt partial claim, frozen worlds, adoption rule and continuation boundary at source a68d6adffec3aea86a55a17d6b4d65a27badd42a. The fixed candidate.diff is empty and candidate_revision is null. Evaluation calibrations and the transport intervention are explicitly NOT TESTED.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "report",
+            "abstract",
+            "notebook",
+            "compact-evidence",
+            "compact-manifest",
+            "measurements",
+            "policy",
+            "offline-checks",
+            "offline-extractor",
+            "guard-tests",
+            "budget",
+            "handoff"
+          ],
+          "description": "Independently recalculated the canonical manifest SHA-256, which matches the assigned submission SHA-256, all 12 selected asset SHA-256 values, and the empty candidate.diff SHA-256.",
+          "kind": "recomputed"
+        },
+        {
+          "asset_ids": [
+            "compact-evidence",
+            "policy"
+          ],
+          "description": "Inspected archived runner, service, collector variants, invocations, native intervention snapshots and activation-probe output. Collector variants differ only in resolveCollectionForce default multiplier 5 to 4; explicit overrides and pullout multipliers remain intact. Recorded implementation, firmware, scene and native hashes agree across the four attempts. Checked six recorded upstream source hashes against git objects at the frozen base. Motor perturbation is actually imported and applied before ordinary stepping, with saved native readback and torque response evidence.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "offline-extractor",
+            "compact-evidence",
+            "compact-manifest",
+            "measurements"
+          ],
+          "description": "Reran the supplied offline-extractor with .venv/bin/python against the fixed compact archive and manifest. It passed, verified 285 archived members, recalculated applied and intermediate-fit errors, checked all 27 fit artifacts, point and sweep counts, step totals, readback agreement and frozen harness hashes. This was analysis of saved data, with no fresh simulation or fit.",
+          "kind": "recomputed"
+        },
+        {
+          "asset_ids": [
+            "compact-evidence",
+            "measurements"
+          ],
+          "description": "Separately calculated effective anchor truth from archived scene anchor/attachment translations, parsed final rounded M669 commands and checked their equality with firmware readback. Recalculated final maxima of 4.547215891, 3.695888660 and 2.852897555 mm for n-default, d-default and d-candidate; all three have every anchor below 5 mm. Development RMSE changes from 3.130174953 to 2.534111160 mm, maximum improves 0.842991105 mm or 22.808888%, and step effort ratio is 1.064117012. Nominal candidate has no applied command or readback.",
+          "kind": "recomputed"
+        },
+        {
+          "asset_ids": [
+            "compact-evidence",
+            "notebook",
+            "report"
+          ],
+          "description": "Inspected nominal failure manifest and saved request 10812 excerpt: finite A/B/C/D encoder values precede the reported 5000 ms timeout at simulator step 1347144. Inspected frozen bridge source, which caps finite command deadlines at 5000 ms. Neither the excerpt nor source inspection establishes original wall latency, delay cause or effectiveness of a fix. Also inspected saved fit flags and tails, including the development candidate failed solver flag and 2200.8463 mm intermediate maximum, separately from accepted applied geometry.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "guard-tests",
+            "budget",
+            "offline-checks"
+          ],
+          "description": "Inspected the saved four-test fixed-anchor guard log and producer offline-check receipt. Did not rerun those guard tests. Budget ledger records four completed or failed collections, 27 fits, 470 physical points and 7968523 steps including 3003 activation-probe steps.",
+          "kind": "inspected"
+        }
+      ],
+      "code_readiness": "report_only",
+      "discrepancy": null,
+      "finding": "supported",
+      "limitations": [
+        "Support applies to the exact controlled partial claim. General superiority of lower force remains inconclusive: the nominal candidate failed and neither held-out evaluation calibration ran.",
+        "Calibration evidence covers two hypothetical HP3 worlds with one encoder-noise seed per world, known 30 mm radii, zero buildup, no layering and no guide friction. It does not establish hardware accuracy, reliability, failure-rate reduction or held-out motion prediction.",
+        "Adaptive workloads consume the matched noise stream at different physical times. The development result measures the resulting calibration workflow; it does not isolate equilibrium bias as the mechanism. Anchor A worsens slightly despite the lower maximum and RMSE.",
+        "The original transport delay and precise response latency remain unknown. A 5000 ms source cap is observable, but the delayed-response discriminator and transport fix were not tested. The nominal failure remains in the denominator.",
+        "This review recomputed saved geometry and consistency checks, not physics or fitting. The compact archive omits four full command/noise journals and supplies their full-archive references; I did not independently inspect or rehash those omitted journals.",
+        "Archived research harness imports use absolute worktree paths. Reproduction needs the documented path rebasing, recorded base, dependencies and native artifact; no production code candidate is supplied."
+      ],
+      "practical_value": "Retain the partial as a useful local accuracy and effort result plus a preserved workflow failure. It supports keeping the production 5mid default and retaining the completed evidence for any bounded continuation, without repeating successful calibrations. Large intermediate errors also show why solver success or a fit score cannot replace final applied-geometry checks.",
+      "reason": "Keep the exact report-only claim at a68d6adffec3aea86a55a17d6b4d65a27badd42a. Saved evidence supports three accepted calibrations with all applied anchor errors below 5 mm and a development maximum reduction from 3.6959 to 2.8529 mm at 1.0641 times simulated effort. The nominal candidate aborted on encoder transport before fitting, so the frozen no-new-failure condition did not pass. The report preserves that failure and intermediate tails, and correctly leaves evaluation and the transport intervention untested. These results support retaining the partial report and provide no basis to adopt a production force change. No additional check is needed to retain this scoped report.",
+      "required_checks": [],
+      "submission_id": "submission-1b4de3c98dfd474abb162d80f5aa8fcf",
+      "submission_sha256": "05b61f9929d6d56dcd5f679466b0e758e7b14c7d57f255a062203aa2a9168fed",
+      "verdict": "keep"
+    },
+    "response_sha256": "e6c4292983c688882db4f44681b2ad1bda9719a81cb684d71cc5e1a1919f1bd6",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-1a7c30f918574acb9c4b37a513dccd02",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "run_id": "review-run-1a7c30f918574acb9c4b37a513dccd02",
+    "submission_id": "submission-1b4de3c98dfd474abb162d80f5aa8fcf"
+  }
+}
+```
+
+## admission: Keep the exact report-only claim at a68d6adffec3aea86a55a17d6b4d65a27badd42a. Saved evidence supports three accepted calibrations with all applied anchor errors below 5 mm and a development maximum reduction from 3.6959 to 2.8529 mm at 1.0641 times simulated effort. The nominal candidate aborted on encoder transport before fitting, so the frozen no-new-failure condition did not pass. The report preserves that failure and intermediate tails, and correctly leaves evaluation and the transport intervention untested. These results support retaining the partial report and provide no basis to adopt a production force change. No additional check is needed to retain this scoped report.
+
+```json
+{
+  "id": "admission-410f1328caf0460aa2142d5339f7ccc2",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "admission",
+  "title": "Keep the exact report-only claim at a68d6adffec3aea86a55a17d6b4d65a27badd42a. Saved evidence supports three accepted calibrations with all applied anchor errors below 5 mm and a development maximum reduction from 3.6959 to 2.8529 mm at 1.0641 times simulated effort. The nominal candidate aborted on encoder transport before fitting, so the frozen no-new-failure condition did not pass. The report preserves that failure and intermediate tails, and correctly leaves evaluation and the transport intervention untested. These results support retaining the partial report and provide no basis to adopt a production force change. No additional check is needed to retain this scoped report.",
+  "revision": 1,
+  "created_at": "2026-11-05T21:28:42.034190+00:00",
+  "updated_at": "2026-11-05T21:28:42.034190+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "claim-a2c1c9c97fab423099085fa39b817cfd",
+    "code_readiness": "report_only",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "Retain the partial as a useful local accuracy and effort result plus a preserved workflow failure. It supports keeping the production 5mid default and retaining the completed evidence for any bounded continuation, without repeating successful calibrations. Large intermediate errors also show why solver success or a fit score cannot replace final applied-geometry checks.",
+    "required_checks": [],
+    "review_id": "review-6d368c8db8d14e0e9166b495cee60436",
+    "submission_id": "submission-1b4de3c98dfd474abb162d80f5aa8fcf",
+    "submission_sha256": "05b61f9929d6d56dcd5f679466b0e758e7b14c7d57f255a062203aa2a9168fed"
+  }
+}
+```
+
+## runtime_allocation: Finite manager allocation
+
+```json
+{
+  "id": "runtime_allocation-725f4e09a495434696135e881a8d854b",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "runtime_allocation",
+  "title": "Finite manager allocation",
+  "revision": 1,
+  "created_at": "2026-11-05T21:28:42.270300+00:00",
+  "updated_at": "2026-11-05T21:28:42.270300+00:00",
+  "details": {
+    "cleanup_deadline": 1793920912.2701585,
+    "cleanup_seconds": 190,
+    "deadline": 1793920722.2701585,
+    "events": [],
+    "lease_until": 1793914152.4003763,
+    "owner": {
+      "id": "controller-8de04df8e8d540b58256a18c6905a6db",
+      "process": {
+        "birth": "12885",
+        "boot_id": "fa7d930e-98ca-4b05-8278-c3e7f9437273",
+        "group": 776,
+        "host": "4e127f450d90",
+        "pid": 776,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 900,
+    "started_at": "2026-11-05T21:28:42.270162+00:00",
+    "state": "active",
+    "task_limit": 1,
+    "wall_reserved_seconds": 0,
+    "wall_seconds": 6600,
+    "worker_limit": 1
   }
 }
 ```

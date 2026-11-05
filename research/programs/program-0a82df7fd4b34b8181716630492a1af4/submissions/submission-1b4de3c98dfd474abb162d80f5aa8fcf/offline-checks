@@ -1,0 +1,221 @@
+{
+  "kind": "offline fixed-evidence recomputation",
+  "passed": true,
+  "compact_files_verified": 285,
+  "omitted_duplicate_event_journals": [
+    {
+      "path": "runs/n-default/sweeps.headless/events.jsonl",
+      "bytes": 138656494,
+      "sha256": "48cdde79d8b57cf32aaaffe04cce999571dd023ecedf3d633bab3237465f9f71",
+      "reason": "Duplicate compact view omits large complete command/noise events.jsonl; exact full file is retained in the pushed per-run raw archive."
+    },
+    {
+      "path": "runs/n-candidate/sweeps.headless/events.jsonl",
+      "bytes": 81771498,
+      "sha256": "9096197641fa8807f513dbfea1329305fa2be3383f7ad6d47cc217dc5756c894",
+      "reason": "Duplicate compact view omits large complete command/noise events.jsonl; exact full file is retained in the pushed per-run raw archive."
+    },
+    {
+      "path": "runs/d-default/sweeps.headless/events.jsonl",
+      "bytes": 146886418,
+      "sha256": "6f472265284ef26be6112572de491bd2799ed4ab599f3a86b1f2d7bb77d340ac",
+      "reason": "Duplicate compact view omits large complete command/noise events.jsonl; exact full file is retained in the pushed per-run raw archive."
+    },
+    {
+      "path": "runs/d-candidate/sweeps.headless/events.jsonl",
+      "bytes": 148133780,
+      "sha256": "756ecb64022ef67e4f2ba45871153722a498adcb201e88612d71b881b9cc7dd1",
+      "reason": "Duplicate compact view omits large complete command/noise events.jsonl; exact full file is retained in the pushed per-run raw archive."
+    }
+  ],
+  "full_raw_archives_retained": [
+    {
+      "run": "n-default",
+      "manifest": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/n-default/raw-artifact-manifest.json",
+      "groups": [
+        {
+          "gzip_sha256": "dae7d09825a553d2a43092867d28a541148d5c5b500c50da9475298a4c09e6aa",
+          "parts": [
+            {
+              "path": "raw-run.tar.gz",
+              "bytes": 8407440,
+              "sha256": "dae7d09825a553d2a43092867d28a541148d5c5b500c50da9475298a4c09e6aa"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run": "n-candidate",
+      "manifest": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/n-candidate/raw-artifact-manifest.json",
+      "groups": [
+        {
+          "gzip_sha256": "2f693d8a3327cf1a2b76f0fa51620bd48566095632ccf18e58526573d1b5e0c7",
+          "parts": [
+            {
+              "path": "raw-run.tar.gz",
+              "bytes": 4322120,
+              "sha256": "2f693d8a3327cf1a2b76f0fa51620bd48566095632ccf18e58526573d1b5e0c7"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run": "d-default",
+      "manifest": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/d-default/raw-artifact-manifest.json",
+      "groups": [
+        {
+          "gzip_sha256": "b306d1b982e250a6900eada860e7185ba8298628025051d4629b95d41129d305",
+          "parts": [
+            {
+              "path": "raw-run.tar.gz",
+              "bytes": 8543832,
+              "sha256": "b306d1b982e250a6900eada860e7185ba8298628025051d4629b95d41129d305"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run": "d-candidate",
+      "manifest": "research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/d-candidate/raw-artifact-manifest.json",
+      "groups": [
+        {
+          "gzip_sha256": "666a9494948f08eb6d14750f333c2f5b21d2dbf742d73125f259a9416aebcac1",
+          "parts": [
+            {
+              "path": "raw-run.tar.gz",
+              "bytes": 8502178,
+              "sha256": "666a9494948f08eb6d14750f333c2f5b21d2dbf742d73125f259a9416aebcac1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "run": "n-default",
+      "applied_recomputed": {
+        "per_anchor_error_mm": {
+          "A": 2.759438348649989,
+          "B": 4.547215890556576,
+          "C": 1.164774359856155,
+          "D": 1.7423260314878015
+        },
+        "max_mm": 4.547215890556576,
+        "rmse_mm": 2.8584992419409856,
+        "all_below5": true,
+        "anchors_over20": 0
+      },
+      "fits": 9,
+      "points": 140,
+      "steps": 2156688,
+      "readback_agrees": true,
+      "normal_completion": true
+    },
+    {
+      "run": "n-candidate",
+      "applied_recomputed": null,
+      "fits": 0,
+      "points": 50,
+      "steps": 1347144,
+      "readback_agrees": false,
+      "normal_completion": false
+    },
+    {
+      "run": "d-default",
+      "applied_recomputed": {
+        "per_anchor_error_mm": {
+          "A": 2.499299901972569,
+          "B": 3.695888659558299,
+          "C": 3.36598989218654,
+          "D": 2.820638225650294
+        },
+        "max_mm": 3.695888659558299,
+        "rmse_mm": 3.1301749527044542,
+        "all_below5": true,
+        "anchors_over20": 0
+      },
+      "fits": 9,
+      "points": 140,
+      "steps": 2161548,
+      "readback_agrees": true,
+      "normal_completion": true
+    },
+    {
+      "run": "d-candidate",
+      "applied_recomputed": {
+        "per_anchor_error_mm": {
+          "A": 2.559882809817639,
+          "B": 2.8528975546135613,
+          "C": 2.222780471118976,
+          "D": 2.460508077613276
+        },
+        "max_mm": 2.8528975546135613,
+        "rmse_mm": 2.5341111597514803,
+        "all_below5": true,
+        "anchors_over20": 0
+      },
+      "fits": 9,
+      "points": 140,
+      "steps": 2300140,
+      "readback_agrees": true,
+      "normal_completion": true
+    }
+  ],
+  "decision": {
+    "supported": false,
+    "finding": "inconclusive",
+    "production_force_adoption": "blocked",
+    "decision": "Default force adoption is blocked by the preserved nominal candidate workflow failure. Evaluation pair NOT TESTED. The manager will fund only the two unrun evaluation jobs and focused transport follow-up in a fresh bounded continuation. No successful run will be repeated.",
+    "tested_primary_runs": [
+      "n-default",
+      "n-candidate",
+      "d-default",
+      "d-candidate"
+    ],
+    "unrun_primary_runs": [
+      "e-default",
+      "e-candidate"
+    ],
+    "pairs": [
+      {
+        "world": "nominal",
+        "default_max_mm": 4.547215890556576,
+        "candidate_max_mm": null,
+        "max_improvement_mm": null,
+        "max_improvement_percent": null,
+        "effort_ratio": null,
+        "completed_both": false,
+        "readback_both": false
+      },
+      {
+        "world": "development",
+        "default_max_mm": 3.695888659558299,
+        "candidate_max_mm": 2.8528975546135613,
+        "max_improvement_mm": 0.8429911049447378,
+        "max_improvement_percent": 22.808887999496307,
+        "effort_ratio": 1.0641170124373829,
+        "completed_both": true,
+        "readback_both": true
+      }
+    ],
+    "partial_control": {
+      "assessed_utc": "2026-11-05T18:29:40.720987+00:00",
+      "manager_instruction": "Controlled four-primary partial if both evaluation jobs plus pushes and10minreportreserve cannot fit conservatively; no deadline extension. Manager funds only unrun eval pair and focused transport follow-up.",
+      "observed_slowest_completed_job_wall_s": 913.0879748390003,
+      "conservative_required_remaining_minutes": 48.43626582796668,
+      "approximate_live_remaining_minutes": 40,
+      "unrun_primary_runs": [
+        "e-default",
+        "e-candidate"
+      ],
+      "optional_transport_followup": "NOT TESTED; requires allsixprimary jobs first",
+      "seventh_collection": "unused; confirmation cannot erase nominalfailure",
+      "production_force_adoption": "blocked; nominalworkflowfailure retained"
+    }
+  },
+  "scope": "Numerical/hash/readback checks only. Successful checks do not establish hardware transfer or accept production adoption."
+}
