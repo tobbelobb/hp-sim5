@@ -1,6 +1,6 @@
 # Commissioned lower-measurement-force iteration
 
-Assignment: assignment-a64d3f287c374d4e8b0e697ee33afe68. Status: commissioned, not yet dispatched; no numerical results yet.
+Assignment: assignment-a64d3f287c374d4e8b0e697ee33afe68. Status: worker cancelled after account usage limit; setup preserved, no calibration collection or fit. See program CONTINUE.md and reconcile upstream main fbd2c744.
 
 The earlier motor-friction-only proposal is superseded by an implementation-focused paired test: current default sensor force min(forceMax,5*forceMid) versus fixed candidate min(forceMax,4*forceMid). Pullout and preload forces, guards, solver, stopping and selection stay unchanged. Prior independent force-valley evidence motivates four, with no tuning on new truth.
 
