@@ -486,7 +486,7 @@ For a bounded native HP3 stiffness comparison, source the cloud environment and
 collect two production bootstrap datasets without fitting or applying parameters:
 
 ```bash
-source scripts/cloud/env.sh
+source .agents/skills/cloud-research-client/scripts/env.sh
 .venv/bin/python -m autocal.tools.collect_native_parameter_pair --output output/research/new-native-pair
 ```
 

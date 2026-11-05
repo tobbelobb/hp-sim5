@@ -43,14 +43,19 @@ def browser_recording(dataset):
         for sig in (signal.SIGTERM, signal.SIGHUP):
             handlers[sig] = signal.signal(sig, interrupt)
         deadline = time.monotonic() + 30
-        while True:
-            try:
-                with connect(url, open_timeout=1, close_timeout=1):
-                    break
-            except OSError:
-                if process.poll() is not None or time.monotonic() > deadline:
-                    raise RuntimeError(f'Flight recorder did not start; see {directory / "recorder.log"}') from None
-                time.sleep(.1)
+        try:
+            while True:
+                try:
+                    with connect(url, open_timeout=1, close_timeout=1):
+                        break
+                except OSError:
+                    if process.poll() is not None or time.monotonic() > deadline:
+                        raise RuntimeError(f'Flight recorder did not start; see {directory / "recorder.log"}') from None
+                    time.sleep(.1)
+        except RuntimeError as error:
+            print(f'; extended recording degraded: {error}', file=sys.stderr, flush=True)
+            yield None
+            return
         os.environ['AUTOCAL_REFERENCE_WS'] = url
         print(f'; extended recording: {directory}', flush=True)
         yield directory
@@ -70,9 +75,13 @@ def browser_recording(dataset):
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
-                raise RuntimeError(f'Flight recorder did not finalize; see {directory / "recorder.log"}') from None
-            if process.returncode:
-                raise RuntimeError(f'Flight recorder exited with status {process.returncode}; see {directory / "recorder.log"}')
+                print(f'; extended recording degraded: recorder did not finalize; see {directory / "recorder.log"}',
+                      file=sys.stderr, flush=True)
+            else:
+                if process.returncode:
+                    print(f'; extended recording degraded: recorder exited with status {process.returncode}; '
+                          f'see {directory / "recorder.log"}', file=sys.stderr, flush=True)
             manifests = [json.loads(path.read_text()) for path in directory.glob('hangprinter-*.json')]
             if not manifests or any(item.get('status') != 'finalized' or item.get('rejected_messages') for item in manifests):
-                raise RuntimeError(f'Extended recording is incomplete; see {directory / "recorder.log"}')
+                print(f'; extended recording degraded: recording is incomplete; see {directory / "recorder.log"}',
+                      file=sys.stderr, flush=True)

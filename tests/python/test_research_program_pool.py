@@ -320,6 +320,25 @@ def test_review_capacity_is_global_and_stop_leaves_other_program_reviewer(contex
     until(lambda: m.reviews.status('p', run['id'])['details']['state'] == 'cancelled')
 
 
+def test_cloud_dispatch_is_sequential_while_local_keeps_pool_capacity(manager, monkeypatch):
+    a = attach(manager)
+    configure(a)
+    first, second = assignment(a, 'first'), assignment(a, 'second')
+    allocation = grant(a)
+    worker = tool(a, 'run_once', {'settings': {'machine': 'hp3'}, 'assignment_id': first['id'],
+                                  'allocation_id': allocation['id']})
+    until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
+    with ProgramStore(manager['store']) as store:
+        monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'local')
+        pool.check_worker(store, 'p', second['id'], program_limit=2)
+        monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
+        with pytest.raises(ProgramError, match='runs sequentially'):
+            pool.check_worker(store, 'p', second['id'])
+        with pytest.raises(ProgramError, match='runs sequentially'):
+            pool.check_review(store)
+    tool(a, 'stop_program', {'reason': 'Fixture cleanup'})
+
+
 def test_startup_gap_excludes_workers_reviewers_and_preserves_queued_exclusive_item(context):
     c = context
     m = local_manager(c)

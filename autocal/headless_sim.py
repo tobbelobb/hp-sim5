@@ -63,6 +63,7 @@ class HeadlessSimulation:
         self.processes = []
         self.physics = None
         self.recorder = None
+        self.recording_started = False
         self.reference_url = os.environ.get('AUTOCAL_REFERENCE_WS')
         self.recording_mode = getattr(args, 'recording_mode', None)
         if self.recording_mode is None:
@@ -105,6 +106,34 @@ class HeadlessSimulation:
         self.manifest.setdefault('owned_services', []).append({'name': name, 'pid': process.pid})
         self.write_manifest()
 
+    def _start_owned_recorder(self):
+        if self.recording_mode == 'none' or self.reference_url:
+            return
+        try:
+            from websockets.sync.client import connect
+            port = free_port()
+            self.recorder = self.spawn('recorder', [sys.executable, 'scripts/hangprinter_flight_recorder.py',
+                '--extended-reference', '--no-viewer', '--port', str(port), '--output', str(self.directory),
+                '--sample-stride', '100' if self.recording_mode == 'sampled' else '10', '--geometry-detail', 'compact'])
+            self.reference_url = f'ws://127.0.0.1:{port}'
+            deadline = time.monotonic() + 30
+            while True:
+                try:
+                    with connect(self.reference_url, open_timeout=1, close_timeout=1):
+                        break
+                except OSError:
+                    if self.recorder.poll() is not None or time.monotonic() > deadline:
+                        raise RuntimeError(f'Reference recorder did not start; see {self.directory / "recorder.log"}') from None
+                    time.sleep(.1)
+            os.environ['AUTOCAL_REFERENCE_WS'] = self.reference_url
+        except Exception as error:
+            self.manifest['recording_error'] = f'Reference recorder did not start: {error}'
+            if self.recorder is not None:
+                _stop_process(self.recorder)
+                self.recorder = None
+            self.reference_url = None
+            os.environ.pop('AUTOCAL_REFERENCE_WS', None)
+
     def request(self, operation, **args):
         request = Request(f"{self.url}/{operation}", data=json.dumps(args).encode(),
                           headers={"Content-Type": "application/json"})
@@ -116,23 +145,7 @@ class HeadlessSimulation:
             for sig in (signal.SIGTERM, signal.SIGHUP):
                 self.signal_handlers[sig] = signal.getsignal(sig)
                 signal.signal(sig, self.interrupt)
-            if self.recording_mode != 'none' and not self.reference_url:
-                from websockets.sync.client import connect
-                port = free_port()
-                self.recorder = self.spawn('recorder', [sys.executable, 'scripts/hangprinter_flight_recorder.py',
-                    '--extended-reference', '--no-viewer', '--port', str(port), '--output', str(self.directory),
-                    '--sample-stride', '100' if self.recording_mode == 'sampled' else '10', '--geometry-detail', 'compact'])
-                self.reference_url = f'ws://127.0.0.1:{port}'
-                deadline = time.monotonic() + 30
-                while True:
-                    try:
-                        with connect(self.reference_url, open_timeout=1, close_timeout=1):
-                            break
-                    except OSError:
-                        if self.recorder.poll() is not None or time.monotonic() > deadline:
-                            raise RuntimeError(f'Reference recorder did not start; see {self.directory / "recorder.log"}') from None
-                        time.sleep(.1)
-                os.environ['AUTOCAL_REFERENCE_WS'] = self.reference_url
+            self._start_owned_recorder()
             if self.reference_url:
                 self.manifest.update(extended_reference_ws=self.reference_url, owned_recorder=self.recorder is not None)
             from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server, _send_rrf_gcode
@@ -181,6 +194,7 @@ class HeadlessSimulation:
             self.write_manifest()
             if self.reference_url:
                 from autocal import extended_reference
+                self.recording_started = True
                 extended_reference.emit('headless_start', **self.manifest)
                 for name in ('scene.usda', 'baked-scene.usda', 'firmware-config.g'):
                     extended_reference.artifact(self.directory / name)
@@ -193,6 +207,14 @@ class HeadlessSimulation:
         failed = bool(error or self.manifest.get("exit_code") or
                       (self.physics is not None and self.physics.poll() is not None))
         capture_error = None
+        recording_error = self.manifest.get('recording_error')
+        if self.reference_url:
+            from autocal import extended_reference
+            if self.recording_started:
+                recording_error = extended_reference.failure() or recording_error
+            extended_reference.close()
+            if self.recording_started:
+                recording_error = extended_reference.failure() or recording_error
         interrupted = error_type is KeyboardInterrupt or (error_type is SystemExit and error.code == 130)
         self.manifest.update(status="interrupted" if interrupted else "failed" if error else "complete",
                              wall_s=time.monotonic() - self.started)
@@ -205,7 +227,10 @@ class HeadlessSimulation:
                     try:
                         process.wait(timeout=45 if process is self.recorder else 15)
                     except subprocess.TimeoutExpired:
-                        capture_error = 'Reference services did not drain before shutdown'
+                        if process is self.recorder:
+                            recording_error = recording_error or 'Reference recorder did not drain before shutdown'
+                        else:
+                            capture_error = 'Reference services did not drain before shutdown'
                         process.kill()
                         process.wait()
                 else:
@@ -215,6 +240,7 @@ class HeadlessSimulation:
         if clock.exists():
             state = json.loads(clock.read_text())
             self.manifest["service_wall_s"] = state.pop("wall_s")
+            recording_error = state.pop('recording_error', None) or recording_error
             if not state.get("error"):
                 state.pop("error", None)
             elif self.reference_url:
@@ -226,7 +252,7 @@ class HeadlessSimulation:
                 if self.physics.returncode != 0:
                     capture_error = capture_error or f'Headless physics exited with status {self.physics.returncode}; see physics.log'
                 if not self.manifest.get("recording_drained"):
-                    capture_error = capture_error or 'Headless physics did not confirm recording drain; see physics.log'
+                    recording_error = recording_error or 'Headless physics did not confirm recording drain; see physics.log'
         if self.manifest.get("exit_code"):
             self.manifest["status"] = "failed"
         self.manifest["normal_completion"] = (
@@ -237,16 +263,16 @@ class HeadlessSimulation:
         if self.manifest.get("stop_reason") == "Ctrl-C":
             self.manifest["status"] = "interrupted"
         if self.reference_url:
-            from autocal import extended_reference
-            extended_reference.close()
             if self.recorder:
                 os.environ.pop('AUTOCAL_REFERENCE_WS', None)
                 self.manifest['recordings'] = [json.loads(path.read_text()) for path in self.directory.glob('hangprinter-*.json')]
                 if not self.manifest['kept_alive'] and (self.recorder.returncode != 0 or
                         any(recording['status'] != 'finalized' for recording in self.manifest['recordings'])):
-                    capture_error = 'Reference recorder did not finalize; see recorder.log'
+                    recording_error = recording_error or 'Reference recorder did not finalize; see recorder.log'
+        if recording_error:
+            self.manifest['recording_error'] = recording_error
         if capture_error:
-            self.manifest.update(status='failed' if not error else self.manifest['status'], recording_error=capture_error,
+            self.manifest.update(status='failed' if not error else self.manifest['status'], service_error=capture_error,
                                  normal_completion=False)
         for sig, handler in self.signal_handlers.items():
             signal.signal(sig, handler)

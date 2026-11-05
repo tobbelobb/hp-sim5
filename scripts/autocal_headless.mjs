@@ -24,12 +24,18 @@ function buildWorld() {
   bakedSceneHash = createHash('sha256').update(bakedScene).digest('hex');
 }
 buildWorld();
-let recordingDrained = false;
+let recordingDrained = false, recordingError = null;
 const started = performance.now();
 const maxPhysicsSteps = Number(process.env.HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS || Infinity);
-const recorder = process.env.AUTOCAL_REFERENCE_WS ? new FlightRecorder({ world,
+let recorder = process.env.AUTOCAL_REFERENCE_WS ? new FlightRecorder({ world,
   url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless',
-  recordPhysics: recordingMode !== 'events' }) : null;
+  recordPhysics: recordingMode !== 'events', nonFatal: true }) : null;
+function disableRecorder(error) {
+  const message = String(error?.message ?? error ?? 'Recording unavailable');
+  recordingError ||= message;
+  try { recorder?.fail(error instanceof Error ? error : new Error(message)); } catch {}
+  recorder = null;
+}
 function attachRecorder() {
   world.setResource('sceneGeneration', epoch);
   world.setResource('researchClock', { generation: epoch, step: 0, time: 0, source: 'headless.researchClock' });
@@ -46,7 +52,10 @@ function attachRecorder() {
   if (recorder.socket?.readyState === 1) recorder.update(world, 0);
 }
 attachRecorder();
-if (recorder) await recorder.ensureConnected(recorder.url);
+if (recorder) {
+  try { await recorder.ensureConnected(recorder.url); }
+  catch (error) { disableRecorder(error); }
+}
 const events = fs.openSync(`${directory}/events.jsonl`, 'a');
 function event(type, values = {}) {
   fs.writeSync(events, JSON.stringify({ type, epoch, step, sim_time_s: step * dt, ...values }) + '\n');
@@ -55,6 +64,7 @@ function status() {
   return { backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), step, epoch, total_steps: totalSteps, dt_s: dt,
     simulated_s: totalSteps * dt, collector_time_s: collectorTime, wall_s: (performance.now() - started) / 1000,
     queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained,
+    recording_error: recordingError,
     baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
     settings: { enableLayering: world.getResource('enableLayering') === true,
       closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps, timeScale: speed } };
@@ -72,8 +82,10 @@ async function advance(seconds = 0, drain = false) {
       throw new Error(failure);
     }
     if (recorder) {
-      if (!recorder.socket || recorder.socket.readyState !== 1) throw new Error(recorder.error || 'Flight recorder disconnected');
-      if (!recorder.readyForStep()) await recorder.drain(10000, { all: false });
+      try {
+        if (!recorder.socket || recorder.socket.readyState !== 1) throw new Error(recorder.error || 'Flight recorder disconnected');
+        if (!recorder.readyForStep()) await recorder.drain(10000, { all: false });
+      } catch (error) { disableRecorder(error); }
     }
     world.update(dt); step++; totalSteps++; collectorTime += dt;
     world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
@@ -146,7 +158,7 @@ const server = http.createServer(async (request, reply) => {
     const args = text ? JSON.parse(text) : {};
     let result;
     if (failure) throw new Error(failure);
-    if (recorder && (!recorder.socket || recorder.socket.readyState !== 1)) throw new Error(recorder.error || 'Flight recorder disconnected');
+    if (recorder && (!recorder.socket || recorder.socket.readyState !== 1)) disableRecorder(recorder.error || 'Flight recorder disconnected');
     if (request.url === '/gcode') {
       const commandId = `${process.pid}:${totalSteps}:${Date.now()}`;
       event('gcode_send', { command_id: commandId, line: args.line });
@@ -179,10 +191,12 @@ async function close() {
   try {
     await delivered;
     if (recorder) {
-      recorder.recordEvent('service_stopped', status());
-      await recorder.drain(10000, { wallTimeoutMs: 10000 });
-      recordingDrained = true;
-      recorder.disconnect();
+      try {
+        recorder.recordEvent('service_stopped', status());
+        await recorder.drain(10000, { wallTimeoutMs: 10000 });
+        recordingDrained = true;
+        recorder.disconnect();
+      } catch (error) { disableRecorder(error); }
     }
   } catch (error) { failure = error.message; }
   fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status(), null, 2));

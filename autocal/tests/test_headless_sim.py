@@ -224,7 +224,8 @@ def test_extended_headless_rejects_crash_after_last_request(tmp_path, monkeypatc
     assert manifest['status'] == 'failed' and not manifest['normal_completion']
     assert manifest['physics_returncode'] == -signal.SIGKILL
     assert not manifest['recording_drained'] and not manifest['kept_alive']
-    assert 'Headless physics exited with status -9' in manifest['recording_error']
+    assert 'Headless physics exited with status -9' in manifest['service_error']
+    assert 'did not confirm recording drain' in manifest['recording_error']
     recording, = manifest['recordings']
     assert recording['status'] == 'finalized'
     assert not any(event['kind'] == 'service_stopped' for event in recorded_events(recording['rrd'], 'headless'))
@@ -245,27 +246,42 @@ def test_extended_headless_requires_drain_even_with_zero_exit_status(tmp_path, m
     service.physics = SimpleNamespace(returncode=0, poll=lambda: 0)
     service.manifest.update(stop_reason='patience', applied_parameters=['M669'])
     (service.directory / 'clock.json').write_text(json.dumps(dict(wall_s=2., error=None)))
-    with pytest.raises(RuntimeError, match='did not confirm recording drain'):
-        service.__exit__(None, None, None)
-    assert service.manifest['status'] == 'failed' and not service.manifest['normal_completion']
+    service.__exit__(None, None, None)
+    assert service.manifest['status'] == 'complete' and service.manifest['normal_completion']
+    assert 'did not confirm recording drain' in service.manifest['recording_error']
     assert service.manifest['physics_returncode'] == 0
 
 
-def test_extended_headless_fails_when_recorder_disconnects(tmp_path, monkeypatch):
+def test_extended_headless_continues_when_recorder_disconnects(tmp_path, monkeypatch):
     from argparse import Namespace
-    from urllib.error import HTTPError
     monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
     args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
                      rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
                      keep_sim_alive=False, extended_reference=True)
-    with pytest.raises(HTTPError):
-        with HeadlessSimulation(args, []) as service:
-            service.recorder.terminate()
-            service.recorder.wait(timeout=15)
-            service.request('advance', seconds=.1)
-    assert service.manifest['status'] == 'failed'
-    assert service.manifest['recording_error'] == 'Flight recorder disconnected'
-    assert not service.manifest['normal_completion']
+    with HeadlessSimulation(args, []) as service:
+        service.recorder.terminate()
+        service.recorder.wait(timeout=15)
+        result = service.request('advance', seconds=.1)
+    assert 'Flight recorder disconnected' in result['recording_error']
+    assert service.manifest['status'] == 'complete'
+    assert 'Flight recorder disconnected' in service.manifest['recording_error']
+
+
+def test_recorder_readiness_failure_is_nonfatal(tmp_path, monkeypatch):
+    from argparse import Namespace
+    from types import SimpleNamespace
+    monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+                     recording_mode='events')
+    service = HeadlessSimulation(args, [])
+    monkeypatch.setattr(service, 'spawn', lambda *args: SimpleNamespace(poll=lambda: 1))
+    monkeypatch.setattr('autocal.headless_sim.free_port', lambda: 9877)
+    monkeypatch.setattr('websockets.sync.client.connect', lambda *args, **kwargs: (_ for _ in ()).throw(OSError('unavailable')))
+    service._start_owned_recorder()
+    assert service.reference_url is None
+    assert 'Reference recorder did not start' in service.manifest['recording_error']
+    assert 'AUTOCAL_REFERENCE_WS' not in os.environ
 
 
 def test_headless_uses_external_recorder_and_preserves_collector_clock(tmp_path, monkeypatch):

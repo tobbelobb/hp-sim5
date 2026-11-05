@@ -1,6 +1,6 @@
 """Collect a bounded native HP3 stiffness pair with production bootstrap collection.
 
-Source scripts/cloud/env.sh first. Outputs are numerical data and journals, with no
+Source .agents/skills/cloud-research-client/scripts/env.sh first. Outputs are numerical data and journals, with no
 fit, truth inputs or calibration acceptance decision. Existing outputs are refused.
 """
 from __future__ import annotations
@@ -42,10 +42,11 @@ def finite_measurements(dataset):
 def node_identity():
     path = shutil.which('node')
     if path is None:
-        raise RuntimeError('Node is missing. Source scripts/cloud/env.sh before collection.')
+        raise RuntimeError('Node is missing. Source .agents/skills/cloud-research-client/scripts/env.sh before collection.')
     version = subprocess.check_output([path, '--version'], text=True).strip()
     if version != 'v23.11.1':
-        raise RuntimeError(f'Unsupported Node {version} at {path}. Source scripts/cloud/env.sh; native cloud collection requires Node23.11.1.')
+        raise RuntimeError(f'Unsupported Node {version} at {path}. Source '
+                           '.agents/skills/cloud-research-client/scripts/env.sh; native cloud collection requires Node23.11.1.')
     return path, version
 
 

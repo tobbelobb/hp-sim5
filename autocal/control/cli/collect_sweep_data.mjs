@@ -527,6 +527,8 @@ async function main() {
       bridgeCtx = null;
     }
     await reference.close();
+    const recordingFailure = reference.failure();
+    if (recordingFailure) console.error(`Extended recording degraded: ${recordingFailure.message ?? recordingFailure}`);
   };
 
   const onSigInt = () => {

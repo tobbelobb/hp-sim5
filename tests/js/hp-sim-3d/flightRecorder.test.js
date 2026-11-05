@@ -351,6 +351,35 @@ describe('flight recorder delivery', () => {
     expect(() => recorder.flushEvents()).toThrow('write failed');
     await expect(recorder.drain()).rejects.toThrow('write failed');
   });
+
+  test('non-fatal capture disables recording without throwing into simulation', () => {
+    const world = new World();
+    world.setResource('sceneGeneration', 1);
+    const recorder = new FlightRecorder({ world, WebSocketClass: FakeSocket, nonFatal: true });
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    recorder.extendedReference = true;
+    recorder.eventBatchBytes = 2 * 1024 * 1024;
+    socket.send = () => { throw new Error('write failed'); };
+    expect(() => recorder.recordEvent('event', {})).not.toThrow();
+    expect(recorder.error).toBe('write failed');
+
+    recorder.connect();
+    const replacement = recorder.socket;
+    replacement.readyState = 1; replacement.emit('open');
+    replacement.send = () => { throw new Error('sample write failed'); };
+    expect(() => recorder.update(world, .002)).not.toThrow();
+    expect(recorder.error).toBe('sample write failed');
+
+    const malformed = new FlightRecorder({ world, WebSocketClass: FakeSocket, nonFatal: true });
+    malformed.connect();
+    malformed.socket.readyState = 1; malformed.socket.emit('open');
+    malformed.extendedReference = true;
+    const payload = {}; payload.self = payload;
+    expect(() => malformed.recordEvent('event', payload)).not.toThrow();
+    expect(malformed.error).toMatch('circular');
+  });
 });
 
 test('extended browser events preserve both clocks and do not release physics backpressure', () => {

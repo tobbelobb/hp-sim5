@@ -7,13 +7,15 @@ const MAX_PENDING_EVENTS = 65536;
 const MAX_PENDING_EVENT_BYTES = 32 * 1024 * 1024;
 
 export class FlightRecorder {
-  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket, source = 'browser', recordPhysics = true }) {
+  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket,
+    source = 'browser', recordPhysics = true, nonFatal = false }) {
     this.world = world;
     this.button = button;
     this.url = url;
     this.WebSocketClass = WebSocketClass;
     this.source = source;
     this.recordPhysics = recordPhysics;
+    this.nonFatal = nonFatal;
     this.socket = null;
     this.pending = 0;
     this.pendingEvents = 0;
@@ -124,7 +126,7 @@ export class FlightRecorder {
   }
 
   fail(error) {
-    this.error = error.message;
+    this.error ||= error?.message ?? String(error);
     clearTimeout(this.eventTimer);
     this.eventTimer = null;
     this.socket?.close();
@@ -187,30 +189,41 @@ export class FlightRecorder {
 
   recordEvent(kind, payload) {
     if (this.stopping) return;
-    if (this.error) throw new Error(this.error);
-    if (!this.socket || this.socket.readyState !== 1 || !this.extendedReference) return;
-    const clock = this.world.getResource('researchClock');
-    const data = JSON.stringify({ version: 1, type: 'autocal_event', source: this.source,
-      wall_time_ms: Date.now(), wall_time_source: `${this.source}.Date.now`,
-      monotonic_ms: performance.now(), kind, payload, sim_time_s: clock?.time ?? null,
-      sim_time_source: clock ? `${this.source}.researchClock` : 'unavailable',
-      session: this.session, generation: this.world.getResource('sceneGeneration') || 0,
-      recorder_sim_time_s: this.time });
-    const bytes = this.eventEncoder.encode(data).byteLength;
-    if (this.pendingEvents >= MAX_PENDING_EVENTS || this.pendingEventBytes + bytes > MAX_PENDING_EVENT_BYTES) {
-      const error = new Error('Flight recorder event queue exceeded its limit; capture is incomplete');
-      this.fail(error);
-      throw error;
+    if (this.error) {
+      if (this.nonFatal) return;
+      throw new Error(this.error);
     }
-    if (this.eventBatchBytes + bytes > EVENT_BATCH_BYTES) this.flushEvents();
-    this.eventBatch.push(data);
-    this.eventBatchBytes += bytes;
-    this.pendingEvents += 1;
-    this.pendingEventBytes += bytes;
-    if (this.eventBatch.length >= EVENT_BATCH_SIZE || this.eventBatchBytes >= EVENT_BATCH_BYTES) this.flushEvents();
-    else if (!this.eventTimer) {
-      this.eventTimer = setTimeout(() => this.flushEvents(), 20);
-      this.eventTimer.unref?.();
+    if (!this.socket || this.socket.readyState !== 1 || !this.extendedReference) return;
+    try {
+      const clock = this.world.getResource('researchClock');
+      const data = JSON.stringify({ version: 1, type: 'autocal_event', source: this.source,
+        wall_time_ms: Date.now(), wall_time_source: `${this.source}.Date.now`,
+        monotonic_ms: performance.now(), kind, payload, sim_time_s: clock?.time ?? null,
+        sim_time_source: clock ? `${this.source}.researchClock` : 'unavailable',
+        session: this.session, generation: this.world.getResource('sceneGeneration') || 0,
+        recorder_sim_time_s: this.time });
+      const bytes = this.eventEncoder.encode(data).byteLength;
+      if (this.pendingEvents >= MAX_PENDING_EVENTS || this.pendingEventBytes + bytes > MAX_PENDING_EVENT_BYTES) {
+        const error = new Error('Flight recorder event queue exceeded its limit; capture is incomplete');
+        this.fail(error);
+        if (!this.nonFatal) throw error;
+        return;
+      }
+      if (this.eventBatchBytes + bytes > EVENT_BATCH_BYTES) this.flushEvents();
+      this.eventBatch.push(data);
+      this.eventBatchBytes += bytes;
+      this.pendingEvents += 1;
+      this.pendingEventBytes += bytes;
+      if (this.eventBatch.length >= EVENT_BATCH_SIZE || this.eventBatchBytes >= EVENT_BATCH_BYTES) this.flushEvents();
+      else if (!this.eventTimer) {
+        this.eventTimer = setTimeout(() => {
+          try { this.flushEvents(); } catch (error) { if (!this.nonFatal) throw error; }
+        }, 20);
+        this.eventTimer.unref?.();
+      }
+    } catch (error) {
+      this.fail(error);
+      if (!this.nonFatal) throw error;
     }
   }
 
@@ -247,15 +260,20 @@ export class FlightRecorder {
     if (!this.recordPhysics || (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride)) return;
     this.lastSentStep = this.step;
     // Preserve event/sample order, including scene context before step zero.
-    this.flushEvents();
-    this.socket.send(JSON.stringify({
-      source: this.source,
-      sample_stride: this.sampleStride, geometry_detail: this.geometryDetail,
-      research_clock: world.getResource('researchClock') || null,
-      wall_time_ms: Date.now(), speed_scale: world.getResource('timeScale') || 1,
-      version: 1, session: this.session, generation, step: this.step, time: this.time, dt,
-      ...captureFlightRecorderSnapshot(world, { geometryDetail: this.geometryDetail }),
-    }));
-    this.pending += 1;
+    try {
+      this.flushEvents();
+      this.socket.send(JSON.stringify({
+        source: this.source,
+        sample_stride: this.sampleStride, geometry_detail: this.geometryDetail,
+        research_clock: world.getResource('researchClock') || null,
+        wall_time_ms: Date.now(), speed_scale: world.getResource('timeScale') || 1,
+        version: 1, session: this.session, generation, step: this.step, time: this.time, dt,
+        ...captureFlightRecorderSnapshot(world, { geometryDetail: this.geometryDetail }),
+      }));
+      this.pending += 1;
+    } catch (error) {
+      this.fail(error);
+      if (!this.nonFatal) throw error;
+    }
   }
 }

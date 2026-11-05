@@ -69,6 +69,26 @@ def test_owned_recorder_drains_browser_and_finalizes(tmp_path, monkeypatch, fail
     assert list(directory.glob("*.rrd"))
 
 
+def test_owned_recorder_startup_failure_is_nonfatal(tmp_path, monkeypatch):
+    import autocal.browser_recording as module
+    monkeypatch.delenv("AUTOCAL_REFERENCE_WS", raising=False)
+
+    class DeadProcess:
+        returncode = 1
+
+        def poll(self):
+            return self.returncode
+
+        def wait(self, timeout):
+            return self.returncode
+
+    monkeypatch.setattr(module.subprocess, "Popen", lambda *args, **kwargs: DeadProcess())
+    dataset = tmp_path / "sweeps.json"
+    with module.browser_recording(dataset) as directory:
+        assert directory is None
+    assert "AUTOCAL_REFERENCE_WS" not in os.environ
+
+
 def test_headless_recording_alias_uses_managed_headless_recorder(tmp_path, monkeypatch):
     import autocal.headless_sim as module
     monkeypatch.delenv("AUTOCAL_REFERENCE_WS", raising=False)

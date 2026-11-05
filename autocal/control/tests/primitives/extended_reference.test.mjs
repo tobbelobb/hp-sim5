@@ -28,27 +28,37 @@ test('events enqueue without blocking commands; completion drains all acknowledg
   expect(complete).toBe(true);
 });
 
-test('queue overflow fails capture instead of silently dropping events', async () => {
+test('queue overflow degrades capture without failing the command', async () => {
   const log = logger({ maxEvents: 1 });
   log.emit('first', {});
-  expect(() => log.emit('second', {})).toThrow('incomplete');
-  await expect(log.close()).rejects.toThrow('limit');
+  expect(() => log.emit('second', {})).not.toThrow();
+  expect(log.failure().message).toMatch('limit');
+  await expect(log.close()).resolves.toBeUndefined();
 });
 
-test('invalid transport setup fails immediately and does not leave cleanup waiting', async () => {
+test('invalid transport setup degrades immediately without leaving cleanup waiting', async () => {
   const log = logger({ WebSocketClass: class { constructor() { throw new Error('Invalid URL'); } } });
-  expect(() => log.emit('event', {})).toThrow('Invalid URL');
-  await expect(log.close()).rejects.toThrow('Invalid URL');
+  expect(() => log.emit('event', {})).not.toThrow();
+  expect(log.failure().message).toBe('Invalid URL');
+  await expect(log.close()).resolves.toBeUndefined();
 });
 
-test('a recorder that stops acknowledging has a bounded failure', async () => {
+test('unserializable events degrade capture without throwing', async () => {
+  const log = logger();
+  const payload = {}; payload.self = payload;
+  expect(() => log.emit('event', payload)).not.toThrow();
+  expect(log.failure()).toBeInstanceOf(TypeError);
+  await expect(log.close()).resolves.toBeUndefined();
+});
+
+test('a recorder that stops acknowledging disables capture non-fatally', async () => {
   jest.useFakeTimers();
   try {
     const log = logger({ ackTimeoutMs: 100 });
     log.emit('event', {}); Socket.current.open();
-    const drained = expect(log.close()).rejects.toThrow('timed out');
     jest.advanceTimersByTime(100);
-    await drained;
-    expect(() => log.emit('later', {})).toThrow('timed out');
+    expect(log.failure().message).toMatch('timed out');
+    expect(() => log.emit('later', {})).not.toThrow();
+    await expect(log.close()).resolves.toBeUndefined();
   } finally { jest.useRealTimers(); }
 });

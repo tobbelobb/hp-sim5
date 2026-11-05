@@ -16,7 +16,7 @@ import time
 
 from .program import ProgramError, _allocation, _identity, _json, _now, _object, _text
 from . import program_pool as pool
-from .client_transport import client_adapter
+from .client_transport import client_adapter, research_client
 from .program_communication import pending_question, worker_policy
 
 
@@ -218,7 +218,13 @@ class WorkerDispatcher:
             prompt = ('# Bounded research assignment\n\n' + json.dumps(contract, indent=2, ensure_ascii=False) +
                       '\n\nRespect the recorded allocation. Preserve unsuccessful and partial evidence. '
                       'Execution success does not accept a scientific claim.\n\n' + pool.SHARED_BOUNDARY +
-                      worker_policy(session) + '\n\n' + instructions)
+                      worker_policy(session) +
+                      ('\nCloud worker setup (cloud only): in every shell, run '
+                       '`source .agents/skills/cloud-research-client/scripts/env.sh` before Python, Node, '
+                       'native, recorder or physics commands. '
+                       'Use its pinned Node 23.11.1 toolchain. Run simulation jobs one at a time; do not launch concurrent trials.\n'
+                       if research_client() == 'cloud' else '') +
+                      '\n\n' + instructions)
             prompt_path = directory / 'prompt.txt'
             prompt_path.write_bytes(prompt.encode('utf-8'))
             (directory / 'assignment.json').write_text(json.dumps(contract, indent=2, ensure_ascii=False) + '\n')

@@ -1,5 +1,6 @@
 """Store-wide cooperative capacity checks. Call reservations inside BEGIN IMMEDIATE."""
 from .program import ProgramError
+from .client_transport import research_client
 
 MAX_WORKERS = 4
 ACTIVE = ('starting', 'running', 'cancelling', 'ownership_lost')
@@ -80,6 +81,8 @@ def check_worker(store, program_id, assignment_id, *, program_limit=None, exclus
     workers, reviews, uncertain = occupancy(store, exclude=(program_id, assignment_id))
     if uncertain:
         raise ProgramError('Interrupted ownership or unknown cleanup needs an explicit bounded handoff, including unopened programs')
+    if research_client() == 'cloud' and (workers or reviews):
+        raise ProgramError('Cloud research runs sequentially; wait for the active worker or review to finish')
     if len(workers) >= limit(store):
         raise ProgramError('A worker is already reserved; store-wide worker pool is full')
     if program_limit is not None and sum(r['program_id'] == program_id for r in workers) >= program_limit:
@@ -97,6 +100,8 @@ def check_review(store, *, reservation=None):
                    r.get('reservation', {}).get('assignment_id') == reservation[1])]
     if reviews:
         raise ProgramError('The separate review concurrency slot is occupied across this store')
+    if research_client() == 'cloud' and workers:
+        raise ProgramError('Cloud research runs sequentially; wait for the active worker to finish')
     if any(r.get('reservation', r['details']).get('settings', {}).get('shared_runtime_write') for r in workers):
         raise ProgramError('Shared runtime write reservation blocks separate evaluation')
 

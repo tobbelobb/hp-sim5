@@ -228,6 +228,24 @@ class WorkerTests(unittest.TestCase):
             with self.assertRaisesRegex(ProgramError, 'required attempt fields'):
                 restored.import_snapshot(invalid)
 
+    def test_cloud_worker_prompt_sources_env_sh_but_local_prompt_does_not(self):
+        with patch.dict(os.environ, {'HP_SIM5_RESEARCH_CLIENT': 'local'}):
+            local = self.dispatcher()
+            started = local.start('p', 'a', settings={'machine': 'hp3'})
+            local_record = self.finish(local, started['id'])
+        local_prompt = (Path(local_record['details']['attempt_dir']) / 'prompt.txt').read_text()
+        self.assertNotIn('Cloud worker setup', local_prompt)
+
+        self.new_assignment('cloud-env')
+        with patch.dict(os.environ, {'HP_SIM5_RESEARCH_CLIENT': 'cloud'}):
+            cloud = self.dispatcher()
+            started = cloud.start('p', 'cloud-env', settings={'machine': 'hp3'})
+            cloud_record = self.finish(cloud, started['id'])
+        cloud_prompt = (Path(cloud_record['details']['attempt_dir']) / 'prompt.txt').read_text()
+        self.assertIn('Cloud worker setup (cloud only)', cloud_prompt)
+        self.assertIn('source .agents/skills/cloud-research-client/scripts/env.sh', cloud_prompt)
+        self.assertIn('pinned Node 23.11.1', cloud_prompt)
+
     def test_nonzero_auth_and_missing_executable(self):
         for mode in ('nonzero', 'auth', 'missing'):
             with self.subTest(mode=mode):
