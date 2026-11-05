@@ -1,0 +1,382 @@
+{
+  "session": "/workspace/hp-sim5/output/research/sessions/attempt-7b09fff3cc5b4bb89c33586f94cc4ebe",
+  "source_revision": "a68d6adffec3aea86a55a17d6b4d65a27badd42a",
+  "omitted": [],
+  "groups": [
+    {
+      "name": "n-default",
+      "uncompressed_bytes": 143788903,
+      "gzip_sha256": "dae7d09825a553d2a43092867d28a541148d5c5b500c50da9475298a4c09e6aa",
+      "files": [
+        {
+          "path": "runs/n-default/candidate.patch",
+          "bytes": 742,
+          "sha256": "3556ce11a367d5c60662c1e71e5d441f799bdd7c8e1ce950bd41f4b3afc1ce8b"
+        },
+        {
+          "path": "runs/n-default/collector-policy/collect_sweep_data.mjs",
+          "bytes": 29208,
+          "sha256": "a0b272ee55c2798ecbf987378b5272b39c31994e4b47a14cbd5a794e54a77b49"
+        },
+        {
+          "path": "runs/n-default/collector-policy/sweep_data_collection.mjs",
+          "bytes": 65075,
+          "sha256": "887f2cc9858c90decf35ffdaa2fd287d4f1ee358c536062529404a441a8075c1"
+        },
+        {
+          "path": "runs/n-default/collector-policy/uncalibrated_actions.mjs",
+          "bytes": 25282,
+          "sha256": "9fa05d67298b9e758301cd9df978a6e901aad42f112f2ede1da04ebee6b33773"
+        },
+        {
+          "path": "runs/n-default/command.stdout.log",
+          "bytes": 2584,
+          "sha256": "9527469f95f97d416eaa719f738e53231c639dd732bc5332acf0c2e8d5d3c37d"
+        },
+        {
+          "path": "runs/n-default/exit.json",
+          "bytes": 54,
+          "sha256": "db22686f28427581ad4023ef2e461c976e6e832cdfa39f3018fca6c5379c6671"
+        },
+        {
+          "path": "runs/n-default/fit-ledger.json",
+          "bytes": 856,
+          "sha256": "5941bf24e31a36d364b2c885234bd6c6638a2021d6f10dc62511a0639d28d3c6"
+        },
+        {
+          "path": "runs/n-default/harness-source/__pycache__/analyze.cpython-312.pyc",
+          "bytes": 15038,
+          "sha256": "b3e3f06ca816f4f309c0198cf699f0b0b02cadef45fde047fb9c96540a839ee9"
+        },
+        {
+          "path": "runs/n-default/harness-source/analyze.py",
+          "bytes": 6051,
+          "sha256": "b601822425ead251286c4a5ac3b43f889477e7311ca9adb60980f74379f45ee4"
+        },
+        {
+          "path": "runs/n-default/harness-source/autocal_headless.mjs",
+          "bytes": 16222,
+          "sha256": "46c2a1f6b880aca660cee7142613cbafe59c9228f90c26c9d11680a61bb2d07f"
+        },
+        {
+          "path": "runs/n-default/harness-source/candidate/collect_sweep_data.mjs",
+          "bytes": 29208,
+          "sha256": "a0b272ee55c2798ecbf987378b5272b39c31994e4b47a14cbd5a794e54a77b49"
+        },
+        {
+          "path": "runs/n-default/harness-source/candidate/sweep_data_collection.mjs",
+          "bytes": 65075,
+          "sha256": "887f2cc9858c90decf35ffdaa2fd287d4f1ee358c536062529404a441a8075c1"
+        },
+        {
+          "path": "runs/n-default/harness-source/candidate/uncalibrated_actions.mjs",
+          "bytes": 25282,
+          "sha256": "6a0fa887ea87ab2b16e7ad45b4261f4b811fde5fdb67209a339fdbdb5d49f7d6"
+        },
+        {
+          "path": "runs/n-default/harness-source/default/collect_sweep_data.mjs",
+          "bytes": 29208,
+          "sha256": "a0b272ee55c2798ecbf987378b5272b39c31994e4b47a14cbd5a794e54a77b49"
+        },
+        {
+          "path": "runs/n-default/harness-source/default/sweep_data_collection.mjs",
+          "bytes": 65075,
+          "sha256": "887f2cc9858c90decf35ffdaa2fd287d4f1ee358c536062529404a441a8075c1"
+        },
+        {
+          "path": "runs/n-default/harness-source/default/uncalibrated_actions.mjs",
+          "bytes": 25282,
+          "sha256": "9fa05d67298b9e758301cd9df978a6e901aad42f112f2ede1da04ebee6b33773"
+        },
+        {
+          "path": "runs/n-default/harness-source/development.json",
+          "bytes": 713,
+          "sha256": "27aecd1be7035bfb800bf36294b96827ef237ed0ca2aa1034fba3210e8c9e47e"
+        },
+        {
+          "path": "runs/n-default/harness-source/evaluation.json",
+          "bytes": 714,
+          "sha256": "5971aaf66df0b76ece357e63860ed17388506664cf57cfb40accdd1aff47132a"
+        },
+        {
+          "path": "runs/n-default/harness-source/hp3-stock.usda",
+          "bytes": 22837,
+          "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+        },
+        {
+          "path": "runs/n-default/harness-source/motor_probe.mjs",
+          "bytes": 3565,
+          "sha256": "b5a1a47232d529bddce302c4ba1ae6351fb3b6d77d1264c145b40bf3d6f38dd3"
+        },
+        {
+          "path": "runs/n-default/harness-source/nominal.json",
+          "bytes": 697,
+          "sha256": "70d98c73a3261517bd50c217b578c71142df02555a63242e3e130853bb6f64f3"
+        },
+        {
+          "path": "runs/n-default/harness-source/proposed_motor_perturbation.mjs",
+          "bytes": 2052,
+          "sha256": "4d70734cb761106fb1f17bd0d7b1885001d967bf4af25fcecf50a1cc2c2f81ae"
+        },
+        {
+          "path": "runs/n-default/harness-source/run.py",
+          "bytes": 3926,
+          "sha256": "e3655aaa645265b658fd90854a43f19f50c63539f77dc1e3efc160dd8a20b79b"
+        },
+        {
+          "path": "runs/n-default/invocation.json",
+          "bytes": 2224,
+          "sha256": "96e8ce09aac73ff93166323bb369461045859e215b34a3b3502e2794a82d44d2"
+        },
+        {
+          "path": "runs/n-default/policy-frozen.json",
+          "bytes": 6266,
+          "sha256": "ebd49eefed003775e9dd3098db74641adc1565d5681cac58b2dc92c6ff20bdcb"
+        },
+        {
+          "path": "runs/n-default/runner-snapshot.py",
+          "bytes": 3926,
+          "sha256": "e3655aaa645265b658fd90854a43f19f50c63539f77dc1e3efc160dd8a20b79b"
+        },
+        {
+          "path": "runs/n-default/service-snapshot.mjs",
+          "bytes": 16222,
+          "sha256": "46c2a1f6b880aca660cee7142613cbafe59c9228f90c26c9d11680a61bb2d07f"
+        },
+        {
+          "path": "runs/n-default/setup-evidence/callsite-audit.md",
+          "bytes": 1728,
+          "sha256": "bd273a497ca3550caafd37d80e8b6a1fa9b9e15c4ba82b6ac77f35077a338998"
+        },
+        {
+          "path": "runs/n-default/setup-evidence/motor-probe.json",
+          "bytes": 21407,
+          "sha256": "4be140b9a873bb1873ca8b52c23ee66d5b46ede83f58c4524a9310107260c70e"
+        },
+        {
+          "path": "runs/n-default/setup-evidence/package_run.py",
+          "bytes": 4804,
+          "sha256": "89da65e40b9a87de947749a90b6274dd5618e6111d7d9db4375799d1dea1f2c1"
+        },
+        {
+          "path": "runs/n-default/setup-evidence/preflight.json",
+          "bytes": 12833,
+          "sha256": "9ac674253b96ffcb811f5dc68b56380556b50b6267c33f2c49b740b021298ae0"
+        },
+        {
+          "path": "runs/n-default/setup-evidence/socket-probe.json",
+          "bytes": 306,
+          "sha256": "743fcb0779f18f8833559746ef3a685621db8c4fb5fa1150f8289ef894918586"
+        },
+        {
+          "path": "runs/n-default/setup-evidence/verify_result.py",
+          "bytes": 2103,
+          "sha256": "d43b048188cdcecbed90b2a724b4a9a901c1d282510e7036172a6d291181e288"
+        },
+        {
+          "path": "runs/n-default/stages/fit-001-default.json",
+          "bytes": 130916,
+          "sha256": "e927692acb4039cc4cbefc0cb6baab4933a6252a231e20b7bdd3beb492458fa2"
+        },
+        {
+          "path": "runs/n-default/stages/fit-002-default.json",
+          "bytes": 166148,
+          "sha256": "68c01d68f17dddb7558fd2433f2e8c1e5e8ba1a795b83168f034a7fe422d0f2c"
+        },
+        {
+          "path": "runs/n-default/stages/fit-002-default.warm.json",
+          "bytes": 166394,
+          "sha256": "3d8c5f018bac6c4bac960a4d8325ad457e1b430b76691a60f1ae774ffe734638"
+        },
+        {
+          "path": "runs/n-default/stages/fit-003-default.json",
+          "bytes": 201157,
+          "sha256": "fec2dff06664b628f778ea299a8af4d9cf13c73be600b2fe6bb64fb9bf2ad4b2"
+        },
+        {
+          "path": "runs/n-default/stages/fit-003-default.warm.json",
+          "bytes": 201411,
+          "sha256": "551e70647896a45291c5550686bda08f370088cadf9eeb0a00d5d0ab37add914"
+        },
+        {
+          "path": "runs/n-default/stages/fit-004-default.json",
+          "bytes": 236939,
+          "sha256": "17956987abf9bf4503a1fd69a4bb396f99a8e3d664b0dd1e818c284b755ac7a7"
+        },
+        {
+          "path": "runs/n-default/stages/fit-004-default.warm.json",
+          "bytes": 237186,
+          "sha256": "548b0114e04ddc022095401424f1977d04b4db6a7dd6ca845246b0e895ae87a6"
+        },
+        {
+          "path": "runs/n-default/stages/fit-005-default.json",
+          "bytes": 271823,
+          "sha256": "9515f8214c9442a4437ef78180b548637ac52caefd79bd9864058427d29a0a5a"
+        },
+        {
+          "path": "runs/n-default/stages/fit-005-default.warm.json",
+          "bytes": 272337,
+          "sha256": "8c6ca9172690236c523d6af4dc50fb69ad8dfa6c007ae8cbfd39d3623f18bb24"
+        },
+        {
+          "path": "runs/n-default/stages/history-005.json",
+          "bytes": 2042159,
+          "sha256": "4c591a3517d5be0633edd1501614d7c0c1446d0cf8545502ce3f6028bcaaebad"
+        },
+        {
+          "path": "runs/n-default/sweeps.active_sweep_cfg.default.txt",
+          "bytes": 10,
+          "sha256": "43959483087ed678e9eaa9799d338d33b6aead76e7337a9ddda78d2a6c2e5507"
+        },
+        {
+          "path": "runs/n-default/sweeps.active_sweep_cfg.default.warm.txt",
+          "bytes": 10,
+          "sha256": "006a37fe1c34a44623ac43540b054533274bdb97f46ca532fe8b24405918af22"
+        },
+        {
+          "path": "runs/n-default/sweeps.bootstrap_cfg.txt",
+          "bytes": 30,
+          "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069"
+        },
+        {
+          "path": "runs/n-default/sweeps.full_auto.log",
+          "bytes": 43213,
+          "sha256": "9a83159c8ae54c9cca30db71bd438d06ab37e8d267c69d50ac8b71b7ea33906d"
+        },
+        {
+          "path": "runs/n-default/sweeps.full_auto_log.jsonl",
+          "bytes": 32083,
+          "sha256": "c1e883c3e47bef7b2b482b0cb021b96138857e9c6e66bf3aae6bf695d0ae36f4"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/baked-scene.usda",
+          "bytes": 23767,
+          "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/clock.json",
+          "bytes": 3016,
+          "sha256": "8ae692552a3eca889220c97abbac9d6bd55e328c8db849e4ac5767a92485433a"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/events.jsonl",
+          "bytes": 138656494,
+          "sha256": "48cdde79d8b57cf32aaaffe04cce999571dd023ecedf3d633bab3237465f9f71"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/firmware-config.g",
+          "bytes": 4727,
+          "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/initial-native.json",
+          "bytes": 8096,
+          "sha256": "a92a19d96dd9b1ea227d0d033058b7efcaeb3b5688b004feda1e1b685221894d"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/intervention-native.json",
+          "bytes": 9215,
+          "sha256": "f19a5dc23b4c06aee2afef6e9d3dceeda12a285e0d6b3a4d887642e0645a013a"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/manifest.json",
+          "bytes": 6564,
+          "sha256": "f7f4e779d2f9333ea9f5159f55c08e11505afe8a6352b906a423e6e12aeaa3e8"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/motor-selection.json",
+          "bytes": 1359,
+          "sha256": "5d1df0582feb0d2f656003d706162406cf67af9f814a15128554382ea34aaac5"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/physics.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/rrf.log",
+          "bytes": 79122,
+          "sha256": "0832ecee795817866ba79300051f81a1d987bcbc113c0faea79a91ff478738e3"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/scene.usda",
+          "bytes": 22837,
+          "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+        },
+        {
+          "path": "runs/n-default/sweeps.headless/terminal-native.json",
+          "bytes": 29002,
+          "sha256": "1f6fe541c8476f120c2462f108d8b8869ae7bc23764a02b06d094271d727bf8a"
+        },
+        {
+          "path": "runs/n-default/sweeps.json",
+          "bytes": 222697,
+          "sha256": "3c19525ede2903b26d6cf5d37bbb496b78f39824fb045e6875069be182d8e328"
+        },
+        {
+          "path": "runs/n-default/sweeps.json.force-tuning.json",
+          "bytes": 4879,
+          "sha256": "8178443c733edab941daff40ed12750a68a68509799e58756ea58bef9aaf8c0c"
+        },
+        {
+          "path": "runs/n-default/sweeps.json.partial-points.jsonl",
+          "bytes": 55912,
+          "sha256": "63d43545e0197aec45081eec051d5c9f9fc2656232b6dc59f9bb5a422dfbad0d"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_001.json.force-tuning.json",
+          "bytes": 1320,
+          "sha256": "891c66681eaaac905b151e8d681987853a772c62667d4bca379e4a3ddc686f2c"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_001.json.partial-points.jsonl",
+          "bytes": 19176,
+          "sha256": "11197a3df0cc9b649e1eef941d442f21c40337d52065d6ffb83885e8e97894da"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_002.json.force-tuning.json",
+          "bytes": 1320,
+          "sha256": "684f4bf9b11816e7ed4a798a5d37b95d8d550a078c9e28682b25528a10891612"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_002.json.partial-points.jsonl",
+          "bytes": 19099,
+          "sha256": "dc2976cc4b8e6ecece11b48bb3d9ecec0ba820bf0f589e0eb5b2d586dc571ed0"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_003.json.force-tuning.json",
+          "bytes": 1320,
+          "sha256": "dbef5f3d79f7f34445f9eca827aa3071108a7dccc0368097443b180c3a70fe90"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_003.json.partial-points.jsonl",
+          "bytes": 19398,
+          "sha256": "c2b38a8bd68e8a9e1510680dd9baa0ebbc31101b697e1ceed286e257f4ee9a0b"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_004.json.force-tuning.json",
+          "bytes": 1320,
+          "sha256": "e3dee6ad890e1bcb58770d9b0b4e3f7f63fc21b373ffc8156a439b0db62a948a"
+        },
+        {
+          "path": "runs/n-default/sweeps.new_004.json.partial-points.jsonl",
+          "bytes": 19138,
+          "sha256": "b361e63b7c95f336d695d36d682b657a6b49f2096fc0fbcef11df1cdca4edd43"
+        },
+        {
+          "path": "runs/n-default/verified-result.json",
+          "bytes": 70744,
+          "sha256": "c6c0ff980c11a61fff5d2c008019cc7468f055c2d1fac0ef28bf6db51ff87641"
+        }
+      ],
+      "parts": [
+        {
+          "path": "raw-run.tar.gz",
+          "bytes": 8407440,
+          "sha256": "dae7d09825a553d2a43092867d28a541148d5c5b500c50da9475298a4c09e6aa"
+        }
+      ]
+    }
+  ],
+  "verified_by_readback": true
+}

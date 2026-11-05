@@ -1,0 +1,8 @@
+{
+  "source_path": "runs/n-candidate/sweeps.headless/events.jsonl",
+  "source_sha256": "9096197641fa8807f513dbfea1329305fa2be3383f7ad6d47cc217dc5756c894",
+  "first_line": 360472,
+  "last_line": 360591,
+  "excerpt_sha256": "5efc74f8a6fe5e97f0a8ef684be150a45557a899a7aa7eafda854dcbf9d764e7",
+  "observation": "Final valid encoder response and timeout reply occur at same simulator step; no wall timestamps per response, so exact latency and original delay cause are unestablished."
+}

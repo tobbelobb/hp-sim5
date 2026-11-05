@@ -1,0 +1,14 @@
+{
+  "assessed_utc": "2026-11-05T18:29:40.720987+00:00",
+  "manager_instruction": "Controlled four-primary partial if both evaluation jobs plus pushes and10minreportreserve cannot fit conservatively; no deadline extension. Manager funds only unrun eval pair and focused transport follow-up.",
+  "observed_slowest_completed_job_wall_s": 913.0879748390003,
+  "conservative_required_remaining_minutes": 48.43626582796668,
+  "approximate_live_remaining_minutes": 40,
+  "unrun_primary_runs": [
+    "e-default",
+    "e-candidate"
+  ],
+  "optional_transport_followup": "NOT TESTED; requires allsixprimary jobs first",
+  "seventh_collection": "unused; confirmation cannot erase nominalfailure",
+  "production_force_adoption": "blocked; nominalworkflowfailure retained"
+}

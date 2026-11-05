@@ -1,0 +1,18 @@
+{
+  "observed_utc": "2026-11-05T17:58:08.410982+00:00",
+  "owned_services": [
+    {
+      "pid": 1892,
+      "alive": false
+    },
+    {
+      "pid": 1896,
+      "alive": false
+    }
+  ],
+  "physics_returncode": 0,
+  "status": "failed",
+  "native_error": null,
+  "collector_failure": "M569.3 encoder request reply timeout5000ms",
+  "cause": "unestablished; host contention possible; no OOM observed"
+}

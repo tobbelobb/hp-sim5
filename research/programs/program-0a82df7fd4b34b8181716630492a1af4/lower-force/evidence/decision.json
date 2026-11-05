@@ -1,0 +1,52 @@
+{
+  "supported": false,
+  "finding": "inconclusive",
+  "production_force_adoption": "blocked",
+  "decision": "Default force adoption is blocked by the preserved nominal candidate workflow failure. Evaluation pair NOT TESTED. The manager will fund only the two unrun evaluation jobs and focused transport follow-up in a fresh bounded continuation. No successful run will be repeated.",
+  "tested_primary_runs": [
+    "n-default",
+    "n-candidate",
+    "d-default",
+    "d-candidate"
+  ],
+  "unrun_primary_runs": [
+    "e-default",
+    "e-candidate"
+  ],
+  "pairs": [
+    {
+      "world": "nominal",
+      "default_max_mm": 4.547215890556576,
+      "candidate_max_mm": null,
+      "max_improvement_mm": null,
+      "max_improvement_percent": null,
+      "effort_ratio": null,
+      "completed_both": false,
+      "readback_both": false
+    },
+    {
+      "world": "development",
+      "default_max_mm": 3.695888659558299,
+      "candidate_max_mm": 2.8528975546135613,
+      "max_improvement_mm": 0.8429911049447378,
+      "max_improvement_percent": 22.808887999496307,
+      "effort_ratio": 1.0641170124373829,
+      "completed_both": true,
+      "readback_both": true
+    }
+  ],
+  "partial_control": {
+    "assessed_utc": "2026-11-05T18:29:40.720987+00:00",
+    "manager_instruction": "Controlled four-primary partial if both evaluation jobs plus pushes and10minreportreserve cannot fit conservatively; no deadline extension. Manager funds only unrun eval pair and focused transport follow-up.",
+    "observed_slowest_completed_job_wall_s": 913.0879748390003,
+    "conservative_required_remaining_minutes": 48.43626582796668,
+    "approximate_live_remaining_minutes": 40,
+    "unrun_primary_runs": [
+      "e-default",
+      "e-candidate"
+    ],
+    "optional_transport_followup": "NOT TESTED; requires allsixprimary jobs first",
+    "seventh_collection": "unused; confirmation cannot erase nominalfailure",
+    "production_force_adoption": "blocked; nominalworkflowfailure retained"
+  }
+}
