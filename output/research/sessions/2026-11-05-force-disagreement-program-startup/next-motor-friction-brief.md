@@ -1,59 +1,20 @@
-# Proposed next discriminator: motor friction and noise
+# Commissioned lower-measurement-force iteration
 
-Status: proposed, not commissioned or tested. Dispatch only after the current
-fixed-evidence review, using a new finite assignment. This is not a restart of
-the guide-friction investigation.
+Assignment: assignment-a64d3f287c374d4e8b0e697ee33afe68. Status: commissioned, not yet dispatched; no numerical results yet.
 
-The guide-friction stress found a simulation-model limitation. A distinct next
-question uses existing torque-mode motor Coulomb/stiction terms, with every guide
-coefficient zero, to test the human's robustness claim without that mechanism.
+The earlier motor-friction-only proposal is superseded by an implementation-focused paired test: current default sensor force min(forceMax,5*forceMid) versus fixed candidate min(forceMax,4*forceMid). Pullout and preload forces, guards, solver, stopping and selection stay unchanged. Prior independent force-valley evidence motivates four, with no tuning on new truth.
 
-Keep HP3, known 30 mm radii, zero buildup, no layering, original default collection
-policy and automatic stopping. Reuse the completed nominal and matched noise-only
-reference evidence from the current assignment, after checking identities.
+{
+  "machine": "hp3",
+  "radii": "known 30 mm",
+  "buildup": 0,
+  "layering": false,
+  "guides_mu": 0,
+  "candidate": "sensor measurement force min(forceMax,4*forceMid); all pullout/preload/settling/stopping/solver rules unchanged",
+  "worlds": "nominal noise .03 seed4001; dev motor factors [.5,2,1.5,1]/[2,.5,1,1.5] sigma .03 seed4101; eval [.5,1.5,2,.75]/[1.5,2,.5,1] sigma .05 seed4201",
+  "failure": "any anchor >20 mm or no completed calibration",
+  "good": "every anchor <5 mm",
+  "effort_limit": "1.20 times paired completed baseline simulated time/steps"
+}
 
-Declare one development and one evaluation world before numerical work. Vary
-per-motor Coulomb and stiction magnitudes independently over 0.5-2x the modeled
-defaults, plus Gaussian encoder-read noise 0.02-0.05 deg. These are hypothetical
-modest parameter perturbations, not hardware-characterized ranges. Preserve
-stiction speed/cogging/windage unless a new specific question requires them.
-Verify ECS and packed native fields and report effective defaults when native
-NaN selects fallback. The model uses smoothed friction, not ideal breakaway.
-
-Test current defaults on each world. If all complete accurately, retain defaults
-and report the finite tested scope, not a hardware-reliability claim. If the
-development world fails, choose at most one bounded force/measurement recovery
-using noisy encoders and current tuning; freeze before evaluation-world accuracy
-is inspected. Do not tune against test truth, relax physical guards or default
-switch solvers. Any anchor >20 mm fails, every anchor <5 mm is good. Retain failed
-collection separately from bad accepted geometry, and intermediate solver tails
-separately from final applied results.
-
-Candidate finite budget: 75 worker minutes, 15 review minutes, 10 startup/manager
-minutes, 190 seconds cleanup; at most 5 collections, 60 fresh fit calls, 4M steps
-and 8000 sim seconds per collection, 20M total steps, 1400 measurement points. Use
-sequential native jobs, no recording for the numerical matrix, preserved full
-command/noise journals and passive initial/final snapshots. Reserve last 10 worker
-minutes for reports/cleanup. These numerical counters are contracts, not claimed
-hard aggregate quotas. A later allocation may narrow this proposal.
-
-Expected result is a concrete table of per-anchor errors, maxima, acceptance,
-failures, steps/simulated time and verified physical/noise parameters. A supported
-small improvement is useful; a scoped negative result or finite no-failure screen
-is also useful. No automatic merge or push.
-
-## Proposed declared worlds
-
-Use A/B/C/D factor order and all guide coefficients zero. These fixed example
-worlds are selected before outcome inspection, not fitted to geometry.
-
-| World | Split | Coulomb factors | Stiction factors | Read sigma deg | Seed |
-| --- | --- | --- | --- | --- | --- |
-| motor-dev | development | 2, .5, 1.5, 1 | 2, .5, 1, 1.5 | .03 | 4101 |
-| motor-eval | evaluation | .5, 1.5, 2, .75 | 1.5, 2, .5, 1 | .05 | 4201 |
-
-Recompute the effective default torque in Nm per motor before multiplying;
-expected stock values are .001 Nm Coulomb and .0015 Nm stiction, subject to
-loaded-state verification. Keep stiction speed, cogging and windage unchanged.
-The matched noise-only default from the first study supplies reference context,
-not a matched same-seed arm for these new worlds.
+Budget: 100 worker + 15 review + 10 manager/startup minutes, 190 seconds cleanup. At most seven collections, eighty fits, 28M steps, 2000 points; per job 4M steps and 8000 sim seconds. Sequential native Rust, speedup25, recording none plus full journals and passive snapshots. Preflight and separate command socket probe required. Reserve last ten worker minutes for report, artifacts and cleanup. Commit and push safe checkpoints after every collection. No automatic main-branch merge.

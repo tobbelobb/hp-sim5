@@ -176,3 +176,9 @@ The user explicitly authorized committing/pushing recoverable work and clarified
 that actual validated autocal improvements are the desired delivery. Subsequent
 experiments must push small checkpoints after each job rather than waiting for
 end-of-turn saving.
+
+## Recovery and implementation iteration, 2026-11-05
+
+All original files recovered; both remote research branches contain commit ba103ee5. This was an execution attachment outage, with no observed deletion. The fixed report-only first result is admitted as admission-22c5d2de62e841e9bd8b77c2b3ae4811. No production improvement was adopted.
+
+Human now explicitly authorizes committing and pushing all recoverable work, asks for actual autocal improvements, and requires incremental durability. New assignment assignment-a64d3f287c374d4e8b0e697ee33afe68 tests the fixed 4-times-midpoint sensor measurement force against current 5-times, keeping all other collection/fit/stopping behavior fixed. Six primary fresh collections across three declared worlds, up to seven total including a justified confirmation; 100 worker minutes, 15 review minutes, 10 startup/manager minutes, 190 s cleanup; 80 fit calls, 28M steps total, 4M steps/8000 sim seconds per job, 2000 points total. No new numerical result yet. Remote checkpoint after every collection.

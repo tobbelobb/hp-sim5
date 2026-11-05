@@ -68,7 +68,7 @@ What earlier runs have already established
 
 - The 2026-11-05 guide-friction study tested a bounded preload change in an
   isolated harness. It preserved nominal accuracy but did not recover collection.
-  Three completed calibrations had all anchors below5mm; four active-guide
+  Three completed calibrations had all anchors below 5 mm; four active-guide
   trials failed before fitting. A matched zero-guide/noise-only control passed.
   A constructed probe found load torque with macroscopic local cable slack.
   The independent reviewer kept the scoped report-only result. No production
@@ -148,8 +148,8 @@ Execution and reporting
   versus evaluation worlds and every exception. No large-error reliability claim
   follows from a matrix containing no large errors.
 - Implement only a supported change and run relevant autocal checks. Physics,
-  motor or dynamics changes require npm run test:physics. No automatic merge or
-  push. Preserve one-click operation and automatic stopping.
+  motor or dynamics changes require npm run test:physics. Commit and push research checkpoints under the human's explicit authorization;
+  adopt production changes only when supported. Preserve one-click operation and automatic stopping.
 - Maintain research.md, abstract.md and report.md with experiment IDs, measured
   outcomes, references, limitations and next decision. Regenerate the catalog
   with .venv/bin/python scripts/research_index.py. Research Programs use the
