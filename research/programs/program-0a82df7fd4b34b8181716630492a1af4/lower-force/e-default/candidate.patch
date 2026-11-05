@@ -1,0 +1,11 @@
+--- default/uncalibrated_actions.mjs
++++ candidate/uncalibrated_actions.mjs
+@@ -308,7 +308,7 @@
+ 
+ // An edge force measured in one geometry can overload held motors elsewhere.
+ // Use the existing five-times-start preload, bounded by the measured force cap.
+-export function resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce, preloadMultiplier = 5 } = {}) {
++export function resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce, preloadMultiplier = 4 } = {}) {
+   if (Number.isFinite(sensorCollectionForce)) return sensorCollectionForce;
+   const preload = Number.isFinite(forceMid) ? forceMid * preloadMultiplier : forceMax;
+   return Number.isFinite(forceMax) ? Math.min(forceMax, preload) : (preload ?? 0);
