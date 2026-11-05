@@ -1,0 +1,137 @@
+{
+  "candidate_id": "sensor-4mid-v1",
+  "frozen_utc": "2026-11-05T12:03:03.972065+00:00",
+  "source_revision": "76395fac528fc194dfb31eac4fc6274123f91448",
+  "worlds": [
+    {
+      "id": "nominal",
+      "split": "nominal",
+      "mu": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "motor_factors": {
+        "A": {
+          "coulombFriction": 1,
+          "stictionTorque": 1
+        },
+        "B": {
+          "coulombFriction": 1,
+          "stictionTorque": 1
+        },
+        "C": {
+          "coulombFriction": 1,
+          "stictionTorque": 1
+        },
+        "D": {
+          "coulombFriction": 1,
+          "stictionTorque": 1
+        }
+      },
+      "sigma_deg": 0.03,
+      "noise_seed": 4001,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/harness/hp3-stock.usda",
+      "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+    },
+    {
+      "id": "development",
+      "split": "development",
+      "mu": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "motor_factors": {
+        "A": {
+          "coulombFriction": 0.5,
+          "stictionTorque": 2
+        },
+        "B": {
+          "coulombFriction": 2,
+          "stictionTorque": 0.5
+        },
+        "C": {
+          "coulombFriction": 1.5,
+          "stictionTorque": 1
+        },
+        "D": {
+          "coulombFriction": 1,
+          "stictionTorque": 1.5
+        }
+      },
+      "sigma_deg": 0.03,
+      "noise_seed": 4101,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/harness/hp3-stock.usda",
+      "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+    },
+    {
+      "id": "evaluation",
+      "split": "evaluation",
+      "mu": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "motor_factors": {
+        "A": {
+          "coulombFriction": 0.5,
+          "stictionTorque": 1.5
+        },
+        "B": {
+          "coulombFriction": 1.5,
+          "stictionTorque": 2
+        },
+        "C": {
+          "coulombFriction": 2,
+          "stictionTorque": 0.5
+        },
+        "D": {
+          "coulombFriction": 0.75,
+          "stictionTorque": 1
+        }
+      },
+      "sigma_deg": 0.05,
+      "noise_seed": 4201,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-11d12ea8033e4ba291598eb250d6e416/harness/hp3-stock.usda",
+      "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+    }
+  ],
+  "rule": "min(forceMax,4*forceMid) default sensor measurement only; explicit sensor override unchanged; explicit20 pullouts and direct2 preloads unchanged",
+  "truth_boundary": "Only evaluator contains anchor truth. No truth used for force, thresholds, starts, selection or stopping.",
+  "budget": {
+    "collections": 7,
+    "primary_runs": 6,
+    "fresh_fits": 80,
+    "physics_steps": 28000000,
+    "physical_points": 2000,
+    "steps_per_collection": 4000000,
+    "max_auto_iterations": 6,
+    "wall_minutes": 100,
+    "report_reserve_minutes": 10
+  },
+  "hashes": {
+    "harness/run.py": "e3655aaa645265b658fd90854a43f19f50c63539f77dc1e3efc160dd8a20b79b",
+    "harness/proposed_motor_perturbation.mjs": "a3ddc15886f09a1a4e2a138d5d71a078d92c8261958ffedf66b20f604a300b9a",
+    "harness/hp3-stock.usda": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "harness/nominal.json": "64e947671ff16bfbf12c63ee03d91f4aa844df6555878801e0ec607719216bbe",
+    "harness/autocal_headless.mjs": "2482b871960d5f2edb5fdefb668f8ce556da082c90bc39122ffd7ee2a930f9cf",
+    "harness/analyze.py": "b601822425ead251286c4a5ac3b43f889477e7311ca9adb60980f74379f45ee4",
+    "harness/evaluation.json": "ab1678b24075e87c26f81d62491df50fd1f0e1f3d9947d7e7f5f00b16cc0ff2d",
+    "harness/development.json": "d9595f5ec68b18c7fad344450fc89b28945117e69353ed40401c3de95ae04583",
+    "harness/candidate/uncalibrated_actions.mjs": "c66d51243b49aebe9482ffe10f9da7a445a949accae532e2ace02fec76770bcf",
+    "harness/candidate/sweep_data_collection.mjs": "f92c48a9f8054b907029b9ae730c77a9955074377839592adb6a3ee56eaa0f40",
+    "harness/candidate/collect_sweep_data.mjs": "d59813ed6083881f7df7d788ad1034c17f18c86e1c1f222e744cd6b92a6a033f",
+    "harness/default/uncalibrated_actions.mjs": "92aa0978e766916ed79f9f49b99816b3adaa9646905fb7c123e64737dcbdd056",
+    "harness/default/sweep_data_collection.mjs": "f92c48a9f8054b907029b9ae730c77a9955074377839592adb6a3ee56eaa0f40",
+    "harness/default/collect_sweep_data.mjs": "d59813ed6083881f7df7d788ad1034c17f18c86e1c1f222e744cd6b92a6a033f",
+    "harness/original/run.py": "f801eb1f481d3f45d76f5fb88952caf55933989e73c45f965f7dddf4e7538e41",
+    "harness/original/proposed_motor_perturbation.mjs": "934407854c2b6b333e88d1dcf095f11920118bbf17b17e617ab3468014937e61",
+    "harness/original/autocal_headless.mjs": "221ee4c5667fb1322f581fa970266982bc71e74f89ef4586b322bf7374638efb",
+    "harness/original/analyze.py": "b601822425ead251286c4a5ac3b43f889477e7311ca9adb60980f74379f45ee4"
+  },
+  "candidate_patch_sha256": "32fd46e82eb085da77f0a55debac4939482dd4eb8d28722c6b1ec46977c7ab39"
+}
