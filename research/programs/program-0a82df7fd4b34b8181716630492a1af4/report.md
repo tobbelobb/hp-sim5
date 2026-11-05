@@ -1,8 +1,8 @@
 # Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?
 
-Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 60 · active
+Program: program-0a82df7fd4b34b8181716630492a1af4 · revision 78 · active
 
-No scientific result is available yet; evidence has not been admitted by review.
+Reviewed findings are recorded in scoped admission history.
 
 ## Program
 
@@ -12,9 +12,9 @@ No scientific result is available yet; evidence has not been admitted by review.
   "question_id": "question-e4c608b6f4d04b0cbf37decfea93e9c0",
   "goal": "Can encoder-only HP3 autocalibration use an additional force-varied sweep to resolve solver disagreement and improve geometric accuracy and failure rate across physically varied worlds, with known spool radii, no buildup, and automatic stopping?",
   "state": "active",
-  "revision": 60,
+  "revision": 78,
   "created_at": "2026-11-05T08:48:29.407994+00:00",
-  "updated_at": "2026-11-05T11:14:21.197582+00:00",
+  "updated_at": "2026-11-05T11:56:57.700120+00:00",
   "constraints": {}
 }
 ```
@@ -431,9 +431,9 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
   "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
   "kind": "runtime_allocation",
   "title": "Finite manager allocation",
-  "revision": 9,
+  "revision": 10,
   "created_at": "2026-11-05T08:59:21.160174+00:00",
-  "updated_at": "2026-11-05T11:14:21.198012+00:00",
+  "updated_at": "2026-11-05T11:41:27.560277+00:00",
   "details": {
     "cleanup_deadline": 1793877451.1583319,
     "cleanup_seconds": 190,
@@ -481,6 +481,7 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
           "worktree": true
         },
         "state": "submitted",
+        "superseded_by": "runtime_allocation-8253d0256262499cac9609ede9af163a",
         "usage": {
           "estimates": {
             "collections": 12,
@@ -1263,6 +1264,623 @@ Bounded budget: 100 worker minutes including research and report, up to 12 fresh
     "submission_id": "submission-eee989ceef1947c39f94515078da2af2",
     "submission_sha256": "d6921246a025f363e700d9113157c3019d4ac1bae6103cfd50f2dd7ee0cd7352",
     "wall_minutes": 15
+  }
+}
+```
+
+## runtime_allocation: Reserved saved-evidence review
+
+```json
+{
+  "id": "runtime_allocation-8253d0256262499cac9609ede9af163a",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "runtime_allocation",
+  "title": "Reserved saved-evidence review",
+  "revision": 7,
+  "created_at": "2026-11-05T11:41:27.559582+00:00",
+  "updated_at": "2026-11-05T11:53:27.572095+00:00",
+  "details": {
+    "cleanup_deadline": 1793879798.1585896,
+    "cleanup_seconds": 190,
+    "deadline": 1793879608.1585896,
+    "events": [],
+    "lease_until": 1793879618.6237566,
+    "owner": {
+      "id": "controller-d223d36fb4f340a5ba0305c2ffc89297",
+      "process": {
+        "birth": "10638",
+        "boot_id": "f7d52d5b-7ad1-4788-8f0c-2e0c21c98a12",
+        "group": 702,
+        "host": "e4eed99f14b4",
+        "pid": 702,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "admission_id": "admission-22c5d2de62e841e9bd8b77c2b3ae4811",
+        "assignment_id": "assignment-c6f56395495f43cfb1d1d5e03b01c593",
+        "attempt_id": "attempt-939c073f49004eb6949910600200be51",
+        "charged_at": "2026-11-05T11:41:27.558669+00:00",
+        "review_pending": false,
+        "review_seconds": 720,
+        "reviews": [
+          {
+            "charge_id": "1f1321b891b54655b653696352a57399",
+            "reserved_seconds": 600,
+            "run_id": "review-run-b9763effa14d4c14b812620e8bf605fa",
+            "state": "completed"
+          }
+        ],
+        "state": "submitted",
+        "usage": {
+          "estimates": {},
+          "observed_worker_wall_seconds": 5272.035399913788,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": []
+        },
+        "worker_seconds": 0
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 720,
+    "started_at": "2026-11-05T11:41:27.558619+00:00",
+    "state": "expired",
+    "task_limit": 1,
+    "wall_reserved_seconds": 720,
+    "wall_seconds": 720.6
+  }
+}
+```
+
+## review_run: Separate saved-evidence review
+
+```json
+{
+  "id": "review-run-b9763effa14d4c14b812620e8bf605fa",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "review_run",
+  "title": "Separate saved-evidence review",
+  "revision": 3,
+  "created_at": "2026-11-05T11:42:11.421164+00:00",
+  "updated_at": "2026-11-05T11:47:02.018365+00:00",
+  "details": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-b9763effa14d4c14b812620e8bf605fa",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-b9763effa14d4c14b812620e8bf605fa/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793879531.4201114,
+    "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-b9763effa14d4c14b812620e8bf605fa",
+    "error": null,
+    "guard_argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+      "1793879531.4201114",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-b9763effa14d4c14b812620e8bf605fa/wall-expired",
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/.agents/skills/cloud-research-client/scripts/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-b9763effa14d4c14b812620e8bf605fa",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-b9763effa14d4c14b812620e8bf605fa/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "owner": {
+      "id": "review-controller-bd26c6db2fc041b6a856e95619971ed1",
+      "process": {
+        "birth": "10638",
+        "boot_id": "f7d52d5b-7ad1-4788-8f0c-2e0c21c98a12",
+        "group": 702,
+        "host": "e4eed99f14b4",
+        "pid": 702,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "1052839",
+      "boot_id": "f7d52d5b-7ad1-4788-8f0c-2e0c21c98a12",
+      "group": 9609,
+      "host": "e4eed99f14b4",
+      "pid": 9609,
+      "uid": 1000
+    },
+    "prompt_sha256": "ca71da99cca9eedff869c8557650e3b73a51fc0f6c909a669f46c182bfef50a7",
+    "returncode": 0,
+    "review_id": "review-e4a30f0e13144f0e80b7dab88ac93496",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-b9763effa14d4c14b812620e8bf605fa",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-8253d0256262499cac9609ede9af163a",
+      "assignment-c6f56395495f43cfb1d1d5e03b01c593",
+      "1f1321b891b54655b653696352a57399"
+    ],
+    "started_at": "2026-11-05T11:42:11.420094+00:00",
+    "state": "completed",
+    "submission_id": "submission-eee989ceef1947c39f94515078da2af2",
+    "submission_sha256": "d6921246a025f363e700d9113157c3019d4ac1bae6103cfd50f2dd7ee0cd7352",
+    "wall_minutes": 10
+  }
+}
+```
+
+## review: Keep the unchanged report and evidence. Its scoped claim is supported: bounded preload preserved nominal final errors below 5 mm but failed to recover the tested development collection; matched zero-guide/noise-only collection succeeded; the constructed native probe demonstrates load torque with macroscopic local slack. The report distinguishes intermediate fits from final acceptance and states the remaining causal and hardware limits. No production change is proposed, so code adoption and engineering gates are outside this report-only verdict.
+
+```json
+{
+  "id": "review-e4a30f0e13144f0e80b7dab88ac93496",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "review",
+  "title": "Keep the unchanged report and evidence. Its scoped claim is supported: bounded preload preserved nominal final errors below 5 mm but failed to recover the tested development collection; matched zero-guide/noise-only collection succeeded; the constructed native probe demonstrates load torque with macroscopic local slack. The report distinguishes intermediate fits from final acceptance and states the remaining causal and hardware limits. No production change is proposed, so code adoption and engineering gates are outside this report-only verdict.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:47:02.019035+00:00",
+  "updated_at": "2026-11-05T11:47:02.019035+00:00",
+  "details": {
+    "contract": "hp-sim5-evidence-review-v2",
+    "response": {
+      "checks": [
+        {
+          "asset_ids": [
+            "report",
+            "abstract",
+            "asset_04"
+          ],
+          "description": "Reviewed the report HP3 friction/noise robustness screen and claim-a9ac9685183a4e3fb89ceff5a9664e8b at source revision 5bb8eb955fa680ddc631b6fb10f988ec3efb497a. Inspected manifest.json and the empty candidate.diff. All 32 submitted asset hashes match the manifest. This is a report-only submission with no production code candidate.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "asset_05",
+            "asset_06",
+            "asset_07",
+            "asset_08",
+            "asset_09",
+            "asset_17",
+            "asset_26",
+            "asset_28",
+            "asset_29"
+          ],
+          "description": "Traced the declared worlds, commands, effective 12-iteration override, fixed radii, zero buildup, native artifact and policy freeze. Rehashed the three embedded frozen policy sources and matched them to both v2 run invocations. The 09:44:12 freeze precedes the 10:03:13 eval0 start. The policy diff changes two preload paths plus import resolution. Inspected the generator and recorded byte-equivalence results; did not rerun generation or numerical jobs.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "measurements",
+            "asset_10",
+            "asset_19",
+            "asset_20",
+            "asset_21",
+            "asset_30"
+          ],
+          "description": "Parsed the exact applied M669 commands and independently recalculated Euclidean errors against the evaluator's full-precision authored truth. Maximum errors are 3.840677, 3.873242 and 4.349453 mm; anchor RMSE values are 3.284983, 3.319754 and 3.562306 mm. All match the saved measurements. Counted 140 points in each accepted dataset and recalculated nominal policy/default step ratio 0.9927558. These are arithmetic checks on saved data, not independent calibration reproduction.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "measurements",
+            "asset_15",
+            "asset_19",
+            "asset_29"
+          ],
+          "description": "Compared failure windows, partial-point evidence, manifests and hash-matched original collector logs. Active dev1 default has no points or fit; both development policy versions have 20 points and no fit; eval0 default has 40 points and no fit. Logs record encoder stability failures. Successful logs confirm spread-consensus stopping at iteration 5/12. Inspected severe 2693.972 and 2628.269 mm intermediate cold candidates separately from the final applied consensuses.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "asset_16",
+            "asset_29"
+          ],
+          "description": "Inspected native readback of all nine guide coefficients, unchanged spool/motor settings, shared artifact identity and matched eval0 scene, noise sigma and seed. The posthoc noise-only control has zero native guide mu and normal acceptance. Zero-mu injection and unmodified nominal audits record the same complete first-step state hash. Saved native audits support the intervention distinction; no fresh audit was run.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "asset_11",
+            "asset_12",
+            "asset_13",
+            "asset_14",
+            "asset_18"
+          ],
+          "description": "Inspected probe construction, terminal snapshots and both saved native outputs. At 8 seconds the active probe has 53.494/53.353 mm local slack, zero local force and 0.0507058 Nm native load torque. Recalculated torque from transferred forces times 0.03 m radius, signed cable power 0.0133865 W, and rest/storage balances. Verified every source-map file hash and excerpt against git revision 5bb8eb955fa680ddc631b6fb10f988ec3efb497a. Source supports unconditional neighboring pinhole load transfer and the stated active-friction redistribution branch. No simulation, fit, exact replay or full energy audit was performed.",
+          "kind": "inspected"
+        }
+      ],
+      "code_readiness": "report_only",
+      "discrepancy": null,
+      "finding": "supported",
+      "limitations": [
+        "The evidence supports the tested simulation outcomes. It does not establish a hardware failure rate, calibrated hardware friction distribution or general robustness.",
+        "There is one completed nominal pair and one posthoc matched noise-only contrast. Adaptive workloads share a noise-stream prefix, not identical noise at identical physical times.",
+        "Held-out policy arms, eval1, wider friction ranges, layering, buildup and other machine configurations remain untested.",
+        "The probe reconstructs selected terminal fields with fresh hidden history. Terminal snapshots follow cleanup, and signed power samples omit terms required for a full energy balance. The complete causal model defect remains unresolved.",
+        "Independent work here checked saved-data arithmetic, hashes, commands and source. It did not independently reproduce the producer's numerical runs or reprocess every large raw sensor journal."
+      ],
+      "practical_value": "The negative result prevents advancing an unsupported preload robustness claim. It preserves good nominal final accuracy and identifies a concrete guide transport and spool-load assumption for a separately scoped physical-model investigation.",
+      "reason": "Keep the unchanged report and evidence. Its scoped claim is supported: bounded preload preserved nominal final errors below 5 mm but failed to recover the tested development collection; matched zero-guide/noise-only collection succeeded; the constructed native probe demonstrates load torque with macroscopic local slack. The report distinguishes intermediate fits from final acceptance and states the remaining causal and hardware limits. No production change is proposed, so code adoption and engineering gates are outside this report-only verdict.",
+      "required_checks": [],
+      "submission_id": "submission-eee989ceef1947c39f94515078da2af2",
+      "submission_sha256": "d6921246a025f363e700d9113157c3019d4ac1bae6103cfd50f2dd7ee0cd7352",
+      "verdict": "keep"
+    },
+    "response_sha256": "ce0907faae4bfc8a072aeeebc3f970c2ddabfb458a824bc3ffd80e809acfb4c7",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-b9763effa14d4c14b812620e8bf605fa",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "run_id": "review-run-b9763effa14d4c14b812620e8bf605fa",
+    "submission_id": "submission-eee989ceef1947c39f94515078da2af2"
+  }
+}
+```
+
+## admission: Keep the unchanged report and evidence. Its scoped claim is supported: bounded preload preserved nominal final errors below 5 mm but failed to recover the tested development collection; matched zero-guide/noise-only collection succeeded; the constructed native probe demonstrates load torque with macroscopic local slack. The report distinguishes intermediate fits from final acceptance and states the remaining causal and hardware limits. No production change is proposed, so code adoption and engineering gates are outside this report-only verdict.
+
+```json
+{
+  "id": "admission-22c5d2de62e841e9bd8b77c2b3ae4811",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "admission",
+  "title": "Keep the unchanged report and evidence. Its scoped claim is supported: bounded preload preserved nominal final errors below 5 mm but failed to recover the tested development collection; matched zero-guide/noise-only collection succeeded; the constructed native probe demonstrates load torque with macroscopic local slack. The report distinguishes intermediate fits from final acceptance and states the remaining causal and hardware limits. No production change is proposed, so code adoption and engineering gates are outside this report-only verdict.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:47:13.782210+00:00",
+  "updated_at": "2026-11-05T11:47:13.782210+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "claim-a9ac9685183a4e3fb89ceff5a9664e8b",
+    "code_readiness": "report_only",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "The negative result prevents advancing an unsupported preload robustness claim. It preserves good nominal final accuracy and identifies a concrete guide transport and spool-load assumption for a separately scoped physical-model investigation.",
+    "required_checks": [],
+    "review_id": "review-e4a30f0e13144f0e80b7dab88ac93496",
+    "submission_id": "submission-eee989ceef1947c39f94515078da2af2",
+    "submission_sha256": "d6921246a025f363e700d9113157c3019d4ac1bae6103cfd50f2dd7ee0cd7352"
+  }
+}
+```
+
+## steering: Commit and push all recoverable work. Recover originals and checkpoint later results remotely after each experiment. The human wants actual autocal improvements with concrete before/after evidence, not only rejected prototypes. Priorities, thresholds and +20 percent effort allowance remain. Interview closed; proceed autonomously.
+
+```json
+{
+  "id": "steering-b2ce90c86a5345ca820da9857319185b",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "steering",
+  "title": "Commit and push all recoverable work. Recover originals and checkpoint later results remotely after each experiment. The human wants actual autocal improvements with concrete before/after evidence, not only rejected prototypes. Priorities, thresholds and +20 percent effort allowance remain. Interview closed; proceed autonomously.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:55:22.450211+00:00",
+  "updated_at": "2026-11-05T11:55:22.450211+00:00",
+  "details": {
+    "actor": "human",
+    "evidence_ids": [],
+    "subject_id": null
+  }
+}
+```
+
+## human_input: Commit and push all recoverable work. Recover originals and checkpoint later results remotely after each experiment. The human wants actual autocal improvements with concrete before/after evidence, not only rejected prototypes. Priorities, thresholds and +20 percent effort allowance remain. Interview closed; proceed autonomously.
+
+```json
+{
+  "id": "human_input-91603d5151214d8ba35e9cf89b8a36b4",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "human_input",
+  "title": "Commit and push all recoverable work. Recover originals and checkpoint later results remotely after each experiment. The human wants actual autocal improvements with concrete before/after evidence, not only rejected prototypes. Priorities, thresholds and +20 percent effort allowance remain. Interview closed; proceed autonomously.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:55:22.450290+00:00",
+  "updated_at": "2026-11-05T11:55:22.450290+00:00",
+  "details": {
+    "citation_ids": [
+      "steering-b2ce90c86a5345ca820da9857319185b"
+    ],
+    "intent": "instruction",
+    "links": [],
+    "next_assignment_id": null,
+    "provenance": {
+      "date": "2026-11-05",
+      "source": "current conversation"
+    },
+    "steering_id": "steering-b2ce90c86a5345ca820da9857319185b"
+  }
+}
+```
+
+## decision: All original first-study files recovered and pushed. Admission admission-22c5d2de62e841e9bd8b77c2b3ae4811 supports the negative report-only result: consistent bounded preload did not recover guide-stressed collection. Reject that prototype for adoption. Preserve the broader force/measurement question; do not infer hardware failure from a model-boundary probe. Next test a different intervention: lower sensor measurement force, from the current 5 times tuned forceMid to 4 times, separately from unchanged pullout/preload forces. Prior independent force-valley results motivate this fixed candidate. Test fresh motor-friction/noise pairs and implement only if applied geometry and effort support it. Commit/push checkpoints after every numerical collection.
+
+```json
+{
+  "id": "decision-570ae430f6c4401cba5c83ccaa261f21",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "decision",
+  "title": "All original first-study files recovered and pushed. Admission admission-22c5d2de62e841e9bd8b77c2b3ae4811 supports the negative report-only result: consistent bounded preload did not recover guide-stressed collection. Reject that prototype for adoption. Preserve the broader force/measurement question; do not infer hardware failure from a model-boundary probe. Next test a different intervention: lower sensor measurement force, from the current 5 times tuned forceMid to 4 times, separately from unchanged pullout/preload forces. Prior independent force-valley results motivate this fixed candidate. Test fresh motor-friction/noise pairs and implement only if applied geometry and effort support it. Commit/push checkpoints after every numerical collection.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:56:56.343242+00:00",
+  "updated_at": "2026-11-05T11:56:56.343242+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [
+      "artifact-2f41c931876a4035a112178e7d712708"
+    ],
+    "subject_id": null
+  }
+}
+```
+
+## approach: Lower measurement force from five to four times the encoder-tuned midpoint
+
+```json
+{
+  "id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "approach",
+  "title": "Lower measurement force from five to four times the encoder-tuned midpoint",
+  "revision": 1,
+  "created_at": "2026-11-05T11:56:56.692902+00:00",
+  "updated_at": "2026-11-05T11:56:56.692902+00:00",
+  "details": {
+    "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
+    "reason": "Earlier force valley was near 3.8 times midpoint but only one nominal world. A fixed four-times rule is a small production candidate and remains independent of new test truth.",
+    "state": "live"
+  }
+}
+```
+
+## approach: Lower force worsens drag bias or settling enough to defeat the accuracy benefit
+
+```json
+{
+  "id": "approach-4efeaafb10e946d68b589da1124f50ad",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "approach",
+  "title": "Lower force worsens drag bias or settling enough to defeat the accuracy benefit",
+  "revision": 1,
+  "created_at": "2026-11-05T11:56:56.912891+00:00",
+  "updated_at": "2026-11-05T11:56:56.912891+00:00",
+  "details": {
+    "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
+    "reason": "With variable motor friction and sensor noise, lower force can increase relative drag, create inaccurate equilibria or cost more than the allowed effort.",
+    "state": "live"
+  }
+}
+```
+
+## route_plan: User asks for actual autocal improvements; test the most concrete earlier unshipped force candidate without replaying the guide-model limitation.
+
+```json
+{
+  "id": "route_plan-33be6158a51741b0933ff22eb9ba0094",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "route_plan",
+  "title": "User asks for actual autocal improvements; test the most concrete earlier unshipped force candidate without replaying the guide-model limitation.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:56:57.191186+00:00",
+  "updated_at": "2026-11-05T11:56:57.191186+00:00",
+  "details": {
+    "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+    "citation_ids": [
+      "decision-570ae430f6c4401cba5c83ccaa261f21",
+      "admission-22c5d2de62e841e9bd8b77c2b3ae4811"
+    ],
+    "decision_value": "Adopt a small supported collector improvement with fresh paired geometry, or reject it explicitly and retain all counterexamples.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 7,
+      "fresh_fits": 80,
+      "physical_points": 2000,
+      "physics_steps": 28000000,
+      "review_minutes": 15,
+      "wall_minutes": 100
+    },
+    "hypothesis": "Lower measurement force reduces equilibrium stretch/model bias across varied drag/noise while preserving completion and automatic stopping.",
+    "novelty": "First frozen lower-sensor-force production candidate paired across motor Coulomb/stiction and noisy encoders. Distinct from failed guide preload experiment.",
+    "objections": [],
+    "observation": "Paired lower-force and default fresh completed calibrations improve applied per-anchor errors without new failure and with <=20 percent extra collection effort.",
+    "priority": 1,
+    "reason": "User asks for actual autocal improvements; test the most concrete earlier unshipped force candidate without replaying the guide-model limitation.",
+    "reopening_condition": "A different encoder-observable force rule, materially different measured drag, or independently corrected model.",
+    "retry_key": "081d59eb5d1f8aa300b282528851baf62a4ae73be067a730485d901fe3a5f968",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "candidate": "sensor measurement force min(forceMax,4*forceMid); all pullout/preload/settling/stopping/solver rules unchanged",
+      "effort_limit": "1.20 times paired completed baseline simulated time/steps",
+      "failure": "any anchor >20 mm or no completed calibration",
+      "good": "every anchor <5 mm",
+      "guides_mu": 0,
+      "layering": false,
+      "machine": "hp3",
+      "radii": "known 30 mm",
+      "worlds": "nominal noise .03 seed4001; dev motor factors [.5,2,1.5,1]/[2,.5,1,1.5] sigma .03 seed4101; eval [.5,1.5,2,.75]/[1.5,2,.5,1] sigma .05 seed4201"
+    },
+    "tradeoffs": [
+      "At most twenty percent extra completed-pair simulated collection effort.",
+      "No hardware reliability claim from three hypothetical simulated worlds."
+    ],
+    "uncertainty": "The force-valley result used another solver/source revision and only one world; transfer is unproven. Motor factors are hypothetical, not hardware-characterized."
+  }
+}
+```
+
+## route_plan: User asks for actual autocal improvements; test the most concrete earlier unshipped force candidate without replaying the guide-model limitation.
+
+```json
+{
+  "id": "route_plan-a14c39791a884a788f8ac33a7ec9d67d",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "route_plan",
+  "title": "User asks for actual autocal improvements; test the most concrete earlier unshipped force candidate without replaying the guide-model limitation.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:56:57.424783+00:00",
+  "updated_at": "2026-11-05T11:56:57.424783+00:00",
+  "details": {
+    "approach_id": "approach-4efeaafb10e946d68b589da1124f50ad",
+    "citation_ids": [
+      "decision-570ae430f6c4401cba5c83ccaa261f21",
+      "admission-22c5d2de62e841e9bd8b77c2b3ae4811"
+    ],
+    "decision_value": "Adopt a small supported collector improvement with fresh paired geometry, or reject it explicitly and retain all counterexamples.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 7,
+      "fresh_fits": 80,
+      "physical_points": 2000,
+      "physics_steps": 28000000,
+      "review_minutes": 15,
+      "wall_minutes": 100
+    },
+    "hypothesis": "Lower force does not transfer; motor friction bias, noise or slower settling outweigh nominal accuracy gains.",
+    "novelty": "First frozen lower-sensor-force production candidate paired across motor Coulomb/stiction and noisy encoders. Distinct from failed guide preload experiment.",
+    "objections": [],
+    "observation": "A fresh paired motor/noise evaluation shows new failures, greater than 20 mm error, accuracy regression or effort beyond 1.20 times baseline.",
+    "priority": 2,
+    "reason": "User asks for actual autocal improvements; test the most concrete earlier unshipped force candidate without replaying the guide-model limitation.",
+    "reopening_condition": "A different encoder-observable force rule, materially different measured drag, or independently corrected model.",
+    "retry_key": "41a0b994d9b2fe3a18edfe9281308cc69a76355b25152f53e94b5ff0d11a8d32",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "candidate": "sensor measurement force min(forceMax,4*forceMid); all pullout/preload/settling/stopping/solver rules unchanged",
+      "effort_limit": "1.20 times paired completed baseline simulated time/steps",
+      "failure": "any anchor >20 mm or no completed calibration",
+      "good": "every anchor <5 mm",
+      "guides_mu": 0,
+      "layering": false,
+      "machine": "hp3",
+      "radii": "known 30 mm",
+      "worlds": "nominal noise .03 seed4001; dev motor factors [.5,2,1.5,1]/[2,.5,1,1.5] sigma .03 seed4101; eval [.5,1.5,2,.75]/[1.5,2,.5,1] sigma .05 seed4201"
+    },
+    "tradeoffs": [
+      "At most twenty percent extra completed-pair simulated collection effort.",
+      "No hardware reliability claim from three hypothetical simulated worlds."
+    ],
+    "uncertainty": "The force-valley result used another solver/source revision and only one world; transfer is unproven. Motor factors are hypothetical, not hardware-characterized."
+  }
+}
+```
+
+## assignment: Implement and evaluate a narrowly scoped lower-sensor-force autocal improvement: fixed 4*forceMid against current 5*forceMid, unchanged guards, preloads, solver and automatic stopping. Reuse recovered harness safely in own session; run fresh paired nominal/development/evaluation worlds. Report per-anchor applied geometry, all failures and effort, and retain a production candidate only when supported.
+
+```json
+{
+  "id": "assignment-a64d3f287c374d4e8b0e697ee33afe68",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "assignment",
+  "title": "Implement and evaluate a narrowly scoped lower-sensor-force autocal improvement: fixed 4*forceMid against current 5*forceMid, unchanged guards, preloads, solver and automatic stopping. Reuse recovered harness safely in own session; run fresh paired nominal/development/evaluation worlds. Report per-anchor applied geometry, all failures and effort, and retain a production candidate only when supported.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:56:57.703193+00:00",
+  "updated_at": "2026-11-05T11:56:57.703193+00:00",
+  "details": {
+    "allocation": {
+      "collections": 7,
+      "fresh_fits": 80,
+      "physical_points": 2000,
+      "physics_steps": 28000000,
+      "review_minutes": 15,
+      "wall_minutes": 100
+    },
+    "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+    "execution_state": "ready",
+    "knowledge_state": "unassessed",
+    "question_id": "question-0e6d4ed320fe44a793f3bc5eb35f9c34",
+    "review_state": "unreviewed"
+  }
+}
+```
+
+## investigation: Implement and evaluate a narrowly scoped lower-sensor-force autocal improvement: fixed 4*forceMid against current 5*forceMid, unchanged guards, preloads, solver and automatic stopping. Reuse recovered harness safely in own session; run fresh paired nominal/development/evaluation worlds. Report per-anchor applied geometry, all failures and effort, and retain a production candidate only when supported.
+
+```json
+{
+  "id": "investigation-5eded1331eec4fe89ceea54d16729433",
+  "program_id": "program-0a82df7fd4b34b8181716630492a1af4",
+  "kind": "investigation",
+  "title": "Implement and evaluate a narrowly scoped lower-sensor-force autocal improvement: fixed 4*forceMid against current 5*forceMid, unchanged guards, preloads, solver and automatic stopping. Reuse recovered harness safely in own session; run fresh paired nominal/development/evaluation worlds. Report per-anchor applied geometry, all failures and effort, and retain a production candidate only when supported.",
+  "revision": 1,
+  "created_at": "2026-11-05T11:56:57.703358+00:00",
+  "updated_at": "2026-11-05T11:56:57.703358+00:00",
+  "details": {
+    "assignment_id": "assignment-a64d3f287c374d4e8b0e697ee33afe68",
+    "citation_ids": [
+      "decision-570ae430f6c4401cba5c83ccaa261f21",
+      "admission-22c5d2de62e841e9bd8b77c2b3ae4811"
+    ],
+    "execution": {
+      "machine": "hp3",
+      "recording_mode": "none",
+      "simulated_autocal_speedup": 25
+    },
+    "explanations": [
+      {
+        "approach_id": "approach-1ae49e51d47342ae9cc9f973962a14f9",
+        "explanation": "A lower sensor load reduces systematic stretch/model bias at reasonable effort."
+      },
+      {
+        "approach_id": "approach-4efeaafb10e946d68b589da1124f50ad",
+        "explanation": "Variable drag or noise defeats nominal force-valley benefit and lower load worsens settling."
+      }
+    ],
+    "kind": "experiment",
+    "outcomes": {
+      "improved": {
+        "actions": [],
+        "finding": "supported",
+        "observation": "The frozen candidate yields materially better applied geometry in held-out motor/noise pair and no new completed-world failure; completed-pair effort at most 1.20 times baseline. Production diff and relevant checks support adoption."
+      },
+      "inconclusive": {
+        "actions": [],
+        "finding": "inconclusive",
+        "observation": "Budget or missing valid pairs prevents a comparison; preserve all partial evidence."
+      },
+      "mixed": {
+        "actions": [],
+        "finding": "mixed",
+        "observation": "Some pairs improve but transfer or collection-effort criteria conflict; retain exact scoped results and report code readiness separately."
+      },
+      "not_improved": {
+        "actions": [],
+        "finding": "rejected",
+        "observation": "The frozen lower-force candidate fails improvement criteria or produces a regression. Preserve code/evidence but do not adopt an unsupported default."
+      },
+      "tool_failure": {
+        "actions": [],
+        "finding": "tool_failure",
+        "observation": "Runtime or access failure prevents valid numerical evidence."
+      }
+    },
+    "route_plan_ids": [
+      "route_plan-33be6158a51741b0933ff22eb9ba0094",
+      "route_plan-a14c39791a884a788f8ac33a7ec9d67d"
+    ]
   }
 }
 ```

@@ -1,50 +1,32 @@
-# Force and measurement robustness across HP3 friction and noise variation
+# HP3 force and friction robustness program
 
-Status: in progress, first bounded worker running.
+Status: guide-friction investigation complete and independently reviewed.
+No production autocal improvement was adopted.
 
 ## Abstract
 
-This program asks whether force and measurement choices can prevent large
-encoder-only HP3 calibration errors across friction and noise variation.
-The startup audit found completed profiling, warm-start and
-early-stopping work, mixed solver/default results, a ten-world mass/gravity
-comparison, and an origin-shift study. It replaced stale starting questions in
-the parameter-variation prompt with narrower unresolved directions. Program
-runtime setup and independent command socket checks passed. These are tool
-checks. The human ended the interview and prioritized robustness, with any anchor
-above 20 mm a failure and every anchor below 5 mm good performance. Friction is
-the primary variation, and up to 20% additional collection time is acceptable for
-substantially fewer large errors. A bounded worker has begun fresh collection.
-The first nominal run stopped automatically with maximum applied anchor error
-3.841 mm and all four anchors below 5 mm. The first active-friction/noise run
-failed settling before collecting any points. Its clean encoder drift was much
-larger than injected noise. One bounded preload policy is under development;
-no policy improvement or separate evidence review is available yet.
+The program refreshed the parameter-variation agenda against earlier research,
+then tested encoder-only HP3 force handling under guide-friction and sensor-noise
+variation. Nominal defaults, a bounded-preload prototype and a matched noise-only
+control each stopped automatically with all anchors below5mm. Four active-guide
+trials failed collection before fitting; both preload versions failed to recover
+the development case. A constructed native probe transmitted spool load with
+macroscopic local cable slack, limiting interpretation of the guide stress as a
+real-machine robustness test. Separate reviewers checked source provenance,
+original asset hashes and saved-data arithmetic. The report-only finding was
+admitted after recovery from a root execution-attachment failure. The original
+research files survived and are pushed with a verified raw-artifact archive.
+
 
 ## Topics
 
-Autocalibration, HP3, force tuning, solver disagreement, parameter variation,
-encoder-only calibration, research program, startup interview.
+HP3, autocalibration, force tuning, guide friction, motor friction, sensor noise,
+robustness, candidate tails, native model validation, recovery.
 
 ## Tested hypotheses
 
 | Hypothesis | Experiment IDs | Outcome | Evidence |
 | --- | --- | --- | --- |
-| A bounded preload improves completion across friction/noise worlds | None completed | Not tested | Worker experiment in progress |
-| Current default completes the first active-friction/noise world | dev1-active-default | Rejected for this simulated collection, unreviewed | [Worker evidence](../attempt-939c073f49004eb6949910600200be51/evidence/measurements.json) |
-
-## Decision handoff
-
-- Scope: known spool radii, zero buildup, no line layering, HP3 simulation.
-- Review: manager inspected the historical reports; no separate review yet.
-- Decision: preserve current defaults pending a paired robustness experiment.
-- Next: verify active friction/noise interventions, then compare a frozen policy
-  on held-out worlds. Initial results remain unreviewed.
-
-## References
-
-- [Research notebook](research.md): objective, candidate experiment, budgets and pending interview.
-- [Startup report](report.md): audit and tool checks.
-- [Updated prompt](../../../../research/prompts/autocal_parameter_variation_focus.txt): scoped questions and historical evidence links.
-- [Ten-world and fallback report](../2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md): existing simulated solver and force evidence.
-- [Fresh reference study](../2026-10-20-interactive-research-ae0174ce/report.md): limits of origin-shift approaches.
+| Bounded preload recovers active-guide collection | dev1-active-default, dev1-bounded-preload, dev1-consistent-preload | Rejected in tested model | [Producer report](../attempt-939c073f49004eb6949910600200be51/report.md) |
+| Nominal and matched noise-only defaults finish below5mm per anchor | nominal-numeric, eval0-noise-only-default | Supported within this scope | [Measurements](../attempt-939c073f49004eb6949910600200be51/evidence/measurements.json) |
+| Encoder-only hardware robustness is established | None | Not tested | No hardware experiments |
