@@ -67,7 +67,7 @@ the controller; `research/prompts/` contains research missions only.
 
 Cloud open returns the shared manager workflow text as `manager_instructions`;
 the skill does not duplicate it or require a separate reading hop. The cloud
-adapter, bridges, setup scripts, report assets and tests now live under
+adapter, bridges, setup scripts and tests now live under
 `.agents/skills/cloud-research-client/`. `scripts/cloud/` and the old entry prompt
 and symlink have been removed. Cloud tests remain in default pytest/CI discovery.
 
@@ -99,9 +99,7 @@ Socket restrictions are possible locally too; common preflight/socket diagnostic
 are not inherently cloud-specific.
 
 Architecture reports and historical task cards remain optional references,
-not startup instructions. Archived evidence is unchanged. The optional visual
-report lives inside the cloud skill and is refreshed from the active source
-prompts.
+not startup instructions. Archived evidence is unchanged.
 
 An exact once-only context guarantee also depends on the coding client: automatic
 AGENTS discovery, previously read files and an existing parent chat are outside
@@ -116,6 +114,6 @@ local sockets permitted after the sandbox rejected the relay fixture's bind.
 New checks cover omitted choices without session creation or budget charges,
 commissioned choices and conflicts in both transports, discoverable help, prompt
 registration, exact selected-prompt delivery and route provenance. The cloud
-skill passed its frontmatter validator. The offline visual report was regenerated
-from source prompts, and `git diff --check` passed. These are code, CLI and
-process/relay tests; no new live model research trial was commissioned.
+skill passed its frontmatter validator, and `git diff --check` passed. These are
+code, CLI and process/relay tests; no new live model research trial was
+commissioned.

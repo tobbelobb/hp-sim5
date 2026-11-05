@@ -62,5 +62,4 @@ Check the original direct research-agent launcher independently.
 
 Repeat the same cycle for each supported adapter with its actual authenticated
 actors. No fixture transcript substitutes for model/tool use. See
-[the visual audit](../../.agents/skills/cloud-research-client/assets/research-program-cloud.html) for the current cloud
-path's measured scope and remaining verification gap.
+the cloud skill and its tests for the current transport boundary.

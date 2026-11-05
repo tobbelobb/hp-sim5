@@ -13,7 +13,6 @@ references. Local research does not read or import this package.
 | `scripts/env.sh`, `install.sh`, `start.sh`, `install_playwright_skill.py` | Cloud toolchain setup, environment and optional service startup |
 | `assets/playwright-skill.json` | Pinned Playwright skill checksums |
 | `tests/` | Adapter, environment, actor bridge and relay regressions; included by default pytest and CI |
-| `scripts/build_report.py`, `assets/report_template.html`, `assets/research-program-cloud.html` | Offline architecture report with source prompt panels and historical evidence |
 
 ## Shared core
 
@@ -46,9 +45,3 @@ Run `.venv/bin/python -m pytest tests/python/test_research_program*.py
 .agents/skills/cloud-research-client/tests tests/python/test_research_agent.py`
 for the program/launcher/adapter checks. These are not evidence of a live model
 research trial. Historical cloud evidence remains in research archives.
-
-Regenerate the optional offline report after changing source prompts:
-
-```bash
-.venv/bin/python .agents/skills/cloud-research-client/scripts/build_report.py
-```

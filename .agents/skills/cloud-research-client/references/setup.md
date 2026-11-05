@@ -2,8 +2,7 @@
 
 Use [the skill](../SKILL.md) to launch or resume a cloud Research Program.
 Read this setup reference only when dependencies or optional development services
-are needed. The [boundary map](boundary.md) describes ownership; the optional
-[offline report](../assets/research-program-cloud.html) includes historical trials.
+are needed. The [boundary map](boundary.md) describes ownership.
 
 This package preserves the setup and startup steps validated during Codex
 cloud onboarding. Use the existing checkout: cloud tasks are already isolated,

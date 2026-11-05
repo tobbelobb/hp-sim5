@@ -1,7 +1,6 @@
 # A research program above hp-sim5-research-agent
 
-For the implemented feature, start with [research/program.md](research/program.md)
-and the [visual cloud report](.agents/skills/cloud-research-client/assets/research-program-cloud.html).
+For the implemented feature, start with [research/program.md](research/program.md).
 This document retains the original proposal.
 
 Design proposal, 23 October 2026. Based on checkout `b39fa16faec8`, the
