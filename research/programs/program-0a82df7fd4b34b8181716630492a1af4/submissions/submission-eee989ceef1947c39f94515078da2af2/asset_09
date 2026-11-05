@@ -1,0 +1,53 @@
+from pathlib import Path
+import re,json,hashlib,datetime,sys
+ROOT=Path.cwd(); S=Path(sys.argv[1]) if len(sys.argv)>1 else Path('/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51'); H=S/'harness'; H.mkdir(parents=True,exist_ok=True)
+worlds=[dict(id='dev0',split='development',mu=[0,0,0,0],sigma_deg=0,noise_seed=100),dict(id='dev1',split='development',mu=[.003,.008,.006,.004],sigma_deg=.02,noise_seed=101),dict(id='eval0',split='evaluation',mu=[.008,.0035,.0045,.006],sigma_deg=.03,noise_seed=202),dict(id='eval1',split='evaluation',mu=[.004,.0065,.008,.003],sigma_deg=.05,noise_seed=303)]
+stock=(ROOT/'public/usd_scenes/hp3_rigid_body.usda').read_text()
+for w in worlds:
+    text=stock
+    for route,mu in ([] if w['id']=='dev0' else zip('ABCD',w['mu'])):
+        # Guide anchors are interior pinholes; terminal attachment and spool materials stay stock.
+        text=re.sub(r'(def Xform "Anchor'+route+r'[^\n]+[\s\S]*?rel material:binding = </World/PhysicsScene/)AnchorMaterial(>)',r'\g<1>Route'+route+r'\2',text)
+        material='\n        def Material "Route'+route+'" (prepend apiSchemas = ["PhysicsMaterialAPI"]) {\n            float physics:staticFriction = '+str(mu)+'\n            float physics:dynamicFriction = '+str(mu)+'\n            float physics:restitution = 0.025\n        }\n'
+        pos=text.index('        def Material "AnchorMaterial"')
+        text=text[:pos]+material+text[pos:]
+    p=H/(w['id']+'-v2.usda');p.write_text(text);w['scene']=str(p);w['scene_sha256']=hashlib.sha256(p.read_bytes()).hexdigest()
+(S/'generated-design.json').write_text(json.dumps(dict(generated_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),source_revision='5bb8eb955fa680ddc631b6fb10f988ec3efb497a',worlds=worlds,scope='HP3 unlayered known 30 mm radii, zero buildup; only contact mu and sensor-read Gaussian noise vary',assumptions='stock active guide mu=0; added guide mu .003-.008; Gaussian sigma .02-.05 degrees equals .0105-.0262 mm at 30 mm radius; hypothetical modest ranges, not hardware-characterized',evaluation_rule='Do not inspect held-out accuracy until one policy is frozen; truth used only in final evaluation. Fitting seed stays production 0.',budget=dict(jobs=12,fits=80,points=4000,steps_per_job=4000000,sim_s_per_job=8000,wall_s_per_job=600,total_steps=48000000)),indent=2)+'\n')
+# Copy production service verbatim except import resolution, audited readout and explicit sensor noise insertion.
+s=(ROOT/'scripts/autocal_headless.mjs').read_text()
+def imp(m):
+    path=m[1]
+    if path.startswith('.'):
+        return "from '"+(ROOT/'scripts'/path).resolve().as_uri()+"'"
+    if path=='ws':return "from '"+(ROOT/'node_modules/ws/wrapper.mjs').as_uri()+"'"
+    return m[0]
+s=re.sub(r"from '([^']+)'",imp,s)
+s=s.replace('  bakedSceneFile = `baked-scene', "  // Session-only plant intervention: stock applyAnchor ignores material mu.\n  const plantSpec = JSON.parse(fs.readFileSync(process.env.FRICTION_WORLD_SPEC, 'utf8'));\n  for (const entity of world.query([SceneEntityInfoComponent])) {\n    const info = world.getComponent(entity, SceneEntityInfoComponent);\n    const route = /^Anchor([ABCD])/.exec(info.name)?.[1];\n    if (route) world.addComponent(entity, new CoefficientOfFrictionComponent(plantSpec.mu['ABCD'.indexOf(route)]));\n  }\n"+'  bakedSceneFile = `baked-scene')
+s="import { SceneEntityInfoComponent, CoefficientOfFrictionComponent } from '"+(ROOT/'src/js/cable_joints_3d/ecs.js').as_uri()+"';\n"+s
+needle='buildWorld();\nlet recordingDrained'
+inject='''buildWorld();
+const noiseSpec = JSON.parse(fs.readFileSync(process.env.FRICTION_WORLD_SPEC, 'utf8'));
+let noiseState = noiseSpec.noise_seed >>> 0;
+function uniform() { noiseState += 0x6D2B79F5; let t = noiseState; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+function normal() { return Math.sqrt(-2*Math.log(Math.max(uniform(),1e-12)))*Math.cos(2*Math.PI*uniform()); }
+function auditNative() {
+  const engine = world.getResource('cableSolverBackend');
+  if (!engine.fullEngine || engine.physicsEngine !== 'rust-native') throw new Error('Expected native Rust');
+  if (engine.world !== world) return;
+  const rows = engine.ids.map((id,i) => { const c=world.getComponent(id,SceneEntityInfoComponent), a=engine.entityRegion.data, o=i*160; return {id,name:c?.name,mu_ecs:world.getComponent(id,CoefficientOfFrictionComponent)?.mu,mu_native:a[o+105],radius_native:a[o+104],motor_native:Array.from(a.slice(o+107,o+121))}; });
+  fs.writeFileSync(`${directory}/intervention-native.json`,JSON.stringify({noise:noiseSpec,physics_engine:engine.physicsEngine,scene_sha256:createHash('sha256').update(sceneText).digest('hex'),baked_scene_sha256:bakedSceneHash,rows},null,2));
+}
+let recordingDrained'''
+assert needle in s;s=s.replace(needle,inject,1)
+s=s.replace('    world.update(dt); step++; totalSteps++; collectorTime += dt;', '    world.update(dt); step++; totalSteps++; collectorTime += dt;\n    if (step === 1) auditNative();')
+needle="    event('encoder_response', { request_id: payload.requestId, axes: payload.axes, angles_deg: response.anglesDeg });"
+replacement="""    const cleanAngles = response.anglesDeg.slice();
+    if (noiseSpec.sigma_deg > 0) response.anglesDeg = response.anglesDeg.map(value => value + noiseSpec.sigma_deg * normal());
+    event('sensor_noise', { request_id: payload.requestId, axes: payload.axes, clean_angles_deg: cleanAngles, noisy_angles_deg: response.anglesDeg, sigma_deg: noiseSpec.sigma_deg, seed: noiseSpec.noise_seed });
+"""+needle
+assert needle in s;s=s.replace(needle,replacement)
+snap=(Path(__file__).parent/'terminal-snapshot.txt').read_text()
+s=s.replace('async function close() {',snap+'async function close() {').replace("  event('service_stopped'); fs.closeSync(events);","  writeTerminalNative();\n  event('service_stopped'); fs.closeSync(events);")
+(H/'autocal_headless.mjs').write_text(s)
+for w in worlds:(H/(w['id']+'.json')).write_text(json.dumps(w,indent=2)+'\n')
+print(json.dumps(worlds,indent=2))

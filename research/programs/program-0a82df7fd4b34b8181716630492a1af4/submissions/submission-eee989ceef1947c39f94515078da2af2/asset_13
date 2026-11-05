@@ -1,0 +1,839 @@
+{
+  "arm": "zero",
+  "utc": "2026-11-05T10:05:43.679Z",
+  "node_version": "v23.11.1",
+  "physics_engine": "rust-native",
+  "artifact_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+  "steps": 4001,
+  "simulated_s": 8.002,
+  "source_sha256": "89321d466562bc79f1cc81958b65c9319eb545c07b2c6e4523e64a57a5d0a1e9",
+  "construction": "Fresh native world, ordinary first step, then terminal observed geometry/motor commands/rest lengths/storage restored. Hidden knot/history retained from initial scene. Controlled diagnostic, not exact replay.",
+  "units": "SI. Local and transferred forces are modeled constraints. Power uses signed world-z spool omega and native commanded/load torques. Work is trapezoid sample integration, not full energy audit; motor losses and body work omitted.",
+  "samples": [
+    {
+      "step": 0,
+      "simulated_s": 0,
+      "omega_rad_s": 0.26183768988468575,
+      "encoder_rad": 24.146765207107585,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 0.0000017139743961037218,
+      "target_power_w": -0.008114768949830228,
+      "cable_load_power_w": 0,
+      "target_work_j": 0,
+      "cable_load_work_j": 0,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07544245273891331,
+        -0.8363068865861819,
+        0.2954320460242834
+      ],
+      "effector_velocity_m_s": [
+        -0.0000032725104848196906,
+        0.0000024124652275858693,
+        -0.0000015055910129735395
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.27559704378761263,
+          "rest_sum_m": 3.1732228765966366,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.6477189885198332,
+              "extension_m": -0.11941983084494101,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 26,
+              "length_m": 2.525499889727193,
+              "rest_m": 2.5255038880768033,
+              "extension_m": -0.000003998349610068175,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.2755970437875827,
+          "rest_sum_m": 3.173222876596628,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.6475941769169735,
+              "extension_m": -0.11929501924208186,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 28,
+              "length_m": 2.525611011898963,
+              "rest_m": 2.525628699679655,
+              "extension_m": -0.000017687780691666433,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 1,
+      "simulated_s": 0.002,
+      "omega_rad_s": -1.2394126188061043,
+      "encoder_rad": 24.147288882487356,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 0.00003840359099139514,
+      "target_power_w": 0.038411380116991266,
+      "cable_load_power_w": 0,
+      "target_work_j": 0.000030296611167161038,
+      "cable_load_work_j": 0,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07546374646508938,
+        -0.8363822657311675,
+        0.29541864581045124
+      ],
+      "effector_velocity_m_s": [
+        0.010646863088034642,
+        -0.03768957249278282,
+        -0.006700106916085469
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.27558133352621955,
+          "rest_sum_m": 3.1732385868580293,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.548961883537305,
+              "extension_m": -0.0206627258624128,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 26,
+              "length_m": 2.5254998815887144,
+              "rest_m": 2.6242767033207244,
+              "extension_m": -0.09877682173200997,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.27558133352618963,
+          "rest_sum_m": 3.1732385868580213,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.548941908527164,
+              "extension_m": -0.020642750852272296,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 28,
+              "length_m": 2.5256110038510613,
+              "rest_m": 2.6242966783308574,
+              "extension_m": -0.09868567447979615,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "simulated_s": 0.004,
+      "omega_rad_s": -2.5299261188182314,
+      "encoder_rad": 24.144810057249742,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 0.000160013154166967,
+      "target_power_w": 0.0784064583039671,
+      "cable_load_power_w": 0,
+      "target_work_j": 0.0001471144495881194,
+      "cable_load_work_j": 0,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07552792573105879,
+        -0.8364835307461449,
+        0.295436697505215
+      ],
+      "effector_velocity_m_s": [
+        0.03208963298470535,
+        -0.05063250748871262,
+        0.009025847381882723
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.2756556982833479,
+          "rest_sum_m": 3.173164222100901,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5489210959557363,
+              "extension_m": -0.020621938280844132,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 26,
+              "length_m": 2.5256552231113583,
+              "rest_m": 2.624243126145165,
+              "extension_m": -0.0985879030338066,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.275655698283318,
+          "rest_sum_m": 3.173164222100893,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5489107498577652,
+              "extension_m": -0.02061159218287356,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 28,
+              "length_m": 2.52571278531291,
+              "rest_m": 2.6242534722431277,
+              "extension_m": -0.09854068693021745,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "simulated_s": 0.01,
+      "omega_rad_s": -5.8237323389299815,
+      "encoder_rad": 24.12254388789075,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 0.0008478964588874719,
+      "target_power_w": 0.18048678315518243,
+      "cable_load_power_w": 0,
+      "target_work_j": 0.0009392589887454181,
+      "cable_load_work_j": 0,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07603130886064925,
+        -0.8367972363032926,
+        0.2957496862858704
+      ],
+      "effector_velocity_m_s": [
+        0.10544458254643091,
+        -0.059392660249513174,
+        0.06076109630745452
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.2763236833641176,
+          "rest_sum_m": 3.1724962370201317,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5486902153296652,
+              "extension_m": -0.020391057654773004,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 26,
+              "length_m": 2.5262971207324174,
+              "rest_m": 2.6238060216904664,
+              "extension_m": -0.09750890095804898,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.2763236833640877,
+          "rest_sum_m": 3.1724962370201233,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5486817426343941,
+              "extension_m": -0.020382584959502403,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 28,
+              "length_m": 2.526344289539809,
+              "rest_m": 2.623814494385729,
+              "extension_m": -0.09747020484592017,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 10,
+      "simulated_s": 0.02,
+      "omega_rad_s": -10.008058892715226,
+      "encoder_rad": 24.048436666602072,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 0.002504031070001408,
+      "target_power_w": 0.3101657579794732,
+      "cable_load_power_w": 0,
+      "target_work_j": 0.003365639322859987,
+      "cable_load_work_j": 0,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.0774316411590001,
+        -0.8377419350426016,
+        0.2963267516009189
+      ],
+      "effector_velocity_m_s": [
+        0.14878661819742178,
+        -0.1008171080093545,
+        0.06275340856104483
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.2785469000027781,
+          "rest_sum_m": 3.170273020381471,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5479869834529693,
+              "extension_m": -0.01968782577807704,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 26,
+              "length_m": 2.5280737432166687,
+              "rest_m": 2.622286036928502,
+              "extension_m": -0.09421229371183326,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.2785469000027482,
+          "rest_sum_m": 3.1702730203814635,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5479837348428455,
+              "extension_m": -0.0196845771679538,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 28,
+              "length_m": 2.5280918623018014,
+              "rest_m": 2.622289285538618,
+              "extension_m": -0.09419742323681657,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 50,
+      "simulated_s": 0.1,
+      "omega_rad_s": -24.17762550763749,
+      "encoder_rad": 22.511443062899748,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 0.014613939379689076,
+      "target_power_w": 0.7493032986824981,
+      "cable_load_power_w": 0,
+      "target_work_j": 0.05143866783206393,
+      "cable_load_work_j": 0,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.08699048122427577,
+        -0.8393212942377034,
+        0.2975885666665537
+      ],
+      "effector_velocity_m_s": [
+        0.07879688547371422,
+        -0.004597757613078457,
+        0.0059067772266163665
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.32465670811384784,
+          "rest_sum_m": 3.1241632122704006,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5386424805103817,
+              "extension_m": -0.010343322835489444,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 26,
+              "length_m": 2.5358720750088746,
+              "rest_m": 2.585520731760019,
+              "extension_m": -0.04964865675114449,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.3246567081138179,
+          "rest_sum_m": 3.124163212270394,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5386010706425296,
+              "extension_m": -0.010301912967637938,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 28,
+              "length_m": 2.5361076611091122,
+              "rest_m": 2.5855621416278645,
+              "extension_m": -0.04945448051875223,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 100,
+      "simulated_s": 0.2,
+      "omega_rad_s": -3.603844155896054,
+      "encoder_rad": 20.459416884824172,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 0.00032469231749965354,
+      "target_power_w": 0.11168889654186814,
+      "cable_load_power_w": 0,
+      "target_work_j": 0.11439662793037036,
+      "cable_load_work_j": -0.002755898192872431,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.08491353359608034,
+        -0.8388736773902702,
+        0.2972688277816155
+      ],
+      "effector_velocity_m_s": [
+        -0.23122439884348117,
+        -0.026780019780070496,
+        0.006595468743653132
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.3862174934561149,
+          "rest_sum_m": 3.0626024269281347,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5283254442442956,
+              "extension_m": -0.000026286569403399795,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 26,
+              "length_m": 2.5341508909944865,
+              "rest_m": 2.534276982683839,
+              "extension_m": -0.00012609168935240334,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.38621749345608497,
+          "rest_sum_m": 3.062602426928126,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.528316579022711,
+              "extension_m": -0.000017421347819346344,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            },
+            {
+              "id": 28,
+              "length_m": 2.5342022793085106,
+              "rest_m": 2.534285847905415,
+              "extension_m": -0.00008356859690428209,
+              "local_force_n": 0,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 500,
+      "simulated_s": 1,
+      "omega_rad_s": 0.008202665119807094,
+      "encoder_rad": 20.197441956323733,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0.028861705821250846,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 1.6820928766924984e-9,
+      "target_power_w": -0.00025421371632701353,
+      "cable_load_power_w": 0.0002367429076381077,
+      "target_work_j": 0.12240370701422622,
+      "cable_load_work_j": -0.0007402837380247617,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07610518043362452,
+        -0.8368202204806625,
+        0.2957421385622623
+      ],
+      "effector_velocity_m_s": [
+        0.00019736016414889646,
+        -0.00013862035225242764,
+        0.00008733524906046064
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.39407674131112813,
+          "rest_sum_m": 3.0547431790731276,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5283044623028595,
+              "extension_m": -0.000005304627967328557,
+              "local_force_n": 0,
+              "transferred_force_n": 0.5465433201029811
+            },
+            {
+              "id": 26,
+              "length_m": 2.5264133491680028,
+              "rest_m": 2.526438716770268,
+              "extension_m": -0.00002536760226545809,
+              "local_force_n": 0.5465433201029811,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.3940767413110982,
+          "rest_sum_m": 3.0547431790731117,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5283014001792989,
+              "extension_m": -0.0000022425044072793554,
+              "local_force_n": 0,
+              "transferred_force_n": 0.41551354060538054
+            },
+            {
+              "id": 28,
+              "length_m": 2.5264310547942324,
+              "rest_m": 2.5264417788938127,
+              "extension_m": -0.000010724099580361468,
+              "local_force_n": 0.41551354060538054,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 1000,
+      "simulated_s": 2,
+      "omega_rad_s": 0.020534374764907395,
+      "encoder_rad": 20.20300205342475,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0.02650142111710349,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 1.0541513674641642e-8,
+      "target_power_w": -0.000636393128964104,
+      "cable_load_power_w": 0.0005441901130212339,
+      "target_work_j": 0.12223100852949756,
+      "cable_load_work_j": -0.0005825801471509201,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07623811588737232,
+        -0.8369134912723446,
+        0.29580098897745166
+      ],
+      "effector_velocity_m_s": [
+        -0.00010396142608587455,
+        0.00012189993059408266,
+        -0.000035851666857489306
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.39390993839809807,
+          "rest_sum_m": 3.0549099819861585,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5283041856838656,
+              "extension_m": -0.000005028008973395615,
+              "local_force_n": 0,
+              "transferred_force_n": 0.5027676212643158
+            },
+            {
+              "id": 26,
+              "length_m": 2.526581749934764,
+              "rest_m": 2.526605796302293,
+              "extension_m": -0.00002404636752917355,
+              "local_force_n": 0.5027676212643158,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.39390993839806815,
+          "rest_sum_m": 3.0549099819861376,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5283013647694649,
+              "extension_m": -0.000002207094573214441,
+              "local_force_n": 0,
+              "transferred_force_n": 0.3806130826391339
+            },
+            {
+              "id": 28,
+              "length_m": 2.5265980617562103,
+              "rest_m": 2.526608617216673,
+              "extension_m": -0.000010555460462580157,
+              "local_force_n": 0.3806130826391339,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 2000,
+      "simulated_s": 4,
+      "omega_rad_s": 0.019969789488024622,
+      "encoder_rad": 20.203083176425817,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0.02646073176762996,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 9.969812304900468e-9,
+      "target_power_w": -0.0006188957278970639,
+      "cable_load_power_w": 0.000528415243098656,
+      "target_work_j": 0.1222285118952983,
+      "cable_load_work_j": -0.0005634700455851563,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07624005060286344,
+        -0.8369148486677639,
+        0.2958018439560639
+      ],
+      "effector_velocity_m_s": [
+        -0.00011764590338719794,
+        0.00013151586714110763,
+        -0.00004190523048008821
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.39390750470806624,
+          "rest_sum_m": 3.05491241567619,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5283041846474218,
+              "extension_m": -0.000005026972529575957,
+              "local_force_n": 0,
+              "transferred_force_n": 0.5020097987252884
+            },
+            {
+              "id": 26,
+              "length_m": 2.5265841895948005,
+              "rest_m": 2.5266082310287685,
+              "extension_m": -0.000024041433968058357,
+              "local_force_n": 0.5020097987252884,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.3939075047080363,
+          "rest_sum_m": 3.054912415676167,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5283013672918789,
+              "extension_m": -0.000002209616987269847,
+              "local_force_n": 0,
+              "transferred_force_n": 0.38001459352904376
+            },
+            {
+              "id": 28,
+              "length_m": 2.526600480850228,
+              "rest_m": 2.526611048384288,
+              "extension_m": -0.000010567534060257344,
+              "local_force_n": 0.38001459352904376,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 4000,
+      "simulated_s": 8,
+      "omega_rad_s": 0.019969788845230565,
+      "encoder_rad": 20.203083176522263,
+      "target_torque_nm": -0.0309916,
+      "cable_load_torque_nm": 0.02646073172158412,
+      "rotor_inertia_kg_m2": 0.00005,
+      "rotor_energy_j": 9.969811663077378e-9,
+      "target_power_w": -0.0006188957079758476,
+      "cable_load_power_w": 0.0005284152251703292,
+      "target_work_j": 0.12222851189232704,
+      "cable_load_work_j": -0.0005294475671522736,
+      "local_tension_torque_bound_nm": 0,
+      "effector_position_m": [
+        0.07624005060519946,
+        -0.8369148486693176,
+        0.2958018439570425
+      ],
+      "effector_velocity_m_s": [
+        -0.00011764591932583723,
+        0.00013151587785475982,
+        -0.000041905237196937506
+      ],
+      "paths": [
+        {
+          "id": 39,
+          "stored_m": 0.39390750470517216,
+          "rest_sum_m": 3.0549124156790675,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 25,
+              "length_m": 0.5282991576748922,
+              "rest_m": 0.5283041846474207,
+              "extension_m": -0.000005026972528465734,
+              "local_force_n": 0,
+              "transferred_force_n": 0.5020097978491258
+            },
+            {
+              "id": 26,
+              "length_m": 2.5265841895976835,
+              "rest_m": 2.5266082310316467,
+              "extension_m": -0.000024041433963173375,
+              "local_force_n": 0.5020097978491258,
+              "transferred_force_n": 0
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "stored_m": 0.39390750470514224,
+          "rest_sum_m": 3.054912415679025,
+          "total_rest_m": 3.4488199203848398,
+          "joints": [
+            {
+              "id": 27,
+              "length_m": 0.5282991576748917,
+              "rest_m": 0.5283013672918818,
+              "extension_m": -0.0000022096169901564267,
+              "local_force_n": 0,
+              "transferred_force_n": 0.38001459287034484
+            },
+            {
+              "id": 28,
+              "length_m": 2.5266004808530695,
+              "rest_m": 2.526611048387143,
+              "extension_m": -0.00001056753407358002,
+              "local_force_n": 0.38001459287034484,
+              "transferred_force_n": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

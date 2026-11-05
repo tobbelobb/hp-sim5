@@ -1,0 +1,79 @@
+{
+  "source_revision": "5bb8eb955fa680ddc631b6fb10f988ec3efb497a",
+  "worlds": [
+    {
+      "id": "dev0",
+      "split": "development",
+      "mu": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sigma_deg": 0,
+      "noise_seed": 100,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51/harness/dev0-v2.usda",
+      "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "version": 2
+    },
+    {
+      "id": "dev1",
+      "split": "development",
+      "mu": [
+        0.003,
+        0.008,
+        0.006,
+        0.004
+      ],
+      "sigma_deg": 0.02,
+      "noise_seed": 101,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51/harness/dev1-v2.usda",
+      "scene_sha256": "5d90185813c6cd9b4dc1ffdf65eac1274ee1c28f740e56fa6ab9b02055f4fa54",
+      "version": 2
+    },
+    {
+      "id": "eval0",
+      "split": "evaluation",
+      "mu": [
+        0.008,
+        0.0035,
+        0.0045,
+        0.006
+      ],
+      "sigma_deg": 0.03,
+      "noise_seed": 202,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51/harness/eval0-v2.usda",
+      "scene_sha256": "214b2d7ccb204f5ea544783aec45655b0c7a04308e675dbf91b1513aa0571882",
+      "version": 2
+    },
+    {
+      "id": "eval1",
+      "split": "evaluation",
+      "mu": [
+        0.004,
+        0.0065,
+        0.008,
+        0.003
+      ],
+      "sigma_deg": 0.05,
+      "noise_seed": 303,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51/harness/eval1-v2.usda",
+      "scene_sha256": "819c5245226fab73dc7be65dca9a1234ccefd237112d0cfaa65e96a7af3a0d27",
+      "version": 2
+    }
+  ],
+  "scope": "HP3 unlayered known 30 mm radii zero buildup; active guide pinhole contact mu and sensor-read Gaussian noise",
+  "assumptions": "Stock active guide mu=0; added guide mu .003-.008. Noise .02-.05 degrees is hypothetical modest read noise, not hardware-characterized.",
+  "evaluation_rule": "Do not inspect held-out accuracy until one policy is frozen; truth used only in final evaluation. Fitting seed stays production 0.",
+  "budget": {
+    "jobs": 12,
+    "fits": 80,
+    "points": 4000,
+    "steps_per_job": 4000000,
+    "sim_s_per_job": 8000,
+    "wall_s_per_job": 600,
+    "total_steps": 48000000
+  },
+  "original_declared_utc_label_inaccurate": "2026-11-05T09:08:00Z",
+  "correction_utc": "2026-11-05T09:06:28.463851+00:00"
+}

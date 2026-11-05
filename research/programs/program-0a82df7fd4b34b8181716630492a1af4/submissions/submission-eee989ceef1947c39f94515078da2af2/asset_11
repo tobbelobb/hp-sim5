@@ -1,0 +1,76 @@
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+import {createHeadlessWorld} from '/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/hp-sim-3d/app/headlessWorld.js';
+import {SceneEntityInfoComponent,CoefficientOfFrictionComponent} from '/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/src/js/cable_joints_3d/ecs.js';
+const S='/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51';
+const spec=JSON.parse(fs.readFileSync(`${S}/harness/dev1.json`));
+const terminal=JSON.parse(fs.readFileSync(`${S}/runs/dev1-consistent-preload/sweeps.headless/terminal-native.json`));
+const arm=process.argv[2];
+if(!['active','zero'].includes(arm))throw Error('Specify active or zero');
+const {world,dt}=createHeadlessWorld(fs.readFileSync(spec.scene,'utf8'),{lineLayeringEnabled:false});
+for(const id of world.query([SceneEntityInfoComponent])){
+ const route=/^Anchor([ABCD])/.exec(world.getComponent(id,SceneEntityInfoComponent).name)?.[1];
+ if(route)world.addComponent(id,new CoefficientOfFrictionComponent(arm==='active'?spec.mu['ABCD'.indexOf(route)]:0));
+}
+world.update(dt); // Ordinary production preparation, pinned Node; never call prepare manually.
+const engine=world.getResource('cableSolverBackend');
+// Construct a diagnostic state from observed terminal geometry, motor commands,
+// local rest lengths and path storage. This is not an exact full-state replay:
+// hidden knot/history fields retain the newly loaded scene values.
+for(const e of terminal.entities){
+ const o=engine.index.get(e.id)*160,a=engine.entityRegion.data;
+ a.set(e.position_m,o);a.set(e.quaternion_xyzw,o+3);
+ a.set(e.position_m,o+7);a.set(e.quaternion_xyzw,o+10);
+ a.set(e.velocity_m_s,o+69);a.set(e.angular_velocity_rad_s,o+72);
+ a.set(e.position_m,o+83);a.set(e.quaternion_xyzw,o+86);
+ a.set(e.position_m,o+90);a.set(e.quaternion_xyzw,o+93);
+ a[o+66]=e.encoder_rad;a[o+57]=+e.torque_mode;a[o+107]=e.commanded_angle_rad;
+ a[o+113]=+e.closed_loop;a[o+114]=e.target_torque_nm;
+}
+for(const snap of terminal.paths){
+ const p=engine.transport.path(engine.pathIds.indexOf(snap.id)),n=p[0];
+ p[7]=snap.total_rest_length_m;
+ for(let l=0;l<=n;l++)p[16+l*5+2]=snap.stored_m[l];
+ for(let j=0;j<n;j++){
+  const o=16+(n+1)*5+j*16,s=snap.joints[j];
+  p[o+3]=s.rest_length_m;p.set(s.point_a_m,o+4);p.set(s.point_b_m,o+7);
+ }
+}
+const cId=terminal.entities.find(e=>e.name==='SpoolC').id;
+const effId=terminal.entities.find(e=>e.name==='Effector').id;
+const cOffset=engine.index.get(cId)*160,effOffset=engine.index.get(effId)*160;
+let targetWork=0,cableWork=0;
+function observe(step){
+ engine.refreshMemory();const a=engine.entityRegion.data,o=cOffset;
+ const paths=engine.pathIds.flatMap((id,i)=>{
+  const p=engine.transport.path(i),n=p[0],base=16+(n+1)*5;
+  if(engine.ids[p[base+1]]!==cId)return [];
+  const joints=Array.from({length:n},(_,j)=>{const k=base+j*16;
+   const length=Math.hypot(...Array.from(p.slice(k+4,k+7)).map((x,t)=>x-p[k+7+t]));
+   return {id:p[k],length_m:length,rest_m:p[k+3],extension_m:length-p[k+3],local_force_n:p[k+11],transferred_force_n:p[k+12]};});
+  return [{id,stored_m:p[18],rest_sum_m:joints.reduce((v,j)=>v+j.rest_m,0),total_rest_m:p[7],joints}];
+ });
+ const omega=a[o+74],torque=a[o+59];
+ return {step,simulated_s:step*dt,omega_rad_s:omega,encoder_rad:a[o+66],target_torque_nm:a[o+114],cable_load_torque_nm:torque,
+  rotor_inertia_kg_m2:a[o+33],rotor_energy_j:.5*a[o+33]*omega*omega,
+  target_power_w:a[o+114]*omega,cable_load_power_w:torque*omega,target_work_j:targetWork,cable_load_work_j:cableWork,
+  local_tension_torque_bound_nm:paths.reduce((v,p)=>v+p.joints[0].local_force_n*a[o+104],0),
+  effector_position_m:Array.from(a.slice(effOffset,effOffset+3)),effector_velocity_m_s:Array.from(a.slice(effOffset+69,effOffset+72)),paths};
+}
+const samples=[observe(0)],keep=new Set([1,2,5,10,50,100,500,1000,2000,4000]);
+let prev=samples[0];
+for(let step=1;step<=4000;step++){
+ world.update(dt);const now=observe(step);
+ targetWork+=.5*(prev.target_power_w+now.target_power_w)*dt;
+ cableWork+=.5*(prev.cable_load_power_w+now.cable_load_power_w)*dt;
+ now.target_work_j=targetWork;now.cable_load_work_j=cableWork;
+ if(keep.has(step))samples.push(now);prev=now;
+}
+const out={arm,utc:new Date().toISOString(),node_version:process.version,physics_engine:engine.physicsEngine,artifact_sha256:engine.artifactInfo.sha256,
+ steps:4001,simulated_s:4001*dt,source_sha256:createHash('sha256').update(fs.readFileSync(import.meta.filename)).digest('hex'),
+ construction:'Fresh native world, ordinary first step, then terminal observed geometry/motor commands/rest lengths/storage restored. Hidden knot/history retained from initial scene. Controlled diagnostic, not exact replay.',
+ units:'SI. Local and transferred forces are modeled constraints. Power uses signed world-z spool omega and native commanded/load torques. Work is trapezoid sample integration, not full energy audit; motor losses and body work omitted.',
+ samples};
+fs.writeFileSync(`${S}/evidence/torque-slack-${arm}.json`,JSON.stringify(out,null,2));
+console.log(JSON.stringify({arm,steps:out.steps,samples:samples.map(s=>({step:s.step,omega:s.omega_rad_s,cable_load:s.cable_load_torque_nm,local_bound:s.local_tension_torque_bound_nm,extension:s.paths.map(p=>p.joints[0].extension_m)}))}));
+engine.dispose();

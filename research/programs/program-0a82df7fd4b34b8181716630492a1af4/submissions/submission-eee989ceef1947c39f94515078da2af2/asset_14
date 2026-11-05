@@ -1,0 +1,3647 @@
+{
+  "dev1-consistent-preload": {
+    "status": {
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+          "nodeApiHeaders": {
+            "directory": "/workspace/hp-sim5/src/wasm/cable_solver/native/node-api",
+            "sha256": {
+              "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+              "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+              "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+              "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+            }
+          },
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+            "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+            "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+          },
+          "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+        }
+      },
+      "step": 1283333,
+      "epoch": 0,
+      "total_steps": 1283333,
+      "dt_s": 0.002,
+      "simulated_s": 2566.666,
+      "collector_time_s": 2566.6659999531303,
+      "wall_s": 276.91433426699996,
+      "queue_length": 4,
+      "error": null,
+      "recording_drained": false,
+      "baked_scene_file": "baked-scene.usda",
+      "baked_scene_sha256": "efcc5e0ab5a74290e7b3faf663cfb7d54340402d314c4bc13cbeda89374093de",
+      "settings": {
+        "enableLayering": false,
+        "closedLoopMotorsEnabled": true,
+        "physicsSubsteps": 1,
+        "timeScale": 25
+      }
+    },
+    "node_version": "v23.11.1",
+    "units": "m, s, rad, N, Nm; simulated constraint forces, not measured tension",
+    "stage": "terminal after collector cleanup, final stop commands may already zero motor targets; inspect command journal for pre-stop command",
+    "entities": [
+      {
+        "id": 0,
+        "name": "SpoolA",
+        "position_m": [
+          0,
+          -2.5,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          2.4567015088905464e-12,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": -25.13274122871343,
+        "torque_mode": false,
+        "commanded_angle_rad": -94.24777960768888,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 1,
+        "name": "AnchorAL",
+        "position_m": [
+          -0.346410161513775,
+          -2.1,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.003,
+        "radius_m": 0.01
+      },
+      {
+        "id": 2,
+        "name": "AnchorAR",
+        "position_m": [
+          0.346410161513775,
+          -2.1,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.003,
+        "radius_m": 0.01
+      },
+      {
+        "id": 3,
+        "name": "AttachAL",
+        "position_m": [
+          -0.2709326327511046,
+          -1.0363676271158972,
+          0.29541149443487036
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -3.3985269529135387e-06,
+          2.505340268577072e-06,
+          -0.01964156295115093
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 4,
+        "name": "AttachAR",
+        "position_m": [
+          0.42188767557430723,
+          -1.0362461377819687,
+          0.2953365796713755
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -3.3985269529135387e-06,
+          2.505340268577072e-06,
+          -0.01964156295115093
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 5,
+        "name": "SpoolB",
+        "position_m": [
+          2.165063509461097,
+          1.25,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          -0.8485102149902723,
+          0.5291790009601305
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 16.823228659940202,
+        "torque_mode": false,
+        "commanded_angle_rad": 111.071008267634,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 6,
+        "name": "AnchorBL",
+        "position_m": [
+          1.991858428704209,
+          0.75,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.008,
+        "radius_m": 0.01
+      },
+      {
+        "id": 7,
+        "name": "AnchorBR",
+        "position_m": [
+          1.645448267190434,
+          1.35,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.008,
+        "radius_m": 0.01
+      },
+      {
+        "id": 8,
+        "name": "AttachBR",
+        "position_m": [
+          0.07537231463743847,
+          -0.43630689430342956,
+          0.29543022362244353
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -3.3985269529135387e-06,
+          2.505340268577072e-06,
+          -0.01964156295115093
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 9,
+        "name": "SpoolC",
+        "position_m": [
+          -2.165063509461097,
+          1.25,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          -0.47326020344206216,
+          0.8809226866405349
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0.26183768988468575
+        ],
+        "encoder_rad": 24.146765207107585,
+        "torque_mode": true,
+        "commanded_angle_rad": -62.83185307190267,
+        "target_torque_nm": -0.0309916,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 10,
+        "name": "AnchorCL",
+        "position_m": [
+          -1.645448267190433,
+          1.35,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.006,
+        "radius_m": 0.01
+      },
+      {
+        "id": 11,
+        "name": "AnchorCR",
+        "position_m": [
+          -1.991858428704209,
+          0.75,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.006,
+        "radius_m": 0.01
+      },
+      {
+        "id": 12,
+        "name": "SpoolD",
+        "position_m": [
+          0,
+          0,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 13,
+        "name": "AnchorD0",
+        "position_m": [
+          -0.346410161513775,
+          -0.2,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004,
+        "radius_m": 0.01
+      },
+      {
+        "id": 14,
+        "name": "AnchorD1",
+        "position_m": [
+          0.346410161513775,
+          -0.2,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004,
+        "radius_m": 0.01
+      },
+      {
+        "id": 15,
+        "name": "AnchorD2",
+        "position_m": [
+          0,
+          0.4,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004,
+        "radius_m": 0.01
+      },
+      {
+        "id": 16,
+        "name": "Effector",
+        "position_m": [
+          0.07544245273891331,
+          -0.8363068865861819,
+          0.2954320460242834
+        ],
+        "quaternion_xyzw": [
+          4.681758475974357e-05,
+          5.406923663088999e-05,
+          8.767493900249317e-05,
+          0.9999999935988684
+        ],
+        "velocity_m_s": [
+          -3.2725104848196906e-06,
+          2.4124652275858693e-06,
+          -1.5055910129735395e-06
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": null
+      }
+    ],
+    "paths": [
+      {
+        "id": 35,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.7539822368622604,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 17,
+            "entity_a": 0,
+            "entity_b": 1,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5278260159702095,
+            "point_a_m": [
+              0.021527931238343945,
+              -2.4791062646566697,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "constraint_lambda": -3.785133637455473e-05,
+            "constraint_force_n": 9.462834093638682,
+            "transferred_constraint_force_n": 3.040928380451264,
+            "constraint_force_vector_n": [
+              6.590465038344353,
+              -6.79050805625701,
+              0
+            ]
+          },
+          {
+            "id": 18,
+            "entity_a": 1,
+            "entity_b": 3,
+            "length_m": 1.1674873751077497,
+            "rest_length_m": 1.1670116675511795,
+            "point_a_m": [
+              -0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.2709326327511046,
+              -1.0363676271158972,
+              0.29541149443487036
+            ],
+            "constraint_lambda": -1.2163713521805056e-05,
+            "constraint_force_n": 3.040928380451264,
+            "transferred_constraint_force_n": 9.462834093638682,
+            "constraint_force_vector_n": [
+              -0.1965946392178743,
+              -2.770419567724643,
+              -1.2382937380254924
+            ]
+          }
+        ]
+      },
+      {
+        "id": 36,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.7539822368622604,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 19,
+            "entity_a": 0,
+            "entity_b": 2,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5277863947342769,
+            "point_a_m": [
+              0.023754853705218213,
+              -2.518322306771902,
+              -0.18
+            ],
+            "point_b_m": [
+              0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "constraint_lambda": -4.102103524916245e-05,
+            "constraint_force_n": 10.255258812290611,
+            "transferred_constraint_force_n": 2.962587462164018,
+            "constraint_force_vector_n": [
+              -6.26333326613461,
+              -8.120405759837114,
+              0
+            ]
+          },
+          {
+            "id": 20,
+            "entity_a": 2,
+            "entity_b": 4,
+            "length_m": 1.1675675562836687,
+            "rest_length_m": 1.1670512887873665,
+            "point_a_m": [
+              0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "point_b_m": [
+              0.42188767557430723,
+              -1.0362461377819687,
+              0.2953365796713755
+            ],
+            "constraint_lambda": -1.185034984865607e-05,
+            "constraint_force_n": 2.962587462164018,
+            "transferred_constraint_force_n": 10.255258812290611,
+            "constraint_force_vector_n": [
+              -0.19164142255241057,
+              -2.6991468556312217,
+              -1.2061526801651665
+            ]
+          }
+        ]
+      },
+      {
+        "id": 37,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.49530314020439475,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 21,
+            "entity_a": 5,
+            "entity_b": 6,
+            "length_m": 0.5282991576748917,
+            "rest_length_m": 0.5282999901948789,
+            "point_a_m": [
+              2.136205038254652,
+              1.2581968676716653,
+              -0.18
+            ],
+            "point_b_m": [
+              1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0.9514928677613321,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 22,
+            "entity_a": 6,
+            "entity_b": 4,
+            "length_m": 2.4251656220551108,
+            "rest_length_m": 2.4252167899865777,
+            "point_a_m": [
+              1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "point_b_m": [
+              0.42188767557430723,
+              -1.0362461377819687,
+              0.2953365796713755
+            ],
+            "constraint_lambda": -3.8059714710453286e-06,
+            "constraint_force_n": 0.9514928677613321,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0.6159269392032187,
+              0.7008737140049494,
+              -0.1864100855140271
+            ]
+          }
+        ]
+      },
+      {
+        "id": 38,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.49530314020439475,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 23,
+            "entity_a": 5,
+            "entity_b": 7,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5282596647523138,
+            "point_a_m": [
+              2.1690536657288866,
+              1.2797334601578527,
+              -0.18
+            ],
+            "point_b_m": [
+              1.645448267190434,
+              1.35,
+              -0.18
+            ],
+            "constraint_lambda": -3.159433806212419e-06,
+            "constraint_force_n": 0.7898584515531047,
+            "transferred_constraint_force_n": 1.9066451959826183,
+            "constraint_force_vector_n": [
+              0.7828408266532514,
+              -0.10505528837103965,
+              0
+            ]
+          },
+          {
+            "id": 24,
+            "entity_a": 7,
+            "entity_b": 8,
+            "length_m": 2.4252968302776563,
+            "rest_length_m": 2.4252571154294333,
+            "point_a_m": [
+              1.645448267190434,
+              1.35,
+              -0.18
+            ],
+            "point_b_m": [
+              0.07537231463743847,
+              -0.43630689430342956,
+              0.29543022362244353
+            ],
+            "constraint_lambda": -7.6265807839304736e-06,
+            "constraint_force_n": 1.9066451959826183,
+            "transferred_constraint_force_n": 0.7898584515531047,
+            "constraint_force_vector_n": [
+              1.2342381834826157,
+              1.4043782204651007,
+              -0.3737296130632511
+            ]
+          }
+        ]
+      },
+      {
+        "id": 39,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.27559704378761263,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 25,
+            "entity_a": 9,
+            "entity_b": 10,
+            "length_m": 0.5282991576748922,
+            "rest_length_m": 0.6477189885198332,
+            "point_a_m": [
+              -2.157732969492996,
+              1.2209093969850044,
+              -0.18
+            ],
+            "point_b_m": [
+              -1.645448267190433,
+              1.35,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 1.3753459039306655,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 26,
+            "entity_a": 10,
+            "entity_b": 8,
+            "length_m": 2.525499889727193,
+            "rest_length_m": 2.5255038880768033,
+            "point_a_m": [
+              -1.645448267190433,
+              1.35,
+              -0.18
+            ],
+            "point_b_m": [
+              0.07537231463743847,
+              -0.43630689430342956,
+              0.29543022362244353
+            ],
+            "constraint_lambda": -5.501383615722662e-06,
+            "constraint_force_n": 1.3753459039306655,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              -0.9371185774800482,
+              0.9728179122060341,
+              -0.2588637419410514
+            ]
+          }
+        ]
+      },
+      {
+        "id": 40,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.2755970437875827,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 27,
+            "entity_a": 9,
+            "entity_b": 11,
+            "length_m": 0.5282991576748917,
+            "rest_length_m": 0.6475941769169735,
+            "point_a_m": [
+              -2.1928085194341045,
+              1.238588846614049,
+              -0.18
+            ],
+            "point_b_m": [
+              -1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0.5004418109811658,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 28,
+            "entity_a": 11,
+            "entity_b": 3,
+            "length_m": 2.525611011898963,
+            "rest_length_m": 2.525628699679655,
+            "point_a_m": [
+              -1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.2709326327511046,
+              -1.0363676271158972,
+              0.29541149443487036
+            ],
+            "constraint_lambda": -2.0017672439246634e-06,
+            "constraint_force_n": 0.5004418109811658,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              -0.3409914133086404,
+              0.3539780425608517,
+              -0.09416160370699281
+            ]
+          }
+        ]
+      },
+      {
+        "id": 41,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.298873413503582,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.000000000000001,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 29,
+            "entity_a": 12,
+            "entity_b": 13,
+            "length_m": 0.3988734135035822,
+            "rest_length_m": 0.3987642103692217,
+            "point_a_m": [
+              -0.01690631016489935,
+              0.024782588174123803,
+              2
+            ],
+            "point_b_m": [
+              -0.346410161513775,
+              -0.2,
+              2
+            ],
+            "constraint_lambda": -8.736250748837547e-06,
+            "constraint_force_n": 2.1840626872093867,
+            "transferred_constraint_force_n": 1.780732324658351,
+            "constraint_force_vector_n": [
+              1.8042242041193468,
+              1.230814706984848,
+              0
+            ]
+          },
+          {
+            "id": 32,
+            "entity_a": 13,
+            "entity_b": 3,
+            "length_m": 1.9002183133367485,
+            "rest_length_m": 1.9001092031343616,
+            "point_a_m": [
+              -0.346410161513775,
+              -0.2,
+              2
+            ],
+            "point_b_m": [
+              -0.2709326327511046,
+              -1.0363676271158972,
+              0.29541149443487036
+            ],
+            "constraint_lambda": -7.122929298633405e-06,
+            "constraint_force_n": 1.780732324658351,
+            "transferred_constraint_force_n": 2.1840626872093867,
+            "constraint_force_vector_n": [
+              -0.07073190150544943,
+              0.7837797895988917,
+              1.5974022197333002
+            ]
+          }
+        ]
+      },
+      {
+        "id": 42,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.298873413503582,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.000000000000001,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 30,
+            "entity_a": 12,
+            "entity_b": 14,
+            "length_m": 0.39887341350358224,
+            "rest_length_m": 0.39875730572929236,
+            "point_a_m": [
+              -0.013009195847869378,
+              -0.027032588174123802,
+              2
+            ],
+            "point_b_m": [
+              0.346410161513775,
+              -0.2,
+              2
+            ],
+            "constraint_lambda": -9.28862194319091e-06,
+            "constraint_force_n": 2.3221554857977273,
+            "transferred_constraint_force_n": 1.8473982165291292,
+            "constraint_force_vector_n": [
+              -2.0924624307950785,
+              1.0069791834648962,
+              0
+            ]
+          },
+          {
+            "id": 33,
+            "entity_a": 14,
+            "entity_b": 4,
+            "length_m": 1.9002320475906362,
+            "rest_length_m": 1.900116107774291,
+            "point_a_m": [
+              0.346410161513775,
+              -0.2,
+              2
+            ],
+            "point_b_m": [
+              0.42188767557430723,
+              -1.0362461377819687,
+              0.2953365796713755
+            ],
+            "constraint_lambda": -7.389592866116517e-06,
+            "constraint_force_n": 1.8473982165291292,
+            "transferred_constraint_force_n": 2.3221554857977273,
+            "constraint_force_vector_n": [
+              -0.07335868015194236,
+              0.8129885382836924,
+              1.6572713450430252
+            ]
+          }
+        ]
+      },
+      {
+        "id": 43,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.2988734135035824,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.000000000000001,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 31,
+            "entity_a": 12,
+            "entity_b": 15,
+            "length_m": 0.39887341350358263,
+            "rest_length_m": 0.398788121527746,
+            "point_a_m": [
+              0.029915506012768694,
+              0.0022500000000000016,
+              2
+            ],
+            "point_b_m": [
+              0,
+              0.4,
+              2
+            ],
+            "constraint_lambda": -6.823358066929685e-06,
+            "constraint_force_n": 1.7058395167324212,
+            "transferred_constraint_force_n": 1.0014422095915831,
+            "constraint_force_vector_n": [
+              0.12793796375493158,
+              -1.7010350773209066,
+              0
+            ]
+          },
+          {
+            "id": 34,
+            "entity_a": 15,
+            "entity_b": 8,
+            "length_m": 1.9001706054491754,
+            "rest_length_m": 1.9000852919758382,
+            "point_a_m": [
+              0,
+              0.4,
+              2
+            ],
+            "point_b_m": [
+              0.07537231463743847,
+              -0.43630689430342956,
+              0.29543022362244353
+            ],
+            "constraint_lambda": -4.005768838366333e-06,
+            "constraint_force_n": 1.0014422095915831,
+            "transferred_constraint_force_n": 1.7058395167324212,
+            "constraint_force_vector_n": [
+              -0.039723384802282866,
+              0.440746444795636,
+              0.8983602413572904
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "eval0-default": {
+    "status": {
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+          "nodeApiHeaders": {
+            "directory": "/workspace/hp-sim5/src/wasm/cable_solver/native/node-api",
+            "sha256": {
+              "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+              "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+              "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+              "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+            }
+          },
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+            "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+            "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+          },
+          "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+        }
+      },
+      "step": 1432483,
+      "epoch": 0,
+      "total_steps": 1432483,
+      "dt_s": 0.002,
+      "simulated_s": 2864.966,
+      "collector_time_s": 2864.9659999460764,
+      "wall_s": 291.22229799999997,
+      "queue_length": 4,
+      "error": null,
+      "recording_drained": false,
+      "baked_scene_file": "baked-scene.usda",
+      "baked_scene_sha256": "d4adadf20668830615b2cb4fcfbf2ba4ba3802b755f52e87dfac6c3d292073d0",
+      "settings": {
+        "enableLayering": false,
+        "closedLoopMotorsEnabled": true,
+        "physicsSubsteps": 1,
+        "timeScale": 25
+      }
+    },
+    "node_version": "v23.11.1",
+    "units": "m, s, rad, N, Nm; simulated constraint forces, not measured tension",
+    "stage": "terminal after collector cleanup, final stop commands may already zero motor targets; inspect command journal for pre-stop command",
+    "entities": [
+      {
+        "id": 0,
+        "name": "SpoolA",
+        "position_m": [
+          0,
+          -2.5,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          1.2350702323669518e-11,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": -25.132741228693643,
+        "torque_mode": false,
+        "commanded_angle_rad": -75.39822368613034,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 1,
+        "name": "AnchorAL",
+        "position_m": [
+          -0.346410161513775,
+          -2.1,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.008,
+        "radius_m": 0.01
+      },
+      {
+        "id": 2,
+        "name": "AnchorAR",
+        "position_m": [
+          0.346410161513775,
+          -2.1,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.008,
+        "radius_m": 0.01
+      },
+      {
+        "id": 3,
+        "name": "AttachAL",
+        "position_m": [
+          -0.40089708632095816,
+          -1.0347491803921147,
+          0.29386336197136254
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -2.080901981976746e-06,
+          -1.5340059222879177e-06,
+          -0.019639064003685307
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 4,
+        "name": "AttachAR",
+        "position_m": [
+          0.29192323620887,
+          -1.0347266108084714,
+          0.2938499352175565
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -2.080901981976746e-06,
+          -1.5340059222879177e-06,
+          -0.019639064003685307
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 5,
+        "name": "SpoolB",
+        "position_m": [
+          2.165063509461097,
+          1.25,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          -0.9217299123579916,
+          0.3878323976468818
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0.21893417301705942
+        ],
+        "encoder_rad": 29.070891398921137,
+        "torque_mode": true,
+        "commanded_angle_rad": 125.66370614377934,
+        "target_torque_nm": -0.0136363,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 6,
+        "name": "AnchorBL",
+        "position_m": [
+          1.991858428704209,
+          0.75,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.0035,
+        "radius_m": 0.01
+      },
+      {
+        "id": 7,
+        "name": "AnchorBR",
+        "position_m": [
+          1.645448267190434,
+          1.35,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.0035,
+        "radius_m": 0.01
+      },
+      {
+        "id": 8,
+        "name": "AttachBR",
+        "position_m": [
+          -0.05450647002213295,
+          -0.434737897585126,
+          0.293901367648777
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -2.080901981976746e-06,
+          -1.5340059222879177e-06,
+          -0.019639064003685307
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 9,
+        "name": "SpoolC",
+        "position_m": [
+          -2.165063509461097,
+          1.25,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          -0.7242470829780585,
+          0.689540544709137
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 17.229672209454392,
+        "torque_mode": false,
+        "commanded_angle_rad": -26.75262494080271,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 10,
+        "name": "AnchorCL",
+        "position_m": [
+          -1.645448267190433,
+          1.35,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.0045,
+        "radius_m": 0.01
+      },
+      {
+        "id": 11,
+        "name": "AnchorCR",
+        "position_m": [
+          -1.991858428704209,
+          0.75,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.0045,
+        "radius_m": 0.01
+      },
+      {
+        "id": 12,
+        "name": "SpoolD",
+        "position_m": [
+          0,
+          0,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          1.991933633088946e-20,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 3.983867266177892e-20,
+        "torque_mode": false,
+        "commanded_angle_rad": 3.983867266177892e-20,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 13,
+        "name": "AnchorD0",
+        "position_m": [
+          -0.346410161513775,
+          -0.2,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.006,
+        "radius_m": 0.01
+      },
+      {
+        "id": 14,
+        "name": "AnchorD1",
+        "position_m": [
+          0.346410161513775,
+          -0.2,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.006,
+        "radius_m": 0.01
+      },
+      {
+        "id": 15,
+        "name": "AnchorD2",
+        "position_m": [
+          0,
+          0.4,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.006,
+        "radius_m": 0.01
+      },
+      {
+        "id": 16,
+        "name": "Effector",
+        "position_m": [
+          -0.05449344022635685,
+          -0.8347378963958162,
+          0.29391083502633614
+        ],
+        "quaternion_xyzw": [
+          3.7265600290558726e-05,
+          9.690502604158285e-06,
+          1.628777095572129e-05,
+          0.9999999991260389
+        ],
+        "velocity_m_s": [
+          -2.171710210968625e-06,
+          -1.6009619741019776e-06,
+          9.762150532388603e-07
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": null
+      }
+    ],
+    "paths": [
+      {
+        "id": 35,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.7539822368875013,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 17,
+            "entity_a": 0,
+            "entity_b": 1,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5279841850380677,
+            "point_a_m": [
+              0.021527931238343945,
+              -2.4791062646566697,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "constraint_lambda": -2.5197810945902785e-05,
+            "constraint_force_n": 6.299452736475696,
+            "transferred_constraint_force_n": 1.927840571398426,
+            "constraint_force_vector_n": [
+              4.387303276124725,
+              -4.520472845001546,
+              0
+            ]
+          },
+          {
+            "id": 18,
+            "entity_a": 1,
+            "entity_b": 3,
+            "length_m": 1.167165206587747,
+            "rest_length_m": 1.1668534984578924,
+            "point_a_m": [
+              -0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.40089708632095816,
+              -1.0347491803921147,
+              0.29386336197136254
+            ],
+            "constraint_lambda": -7.711362285593704e-06,
+            "constraint_force_n": 1.927840571398426,
+            "transferred_constraint_force_n": 6.299452736475696,
+            "constraint_force_vector_n": [
+              0.08999763157875286,
+              -1.759505627107739,
+              -0.7826938374717322
+            ]
+          }
+        ]
+      },
+      {
+        "id": 36,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.7539822368875013,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 19,
+            "entity_a": 0,
+            "entity_b": 2,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5279784759533542,
+            "point_a_m": [
+              0.023754853705218213,
+              -2.518322306771902,
+              -0.18
+            ],
+            "point_b_m": [
+              0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "constraint_lambda": -2.5654537722976652e-05,
+            "constraint_force_n": 6.413634430744163,
+            "transferred_constraint_force_n": 1.8942065720954688,
+            "constraint_force_vector_n": [
+              -3.91708591876422,
+              -5.078498254035938,
+              0
+            ]
+          },
+          {
+            "id": 20,
+            "entity_a": 2,
+            "entity_b": 4,
+            "length_m": 1.1671803544673252,
+            "rest_length_m": 1.1668592075425788,
+            "point_a_m": [
+              0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "point_b_m": [
+              0.29192323620887,
+              -1.0347266108084714,
+              0.2938499352175565
+            ],
+            "constraint_lambda": -7.576826288381875e-06,
+            "constraint_force_n": 1.8942065720954688,
+            "transferred_constraint_force_n": 6.413634430744163,
+            "constraint_force_vector_n": [
+              0.08835780572393812,
+              -1.7288202844741345,
+              -0.7690200647109875
+            ]
+          }
+        ]
+      },
+      {
+        "id": 37,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.12787325803490837,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 21,
+            "entity_a": 5,
+            "entity_b": 6,
+            "length_m": 0.5282991576748917,
+            "rest_length_m": 0.8110166265147599,
+            "point_a_m": [
+              2.136205038254652,
+              1.2581968676716653,
+              -0.18
+            ],
+            "point_b_m": [
+              1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0.38158723628643015,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 22,
+            "entity_a": 6,
+            "entity_b": 4,
+            "length_m": 2.5098929250304165,
+            "rest_length_m": 2.5099300358403474,
+            "point_a_m": [
+              1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "point_b_m": [
+              0.29192323620887,
+              -1.0347266108084714,
+              0.2938499352175565
+            ],
+            "constraint_lambda": -1.5263489451457207e-06,
+            "constraint_force_n": 0.38158723628643015,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0.258435715016405,
+              0.27135358100075163,
+              -0.0720210676034718
+            ]
+          }
+        ]
+      },
+      {
+        "id": 38,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.12787325803489388,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 23,
+            "entity_a": 5,
+            "entity_b": 7,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.8110072945395994,
+            "point_a_m": [
+              2.1690536657288866,
+              1.2797334601578527,
+              -0.18
+            ],
+            "point_b_m": [
+              1.645448267190434,
+              1.35,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0.8197731001937099,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 24,
+            "entity_a": 7,
+            "entity_b": 8,
+            "length_m": 2.509923898827892,
+            "rest_length_m": 2.509939367815497,
+            "point_a_m": [
+              1.645448267190434,
+              1.35,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.05450647002213295,
+              -0.434737897585126,
+              0.293901367648777
+            ],
+            "constraint_lambda": -3.2790924007748395e-06,
+            "constraint_force_n": 0.8197731001937099,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0.5552022445634722,
+              0.5829434393019047,
+              -0.15477515953070556
+            ]
+          }
+        ]
+      },
+      {
+        "id": 39,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.48310983371661237,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 25,
+            "entity_a": 9,
+            "entity_b": 10,
+            "length_m": 0.5282991576748922,
+            "rest_length_m": 0.5282992330306472,
+            "point_a_m": [
+              -2.157732969492996,
+              1.2209093969850044,
+              -0.18
+            ],
+            "point_b_m": [
+              -1.645448267190433,
+              1.35,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 1.042306600120417,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 26,
+            "entity_a": 10,
+            "entity_b": 8,
+            "length_m": 2.4374100334808375,
+            "rest_length_m": 2.437410853635798,
+            "point_a_m": [
+              -1.645448267190433,
+              1.35,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.05450647002213295,
+              -0.434737897585126,
+              0.293901367648777
+            ],
+            "constraint_lambda": -4.1692264004816686e-06,
+            "constraint_force_n": 1.042306600120417,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              -0.6803200471891562,
+              0.7632216570040029,
+              -0.20263362092010148
+            ]
+          }
+        ]
+      },
+      {
+        "id": 40,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.48310983371653443,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 27,
+            "entity_a": 9,
+            "entity_b": 11,
+            "length_m": 0.5282991576748917,
+            "rest_length_m": 0.528292764082068,
+            "point_a_m": [
+              -2.1928085194341045,
+              1.238588846614049,
+              -0.18
+            ],
+            "point_b_m": [
+              -1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "constraint_lambda": -5.114874258893564e-07,
+            "constraint_force_n": 0.12787185647233912,
+            "transferred_constraint_force_n": 0.6192724868686971,
+            "constraint_force_vector_n": [
+              -0.048638845598405485,
+              0.11826019776973558,
+              0
+            ]
+          },
+          {
+            "id": 28,
+            "entity_a": 11,
+            "entity_b": 3,
+            "length_m": 2.437423663560983,
+            "rest_length_m": 2.4374173225846194,
+            "point_a_m": [
+              -1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.40089708632095816,
+              -1.0347491803921147,
+              0.29386336197136254
+            ],
+            "constraint_lambda": -2.4770899474747883e-06,
+            "constraint_force_n": 0.6192724868686971,
+            "transferred_constraint_force_n": 0.12787185647233912,
+            "constraint_force_vector_n": [
+              -0.40420690566638745,
+              0.4534629277092259,
+              -0.12036014123256154
+            ]
+          }
+        ]
+      },
+      {
+        "id": 41,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.298873413503582,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999999998,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 29,
+            "entity_a": 12,
+            "entity_b": 13,
+            "length_m": 0.3988734135035822,
+            "rest_length_m": 0.3987842688087053,
+            "point_a_m": [
+              -0.01690631016489935,
+              0.024782588174123803,
+              2
+            ],
+            "point_b_m": [
+              -0.346410161513775,
+              -0.2,
+              2
+            ],
+            "constraint_lambda": -7.131575590149097e-06,
+            "constraint_force_n": 1.7828938975372741,
+            "transferred_constraint_force_n": 1.3010021313707796,
+            "constraint_force_vector_n": [
+              1.4728241740274917,
+              1.0047385740957147,
+              0
+            ]
+          },
+          {
+            "id": 32,
+            "entity_a": 13,
+            "entity_b": 3,
+            "length_m": 1.9001782144746089,
+            "rest_length_m": 1.9000891446948776,
+            "point_a_m": [
+              -0.346410161513775,
+              -0.2,
+              2
+            ],
+            "point_b_m": [
+              -0.40089708632095816,
+              -1.0347491803921147,
+              0.29386336197136254
+            ],
+            "constraint_lambda": -5.204008525483118e-06,
+            "constraint_force_n": 1.3010021313707796,
+            "transferred_constraint_force_n": 1.7828938975372741,
+            "constraint_force_vector_n": [
+              0.03730575950353286,
+              0.5715335891863605,
+              1.1681456170233797
+            ]
+          }
+        ]
+      },
+      {
+        "id": 42,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.298873413503582,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999999998,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 30,
+            "entity_a": 12,
+            "entity_b": 14,
+            "length_m": 0.39887341350358224,
+            "rest_length_m": 0.39878288119398975,
+            "point_a_m": [
+              -0.013009195847869378,
+              -0.027032588174123802,
+              2
+            ],
+            "point_b_m": [
+              0.346410161513775,
+              -0.2,
+              2
+            ],
+            "constraint_lambda": -7.242584767399584e-06,
+            "constraint_force_n": 1.810646191849896,
+            "transferred_constraint_force_n": 1.2317569206152963,
+            "constraint_force_vector_n": [
+              -1.63154842777746,
+              0.785168364032472,
+              0
+            ]
+          },
+          {
+            "id": 33,
+            "entity_a": 14,
+            "entity_b": 4,
+            "length_m": 1.9001803554868462,
+            "rest_length_m": 1.9000905323095922,
+            "point_a_m": [
+              0.346410161513775,
+              -0.2,
+              2
+            ],
+            "point_b_m": [
+              0.29192323620887,
+              -1.0347266108084714,
+              0.2938499352175565
+            ],
+            "constraint_lambda": -4.9270276824611856e-06,
+            "constraint_force_n": 1.2317569206152963,
+            "transferred_constraint_force_n": 1.810646191849896,
+            "constraint_force_vector_n": [
+              0.0353267953148596,
+              0.5410964708189081,
+              1.1059799900015288
+            ]
+          }
+        ]
+      },
+      {
+        "id": 43,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.2988734135035824,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999999998,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 31,
+            "entity_a": 12,
+            "entity_b": 15,
+            "length_m": 0.39887341350358263,
+            "rest_length_m": 0.398803672095678,
+            "point_a_m": [
+              0.029915506012768694,
+              0.0022500000000000016,
+              2
+            ],
+            "point_b_m": [
+              0,
+              0.4,
+              2
+            ],
+            "constraint_lambda": -5.579312632368881e-06,
+            "constraint_force_n": 1.3948281580922204,
+            "transferred_constraint_force_n": 0.6936315885650255,
+            "constraint_force_vector_n": [
+              0.10461211185691653,
+              -1.390899671672897,
+              0
+            ]
+          },
+          {
+            "id": 34,
+            "entity_a": 15,
+            "entity_b": 8,
+            "length_m": 1.9001396938777486,
+            "rest_length_m": 1.9000697414079057,
+            "point_a_m": [
+              0,
+              0.4,
+              2
+            ],
+            "point_b_m": [
+              -0.05450647002213295,
+              -0.434737897585126,
+              0.293901367648777
+            ],
+            "constraint_lambda": -2.774526354260102e-06,
+            "constraint_force_n": 0.6936315885650255,
+            "transferred_constraint_force_n": 1.3948281580922204,
+            "constraint_force_vector_n": [
+              0.019897323421129536,
+              0.304711534840874,
+              0.6227999339361193
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "eval0-noise-only-default": {
+    "status": {
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+          "nodeApiHeaders": {
+            "directory": "/workspace/hp-sim5/src/wasm/cable_solver/native/node-api",
+            "sha256": {
+              "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+              "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+              "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+              "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+            }
+          },
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+            "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+            "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+          },
+          "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+        }
+      },
+      "step": 2139315,
+      "epoch": 0,
+      "total_steps": 2139315,
+      "dt_s": 0.002,
+      "simulated_s": 4278.63,
+      "collector_time_s": 4278.6299999541725,
+      "wall_s": 577.113412948,
+      "queue_length": 0,
+      "error": null,
+      "recording_drained": false,
+      "baked_scene_file": "baked-scene.usda",
+      "baked_scene_sha256": "d4adadf20668830615b2cb4fcfbf2ba4ba3802b755f52e87dfac6c3d292073d0",
+      "settings": {
+        "enableLayering": false,
+        "closedLoopMotorsEnabled": true,
+        "physicsSubsteps": 1,
+        "timeScale": 25
+      }
+    },
+    "node_version": "v23.11.1",
+    "units": "m, s, rad, N, Nm; simulated constraint forces, not measured tension",
+    "stage": "terminal after collector cleanup, final stop commands may already zero motor targets; inspect command journal for pre-stop command",
+    "entities": [
+      {
+        "id": 0,
+        "name": "SpoolA",
+        "position_m": [
+          0,
+          -2.5,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          5.937161873248442e-11,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 1.1874323746496884e-10,
+        "torque_mode": false,
+        "commanded_angle_rad": -18.849555921420016,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 1,
+        "name": "AnchorAL",
+        "position_m": [
+          -0.346410161513775,
+          -2.1,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 2,
+        "name": "AnchorAR",
+        "position_m": [
+          0.346410161513775,
+          -2.1,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 3,
+        "name": "AttachAL",
+        "position_m": [
+          -0.3464147212836863,
+          -0.2000150313076172,
+          0.09989492606418186
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -3.69762214082583e-05,
+          3.226791398715132e-05,
+          -0.019639999559658276
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 4,
+        "name": "AttachAR",
+        "position_m": [
+          0.3464056017438636,
+          -0.20001500957509827,
+          0.09989492606375311
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -3.69762214082583e-05,
+          3.226791398715132e-05,
+          -0.019639999559658276
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 5,
+        "name": "SpoolB",
+        "position_m": [
+          2.165063509461097,
+          1.25,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          2.208969571800601e-10,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 4.417939143601202e-10,
+        "torque_mode": false,
+        "commanded_angle_rad": 188.4955592158294,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 6,
+        "name": "AnchorBL",
+        "position_m": [
+          1.991858428704209,
+          0.75,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 7,
+        "name": "AnchorBR",
+        "position_m": [
+          1.645448267190434,
+          1.35,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 8,
+        "name": "AttachBR",
+        "position_m": [
+          -4.5785908247840165e-06,
+          0.39998497955864215,
+          0.09989492606406393
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          -3.69762214082583e-05,
+          3.226791398715132e-05,
+          -0.019639999559658276
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.004999999888241291,
+        "radius_m": 0.01
+      },
+      {
+        "id": 9,
+        "name": "SpoolC",
+        "position_m": [
+          -2.165063509461097,
+          1.25,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          9.50350909079134e-14,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 1.900701818158268e-13,
+        "torque_mode": false,
+        "commanded_angle_rad": 6.283185307179777,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 10,
+        "name": "AnchorCL",
+        "position_m": [
+          -1.645448267190433,
+          1.35,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 11,
+        "name": "AnchorCR",
+        "position_m": [
+          -1.991858428704209,
+          0.75,
+          -0.18
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 12,
+        "name": "SpoolD",
+        "position_m": [
+          0,
+          0,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          -8.590453652243535e-14,
+          1
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": -1.718090730448707e-13,
+        "torque_mode": false,
+        "commanded_angle_rad": -1.718090730448707e-13,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0.20000000298023224,
+        "radius_m": 0.03
+      },
+      {
+        "id": 13,
+        "name": "AnchorD0",
+        "position_m": [
+          -0.346410161513775,
+          -0.2,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 14,
+        "name": "AnchorD1",
+        "position_m": [
+          0.346410161513775,
+          -0.2,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 15,
+        "name": "AnchorD2",
+        "position_m": [
+          0,
+          0.4,
+          2
+        ],
+        "quaternion_xyzw": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "velocity_m_s": [
+          0,
+          0,
+          0
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": 0.01
+      },
+      {
+        "id": 16,
+        "name": "Effector",
+        "position_m": [
+          -4.5659491550338545e-06,
+          -1.5020130841389776e-05,
+          0.09993420606278132
+        ],
+        "quaternion_xyzw": [
+          8.092912856007629e-14,
+          3.0888382449208554e-13,
+          1.5683773532443214e-08,
+          0.9999999999999999
+        ],
+        "velocity_m_s": [
+          -3.6929024359202384e-05,
+          3.242317216940541e-05,
+          -1.6881634978815896e-10
+        ],
+        "angular_velocity_rad_s": [
+          0,
+          0,
+          0
+        ],
+        "encoder_rad": 0,
+        "torque_mode": false,
+        "commanded_angle_rad": 0,
+        "target_torque_nm": 0,
+        "closed_loop": false,
+        "mu": 0,
+        "radius_m": null
+      }
+    ],
+    "paths": [
+      {
+        "id": 35,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.0000000000152214,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 17,
+            "entity_a": 0,
+            "entity_b": 1,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5283056702082598,
+            "point_a_m": [
+              0.021527931238343945,
+              -2.4791062646566697,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 18,
+            "entity_a": 1,
+            "entity_b": 3,
+            "length_m": 1.9204905755858999,
+            "rest_length_m": 1.9205142501626533,
+            "point_a_m": [
+              -0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.3464147212836863,
+              -0.2000150313076172,
+              0.09989492606418186
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": 36,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.0000000000152214,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 19,
+            "entity_a": 0,
+            "entity_b": 2,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5283056655697741,
+            "point_a_m": [
+              0.023754853705218213,
+              -2.518322306771902,
+              -0.18
+            ],
+            "point_b_m": [
+              0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 20,
+            "entity_a": 2,
+            "entity_b": 4,
+            "length_m": 1.920490597086312,
+            "rest_length_m": 1.9205142548013536,
+            "point_a_m": [
+              0.346410161513775,
+              -2.1,
+              -0.18
+            ],
+            "point_b_m": [
+              0.3464056017438636,
+              -0.20001500957509827,
+              0.09989492606375311
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": 37,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999880378,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 21,
+            "entity_a": 5,
+            "entity_b": 6,
+            "length_m": 0.5282991576748917,
+            "rest_length_m": 0.5283000173686492,
+            "point_a_m": [
+              2.136205038254652,
+              1.2581968676716653,
+              -0.18
+            ],
+            "point_b_m": [
+              1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 22,
+            "entity_a": 6,
+            "entity_b": 4,
+            "length_m": 1.9205167777986214,
+            "rest_length_m": 1.9205199030284483,
+            "point_a_m": [
+              1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "point_b_m": [
+              0.3464056017438636,
+              -0.20001500957509827,
+              0.09989492606375311
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": 38,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999880378,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 23,
+            "entity_a": 5,
+            "entity_b": 7,
+            "length_m": 0.5282991576748914,
+            "rest_length_m": 0.5283000127302551,
+            "point_a_m": [
+              2.1690536657288866,
+              1.2797334601578527,
+              -0.18
+            ],
+            "point_b_m": [
+              1.645448267190434,
+              1.35,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 24,
+            "entity_a": 7,
+            "entity_b": 8,
+            "length_m": 1.920516799299148,
+            "rest_length_m": 1.9205199076671364,
+            "point_a_m": [
+              1.645448267190434,
+              1.35,
+              -0.18
+            ],
+            "point_b_m": [
+              -4.5785908247840165e-06,
+              0.39998497955864215,
+              0.09989492606406393
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": 39,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.0000000000444547,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 25,
+            "entity_a": 9,
+            "entity_b": 10,
+            "length_m": 0.5282991576748922,
+            "rest_length_m": 0.5283017053189976,
+            "point_a_m": [
+              -2.157732969492996,
+              1.2209093969850044,
+              -0.18
+            ],
+            "point_b_m": [
+              -1.645448267190433,
+              1.35,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 26,
+            "entity_a": 10,
+            "entity_b": 8,
+            "length_m": 1.9205089536507989,
+            "rest_length_m": 1.9205182150195592,
+            "point_a_m": [
+              -1.645448267190433,
+              1.35,
+              -0.18
+            ],
+            "point_b_m": [
+              -4.5785908247840165e-06,
+              0.39998497955864215,
+              0.09989492606406393
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": 40,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.4488199203848398,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          1.0000000000444547,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 27,
+            "entity_a": 9,
+            "entity_b": 11,
+            "length_m": 0.5282991576748917,
+            "rest_length_m": 0.5283017006808406,
+            "point_a_m": [
+              -2.1928085194341045,
+              1.238588846614049,
+              -0.18
+            ],
+            "point_b_m": [
+              -1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 28,
+            "entity_a": 11,
+            "entity_b": 3,
+            "length_m": 1.920508975151296,
+            "rest_length_m": 1.920518219659219,
+            "point_a_m": [
+              -1.991858428704209,
+              0.75,
+              -0.18
+            ],
+            "point_b_m": [
+              -0.3464147212836863,
+              -0.2000150313076172,
+              0.09989492606418186
+            ],
+            "constraint_lambda": 0,
+            "constraint_force_n": 0,
+            "transferred_constraint_force_n": 0,
+            "constraint_force_vector_n": [
+              0,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": 41,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.298873413503582,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999994191,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 29,
+            "entity_a": 12,
+            "entity_b": 13,
+            "length_m": 0.3988734135035822,
+            "rest_length_m": 0.39882087650224163,
+            "point_a_m": [
+              -0.01690631016489935,
+              0.024782588174123803,
+              2
+            ],
+            "point_b_m": [
+              -0.346410161513775,
+              -0.2,
+              2
+            ],
+            "constraint_lambda": -4.202960107244635e-06,
+            "constraint_force_n": 1.0507400268111586,
+            "transferred_constraint_force_n": 0.265139998393989,
+            "constraint_force_vector_n": [
+              0.8680019120842917,
+              0.5921378931981369,
+              0
+            ]
+          },
+          {
+            "id": 32,
+            "entity_a": 13,
+            "entity_b": 3,
+            "length_m": 1.900105074000744,
+            "rest_length_m": 1.9000525369994032,
+            "point_a_m": [
+              -0.346410161513775,
+              -0.2,
+              2
+            ],
+            "point_b_m": [
+              -0.3464147212836863,
+              -0.2000150313076172,
+              0.09989492606418186
+            ],
+            "constraint_lambda": -1.060559993575956e-06,
+            "constraint_force_n": 0.265139998393989,
+            "transferred_constraint_force_n": 1.0507400268111586,
+            "constraint_force_vector_n": [
+              6.362687008688096e-07,
+              2.0974634150559654e-06,
+              0.26513999838492924
+            ]
+          }
+        ]
+      },
+      {
+        "id": 42,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.298873413503582,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999994191,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 30,
+            "entity_a": 12,
+            "entity_b": 14,
+            "length_m": 0.39887341350358224,
+            "rest_length_m": 0.39882087650221953,
+            "point_a_m": [
+              -0.013009195847869378,
+              -0.027032588174123802,
+              2
+            ],
+            "point_b_m": [
+              0.346410161513775,
+              -0.2,
+              2
+            ],
+            "constraint_lambda": -4.2029601090165505e-06,
+            "constraint_force_n": 1.0507400272541376,
+            "transferred_constraint_force_n": 0.2651399987546986,
+            "constraint_force_vector_n": [
+              -0.9468074144942907,
+              0.45564275999148934,
+              0
+            ]
+          },
+          {
+            "id": 33,
+            "entity_a": 14,
+            "entity_b": 4,
+            "length_m": 1.9001050740010008,
+            "rest_length_m": 1.9000525369996382,
+            "point_a_m": [
+              0.346410161513775,
+              -0.2,
+              2
+            ],
+            "point_b_m": [
+              0.3464056017438636,
+              -0.20001500957509827,
+              0.09989492606375311
+            ],
+            "constraint_lambda": -1.0605599950187945e-06,
+            "constraint_force_n": 0.2651399987546986,
+            "transferred_constraint_force_n": 1.0507400272541376,
+            "constraint_force_vector_n": [
+              6.363212724020896e-07,
+              2.0944552605003143e-06,
+              0.2651399987456626
+            ]
+          }
+        ]
+      },
+      {
+        "id": 43,
+        "stiffness_n_m": 20000,
+        "total_rest_length_m": 3.2988734135035824,
+        "link_types": [
+          3,
+          2,
+          0
+        ],
+        "stored_m": [
+          0.9999999999994191,
+          0,
+          0
+        ],
+        "joints": [
+          {
+            "id": 31,
+            "entity_a": 12,
+            "entity_b": 15,
+            "length_m": 0.39887341350358263,
+            "rest_length_m": 0.3988208765022039,
+            "point_a_m": [
+              0.029915506012768694,
+              0.0022500000000000016,
+              2
+            ],
+            "point_b_m": [
+              0,
+              0.4,
+              2
+            ],
+            "constraint_lambda": -4.202960110299969e-06,
+            "constraint_force_n": 1.0507400275749923,
+            "transferred_constraint_force_n": 0.2651399988400706,
+            "constraint_force_vector_n": [
+              0.07880550206812442,
+              -1.0477806537592143,
+              0
+            ]
+          },
+          {
+            "id": 34,
+            "entity_a": 15,
+            "entity_b": 8,
+            "length_m": 1.9001050740008207,
+            "rest_length_m": 1.9000525369994419,
+            "point_a_m": [
+              0,
+              0.4,
+              2
+            ],
+            "point_b_m": [
+              -4.5785908247840165e-06,
+              0.39998497955864215,
+              0.09989492606406393
+            ],
+            "constraint_lambda": -1.0605599953602824e-06,
+            "constraint_force_n": 0.2651399988400706,
+            "transferred_constraint_force_n": 1.0507400275749923,
+            "constraint_force_vector_n": [
+              6.388905630781556e-07,
+              2.096037868850907e-06,
+              0.2651399988310159
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

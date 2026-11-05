@@ -1,0 +1,142 @@
+{
+  "utc": "2026-11-05T10:26:20.485967+00:00",
+  "deadline_utc": "2026-11-05T10:39:32Z",
+  "reporting_reserve_utc": "2026-11-05T10:29:00Z",
+  "worker_wall_budget_minutes": 100,
+  "jobs_counted": 9,
+  "job_cap": 12,
+  "rows": [
+    {
+      "id": "friction-baseline",
+      "path": "native/friction-baseline",
+      "status": "failed",
+      "steps": 992881,
+      "simulated_s": 1985.762,
+      "physical_points": 30,
+      "counts_as_collection": true,
+      "wall_s": 360.20633968800007,
+      "fit_artifacts": 0
+    },
+    {
+      "id": "dev1-active-default",
+      "path": "runs/dev1-active-default",
+      "status": "failed",
+      "steps": 749017,
+      "simulated_s": 1498.034,
+      "physical_points": 0,
+      "counts_as_collection": true,
+      "wall_s": 127.47287076300017,
+      "fit_artifacts": 0
+    },
+    {
+      "id": "dev1-bounded-preload",
+      "path": "runs/dev1-bounded-preload",
+      "status": "failed",
+      "steps": 1020587,
+      "simulated_s": 2041.174,
+      "physical_points": 20,
+      "counts_as_collection": true,
+      "wall_s": 204.10283267899968,
+      "fit_artifacts": 0
+    },
+    {
+      "id": "dev1-consistent-preload",
+      "path": "runs/dev1-consistent-preload",
+      "status": "failed",
+      "steps": 1283333,
+      "simulated_s": 2566.666,
+      "physical_points": 20,
+      "counts_as_collection": true,
+      "wall_s": 278.095912754,
+      "fit_artifacts": 0
+    },
+    {
+      "id": "dev1-default",
+      "path": "runs/dev1-default",
+      "status": "failed",
+      "steps": 255131,
+      "simulated_s": 510.262,
+      "physical_points": 0,
+      "counts_as_collection": true,
+      "wall_s": 159.37223351099988,
+      "fit_artifacts": 0
+    },
+    {
+      "id": "dev1-friction-default",
+      "path": "runs/dev1-friction-default",
+      "status": "failed",
+      "steps": 0,
+      "simulated_s": 0,
+      "physical_points": 0,
+      "counts_as_collection": false,
+      "wall_s": 31.44787320399996,
+      "fit_artifacts": 0
+    },
+    {
+      "id": "eval0-default",
+      "path": "runs/eval0-default",
+      "status": "failed",
+      "steps": 1432483,
+      "simulated_s": 2864.966,
+      "physical_points": 40,
+      "counts_as_collection": true,
+      "wall_s": 292.179252293,
+      "fit_artifacts": 0
+    },
+    {
+      "id": "eval0-noise-only-default",
+      "path": "runs/eval0-noise-only-default",
+      "status": "complete",
+      "steps": 2139315,
+      "simulated_s": 4278.63,
+      "physical_points": 140,
+      "counts_as_collection": true,
+      "wall_s": 578.7280528660003,
+      "fit_artifacts": 9
+    },
+    {
+      "id": "nominal-consistent-preload",
+      "path": "runs/nominal-consistent-preload",
+      "status": "complete",
+      "steps": 2076452,
+      "simulated_s": 4152.904,
+      "physical_points": 140,
+      "counts_as_collection": true,
+      "wall_s": 543.962464442,
+      "fit_artifacts": 9
+    },
+    {
+      "id": "nominal-numeric",
+      "path": "runs/nominal-numeric",
+      "status": "complete",
+      "steps": 2091604,
+      "simulated_s": 4183.2080000000005,
+      "physical_points": 140,
+      "counts_as_collection": true,
+      "wall_s": 753.1356214460002,
+      "fit_artifacts": 9
+    }
+  ],
+  "collection_steps": 12040803,
+  "collection_simulated_s": 24081.606,
+  "physical_measurement_points": 530,
+  "point_cap": 4000,
+  "completed_physical_probe_steps": 8006,
+  "failed_unpinned_probe_step_conservative_upper_bound": 40000,
+  "conservative_total_steps": 12088809,
+  "total_step_cap": 48000000,
+  "fits_reserved_or_called": 27,
+  "fit_artifact_count": 27,
+  "fit_cap": 80,
+  "per_collection_step_cap": 4000000,
+  "per_collection_simulated_s_cap": 8000,
+  "manager_decision": {
+    "answer": "Yes. Exclude the two proved zero-physics/zero-collection startup attempts from the 12 fresh numerical collection-job counter. Retain both as infrastructure attempts and retain all wall/startup costs and failures. Every attempt that advanced physics remains counted, even if zero points. Total 100 worker minutes, 80 fits, 48M steps, 4000 points and per-job 4M/8000sim-second limits remain unchanged. Applying the same bounded preload law consistently to both pre-measurement preload paths is authorized development refinement v2; preserve v1 and freeze exact v2 code before held-out scoring. Prioritize v2 development completion, nominal-policy control, then complete held-out pairs in order. If wall deadline approaches, finish fewer complete pairs and explicitly report missing evaluation instead of truncating cleanup or asserting untested robustness. Do not omit the nominal control merely to claim more evaluation worlds.",
+    "id": "budget-startup-definition-e1e48cca17204a388dbb7ea5143dd90d"
+  },
+  "infrastructure_attempts_excluded_from_collection_counter": [
+    "runs/dev1-friction-default",
+    "runs/nominal-wrapper"
+  ],
+  "counting_rule": "All attempts advancing physics count, even zero-point failures. Two proved zero-physics/collection startup attempts excluded by explicit manager decision. Their wall costs/failures remain. Completed short probes are counted separately;40k allowance conservatively covers unpinned failed attempts."
+}

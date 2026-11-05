@@ -1,0 +1,29 @@
+{
+  "source": "output/research/sessions/attempt-939c073f49004eb6949910600200be51/runs/dev1-consistent-preload/sweeps.headless/terminal-native.json",
+  "sha256": "76b8f7fc1559a2636aef3c04ab0d7ef25d53df63639f3d1cd218935e3dfecb56",
+  "interpretation": "Manager arithmetic screen only. Uses instantaneous simulated constraint-force magnitudes in a post-cleanup snapshot. Flags mismatch with a simple massless capstan bound; does not establish a root cause, physical fidelity or hardware failure.",
+  "rows": [
+    {
+      "path_id": 39,
+      "guide": "AnchorCL",
+      "mu": 0.006,
+      "wrap_rad": 2.0804691934854165,
+      "capstan_ratio_bound": 1.012561050692397,
+      "local_spool_force_n": 0,
+      "downstream_force_n": 1.3753459039306655,
+      "gap_over_bound_n": 1.3753459039306655,
+      "spool_side_slack_mm": 119.419830844941
+    },
+    {
+      "path_id": 40,
+      "guide": "AnchorCR",
+      "mu": 0.006,
+      "wrap_rad": 2.72215332907426,
+      "capstan_ratio_bound": 1.016467031259995,
+      "local_spool_force_n": 0,
+      "downstream_force_n": 0.5004418109811658,
+      "gap_over_bound_n": 0.5004418109811658,
+      "spool_side_slack_mm": 119.29501924208185
+    }
+  ]
+}

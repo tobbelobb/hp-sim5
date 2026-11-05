@@ -1,0 +1,22 @@
+{
+  "autocal_headless.mjs": {
+    "equal": true,
+    "sha256": "221ee4c5667fb1322f581fa970266982bc71e74f89ef4586b322bf7374638efb"
+  },
+  "dev0-v2.usda": {
+    "equal": true,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+  },
+  "dev1-v2.usda": {
+    "equal": true,
+    "sha256": "5d90185813c6cd9b4dc1ffdf65eac1274ee1c28f740e56fa6ab9b02055f4fa54"
+  },
+  "eval0-v2.usda": {
+    "equal": true,
+    "sha256": "214b2d7ccb204f5ea544783aec45655b0c7a04308e675dbf91b1513aa0571882"
+  },
+  "eval1-v2.usda": {
+    "equal": true,
+    "sha256": "819c5245226fab73dc7be65dca9a1234ccefd237112d0cfaa65e96a7af3a0d27"
+  }
+}

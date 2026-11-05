@@ -1,0 +1,79 @@
+--- autocal/control/behaviors/sweep_data_collection.mjs
++++ session-local/sweep_data_collection.mjs
+@@ -6,15 +6,15 @@
+   parseM669,
+   runMoveWithWait,
+   sleep as baseSleep,
+-} from '../primitives/encoder_utils.mjs';
++} from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/primitives/encoder_utils.mjs';
+ import {
+   buildMotorCatalogFromConfig,
+   computeMmPerDegreeFromDescriptor,
+   resolveMotorToken,
+-} from '../../../integrations/klipper/klipperMotorAddressConfig.js';
+-import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
+-import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
+-import { collectWithSlipRecovery } from './slip_recovery.mjs';
++} from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/integrations/klipper/klipperMotorAddressConfig.js';
++import { DEFAULT_KLIPPY_CONFIG_PATH } from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/integrations/klipper/klippy_api_cli_config.mjs';
++import { ENCODER_NOISE_DEFAULTS } from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/primitives/encoder_noise.mjs';
++import { collectWithSlipRecovery } from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/behaviors/slip_recovery.mjs';
+ import {
+   angleToLength,
+   assertFixedAnchorAngles,
+@@ -27,9 +27,9 @@
+   returnMotorsToOriginOneAtATime,
+   resolveCollectionForce,
+   waitForStableEncoders,
+-} from '../primitives/uncalibrated_actions.mjs';
+-import { attachDebugState } from '../primitives/debug_trace.mjs';
+-import { FORCE_TUNING_DEFAULTS, tuneForce } from './force_tuning.mjs';
++} from './uncalibrated_actions.mjs';
++import { attachDebugState } from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/primitives/debug_trace.mjs';
++import { FORCE_TUNING_DEFAULTS, tuneForce } from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/behaviors/force_tuning.mjs';
+ 
+ export const MACHINE_CONFIGS = {
+   slideprinter: { numAnchors: 3, dimensions: 2, axes: ['X', 'Y', 'Z'], mustBeInFixedSet: [] },
+@@ -1168,7 +1168,7 @@
+     if (fixedSet.has(idx) || forbidden.has(idx)) {
+       return 'position';
+     }
+-    return forceMid*2.0;
++    return resolveCollectionForce({ forceMid, forceMax });
+   });
+   await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
+   const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, {
+--- autocal/control/primitives/uncalibrated_actions.mjs
++++ session-local/uncalibrated_actions.mjs
+@@ -1,14 +1,14 @@
+-import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from '../primitives/encoder_utils.mjs';
+-import { sampleEncoderNoise } from './encoder_noise.mjs';
++import { parseEncoderReply, runMoveWithWait, sleep as baseSleep } from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/primitives/encoder_utils.mjs';
++import { sampleEncoderNoise } from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/primitives/encoder_noise.mjs';
+ import {
+   formatCallSite,
+   getDebugState,
+   parseCallSite,
+   updateDebugAngles,
+-} from '../primitives/debug_trace.mjs';
++} from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/primitives/debug_trace.mjs';
+ import {
+   projectSimulationWallDeadline, simulationHardWallDeadline,
+-} from './simulation_deadline.mjs';
++} from 'file:///workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/autocal/control/primitives/simulation_deadline.mjs';
+ 
+ const DEFAULT_STABILITY_POLL_MS = 500;
+ // A 1500 ms quiet window is more than encoder polls can resolve cheaply: replay of 817
+@@ -370,9 +370,9 @@
+   });
+ 
+   const preloadModes = buildModes(
+-    Number.isFinite(forceMid)
+-      ? forceMid * 2.0
+-      : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
++    Number.isFinite(forceMid) || Number.isFinite(forceMax)
++      ? resolveCollectionForce({ forceMid, forceMax })
++      : fallbackForce,
+   );
+   const measurementSensorForce = resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce });
+   // Pull slack out of the sensor line before sampling encoder angles.

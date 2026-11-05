@@ -1,0 +1,9 @@
+function writeTerminalNative() {
+  const engine = world.getResource('cableSolverBackend');
+  if (engine?.world !== world || !engine.entityRegion) return;
+  engine.refreshMemory();
+  const a=engine.entityRegion.data;
+  const entities=engine.ids.map((id,i)=>{const o=i*160;return {id,name:world.getComponent(id,SceneEntityInfoComponent)?.name,position_m:Array.from(a.slice(o,o+3)),quaternion_xyzw:Array.from(a.slice(o+3,o+7)),velocity_m_s:Array.from(a.slice(o+69,o+72)),angular_velocity_rad_s:Array.from(a.slice(o+72,o+75)),encoder_rad:a[o+66],torque_mode:!!a[o+57],commanded_angle_rad:a[o+107],target_torque_nm:a[o+114],closed_loop:!!a[o+113],mu:a[o+105],radius_m:a[o+104]};});
+  const paths=engine.pathIds.map((id,i)=>{const p=engine.transport.path(i),n=p[0];return {id,stiffness_n_m:p[2],total_rest_length_m:p[7],link_types:Array.from({length:n+1},(_,j)=>p[16+j*5]),stored_m:Array.from({length:n+1},(_,j)=>p[16+j*5+2]),joints:Array.from({length:n},(_,j)=>{const o=16+(n+1)*5+j*16,pa=Array.from(p.slice(o+4,o+7)),pb=Array.from(p.slice(o+7,o+10));return {id:p[o],entity_a:engine.ids[p[o+1]],entity_b:engine.ids[p[o+2]],length_m:Math.hypot(...pa.map((x,k)=>x-pb[k])),rest_length_m:p[o+3],point_a_m:pa,point_b_m:pb,constraint_lambda:p[o+10],constraint_force_n:p[o+11],transferred_constraint_force_n:p[o+12],constraint_force_vector_n:Array.from(p.slice(o+13,o+16))};})};});
+  fs.writeFileSync(`${directory}/terminal-native.json`,JSON.stringify({status:status(),node_version:process.version,units:'m, s, rad, N, Nm; simulated constraint forces, not measured tension',stage:'terminal after collector cleanup, final stop commands may already zero motor targets; inspect command journal for pre-stop command',entities,paths},null,2));
+}

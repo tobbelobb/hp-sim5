@@ -1,0 +1,2453 @@
+{
+  "dev1-active-default": {
+    "raw_last_6_sim_s": [
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 746017,
+        "sim_time_s": 1492.034,
+        "request_id": 5163,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1938.432326675414,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.8912277971567,
+          -1440.0121185936034,
+          1938.4139009880248,
+          0.01698607419499038
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 746267,
+        "sim_time_s": 1492.534,
+        "request_id": 5165,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1916.7316175290966,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.905070535902,
+          -1439.984353886216,
+          1916.7262687718746,
+          0.010752371905275488
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 746517,
+        "sim_time_s": 1493.034,
+        "request_id": 5167,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1917.5569401790463,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.9105190463641,
+          -1439.9667131887516,
+          1917.5591070008995,
+          -0.005145598643120608
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 746767,
+        "sim_time_s": 1493.534,
+        "request_id": 5169,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1929.464431401254,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.9074525644105,
+          -1440.025214885136,
+          1929.4611213048336,
+          -0.022218560802226922
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 747017,
+        "sim_time_s": 1494.034,
+        "request_id": 5171,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1940.7220356661076,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.8767384592663,
+          -1439.9916593572507,
+          1940.6830825536417,
+          -0.03325207848768372
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 747267,
+        "sim_time_s": 1494.534,
+        "request_id": 5173,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1952.6189150169778,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.8888916084998,
+          -1440.019542113426,
+          1952.6140872101741,
+          -0.03054954151147104
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 747517,
+        "sim_time_s": 1495.034,
+        "request_id": 5175,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1964.2478431195739,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.8781853001116,
+          -1440.0102509227024,
+          1964.2300996032982,
+          -0.028844852267719483
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 747767,
+        "sim_time_s": 1495.534,
+        "request_id": 5177,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1975.6784186590987,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.917870052854,
+          -1440.0097580849588,
+          1975.6879971279952,
+          0.004461738284330138
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 748017,
+        "sim_time_s": 1496.034,
+        "request_id": 5179,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1987.6872132818946,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.9092659086361,
+          -1440.0080498064403,
+          1987.6561765587433,
+          0.004927914528415702
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 748267,
+        "sim_time_s": 1496.534,
+        "request_id": 5181,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          1999.059521895739,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.9081498338319,
+          -1439.980622923985,
+          1999.0455919664491,
+          -0.017241922015297857
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 748517,
+        "sim_time_s": 1497.034,
+        "request_id": 5183,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          2010.8257705890649,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.865786915615,
+          -1439.979797594907,
+          2010.83261306191,
+          -0.004688433800190401
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 748767,
+        "sim_time_s": 1497.534,
+        "request_id": 5185,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          2022.7220131425845,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.9207278930465,
+          -1440.0056075484435,
+          2022.7157520720116,
+          0.01158659863082016
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 749017,
+        "sim_time_s": 1498.034,
+        "request_id": 5187,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          963.8999999971254,
+          -1439.999999997283,
+          2034.06548801226,
+          0
+        ],
+        "noisy_angles_deg": [
+          963.9491060617062,
+          -1439.9837551071819,
+          2034.0819580589794,
+          0.03928749506110267
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      }
+    ],
+    "diagnostic": {
+      "utc": "2026-11-05T09:29:00.974974+00:00",
+      "run": "dev1-active-default",
+      "terminal_reason": "Encoder stability timeout during pullout preload; no measurement or fit",
+      "sensor_force_command_n": 0.41322093567999973,
+      "noise_seed": 101,
+      "configured_sigma_deg": 0.02,
+      "guard": {
+        "quiet_window_s": 1,
+        "quiet_range_limit_deg": 0.3,
+        "vibration_window_s": 5,
+        "full_tolerance_deg": 1.5
+      },
+      "axes": {
+        "A": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0.0,
+            "last_5s_range_deg": 0.0,
+            "early_late_mean_difference_deg": 0.0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.08331914609118485,
+            "last_5s_range_deg": 0.08331914609118485,
+            "early_late_mean_difference_deg": 0.013997817316067085
+          }
+        },
+        "B": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0.0,
+            "last_5s_range_deg": 0.0,
+            "early_late_mean_difference_deg": 0.0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.025809953536509056,
+            "last_5s_range_deg": 0.05850169638438274,
+            "early_late_mean_difference_deg": 0.012289829179280787
+          }
+        },
+        "C": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 23.23971742319509,
+            "last_5s_range_deg": 116.5085478332137,
+            "early_late_mean_difference_deg": 64.15723737729877
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 23.24934499706933,
+            "last_5s_range_deg": 116.52285105807982,
+            "early_late_mean_difference_deg": 64.16050254347829
+          }
+        },
+        "D": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0,
+            "last_5s_range_deg": 0,
+            "early_late_mean_difference_deg": 0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.04397592886129307,
+            "last_5s_range_deg": 0.07253957354878639,
+            "early_late_mean_difference_deg": 0.02603247938561866
+          }
+        }
+      }
+    }
+  },
+  "dev1-consistent-preload": {
+    "raw_last_6_sim_s": [
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1280333,
+        "sim_time_s": 2560.666,
+        "request_id": 9836,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1276.4433368430248,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1439.9908230836877,
+          963.9167365317494,
+          1276.4527973833938,
+          0.008450295529860012
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1280583,
+        "sim_time_s": 2561.166,
+        "request_id": 9838,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1285.1464926659107,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.027675607087,
+          963.913654529367,
+          1285.141172610791,
+          -0.004391831391492272
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1280833,
+        "sim_time_s": 2561.666,
+        "request_id": 9840,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1294.3197849804612,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1439.9796744768455,
+          963.921875839,
+          1294.3478629697402,
+          -0.026247136058403384
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1281083,
+        "sim_time_s": 2562.166,
+        "request_id": 9842,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1303.4600195792827,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.0256800644245,
+          963.8486892626865,
+          1303.4465514256503,
+          0.012625463580878998
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1281333,
+        "sim_time_s": 2562.666,
+        "request_id": 9844,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1312.1354049929173,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.0144710182167,
+          963.8935119797372,
+          1312.149868486714,
+          0.011287252916281177
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1281583,
+        "sim_time_s": 2563.166,
+        "request_id": 9846,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1320.773533757228,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1439.9855771645298,
+          963.9013193017123,
+          1320.787209294876,
+          0.004706841788104452
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1281833,
+        "sim_time_s": 2563.666,
+        "request_id": 9848,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1329.8423170162075,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1439.999964668389,
+          963.8701483621263,
+          1329.8464922873945,
+          0.0006318065020989328
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1282083,
+        "sim_time_s": 2564.166,
+        "request_id": 9850,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1339.0690773621984,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.0001078406408,
+          963.889401061102,
+          1339.0170265393504,
+          -0.010055297963604526
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1282333,
+        "sim_time_s": 2564.666,
+        "request_id": 9852,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1347.8256118323613,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1439.974473384601,
+          963.8938393250272,
+          1347.8668480809424,
+          -0.0023101768642483887
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1282583,
+        "sim_time_s": 2565.166,
+        "request_id": 9854,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1356.4251020757897,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.0139407713018,
+          963.9038402140498,
+          1356.414438502838,
+          0.0016220622783892664
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1282833,
+        "sim_time_s": 2565.666,
+        "request_id": 9856,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1365.3766427160303,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.0148582178176,
+          963.8660233118486,
+          1365.3801175225688,
+          -0.01780585004712529
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1283083,
+        "sim_time_s": 2566.166,
+        "request_id": 9858,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1374.6482661245896,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.0023642293834,
+          963.9280828647587,
+          1374.6145227523714,
+          0.004086919760731088
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1283333,
+        "sim_time_s": 2566.666,
+        "request_id": 9860,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999997185,
+          963.8999999981012,
+          1383.5077352606038,
+          0
+        ],
+        "noisy_angles_deg": [
+          -1440.0196918519866,
+          963.8932161671831,
+          1383.4966183186514,
+          0.015021808779041497
+        ],
+        "sigma_deg": 0.02,
+        "seed": 101
+      }
+    ],
+    "diagnostic": {
+      "run_id": "dev1-consistent-preload",
+      "utc": "2026-11-05T09:46:11.753021+00:00",
+      "purpose": "Posthoc only. Clean encoders and physical state never select forces or stopping.",
+      "last_force_events": [
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 910751,
+          "sim_time_s": 1821.502,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793871716794
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:3.049134672933116:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 910751,
+          "sim_time_s": 1821.502,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:3.049134672933116:0.0",
+            "reply": "-0.091474 Nm, pos_mode, -0.091474 Nm, pos_mode,"
+          }
+        },
+        {
+          "type": "gcode_send",
+          "epoch": 0,
+          "step": 922325,
+          "sim_time_s": 1844.65,
+          "command_id": "3206:922325:1793871718256",
+          "line": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:0.010330523391999994:0.0"
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 922325,
+          "sim_time_s": 1844.65,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetTorqueMode",
+              "axis": "A",
+              "driver": 40,
+              "torqueNm": -0.091474,
+              "timestamp": 1793871718261
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:0.010330523391999994:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 922325,
+          "sim_time_s": 1844.65,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "B",
+              "driver": 41,
+              "torqueNm": 0,
+              "timestamp": 1793871718261
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:0.010330523391999994:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 922325,
+          "sim_time_s": 1844.65,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetTorqueMode",
+              "axis": "C",
+              "driver": 42,
+              "torqueNm": -0.000309916,
+              "timestamp": 1793871718261
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:0.010330523391999994:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 922325,
+          "sim_time_s": 1844.65,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793871718261
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:0.010330523391999994:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 922325,
+          "sim_time_s": 1844.65,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.049134672933116:0.0:0.010330523391999994:0.0",
+            "reply": "-0.091474 Nm, pos_mode, -0.000310 Nm, pos_mode,"
+          }
+        },
+        {
+          "type": "gcode_send",
+          "epoch": 0,
+          "step": 983329,
+          "sim_time_s": 1966.6580000000001,
+          "command_id": "3206:983329:1793871730848",
+          "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.0330523391999993:0.0"
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 983329,
+          "sim_time_s": 1966.6580000000001,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "A",
+              "driver": 40,
+              "torqueNm": 0,
+              "timestamp": 1793871730853
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.0330523391999993:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 983329,
+          "sim_time_s": 1966.6580000000001,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "B",
+              "driver": 41,
+              "torqueNm": 0,
+              "timestamp": 1793871730853
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.0330523391999993:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 983329,
+          "sim_time_s": 1966.6580000000001,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetTorqueMode",
+              "axis": "C",
+              "driver": 42,
+              "torqueNm": -0.0309916,
+              "timestamp": 1793871730853
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.0330523391999993:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 983329,
+          "sim_time_s": 1966.6580000000001,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793871730853
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.0330523391999993:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 983329,
+          "sim_time_s": 1966.6580000000001,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.0330523391999993:0.0",
+            "reply": "pos_mode, pos_mode, -0.030992 Nm, pos_mode,"
+          }
+        },
+        {
+          "type": "gcode_send",
+          "epoch": 0,
+          "step": 1283333,
+          "sim_time_s": 2566.666,
+          "command_id": "3206:1283333:1793871791587",
+          "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1283333,
+          "sim_time_s": 2566.666,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "A",
+              "driver": 40,
+              "torqueNm": 0,
+              "timestamp": 1793871791591
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1283333,
+          "sim_time_s": 2566.666,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "B",
+              "driver": 41,
+              "torqueNm": 0,
+              "timestamp": 1793871791591
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1283333,
+          "sim_time_s": 2566.666,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "C",
+              "driver": 42,
+              "torqueNm": 0,
+              "timestamp": 1793871791591
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1283333,
+          "sim_time_s": 2566.666,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793871791591
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1283333,
+          "sim_time_s": 2566.666,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0",
+            "reply": "pos_mode, pos_mode, pos_mode, pos_mode,"
+          }
+        }
+      ],
+      "axes": {
+        "A": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0.0,
+            "last_5s_range_deg": 0.0,
+            "early_late_mean_difference_deg": 2.2737367544323206e-13
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.01732762260326126,
+            "last_5s_range_deg": 0.05120667982350824,
+            "early_late_mean_difference_deg": 0.004153152176968433
+          }
+        },
+        "B": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0.0,
+            "last_5s_range_deg": 0.0,
+            "early_late_mean_difference_deg": 0.0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.06205955291011378,
+            "last_5s_range_deg": 0.07939360207217305,
+            "early_late_mean_difference_deg": 0.009509408846042788
+          }
+        },
+        "C": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 18.13109254457345,
+            "last_5s_range_deg": 89.18795028014256,
+            "early_late_mean_difference_deg": 48.95664865382582
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 18.11650079608262,
+            "last_5s_range_deg": 89.14875534891121,
+            "early_late_mean_difference_deg": 48.955340534853576
+          }
+        },
+        "D": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0,
+            "last_5s_range_deg": 0,
+            "early_late_mean_difference_deg": 0.0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.03282765882616679,
+            "last_5s_range_deg": 0.04126894483744488,
+            "early_late_mean_difference_deg": 0.0012981309871316926
+          }
+        }
+      },
+      "last_encoder_sim_time_s": 2566.666,
+      "terminal": {
+        "snapshot_stage": "terminal after collector cleanup, final stop commands may already zero motor targets; inspect command journal for pre-stop command",
+        "units": "m, s, rad, N, Nm; simulated constraint forces, not measured tension",
+        "selected_entities": [
+          {
+            "id": 0,
+            "name": "SpoolA",
+            "position_m": [
+              0,
+              -2.5,
+              -0.18
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              2.4567015088905464e-12,
+              1
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": -25.13274122871343,
+            "torque_mode": false,
+            "commanded_angle_rad": -94.24777960768888,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 5,
+            "name": "SpoolB",
+            "position_m": [
+              2.165063509461097,
+              1.25,
+              -0.18
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              -0.8485102149902723,
+              0.5291790009601305
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": 16.823228659940202,
+            "torque_mode": false,
+            "commanded_angle_rad": 111.071008267634,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 9,
+            "name": "SpoolC",
+            "position_m": [
+              -2.165063509461097,
+              1.25,
+              -0.18
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              -0.47326020344206216,
+              0.8809226866405349
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0.26183768988468575
+            ],
+            "encoder_rad": 24.146765207107585,
+            "torque_mode": true,
+            "commanded_angle_rad": -62.83185307190267,
+            "target_torque_nm": -0.0309916,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 12,
+            "name": "SpoolD",
+            "position_m": [
+              0,
+              0,
+              2
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": 0,
+            "torque_mode": false,
+            "commanded_angle_rad": 0,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 16,
+            "name": "Effector",
+            "position_m": [
+              0.07544245273891331,
+              -0.8363068865861819,
+              0.2954320460242834
+            ],
+            "quaternion_xyzw": [
+              4.681758475974357e-05,
+              5.406923663088999e-05,
+              8.767493900249317e-05,
+              0.9999999935988684
+            ],
+            "velocity_m_s": [
+              -3.2725104848196906e-06,
+              2.4124652275858693e-06,
+              -1.5055910129735395e-06
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": 0,
+            "torque_mode": false,
+            "commanded_angle_rad": 0,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0,
+            "radius_m": null
+          }
+        ],
+        "joints": [
+          {
+            "path": 35,
+            "joint": 17,
+            "entity_a": 0,
+            "entity_b": 1,
+            "length_minus_rest_m": 0.00047314170468193417,
+            "constraint_force_n": 9.462834093638682
+          },
+          {
+            "path": 35,
+            "joint": 18,
+            "entity_a": 1,
+            "entity_b": 3,
+            "length_minus_rest_m": 0.00047570755657022623,
+            "constraint_force_n": 3.040928380451264
+          },
+          {
+            "path": 36,
+            "joint": 19,
+            "entity_a": 0,
+            "entity_b": 2,
+            "length_minus_rest_m": 0.0005127629406145306,
+            "constraint_force_n": 10.255258812290611
+          },
+          {
+            "path": 36,
+            "joint": 20,
+            "entity_a": 2,
+            "entity_b": 4,
+            "length_minus_rest_m": 0.0005162674963021807,
+            "constraint_force_n": 2.962587462164018
+          },
+          {
+            "path": 37,
+            "joint": 21,
+            "entity_a": 5,
+            "entity_b": 6,
+            "length_minus_rest_m": -8.325199872816214e-07,
+            "constraint_force_n": 0
+          },
+          {
+            "path": 37,
+            "joint": 22,
+            "entity_a": 6,
+            "entity_b": 4,
+            "length_minus_rest_m": -5.1167931466977734e-05,
+            "constraint_force_n": 0.9514928677613321
+          },
+          {
+            "path": 38,
+            "joint": 23,
+            "entity_a": 5,
+            "entity_b": 7,
+            "length_minus_rest_m": 3.949292257765524e-05,
+            "constraint_force_n": 0.7898584515531047
+          },
+          {
+            "path": 38,
+            "joint": 24,
+            "entity_a": 7,
+            "entity_b": 8,
+            "length_minus_rest_m": 3.971484822296034e-05,
+            "constraint_force_n": 1.9066451959826183
+          },
+          {
+            "path": 39,
+            "joint": 25,
+            "entity_a": 9,
+            "entity_b": 10,
+            "length_minus_rest_m": -0.11941983084494101,
+            "constraint_force_n": 0
+          },
+          {
+            "path": 39,
+            "joint": 26,
+            "entity_a": 10,
+            "entity_b": 8,
+            "length_minus_rest_m": -3.998349610068175e-06,
+            "constraint_force_n": 1.3753459039306655
+          },
+          {
+            "path": 40,
+            "joint": 27,
+            "entity_a": 9,
+            "entity_b": 11,
+            "length_minus_rest_m": -0.11929501924208186,
+            "constraint_force_n": 0
+          },
+          {
+            "path": 40,
+            "joint": 28,
+            "entity_a": 11,
+            "entity_b": 3,
+            "length_minus_rest_m": -1.7687780691666433e-05,
+            "constraint_force_n": 0.5004418109811658
+          },
+          {
+            "path": 41,
+            "joint": 29,
+            "entity_a": 12,
+            "entity_b": 13,
+            "length_minus_rest_m": 0.00010920313436046936,
+            "constraint_force_n": 2.1840626872093867
+          },
+          {
+            "path": 41,
+            "joint": 32,
+            "entity_a": 13,
+            "entity_b": 3,
+            "length_minus_rest_m": 0.00010911020238690838,
+            "constraint_force_n": 1.780732324658351
+          },
+          {
+            "path": 42,
+            "joint": 30,
+            "entity_a": 12,
+            "entity_b": 14,
+            "length_minus_rest_m": 0.00011610777428988639,
+            "constraint_force_n": 2.3221554857977273
+          },
+          {
+            "path": 42,
+            "joint": 33,
+            "entity_a": 14,
+            "entity_b": 4,
+            "length_minus_rest_m": 0.0001159398163452785,
+            "constraint_force_n": 1.8473982165291292
+          },
+          {
+            "path": 43,
+            "joint": 31,
+            "entity_a": 12,
+            "entity_b": 15,
+            "length_minus_rest_m": 8.529197583662107e-05,
+            "constraint_force_n": 1.7058395167324212
+          },
+          {
+            "path": 43,
+            "joint": 34,
+            "entity_a": 15,
+            "entity_b": 8,
+            "length_minus_rest_m": 8.531347333717854e-05,
+            "constraint_force_n": 1.0014422095915831
+          }
+        ],
+        "effector_speed_m_s": 4.33544895551919e-06
+      },
+      "interpretation_limit": "Motor/encoder drift need not mean effector motion. Slack spool-side segments with loaded distal segments may reflect model behavior; this is not hardware evidence."
+    }
+  },
+  "eval0-default": {
+    "raw_last_6_sim_s": [
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1429483,
+        "sim_time_s": 2858.966,
+        "request_id": 11337,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1572.913243242548,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1439.959648601039,
+          1572.908413099066,
+          987.1907775488716,
+          -0.008767903083830419
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1429733,
+        "sim_time_s": 2859.466,
+        "request_id": 11339,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1580.6403869121816,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1440.0214148981872,
+          1580.6436436098472,
+          987.2149267875848,
+          0.04208140749358728
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1429983,
+        "sim_time_s": 2859.966,
+        "request_id": 11341,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1588.4294856895663,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1439.9848377601795,
+          1588.4764794260313,
+          987.1698400801298,
+          0.013053399751534892
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1430233,
+        "sim_time_s": 2860.466,
+        "request_id": 11343,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1596.2716223291313,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1439.9148950255806,
+          1596.3100527010101,
+          987.2354218773094,
+          -0.017746530891685965
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1430483,
+        "sim_time_s": 2860.966,
+        "request_id": 11345,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1604.1366482214562,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1440.0482021317237,
+          1604.1402117033713,
+          987.1547032433423,
+          -0.02848580106308365
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1430733,
+        "sim_time_s": 2861.466,
+        "request_id": 11347,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1611.9827597701765,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1440.040011741928,
+          1611.9205251851483,
+          987.1915960909212,
+          0.034854655075348594
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1430983,
+        "sim_time_s": 2861.966,
+        "request_id": 11349,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1619.777353783409,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1440.026210231333,
+          1619.8019036401463,
+          987.2318730796696,
+          0.028395044208297006
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1431233,
+        "sim_time_s": 2862.466,
+        "request_id": 11351,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1627.509235646623,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1440.006513917766,
+          1627.5186932895335,
+          987.1859474552022,
+          0.0019131555525285112
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1431483,
+        "sim_time_s": 2862.966,
+        "request_id": 11353,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1635.1848217043878,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1440.044876695571,
+          1635.2071245853065,
+          987.1756479569798,
+          0.004448029090714193
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1431733,
+        "sim_time_s": 2863.466,
+        "request_id": 11355,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1642.8188613951904,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1439.9867290949837,
+          1642.8045577084854,
+          987.1892616399974,
+          -0.062433272061730744
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1431983,
+        "sim_time_s": 2863.966,
+        "request_id": 11357,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1650.4282239323531,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1439.9977098124405,
+          1650.3873369980588,
+          987.1551253940465,
+          -0.0016392248332520794
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1432233,
+        "sim_time_s": 2864.466,
+        "request_id": 11359,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1658.0296078351707,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1439.980922476527,
+          1658.0102730501399,
+          987.2113702386524,
+          -0.05755826674417955
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      },
+      {
+        "type": "sensor_noise",
+        "epoch": 0,
+        "step": 1432483,
+        "sim_time_s": 2864.966,
+        "request_id": 11361,
+        "axes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "clean_angles_deg": [
+          -1439.9999999985846,
+          1665.639383841347,
+          987.1874999955808,
+          2.2825878049231454e-18
+        ],
+        "noisy_angles_deg": [
+          -1440.0167072756071,
+          1665.65643083957,
+          987.1529090181459,
+          0.010009219903175022
+        ],
+        "sigma_deg": 0.03,
+        "seed": 202
+      }
+    ],
+    "diagnostic": {
+      "run_id": "eval0-default",
+      "utc": "2026-11-05T10:08:48.383599+00:00",
+      "purpose": "Posthoc only. Clean encoders and physical state never select forces or stopping.",
+      "last_force_events": [
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1369971,
+          "sim_time_s": 2739.942,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793873273745
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.354048140226428:0.011363575731199994:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1369971,
+          "sim_time_s": 2739.942,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T3.354048140226428:0.011363575731199994:0.0:0.0",
+            "reply": "-0.100621 Nm, -0.000341 Nm, pos_mode, pos_mode,"
+          }
+        },
+        {
+          "type": "gcode_send",
+          "epoch": 0,
+          "step": 1414225,
+          "sim_time_s": 2828.4500000000003,
+          "command_id": "3751:1414225:1793873281836",
+          "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1414225,
+          "sim_time_s": 2828.4500000000003,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "A",
+              "driver": 40,
+              "torqueNm": 0,
+              "timestamp": 1793873281839
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1414225,
+          "sim_time_s": 2828.4500000000003,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetTorqueMode",
+              "axis": "B",
+              "driver": 41,
+              "torqueNm": -0.0136363,
+              "timestamp": 1793873281839
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1414225,
+          "sim_time_s": 2828.4500000000003,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "C",
+              "driver": 42,
+              "torqueNm": 0,
+              "timestamp": 1793873281839
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1414225,
+          "sim_time_s": 2828.4500000000003,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793873281839
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1414225,
+          "sim_time_s": 2828.4500000000003,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0",
+            "reply": "pos_mode, -0.013636 Nm, pos_mode, pos_mode,"
+          }
+        },
+        {
+          "type": "gcode_send",
+          "epoch": 0,
+          "step": 1417479,
+          "sim_time_s": 2834.958,
+          "command_id": "3751:1417479:1793873282391",
+          "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1417479,
+          "sim_time_s": 2834.958,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "A",
+              "driver": 40,
+              "torqueNm": 0,
+              "timestamp": 1793873282394
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1417479,
+          "sim_time_s": 2834.958,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetTorqueMode",
+              "axis": "B",
+              "driver": 41,
+              "torqueNm": -0.0136363,
+              "timestamp": 1793873282394
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1417479,
+          "sim_time_s": 2834.958,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "C",
+              "driver": 42,
+              "torqueNm": 0,
+              "timestamp": 1793873282394
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1417479,
+          "sim_time_s": 2834.958,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793873282394
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1417479,
+          "sim_time_s": 2834.958,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.4545430292479997:0.0:0.0",
+            "reply": "pos_mode, -0.013636 Nm, pos_mode, pos_mode,"
+          }
+        },
+        {
+          "type": "gcode_send",
+          "epoch": 0,
+          "step": 1432483,
+          "sim_time_s": 2864.966,
+          "command_id": "3751:1432483:1793873285283",
+          "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1432483,
+          "sim_time_s": 2864.966,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "A",
+              "driver": 40,
+              "torqueNm": 0,
+              "timestamp": 1793873285287
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1432483,
+          "sim_time_s": 2864.966,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "B",
+              "driver": 41,
+              "torqueNm": 0,
+              "timestamp": 1793873285287
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1432483,
+          "sim_time_s": 2864.966,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "C",
+              "driver": 42,
+              "torqueNm": 0,
+              "timestamp": 1793873285287
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1432483,
+          "sim_time_s": 2864.966,
+          "payload": {
+            "type": "command",
+            "command": {
+              "type": "SetPositionMode",
+              "axis": "D",
+              "driver": 43,
+              "torqueNm": 0,
+              "timestamp": 1793873285287
+            },
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0"
+          }
+        },
+        {
+          "type": "bridge_payload",
+          "epoch": 0,
+          "step": 1432483,
+          "sim_time_s": 2864.966,
+          "payload": {
+            "type": "reply",
+            "gcode": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.0:0.0",
+            "reply": "pos_mode, pos_mode, pos_mode, pos_mode,"
+          }
+        }
+      ],
+      "axes": {
+        "A": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0.0,
+            "last_5s_range_deg": 0.0,
+            "early_late_mean_difference_deg": 0.0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.03578479908014742,
+            "last_5s_range_deg": 0.13330710614309282,
+            "early_late_mean_difference_deg": 0.0019439362740740762
+          }
+        },
+        "B": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 15.21115990899375,
+            "last_5s_range_deg": 77.20989815178064,
+            "early_late_mean_difference_deg": 42.40232883496287
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 15.269093841511221,
+            "last_5s_range_deg": 77.17995141353867,
+            "early_late_mean_difference_deg": 42.38516697877208
+          }
+        },
+        "C": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0.0,
+            "last_5s_range_deg": 0.0,
+            "early_late_mean_difference_deg": 0.0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.05846122050650138,
+            "last_5s_range_deg": 0.08251285916344386,
+            "early_late_mean_difference_deg": 0.018034121531286473
+          }
+        },
+        "D": {
+          "clean_angles_deg": {
+            "last_1s_range_deg": 0.0,
+            "last_5s_range_deg": 0.0,
+            "early_late_mean_difference_deg": 0.0
+          },
+          "noisy_angles_deg": {
+            "last_1s_range_deg": 0.06756748664735457,
+            "last_5s_range_deg": 0.09728792713707934,
+            "early_late_mean_difference_deg": 0.026765356701211197
+          }
+        }
+      },
+      "last_encoder_sim_time_s": 2864.966,
+      "terminal": {
+        "snapshot_stage": "terminal after collector cleanup, final stop commands may already zero motor targets; inspect command journal for pre-stop command",
+        "units": "m, s, rad, N, Nm; simulated constraint forces, not measured tension",
+        "selected_entities": [
+          {
+            "id": 0,
+            "name": "SpoolA",
+            "position_m": [
+              0,
+              -2.5,
+              -0.18
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              1.2350702323669518e-11,
+              1
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": -25.132741228693643,
+            "torque_mode": false,
+            "commanded_angle_rad": -75.39822368613034,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 5,
+            "name": "SpoolB",
+            "position_m": [
+              2.165063509461097,
+              1.25,
+              -0.18
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              -0.9217299123579916,
+              0.3878323976468818
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0.21893417301705942
+            ],
+            "encoder_rad": 29.070891398921137,
+            "torque_mode": true,
+            "commanded_angle_rad": 125.66370614377934,
+            "target_torque_nm": -0.0136363,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 9,
+            "name": "SpoolC",
+            "position_m": [
+              -2.165063509461097,
+              1.25,
+              -0.18
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              -0.7242470829780585,
+              0.689540544709137
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": 17.229672209454392,
+            "torque_mode": false,
+            "commanded_angle_rad": -26.75262494080271,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 12,
+            "name": "SpoolD",
+            "position_m": [
+              0,
+              0,
+              2
+            ],
+            "quaternion_xyzw": [
+              0,
+              0,
+              1.991933633088946e-20,
+              1
+            ],
+            "velocity_m_s": [
+              0,
+              0,
+              0
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": 3.983867266177892e-20,
+            "torque_mode": false,
+            "commanded_angle_rad": 3.983867266177892e-20,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0.20000000298023224,
+            "radius_m": 0.03
+          },
+          {
+            "id": 16,
+            "name": "Effector",
+            "position_m": [
+              -0.05449344022635685,
+              -0.8347378963958162,
+              0.29391083502633614
+            ],
+            "quaternion_xyzw": [
+              3.7265600290558726e-05,
+              9.690502604158285e-06,
+              1.628777095572129e-05,
+              0.9999999991260389
+            ],
+            "velocity_m_s": [
+              -2.171710210968625e-06,
+              -1.6009619741019776e-06,
+              9.762150532388603e-07
+            ],
+            "angular_velocity_rad_s": [
+              0,
+              0,
+              0
+            ],
+            "encoder_rad": 0,
+            "torque_mode": false,
+            "commanded_angle_rad": 0,
+            "target_torque_nm": 0,
+            "closed_loop": false,
+            "mu": 0,
+            "radius_m": null
+          }
+        ],
+        "joints": [
+          {
+            "path": 35,
+            "joint": 17,
+            "entity_a": 0,
+            "entity_b": 1,
+            "length_minus_rest_m": 0.00031497263682378485,
+            "constraint_force_n": 6.299452736475696
+          },
+          {
+            "path": 35,
+            "joint": 18,
+            "entity_a": 1,
+            "entity_b": 3,
+            "length_minus_rest_m": 0.00031170812985448215,
+            "constraint_force_n": 1.927840571398426
+          },
+          {
+            "path": 36,
+            "joint": 19,
+            "entity_a": 0,
+            "entity_b": 2,
+            "length_minus_rest_m": 0.0003206817215372082,
+            "constraint_force_n": 6.413634430744163
+          },
+          {
+            "path": 36,
+            "joint": 20,
+            "entity_a": 2,
+            "entity_b": 4,
+            "length_minus_rest_m": 0.00032114692474638495,
+            "constraint_force_n": 1.8942065720954688
+          },
+          {
+            "path": 37,
+            "joint": 21,
+            "entity_a": 5,
+            "entity_b": 6,
+            "length_minus_rest_m": -0.28271746883986826,
+            "constraint_force_n": 0
+          },
+          {
+            "path": 37,
+            "joint": 22,
+            "entity_a": 6,
+            "entity_b": 4,
+            "length_minus_rest_m": -3.7110809930851474e-05,
+            "constraint_force_n": 0.38158723628643015
+          },
+          {
+            "path": 38,
+            "joint": 23,
+            "entity_a": 5,
+            "entity_b": 7,
+            "length_minus_rest_m": -0.28270813686470797,
+            "constraint_force_n": 0
+          },
+          {
+            "path": 38,
+            "joint": 24,
+            "entity_a": 7,
+            "entity_b": 8,
+            "length_minus_rest_m": -1.546898760507176e-05,
+            "constraint_force_n": 0.8197731001937099
+          },
+          {
+            "path": 39,
+            "joint": 25,
+            "entity_a": 9,
+            "entity_b": 10,
+            "length_minus_rest_m": -7.535575496930846e-08,
+            "constraint_force_n": 0
+          },
+          {
+            "path": 39,
+            "joint": 26,
+            "entity_a": 10,
+            "entity_b": 8,
+            "length_minus_rest_m": -8.201549603903402e-07,
+            "constraint_force_n": 1.042306600120417
+          },
+          {
+            "path": 40,
+            "joint": 27,
+            "entity_a": 9,
+            "entity_b": 11,
+            "length_minus_rest_m": 6.393592823616956e-06,
+            "constraint_force_n": 0.12787185647233912
+          },
+          {
+            "path": 40,
+            "joint": 28,
+            "entity_a": 11,
+            "entity_b": 3,
+            "length_minus_rest_m": 6.340976363539141e-06,
+            "constraint_force_n": 0.6192724868686971
+          },
+          {
+            "path": 41,
+            "joint": 29,
+            "entity_a": 12,
+            "entity_b": 13,
+            "length_minus_rest_m": 8.914469487686372e-05,
+            "constraint_force_n": 1.7828938975372741
+          },
+          {
+            "path": 41,
+            "joint": 32,
+            "entity_a": 13,
+            "entity_b": 3,
+            "length_minus_rest_m": 8.906977973133223e-05,
+            "constraint_force_n": 1.3010021313707796
+          },
+          {
+            "path": 42,
+            "joint": 30,
+            "entity_a": 12,
+            "entity_b": 14,
+            "length_minus_rest_m": 9.053230959249481e-05,
+            "constraint_force_n": 1.810646191849896
+          },
+          {
+            "path": 42,
+            "joint": 33,
+            "entity_a": 14,
+            "entity_b": 4,
+            "length_minus_rest_m": 8.982317725392264e-05,
+            "constraint_force_n": 1.2317569206152963
+          },
+          {
+            "path": 43,
+            "joint": 31,
+            "entity_a": 12,
+            "entity_b": 15,
+            "length_minus_rest_m": 6.974140790461103e-05,
+            "constraint_force_n": 1.3948281580922204
+          },
+          {
+            "path": 43,
+            "joint": 34,
+            "entity_a": 15,
+            "entity_b": 8,
+            "length_minus_rest_m": 6.995246984287107e-05,
+            "constraint_force_n": 0.6936315885650255
+          }
+        ],
+        "effector_speed_m_s": 2.8692159753347326e-06
+      },
+      "interpretation_limit": "Motor/encoder drift need not mean effector motion. Slack spool-side segments with loaded distal segments may reflect model behavior; this is not hardware evidence."
+    }
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "utc": "2026-11-05T10:26:24.191519+00:00",
+  "claim": "Nominal calibration good; bounded preload did not recover development collection; active-guide model permits transferred spool load with macroscopic local slack; no hardware or robust-policy claim.",
+  "selected_files_excluding_this_manifest": [
+    {
+      "path": "report.md",
+      "bytes": 16872,
+      "sha256": "0c6d015d86981ca97092a5da8eaf57b7eaa78a541c740b5cbdea57a02bd71290"
+    },
+    {
+      "path": "abstract.md",
+      "bytes": 2822,
+      "sha256": "5e66942ce4919e94deefae4b5e5ddbac6f99c95cfca00504c67fcf04972db2c8"
+    },
+    {
+      "path": "research.md",
+      "bytes": 12189,
+      "sha256": "5ece129f2ea5115e95ee32f6161624d34c7eecabf836069d5ebf6c4f734b3f62"
+    },
+    {
+      "path": "evidence/measurements.json",
+      "bytes": 230981,
+      "sha256": "6f3cc47153a2b9f7c42d2d44f83adc28375076e0b52900742b33afffb9506740"
+    },
+    {
+      "path": "policy-frozen.json",
+      "bytes": 1894,
+      "sha256": "53a36f598a10573e67c9ccc4d9378840e9e364193bc5147bfae72d4ec02600d6"
+    },
+    {
+      "path": "evidence/policy-diff.patch",
+      "bytes": 4350,
+      "sha256": "7a0eead714aeb2540b667962d6671a990122559a99ae335a721432d536927db8"
+    },
+    {
+      "path": "evidence/frozen-policy-sources.json",
+      "bytes": 222665,
+      "sha256": "2a26abd291ef56d0b81af00dd898c28b13b97fa6a704c8eb2b5daa8615464656"
+    },
+    {
+      "path": "harness/run.py",
+      "bytes": 3894,
+      "sha256": "f801eb1f481d3f45d76f5fb88952caf55933989e73c45f965f7dddf4e7538e41"
+    },
+    {
+      "path": "harness/prepare.py",
+      "bytes": 6060,
+      "sha256": "b52281825b4d46471a1addc6d38bdf9fd68b071b0b20d68df337b9e7d359b138"
+    },
+    {
+      "path": "harness/analyze.py",
+      "bytes": 6051,
+      "sha256": "b601822425ead251286c4a5ac3b43f889477e7311ca9adb60980f74379f45ee4"
+    },
+    {
+      "path": "harness/torque_slack_probe.mjs",
+      "bytes": 5329,
+      "sha256": "89321d466562bc79f1cc81958b65c9319eb545c07b2c6e4523e64a57a5d0a1e9"
+    },
+    {
+      "path": "evidence/torque-slack-active.json",
+      "bytes": 26633,
+      "sha256": "df5e95410ddb60bea2cf5a0db42bd72437eae0098b5dcfe08ab4da241a604724"
+    },
+    {
+      "path": "evidence/torque-slack-zero.json",
+      "bytes": 26203,
+      "sha256": "b783417aa03baae81701317b502b39ed97a4baec94cd8a539c9b9fff947cd431"
+    },
+    {
+      "path": "evidence/terminal-snapshots.json",
+      "bytes": 92145,
+      "sha256": "dbc54fc694fa5fbb8897ab5644ee5b5ce07493c3e078b8deff0514581a3103e3"
+    },
+    {
+      "path": "evidence/failure-windows.json",
+      "bytes": 65214,
+      "sha256": "b57a4d42554ad63e4bdc411116c162c7dbe4975478a6b4a51f938a247a15a7ba"
+    },
+    {
+      "path": "evidence/native-audits.json",
+      "bytes": 73223,
+      "sha256": "9473641f809ef99580083d5a7637ba825e8606fdb2d1bda5becbe78c016b71ae"
+    },
+    {
+      "path": "evidence/generator-reproduction-v2.json",
+      "bytes": 638,
+      "sha256": "92128966ff32bedabdeff3a86b0b935e28b241d7d3e1d9416689f9c4147fa076"
+    },
+    {
+      "path": "evidence/model-source-map.json",
+      "bytes": 18896,
+      "sha256": "78d242b1a91bdc0fc369f82b3e23dd6952970ffa50fe003e5cade2d1948ba646"
+    },
+    {
+      "path": "evidence/calibration-evidence.json",
+      "bytes": 668707,
+      "sha256": "75906b0b4cc7ac4de376a69e5c31f5c335cafb3780833b45a34f4f1f6c5ff0f9"
+    },
+    {
+      "path": "runs/nominal-numeric/sweeps.json",
+      "bytes": 213388,
+      "sha256": "6eb218b508b501e25419a763a464bfb5ff932188bed3bf2c7707a7885a988a10"
+    },
+    {
+      "path": "runs/nominal-consistent-preload/sweeps.json",
+      "bytes": 213435,
+      "sha256": "41119bc966d805faff92a3e07f75d2ac29b692a66ad7ce39f59ae880813249d7"
+    },
+    {
+      "path": "budget-ledger.json",
+      "bytes": 5142,
+      "sha256": "b649eaebf5c3cb2c414a5275b6a6f2a526bdb1b8efdac0ca1d33092e683df06e"
+    },
+    {
+      "path": "evidence/reproduction.md",
+      "bytes": 4732,
+      "sha256": "678ac7bdd03d818fc88fae6b6cd3b559d18760bfe3c8588bba20396076f542e5"
+    },
+    {
+      "path": "harness/proposed_motor_perturbation.mjs",
+      "bytes": 2052,
+      "sha256": "934407854c2b6b333e88d1dcf095f11920118bbf17b17e617ab3468014937e61"
+    },
+    {
+      "path": "proposed-next-discriminator.md",
+      "bytes": 3463,
+      "sha256": "00aaf5274234db1b455a4226bb7a3cfaed043dbcda56b3624436116fead2ad0b"
+    },
+    {
+      "path": "harness/autocal_headless.mjs",
+      "bytes": 15027,
+      "sha256": "221ee4c5667fb1322f581fa970266982bc71e74f89ef4586b322bf7374638efb"
+    },
+    {
+      "path": "harness/terminal-snapshot.txt",
+      "bytes": 1729,
+      "sha256": "21fca94868c41339b695bb16e27b603fe7af19e6294938edb174cfe849b3df45"
+    },
+    {
+      "path": "design.json",
+      "bytes": 2525,
+      "sha256": "48a03b464d539d4978ebdb0f163f5940ea85d8cf045e8b0adb7a4e5382e33352"
+    },
+    {
+      "path": "evidence/review-inputs.json",
+      "bytes": 157439,
+      "sha256": "a28fe64a4b40b5768118f7690daa0714dd43e7512005c546e05ca71b79bd18f1"
+    },
+    {
+      "path": "runs/eval0-noise-only-default/sweeps.json",
+      "bytes": 221434,
+      "sha256": "b9f8909860fc9fe9a7ebb11018bd64b546dd7fb1286acc34917390e029e2da3e"
+    },
+    {
+      "path": "final-message.md",
+      "bytes": 2393,
+      "sha256": "f7887b72798ae4a744fc6a7e72a5034c3408dc6ff225bbd2336ee87235244169"
+    }
+  ],
+  "raw_journals": "Retained session-local; hashes in evidence/review-inputs.json. No rerun required for review.",
+  "source_revision": "5bb8eb955fa680ddc631b6fb10f988ec3efb497a",
+  "native_artifact_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+}

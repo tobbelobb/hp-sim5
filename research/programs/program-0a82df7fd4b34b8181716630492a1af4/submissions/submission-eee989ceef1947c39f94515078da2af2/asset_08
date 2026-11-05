@@ -1,0 +1,51 @@
+import os,sys,json,hashlib,time,shutil,importlib,fcntl
+from pathlib import Path
+ROOT=Path.cwd();sys.path.insert(0,str(ROOT))
+from autocal.headless_sim import HeadlessSimulation
+from autocal.autocal import main
+S=Path(__file__).resolve().parents[1];H=S/'harness'
+world,runid=sys.argv[1:3];extra=sys.argv[3:];policy="--bounded-preload" in extra;extra=[x for x in extra if x!="--bounded-preload"]
+spec=json.loads((H/(world+'.json')).read_text());run=S/'runs'/runid;run.mkdir(parents=True,exist_ok=False)
+shutil.copyfile(H/'autocal_headless.mjs',run/'service-snapshot.mjs')
+shutil.copyfile(Path(__file__),run/'runner-snapshot.py')
+if policy:shutil.copytree(H/'policy',run/'collector-policy')
+os.environ['FRICTION_WORLD_SPEC']=str(H/(world+'.json'))
+os.environ['HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS']='4000000'
+os.environ['OMP_NUM_THREADS']='1';os.environ['OPENBLAS_NUM_THREADS']='1'
+orig_init=HeadlessSimulation.__init__;orig_spawn=HeadlessSimulation.spawn
+# Session-local adaptation. Production scene/configuration files remain untouched.
+def init(self,args,collector_args):
+    orig_init(self,args,collector_args);self.scene=Path(spec['scene']);self.manifest['scene']=str(self.scene);self.manifest['intervention']=spec
+
+def spawn(self,name,command):
+    if name=='physics':
+        assert command[1]=='scripts/autocal_headless.mjs';command=[command[0],str(run/'service-snapshot.mjs'),*command[2:]]
+    return orig_spawn(self,name,command)
+HeadlessSimulation.__init__=init;HeadlessSimulation.spawn=spawn
+if policy:
+    import subprocess
+    original_popen=subprocess.Popen
+    def popen(command,*a,**kw):
+        if isinstance(command,(list,tuple)) and len(command)>1 and command[0]=='node' and command[1]=='autocal/control/cli/collect_sweep_data.mjs':
+            command=[command[0],str(run/'collector-policy/collect_sweep_data.mjs'),*command[2:]]
+        return original_popen(command,*a,**kw)
+    subprocess.Popen=popen
+
+argv=['--headless-sim','--recording-mode','none','--machine-type','hangprinter_3','--dataset',str(run/'sweeps.json'),'--rrf-config','sys/config_hp3.g','--base-radii','30','--buildup-factor','0','--find-radii','off','--find-buildup-factor','off','--optimizer-mode','fast','--solve-optimizer','lbfgsb','--solve-iterations','400','--solve-restarts','4','--spool-outer-iters','3','--max-steps','6','--sweep-points','10','--speedup','25','--stage-artifacts',str(run/'stages'),*extra]
+(run/'invocation.json').write_text(json.dumps(dict(world=spec,policy='bounded-preload-v2' if policy else 'production-default',policy_files={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (run/'collector-policy').glob('*.mjs')},argv=argv,extra=extra,script_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in [Path(__file__),H/'autocal_headless.mjs']},started_unix=time.time()),indent=2)+'\n')
+module=importlib.import_module('autocal.autocal')
+original_plan=module.plan_next_ellipse_sweep
+ledger=S/'fit-ledger.json'
+def counted_plan(*a,**kw):
+    with (S/'fit-ledger.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        state=json.loads(ledger.read_text()) if ledger.exists() else dict(reserved_uninstrumented_fits=len(list((S/'runs/nominal-numeric/stages').glob('fit-*.json'))),calls=[])
+        if len(state['calls'])+state['reserved_uninstrumented_fits'] >= 80: raise RuntimeError('Session 80-fit budget exhausted')
+        state['calls'].append(dict(run=runid,utc=time.time(),index=len(state['calls'])+1))
+        tmp=ledger.with_suffix('.tmp');tmp.write_text(json.dumps(state,indent=2)+'\n');tmp.replace(ledger)
+    return original_plan(*a,**kw)
+module.plan_next_ellipse_sweep=counted_plan
+try:code=main(argv)
+except BaseException as e:
+    (run/'failure.json').write_text(json.dumps(dict(type=type(e).__name__,message=str(e))));raise
+(run/'exit.json').write_text(json.dumps(dict(exit_code=code,finished_unix=time.time()))+'\n');sys.exit(code)

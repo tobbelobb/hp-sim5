@@ -1,0 +1,37 @@
+// Proposed next discriminator only. Not imported or executed by this study.
+import {SceneEntityInfoComponent} from '/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/src/js/cable_joints_3d/ecs.js';
+import {StepperMotorComponent} from '/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b/hp-sim-3d/app/hangprinter_stepper_motor.js';
+
+export function applyMotorFrictionPlant(world, perAxis) {
+  const rows=[];
+  for(const entity of world.query([StepperMotorComponent,SceneEntityInfoComponent])) {
+    const name=world.getComponent(entity,SceneEntityInfoComponent).name;
+    const axis=/^Spool([ABCD])$/.exec(name)?.[1];
+    if(!axis)continue;
+    const motor=world.getComponent(entity,StepperMotorComponent), factors=perAxis[axis]??{};
+    const baseline={coulombFriction:motor.coulombFriction??.002*motor.holdingTorque,
+      stictionTorque:motor.stictionTorque??.003*motor.holdingTorque,
+      stictionSpeed:motor.stictionSpeed??1,
+      windageCoeff:motor.windageCoeff??motor.dampingCoeff*1e-3};
+    const selected={};
+    for(const key of Object.keys(baseline)) {
+      const factor=factors[key]??1;
+      if(!Number.isFinite(factor)||factor<0||(key==='stictionSpeed'&&factor===0))throw Error(`Invalid ${axis}.${key} multiplier`);
+      selected[key]=baseline[key]*factor;motor[key]=selected[key];
+    }
+    rows.push({entity,name,baseline,selected});
+  }
+  return rows;
+}
+
+export function readNativeMotorFriction(world) {
+  const engine=world.getResource('cableSolverBackend');
+  if(engine?.world!==world||!engine.entityRegion)throw Error('Read after ordinary first production step');
+  engine.refreshMemory();
+  return world.query([StepperMotorComponent,SceneEntityInfoComponent]).map(entity=>{
+    const name=world.getComponent(entity,SceneEntityInfoComponent).name;
+    const o=engine.index.get(entity)*160,a=engine.entityRegion.data;
+    return {entity,name,holdingTorque:a[o+109],dampingCoeff:a[o+111],
+      windageCoeff:a[o+115],coulombFriction:a[o+116],stictionTorque:a[o+117],stictionSpeed:a[o+118]};
+  });
+}

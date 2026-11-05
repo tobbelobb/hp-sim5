@@ -1,0 +1,26 @@
+# Proposed next discriminator — not run
+
+Keep stock effective guide mu=0 and the current verified encoder-noise hook. Perturb motor friction separately through the existing native motor fields. Declare development/held-out worlds and freeze an encoder-observable policy before any future scoring. This study did not run those worlds or establish that the motor model transfers to hardware.
+
+The small reusable module is [proposed_motor_perturbation.mjs](harness/proposed_motor_perturbation.mjs). In a copy of the current service wrapper, import its two functions. Call `applyMotorFrictionPlant(world, perAxis)` after world construction and before the ordinary first production step. For example, a future declared plant might use `{A:{coulombFriction:1.25,stictionTorque:1.25},B:{coulombFriction:.8,stictionTorque:.8}}`; omitted fields/axes preserve effective defaults. Those illustrative multipliers are not selected or tested distributions. Do not set them from anchor truth, a fitted answer, or desired success.
+
+After the first normal `world.update(dt)`, call `readNativeMotorFriction(world)` and compare every changed native field to the returned selected values. Do not call engine.prepare manually. Record scene/spec/source/native-artifact hashes and process.version, and prove a torque-mode physical response before funding collection. The session wrapper's command/noise journal, loaded-native readback and separate evaluator can be reused. Existing frozen preload-policy results do not validate a motor-friction policy.
+
+Read/write path:
+
+- JS component: `StepperMotorComponent` in `hp-sim-3d/app/hangprinter_stepper_motor.js`. Optional properties can be assigned before native preparation.
+- Native adapter: `src/js/cable_joints_3d/rust_physics_engine.js`, entity record stride160. `windageCoeff`→slot115, `coulombFriction`→116, `stictionTorque`→117, `stictionSpeed`→118; holding torque109 and damping coefficient111 establish fallback defaults. These properties are then live bound views.
+- Native force law: `src/wasm/cable_solver/src/engine.rs`, `motors(dt,true)` around1503-1536. Missing optional JS values pack as NaN and activate the fallback laws below. JSON readback serializes NaN as null, so null means fallback, not zero.
+
+| Parameter | Native fallback | Current HP3 effective value | Units |
+| --- | --- | --- | --- |
+| Coulomb torque | .002 × holdingTorque | .001 | Nm |
+| Stiction amplitude | .003 × holdingTorque | .0015 | Nm |
+| Stiction speed | 1 | 1 | rad/s |
+| Windage coefficient | dampingCoeff × .001 | .000011, with loaded damping .011 | Nm/(rad/s)² |
+
+Current loaded holding torque is .5 Nm per spool. Readbacks in `runs/*/sweeps.headless/intervention-native.json` show the actual fields. Recompute defaults per entity rather than assuming all scenes match HP3.
+
+The torque contribution is `-(coulomb + stiction*exp(-abs(omega)/stictionSpeed)) * omega/(abs(omega)+.001)`, plus quadratic windage. It vanishes at exactly zero speed and is not ideal static breakaway friction. Position mode uses a different holding/damping law; perturbing these optional fields directly stresses torque-mode collection. This is distinct from guide capstan tension redistribution and does not repair the observed guide/spool load-transfer boundary.
+
+Any production physics change needs a separate reviewed proposal and its required gates. This file is a research recipe, not a request to integrate a change or run additional jobs now.

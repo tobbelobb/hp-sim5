@@ -1,0 +1,46 @@
+# Fixed-evidence review and reproduction
+
+The submitted review set is listed explicitly in `submission-files.json`; each selected file is hashed in `review-manifest.json` except that manifest itself. Read-only review needs no physics rerun. `evidence/review-inputs.json` includes exact original invocations, manifests, world specifications, preflight, chronology correction, and hashes/paths of retained raw journals and histories. `evidence/calibration-evidence.json` preserves full-precision typed candidate anchors, solver/production status, force checkpoints, decisions, and exact rounded M669 application commands. The separate evaluator defines the four truth anchors and Euclidean error calculation explicitly.
+
+Root checkout: `/workspace/hp-sim5-worktrees/bounded-research-assignment-8b39a80b`.
+Session: `/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51`.
+Pinned runtime: Node v23.11.1; local `.venv/bin/python`.
+
+Saved-evidence checks:
+
+```sh
+source .agents/skills/cloud-research-client/scripts/env.sh
+S=/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51
+.venv/bin/python "$S/harness/analyze.py" nominal-numeric nominal-consistent-preload dev1-active-default dev1-bounded-preload dev1-consistent-preload eval0-default eval0-noise-only-default
+```
+
+The complete old session is needed for that command; the small selected bundle instead contains all derived measurements plus raw candidate anchors, accepted datasets, failure windows, and native snapshots needed to assess the scoped claim. A normal autocalibration run's wall-driven request timings can vary with host load. The claimed final errors belong to the preserved run, not a guarantee of bitwise regeneration.
+
+The corrected generator is `harness/prepare.py`. Give it a new output directory rather than overwriting the frozen harness. `evidence/generator-reproduction-v2.json` records byte equivalence for the tested service and four design scenes. Frozen policy source is embedded verbatim with SHA256 in `evidence/frozen-policy-sources.json`; the diff contains import path rewrites plus the two preload-law changes. The original policy-v1 negative and all raw source snapshots remain session-local with references.
+
+Fresh simulation commands below are an exact recipe for a separately budgeted future rerun, not an instruction to start additional work during fixed-evidence review. Use new run names; never overwrite preserved evidence.
+
+```sh
+source .agents/skills/cloud-research-client/scripts/env.sh
+S=/workspace/hp-sim5/output/research/sessions/attempt-939c073f49004eb6949910600200be51
+timeout -s TERM -k 85s 1200s .venv/bin/python "$S/harness/run.py" dev0 NEW_NOMINAL_DEFAULT --max-steps 12
+timeout -s TERM -k 85s 1200s .venv/bin/python "$S/harness/run.py" dev0 NEW_NOMINAL_POLICY --max-steps 12 --bounded-preload
+timeout -s TERM -k 85s 1200s .venv/bin/python "$S/harness/run.py" dev1 NEW_DEV_DEFAULT --max-steps 12
+timeout -s TERM -k 85s 1200s .venv/bin/python "$S/harness/run.py" dev1 NEW_DEV_POLICY --max-steps 12 --bounded-preload
+timeout -s TERM -k 85s 1200s .venv/bin/python "$S/harness/run.py" eval0 NEW_EVAL_DEFAULT --max-steps 12
+timeout -s TERM -k 85s 1080s .venv/bin/python "$S/harness/run.py" eval0-noise-only NEW_NOISE_ONLY --max-steps 12
+```
+
+`harness/run.py` enforces four million steps per job, fixed 30 mm radii, zero buildup, no layering, production force autotuning/fit/selection/stopping, 10 points per sub-sweep, and the session's 80-fit counter. Original invocations include both default `--max-steps 6` and final overriding `--max-steps 12`; the actual CLI logs show 12. Shell wall limits are recorded separately.
+
+The bounded physical diagnostic requires the v2 terminal snapshot as its construction input. This input is included in `evidence/terminal-snapshots.json` and remains at its original path in the full session. The script reconstructs only the explicitly recorded state; it is not a full-state replay. The exact construction code and two outputs are selected.
+
+```sh
+source .agents/skills/cloud-research-client/scripts/env.sh
+node "$S/harness/torque_slack_probe.mjs" active
+node "$S/harness/torque_slack_probe.mjs" zero
+```
+
+Each arm uses 4001 native steps including ordinary preparation (8.002 simulated seconds). Source, native artifact and runtime hashes are in the outputs. Power samples omit several work/loss terms and must not be read as a complete energy balance.
+
+`proposed-next-discriminator.md` and `harness/proposed_motor_perturbation.mjs` describe an unexecuted motor-friction route. They are explicitly separate from tested findings. No production physics source, build artifact, shared dataset, merge, or push is part of this submission.

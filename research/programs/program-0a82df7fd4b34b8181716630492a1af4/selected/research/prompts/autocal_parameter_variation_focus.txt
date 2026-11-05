@@ -1,5 +1,5 @@
 Improve encoder-only HP3 autocalibration across physically different machines.
-Updated 2026-11-05 after inspecting the research catalog and reports below.
+Updated 2026-11-05 after inspecting prior reports and completing the human interview.
 
 The goal is accurate, reliable anchors with less collection effort, preserving
 one-click operation and automatic stopping. Use known spool radii, zero buildup
@@ -10,6 +10,18 @@ must not choose measurements, fit seeds, thresholds or the applied answer.
 The historical reference is output/extended-autocal/no-buildup-reference-003.
 Also use a fresh current-code baseline for any live comparison. Physics, motor,
 collector and fitting changes since that reference can change its results.
+
+Human priorities and success criteria
+
+Prioritize fewer failures across physical setups, then accuracy, then runtime,
+then explanation. More than 20 mm Euclidean placement error on ANY anchor is a
+practical calibration failure. Good performance requires less than 5 mm on EVERY
+anchor. Report all per-anchor errors and their maximum; RMSE alone is insufficient.
+Emphasize unpredictable friction, modest scene perturbations and simulated sensor
+noise. Up to 20% more collection time is worthwhile if it substantially reduces
+large errors. Challenge transfer to real machines by looking for reproducible
+failures under modest perturbations. A small simulation matrix can falsify a
+robustness claim; it cannot establish hardware reliability.
 
 What earlier runs have already established
 
@@ -62,7 +74,17 @@ Several older reports refer to external worktrees or absent artifacts.
 
 Remaining promising questions
 
-1. Can force-varied measurements resolve solver disagreement?
+1. Which force and measurement choices avoid large errors across machines?
+   Start with independently varied motor or routing friction where modeled and
+   simulated sensor noise. Extend beyond mass/gravity to cable stiffness,
+   asymmetric anchor layouts and payload when they resolve a specific gap.
+   First verify each intervention changes the intended physical property in the
+   baked native world. Distinguish unsupported parameters from negative results.
+   Screen a small declared design, then reserve different worlds for evaluation.
+   Compare current automatic force tuning with a bounded encoder-based policy.
+   Do not let simulated truth set per-world forces or select the winning rule.
+
+2. Can force-varied measurements resolve solver disagreement?
    Freeze L-BFGS-B and TRF candidates from the same encoder prefix. Use their
    predicted measurements and observable noise to choose a feasible extra sweep,
    potentially at a different sensor force. Compare both frozen candidates on
@@ -70,15 +92,6 @@ Remaining promising questions
    planner and a matched extra-sweep control. Measure whether the decision also
    improves applied geometry, rather than assuming prediction cost proves it.
    If solvers agree but are both biased, can a force change expose model error?
-
-2. Which force choices remain useful across plausible physical variation?
-   Extend beyond mass/gravity to independently varied cable stiffness, motor or
-   routing friction where modeled, asymmetric anchor layouts and payload.
-   First verify each intervention changes the intended physical property in the
-   baked native world. Distinguish unsupported parameters from negative results.
-   Screen a small declared design, then reserve different worlds for evaluation.
-   Compare current automatic force tuning with a bounded encoder-based policy.
-   Do not let simulated truth set per-world forces or select the winning rule.
 
 3. Which missing measurement would constrain the weak geometry directions?
    Known radii supply a metric length-change reference; joint unknown radii and

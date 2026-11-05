@@ -1,0 +1,20 @@
+{
+  "policy_id": "bounded-preload-v2",
+  "stage": "frozen before held-out testing",
+  "utc": "2026-11-05T09:38:20.786140+00:00",
+  "rule": "Consistently at held-drive pullout settling and ordinary data-point preloading, command min(forceMax,5*forceMid) to free sensor instead of 2*forceMid. One bounded rule across both preload paths. Both values come from production noisy-encoder force autotuning. Preserve fallback when both force parameters are missing. No new scene truth, sensor truth, force measurement, fit or stopping input.",
+  "trigger": "Controller transitions from encoder-observed pullout to held-drive preload settling. Apply the same rule at the later ordinary point-preload transition.",
+  "guards": "Unchanged stability windows/tolerances/timeouts, fixed-anchor drift guards, force tuner and fit/stopping policy. Command never exceeds autotuned forceMax.",
+  "source_sha256": {
+    "harness/policy/uncalibrated_actions.mjs": "5acf361c4c7c027c5eb1cad753e8f4d8b96e544ef195221b140d24e43d02940a",
+    "harness/policy/sweep_data_collection.mjs": "cf4911796c32ec7af25027899113b72e184c115b3bf4024c428e2056958a7ed2",
+    "harness/policy/collect_sweep_data.mjs": "a9c3527f5d2e0d52eac5fc7b40dcc24b49b118249340d527c50542fb9020325e"
+  },
+  "original_sha256": "ac74b217f22db37ef0f4481a336358641ae5a786be2a81ac94951fa21f1db20f",
+  "production_change": "return forceMid*2.0 -> return resolveCollectionForce({ forceMid, forceMax })",
+  "not_tested": "No held-out evaluation yet. Extra point collection cannot repair an upstream no-point settling failure.",
+  "frozen_utc": "2026-11-05T09:44:12.165581+00:00",
+  "development_outcome": "default failed before first point; v1 and v2 each failed after20 points; no successful recovery demonstrated. No further tuning.",
+  "design_sha256": "48a03b464d539d4978ebdb0f163f5940ea85d8cf045e8b0adb7a4e5382e33352",
+  "heldout_scored_or_started": false
+}

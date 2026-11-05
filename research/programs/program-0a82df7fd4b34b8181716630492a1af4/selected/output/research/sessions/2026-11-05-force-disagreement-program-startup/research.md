@@ -3,7 +3,7 @@
 Program: program-0a82df7fd4b34b8181716630492a1af4
 Date: 2026-11-05
 Base revision: 865c9ab8aac926e258e9fe797141dd26e41e259e
-Status: startup interview pending, no experiments commissioned.
+Status: interview completed; first bounded investigation dispatched.
 
 ## Objective and authority
 
@@ -86,3 +86,72 @@ tool readiness, not calibration accuracy.
 Next decision: incorporate real interview answers, record the brief, choose
 one finite discriminator and commission one worker plus a separate fixed-evidence
 review. Keep the same program ID and live controller attachment.
+
+## Accepted interview answers and dispatch, 2026-11-05
+
+Interview ended at the human's request. No further startup questions are needed.
+The human ranks robustness across setups first, accuracy second, runtime third,
+and explanation fourth. They want to challenge the claim of real-machine
+transfer using modest USDA/noise/friction perturbations. Any anchor above 20 mm
+is failure; all anchors below 5 mm is good performance. Friction has priority.
+A 20% collection-time increase is acceptable for substantially fewer large errors.
+
+These answers supersede the earlier provisional solver-disagreement emphasis.
+The first commissioned investigation tests force/measurement robustness against
+shared model bias. Solver disagreement is optional diagnostic work.
+
+Question: question-0e6d4ed320fe44a793f3bc5eb35f9c34
+Assignment: assignment-c6f56395495f43cfb1d1d5e03b01c593
+Attempt: attempt-939c073f49004eb6949910600200be51
+Allocation: runtime_allocation-2bf15473de9946e49587d6ae3077cab6
+
+Actual allocation is 135 wall minutes: 100 worker, 20 separate review and
+15 startup/manager margin, plus 190 seconds cleanup. Contract allows up to
+12 fresh collection jobs, 80 fresh fits, 48 million physics steps and 4000
+measurement points total. Each job is bounded at 4 million steps and 8000
+simulated seconds. Worker must reserve final 10 minutes for summaries/cleanup.
+Use one isolated worktree worker, no Viewer, routine event recording within
+experiments, native Rust and speedup 25. No model or API credentials are needed.
+
+No calibration result is available at dispatch. Holdout policy, loaded parameter
+verification and full per-anchor reporting are required before scientific claims.
+
+## External source inspected during collection
+
+Piao, Kim, Choi, Moon, Choi, Park and Kim, 2019. Indirect Force Control of a
+Cable-Driven Parallel Robot: Tension Estimation using Artificial Neural Network
+trained by Force Sensor Measurements. Sensors 19, 2520.
+DOI https://doi.org/10.3390/s19112520 . Full text
+https://pmc.ncbi.nlm.nih.gov/articles/PMC6603654/ .
+
+Sections 2.2 and 3.1 report pulley loading/unloading hysteresis and distinguish
+bearing and sliding friction. Additional force sensors supply training/reference
+data. This motivates treating our static capstan stress as a limited friction
+model; it does not validate encoder-only autocal, determine our coefficient
+ranges or support hardware accuracy of the program. No algorithm is adopted
+from the paper. The separate IEEE 2025 conference abstract at DOI
+10.1109/ICECER65523.2025.11401211 was found in search, but its full page failed to
+load; it is not used to support a result.
+
+## First measured results, unreviewed
+
+Nominal numerical run completed automatically by spread-consensus after five
+iterations, with applied A/B/C/D errors 3.840677/3.599241/3.463745/1.860538 mm.
+Maximum 3.840677 mm, four-anchor RMSE 3.284983 mm. It used 140 points, 2091604
+physics steps and 4183.208 simulated seconds. One intermediate cold fit was
+catastrophically wrong, but warm/history selection rejected it.
+
+Verified active-friction/noise dev1 default failed the settling guard before
+points or fitting: 749017 steps, 1498.034 simulated seconds. Clean sensor-C
+last-second range23.239717 degrees versus .3 degree quiet limit; added Gaussian
+noise is too small to explain this failure boundary. This is persistent encoder
+motion in simulation, not proof of effector movement or hardware failure.
+
+One development policy uses the existing bounded measurement force
+min(forceMax,5*forceMid) for held-drive preload, replacing2*forceMid. It passed
+the first failed boundary and began collecting points. It has not yet completed.
+No guards or stopping logic were relaxed. Policy and nominal/evaluation controls
+remain pending, as does separate fixed-evidence review.
+
+Evidence: ../attempt-939c073f49004eb6949910600200be51/evidence/measurements.json
+and dev1-failure-diagnostic.json. No scientific admission has been applied.

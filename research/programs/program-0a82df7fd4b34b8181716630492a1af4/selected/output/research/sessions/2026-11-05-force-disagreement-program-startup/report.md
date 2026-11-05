@@ -1,37 +1,39 @@
-# Force-varied sweeps for robust HP3 autocalibration
+# Force and measurement robustness across HP3 friction and noise variation
 
-Status: pending startup interview.
+Status: in progress, first bounded worker running.
 
 ## Abstract
 
-This program asks whether a fresh force-varied sweep can resolve disagreement
-between L-BFGS-B and TRF and improve encoder-only HP3 calibration across different
-physical worlds. The startup audit found completed profiling, warm-start and
+This program asks whether force and measurement choices can prevent large
+encoder-only HP3 calibration errors across friction and noise variation.
+The startup audit found completed profiling, warm-start and
 early-stopping work, mixed solver/default results, a ten-world mass/gravity
 comparison, and an origin-shift study. It replaced stale starting questions in
 the parameter-variation prompt with narrower unresolved directions. Program
 runtime setup and independent command socket checks passed. These are tool
-checks. No new fits, simulated collections or calibration-accuracy experiments
-have run, and no scientific result is available. The human requested a startup
-grill. Questions about practical failure thresholds and physical variation are
-pending; no worker has been dispatched.
+checks. The human ended the interview and prioritized robustness, with any anchor
+above 20 mm a failure and every anchor below 5 mm good performance. Friction is
+the primary variation, and up to 20% additional collection time is acceptable for
+substantially fewer large errors. A bounded worker has begun fresh collection.
+No calibration-accuracy result is available yet.
 
 
-## Startup audit
+## Program startup and accepted brief
 
-The refreshed prompt records the historical findings and four remaining
-questions, with links and limitations. It removes the claim that every earlier
-run used one physical setup. The ten-world study varied mass and gravity while
-leaving layout, stiffness and friction unchanged. Its modest solver difference
-does not resolve force robustness or large errors.
+The refreshed prompt records earlier findings and four remaining questions. It
+removes the false premise that all earlier work used one physical setup. The
+ten-world study varied mass and gravity, leaving layout, stiffness and friction
+unchanged. The human then selected force/measurement robustness and prioritized
+friction, maximum per-anchor error and large-error prevention.
 
-The program controller opened successfully in cloud mode with startup grilling
-and ongoing consequential questions enabled. Dependency and socket checks passed.
-No calibration experiment, implementation change, review or scientific admission
-has occurred. See the [notebook](research.md) for the provisional first experiment,
-budget and pending interview. The prompt edit passed git diff --check.
+The first bounded investigation is running in its own worktree. Its precise
+contract and accepted answers are in the [notebook](research.md). Initial recorder
+and inactive-friction pilot problems are preserved by the worker; neither
+establishes a calibration-accuracy failure. No scientific admission exists yet.
 
 ## References
 
-See the [abstract](abstract.md) and the evidence links in the
-[updated prompt](../../../../research/prompts/autocal_parameter_variation_focus.txt).
+- [Updated prompt](../../../../research/prompts/autocal_parameter_variation_focus.txt): completed work, unresolved questions and human criteria.
+- [Worker notebook](../attempt-939c073f49004eb6949910600200be51/research.md): actual experiment decisions and failures.
+- [Worker report](../attempt-939c073f49004eb6949910600200be51/report.md): numerical results when available.
+- [Startup notebook](research.md): program identity, authority and budgets.

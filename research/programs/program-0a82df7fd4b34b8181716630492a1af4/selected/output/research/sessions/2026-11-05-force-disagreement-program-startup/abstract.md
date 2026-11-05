@@ -1,20 +1,25 @@
-# Force-varied sweeps for robust HP3 autocalibration
+# Force and measurement robustness across HP3 friction and noise variation
 
-Status: pending startup interview.
+Status: in progress, first bounded worker running.
 
 ## Abstract
 
-This program asks whether a fresh force-varied sweep can resolve disagreement
-between L-BFGS-B and TRF and improve encoder-only HP3 calibration across different
-physical worlds. The startup audit found completed profiling, warm-start and
+This program asks whether force and measurement choices can prevent large
+encoder-only HP3 calibration errors across friction and noise variation.
+The startup audit found completed profiling, warm-start and
 early-stopping work, mixed solver/default results, a ten-world mass/gravity
 comparison, and an origin-shift study. It replaced stale starting questions in
 the parameter-variation prompt with narrower unresolved directions. Program
 runtime setup and independent command socket checks passed. These are tool
-checks. No new fits, simulated collections or calibration-accuracy experiments
-have run, and no scientific result is available. The human requested a startup
-grill. Questions about practical failure thresholds and physical variation are
-pending; no worker has been dispatched.
+checks. The human ended the interview and prioritized robustness, with any anchor
+above 20 mm a failure and every anchor below 5 mm good performance. Friction is
+the primary variation, and up to 20% additional collection time is acceptable for
+substantially fewer large errors. A bounded worker has begun fresh collection.
+The first nominal run stopped automatically with maximum applied anchor error
+3.841 mm and all four anchors below 5 mm. The first active-friction/noise run
+failed settling before collecting any points. Its clean encoder drift was much
+larger than injected noise. One bounded preload policy is under development;
+no policy improvement or separate evidence review is available yet.
 
 ## Topics
 
@@ -25,16 +30,16 @@ encoder-only calibration, research program, startup interview.
 
 | Hypothesis | Experiment IDs | Outcome | Evidence |
 | --- | --- | --- | --- |
-| A force-varied sweep improves applied geometry across worlds | None | Not tested | Proposed in [notebook](research.md) |
-| Solver disagreement reveals a useful next measurement | None | Not tested | Proposed in [notebook](research.md) |
+| A bounded preload improves completion across friction/noise worlds | None completed | Not tested | Worker experiment in progress |
+| Current default completes the first active-friction/noise world | dev1-active-default | Rejected for this simulated collection, unreviewed | [Worker evidence](../attempt-939c073f49004eb6949910600200be51/evidence/measurements.json) |
 
 ## Decision handoff
 
 - Scope: known spool radii, zero buildup, no line layering, HP3 simulation.
 - Review: manager inspected the historical reports; no separate review yet.
-- Decision: preserve current defaults; interview before commissioning.
-- Next: settle the practical success/failure criterion and choose the first
-  bounded discriminator. No calibration result is available yet.
+- Decision: preserve current defaults pending a paired robustness experiment.
+- Next: verify active friction/noise interventions, then compare a frozen policy
+  on held-out worlds. Initial results remain unreviewed.
 
 ## References
 
