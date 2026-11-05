@@ -8,5 +8,15 @@
     "effort_ratio": null,
     "completed_both": false,
     "readback_both": false
+  },
+  {
+    "world": "development",
+    "default_max_mm": 3.695888659558299,
+    "candidate_max_mm": 2.8528975546135613,
+    "max_improvement_mm": 0.8429911049447378,
+    "max_improvement_percent": 22.808887999496307,
+    "effort_ratio": 1.0641170124373829,
+    "completed_both": true,
+    "readback_both": true
   }
 ]

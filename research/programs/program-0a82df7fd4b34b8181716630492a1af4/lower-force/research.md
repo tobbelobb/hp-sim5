@@ -53,3 +53,25 @@ Applied per-anchor error mm: {'A': 2.499299901972569, 'B': 3.695888659558299, 'C
 140 physical points, 7 sweeps, 9 fits, 2161548 steps, 4323.0960000000005 simulated seconds, 643.4076395029999 wall seconds. Wall time depends on host load. Intermediate max tail 1911.6000238647873 mm, invalid fits 0.
 
 Full raw archive includes all fits, dataset, selection log, command/noise journals, initial/terminal native snapshots, invocation, candidate patch, policy/source hashes. SHA256 readback verified every archived file. No omissions.
+
+## Seventh collection decision
+
+After d-default, manager declined a seventh unchanged nominal candidate pass solely to replace the failed primary. Under the frozen no-new-failure gate it cannot erase the counterexample and cannot change adoption without isolation evidence. Finish3remaining primary jobs, authorized <=5min separate transport follow-up if reserve remains, reports/checks. Seventh stays unused unless a specific unresolved decision justifies its cost.
+
+## Failure wall-clock reporting correction
+
+The auxiliary runner timestamp difference needs a fallback when failure omits exit.json. Corrected n-candidate summary primary_process_wall_s to manifest406.4474s. Main reported wall_s was already correct. The old raw verified-result retains the original auxiliary-field error; its archive stays immutable. No physical metric or policy changed.
+
+## Controlled continuation contingency
+
+Manager instructed: after devpair checkpoint, start evaluation only if BOTH remaining primary jobs plus pushes and10min reporting reserve fit conservatively in live100min deadline. Otherwise seal four-primary controlled partial evidence with evaluation NOT TESTED. Manager will review partial and fund fresh bounded continuation for only unrun evaluation pair and focused transport work; do not repeat successful jobs or extend current deadline. Aggregate caps remain7collections/80fits/28Msteps/2000points.
+
+## d-candidate
+
+accepted_below20; stop=spread-consensus; normal acceptance=True.
+
+Applied per-anchor error mm: {'A': 2.559882809817639, 'B': 2.8528975546135613, 'C': 2.222780471118976, 'D': 2.460508077613276}. Maximum 2.8528975546135613, sqrt(mean of four squared anchor distances) 2.5341111597514803. Every<5: True; anchors>20: 0.
+
+140 physical points, 7 sweeps, 9 fits, 2300140 steps, 4600.28 simulated seconds, 913.0879748390003 wall seconds. Wall time depends on host load. Intermediate max tail 2200.8462674411935 mm, invalid fits 1.
+
+Full raw archive includes all fits, dataset, selection log, command/noise journals, initial/terminal native snapshots, invocation, candidate patch, policy/source hashes. SHA256 readback verified every archived file. No omissions.
