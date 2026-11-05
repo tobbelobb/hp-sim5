@@ -1,0 +1,22 @@
+{
+  "limit": {
+    "collections": 7,
+    "fresh_fits": 80,
+    "physics_steps": 28000000,
+    "physical_points": 2000,
+    "steps_per_collection": 4000000,
+    "sim_s_per_collection": 8000,
+    "max_auto_iterations": 6,
+    "wall_minutes": 100,
+    "report_reserve_minutes": 10
+  },
+  "completed_or_failed_collections": 2,
+  "fresh_fits": 9,
+  "physics_steps": 3506835,
+  "physical_points": 190,
+  "torque_probe_steps": 3003,
+  "runs": [
+    "n-default",
+    "n-candidate"
+  ]
+}
