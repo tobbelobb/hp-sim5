@@ -1,0 +1,730 @@
+#!/usr/bin/env node
+import path from 'node:path';
+import readline from 'node:readline';
+import fs from 'node:fs/promises';
+import { createReferenceLogger } from 'file:///workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/extended_reference.mjs';
+import { spawn } from 'node:child_process';
+import { createBridge } from 'file:///workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/bridge_factory.mjs';
+import { attachDebugState } from 'file:///workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/debug_trace.mjs';
+import {
+  DEFAULT_RRF_PORT,
+  sendHpSimPositionTraceMode,
+  sendHpSimReset,
+  sendHpSimSpeedScale,
+  sendHpSimSettings,
+  sleep as baseSleep,
+  startRrfSimulator,
+  stopProcess,
+  waitForRrfSimulator,
+} from 'file:///workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/encoder_utils.mjs';
+import { normalizeMachineType } from 'file:///workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/machine_type.mjs';
+import {
+  DEFAULT_KLIPPY_CONFIG_PATH,
+  DEFAULT_KLIPPY_SOCKET_PATH,
+  ensureKlippyApiServer,
+  findKlippyApiProcess,
+  stopKlippyApiServer,
+} from 'file:///workspace/hp-sim5-worktrees/research-question-abfd2d9a/integrations/klipper/klippy_api_cli_config.mjs';
+import {
+  collectSweepData,
+  MACHINE_CONFIGS,
+  MOTOR_IDS_BY_MACHINE,
+  SWEEP_DEFAULTS,
+} from './sweep_data_collection.mjs';
+import { FORCE_TUNING_DEFAULTS } from 'file:///workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/behaviors/force_tuning.mjs';
+import { applyForceModeState } from './uncalibrated_actions.mjs';
+
+const SOURCE_FILE_LABEL = 'autocal/control/cli/collect_sweep_data.mjs';
+const SIM_PROCESS_WARNING_TIMEOUT_MS = 10_000;
+let stepGcodeMode = false;
+let pendingPreSendDelayMs = 0;
+let stepReadline = null;
+
+function getSourceLineFromStack(stack, { skipMatches = 0 } = {}) {
+  if (!stack) {
+    return null;
+  }
+  const matches = [...stack.matchAll(/((?:scripts|autocal\/control)\/[^:\n]+\.mjs):(\d+):\d+/g)];
+  if (matches.length === 0) {
+    return null;
+  }
+  const idx = matches.length > skipMatches ? skipMatches : 0;
+  const file = matches[idx][1];
+  const line = parseInt(matches[idx][2], 10);
+  if (!Number.isFinite(line)) {
+    return null;
+  }
+  return { file, line };
+}
+
+async function waitForEnter(message) {
+  if (!process.stdin.isTTY) {
+    console.log(message);
+    return;
+  }
+  if (!stepReadline) {
+    stepReadline = readline.createInterface({ input: process.stdin, output: process.stdout });
+  }
+  await new Promise((resolve) => stepReadline.question(message, resolve));
+}
+
+function sleep(ms) {
+  const delayMs = Number(ms);
+  if (!Number.isFinite(delayMs) || delayMs <= 0) {
+    return Promise.resolve();
+  }
+  if (stepGcodeMode) {
+    pendingPreSendDelayMs += delayMs;
+    return Promise.resolve();
+  }
+  return baseSleep(delayMs);
+}
+
+function listProcessCommandLines() {
+  return new Promise((resolve, reject) => {
+    const child = spawn('ps', ['-eo', 'args='], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    let stdout = '';
+    child.once('error', reject);
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.once('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`ps exited with code ${code}`));
+        return;
+      }
+      const lines = stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      resolve(lines);
+    });
+  });
+}
+
+function isFirmwareProcessCommandLine(firmware, commandLine) {
+  const argv = String(commandLine)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (firmware === 'klipper') {
+    return argv.some((arg) => arg === 'klippy.py' || arg.endsWith('/klippy.py'));
+  }
+  return argv.some((arg) => arg === 'rrf_simulator' || arg.endsWith('/rrf_simulator'));
+}
+
+async function isFirmwareProcessRunning(firmware) {
+  const commandLines = await listProcessCommandLines();
+  return commandLines.some((commandLine) => isFirmwareProcessCommandLine(firmware, commandLine));
+}
+
+function scheduleSimulatorProcessWarning({ sim, firmware, timeoutMs = SIM_PROCESS_WARNING_TIMEOUT_MS }) {
+  if (!sim) {
+    return;
+  }
+  const timeoutSec = Math.round(Math.max(1, Number(timeoutMs) || SIM_PROCESS_WARNING_TIMEOUT_MS) / 1000);
+  const timer = setTimeout(async () => {
+    try {
+      const running = await isFirmwareProcessRunning(firmware);
+      if (running) {
+        return;
+      }
+      const expectedProcess = firmware === 'klipper' ? 'klippy.py' : 'rrf_simulator';
+      console.warn(
+        `[warning] --sim requested, but ${expectedProcess} is not running after ${timeoutSec}s. `
+        + 'The collector will keep waiting; start the simulator firmware process to continue.',
+      );
+    } catch (_error) {
+      // best-effort warning only
+    }
+  }, Math.max(1, Number(timeoutMs) || SIM_PROCESS_WARNING_TIMEOUT_MS));
+  if (typeof timer.unref === 'function') {
+    timer.unref();
+  }
+}
+
+async function ensureKlippySimulator({
+  sim,
+  firmware,
+  socketPath,
+  configPath,
+  speedup = 1,
+  quiet,
+} = {}) {
+  if (!sim || firmware !== 'klipper') {
+    return null;
+  }
+  const existingKlippy = await findKlippyApiProcess({ socketPath });
+  if (existingKlippy) {
+    return null;
+  }
+  const simSpeedup = Number.isFinite(speedup) && speedup > 1 ? speedup : 1;
+  // Queue capacity for requested playback, not an estimate of achieved clock speed.
+  const queueAheadScale = Math.min(simSpeedup, 20);
+  const motionQueueStepGenLowTime = (0.450 * queueAheadScale).toFixed(3);
+  const motionQueueStepGenHighTime = (0.700 * queueAheadScale).toFixed(3);
+
+  return ensureKlippyApiServer({
+    startScript: './scripts/run_klippy_api_mode.sh',
+    socketPath,
+    configPath: configPath || DEFAULT_KLIPPY_CONFIG_PATH,
+    motionQueueStepGenLowTime,
+    motionQueueStepGenHighTime,
+    onInfo: quiet ? null : (message) => console.log(message),
+  });
+}
+
+export function parseBridgeArgs(argv) {
+  const envServer = process.env.RRF_SERVER_URL;
+  const args = {
+    server: envServer || 'http://localhost:8080',
+    serverExplicit: !!envServer,
+    firmware: 'rrf',
+    wsPort: 8790,
+    quiet: false,
+    command: null,
+    help: false,
+    noWs: false,
+    stepGcode: false,
+    dx: null,
+    dy: null,
+    feed: null,
+    waitWs: null,
+    timeout: null,
+    debug: false,
+    debugGcode: false,
+    debugGcodeResponses: false,
+    pointsFile: null,
+    outputFile: null,
+    settleMs: null,
+    persistRrfSimulator: false,
+    hpSimReset: false,
+    noSpawnRrfSimulator: false,
+    speedup: null,
+    port: null,
+    machineType: null,
+    openLoopMotors: false,
+    physicsSubsteps: null,
+    sweepRange: null,
+    sweepPoints: null,
+    maxSweeps: null,
+    fixedTargets: null,
+    sweepMethod: null,
+    maxTravelMm: null,
+    sensorForce: null,
+    sensorCollectionForce: null,
+    forceLow: null,
+    forceMid: null,
+    forceMax: null,
+    preserveBuildupFactor: false,
+    forceBuildupFactor: null,
+    forceBaseRadii: null,
+    forceStep: null,
+    autoTuneForce: false,
+    noAutoTuneForce: false,
+    torque: null,
+    rampWaitMs: null,
+    swapWaitMs: null,
+    debugSweep: false,
+    debugSweepActions: false,
+    trace: false,
+    sweepConfigFile: null,
+    continuous: false,
+    sampleRate: null,
+    observabilityFile: null,
+    returnToOrigin: false,
+    config: null,
+    socket: null,
+    sim: false,
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--config') {
+      args.config = argv[++i] || null;
+    } else if (arg === '--headless-url') {
+      args.headlessUrl = argv[++i];
+    } else if (arg === '--socket') {
+      args.socket = argv[++i] || null;
+    } else if (arg === '--server' || arg === '--rrf') {
+      args.server = argv[++i] || args.server;
+      args.serverExplicit = true;
+    } else if (arg === '--sim' || arg === '--simulation') {
+      args.sim = true;
+    } else if (arg === '--firmware') {
+      args.firmware = argv[++i] || 'rrf';
+    } else if (arg === '--port') {
+      const value = parseInt(argv[++i], 10);
+      if (Number.isFinite(value)) {
+        args.port = value;
+      }
+    } else if (arg === '--ws-port') {
+      const value = parseInt(argv[++i], 10);
+      if (Number.isFinite(value) && value > 0) {
+        args.wsPort = value;
+      } else {
+        args.wsPort = 0;
+      }
+    } else if (arg === '--cmd' || arg === '-c') {
+      args.command = argv[++i] || null;
+    } else if (arg === '--quiet' || arg === '-q') {
+      args.quiet = true;
+    } else if (arg === '--help' || arg === '-h') {
+      args.help = true;
+    } else if (arg === '--no-ws') {
+      args.noWs = true;
+    } else if (arg === '--step-gcode' || arg === '--step-gcodes' || arg === '--interactive-gcode') {
+      args.stepGcode = true;
+    } else if (arg === '--dx') {
+      args.dx = argv[++i] || null;
+    } else if (arg === '--dy') {
+      args.dy = argv[++i] || null;
+    } else if (arg === '--feed' || arg === '-f') {
+      args.feed = argv[++i] || null;
+    } else if (arg === '--wait-ws') {
+      args.waitWs = argv[++i] || null;
+    } else if (arg === '--timeout') {
+      args.timeout = argv[++i] || null;
+    } else if (arg === '--debug') {
+      args.debug = true;
+    } else if (arg === '--debug-gcode' || arg === '--debug-gcodes' || arg === '--trace-gcode') {
+      args.debugGcode = true;
+    } else if (arg === '--debug-gcode-responses' || arg === '--trace-gcode-responses' || arg === '--debug-gcodes-responses') {
+      args.debugGcodeResponses = true;
+    } else if (arg === '--points-file' || arg === '--points') {
+      args.pointsFile = argv[++i] || null;
+    } else if (arg === '--output-file' || arg === '--output' || arg === '--out') {
+      args.outputFile = argv[++i] || null;
+    } else if (arg === '--settle-ms') {
+      args.settleMs = argv[++i] || null;
+    } else if (arg === '--persist-rrf-simulator') {
+      args.persistRrfSimulator = true;
+    } else if (arg === '--hp-sim-reset') {
+      args.hpSimReset = true;
+    } else if (arg === '--no-spawn-rrf-simulator') {
+      args.noSpawnRrfSimulator = true;
+    } else if (arg === '--speedup') {
+      args.speedup = argv[++i] || null;
+    } else if (arg === '--physics-substeps') {
+      args.physicsSubsteps = Number(argv[++i]);
+      if (!Number.isInteger(args.physicsSubsteps) || args.physicsSubsteps < 1 || args.physicsSubsteps > 16) {
+        throw new Error('--physics-substeps must be an integer from 1 to 16');
+      }
+    } else if (arg === '--open-loop-motors') {
+      args.openLoopMotors = true;
+    } else if (arg === '--machineType' || arg === '--machine-type') {
+      args.machineType = argv[++i] || null;
+    } else if (arg === '--sweepRange') {
+      args.sweepRange = argv[++i] || null;
+    } else if (arg === '--sweepPoints') {
+      args.sweepPoints = argv[++i] || null;
+    } else if (arg === '--maxSweeps') {
+      args.maxSweeps = argv[++i] || null;
+    } else if (arg === '--max-travel-mm' || arg === '--max-travel') {
+      args.maxTravelMm = argv[++i] || null;
+    } else if (arg === '--fixed-targets' || arg === '--fixedTargets' || arg === '--fixed-target') {
+      args.fixedTargets = argv[++i] || null;
+    } else if (arg === '--sensor-force' || arg === '--force-sensor' || arg === '--sensorForce') {
+      args.sensorForce = argv[++i] || null;
+    } else if (arg === '--sensor-collection-force' || arg === '--sensorCollectionForce') {
+      args.sensorCollectionForce = argv[++i] || null;
+    } else if (arg === '--torque') {
+      args.torque = argv[++i] || null;
+    } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
+      args.sweepMethod = argv[++i] || null;
+    } else if (arg === '--force-low' || arg === '--forceLow') {
+      args.forceLow = argv[++i] || null;
+    } else if (arg === '--force-mid' || arg === '--forceMid' || arg === '--force-min' || arg === '--forceMin') {
+      args.forceMid = argv[++i] || null;
+    } else if (arg === '--force-max' || arg === '--forceMax') {
+      args.forceMax = argv[++i] || null;
+    } else if (arg === '--preserve-buildup-factor' || arg === '--preserveBuildupFactor') {
+      args.preserveBuildupFactor = true;
+    } else if (arg === '--force-buildup-factor' || arg === '--forceBuildupFactor') {
+      args.forceBuildupFactor = argv[++i] || null;
+    } else if (arg === '--force-base-radii' || arg === '--forceBaseRadii' || arg === '--base-radii') {
+      args.forceBaseRadii = argv[++i] || null;
+    } else if (arg === '--force-step' || arg === '--forceStep') {
+      args.forceStep = argv[++i] || null;
+    } else if (arg === '--auto-tune-force' || arg === '--autoTuneForce') {
+      args.autoTuneForce = true;
+    } else if (arg === '--no-auto-tune-force' || arg === '--noAutoTuneForce') {
+      args.noAutoTuneForce = true;
+    } else if (arg === '--torque-low') {
+      args.forceLow = argv[++i] || null;
+    } else if (arg === '--torque-min') {
+      args.forceMid = argv[++i] || null;
+    } else if (arg === '--torque-max') {
+      args.forceMax = argv[++i] || null;
+    } else if (arg === '--torque-step') {
+      args.forceStep = argv[++i] || null;
+    } else if (arg === '--auto-tune-torque' || arg === '--autoTuneTorque') {
+      args.autoTuneForce = true;
+    } else if (arg === '--no-auto-tune-torque' || arg === '--noAutoTuneTorque') {
+      args.noAutoTuneForce = true;
+    } else if (arg === '--ramp-wait-ms') {
+      args.rampWaitMs = argv[++i] || null;
+    } else if (arg === '--swap-wait-ms') {
+      args.swapWaitMs = argv[++i] || null;
+    } else if (arg === '--debug-sweep' || arg === '--debugSweep') {
+      args.debugSweep = true;
+    } else if (arg === '--debug-sweep-actions') {
+      args.debugSweepActions = true;
+    } else if (arg === '--trace' || arg === '--trace-positions') {
+      args.trace = true;
+    } else if (arg === '--line-layering') {
+      args.lineLayering = true;
+    } else if (arg === '--sweep-config-file' || arg === '--sweep-config' || arg === '--sweepFile') {
+      args.sweepConfigFile = argv[++i] || null;
+    } else if (arg === '--continuous') {
+      args.continuous = true;
+    } else if (arg === '--sample-rate' || arg === '--sampleRate') {
+      args.sampleRate = argv[++i] || null;
+    } else if (arg === '--observability-file' || arg === '--obs-file') {
+      args.observabilityFile = argv[++i] || null;
+    } else if (arg === '--return-to-origin' || arg === '--returnToOrigin') {
+      args.returnToOrigin = true;
+    } else if (arg === '--project-zero-tension') {
+      args.projectZeroTension = true;
+    }
+  }
+
+  return args;
+}
+
+
+function printHelp() {
+  console.log(`Usage: node autocal/control/cli/collect_sweep_data.mjs [options]
+
+Collect circular sweep data where N-1 anchors are fixed, one anchor drives, and another is in force/sensor mode.
+
+Options:
+  --help, -h                 Show this help and exit
+  --machineType <name>       Machine type: slideprinter | hangprinter_3 | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
+  --sweepPoints <count>      Number of points per sweep (default: ${SWEEP_DEFAULTS.DEFAULT_SWEEP_POINTS})
+  --fixed-targets <csv>      Fixed-anchor target deltas in mm (comma-separated)
+  --max-travel-mm <mm>       Fixed-anchor delta applied to all fixed anchors
+  --maxSweeps <count>        Max sweeps when auto-generating configs (default: ${SWEEP_DEFAULTS.DEFAULT_MAX_SWEEPS})
+  --feed <mm/min>            Feed rate for drive moves (default: ${SWEEP_DEFAULTS.DEFAULT_FEED})
+  --sensor-force <N>         Alias for --sensor-collection-force
+  --settleMs <ms>            Deprecated (was fixed settle time; now waits for encoder stability)
+  --speedup <scale>          hp-sim speed scale (default: 1)
+  --continuous               Deprecated (force-drive sweeps only)
+  --sample-rate <Hz>         Deprecated (continuous mode removed)
+  --force-low <N>            idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
+  --force-mid <N>            start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N})
+  --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
+  --sensor-collection-force <N>
+                              measurement preload force for sensor anchors
+  --sim, --simulation        Enable simulation mode (autostarts Klippy in --firmware klipper)
+  --preserve-buildup-factor  Keep current M666 Q (default behavior when no Q override is provided)
+  --force-buildup-factor <k> Force M666 Q to this value before collection
+  --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
+  --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
+  --no-auto-tune-force       skip auto-tuning and use provided/default forces
+  --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
+  --debug-sweep              Print planned sweep permutations before collecting
+  --trace                    Tell hp-sim to plot a trace of its movements (default: on)
+  --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting, initially 1)
+  --open-loop-motors         Use open-loop simulator motors (default: closed-loop)
+  --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
+  --no-trace                 Disable hp-sim trace plotting
+  --project-zero-tension     Project encoder readings to zero tension during each data point
+  --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
+  --observability-file <path> Sidecar histogram JSON path (default: <output>.obs.json)
+  --firmware <rrf|klipper>   Firmware flavor to target (default: rrf)
+  --config <path>            Simulator config path (only used if --firmware klipper)
+  --socket <path>            Klippy UDS socket path (only used if --firmware klipper)
+  --server, --rrf <url>      RRF server URL (default: http://localhost:${DEFAULT_RRF_PORT})
+  --port <port>              Port for spawned rrf_simulator (default: ${DEFAULT_RRF_PORT})
+  --no-spawn-rrf-simulator   Do not start rrf_simulator automatically
+  --no-ws                    Disable hp-sim websocket bridge
+  --ws-port <port>           WebSocket port (default: 8790)
+  --hp-sim-reset             Reset hp-sim on start
+  --wait-ws <ms>             Wait for hp-sim websocket connection (default: 0)
+  --debug                    Verbose logging (includes G-code replies)
+  --debug-gcode              Echo sent G-code
+  --debug-gcode-responses    Echo G-code responses
+  --debug-sweep-actions      Print sweep debug traces (force modes, waits, moves, data points)
+  --step-gcode               Pause before each G-code; press Enter to send (prints source line + skipped waits)
+  --return-to-origin         Return all motors to encoder origin between sweeps and after collection
+
+Examples:
+  node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweepPoints 41 --output-file sweep.json
+  node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/sweep_configs/hangprinter_4.txt --debug-sweep`);
+}
+
+
+async function main() {
+  const argv = process.argv.slice(2);
+  const args = parseBridgeArgs(argv);
+  const hasNoTrace = argv.includes('--no-trace');
+  if (hasNoTrace) {
+    args.trace = false;
+  } else if (!args.trace) {
+    args.trace = true;
+  }
+  if (args.help) {
+    printHelp();
+    process.exit(0);
+  }
+  stepGcodeMode = !!args.stepGcode;
+  const machineType = normalizeMachineType(args.machineType || 'slideprinter');
+  const machineConfig = MACHINE_CONFIGS[machineType];
+  if (!machineConfig) {
+    console.error(`Unknown machine type: ${machineType}`);
+    process.exit(1);
+  }
+  const motorIds = MOTOR_IDS_BY_MACHINE[machineType];
+  if (!motorIds || motorIds.length !== machineConfig.numAnchors) {
+    console.error(`Motor ID mapping missing or mismatched for ${machineType}`);
+    process.exit(1);
+  }
+  if (motorIds.length !== machineConfig.axes.length) {
+    console.error(`Motor ID count (${motorIds.length}) does not match axes count (${machineConfig.axes.length}) for ${machineType}`);
+    process.exit(1);
+  }
+
+  const speedup = Number.isFinite(parseFloat(args.speedup)) && parseFloat(args.speedup) > 0
+    ? parseFloat(args.speedup)
+    : 1;
+  const debugSweepActions = !!args.debugSweepActions;
+  const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
+  const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : 0;
+
+  const targetPort = Number.isFinite(parseInt(args.port, 10)) ? parseInt(args.port, 10) : DEFAULT_RRF_PORT;
+  const targetServer = args.serverExplicit ? args.server : `http://localhost:${targetPort}`;
+  const socketPath = args.socket || process.env.KLIPPY_SOCKET_PATH || DEFAULT_KLIPPY_SOCKET_PATH;
+  const shouldSpawnRrf = args.firmware === 'rrf' && !args.noSpawnRrfSimulator && !args.serverExplicit;
+  let rrfProcess = null;
+  let managedKlippyProcess = null;
+  let bridgeCtx = null;
+  let send = null;
+  let cleanupStarted = false;
+  const reference = createReferenceLogger();
+
+  const cleanup = async () => {
+    if (cleanupStarted) {
+      return;
+    }
+    cleanupStarted = true;
+    if (rrfProcess && !args.persistRrfSimulator) {
+      stopProcess(rrfProcess);
+      rrfProcess = null;
+    }
+    if (managedKlippyProcess) {
+      stopKlippyApiServer(managedKlippyProcess);
+      managedKlippyProcess = null;
+    }
+    if (stepReadline) {
+      stepReadline.close();
+      stepReadline = null;
+    }
+    if (bridgeCtx?.close) {
+      bridgeCtx.close();
+      bridgeCtx = null;
+    }
+    await reference.close();
+    const recordingFailure = reference.failure();
+    if (recordingFailure) console.error(`Extended recording degraded: ${recordingFailure.message ?? recordingFailure}`);
+  };
+
+  const onSigInt = () => {
+    cleanup().finally(() => process.exit(130));
+  };
+  const onSigTerm = () => {
+    cleanup().finally(() => process.exit(143));
+  };
+  const onSigHup = () => {
+    cleanup().finally(() => process.exit(129));
+  };
+  process.once('SIGINT', onSigInt);
+  process.once('SIGTERM', onSigTerm);
+  process.once('SIGHUP', onSigHup);
+
+  scheduleSimulatorProcessWarning({
+    sim: args.sim,
+    firmware: args.firmware,
+    timeoutMs: SIM_PROCESS_WARNING_TIMEOUT_MS,
+  });
+
+  if (shouldSpawnRrf) {
+    try {
+      console.log(`Starting rrf_simulator at ${targetServer}...`);
+      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug, machineType,
+        preferLineLayerConfig: Boolean(args.lineLayering || Number(args.forceBuildupFactor)),
+      });
+      await waitForRrfSimulator(targetServer);
+    } catch (err) {
+      console.error(`Unable to start rrf_simulator: ${err?.message || err}`);
+      await cleanup();
+      process.exit(1);
+    }
+  }
+
+  try {
+    managedKlippyProcess = await ensureKlippySimulator({
+      sim: args.sim,
+      firmware: args.firmware,
+      socketPath,
+      configPath: args.config,
+      speedup,
+      quiet: args.quiet,
+    });
+  } catch (err) {
+    console.error(`Unable to start Klippy simulator: ${err?.message || err}`);
+    await cleanup();
+    process.exit(1);
+  }
+
+  let success = false;
+  try {
+    bridgeCtx = await createBridge(args.firmware, {
+      server: targetServer,
+      socketPath,
+      wsPort: args.noWs ? 0 : args.wsPort,
+      quiet: args.quiet,
+      configPath: args.config,
+      encoderTimeoutMs,
+      speedup,
+      sim: args.sim,
+      headlessUrl: args.headlessUrl,
+    });
+
+    reference.emit('collection_start', { argv: process.argv, speedup, machineType,
+      timing_source: bridgeCtx.simulationClock?.source ?? bridgeCtx.simulationClock?.backend ?? 'collector.Date.now',
+      wall_deadline_ms: 120000, node_version: process.version });
+    if (args.sweepConfigFile) await reference.artifact(args.sweepConfigFile);
+    if (args.config) await reference.artifact(args.config);
+    send = async (line, options = {}) => {
+      const source = getSourceLineFromStack(new Error().stack, { skipMatches: 1 });
+      const trimmed = line?.trim?.();
+      if (args.stepGcode && trimmed) {
+        const normalPreWaitMs = pendingPreSendDelayMs;
+        pendingPreSendDelayMs = 0;
+        const source = getSourceLineFromStack(new Error().stack, { skipMatches: 0 });
+        const sourceLabel = source ? `${source.file}:${source.line}` : SOURCE_FILE_LABEL;
+        await waitForEnter(
+          `Send: ${trimmed}\n  Enter to send (normal pre-wait ${Math.round(normalPreWaitMs)}ms; from ${sourceLabel}) `,
+        );
+      } else if (args.debugGcode && trimmed) {
+        console.log(`[rrf_gcode] ${trimmed}`);
+      }
+      const commandId = `${process.pid}:${Date.now()}:${Math.random()}`;
+      reference.emit('gcode_send', { commandId, line, options, source }, bridgeCtx.simulationClock);
+      let res;
+      try {
+        res = await bridgeCtx.sendGcodeLine(line, options);
+      } catch (error) {
+        reference.emit('gcode_error', { commandId, error: String(error) }, bridgeCtx.simulationClock);
+        throw error;
+      }
+      reference.emit('gcode_reply', { commandId, result: res }, bridgeCtx.simulationClock);
+      if (args.stepGcode) {
+        const reply = res?.reply?.trim?.() || '';
+        console.log(reply.length > 0 ? `[rrf_reply] ${reply}` : '[rrf_reply] <empty>');
+      } else if ((args.debugGcodeResponses || args.debug) && res?.reply) {
+        const reply = res.reply.trim();
+        if (reply.length > 0) {
+          console.log(`[rrf_reply] ${reply}`);
+        }
+      }
+      return res;
+    };
+    send.firmware = args.firmware;
+    send.simulationClock = bridgeCtx.simulationClock;
+
+    attachDebugState(send, {
+      enabled: debugSweepActions,
+      axes: machineConfig.axes,
+      motorIds,
+    });
+
+    if (!args.noWs) {
+      await bridgeCtx.waitForHpSimConnection(waitForWsMs);
+      if (args.hpSimReset) {
+        await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
+      }
+      if (args.sim) {
+        await sendHpSimSettings(bridgeCtx, {
+          closedLoopMotorsEnabled: !args.openLoopMotors,
+          ...(args.physicsSubsteps !== null ? { physicsSubsteps: args.physicsSubsteps } : {}),
+          lineLayeringEnabled: Boolean(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)),
+          ...(!args.headlessUrl ? { machineType } : {}),
+          ...(!args.headlessUrl && process.env.AUTOCAL_REFERENCE_WS
+            ? { recordingUrl: process.env.AUTOCAL_REFERENCE_WS } : {}),
+        });
+      }
+      if (speedup !== 1) {
+        await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
+      }
+      if (args.trace) {
+        await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
+      }
+    }
+
+    await send.simulationClock?.refresh?.();
+    await collectSweepData(send, {
+      args,
+      machineType,
+      machineConfig,
+      motorIds,
+      speedup,
+      delayFn: send.simulationClock?.sleep ?? sleep,
+      configureSimulator: args.sim && !args.noWs
+        ? async settings => {
+          await sendHpSimSettings(bridgeCtx, settings);
+          // Enabling layering rebakes/reset the browser scene, including its speed.
+          if (speedup !== 1) await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
+          if (args.trace) await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
+        } : null,
+      onRecovery: recovery => reference.emit('sweep_recovery', recovery, bridgeCtx.simulationClock),
+      onPoint: async (point, config) => {
+        reference.emit('measurement', { point, config }, bridgeCtx.simulationClock);
+        if (args.headlessUrl) await fs.appendFile(`${args.outputFile}.partial-points.jsonl`, `${JSON.stringify({ backend: send.simulationClock.backend, service_url: args.headlessUrl, config, point })}\n`);
+      },
+    });
+    await reference.artifact(args.outputFile, bridgeCtx.simulationClock);
+    reference.emit('collection_complete', { outputFile: args.outputFile }, bridgeCtx.simulationClock);
+    await reference.close();
+    success = true;
+  } catch (err) {
+    console.error(`Failed to collect sweeps: ${err?.message || err}`);
+    if (send) {
+      try {
+        await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
+      } catch (holdError) {
+        console.error(`Failed to hold motors after collection error: ${holdError?.message || holdError}`);
+      }
+    }
+  } finally {
+    process.off('SIGINT', onSigInt);
+    process.off('SIGTERM', onSigTerm);
+    process.off('SIGHUP', onSigHup);
+    await cleanup();
+    process.exit(success ? 0 : 1);
+  }
+}
+
+export {
+  combinations,
+  generateSweepConfigs,
+  loadSweepConfigFile,
+  permutations,
+  selectRepresentativeConfigs,
+  validateSweepConfig,
+} from './sweep_data_collection.mjs';
+
+export {
+  angleToLength,
+} from './uncalibrated_actions.mjs';
+
+const isMain = path.basename(process.argv[1] || '') === 'collect_sweep_data.mjs';
+if (isMain) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

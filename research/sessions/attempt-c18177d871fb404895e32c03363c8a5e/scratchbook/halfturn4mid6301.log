@@ -1,0 +1,51 @@
+; headless simulator manifest: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/sweeps.headless/manifest.json
+Writing stage artifacts to: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/stages
+Writing additional info to log: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/sweeps.full_auto.log
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/sweeps.full_auto.stop to request stop (cross-platform)
+; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 4
+
+; === full-auto iteration 2/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 5
+
+; === full-auto iteration 3/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 6
+
+; === full-auto iteration 4/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn4mid6301/sweeps.json ===
+Traceback (most recent call last):
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/harness/run.py", line 80, in <module>
+    try:code=main(argv)
+             ^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 1355, in main
+    result = _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 1365, in _run_full_auto
+    return full_auto_loop(
+           ^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 911, in full_auto_loop
+    run_results.append(_execute_run_variant(runs[0], warm_seeds=warm_seeds))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 881, in _execute_run_variant
+    return _execute_plan_run(
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 695, in _execute_plan_run
+    plan = plan_next_ellipse_sweep(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/harness/run.py", line 75, in counted_plan
+    if len(state['calls'])+state['reserved_uninstrumented_fits'] >= 80: raise RuntimeError('Session 80-fit budget exhausted')
+                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Session 80-fit budget exhausted

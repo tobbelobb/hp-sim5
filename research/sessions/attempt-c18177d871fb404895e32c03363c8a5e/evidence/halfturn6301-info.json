@@ -1,0 +1,30 @@
+{
+  "applied_command": "M669 A0.00:-1904.11:-279.74 B1647.70:951.44:-279.74 C-1647.07:950.87:-279.74 D-0.09:0.17:1903.07",
+  "sweep_count": 7,
+  "cumulative": [
+    {
+      "sweeps": 4,
+      "valid": 4,
+      "min_singular_count_scaled": 0.08095416674375384,
+      "condition": 124.66366416635881
+    },
+    {
+      "sweeps": 5,
+      "valid": 5,
+      "min_singular_count_scaled": 0.1485987321646896,
+      "condition": 77.54474750286957
+    },
+    {
+      "sweeps": 6,
+      "valid": 6,
+      "min_singular_count_scaled": 0.2081323144774519,
+      "condition": 58.44991835964328
+    },
+    {
+      "sweeps": 7,
+      "valid": 7,
+      "min_singular_count_scaled": 0.21112420332235754,
+      "condition": 61.1809097192535
+    }
+  ]
+}

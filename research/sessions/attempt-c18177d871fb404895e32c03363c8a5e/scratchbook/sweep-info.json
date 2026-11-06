@@ -1,0 +1,1358 @@
+{
+  "sweeps": [
+    {
+      "id": "sweep_001",
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_lengths": [
+        522.6405898389539,
+        -0.041887902047863905
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2
+    },
+    {
+      "id": "sweep_002",
+      "fixed_anchors": [
+        1,
+        3
+      ],
+      "fixed_lengths": [
+        522.7453095940735,
+        0.010471975511965976
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 2
+    },
+    {
+      "id": "sweep_003",
+      "fixed_anchors": [
+        2,
+        3
+      ],
+      "fixed_lengths": [
+        522.6981857042697,
+        0.015707963267948963
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1
+    },
+    {
+      "id": "sweep_004",
+      "fixed_anchors": [
+        2,
+        3
+      ],
+      "fixed_lengths": [
+        496.59678674069454,
+        -26.15899482889101
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1
+    },
+    {
+      "id": "sweep_005",
+      "fixed_anchors": [
+        1,
+        3
+      ],
+      "fixed_lengths": [
+        470.32260018117194,
+        -52.2603937924662
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 2
+    },
+    {
+      "id": "sweep_006",
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_lengths": [
+        444.3782808502762,
+        -78.3617927560414
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2
+    },
+    {
+      "id": "sweep_007",
+      "fixed_anchors": [
+        2,
+        3
+      ],
+      "fixed_lengths": [
+        418.1931060826053,
+        -104.47889968288455
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1
+    },
+    {
+      "id": "sweep_008",
+      "fixed_anchors": [
+        1,
+        3
+      ],
+      "fixed_lengths": [
+        392.00269532717834,
+        -130.6640744505555
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 2
+    }
+  ],
+  "combinations": [
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "minimum_singular_per_point_normalized": 0.04908584492163272,
+      "information_scaled_minimum": 0.09817168984326544,
+      "condition": 104.61731129674799,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        4
+      ],
+      "minimum_singular_per_point_normalized": 0.0791426404038994,
+      "information_scaled_minimum": 0.1582852808077988,
+      "condition": 65.50128402721407,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.09115417285874408,
+      "information_scaled_minimum": 0.18230834571748816,
+      "condition": 60.1310912863991,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.0686519039370482,
+      "information_scaled_minimum": 0.1373038078740964,
+      "condition": 73.74582366408286,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.06980602054836227,
+      "information_scaled_minimum": 0.13961204109672454,
+      "condition": 73.12816536807145,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        4
+      ],
+      "minimum_singular_per_point_normalized": 0.08581864989434472,
+      "information_scaled_minimum": 0.17163729978868944,
+      "condition": 61.2383637950837,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.09575966474370284,
+      "information_scaled_minimum": 0.1915193294874057,
+      "condition": 57.739345792655016,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.0730155974433282,
+      "information_scaled_minimum": 0.1460311948866564,
+      "condition": 69.88776346457001,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.07913264109382546,
+      "information_scaled_minimum": 0.15826528218765093,
+      "condition": 65.65744439906844,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        4,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.0575898157329538,
+      "information_scaled_minimum": 0.1151796314659076,
+      "condition": 98.68973992866833,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        4,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.061238261968794,
+      "information_scaled_minimum": 0.122476523937588,
+      "condition": 85.00123398948483,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        4,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.035133712334103194,
+      "information_scaled_minimum": 0.07026742466820639,
+      "condition": 165.477239372299,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.07026905533030409,
+      "information_scaled_minimum": 0.14053811066060817,
+      "condition": 77.8564615972435,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.05243893603490704,
+      "information_scaled_minimum": 0.10487787206981408,
+      "condition": 107.98792652381582,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.053940539823975765,
+      "information_scaled_minimum": 0.10788107964795153,
+      "condition": 96.22240131756081,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        4
+      ],
+      "minimum_singular_per_point_normalized": 0.06436525476046547,
+      "information_scaled_minimum": 0.12873050952093093,
+      "condition": 82.49219473116482,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.050252189799982604,
+      "information_scaled_minimum": 0.10050437959996521,
+      "condition": 110.2135778180354,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.02575145216312015,
+      "information_scaled_minimum": 0.0515029043262403,
+      "condition": 221.34319215951368,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.0583474235892202,
+      "information_scaled_minimum": 0.1166948471784404,
+      "condition": 89.23220606112876,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        4,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.11683399639791298,
+      "information_scaled_minimum": 0.23366799279582595,
+      "condition": 48.3198584454306,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.08352571065864844,
+      "information_scaled_minimum": 0.1670514213172969,
+      "condition": 63.050427701137615,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        4,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.08094316515331709,
+      "information_scaled_minimum": 0.16188633030663419,
+      "condition": 64.97553115363857,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.04403111674333304,
+      "information_scaled_minimum": 0.08806223348666609,
+      "condition": 125.4606780462444,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.06902965699249577,
+      "information_scaled_minimum": 0.13805931398499155,
+      "condition": 80.73491771222085,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        2,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.05714694938645188,
+      "information_scaled_minimum": 0.11429389877290376,
+      "condition": 91.12303569962963,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        3,
+        4,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.1134169440311619,
+      "information_scaled_minimum": 0.2268338880623238,
+      "condition": 50.1964360070852,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        3,
+        4,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.09195576554376024,
+      "information_scaled_minimum": 0.18391153108752048,
+      "condition": 57.881043296481785,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        3,
+        4,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.08861623635739403,
+      "information_scaled_minimum": 0.17723247271478806,
+      "condition": 60.56618209212743,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        3,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.046972897059028476,
+      "information_scaled_minimum": 0.09394579411805695,
+      "condition": 120.09208812764929,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        3,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.07352738520251148,
+      "information_scaled_minimum": 0.14705477040502296,
+      "condition": 76.70467720860015,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        3,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.059866494704618446,
+      "information_scaled_minimum": 0.11973298940923689,
+      "condition": 88.36792633634099,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.10003724728501479,
+      "information_scaled_minimum": 0.20007449457002957,
+      "condition": 56.64339821964636,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.05395013574868251,
+      "information_scaled_minimum": 0.10790027149736502,
+      "condition": 110.35610185107784,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.06489218932541382,
+      "information_scaled_minimum": 0.12978437865082765,
+      "condition": 83.31610284118244,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.04556927052314271,
+      "information_scaled_minimum": 0.09113854104628542,
+      "condition": 123.97066584760712,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "minimum_singular_per_point_normalized": 0.03677493906703577,
+      "information_scaled_minimum": 0.07354987813407154,
+      "condition": 152.62156942621465,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.09380794368477965,
+      "information_scaled_minimum": 0.1876158873695593,
+      "condition": 56.43525888713577,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.02622654582800953,
+      "information_scaled_minimum": 0.05245309165601906,
+      "condition": 222.10323728738499,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.03496708132438221,
+      "information_scaled_minimum": 0.06993416264876443,
+      "condition": 160.05804829313647,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        4,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.12991192045567912,
+      "information_scaled_minimum": 0.25982384091135824,
+      "condition": 41.71027035845525,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        4,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.03705347009895487,
+      "information_scaled_minimum": 0.07410694019790974,
+      "condition": 151.92760609568657,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        4,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.03536629180516826,
+      "information_scaled_minimum": 0.07073258361033652,
+      "condition": 169.07917137967965,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.09649793748668986,
+      "information_scaled_minimum": 0.19299587497337972,
+      "condition": 55.57451454371533,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.09912091159086336,
+      "information_scaled_minimum": 0.19824182318172673,
+      "condition": 55.33777090534804,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        2,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.03148514855376497,
+      "information_scaled_minimum": 0.06297029710752994,
+      "condition": 178.77649368128547,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.13094717573806702,
+      "information_scaled_minimum": 0.26189435147613405,
+      "condition": 42.19438868606803,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        3,
+        4,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.03623526699232435,
+      "information_scaled_minimum": 0.0724705339846487,
+      "condition": 158.01276410811076,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        3,
+        4,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.038780131130582256,
+      "information_scaled_minimum": 0.07756026226116451,
+      "condition": 156.5915971265682,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        3,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.10162832395585523,
+      "information_scaled_minimum": 0.20325664791171047,
+      "condition": 53.810557313170605,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.1038816096724702,
+      "information_scaled_minimum": 0.2077632193449404,
+      "condition": 53.83499318932228,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        3,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.03079717230299777,
+      "information_scaled_minimum": 0.06159434460599554,
+      "condition": 186.0886322792594,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.11723933454631287,
+      "information_scaled_minimum": 0.23447866909262574,
+      "condition": 47.608576890087555,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.054284840932587404,
+      "information_scaled_minimum": 0.10856968186517481,
+      "condition": 114.88090010926955,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.023746075700743968,
+      "information_scaled_minimum": 0.047492151401487936,
+      "condition": 256.5273860038095,
+      "valid": 4
+    },
+    {
+      "indices": [
+        1,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.08029057540276803,
+      "information_scaled_minimum": 0.16058115080553606,
+      "condition": 70.46201599991286,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.11426928564919098,
+      "information_scaled_minimum": 0.22853857129838195,
+      "condition": 48.47615106486916,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        3,
+        4,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.03409677726616191,
+      "information_scaled_minimum": 0.06819355453232381,
+      "condition": 177.08126515340476,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        3,
+        4,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.03422365692591495,
+      "information_scaled_minimum": 0.0684473138518299,
+      "condition": 170.17906971158519,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        3,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.04668358020709355,
+      "information_scaled_minimum": 0.0933671604141871,
+      "condition": 129.66820270206836,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        3,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.08235083384737409,
+      "information_scaled_minimum": 0.16470166769474817,
+      "condition": 67.53636381636775,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        3,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.023968295169902915,
+      "information_scaled_minimum": 0.04793659033980583,
+      "condition": 250.8017526441804,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.12640811577814834,
+      "information_scaled_minimum": 0.2528162315562967,
+      "condition": 44.42275457647629,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.12403011651891423,
+      "information_scaled_minimum": 0.24806023303782845,
+      "condition": 46.30989079484089,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.029864344109289703,
+      "information_scaled_minimum": 0.05972868821857941,
+      "condition": 196.39460042015202,
+      "valid": 4
+    },
+    {
+      "indices": [
+        2,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.07508172632617517,
+      "information_scaled_minimum": 0.15016345265235034,
+      "condition": 75.27897673656159,
+      "valid": 4
+    },
+    {
+      "indices": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.12367820008095678,
+      "information_scaled_minimum": 0.24735640016191357,
+      "condition": 46.291367855917215,
+      "valid": 4
+    },
+    {
+      "indices": [
+        3,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.12118927735201525,
+      "information_scaled_minimum": 0.2423785547040305,
+      "condition": 48.29046883357041,
+      "valid": 4
+    },
+    {
+      "indices": [
+        3,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.028081471756260672,
+      "information_scaled_minimum": 0.056162943512521345,
+      "condition": 212.50899855302578,
+      "valid": 4
+    },
+    {
+      "indices": [
+        3,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.07922814455162158,
+      "information_scaled_minimum": 0.15845628910324316,
+      "condition": 72.80916917217077,
+      "valid": 4
+    },
+    {
+      "indices": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.10487381538090997,
+      "information_scaled_minimum": 0.20974763076181993,
+      "condition": 56.50052581705774,
+      "valid": 4
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "minimum_singular_per_point_normalized": 0.12328565865185467,
+      "information_scaled_minimum": 0.3019869562999862,
+      "condition": 40.297328232013754,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.08543848518820642,
+      "information_scaled_minimum": 0.2092806931074441,
+      "condition": 62.02778663420349,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.0845688434857698,
+      "information_scaled_minimum": 0.2071505146774291,
+      "condition": 63.00865289647739,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.09768276855073994,
+      "information_scaled_minimum": 0.23927293961170068,
+      "condition": 52.69396710915655,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.09882114711069896,
+      "information_scaled_minimum": 0.24206138621772458,
+      "condition": 50.14671806341423,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.06725195752915804,
+      "information_scaled_minimum": 0.16473298014976254,
+      "condition": 78.34147694038788,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.11970132196662238,
+      "information_scaled_minimum": 0.2932071603548282,
+      "condition": 41.557813059378304,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.11839088053756049,
+      "information_scaled_minimum": 0.28999724751582295,
+      "condition": 44.84854242222617,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.07041086003792092,
+      "information_scaled_minimum": 0.17247067944342925,
+      "condition": 75.76263250902593,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.08583246735173441,
+      "information_scaled_minimum": 0.21024574837584545,
+      "condition": 58.47957720901683,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.11819086125331958,
+      "information_scaled_minimum": 0.28950730233071603,
+      "condition": 42.82385073173098,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.1169602614701359,
+      "information_scaled_minimum": 0.2864929607843364,
+      "condition": 45.985731222847875,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.07669304630422959,
+      "information_scaled_minimum": 0.1878588302650057,
+      "condition": 70.4702382781958,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        3,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.08991516667140295,
+      "information_scaled_minimum": 0.22024627848224138,
+      "condition": 56.864423747314035,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.1070272603394815,
+      "information_scaled_minimum": 0.26216217639974476,
+      "condition": 50.62401964495464,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.11611405797201518,
+      "information_scaled_minimum": 0.2844201939953825,
+      "condition": 45.70689953770795,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.11408398792429623,
+      "information_scaled_minimum": 0.2794475582363636,
+      "condition": 45.28182606598534,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.0847240756321781,
+      "information_scaled_minimum": 0.20753075422780642,
+      "condition": 64.06421333594447,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        2,
+        3,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.08249074250999709,
+      "information_scaled_minimum": 0.20206022765280612,
+      "condition": 64.42987320997146,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        2,
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.1087454626164259,
+      "information_scaled_minimum": 0.2663708952531468,
+      "condition": 48.15911931479535,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.10634277461683773,
+      "information_scaled_minimum": 0.26048553564304733,
+      "condition": 50.10979375693962,
+      "valid": 6
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "minimum_singular_per_point_normalized": 0.12920906462806608,
+      "information_scaled_minimum": 0.3164962784810566,
+      "condition": 42.4918115038997,
+      "valid": 6
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.12851630582246432,
+      "information_scaled_minimum": 0.31479937289251236,
+      "condition": 43.198994167029674,
+      "valid": 6
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.03741167946083248,
+      "information_scaled_minimum": 0.09163952509960124,
+      "condition": 153.0221896949993,
+      "valid": 6
+    },
+    {
+      "indices": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.10023709763927048,
+      "information_scaled_minimum": 0.24552974251374893,
+      "condition": 54.86080519656032,
+      "valid": 6
+    },
+    {
+      "indices": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.12072865376345503,
+      "information_scaled_minimum": 0.2957235990536048,
+      "condition": 46.28339349494715,
+      "valid": 6
+    },
+    {
+      "indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.11984065798886682,
+      "information_scaled_minimum": 0.2935484625121162,
+      "condition": 47.2568720254452,
+      "valid": 6
+    },
+    {
+      "indices": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.11727024902979638,
+      "information_scaled_minimum": 0.2872522721321151,
+      "condition": 48.373110499254516,
+      "valid": 6
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "minimum_singular_per_point_normalized": 0.11548050313501301,
+      "information_scaled_minimum": 0.32662818744640826,
+      "condition": 45.26712957272153,
+      "valid": 8
+    }
+  ]
+}

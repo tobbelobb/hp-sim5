@@ -1,5 +1,5 @@
 Improve encoder-only HP3 autocalibration across physically different machines.
-Updated 2026-11-06 after checking the completed guide-friction and lower-force investigations and the prior human interview.
+Updated 2026-11-06 after the human prioritized sub-millimetre accuracy, scaling and robustness across machines.
 
 The goal is accurate, reliable anchors with less collection effort, preserving
 one-click operation and automatic stopping. Use known spool radii, zero buildup
@@ -13,13 +13,15 @@ collector and fitting changes since that reference can change its results.
 
 Human priorities and success criteria
 
-Prioritize fewer failures across physical setups, then accuracy, then runtime,
-then explanation. More than 20 mm Euclidean placement error on ANY anchor is a
-practical calibration failure. Good performance requires less than 5 mm on EVERY
-anchor. Report all per-anchor errors and their maximum; RMSE alone is insufficient.
-Emphasize unpredictable friction, modest scene perturbations and simulated sensor
-noise. Up to 20% more collection time is worthwhile if it substantially reduces
-large errors. A small simulation matrix cannot establish hardware reliability.
+Prioritize correctness and robustness across physical setups and investigate both
+practical improvements and their causes. Aim for less than 1 mm Euclidean error
+on every anchor in every simulated trial. More than 20 mm on any anchor is a
+practical failure and the
+earlier benchmark was less than 5 mm on every anchor. Report all per-anchor errors
+and their maximum; RMSE alone is insufficient. Emphasize uneven motor friction,
+different anchor layouts and simulated sensor noise. Collection time is secondary
+to obtaining reliable results; there is no 20% increase cap. A small simulation
+matrix cannot establish hardware reliability.
 
 What earlier runs have already established
 
@@ -125,10 +127,14 @@ Remaining promising questions
    but was negligible on a later nominal reference. Establish its size in the
    target regime before implementing a larger objective model.
 
-Choose one bounded discriminator first. Record the main explanation, a credible
-rival, the cheapest falsifying observation and what result changes the next
-decision. Expand only after a useful result. A wider budget is permission to
-resolve uncertainty, not a reason to repeat settled studies.
+Prioritize the scaling gauge, weak geometry directions and other barriers to
+sub-millimetre accuracy. Distinguish exact ambiguity from weak conditioning and
+model bias, and test ways to resolve each under explicitly stated measurement
+assumptions. Record rival explanations and falsifying observations, then expand
+promising approaches into independent worlds and fresh applied calibrations.
+Do not require manual physical measurements. State any known nominal radius
+assumption and do not substitute simulated truth for an operational measurement.
+Do not abandon encoder-only calibration while plausible alternatives remain.
 
 Execution and reporting
 
@@ -153,7 +159,8 @@ Execution and reporting
   versus evaluation worlds and every exception. No large-error reliability claim
   follows from a matrix containing no large errors.
 - Implement only a supported change and run relevant autocal checks. Physics,
-  motor or dynamics changes require npm run test:physics. Commit and push research checkpoints under the human's explicit authorization;
+  motor or dynamics changes require npm run test:physics. The human authorized
+  pushing supported, reviewed solutions;
   adopt production changes only when supported. Preserve one-click operation and automatic stopping.
 - Maintain research.md, abstract.md and report.md with experiment IDs, measured
   outcomes, references, limitations and next decision. Regenerate the catalog

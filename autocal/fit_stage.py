@@ -3,6 +3,14 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.filter_pass import estimate_effective_radii_with_spool_model
+from autocal.projection_mode import resolve_projection_mode
+
+
+def _uses_projected_angles(dataset: dict, collector_args: Sequence[str]) -> bool:
+    requested = _arg_has_flag(
+        collector_args, "--project-zero-tension", "--projectZeroTension"
+    )
+    return resolve_projection_mode(dataset, requested=requested) is True
 
 
 def fit_ellipse_dataset(
@@ -124,11 +132,7 @@ def fit_ellipse_dataset(
     spool_params: Optional[SpoolModelParams] = None
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
-    prefer_zero_tension_angles = _arg_has_flag(
-        collector_args,
-        "--project-zero-tension",
-        "--projectZeroTension",
-    )
+    prefer_zero_tension_angles = _uses_projected_angles(dataset, collector_args)
     _annotate_dataset_noise_model(
         dataset,
         line_width_mm=float(line_width),

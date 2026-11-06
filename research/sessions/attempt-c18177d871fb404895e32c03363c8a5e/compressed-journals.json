@@ -1,0 +1,107 @@
+[
+  {
+    "original": "runs/extended6301/sweeps.headless/events.jsonl",
+    "gzip": "runs/extended6301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "4b6924c7e6a1e49b61ce65d2adcf54c326d7cd3a141fd8627ac30eeb1eb88ac8",
+    "original_bytes": 193721860,
+    "gzip_bytes": 10084303
+  },
+  {
+    "original": "runs/filtered7301/sweeps.headless/events.jsonl",
+    "gzip": "runs/filtered7301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "0a69b62b882e9e22c57028621033ef0c378f5538b3d63e4f95698cb46af1fb26",
+    "original_bytes": 158550519,
+    "gzip_bytes": 7926760
+  },
+  {
+    "original": "runs/halfturn4mid6301/sweeps.headless/events.jsonl",
+    "gzip": "runs/halfturn4mid6301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "1ead3c9bb0b3d49bfa77e1b3acb314332a22c7c61ce83e6228f2583482420378",
+    "original_bytes": 137470280,
+    "gzip_bytes": 6929713
+  },
+  {
+    "original": "runs/halfturn4mid6301_retry/sweeps.headless/events.jsonl",
+    "gzip": "runs/halfturn4mid6301_retry/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "2e3b2cac1f148f49b79e4bb1c417bc3cf2584ea668cf236058a4127862145260",
+    "original_bytes": 149412462,
+    "gzip_bytes": 7648064
+  },
+  {
+    "original": "runs/halfturn6301/sweeps.headless/events.jsonl",
+    "gzip": "runs/halfturn6301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "5f13c6dd3b259429bee8fffe707a64e4ea9c336241a7739bbdfff8cd4f8d5c4c",
+    "original_bytes": 148235422,
+    "gzip_bytes": 7439667
+  },
+  {
+    "original": "runs/halfturn7301/sweeps.headless/events.jsonl",
+    "gzip": "runs/halfturn7301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "2ca64a5e0465ab5c753020c082d38ab367890a3a96fcf4d0623f4554749210ce",
+    "original_bytes": 161639541,
+    "gzip_bytes": 8246155
+  },
+  {
+    "original": "runs/halfturnzero6302/sweeps.headless/events.jsonl",
+    "gzip": "runs/halfturnzero6302/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "6515839c3ac1b2ac2afe9b8d1963ec1249374c397226a4d3c141af584222f67e",
+    "original_bytes": 57781270,
+    "gzip_bytes": 2628070
+  },
+  {
+    "original": "runs/projection1206301/sweeps.headless/events.jsonl",
+    "gzip": "runs/projection1206301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "52b1ff9fb40f4d07c4059c79ee4dc2ba6f073b1eac0d1102c68204c75e75957d",
+    "original_bytes": 228837887,
+    "gzip_bytes": 13514862
+  },
+  {
+    "original": "runs/projection6301/sweeps.headless/events.jsonl",
+    "gzip": "runs/projection6301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "bb08fed96734a3fd6a0f4b488404bfde8acc083899c713164010fc6c14b031c5",
+    "original_bytes": 56880155,
+    "gzip_bytes": 2527099
+  },
+  {
+    "original": "runs/robust8301/sweeps.headless/events.jsonl",
+    "gzip": "runs/robust8301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "ac14f7ca3b53f196476536f68aae220dc8765985fdc0e4c45007873a58cce6ed",
+    "original_bytes": 154496850,
+    "gzip_bytes": 8191256
+  },
+  {
+    "original": "runs/spaced6301/sweeps.headless/events.jsonl",
+    "gzip": "runs/spaced6301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "8728d6f4af78466371acd31ecc09619a5975425a216d2f462f7b5b5340299e7e",
+    "original_bytes": 136521381,
+    "gzip_bytes": 6669831
+  },
+  {
+    "original": "runs/stock6301/sweeps.headless/events.jsonl",
+    "gzip": "runs/stock6301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "9f03e2bb4d392a9a9c21bbba5c4defe788426cecad6a911b0135a2eab8523268",
+    "original_bytes": 148031687,
+    "gzip_bytes": 7402989
+  },
+  {
+    "original": "runs/stock7301/sweeps.headless/events.jsonl",
+    "gzip": "runs/stock7301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "4ade2ce07d885d610acd932d1833306b8774048a65decbb249d63dc151dca3fc",
+    "original_bytes": 158550519,
+    "gzip_bytes": 7926437
+  },
+  {
+    "original": "runs/stock8301/sweeps.headless/events.jsonl",
+    "gzip": "runs/stock8301/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "15a36775abfa55f04f9bfc2ab1a67c014308fcdf7d469a05bc369c54d2706919",
+    "original_bytes": 154496850,
+    "gzip_bytes": 8190590
+  },
+  {
+    "original": "runs/stockzero6302/sweeps.headless/events.jsonl",
+    "gzip": "runs/stockzero6302/sweeps.headless/events.jsonl.gz",
+    "sha256_uncompressed": "f5b0b8afdf17e4ccc7a20318ae12064ab45ffc4d49fd6da28fb773acffcb9b32",
+    "original_bytes": 160861898,
+    "gzip_bytes": 7891676
+  }
+]

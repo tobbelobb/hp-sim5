@@ -573,6 +573,35 @@ def test_merge_sweep_datasets_carries_new_m666_collection_keys():
     assert cfg.get("notes", {}).get("base_radii_forced_mm") == [30.0, 30.0, 30.0]
 
 
+def test_merge_rejects_known_mixed_projection_modes_without_mutating_inputs():
+    base = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
+            "config": {"noise_model": {"project_zero_tension": True}},
+            "sweeps": [{"id": "original", "data_points": []}]}
+    new = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
+           "config": {"noise_model": {"project_zero_tension": False}},
+           "sweeps": [{"id": "new", "data_points": []}]}
+    with pytest.raises(ValueError, match="projected and nonprojected"):
+        ac._merge_sweep_datasets(base, new)
+    assert base["sweeps"][0]["id"] == "original"
+    assert new["sweeps"][0]["id"] == "new"
+
+
+def test_merge_infers_legacy_projected_points_and_preserves_mode():
+    base = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
+            "config": {}, "sweeps": []}
+    new = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
+           "config": {}, "sweeps": [{"id": "new", "data_points": [
+               {"raw_angles_zero_tension_deg": [1.0, 2.0, 3.0]}]}]}
+    merged = ac._merge_sweep_datasets(base, new)
+    assert merged["config"]["noise_model"]["project_zero_tension"] is True
+
+    ordinary = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
+                "config": {"noise_model": {"project_zero_tension": False}},
+                "sweeps": [{"id": "ordinary", "data_points": [{"l_drive": 1.0}]}]}
+    with pytest.raises(ValueError, match="projected and nonprojected"):
+        ac._merge_sweep_datasets(new, ordinary)
+
+
 def test_plan_hits_underconstrained_penalty_when_cost_is_sentinel():
     plan = {
         "cost_noise_normalized": 100.0,
@@ -2571,6 +2600,18 @@ def test_simulation_position_objective_score_is_near_zero_for_consistent_point()
     assert valid_points == 1
     assert invalid_points == 0
     assert score == pytest.approx(0.0, abs=1e-6)
+
+    # With projection metadata, later nonzero-force means must not replace the
+    # point lengths, even for the position objective's direct entry point.
+    point = dataset["sweeps"][0]["data_points"][0]
+    point["l_drive_mu"] = point["l_drive"] + 100.0
+    point["l_sensor_mu"] = point["l_sensor"] - 100.0
+    ordinary = ac.simulation_position_objective_score(dataset, anchors, use_noise_mean=True)
+    point["raw_angles_zero_tension_deg"] = [0.0, 0.0, 0.0, 0.0]
+    dataset["config"] = {"noise_model": {"project_zero_tension": True}}
+    projected = ac.simulation_position_objective_score(dataset, anchors, use_noise_mean=True)
+    assert ordinary[0] > 1.0
+    assert projected[0] == pytest.approx(0.0, abs=1e-6)
 
 
 def test_ellipse_prediction_objective_score_is_near_zero_for_consistent_sweep():

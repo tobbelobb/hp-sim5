@@ -117,3 +117,20 @@ test('final dataset records recovered forces while checkpoint retains the earlie
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test.each([false, true])('final dataset records projection mode %s', async projected => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'projection-mode-'));
+  const outputFile = path.join(directory, 'sweeps.json');
+  tuneForce.mockResolvedValue({ forceLow: .0124, forceMid: .248, forceMax: 2.61 });
+  collectWithSlipRecovery.mockResolvedValue({
+    forces: { forceLow: .0124, forceMid: .248, forceMax: 2.61 },
+    dataPoints: [{ l_drive: 1, l_sensor: 2 }], recoveries: [],
+  });
+  try {
+    await interruptedCollection(outputFile, { fixedTargets: '0,0', projectZeroTension: projected }, false);
+    const dataset = JSON.parse(readFileSync(outputFile, 'utf8'));
+    expect(dataset.config.noise_model.project_zero_tension).toBe(projected);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

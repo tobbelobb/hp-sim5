@@ -1,0 +1,128 @@
+[
+  {
+    "module": "uncalibrated_actions.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/debug_trace.mjs",
+    "old_hash": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684",
+    "worktree_hash": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684",
+    "equal": true
+  },
+  {
+    "module": "uncalibrated_actions.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/encoder_noise.mjs",
+    "old_hash": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f",
+    "worktree_hash": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f",
+    "equal": true
+  },
+  {
+    "module": "uncalibrated_actions.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/encoder_utils.mjs",
+    "old_hash": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610",
+    "worktree_hash": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610",
+    "equal": true
+  },
+  {
+    "module": "uncalibrated_actions.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/simulation_deadline.mjs",
+    "old_hash": "72ebc6804a3e7b4ac300b0adb453f14a693a6d3fd6b04d9ddb4f87c10c02bf06",
+    "worktree_hash": "72ebc6804a3e7b4ac300b0adb453f14a693a6d3fd6b04d9ddb4f87c10c02bf06",
+    "equal": true
+  },
+  {
+    "module": "sweep_data_collection.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/behaviors/force_tuning.mjs",
+    "old_hash": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec",
+    "worktree_hash": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec",
+    "equal": true
+  },
+  {
+    "module": "sweep_data_collection.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/behaviors/slip_recovery.mjs",
+    "old_hash": "22732af60c5ade219693eec43ee6c99969fe02d815d9814898ff8de995f7d1fd",
+    "worktree_hash": "22732af60c5ade219693eec43ee6c99969fe02d815d9814898ff8de995f7d1fd",
+    "equal": true
+  },
+  {
+    "module": "sweep_data_collection.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/debug_trace.mjs",
+    "old_hash": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684",
+    "worktree_hash": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684",
+    "equal": true
+  },
+  {
+    "module": "sweep_data_collection.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/encoder_noise.mjs",
+    "old_hash": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f",
+    "worktree_hash": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f",
+    "equal": true
+  },
+  {
+    "module": "sweep_data_collection.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/encoder_utils.mjs",
+    "old_hash": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610",
+    "worktree_hash": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610",
+    "equal": true
+  },
+  {
+    "module": "sweep_data_collection.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/integrations/klipper/klipperMotorAddressConfig.js",
+    "old_hash": "dd09a3c2c30aa089cb25f5a981dcd8a06ca080af3c916ae8cc24d4513996bb35",
+    "worktree_hash": "dd09a3c2c30aa089cb25f5a981dcd8a06ca080af3c916ae8cc24d4513996bb35",
+    "equal": true
+  },
+  {
+    "module": "sweep_data_collection.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/integrations/klipper/klippy_api_cli_config.mjs",
+    "old_hash": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9",
+    "worktree_hash": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9",
+    "equal": true
+  },
+  {
+    "module": "collect_sweep_data.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/behaviors/force_tuning.mjs",
+    "old_hash": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec",
+    "worktree_hash": "46ac01a605555e96cb2f133aa0ef112b411372489c162bd5d2e91bea823990ec",
+    "equal": true
+  },
+  {
+    "module": "collect_sweep_data.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/bridge_factory.mjs",
+    "old_hash": "f8c1cb2209bf8e8d2e052d42547c34e21d7c5b95cfc44a07145a55a0e7476380",
+    "worktree_hash": "f8c1cb2209bf8e8d2e052d42547c34e21d7c5b95cfc44a07145a55a0e7476380",
+    "equal": true
+  },
+  {
+    "module": "collect_sweep_data.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/debug_trace.mjs",
+    "old_hash": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684",
+    "worktree_hash": "026a4a4a216d4091018eaaf7e1e6c0c2c27ed20fb5864f9935374c0ef0ca3684",
+    "equal": true
+  },
+  {
+    "module": "collect_sweep_data.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/encoder_utils.mjs",
+    "old_hash": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610",
+    "worktree_hash": "382d59704c149e4f6e4ce4fed56d00e3400eee76e138e75524b7ff0ab0516610",
+    "equal": true
+  },
+  {
+    "module": "collect_sweep_data.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/extended_reference.mjs",
+    "old_hash": "9f569720f88397e6ceedcfa873c826f5699c84d4a0d80615c5ed44c7bba25b6f",
+    "worktree_hash": "9f569720f88397e6ceedcfa873c826f5699c84d4a0d80615c5ed44c7bba25b6f",
+    "equal": true
+  },
+  {
+    "module": "collect_sweep_data.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/autocal/control/primitives/machine_type.mjs",
+    "old_hash": "6b926f7944087eac1df65ea2e77938edd869fce18aae541567545736e4f7d5b0",
+    "worktree_hash": "6b926f7944087eac1df65ea2e77938edd869fce18aae541567545736e4f7d5b0",
+    "equal": true
+  },
+  {
+    "module": "collect_sweep_data.mjs",
+    "old_path": "/workspace/hp-sim5-worktrees/research-question-abfd2d9a/integrations/klipper/klippy_api_cli_config.mjs",
+    "old_hash": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9",
+    "worktree_hash": "a1b6729a13b42dffbd1a2be9e3acd4a094207c4346e38e957fcc2e8b3328e9e9",
+    "equal": true
+  }
+]

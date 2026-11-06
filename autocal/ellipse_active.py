@@ -56,7 +56,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     spool_options = _resolve_spool_cli_options(parser, args)
     _apply_optimizer_mode_env(args.optimizer_mode)
     collector_args = _clean_collector_args(args.collector_args)
-    if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
+    if bool(args.project_zero_tension) and not _arg_has_flag(
+        collector_args, "--project-zero-tension", "--projectZeroTension"
+    ):
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")

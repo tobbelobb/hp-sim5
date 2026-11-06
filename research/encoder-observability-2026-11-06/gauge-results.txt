@@ -1,0 +1,183 @@
+{
+  "seed": 917,
+  "wide": {
+    "points": 80,
+    "shape": [
+      320,
+      249
+    ],
+    "full_tail": [
+      0.7193929694442053,
+      0.5971437910639236,
+      0.2839306955714674,
+      0.19106064409926504,
+      0.11507544841009966,
+      0.05486493835930586,
+      0.01578045663952004,
+      0.00820708354445853
+    ],
+    "reduced_singular": [
+      0.6234203779700689,
+      0.39035458362304115,
+      0.18621145526593236,
+      0.10284375953003373,
+      0.06205758199723794,
+      0.03713030219559319
+    ],
+    "scale_residual_norm": 7180.2513922286425,
+    "scale_norm": 19365.506036185983,
+    "rank": 249
+  },
+  "narrow": {
+    "points": 80,
+    "shape": [
+      320,
+      249
+    ],
+    "full_tail": [
+      0.27350939269685187,
+      0.037373060246164026,
+      0.026151129084441112,
+      0.013490605260084203,
+      0.012028936811843695,
+      0.0016820661279080239,
+      0.0007282127328109347,
+      0.00021585215018886215
+    ],
+    "reduced_singular": [
+      0.029643429155223763,
+      0.020453346537102637,
+      0.017218803799367025,
+      0.002779636321497479,
+      0.002187607796350195,
+      0.0009230256704343063
+    ],
+    "scale_residual_norm": 1646.0363228875499,
+    "scale_norm": 17688.456602852573,
+    "rank": 249
+  },
+  "unknown_radius": {
+    "smallest_singular": 6.263355059762094e-15,
+    "scale_null_residual": 6.115606282391199e-12,
+    "finite_1pct_encoder_max_diff_rad": 3.4083846855992306e-14
+  },
+  "known_radii_fit": {
+    "success": true,
+    "max_residual_mm": 9.094947017729282e-13,
+    "anchor_errors_mm": [
+      0.0,
+      5.002220859751105e-12,
+      1.3642420526593924e-12,
+      5.9335381368782186e-12
+    ],
+    "nfev": 6
+  }
+}
+{
+  "perturbation_experiments": [
+    {
+      "layout": "wide",
+      "kind": "noise",
+      "extra_exact_anchor_distance": false,
+      "anchor_errors_mm": [
+        0.0,
+        0.42447797040540536,
+        0.4422072420354606,
+        0.32797801392993553
+      ],
+      "rms_encoder_residual_mm": 0.013464143228161175,
+      "nfev": 5
+    },
+    {
+      "layout": "wide",
+      "kind": "noise",
+      "extra_exact_anchor_distance": true,
+      "anchor_errors_mm": [
+        0.0,
+        3.443724381213542e-07,
+        0.37645037511187684,
+        0.6159225857545586
+      ],
+      "rms_encoder_residual_mm": 0.014472574174602364,
+      "nfev": 4
+    },
+    {
+      "layout": "wide",
+      "kind": "axis_bias",
+      "extra_exact_anchor_distance": false,
+      "anchor_errors_mm": [
+        0.0,
+        1.653693353073777,
+        0.8546027383875254,
+        2.3295949340502213
+      ],
+      "rms_encoder_residual_mm": 0.01499367073414905,
+      "nfev": 4
+    },
+    {
+      "layout": "wide",
+      "kind": "axis_bias",
+      "extra_exact_anchor_distance": true,
+      "anchor_errors_mm": [
+        0.0,
+        5.27448264620034e-07,
+        1.4386700476380343,
+        2.5723267855256955
+      ],
+      "rms_encoder_residual_mm": 0.01587608112533234,
+      "nfev": 4
+    },
+    {
+      "layout": "narrow",
+      "kind": "noise",
+      "extra_exact_anchor_distance": false,
+      "anchor_errors_mm": [
+        0.0,
+        20.378491285066957,
+        14.78605023071825,
+        21.3245670054727
+      ],
+      "rms_encoder_residual_mm": 0.013442960593762012,
+      "nfev": 6
+    },
+    {
+      "layout": "narrow",
+      "kind": "noise",
+      "extra_exact_anchor_distance": true,
+      "anchor_errors_mm": [
+        0.0,
+        5.8039404393639416e-09,
+        12.408873977239587,
+        7.734210491932555
+      ],
+      "rms_encoder_residual_mm": 0.01309595030815505,
+      "nfev": 4
+    },
+    {
+      "layout": "narrow",
+      "kind": "axis_bias",
+      "extra_exact_anchor_distance": false,
+      "anchor_errors_mm": [
+        0.0,
+        2.1712751600762203,
+        1.8975213363835273,
+        3.257656573999137
+      ],
+      "rms_encoder_residual_mm": 0.0001240770596545733,
+      "nfev": 7
+    },
+    {
+      "layout": "narrow",
+      "kind": "axis_bias",
+      "extra_exact_anchor_distance": true,
+      "anchor_errors_mm": [
+        0.0,
+        5.738911568187177e-10,
+        3.3563555133494525,
+        4.756136822252938
+      ],
+      "rms_encoder_residual_mm": 0.000233044054187418,
+      "nfev": 4
+    }
+  ]
+}

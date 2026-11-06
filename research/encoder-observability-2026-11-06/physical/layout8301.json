@@ -1,0 +1,32 @@
+{
+  "id": "layout8301",
+  "split": "evaluation",
+  "mu": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "motor_factors": {
+    "A": {
+      "coulombFriction": 2.0,
+      "stictionTorque": 0.5
+    },
+    "B": {
+      "coulombFriction": 0.5,
+      "stictionTorque": 1.5
+    },
+    "C": {
+      "coulombFriction": 1.25,
+      "stictionTorque": 2.0
+    },
+    "D": {
+      "coulombFriction": 1.5,
+      "stictionTorque": 0.75
+    }
+  },
+  "sigma_deg": 0.06,
+  "noise_seed": 8301,
+  "scene": "/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/harness/hp3-offset8301.usda",
+  "scene_sha256": "30b9891e6de1040031a69d501992fdfbd9f238ffc5d942d33abd38be4ab2eba6"
+}

@@ -1,0 +1,84 @@
+{
+  "world": {
+    "id": "layout8301",
+    "split": "evaluation",
+    "mu": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "motor_factors": {
+      "A": {
+        "coulombFriction": 2.0,
+        "stictionTorque": 0.5
+      },
+      "B": {
+        "coulombFriction": 0.5,
+        "stictionTorque": 1.5
+      },
+      "C": {
+        "coulombFriction": 1.25,
+        "stictionTorque": 2.0
+      },
+      "D": {
+        "coulombFriction": 1.5,
+        "stictionTorque": 0.75
+      }
+    },
+    "sigma_deg": 0.06,
+    "noise_seed": 8301,
+    "scene": "/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/harness/hp3-offset8301.usda",
+    "scene_sha256": "30b9891e6de1040031a69d501992fdfbd9f238ffc5d942d33abd38be4ab2eba6"
+  },
+  "policy": "robust-mm-v1",
+  "policy_files": {
+    "uncalibrated_actions.mjs": "c0207b7f573fc187fffc08345671839f3458f43e9859ed326aaa3bd1c21a1057",
+    "sweep_data_collection.mjs": "f34e7850acfe8bab92e74b3f95d7a220a12c50fd397d4d9a7ba453467930a89e",
+    "collect_sweep_data.mjs": "ca9791384b7d59fd5ba00b9963b2d19d4958db56f2929414258e1c26ba891dfc"
+  },
+  "argv": [
+    "--headless-sim",
+    "--recording-mode",
+    "events",
+    "--machine-type",
+    "hangprinter_3",
+    "--dataset",
+    "/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/robust8301/sweeps.json",
+    "--rrf-config",
+    "sys/config_hp3.g",
+    "--base-radii",
+    "30",
+    "--buildup-factor",
+    "0",
+    "--find-radii",
+    "off",
+    "--find-buildup-factor",
+    "off",
+    "--optimizer-mode",
+    "fast",
+    "--solve-optimizer",
+    "lbfgsb",
+    "--solve-iterations",
+    "400",
+    "--solve-restarts",
+    "4",
+    "--spool-outer-iters",
+    "3",
+    "--max-steps",
+    "12",
+    "--sweep-points",
+    "10",
+    "--speedup",
+    "25",
+    "--stage-artifacts",
+    "/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/robust8301/stages"
+  ],
+  "extra": [],
+  "script_sha256": {
+    "run.py": "b1c830012476496801a0ceaf6cdaa8d680f1bd85916069b9417d15459acbe22a",
+    "autocal_headless.mjs": "3e359e5ae4bacf9086045fc123879c6de9c96a4f1180ec905f34039b70e0ac56",
+    "robust_mm_candidate.py": "f46046a2c503043fb63a7de7ee06b27e4f8eb4fc6b8ed4982101552a6b5a3945"
+  },
+  "started_unix": 1793988379.3481903
+}

@@ -51,14 +51,15 @@ def evaluate_history_candidates(
         candidate_plan = candidate.get("plan")
         if isinstance(validation_dataset, dict) and isinstance(candidate_plan, dict):
             settings = candidate.get("settings") or {}
+            projected = _arg_has_flag(
+                collector_args, "--project-zero-tension", "--projectZeroTension"
+            )
             prediction = score_future_sweeps(
                 validation_dataset,
                 np.asarray(candidate_plan.get("anchors"), dtype=float),
                 candidate.get("training_sweep_ids", ()),
                 spool_params=candidate_plan.get("spool_model_params"),
-                prefer_zero_tension_angles=_arg_has_flag(
-                    collector_args, "--project-zero-tension"
-                ),
+                prefer_zero_tension_angles=projected,
                 use_noise_mean=bool(settings.get("use_noise_mean", use_noise_mean)),
                 pointwise_residual_mode=str(
                     settings.get("pointwise_residual_mode", pointwise_residual_mode)
@@ -79,6 +80,7 @@ def evaluate_history_candidates(
                     comparison_dataset,
                     np.asarray(candidate_plan.get("anchors"), dtype=float),
                     candidate.get("training_sweep_ids", ()),
+                    prefer_zero_tension_angles=projected,
                 )
         sort_key = (
             float(comparison[0]) if comparison is not None else float("inf"),

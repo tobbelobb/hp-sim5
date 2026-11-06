@@ -6,6 +6,16 @@ import autocal.planning_pass as pp
 import autocal.fit_stage as fs
 
 
+def test_fit_recognizes_saved_projection_mode_and_both_aliases():
+    ordinary = {"config": {"noise_model": {"project_zero_tension": False}}}
+    projected = {"config": {"noise_model": {"project_zero_tension": True}}}
+    unmarked = {}
+    assert not fs._uses_projected_angles(ordinary, [])
+    assert fs._uses_projected_angles(projected, [])
+    assert fs._uses_projected_angles(unmarked, ["--project-zero-tension"])
+    assert fs._uses_projected_angles(unmarked, ["--projectZeroTension"])
+
+
 def _write_dataset(path) -> None:
     payload = {
         "version": "1.0",

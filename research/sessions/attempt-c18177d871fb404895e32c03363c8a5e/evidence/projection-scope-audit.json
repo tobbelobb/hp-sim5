@@ -1,0 +1,17 @@
+{
+  "heldout_path": [
+    {
+      "effective_use_noise_mean": true,
+      "drive": 100.0,
+      "sensor": 200.0,
+      "annotated": false
+    },
+    {
+      "effective_use_noise_mean": false,
+      "drive": 10.0,
+      "sensor": 20.0,
+      "annotated": true
+    }
+  ],
+  "position_objective_direct_value": 100.0
+}

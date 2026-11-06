@@ -1,0 +1,18 @@
+; headless simulator manifest: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturnzero6302/sweeps.headless/manifest.json
+Writing stage artifacts to: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturnzero6302/stages
+Writing additional info to log: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturnzero6302/sweeps.full_auto.log
+Traceback (most recent call last):
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/harness/run.py", line 80, in <module>
+    try:code=main(argv)
+             ^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 1355, in main
+    result = _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 1365, in _run_full_auto
+    return full_auto_loop(
+           ^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 430, in full_auto_loop
+    _run_collection_command(cmd)
+  File "/workspace/hp-sim5-worktrees/research-question-17836f78/autocal/autocal.py", line 355, in _run_collection_command
+    raise subprocess.CalledProcessError(code, cmd)
+subprocess.CalledProcessError: Command '['node', 'autocal/control/cli/collect_sweep_data.mjs', '--machineType', 'hangprinter_3', '--sweep-config-file', '/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturnzero6302/sweeps.bootstrap_cfg.txt', '--output-file', '/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturnzero6302/sweeps.json', '--speedup', '25', '--server', 'http://127.0.0.1:59631', '--headless-url', 'http://127.0.0.1:34545', '--no-spawn-rrf-simulator', '--firmware', 'rrf', '--sim', '--force-base-radii', '30', '--force-buildup-factor', '0', '--sweepPoints', '10', '--return-to-origin']' returned non-zero exit status 1.

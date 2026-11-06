@@ -1,0 +1,21 @@
+; headless simulator manifest: /workspace/hp-sim5/research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/runs/stock9401/sweeps.headless/manifest.json
+Writing stage artifacts to: /workspace/hp-sim5/research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/runs/stock9401/stages
+Writing additional info to log: /workspace/hp-sim5/research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/runs/stock9401/sweeps.full_auto.log
+Traceback (most recent call last):
+  File "/workspace/hp-sim5/research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/harness/run.py", line 81, in <module>
+    try:code=main(argv)
+             ^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-b63c5bfa/autocal/autocal.py", line 1355, in main
+    result = _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-b63c5bfa/autocal/autocal.py", line 1365, in _run_full_auto
+    return full_auto_loop(
+           ^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-b63c5bfa/autocal/autocal.py", line 430, in full_auto_loop
+    _run_collection_command(cmd)
+  File "/workspace/hp-sim5-worktrees/research-question-b63c5bfa/autocal/autocal.py", line 349, in _run_collection_command
+    for line in process.stdout:
+                ^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/research-question-b63c5bfa/autocal/headless_sim.py", line 289, in interrupt
+    raise KeyboardInterrupt(f"Signal {signum}")
+KeyboardInterrupt: Signal 15

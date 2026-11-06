@@ -1,0 +1,43 @@
+; headless simulator manifest: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.headless/manifest.json
+Writing stage artifacts to: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/stages
+Writing additional info to log: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.full_auto.log
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.full_auto.stop to request stop (cross-platform)
+; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 4
+
+; === full-auto iteration 2/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 5
+
+; === full-auto iteration 3/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 6
+
+; === full-auto iteration 4/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 7
+
+; === full-auto iteration 5/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/spaced6301/sweeps.json ===
+The 4th best try so far.
+; full-auto: stopping early; the two closest distinct fits agree to 3.064mm (limit 4.948mm).
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 0.2425
+Anchors (M669): M669 A0.00:-1905.69:-280.63 B1647.79:951.72:-280.63 C-1646.10:950.33:-280.63 D-0.07:0.15:1907.72
+Interpretation: A Quality score below 2 indicates a near-perfect fit.

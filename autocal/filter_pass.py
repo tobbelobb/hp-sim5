@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from autocal.projection_mode import resolve_projection_mode
+
 import importlib.util
 
 from autocal.theoretical_ellipse import (
@@ -115,6 +117,8 @@ def simulation_position_objective_score(
     *,
     use_noise_mean: bool,
 ) -> Tuple[float, int, int]:
+    if resolve_projection_mode(transformed_dataset) is True:
+        use_noise_mean = False
     anchors_arr = np.asarray(anchors_eval, dtype=float)
     if anchors_arr.ndim != 2 or anchors_arr.shape[0] <= 0 or not np.all(np.isfinite(anchors_arr)):
         return float("inf"), 0, 0

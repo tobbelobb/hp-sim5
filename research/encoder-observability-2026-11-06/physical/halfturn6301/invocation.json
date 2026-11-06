@@ -1,0 +1,83 @@
+{
+  "world": {
+    "id": "fresh6301",
+    "split": "development",
+    "mu": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "motor_factors": {
+      "A": {
+        "coulombFriction": 0.75,
+        "stictionTorque": 1.25
+      },
+      "B": {
+        "coulombFriction": 1.25,
+        "stictionTorque": 0.75
+      },
+      "C": {
+        "coulombFriction": 2.5,
+        "stictionTorque": 1.5
+      },
+      "D": {
+        "coulombFriction": 0.5,
+        "stictionTorque": 2.5
+      }
+    },
+    "sigma_deg": 0.06,
+    "noise_seed": 6301,
+    "scene": "/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/harness/hp3-stock.usda",
+    "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb"
+  },
+  "policy": "halfturn-v1",
+  "policy_files": {
+    "uncalibrated_actions.mjs": "c0207b7f573fc187fffc08345671839f3458f43e9859ed326aaa3bd1c21a1057",
+    "sweep_data_collection.mjs": "16798e653ea9b5ef1fa39c0c2a83a7fc2822d8856b3795cde8a7736973203d06",
+    "collect_sweep_data.mjs": "ca9791384b7d59fd5ba00b9963b2d19d4958db56f2929414258e1c26ba891dfc"
+  },
+  "argv": [
+    "--headless-sim",
+    "--recording-mode",
+    "events",
+    "--machine-type",
+    "hangprinter_3",
+    "--dataset",
+    "/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn6301/sweeps.json",
+    "--rrf-config",
+    "sys/config_hp3.g",
+    "--base-radii",
+    "30",
+    "--buildup-factor",
+    "0",
+    "--find-radii",
+    "off",
+    "--find-buildup-factor",
+    "off",
+    "--optimizer-mode",
+    "fast",
+    "--solve-optimizer",
+    "lbfgsb",
+    "--solve-iterations",
+    "400",
+    "--solve-restarts",
+    "4",
+    "--spool-outer-iters",
+    "3",
+    "--max-steps",
+    "12",
+    "--sweep-points",
+    "10",
+    "--speedup",
+    "25",
+    "--stage-artifacts",
+    "/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/halfturn6301/stages"
+  ],
+  "extra": [],
+  "script_sha256": {
+    "run.py": "68b5167acca8ab6843ba411bbe7c709dba6398a94445624dcca304e5621a13f3",
+    "autocal_headless.mjs": "3e359e5ae4bacf9086045fc123879c6de9c96a4f1180ec905f34039b70e0ac56"
+  },
+  "started_unix": 1793986252.7529306
+}

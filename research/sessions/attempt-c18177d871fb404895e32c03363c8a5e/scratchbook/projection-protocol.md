@@ -1,0 +1,9 @@
+# Zero-tension projection development test
+
+Run the existing full-auto `--project-zero-tension --use-raw-lengths` path on a fresh 6301 world, keeping stock collection policy, nominal 30 mm known radii, zero buildup and uneven motor friction. For every point, the collector fits a line to encoder readings at ten different commanded forces and extrapolates to zero command. Commanded motor force is not measured cable tension: friction, motor stiction, changing pose and nonlinear cable mechanics can invalidate the projection. This is an exploratory encoder-only model assumption, not a measured tension or a claim of unloaded geometry.
+
+Use the actual full-auto path, final automatic stopping and real firmware M669 application; compare per-anchor applied errors and failures to stock 6301. Save all commands, status and the model metadata. Preserve any collection rejection or timeout and do not call an unfinished trial successful. This is development on an examined world; freeze before running, then reserve independent worlds if it warrants follow-up.
+
+Since this policy takes ten force trials per measurement, extend this job's finite step cap to 30M and its wall cap to 5400 s. Extend the overall plan from 14 to 18 starts and 112M to 160M steps; evaluate serially, retain automatic cleanup, and extend further only after recording evidence. This plan is not a runtime claim and is not an assumption that 30M steps guarantees completion.
+
+The raw-length flag is required for this trial: when radius fitting is off, the default noise-mean path otherwise prefers means sampled at the final nonzero force over the projected point lengths. This source-level inconsistency is under review. The flag preserves the projected drive/sensor lengths. It does not automatically correct the fixed-length summary.

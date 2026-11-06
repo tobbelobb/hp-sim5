@@ -1,0 +1,11 @@
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -1214,7 +1214,7 @@
+   const stepCount = steps - 1;
+   const totalDelta = driveStartPointMm - driveEndPointMm;
+   const stepDirection = Math.sign(totalDelta) || 1;
+-  const initialStepMm = computeInitialForceSweepStepMm(baseRadiusMm) * stepDirection;
++  const initialStepMm = Math.min(2 * computeInitialForceSweepStepMm(baseRadiusMm), Math.abs(totalDelta) * 0.5) * stepDirection;
+   const remainingSteps = Math.max(1, stepCount - 1);
+   const stepDelta = (totalDelta - initialStepMm) / remainingSteps;
+   let currentDrive = driveEndPointMm;

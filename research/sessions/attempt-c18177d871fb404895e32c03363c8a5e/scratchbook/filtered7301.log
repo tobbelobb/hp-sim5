@@ -1,0 +1,51 @@
+; headless simulator manifest: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.headless/manifest.json
+Writing stage artifacts to: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/stages
+Writing additional info to log: /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.full_auto.log
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.full_auto.stop to request stop (cross-platform)
+; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 4
+
+; === full-auto iteration 2/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 5
+
+; === full-auto iteration 3/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 6
+
+; === full-auto iteration 4/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.json ===
+The 2nd best try so far.
+Collecting new sweep to try and beat it.
+Still has patience for 2 more attempts.
+Collected sweep nr 7
+
+; === full-auto iteration 5/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.json ===
+; selected run underconstrained; trying to restore sweeps/points from current data.
+; underconstrained recovery exhausted current data without re-establishing constraints.
+; selected run hit underconstrained sentinel; continuing to collect more sweeps.
+Collecting new sweep to try and beat it.
+Still has patience for 2 more attempts.
+Collected sweep nr 8
+
+; === full-auto iteration 6/12 dataset=/workspace/hp-sim5/research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/runs/filtered7301/sweeps.json ===
+The 3rd best try so far.
+; full-auto: stopping early; the two closest distinct fits agree to 1.621mm (limit 5.171mm).
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 0.3971
+Anchors (M669): M669 A0.00:-2003.50:-280.10 B1728.56:951.65:-280.10 C-1718.47:951.83:-280.10 D-0.11:0.23:1984.69
+Interpretation: A Quality score below 2 indicates a near-perfect fit.
+; experimental encoder filter: replace ; stock quality score does not score replacement

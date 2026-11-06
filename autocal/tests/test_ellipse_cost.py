@@ -122,6 +122,27 @@ def test_cost_is_low_for_true_anchors():
     assert detailed.num_valid_sweeps == 3
 
 
+def test_projected_measurements_do_not_use_later_nonzero_force_means():
+    dataset, _ = _synthetic_dataset()
+    point = dataset["sweeps"][0]["data_points"][0]
+    point.update(l_drive=10.0, l_sensor=20.0, l_drive_mu=100.0, l_sensor_mu=200.0)
+
+    # Ordinary collections continue to use the noise-sample mean by default.
+    ordinary = EllipseCostFunction(dataset)
+    assert ordinary._packed_sweeps[0].l_drive[0] == 100.0
+    assert ordinary._packed_sweeps[0].l_sensor[0] == 200.0
+
+    # The projected measurement and the later noise samples represent
+    # different force states. The projection must survive the default setting.
+    for sweep in dataset["sweeps"]:
+        for item in sweep["data_points"]:
+            item["raw_angles_zero_tension_deg"] = [1.0, 2.0, 3.0]
+    dataset["config"] = {"noise_model": {"project_zero_tension": True}}
+    projected = EllipseCostFunction(dataset)
+    assert projected._packed_sweeps[0].l_drive[0] == 10.0
+    assert projected._packed_sweeps[0].l_sensor[0] == 20.0
+
+
 def test_pointwise_euclidean_cost_is_low_for_true_anchors():
     dataset, anchors = _synthetic_dataset()
     cost_fn = EllipseCostFunction(

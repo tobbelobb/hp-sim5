@@ -28,6 +28,12 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);
   });
 
+  test.each(['--project-zero-tension', '--projectZeroTension'])(
+    '%s enables zero-tension projection', flag => {
+      expect(parseBridgeArgs([flag]).projectZeroTension).toBe(true);
+    },
+  );
+
   test.each([
     ['hp3', 'hangprinter_3', 'hp3'], ['hangprinter_3', 'hangprinter_3', 'hp3'],
     ['hp4', 'hangprinter_4', 'hp4'], ['hangprinter_4', 'hangprinter_4', 'hp4'],

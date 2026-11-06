@@ -105,6 +105,7 @@ from autocal.ellipse_cost import EllipseCostFunction
 from autocal.ellipse_fitting import fit_ellipse_from_sweep
 from autocal.ellipse_solver import format_anchor_matrix_plain
 from autocal.json_schema import append_jsonl_line, load_json_file, write_json_file
+from autocal.projection_mode import resolve_projection_mode
 from autocal.spool_model import (
     SpoolModelParams,
     build_spool_model_params,
@@ -1585,6 +1586,11 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
     if not isinstance(base_sweeps, list) or not isinstance(new_sweeps, list):
         raise ValueError("Invalid sweep datasets (missing sweeps list)")
 
+    base_projection = resolve_projection_mode(base)
+    new_projection = resolve_projection_mode(new)
+    if base_projection is not None and new_projection is not None and base_projection != new_projection:
+        raise ValueError("Cannot merge projected and nonprojected sweep datasets")
+
     merged_sweeps: List[dict] = []
     for s in base_sweeps:
         if isinstance(s, dict):
@@ -1624,6 +1630,14 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
             if "force_tuning" in new_config or "torque_tuning" in new_config:
                 updated["force_tuning"] = new_config.get("force_tuning") or new_config.get("torque_tuning")
             merged["config"] = updated
+    resolved_projection = base_projection if base_projection is not None else new_projection
+    if resolved_projection is not None:
+        config = dict(merged.get("config") or {})
+        model = config.get("noise_model")
+        model = dict(model) if isinstance(model, dict) else {}
+        model["project_zero_tension"] = resolved_projection
+        config["noise_model"] = model
+        merged["config"] = config
     return merged
 
 

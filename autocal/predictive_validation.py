@@ -5,6 +5,7 @@ from typing import Dict, Iterable, Optional, Tuple
 import numpy as np
 
 from autocal.ellipse_cost import EllipseCostFunction
+from autocal.projection_mode import resolve_projection_mode
 from autocal.spool_model import SpoolModelParams, dataset_with_modeled_lengths
 
 
@@ -38,17 +39,20 @@ def score_future_sweeps(
     validation_data = dict(dataset)
     validation_data["sweeps"] = held_out
     try:
+        projected = resolve_projection_mode(
+            dataset, requested=bool(prefer_zero_tension_angles)
+        ) is True
         if spool_params is not None:
             validation_data = dataset_with_modeled_lengths(
                 validation_data, spool_params,
-                prefer_zero_tension_angles=prefer_zero_tension_angles,
+                prefer_zero_tension_angles=projected,
             )
         cost = EllipseCostFunction(
             validation_data,
             pointwise_filtering=False,
             sweep_wise_filtering=False,
             robust_loss=True,
-            use_noise_mean=use_noise_mean,
+            use_noise_mean=bool(use_noise_mean) and not projected,
             pointwise_residual_mode=pointwise_residual_mode,
             sigma_source=sigma_source,
         )

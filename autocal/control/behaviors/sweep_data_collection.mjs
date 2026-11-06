@@ -1761,6 +1761,7 @@ export async function collectSweepData(send, context) {
       m669: m669Values,
       m92: m92Values,
       mm_per_degree: mmPerDeg,
+      noise_model: { project_zero_tension: !!options.projectZeroTension },
       notes: {
         buildup_factor_forced: Number.isFinite(forcedBuildupFactor) ? forcedBuildupFactor : undefined,
         base_radii_forced_mm: forcedBaseRadii ?? undefined,

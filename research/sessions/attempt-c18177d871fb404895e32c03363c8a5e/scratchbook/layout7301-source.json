@@ -1,0 +1,70 @@
+{
+  "changes_m": {
+    "SpoolA": [
+      0,
+      -0.1,
+      0
+    ],
+    "AnchorAL": [
+      0,
+      -0.1,
+      0
+    ],
+    "AnchorAR": [
+      0,
+      -0.1,
+      0
+    ],
+    "SpoolB": [
+      0.08,
+      0,
+      0
+    ],
+    "AnchorBL": [
+      0.08,
+      0,
+      0
+    ],
+    "AnchorBR": [
+      0.08,
+      0,
+      0
+    ],
+    "SpoolC": [
+      -0.07,
+      0,
+      0
+    ],
+    "AnchorCL": [
+      -0.07,
+      0,
+      0
+    ],
+    "AnchorCR": [
+      -0.07,
+      0,
+      0
+    ],
+    "SpoolD": [
+      0,
+      0,
+      0.08
+    ],
+    "AnchorD0": [
+      0,
+      0,
+      0.08
+    ],
+    "AnchorD1": [
+      0,
+      0,
+      0.08
+    ],
+    "AnchorD2": [
+      0,
+      0,
+      0.08
+    ]
+  },
+  "scene_hash": "0ffc9d4f28b5a752bf44e139e3a6e1384cdd138879ba8fcdb18ebdc7a5c250eb"
+}

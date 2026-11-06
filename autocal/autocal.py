@@ -1340,7 +1340,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             else str(args.speedup)
         )
         collector_args.extend(["--speedup", speedup_arg])
-    if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
+    if bool(args.project_zero_tension) and not _arg_has_flag(
+        collector_args, "--project-zero-tension", "--projectZeroTension"
+    ):
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")

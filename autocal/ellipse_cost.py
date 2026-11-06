@@ -11,6 +11,7 @@ from autocal.ellipse_fitting import (
     ellipse_euclidean_residuals,
     ellipse_sampson_residuals,
 )
+from autocal.projection_mode import resolve_projection_mode
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
 from autocal.theoretical_ellipse import (
     anchor_opt_vec_to_matrix,
@@ -271,7 +272,11 @@ class EllipseCostFunction:
         self.pointwise_filter_stage = int(pointwise_filter_stage)
         self.pointwise_global_mad = bool(pointwise_global_mad)
         self.sweep_metric = str(sweep_metric or "mad").strip().lower()
-        self.use_noise_mean = bool(use_noise_mean)
+        # A projected collection stores the extrapolated lengths in l_drive and
+        # l_sensor. Its noise means are sampled later at a nonzero force and do
+        # not represent the projected measurement.
+        projected = resolve_projection_mode(dataset) is True
+        self.use_noise_mean = bool(use_noise_mean) and not projected
         self.noise_normalized = bool(noise_normalized)
         self.sigma_source = str(sigma_source or "auto").strip().lower()
         if self.sigma_source not in ("auto", "point", "origin", "min"):

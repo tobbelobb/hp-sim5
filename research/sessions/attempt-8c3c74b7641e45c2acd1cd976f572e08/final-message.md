@@ -1,0 +1,1 @@
+A fresh matched comparison of point-specific encoder fitting reduced the largest anchor error from 5.924 to 4.536 mm, while worsening two anchors. Three anchors remained above 1 mm, so no production change is supported. The [report](report.md) retains the full results, failures, sources and limitations.

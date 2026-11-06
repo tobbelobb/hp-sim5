@@ -386,7 +386,7 @@ export function parseBridgeArgs(argv) {
       args.observabilityFile = argv[++i] || null;
     } else if (arg === '--return-to-origin' || arg === '--returnToOrigin') {
       args.returnToOrigin = true;
-    } else if (arg === '--project-zero-tension') {
+    } else if (arg === '--project-zero-tension' || arg === '--projectZeroTension') {
       args.projectZeroTension = true;
     }
   }

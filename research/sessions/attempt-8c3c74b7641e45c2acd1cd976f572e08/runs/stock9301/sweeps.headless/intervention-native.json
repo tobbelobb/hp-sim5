@@ -1,0 +1,529 @@
+{
+  "noise": {
+    "id": "layout9301",
+    "split": "evaluation",
+    "mu": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "motor_factors": {
+      "A": {
+        "coulombFriction": 1.25,
+        "stictionTorque": 1.75
+      },
+      "B": {
+        "coulombFriction": 2,
+        "stictionTorque": 0.75
+      },
+      "C": {
+        "coulombFriction": 0.5,
+        "stictionTorque": 1.25
+      },
+      "D": {
+        "coulombFriction": 1.75,
+        "stictionTorque": 0.5
+      }
+    },
+    "sigma_deg": 0.06,
+    "noise_seed": 9301,
+    "scene": "/workspace/hp-sim5/research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/harness/hp3-offset.usda",
+    "scene_sha256": "0ffc9d4f28b5a752bf44e139e3a6e1384cdd138879ba8fcdb18ebdc7a5c250eb"
+  },
+  "node_version": "v26.13.0",
+  "physics_engine": "rust-native",
+  "motors": [
+    {
+      "entity": 0,
+      "name": "SpoolA",
+      "holdingTorque": 0.5,
+      "dampingCoeff": 0.011,
+      "windageCoeff": 0.000011,
+      "coulombFriction": 0.00125,
+      "stictionTorque": 0.002625,
+      "stictionSpeed": 1
+    },
+    {
+      "entity": 5,
+      "name": "SpoolB",
+      "holdingTorque": 0.5,
+      "dampingCoeff": 0.011,
+      "windageCoeff": 0.000011,
+      "coulombFriction": 0.002,
+      "stictionTorque": 0.0011250000000000001,
+      "stictionSpeed": 1
+    },
+    {
+      "entity": 9,
+      "name": "SpoolC",
+      "holdingTorque": 0.5,
+      "dampingCoeff": 0.011,
+      "windageCoeff": 0.000011,
+      "coulombFriction": 0.0005,
+      "stictionTorque": 0.001875,
+      "stictionSpeed": 1
+    },
+    {
+      "entity": 12,
+      "name": "SpoolD",
+      "holdingTorque": 0.5,
+      "dampingCoeff": 0.011,
+      "windageCoeff": 0.000011,
+      "coulombFriction": 0.00175,
+      "stictionTorque": 0.00075,
+      "stictionSpeed": 1
+    }
+  ],
+  "selected": [
+    {
+      "entity": 0,
+      "name": "SpoolA",
+      "baseline": {
+        "coulombFriction": 0.001,
+        "stictionTorque": 0.0015,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      },
+      "selected": {
+        "coulombFriction": 0.00125,
+        "stictionTorque": 0.002625,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      }
+    },
+    {
+      "entity": 5,
+      "name": "SpoolB",
+      "baseline": {
+        "coulombFriction": 0.001,
+        "stictionTorque": 0.0015,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      },
+      "selected": {
+        "coulombFriction": 0.002,
+        "stictionTorque": 0.0011250000000000001,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      }
+    },
+    {
+      "entity": 9,
+      "name": "SpoolC",
+      "baseline": {
+        "coulombFriction": 0.001,
+        "stictionTorque": 0.0015,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      },
+      "selected": {
+        "coulombFriction": 0.0005,
+        "stictionTorque": 0.001875,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      }
+    },
+    {
+      "entity": 12,
+      "name": "SpoolD",
+      "baseline": {
+        "coulombFriction": 0.001,
+        "stictionTorque": 0.0015,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      },
+      "selected": {
+        "coulombFriction": 0.00175,
+        "stictionTorque": 0.00075,
+        "stictionSpeed": 1,
+        "windageCoeff": 0.000011
+      }
+    }
+  ],
+  "scene_sha256": "0ffc9d4f28b5a752bf44e139e3a6e1384cdd138879ba8fcdb18ebdc7a5c250eb",
+  "baked_scene_sha256": "9bc59e465bac72e0e6925b475d499c473b748a61d335a8df55ab7e323ce381c6",
+  "rows": [
+    {
+      "id": 0,
+      "name": "SpoolA",
+      "mu_ecs": 0.20000000298023224,
+      "mu_native": 0.20000000298023224,
+      "radius_native": 0.03,
+      "motor_native": [
+        0,
+        0,
+        0.5,
+        50,
+        0.011,
+        600,
+        0,
+        -0.0003,
+        0.000011,
+        0.00125,
+        0.002625,
+        1,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 1,
+      "name": "AnchorAL",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 2,
+      "name": "AnchorAR",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 3,
+      "name": "AttachAL",
+      "mu_ecs": 0.004999999888241291,
+      "mu_native": 0.004999999888241291,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 4,
+      "name": "AttachAR",
+      "mu_ecs": 0.004999999888241291,
+      "mu_native": 0.004999999888241291,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 5,
+      "name": "SpoolB",
+      "mu_ecs": 0.20000000298023224,
+      "mu_native": 0.20000000298023224,
+      "radius_native": 0.03,
+      "motor_native": [
+        0,
+        0,
+        0.5,
+        50,
+        0.011,
+        600,
+        0,
+        0,
+        0.000011,
+        0.002,
+        0.0011250000000000001,
+        1,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 6,
+      "name": "AnchorBL",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 7,
+      "name": "AnchorBR",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 8,
+      "name": "AttachBR",
+      "mu_ecs": 0.004999999888241291,
+      "mu_native": 0.004999999888241291,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 9,
+      "name": "SpoolC",
+      "mu_ecs": 0.20000000298023224,
+      "mu_native": 0.20000000298023224,
+      "radius_native": 0.03,
+      "motor_native": [
+        0,
+        0,
+        0.5,
+        50,
+        0.011,
+        600,
+        0,
+        0,
+        0.000011,
+        0.0005,
+        0.001875,
+        1,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 10,
+      "name": "AnchorCL",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 11,
+      "name": "AnchorCR",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 12,
+      "name": "SpoolD",
+      "mu_ecs": 0.20000000298023224,
+      "mu_native": 0.20000000298023224,
+      "radius_native": 0.03,
+      "motor_native": [
+        0,
+        0,
+        0.5,
+        50,
+        0.011,
+        600,
+        0,
+        0,
+        0.000011,
+        0.00175,
+        0.00075,
+        1,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 13,
+      "name": "AnchorD0",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 14,
+      "name": "AnchorD1",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 15,
+      "name": "AnchorD2",
+      "mu_native": 0,
+      "radius_native": 0.01,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Effector",
+      "mu_native": 0,
+      "radius_native": null,
+      "motor_native": [
+        0,
+        0,
+        0,
+        50,
+        0,
+        600,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}

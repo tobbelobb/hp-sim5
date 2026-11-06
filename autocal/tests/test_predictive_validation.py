@@ -63,6 +63,26 @@ def test_score_future_sweeps_requires_a_whole_sweep_outside_training():
     assert score_future_sweeps(dataset, anchors, training_sweep_ids=["heldout"]) is None
 
 
+def test_projected_validation_uses_projected_lengths_without_metadata():
+    dataset, anchors = _dataset()
+    for point in dataset["sweeps"][0]["data_points"]:
+        point["l_drive_mu"] = point["l_drive"] + 100.0
+        point["l_sensor_mu"] = point["l_sensor"] - 100.0
+    ordinary = score_future_sweeps(dataset, anchors, [])
+    for point in dataset["sweeps"][0]["data_points"]:
+        point["raw_angles_zero_tension_deg"] = [0.0, 0.0, 0.0]
+    before = copy.deepcopy(dataset)
+
+    raw = score_future_sweeps(dataset, anchors, [], use_noise_mean=False)
+    projected = score_future_sweeps(dataset, anchors, [], prefer_zero_tension_angles=True)
+    assert projected == pytest.approx(raw)
+    assert ordinary[0] != pytest.approx(raw[0])
+    assert dataset == before
+
+    dataset["config"] = {"noise_model": {"project_zero_tension": True}}
+    assert score_future_sweeps(dataset, anchors, []) == pytest.approx(raw)
+
+
 @pytest.mark.parametrize("buildup", [0.0, 0.636619])
 def test_validation_scores_the_candidates_own_radius_and_winding(buildup):
     dataset, anchors = _dataset()

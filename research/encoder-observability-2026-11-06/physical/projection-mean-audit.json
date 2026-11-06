@@ -1,0 +1,10 @@
+{
+  "True": {
+    "drive": 100.0,
+    "sensor": 200.0
+  },
+  "False": {
+    "drive": 10.0,
+    "sensor": 20.0
+  }
+}
