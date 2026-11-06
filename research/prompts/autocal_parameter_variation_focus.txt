@@ -1,5 +1,5 @@
 Improve encoder-only HP3 autocalibration across physically different machines.
-Updated 2026-11-05 after inspecting prior reports, the human interview and the completed guide-friction investigation.
+Updated 2026-11-06 after checking the completed guide-friction and lower-force investigations and the prior human interview.
 
 The goal is accurate, reliable anchors with less collection effort, preserving
 one-click operation and automatic stopping. Use known spool radii, zero buildup
@@ -87,13 +87,16 @@ Several older reports refer to external worktrees or absent artifacts.
 Remaining promising questions
 
 1. Which force and measurement choices avoid large errors across machines?
-   Start with existing motor Coulomb/stiction variation and noisy encoder reads,
-   keeping guide friction zero until its transport/load model is validated.
+   The fixed-force study already sampled motor Coulomb/stiction variation and
+   noisy encoder reads in three worlds; its two completed pairs are encouraging
+   but too small to establish robustness. Investigate an observable adaptive
+   force or measurement policy, or a specific model-bias discriminator, in
+   different worlds. Keep guide friction zero until its transport/load model is validated.
    Extend to stiffness, layouts and payload when they resolve a specific gap.
    First verify each intervention changes the intended physical property in the
    baked native world. Distinguish unsupported parameters from negative results.
    Screen a small declared design, then reserve different worlds for evaluation.
-   Compare current automatic force tuning with a materially different encoder-based policy. The fixed4mid rule above is settled for this matrix; reopen it only with a different observable rule, measured motor properties or a corrected model.
+   Compare current automatic force tuning with a materially different encoder-based policy. The fixed4mid rule above is settled for this matrix; reopen it only with a different observable rule, measured motor properties or a corrected model. If the transport fix is present, a fresh full-autocal run can test its integration, but cannot erase the prior timeout or prove its cause.
    Do not let simulated truth set per-world forces or select the winning rule.
 
 2. Can force-varied measurements resolve solver disagreement?
