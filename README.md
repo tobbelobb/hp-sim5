@@ -106,9 +106,9 @@ For a Codex cloud machine, use the reusable [cloud setup and startup instruction
 ### Running Demos Locally
 1. Install Node.js. Run for example:
    ```
-   nvm install 26
-   nvm use 24
-   nvm alias default 24
+   nvm install --lts
+   nvm use --lts
+   nvm alias default 'lts/*'
    ```
 2. In this repository run:
    ```bash

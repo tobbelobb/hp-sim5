@@ -17,16 +17,7 @@ test -x "$PUPPETEER_EXECUTABLE_PATH" || {
 mkdir -p "$HP_SIM5_CLOUD_TOOLS/node" "$XDG_CACHE_HOME" "$MPLCONFIGDIR" \
   "$WARP_CACHE_PATH" "$PIP_CACHE_DIR" "$npm_config_cache" output/cloud
 
-if [[ ! -x "$HP_SIM5_CLOUD_TOOLS/node/node-v$HP_SIM5_NODE_VERSION-linux-x64/bin/node" ]]; then
-  (
-    cd "$HP_SIM5_CLOUD_TOOLS/node"
-    archive="node-v$HP_SIM5_NODE_VERSION-linux-x64.tar.xz"
-    curl -fsSLO "https://nodejs.org/dist/v$HP_SIM5_NODE_VERSION/$archive"
-    curl -fsSL "https://nodejs.org/dist/v$HP_SIM5_NODE_VERSION/SHASUMS256.txt" -o "SHASUMS256-$HP_SIM5_NODE_VERSION.txt"
-    awk -v archive="$archive" '$2 == archive' "SHASUMS256-$HP_SIM5_NODE_VERSION.txt" | sha256sum -c -
-    tar -xf "$archive"
-  )
-fi
+bash .agents/skills/cloud-research-client/scripts/install-node.sh
 if [[ ! -x .venv/bin/python ]]; then
   python3 -m venv .venv
 fi

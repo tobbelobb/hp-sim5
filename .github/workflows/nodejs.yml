@@ -11,9 +11,6 @@ jobs:
     env:
       CI: true
       RUN_RRF_HTTP_ENDPOINT_TESTS: "1"
-    strategy:
-      matrix:
-        node-version: [24.x, 26.x]
     steps:
       - uses: actions/checkout@v3
       - name: Fetch required submodules (https)
@@ -22,10 +19,11 @@ jobs:
           git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
           git submodule sync RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib autocal/auto-calibration-simulation-for-hangprinter
           git submodule update --init RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib autocal/auto-calibration-simulation-for-hangprinter
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use latest Node.js LTS
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 'lts/*'
+          check-latest: true
           cache: 'npm'
       - name: Install dependencies
         run: npm ci

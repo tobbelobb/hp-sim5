@@ -3,12 +3,11 @@
 export HP_SIM5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 export HP_SIM5_CLOUD_TOOLS="${HP_SIM5_CLOUD_TOOLS:-/workspace/.tools}"
 export HP_SIM5_CLOUD_CACHE="${HP_SIM5_CLOUD_CACHE:-/workspace/.cache}"
-export HP_SIM5_NODE_VERSION="${HP_SIM5_NODE_VERSION:-26.13.0}"
 export HP_SIM5_RUST_VERSION=1.99.1
 
 export CARGO_HOME="${CARGO_HOME:-$HP_SIM5_CLOUD_TOOLS/cargo}"
 export RUSTUP_HOME="${RUSTUP_HOME:-$HP_SIM5_CLOUD_TOOLS/rustup}"
-export PATH="$HP_SIM5_CLOUD_TOOLS/node/node-v$HP_SIM5_NODE_VERSION-linux-x64/bin:$CARGO_HOME/bin:$HP_SIM5_ROOT/.venv/bin:$HP_SIM5_CLOUD_TOOLS/playwright-cli/node_modules/.bin:$PATH"
+export PATH="$HP_SIM5_CLOUD_TOOLS/node/current/bin:$CARGO_HOME/bin:$HP_SIM5_ROOT/.venv/bin:$HP_SIM5_CLOUD_TOOLS/playwright-cli/node_modules/.bin:$PATH"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HP_SIM5_CLOUD_CACHE}"
 export MPLCONFIGDIR="${MPLCONFIGDIR:-$HP_SIM5_CLOUD_CACHE/matplotlib}"
 export WARP_CACHE_PATH="${WARP_CACHE_PATH:-$HP_SIM5_CLOUD_CACHE/warp}"

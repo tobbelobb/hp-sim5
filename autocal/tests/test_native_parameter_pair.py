@@ -4,9 +4,8 @@ import pytest
 from autocal.tools import collect_native_parameter_pair as pair
 
 
-def test_unsupported_node_fails_before_output_or_simulation(tmp_path, monkeypatch):
-    monkeypatch.setattr(pair.shutil, 'which', lambda _: '/node23')
-    monkeypatch.setattr(pair.subprocess, 'check_output', lambda *a, **k: 'v23.11.1\n')
+def test_missing_node_fails_before_output_or_simulation(tmp_path, monkeypatch):
+    monkeypatch.setattr(pair.shutil, 'which', lambda _: None)
     monkeypatch.setattr(pair, 'HeadlessSimulation', lambda *a, **k: pytest.fail('must not start physics'))
     destination=tmp_path/'unused'
     with pytest.raises(SystemExit) as error:

@@ -44,9 +44,6 @@ def node_identity():
     if path is None:
         raise RuntimeError('Node is missing. Source .agents/skills/cloud-research-client/scripts/env.sh before collection.')
     version = subprocess.check_output([path, '--version'], text=True).strip()
-    if not re.fullmatch(r'v(?:24|26)\.\d+\.\d+', version):
-        raise RuntimeError(f'Unsupported Node {version} at {path}. Source '
-                           '.agents/skills/cloud-research-client/scripts/env.sh; native cloud collection requires Node 24 or 26.')
     return path, version
 
 
