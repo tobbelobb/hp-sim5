@@ -66,7 +66,7 @@ def main(argv, root):
         args = parser.parse_args(argv)
         try:
             result = request(read_json(args.connection), args.operation, json.loads(args.params),
-                             timeout=60 if args.operation in ('runtime_check', 'worker_start', 'run_once') else 10)
+                             timeout=60 if args.operation in ('runtime_check', 'worker_start') else 10)
         except (OSError, ValueError, TypeError, KeyError) as error:
             result = failure('invalid_request', str(error))
         print(_json(result))
@@ -111,7 +111,7 @@ def main(argv, root):
                 parser.error(str(error))
         if args.dry_run:
             attachment = {'program_id': args.program or 'PROGRAM_ID',
-                          'session': str(root / 'research/programs/dry-run/manager'),
+                          'session': str(args.store.absolute() / 'managers/dry-run'),
                           'connection': str(args.store.absolute() / 'managers' / (args.program or 'PROGRAM_ID') / 'connection.json')}
             opened = {'attachment': attachment, 'overview': None}
         else:

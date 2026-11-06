@@ -2,11 +2,13 @@
 
 `program.review` captures a fixed submission from an ended worker, then starts a
 separate coding-client conversation. The role is loaded directly from
-`role-instructions/REVIEWER.md`; generated prompt data supplies the exact target,
-response schema and runtime limits.
+`role-instructions/REVIEWER.md` and injected through Codex developer instructions
+or Claude's appended system prompt. The task message supplies the exact target
+and response schema.
 
-`submit` takes a claim, base revision, optional committed candidate revision,
-configuration, input identities and selected files. Files are limited to 32 files
+`submit` takes a base revision, optional committed candidate revision,
+selected canonical files and optional configuration/input identities. A finding
+identity is created automatically when omitted. Files are limited to 32 files
 and 32 MiB. The manifest and files have checksums. `submission_verify` rejects
 changed bytes; another candidate or evidence set requires a new submission.
 

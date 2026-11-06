@@ -443,7 +443,8 @@ def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp
                                    if arg.startswith('developer_instructions=')))
     assert f'Session artifacts: {session}' in instructions
     assert str(session / 'abstract.md') in instructions
-    assert 'actually tested hypothesis' in instructions
+    assert (ROOT / 'research-program-feature/role-instructions/RESEARCHER.md').read_text() in instructions
+    assert not (ROOT / 'research/AGENTS.md').exists()
     assert not session.exists()
 
 
@@ -613,7 +614,8 @@ else:
     else:
         assert services[0].closed
     assert services[0].directory.parent == session
-    assert 'Status: not yet summarized' in (session / 'abstract.md').read_text()
+    assert 'No research result is available yet' in (session / 'abstract.md').read_text()
+    assert not (session / 'research.md').exists()
     catalog_root = tmp_path / 'research' if managed else tmp_path
     assert (catalog_root / 'index.md').is_file()
     # The catalog deliberately skips nested test/session artifacts.

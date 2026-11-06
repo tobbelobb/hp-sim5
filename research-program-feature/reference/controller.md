@@ -1,14 +1,14 @@
-# Execution controller
+# Execution and recovery
 
-`program.controller.ProgramController` coordinates allocations, dispatch, review,
-pause, cancellation and recovery. `program.pool` tracks capacity across programs
-sharing one store. Defaults allow one worker and one separate review slot.
+Dispatch goes directly to the existing researcher launcher. There are no route
+plans, runtime allocations, experiment counters or review-funding records.
+`ProgramController` only configures concurrency and observes lost owners.
 
-The current controller requires finite wall-time and task allocations, plus
-review/startup/cleanup reservations. Some numerical limits are recorded contracts,
-not hard aggregate meters. The role cleanup does not remove these API requirements.
+Commissioned researchers default to separate worktrees. Worker concurrency defaults to one. `configure_pool` can select up to four;
+parallel launches use separate worktrees. Shared runtime changes and combined
+checks retain exclusive access. Optional assignment wall timeouts still request
+normal launcher cleanup; cancellation and reviewer/check timeouts remain active.
 
-The host polls children, enforces deadlines and records cleanup. Historical
-process identities never permit adoption or cancellation of an unrelated process.
-Unknown ownership blocks reuse until an explicit handoff records what happened.
-Each store retains its selected client transport across host recovery.
+Historical PIDs never authorize signals. Unknown cleanup blocks capacity reuse
+until an explicit recovery handoff records what happened. The store retains its
+client transport across host recovery.

@@ -129,7 +129,7 @@ resolve uncertainty, not a reason to repeat settled studies.
 
 Execution and reporting
 
-- Read research/AGENTS.md, research/README.md and
+- Read research-program-feature/role-instructions/RESEARCHER.md, research/README.md and
   research/autocal-recording-performance.md. Use the local .venv/bin/python.
 - Start with saved/synthetic evidence, then collect when the question requires
   fresh data. Use native Rust, supported --speedup 25, events for routine live

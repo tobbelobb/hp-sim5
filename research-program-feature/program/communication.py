@@ -18,9 +18,9 @@ def worker_policy(session):
         ' as {"id":"the same question id","answer":"manager decision"}. '
         'Accept only an answer matching your current id. Ask one question at a time; keep '
         'unique ids so old answers cannot answer new questions. Continue independent work '
-        'while waiting; poll at intervals of a few seconds, within the existing wall deadline. '
-        'Never extend budgets or assume silence grants authority. If no answer arrives, '
-        'retain the question and report blocked/partial evidence. Record answers in research.md.\n'
+        'while waiting. '
+        'Never assume silence grants authority. If no answer arrives, '
+        'retain the question and report blocked/partial evidence. Keep useful notes in scratchbook/.\n'
     )
 
 

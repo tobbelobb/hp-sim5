@@ -16,9 +16,9 @@ KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering
          'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt',
          'submission', 'submission_event', 'review_run', 'review', 'admission',
          'route_plan', 'investigation', 'strategy_event', 'human_input', 'runtime_allocation',
-         'integration_job', 'integration_preparation', 'integration_check')
+         'integration_job', 'integration_preparation', 'integration_check', 'integration_delivery')
 TRANSITIONS = {
-    'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set()},
+    'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set(), 'completed': set()},
     'approach': {'live': {'promising', 'parked', 'retired'},
                  'promising': {'live', 'parked', 'retired'},
                  'parked': {'live', 'promising', 'retired'}, 'retired': {'live'}},
@@ -59,7 +59,7 @@ def _allocation(value):
             raise ProgramError('Allocation entries must be named finite nonnegative numbers')
         if (isinstance(amount, float) and not math.isfinite(amount)) or amount < 0:
             raise ProgramError('Allocation entries must be finite and nonnegative')
-    if value.get('wall_minutes', 0) <= 0:
+    if 'wall_minutes' in value and value['wall_minutes'] <= 0:
         raise ProgramError('An assignment requires a positive finite wall_minutes allocation')
     return value
 
@@ -270,8 +270,9 @@ class ProgramStore:
             return self._insert(program_id, 'approach', title,
                                 {'question_id': question_id, 'state': 'live', 'reason': _text(reason, 'reason')}, record_id)
 
-    def add_assignment(self, program_id, approach_id, objective, allocation, *, record_id=None, expected_revision=None):
-        _allocation(allocation)
+    def add_assignment(self, program_id, approach_id, objective, allocation=None, *, settings=None, record_id=None, expected_revision=None):
+        allocation = _allocation({} if allocation is None else allocation)
+        settings = _object({} if settings is None else settings, 'settings')
         with self.transaction():
             program = self._touch(program_id, expected_revision)
             approach = self.get_record(program_id, approach_id, 'approach')
@@ -279,7 +280,7 @@ class ProgramStore:
                 raise ProgramError('Assignments require an active program and live/promising approach')
             return self._insert(program_id, 'assignment', objective,
                                 {'approach_id': approach_id, 'question_id': approach['details']['question_id'],
-                                 'allocation': allocation, 'execution_state': 'planned',
+                                 'allocation': allocation, 'settings': settings, 'execution_state': 'planned',
                                  'review_state': 'unreviewed', 'knowledge_state': 'unassessed'}, record_id)
 
     def add_artifact(self, program_id, reference, sha256, evidence_type, source_revision, *,
@@ -461,10 +462,6 @@ class ProgramStore:
         validate_attempts(by_id)
         from .review import validate_reviews
         validate_reviews(by_id)
-        from .strategy import validate_strategy
-        validate_strategy(by_id)
-        from .controller import validate_allocations
-        validate_allocations(by_id)
         from .integration import validate_integrations
         validate_integrations(by_id)
         with self.transaction():

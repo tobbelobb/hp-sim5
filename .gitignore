@@ -67,3 +67,17 @@ autocal/tools/experiment_progressive_fitting.py
 /research/sessions/**/connection.json
 # Generated catalog; research/catalog.md is the curated topic guide.
 /research/index.md
+# Launcher bookkeeping stays local; publish reports and original evidence instead.
+/research/sessions/*/session.json
+/research/sessions/*/launch.json
+/research/sessions/*/exit.json
+/research/sessions/*/prompt.txt
+/research/sessions/*/instructions.md
+/research/sessions/*/attachment.toml
+/research/sessions/*/attachment.json
+/research/sessions/*/events.jsonl
+/research/sessions/*/final-message.md
+/research/sessions/*/viewer.log
+/research/sessions/*/manager-question.json
+/research/sessions/*/manager-answer.json
+/research/sessions/*/native/runtime.log

@@ -25,10 +25,10 @@ def test_catalog_deduplicates_aliases_and_keeps_evidence_links(tmp_path):
     entries = list(catalog_entries(tmp_path))
     assert [p for p, _ in entries] == [alias]
     index = render_index(tmp_path)
-    assert '[Evidence](sessions/hp3-radius-validation/metrics.json)' in index
-    assert '[Prior](sessions/hp3-radius-validation/../prior/report.md)' in index
-    assert '[Paper](https://example.org/paper)' in index
-    assert '[Code](/repo/code.py)' in index
+    assert '[Radius validation](sessions/hp3-radius-validation/report.md)' in index
+    assert 'Rejected winding hypothesis.' in index
+    assert 'metrics.json' not in index
+    assert '[Paper]' not in index
     assert 'Radius validation' in render_index(tmp_path, 'WINDING')
     assert 'Radius validation' not in render_index(tmp_path, 'elasticity')
     write_index(tmp_path)
@@ -47,10 +47,20 @@ def test_pending_and_legacy_sessions_do_not_claim_completed_research(tmp_path):
     unrelated.mkdir()
     (unrelated / 'telemetry.jsonl').write_text('{}')
     index = render_index(tmp_path)
-    assert 'None recorded yet' in index
     assert 'No research result is available yet' in index
-    assert 'No research decision yet' in index
-    assert 'Scope, review and the next observation have not been recorded' in index
-    assert 'Status: abstract missing' in index
-    assert 'tested hypotheses have not been cataloged' in index
+    assert 'No result summary available' in index
+    assert 'Tested hypotheses' not in index
     assert '[experiments]' not in index
+
+
+def test_sessions_root_refreshes_only_the_canonical_catalog(tmp_path):
+    research = tmp_path / 'research'
+    session = research / 'sessions/topic'
+    session.mkdir(parents=True)
+    (session / 'abstract.md').write_text('# Topic\n\nA result. Another sentence.\n')
+    duplicate = research / 'sessions/index.md'
+    duplicate.write_text('# Research session catalog\nOld duplicate\n')
+    write_index(research / 'sessions')
+    assert not duplicate.exists()
+    assert '[Topic](sessions/topic/abstract.md) — A result.' in (research / 'index.md').read_text()
+    assert 'Another sentence' not in (research / 'index.md').read_text()

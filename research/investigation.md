@@ -101,7 +101,7 @@ The working integration keeps three responsibilities explicit:
 
 Compared with a persistent HTTP harness, fresh trials simplify repeatability
 and keep failed experiments from contaminating subsequent initial state.
-`research/AGENTS.md` supplies the experiment loop and domain-specific traps.
+`research-program-feature/role-instructions/RESEARCHER.md` supplies the experiment loop and domain-specific traps.
 The integration adds no dependency on ROS, OmniSim, GPU training, or an API key.
 
 The largest remaining bridge is native online autocal collection: translate

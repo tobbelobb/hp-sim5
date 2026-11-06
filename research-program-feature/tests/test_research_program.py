@@ -93,9 +93,9 @@ class ProgramTests(unittest.TestCase):
             program = store.create_program('Bound assignments')
             approach = store.add_approach(program['id'], program['question_id'], 'Inspect', 'Cheap')
             before = store.snapshot(program['id'])
-            for allocation in ({}, {'fresh_fits': 1}, {'wall_minutes': 0}, {'wall_minutes': -1},
+            for allocation in ({'wall_minutes': 0}, {'wall_minutes': -1},
                                {'wall_minutes': float('inf')}, {'wall_minutes': float('nan')},
-                               {'wall_minutes': True}, {'wall_minutes': 1, 'fresh_fits': -1}, None):
+                               {'wall_minutes': True}, {'wall_minutes': 1, 'fresh_fits': -1}, []):
                 with self.subTest(allocation=allocation), self.assertRaises(ProgramError):
                     store.add_assignment(program['id'], approach['id'], 'Invalid', allocation)
                 self.assertEqual(store.snapshot(program['id']), before)

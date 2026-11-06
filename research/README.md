@@ -44,7 +44,7 @@ or repository `.env`). For example:
 
 Arguments after `--` go unchanged to the selected CLI, including its resume
 options. `--model` works with either backend; `--model-provider` is Codex-only.
-Claude receives the root and research AGENTS instructions explicitly and loads
+Claude receives root AGENTS.md and the explicit RESEARCHER.md role and loads
 only the session MCP servers from `attachment.json`. `instructions.md` records
 the supplied instructions. Both MCP servers use the supervised connection
 file, and their tools are allowed through Claude's permission checks. Other
@@ -71,7 +71,7 @@ headless Node, with the same fixed steps, forces, motors, encoders and cables
 as the browser. JavaScript handles scene preparation, commands and observations.
 See the [native host implementation](rust-native-engine.md) and the earlier
 [Wasm engine measurements](rust-wasm-engine.md). `--machine hp3` selects the HP3 scene and matching RRF
-configuration; HP4 remains the default. Use `--physics-backend native-python`
+configuration; `--machine` is required. Use `--physics-backend native-python`
 for the independent Python engine, or `--viewer none --no-record` for numerical
 batches without Rerun logging. Fresh `run_experiment` trials also default to native
 Rust; `physics_backend='native-python'` selects the independent reference.
@@ -165,7 +165,7 @@ parent directory is a sibling named `<repo>-worktrees`; override it with
 `--worktree-dir`. The shared addon is only a starting build: each worktree has
 local build metadata and build output, so rebuilding its native physics does
 not change another worktree. Each launched supervisor owns its own physics
-process; session artifacts are stored in the shared `output/` tree. The branch
+process; new session artifacts are stored in shared `research/sessions/`. The branch
 name derives from `--name`, otherwise from the prompt's first line, otherwise
 `research`. `.worktreeinclude` accepts comments, plain relative paths and
 simple globs; missing entries are ignored.
@@ -188,9 +188,9 @@ chat. After releasing the other client, resume with fresh supervised tools:
 ./hp-sim5-research-agent --machine hp4 --codex -- resume CONVERSATION_ID
 ```
 
-Read the previous session's `research.md`, experiment manifests and current Git
+Read the previous session's `report.md`, experiment manifests and current Git
 diff before continuing. The new session has a new artifact directory and world;
-link the previous evidence in its research record. A cancelled collection cannot
+link the previous evidence in its report. A cancelled collection cannot
 continue from its final snapshot or partial-point journal. Keep that evidence
 and start a new collection when needed. A live service-only supervisor can be
 reattached through its existing `attachment.toml` instead.
@@ -292,10 +292,11 @@ reset reports a fresh world identity; an ended supervisor fails attachment
 and requires a new service session. Bare registration of `hp_sim5_mcp.py` only
 supports fresh numerical trials, not continuing-world tools.
 
-Research instructions are supplied through MCP initialization for every entry
-route and through Codex developer instructions for launcher sessions. Maintain
-`research.md` in the session artifact directory with the objective, hypothesis,
-constraints/budgets, experiment IDs, accepted steering and next decision.
+The launcher supplies [RESEARCHER.md](../research-program-feature/role-instructions/RESEARCHER.md)
+explicitly to research clients. MCP initialization supplies tool usage only.
+For a desktop chat intended to act as a researcher, load that role file explicitly.
+Keep one report.md with evidence links, a one-sentence abstract.md, and optional
+working notes in scratchbook/.
 
 ## Finding previous research
 
@@ -304,8 +305,8 @@ instructions and implementation live in [`research-program-feature/`](../researc
 Keep new working notes inside the assigned session's `scratchbook/` directory.
 
 Open the [research topic guide](catalog.md) for the main investigations and
-the local [session catalog](index.md) for short abstracts,
-tested hypotheses, outcomes and evidence links. The catalog includes sessions under `research/sessions/` and existing
+the local [session catalog](index.md) for one result sentence and a report link
+per session. The catalog includes sessions under `research/sessions/` and existing
 investigations directly under `research/`. Older standalone sessions under
 `output/research/` can be searched with `--root output/research`. It reads `abstract.md`, so searching it does not require
 reading long reports or raw telemetry:
@@ -328,19 +329,18 @@ interactive sessions without an initial prompt start as `interactive-research`.
 `--session-dir` still selects an exact new directory. Runtime world IDs and
 experiment IDs remain independent of these names.
 
-Each agent maintains `abstract.md` using the [abstract template](abstract-template.md),
-alongside its notebook and report. It records pending, completed, interrupted or
-blocked work explicitly and links the measurements behind each tested claim.
-The launcher creates a pending abstract and refreshes the local catalog at
-startup and exit; the agent refreshes it during research turns, including desktop
-attachment. Legacy sessions without an abstract are labeled as missing a summary.
+Each researcher maintains a one-sentence abstract.md using the
+[abstract template](abstract-template.md). Detailed findings and evidence belong
+in report.md. The launcher creates a pending abstract and refreshes the single
+catalog at startup and exit. Launcher bookkeeping and transcripts stay ignored;
+keep useful reports and original evidence in Git.
 
 Older hash paths contain absolute references in reports, manifests, attachment
 configuration and conversation history. Descriptive directory aliases let readers
 browse those sessions without moving the evidence. The catalog lists each
 physical session once and prefers its descriptive alias. Keep both paths stable
-while a supervisor is running. Session artifacts and aliases are ignored by Git;
-the topic guide preserves a short account of the existing findings in the repo.
+while a supervisor is running. Older output/ session artifacts and aliases remain ignored by Git. New reports
+and original evidence under research/sessions/ can be committed.
 
 ## Batch mode and diagnostics
 

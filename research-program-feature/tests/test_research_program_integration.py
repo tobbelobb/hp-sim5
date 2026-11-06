@@ -416,7 +416,7 @@ def test_actual_file_host_returns_before_long_check_and_keeps_ownership(integrat
             return result if result['result']['patch_readiness'] == 'passed' else None
         result = until(finished)
         assert not result['result']['lease_held']
-        assert request(attachment, 'overview')['result']['integrations'][0]['patch_readiness'] == 'passed'
+        assert request(attachment, 'overview')['result']['integrations'][0]['state'] == 'finished'
     finally:
         request(attachment, 'shutdown')
         until(lambda: not live(attachment))
@@ -452,3 +452,109 @@ def test_detected_detached_child_holds_lease_without_claiming_shutdown(integrati
         until(lambda: not process_live(child))
     result = c['integration'].recover('p', started['job']['id'], reason='Fixture explicitly stopped detected detached child')
     assert not result['lease_held'] and result['check'] is None
+
+
+def delivery_candidate(c):
+    """Use real canonical session paths, not a published copy of review snapshots."""
+    session = c['root'] / 'research/sessions/fixture'
+    session.mkdir(parents=True)
+    report = session / 'report.md'
+    evidence = session / 'evidence.json'
+    report.write_text('# Result\n\nThe measured improvement.\n')
+    evidence.write_text('{"before": 4, "after": 3}\n')
+    revision = candidate(c, 'final-result', {
+        'improvement.txt': 'Useful change\n',
+        'research/sessions/fixture/report.md': report.read_text(),
+        'research/sessions/fixture/evidence.json': evidence.read_text(),
+        'research/programs/p/summary.html': '<p>Improved the result. <a href="../../sessions/fixture/report.md">Evidence</a></p>',
+    })
+    session.mkdir(parents=True, exist_ok=True)
+    report.write_text('# Result\n\nThe measured improvement.\n')
+    evidence.write_text('{"before": 4, "after": 3}\n')
+    claim = c['store'].graph().add_claim('p', 'Measured improvement', {'session': 'fixture'})
+    selected = [{'id': 'report', 'role': 'report', 'path': str(report)},
+                {'id': 'data', 'role': 'evidence', 'path': str(evidence)}]
+    sub = c['controller'].submit('p', c['attempt']['id'], claim['id'], base_revision=c['base'],
+                                 candidate_revision=revision, config={}, input_identities=['fixture'],
+                                 selected=selected, producer_checks=[])
+    response = copy.deepcopy(CASES['scoped_negative']['review'])
+    response.update(code_readiness='ready')
+    run = reviewer(c, sub, response=response)
+    assert c['controller'].apply('p', run['details']['review_id'])['details']['decision'] == 'keep'
+    report.unlink()
+    evidence.unlink()
+    return sub
+
+
+def test_delivery_is_one_squash_with_the_checked_tree_and_canonical_results(integration):
+    c = integration
+    git(c, 'branch', '-M', 'main')
+    git(c, 'config', 'user.name', 'Fixture researcher')
+    git(c, 'config', 'user.email', 'research@example.org')
+    sub = delivery_candidate(c)
+    prepared = prepare(c, [sub])
+    assert c['store'].get_program('p')['state'] == 'active'
+    with pytest.raises(ProgramError, match='checks before delivery'):
+        c['integration'].finish('p', prepared['job']['id'], 'A useful improvement')
+    passed = ended(c, check(c, prepared, 'from pathlib import Path; assert Path("improvement.txt").read_text() == "Useful change\\n"'))
+    assert c['store'].get_program('p')['state'] == 'active'
+    git(c, 'checkout', '-q', 'main')
+    delivered = c['integration'].finish('p', prepared['job']['id'], 'A useful improvement')
+    revision = delivered['job']['details']['delivered_revision']
+    assert git(c, 'rev-parse', 'HEAD') == revision
+    assert git(c, 'rev-list', '--count', c['base'] + '..main') == '1'
+    assert git(c, 'rev-parse', 'main^{tree}') == passed['check']['details']['manifest']['combined_tree']
+    assert git(c, 'log', '-1', '--format=%s', 'main') == 'A useful improvement'
+    assert git(c, 'status', '--porcelain') == ''
+    assert c['store'].get_program('p')['state'] == 'completed'
+    paths = git(c, 'ls-tree', '-r', '--name-only', 'main').splitlines()
+    assert [p for p in paths if p.endswith('report.md')] == ['research/sessions/fixture/report.md']
+    assert c['integration'].finish('p', prepared['job']['id'], 'Retry')['job']['details']['delivered_revision'] == revision
+    restored = ProgramStore(c['tmp'] / 'delivered-restore', create=True)
+    try:
+        restored.import_snapshot(c['store'].snapshot('p'))
+        assert restored.get_program('p')['state'] == 'completed'
+    finally:
+        restored.close()
+
+
+@pytest.mark.parametrize('blocker', ['main_changed', 'dirty_main', 'failed_check', 'missing_summary', 'different_evidence'])
+def test_delivery_blocks_incomplete_or_changed_results(integration, blocker):
+    c = integration
+    git(c, 'branch', '-M', 'main')
+    git(c, 'config', 'user.name', 'Fixture researcher')
+    git(c, 'config', 'user.email', 'research@example.org')
+    if blocker in ('missing_summary', 'different_evidence'):
+        files = {'improvement.txt': 'Useful change\n'}
+        if blocker == 'different_evidence':
+            files['research/programs/p/summary.html'] = '<p>Summary</p>'
+        sub = reviewed(c, 'incomplete-result', files)
+        if blocker == 'different_evidence':
+            # A selected canonical report must actually be in the checked tree.
+            # Re-submit its fixed original content from a canonical session path.
+            old = sub['details']['manifest']
+            source = c['root'] / 'research/sessions/source/report.md'
+            source.parent.mkdir(parents=True)
+            source.write_bytes((c['store'].directory / 'submissions' / sub['id'] / 'report').read_bytes())
+            selected = [dict(id=a['id'], role=a['role'], path=str(source) if a['role'] == 'report'
+                             else str(c['store'].directory / 'submissions' / sub['id'] / a['id'])) for a in old['assets']]
+            sub = c['controller'].submit('p', c['attempt']['id'], old['claim']['id'], base_revision=c['base'],
+                                         candidate_revision=old['candidate_revision'], config={},
+                                         input_identities=['fixture'], selected=selected, producer_checks=[])
+            response = copy.deepcopy(CASES['scoped_negative']['review']); response['code_readiness'] = 'ready'
+            run = reviewer(c, sub, response=response)
+            c['controller'].apply('p', run['details']['review_id'])
+    else:
+        sub = delivery_candidate(c)
+    prepared = prepare(c, [sub])
+    ended(c, check(c, prepared, 'raise SystemExit(1)' if blocker == 'failed_check' else 'assert True'))
+    git(c, 'checkout', '-q', 'main')
+    if blocker == 'main_changed':
+        git(c, 'commit', '--allow-empty', '-qm', 'Concurrent change')
+    elif blocker == 'dirty_main':
+        (c['root'] / 'unrelated.txt').write_text('Uncommitted human work')
+    before = git(c, 'rev-parse', 'main')
+    with pytest.raises(ProgramError):
+        c['integration'].finish('p', prepared['job']['id'], 'Should not deliver')
+    assert git(c, 'rev-parse', 'main') == before
+    assert c['store'].get_program('p')['state'] == 'active'

@@ -1,14 +1,19 @@
-# Combined code checks
+# Reviewed delivery
 
-`program.integration.IntegrationController` prepares a combined candidate from
-reviewed submissions against an explicit base revision. It keeps an exclusive
-lease while applying patches and checking the combined revision. Conflicts,
-changed submissions and missing reviewer requirements block readiness.
+`integration_prepare` combines reviewed submissions against an explicit base.
+Conflicts, changed evidence and reviewer requirements prevent readiness.
+`integration_check` runs relevant command arrays on the clean combined candidate.
+Receipts identify its tree, inputs, configuration, check output and cleanup.
+Physics changes require `npm run test:physics`.
 
-`integration_check` runs explicit command arrays in the candidate worktree with a
-wall deadline. The runner records commands, outputs, candidate identity and
-cleanup. Physics changes retain the physics test requirement. A passing receipt
-applies only to that revision and configuration. Release the lease after checks.
+A prepared or checked candidate leaves the program active. `integration_finish`
+requires passing checks, current accepted reviews, unchanged evidence, the
+program's summary.html in the candidate and main still at the chosen base. It
+creates one commit with that exact checked tree and main as its sole parent,
+fast-forwards a clean main worktree (or updates main if it is not checked out),
+and marks the program completed. It never pushes. Useful findings without code
+improvements can be delivered through the same path as report/evidence changes.
 
-This controller prepares and checks a candidate; it does not merge or push it.
-Final delivery uses ordinary Git under the human's integration authority.
+Include original session reports and useful evidence in the reviewed candidate,
+along with the short program summary. Do not publish copies from the private
+submission snapshots. A changed main requires preparing and checking again.

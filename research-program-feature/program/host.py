@@ -158,7 +158,7 @@ def serve(store_path, root):
                         store.get_program(program_id)
                         if program_id not in managers:
                             controller_id = _identity('controller')
-                            session = root / 'research/programs' / program_id / 'manager' / controller_id
+                            session = store.directory / 'managers' / program_id / controller_id
                             managers[program_id] = ProgramManager(store, root, program_id, controller_id, session)
                             connection = store.directory / 'managers' / program_id / 'connection.json'
                             connection.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

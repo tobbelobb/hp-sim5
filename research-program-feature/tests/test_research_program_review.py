@@ -19,6 +19,7 @@ import pytest
 from program.store import ProgramError, ProgramStore
 from program.review import CONTRACT, digest
 from program import review as program_review
+from program.prompts import role_instructions
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES = json.loads((ROOT / 'research-program-feature/tests/fixtures/review/cases.json').read_text())
@@ -56,6 +57,12 @@ def context(tmp_path, monkeypatch):
     client = '''import json, sys, re, time
 from pathlib import Path
 prompt = sys.stdin.read()
+if '--append-system-prompt-file' in sys.argv:
+    instructions = Path(sys.argv[sys.argv.index('--append-system-prompt-file') + 1]).read_text()
+else:
+    instructions = json.loads(next(arg.split('=', 1)[1] for arg in sys.argv if arg.startswith('developer_instructions=')))
+assert instructions == (Path.cwd() / 'research-program-feature/role-instructions/REVIEWER.md').read_text()
+assert instructions not in prompt
 target = Path(re.search(r'Target directory: (.+)', prompt).group(1))
 manifest = json.loads((target / 'manifest.json').read_text())
 for asset in manifest['assets']:
@@ -343,14 +350,20 @@ def test_codex_claude_plans_reuse_auth_no_physics_and_claude_receipt(context, mo
     for backend in ('codex', 'claude'):
         plan = c['controller'].plan('p', submission['id'], backend=backend)
         assert plan['argv'][0] == backend
+        assert plan['instructions'] == role_instructions('reviewer')
+        assert plan['instructions'] not in plan['prompt']
         assert 'must-not-be-exposed' not in json.dumps(plan)
         assert not (Path(plan['directory'])).exists()  # dry-run does not mutate
         if backend == 'codex':
+            injected = next(arg.split('=', 1)[1] for arg in plan['argv'] if arg.startswith('developer_instructions='))
+            assert json.loads(injected) == role_instructions('reviewer')
             assert plan['argv'][plan['argv'].index('--sandbox')+1] == 'read-only'
             import tomllib
             disabled = next(a for a in plan['argv'] if a.startswith('mcp_servers.hp_sim5='))
             assert tomllib.loads(disabled)['mcp_servers']['hp_sim5']['enabled'] is False
             assert not any('research_attach.py' in a for a in plan['argv'])
+        else:
+            assert plan['argv'][plan['argv'].index('--append-system-prompt-file') + 1] == str(Path(plan['directory']) / 'instructions.md')
     run = reviewer(c, submission, backend='claude')
     assert run['details']['state'] == 'completed'
     assert c['controller'].apply('p', run['details']['review_id'])['details']['decision'] == 'keep'

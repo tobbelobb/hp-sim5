@@ -59,7 +59,7 @@ def test_manager_communication_policy(tmp_path, backend, flags, grill, questions
     assert f'\"grill_me\": {str(grill).lower()}' in instructions
     assert f'\"ask_questions\": {str(questions).lower()}' in instructions
     assert 'Never treat silence' in instructions
-    assert 'prompt_portfolio' in instructions
+    assert 'integration_finish' in instructions
     if backend == 'codex':
         assert f'features.default_mode_request_user_input={str(grill or questions).lower()}' in plan['argv']
         injected = next(a for a in plan['argv'] if a.startswith('developer_instructions='))
@@ -136,7 +136,7 @@ def attach(c, program='p'):
 def assignment(a, identity='work'):
     route = tool(a, 'approach', {'question_id': 'q', 'title': 'Inspect saved data', 'reason': 'Cheapest discriminator'})
     result = tool(a, 'assignment', {'approach_id': route['id'], 'objective': 'Compare frozen baselines',
-                                    'record_id': identity, 'allocation': {'wall_minutes': 1, 'fresh_fits': 0}})
+                                    'record_id': identity, 'allocation': {'wall_minutes': 1}})
     tool(a, 'transition', {'record_id': result['id'], 'target': 'ready', 'reason': 'Explicit bounded assignment'})
     return result
 
@@ -147,11 +147,10 @@ def test_question_only_actual_cli_creates_owned_host_and_second_chat_opens_it(tm
     attachment = first['attachment']
     try:
         assert first['overview']['program']['goal'] == 'Question without prepared state'
-        assert first['overview']['next_allocation']['state'] == 'unallocated'
+        assert first['overview']['work'] == []
         assert first['physics_world'] is False
         assert first['overview']['manager']['physics_world'] is False
-        for key in ('overview', 'snapshot'):
-            assert Path(first['overview']['manager']['links'][key]).is_file()
+        assert not list(Path(attachment['session']).glob('overview.*'))
         second = cli('--store', store_path, '--program', attachment['program_id'])
         assert second['attachment'] == attachment
         assert tool(attachment, 'worker_sessions') == []
@@ -217,8 +216,7 @@ def test_fresh_cli_calls_retain_owned_worker_share_attachment_pause_then_cancel(
     first = attach(manager)
     work = assignment(first)
     overview = tool(first, 'overview')
-    assert overview['next_allocation']['assignment_id'] == work['id']
-    assert overview['next_allocation']['allocation']['wall_minutes'] == 1
+    assert overview['work'][0]['id'] == work['id']
     started_at = time.monotonic()
     worker = tool(first, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     assert time.monotonic() - started_at < 2
@@ -283,7 +281,7 @@ def test_program_bound_identity_graph_review_and_structured_errors(manager):
     assert bad.returncode == 2
     assert json.loads(bad.stdout)['error']['code'] == 'invalid_request'
     assert 'Traceback' not in bad.stderr
-    assert tool(first, 'strategy')['routes'] == []
+    assert 'route_plan' not in tool(first, 'capabilities')['operations']
     available = tool(first, 'capabilities')
     assert available['physics_world'] is False
     assert {'submit', 'review_start', 'worker_start', 'stop', 'query'} <= available['operations'].keys()
@@ -336,7 +334,6 @@ Path(sys.argv[sys.argv.index('--output-last-message') + 1]).write_text(json.dump
     monkeypatch.setenv('PATH', str(binaries) + os.pathsep + os.environ['PATH'])
     a = attach(manager)
     work = assignment(a)
-    tool(a, 'allocate', {'task_limit': 1, 'wall_minutes': 12, 'review_minutes': 10, 'retry_limit': 2})
     attempt = tool(a, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     until(lambda: tool(a, 'worker_status', {'attempt_id': attempt['id']})['details']['state'] == 'submitted')
     claim = tool(a, 'claim', {'title': fixture['claim'], 'scope': {'evidence_type': 'synthetic', 'configuration': 'fixture'}})
@@ -457,53 +454,17 @@ def test_manager_forwarded_provider_and_model_share_existing_helpers(tmp_path):
     assert 'model_provider="openai"' not in plan['argv']
 
 
-def test_strategy_funding_steering_and_worker_contract_through_fresh_cli(manager):
-    a = attach(manager)
-    for identity, priority in [('saved', 10), ('model', 20)]:
-        tool(a, 'approach', {'question_id': 'q', 'title': identity, 'reason': 'Compare credible routes', 'record_id': identity})
-        tool(a, 'route_plan', dict(approach_id=identity, hypothesis='A fair common fold distinguishes ' + identity,
-             scope={'method': identity, 'evidence': 'simulated'}, priority=priority,
-             estimated_cost={'wall_minutes': 17, 'fresh_fits': 2}, uncertainty='Fair fold availability',
-             decision_value='Decide collection versus model work', novelty='Applied model comparison',
-             observation='Count truly common unseen sweeps', reopening_condition='Changed folds or model',
-             reason='Resolve the cheapest uncertainty', tradeoffs=['Scouting is cheaper than collection'],
-             objections=['Prediction is not physical accuracy']))
-    params = dict(approach_id='saved', objective='Scout four saved sources for fair folds',
-                  allocation={'wall_minutes': 8, 'fresh_fits': 0, 'collections': 0}, kind='scouting',
-                  execution={'source_limit': 4},
-                  explanations=[{'approach_id': 'saved', 'explanation': 'Membership selection is the issue'},
-                                {'approach_id': 'model', 'explanation': 'Model inadequacy dominates'}],
-                  outcomes={'gap': {'observation': 'No shared fair fold found', 'finding': 'inconclusive', 'actions': []}})
-    first = tool(a, 'commission', params)
-    worker = tool(a, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': first['assignment']['id']})
-    until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
-    prompt = Path(worker['details']['attempt_dir'], 'prompt.txt').read_text()
-    assert 'source_limit' in prompt and 'Model inadequacy dominates' in prompt
-    params.update(approach_id='model', kind='tooling', objective='Build a bounded fold-inspection helper')
-    second = tool(a, 'commission', params)
-    note = tool(a, 'steering', {'text': 'Radius bias might matter', 'intent': 'hunch',
-                               'links': ['https://example.org/hunch'], 'provenance': {'channel': 'chat'}})
-    assert note['accepted_input']['details']['intent'] == 'hunch'
-    instruction = tool(a, 'steering', {'text': 'Fund the tooling route next with three fresh fits', 'intent': 'instruction',
-         'next_assignment_id': second['assignment']['id'], 'allocation': {'wall_minutes': 41, 'fresh_fits': 3}})
-    overview = tool(a, 'overview')
-    assert overview['next_allocation']['assignment_id'] == instruction['accepted_input']['details']['next_assignment_id']
-    assert overview['next_allocation']['allocation']['fresh_fits'] == 3
-    assert overview['brief'] and len(overview['strategy']['routes']) == 2
-    assert tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'running'
-    tool(a, 'worker_cancel', {'attempt_id': worker['id']})
-    until(lambda: tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'cancelled')
 
 
 def test_missing_worker_machine_does_not_charge_or_spawn(manager):
     a = attach(manager)
     work = assignment(a)
-    before = tool(a, 'runtime_status')
+    before = tool(a, 'overview')
     error = tool(a, 'worker_start', {'assignment_id': work['id']}, ok=False)
     assert error['code'] == 'invalid_request'
-    assert 'execution.machine' in error['message'] and 'settings.machine' in error['message']
+    assert 'settings.machine' in error['message']
     assert tool(a, 'worker_sessions') == []
-    assert tool(a, 'runtime_status') == before
+    assert tool(a, 'overview') == before
     assert 'Required hp3/hp4' in tool(a, 'capabilities')['worker_machine']
 
 
@@ -521,3 +482,13 @@ def test_manager_answers_worker_question_through_bound_cli(manager):
     assert response['manager_question'] is None
     assert response['details']['runtime']['wall_deadline'] == worker['details']['runtime']['wall_deadline']
     assert json.loads(Path(status['manager_answer_path']).read_text()) == {'id': 'baseline', 'answer': answer}
+
+
+def test_program_cannot_be_marked_complete_without_delivery(manager):
+    a = attach(manager)
+    error = tool(a, 'transition', {'record_id': 'p', 'target': 'completed', 'reason': 'No delivery'}, ok=False)
+    assert error['code'] == 'invalid_request'
+    with ProgramStore(manager['store']) as store:
+        with pytest.raises(ValueError, match='Invalid program transition'):
+            store.transition('p', 'p', 'completed', 'Skip review and integration')
+    assert tool(a, 'overview')['program']['state'] == 'active'

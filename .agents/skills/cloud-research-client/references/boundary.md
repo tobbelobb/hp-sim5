@@ -16,7 +16,7 @@ references. Local research does not read or import this package.
 
 ## Shared core
 
-The shared `research-program-feature/program/` code owns SQLite memory, assignments, budgets, dispatch
+The shared `research-program-feature/program/` code owns SQLite memory, assignments, dispatch
 ownership, fixed evidence, review admission and integration checks. The existing worker
 launcher, supervisor, native engines, RRF, collection, autocal and Rerun stay in
 the core. Their shared correctness fixes remain there too.

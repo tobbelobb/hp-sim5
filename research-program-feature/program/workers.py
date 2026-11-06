@@ -141,7 +141,7 @@ class WorkerDispatcher:
                       dont_ask=False, goal_mode=True, shared_runtime_write=False)
         result.update(options)
         if 'machine' not in result:
-            raise ProgramError('Workers require an explicit machine (hp3/hp4): set execution.machine in commission or settings.machine in worker_start/run_once')
+            raise ProgramError('Workers require an explicit machine (hp3/hp4): set settings.machine in commission or worker_start')
         for name, choices in (('backend', ('codex', 'claude')),
                               ('physics_backend', ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda')),
                               ('machine', ('hp3', 'hp4')), ('viewer', ('none', 'headless', 'window'))):
@@ -168,13 +168,11 @@ class WorkerDispatcher:
     def assignment_settings(self, program_id, assignment_id, settings=None):
         """Bind the commissioned machine to the actual launcher, not just prose."""
         options = dict(_object({} if settings is None else settings, 'worker settings'))
-        investigations = [r for r in self.store.snapshot(program_id)['records'] if
-                          r['kind'] == 'investigation' and r['details']['assignment_id'] == assignment_id]
-        machine = investigations[-1]['details']['execution'].get('machine') if investigations else None
-        if machine is not None:
-            if 'machine' in options and options['machine'] != machine:
-                raise ProgramError('Worker machine conflicts with commissioned execution.machine')
-            options['machine'] = machine
+        assignment = self.store.get_record(program_id, assignment_id, 'assignment')
+        commissioned = assignment['details'].get('settings', {})
+        if 'machine' in commissioned and 'machine' in options and commissioned['machine'] != options['machine']:
+            raise ProgramError('Worker machine conflicts with commissioned settings.machine')
+        options = dict(commissioned, **options)
         return self._settings(options)
 
     def start(self, program_id, assignment_id, *, settings=None, instructions='', runtime=None):
@@ -182,8 +180,7 @@ class WorkerDispatcher:
 
         The assignment snapshot and unchanged additional instructions become one
         UTF-8 prompt file, passed by absolute argv path through worktree re-exec.
-        Wall expiration requests the existing launcher's cleanup. Numerical
-        counters remain contracts unless a production tool enforces that limit.
+        An optional wall timeout requests the existing launcher's cleanup.
         """
         options = self.assignment_settings(program_id, assignment_id, settings)
         if not isinstance(instructions, str):
@@ -209,15 +206,11 @@ class WorkerDispatcher:
                 raise ProgramError('A parallel worker pool requires separate launcher worktrees')
             _allocation(assignment['details']['allocation'])
             directory.mkdir(mode=0o700, parents=True)
-            contract = {'program_id': program_id, 'assignment': assignment,
-                        'constraints': program['constraints'], 'attempt_id': attempt_id,
-                        'source_revision': revision, 'session_dir': str(session),
-                        'execution': options,
-                        'shared_filesystem': pool.SHARED_BOUNDARY,
-                        'shared_runtime_write': options['shared_runtime_write']}
-            prompt = ('# Bounded research assignment\n\n' + json.dumps(contract, indent=2, ensure_ascii=False) +
-                      '\n\nRespect the recorded allocation. Preserve unsuccessful and partial evidence. '
-                      'Execution success does not accept a scientific claim.\n\n' + pool.SHARED_BOUNDARY +
+            contract = {'program_id': program_id, 'question': assignment['title'],
+                        'constraints': program['constraints'], 'session_dir': str(session)}
+            prompt = ('# Research question\n\n' + assignment['title'] +
+                      '\n\nHuman constraints: ' + _json(program['constraints']) +
+                      '\nSession artifacts: ' + str(session) +
                       worker_policy(session) +
                       (client_adapter().worker_instructions() if client_adapter() else '') +
                       '\n\n' + instructions)
@@ -227,10 +220,12 @@ class WorkerDispatcher:
             argv = [self.executable, '--' + options['backend'], '--batch', '--prompt-file', str(prompt_path),
                     '--session-dir', str(session), '--physics-backend', options['physics_backend'],
                     '--machine', options['machine'], '--viewer', options['viewer']]
-            wall_deadline = time.time() + assignment['details']['allocation']['wall_minutes'] * 60
-            if runtime:
-                wall_deadline = min(wall_deadline, runtime['wall_deadline'])
-            argv += ['--wall-deadline', str(wall_deadline)]
+            minutes = assignment['details']['allocation'].get('wall_minutes')
+            wall_deadline = time.time() + minutes * 60 if minutes is not None else None
+            if runtime and runtime.get('wall_deadline') is not None:
+                wall_deadline = min(wall_deadline, runtime['wall_deadline']) if wall_deadline else runtime['wall_deadline']
+            if wall_deadline is not None:
+                argv += ['--wall-deadline', str(wall_deadline)]
             for name in ('model_provider', 'model', 'worktree_dir', 'sidebar_section'):
                 if name in options:
                     value = options[name]
@@ -254,21 +249,10 @@ class WorkerDispatcher:
                        'observations': [{'at': _now(), 'event': 'reserved'}], 'artifacts': [],
                        'started_at': None, 'exited_at': None, 'returncode': None,
                        'cleanup': 'not_requested', 'diagnostics': []}
-            details['runtime'] = dict(runtime or {}, wall_deadline=wall_deadline)
-            saved = self.store.snapshot(program_id)['records']
-            plans = [r for r in saved if r['kind'] == 'route_plan' and
-                     r['details']['approach_id'] == approach['id']]
-            pinned = {i for r in saved if r['kind'] == 'investigation' and
-                      r['details']['assignment_id'] == assignment_id for i in r['details']['route_plan_ids']}
-            pinned.update(r['id'] for r in plans[-1:])
-            details['premise_plan_ids'] = sorted(pinned)
-            details['premise_ids'] = sorted({i for r in saved if r['id'] in pinned for i in r['details']['dependency_ids']})
-            details['premise_event_ids_at_start'] = sorted({e for i in details['premise_ids'] for e in
-                self.store.graph().query(program_id, 'support', i)['states'][i]['review_event_ids']})
-            details['premise_conflicts'] = []
-            if runtime:
-                details['runtime']['wall_deadline'] = min(details['runtime']['wall_deadline'], runtime['wall_deadline'])
-            self.deadlines[attempt_id] = time.monotonic() + max(0, details['runtime']['wall_deadline'] - time.time())
+            details['runtime'] = dict(runtime or {})
+            if wall_deadline is not None:
+                details['runtime']['wall_deadline'] = wall_deadline
+                self.deadlines[attempt_id] = time.monotonic() + max(0, wall_deadline - time.time())
             self.store._touch(program_id)
             self.store._insert(program_id, 'attempt', assignment['title'], details, attempt_id)
             assignment['details']['execution_state'] = 'running'

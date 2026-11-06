@@ -1,4 +1,4 @@
-"""Research missions and the two canonical Research Program role files."""
+"""Research missions and the canonical Research Program role files."""
 from datetime import date
 import hashlib
 import json
@@ -10,6 +10,7 @@ from .store import ProgramError, _object, _text
 
 ROLE_FILES = {
     'manager': 'MANAGER.md',
+    'researcher': 'RESEARCHER.md',
     'reviewer': 'REVIEWER.md',
 }
 PORTFOLIO_VERSION = 1
@@ -119,8 +120,3 @@ class PromptPortfolio:
         if include_text:
             result['prompt'] = dict(record, text=(self.root / record['path']).read_text())
         return result
-
-    def reference(self, prompt_id):
-        """Return the durable subset recorded with a route plan."""
-        prompt = self.resolve(prompt_id)['prompt']
-        return {key: prompt[key] for key in ('id', 'path', 'title', 'sha256')}

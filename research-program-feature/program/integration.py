@@ -1,7 +1,7 @@
 """Frozen reviewed patches in explicit-base worktrees, with polled exact-revision checks.
 
-This cooperative same-UID controller never merges, pushes, resets or stashes the
-human checkout. Its durable lease includes startup, waiting for checks and unknown
+This cooperative same-UID controller delivers only an explicitly finished,
+reviewed and checked squash. Its lease includes startup, checks and unknown
 ownership. Check output and failed worktrees remain available for inspection.
 """
 import json
@@ -66,6 +66,13 @@ def validate_integrations(records):
                 p = require(d['preparation_id'], 'integration_preparation')
                 if p['details']['manifest']['job_id'] != r['id']:
                     raise ProgramError('Integration preparation belongs to another job')
+        elif r['kind'] == 'integration_delivery':
+            job = require(d.get('integration_id'), 'integration_job')
+            checked = require(d.get('check_id'), 'integration_check')['details']['manifest']
+            if (checked['outcome'] != 'passed' or checked['job_id'] != job['id'] or
+                    d.get('tree') != checked['combined_tree'] or
+                    d.get('revision') != job['details'].get('delivered_revision')):
+                raise ProgramError('Delivery differs from the checked integration')
         elif r['kind'] in ('integration_preparation', 'integration_check'):
             m = d.get('manifest', {})
             if d.get('sha256') != json_digest(m) or m.get('contract') != CONTRACT:
@@ -451,6 +458,64 @@ class IntegrationController:
             return self.status(program_id, integration_id)
         d.update(state='released', release={'reason': reason, 'at': _now()})
         self._save(program_id, integration_id, d)
+        return self.status(program_id, integration_id)
+
+    def finish(self, program_id, integration_id, message):
+        """Deliver one reviewed, checked squash to main and mark the program complete."""
+        _text(message, 'commit message')
+        result = self.status(program_id, integration_id)
+        d = result['job']['details']
+        if d.get('delivered_revision'):
+            return result
+        if self.store.get_program(program_id)['state'] != 'active':
+            raise ProgramError('Delivery requires an active program')
+        if result['lease_held'] or not result['check']:
+            raise ProgramError('Finish the candidate checks before delivery')
+        checked = self._verify_receipt(result['check'])
+        if checked['outcome'] != 'passed':
+            raise ProgramError('Delivery requires passing checks on the reviewed candidate')
+        _, prepared, _ = self._fixed(program_id, d)
+        summary = f'research/programs/{program_id}/summary.html'
+        git(d['worktree'], 'cat-file', '-e', prepared['combined_revision'] + ':' + summary)
+        # The reviewed files remain the canonical result; do not publish copies
+        # from the private submission snapshots under a second results tree.
+        for source in prepared['sources']:
+            manifest = self.store.get_record(program_id, source['submission_id'], 'submission')['details']['manifest']
+            for asset in manifest['assets']:
+                path = Path(asset['source'])
+                if asset['missing'] or not path.is_relative_to(self.root / 'research/sessions'):
+                    continue
+                relative = path.relative_to(self.root).as_posix()
+                raw = git(d['worktree'], 'show', prepared['combined_revision'] + ':' + relative)
+                if digest(raw) != asset['sha256']:
+                    raise ProgramError('Final candidate differs from canonical evidence: ' + relative)
+        base = prepared['target_base']
+        if commit(self.root, 'refs/heads/main') != base:
+            raise ProgramError('Main changed; prepare and check a candidate against current main')
+        # A new commit identity, with precisely the reviewed and checked tree.
+        revision = git(self.root, 'commit-tree', prepared['combined_tree'], '-p', base, '-m', message).decode().strip()
+        main_worktree = None
+        for block in git(self.root, 'worktree', 'list', '--porcelain', '-z').decode().split('\0\0'):
+            fields = block.split('\0')
+            if 'branch refs/heads/main' in fields:
+                main_worktree = next(f[len('worktree '):] for f in fields if f.startswith('worktree '))
+        with self.store.transaction():
+            from .pool import check_exclusive
+            check_exclusive(self.store)
+            if main_worktree:
+                if git(main_worktree, 'status', '--porcelain').strip():
+                    raise ProgramError('Main worktree must be clean before delivery')
+                git(main_worktree, 'merge', '--ff-only', revision)
+            else:
+                git(self.root, 'update-ref', 'refs/heads/main', revision, base)
+            self.store._touch(program_id)
+            self.store._insert(program_id, 'integration_delivery', message,
+                               {'integration_id': integration_id, 'revision': revision,
+                                'tree': prepared['combined_tree'], 'base': base, 'check_id': result['check']['id']})
+            d['delivered_revision'] = revision
+            self.store.connection.execute('UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?',
+                                          (_json(d), _now(), integration_id))
+            self.store.connection.execute("UPDATE programs SET state='completed' WHERE id=?", (program_id,))
         return self.status(program_id, integration_id)
 
     def recover(self, program_id, integration_id, *, reason=None):

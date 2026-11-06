@@ -91,7 +91,7 @@ def main(argv=None):
             command.add_argument('--reason', required=True)
         elif name == 'assignment':
             command.add_argument('--approach', required=True)
-            command.add_argument('--allocation', required=True, type=json.loads, help='Finite JSON limits including positive wall_minutes')
+            command.add_argument('--allocation', type=json.loads, help='Optional wall_minutes timeout as JSON')
         elif name == 'artifact':
             command.add_argument('--sha256', required=True)
             command.add_argument('--evidence-type', choices=('simulated', 'synthetic', 'analytic', 'hardware', 'imported'), required=True)

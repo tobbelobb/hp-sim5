@@ -283,7 +283,7 @@ class ReviewController:
             if isinstance(error, ProgramError):
                 raise
             raise ProgramError(f'Submission integrity check failed: {error}') from error
-        for role in ('report', 'abstract', 'evidence'):
+        for role in ('report', 'evidence'):
             if not any(a['role'] == role and not a['missing'] for a in manifest['assets']):
                 gaps.append('Missing required ' + role)
         events = [r for r in self.store.graph()._records(program_id).values()
@@ -320,47 +320,40 @@ class ReviewController:
                     'limitations': [], 'discrepancy': None}
         if contract == CONTRACT:
             response['required_checks'] = []
-        prompt = (f'{instructions}\n\n# Fixed separate review assignment\nContract: {contract}\n'
+        prompt = (f'# Fixed separate review assignment\nContract: {contract}\n'
                   f'Target directory: {target}\nSubmission: {submission_id}\n'
-                  f'SHA-256: {submission["details"]["sha256"]}\nWall allocation: {wall_minutes} minutes.\n'
+                  f'SHA-256: {submission["details"]["sha256"]}\n'
                   f'Known gaps: {_json(gaps)}\n'
                   'Read manifest.json, candidate.diff and selected asset files by their IDs. '
-                  'Do not edit the submission or program store. Do not start physics or duplicate numerical work '
-                  'unless a named gap requires an additional bounded assignment. Reading producer results is inspection. '
-                  'For v2, scientific finding/verdict is separate from code_readiness. Missing engineering gates '
-                  'block code readiness without erasing an otherwise supported scoped finding. '
-                  'Use required_checks argv lists for delivery requirements beyond path detection. '
-                  'For a sound candidate awaiting checks, ready plus required_checks permits combined evaluation. '
-                  'Use blocked or needs_changes for unresolved code defects that require a new fixed review. '
-                  'Return ONLY one JSON object with exactly these fields and valid enum values:\n' + _json(response))
+                  'Keep the saved submission unchanged. Use required_checks argv lists for missing delivery checks. '
+                  'Return ONLY one JSON object with these fields and valid enum values:\n' + _json(response))
         if backend == 'codex':
             argv = coding_client.codex_command(self.root, directory, batch=True, dont_ask=True, model=model,
+                                               instructions=instructions,
                                                model_provider=model_provider, sandbox='read-only',
                                                settings=coding_client.disabled_research_mcp_settings(self.root))
         else:
             argv = coding_client.claude_command(directory, batch=True, dont_ask=True, model=model,
                                                 allowed_tools='Read,Glob,Grep,Bash')
-        return {'id': identity, 'directory': str(directory), 'argv': argv, 'prompt': prompt,
+        return {'id': identity, 'directory': str(directory), 'argv': argv, 'prompt': prompt, 'instructions': instructions,
                 'reviewer': {'context_id': identity, 'backend': backend, 'model': model, 'model_provider': model_provider},
                 'wall_minutes': wall_minutes, 'submission_id': submission_id,
                 'submission_sha256': submission['details']['sha256'], 'contract': contract}
 
-    def start(self, program_id, submission_id, *, runtime_reservation=None, **settings):
+    def start(self, program_id, submission_id, **settings):
         plan = self.plan(program_id, submission_id, **settings)
         directory = Path(plan['directory'])
         directory.mkdir(mode=0o700, parents=True)
         (directory / 'prompt.txt').write_text(plan['prompt'])
-        (directory / 'instructions.md').write_text('Review saved evidence under the fixed contract. Return the requested JSON.')
+        (directory / 'instructions.md').write_text(plan['instructions'])
         (directory / 'attachment.json').write_text('{"mcpServers":{}}\n')
-        details = {k: v for k, v in plan.items() if k not in ('id', 'prompt')}
+        details = {k: v for k, v in plan.items() if k not in ('id', 'prompt', 'instructions')}
         details.update(state='running', owner=self.owner, process=None, started_at=_now(),
                        prompt_sha256=digest(plan['prompt'].encode('utf-8')),
                        deadline=time.time() + plan['wall_minutes'] * 60, returncode=None, error=None, review_id=None)
-        if runtime_reservation:
-            details['runtime_reservation'] = list(runtime_reservation)
         with self.store.transaction():
             from .pool import check_review
-            check_review(self.store, reservation=runtime_reservation)
+            check_review(self.store)
             self.store._touch(program_id)
             self._insert(program_id, 'review_run', 'Separate saved-evidence review', details, plan['id'])
         environment = (coding_client.codex_environment(details['reviewer']['model_provider'], root=self.root,

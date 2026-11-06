@@ -494,11 +494,11 @@ def main():
                         ROOT / 'research' if session.is_relative_to(ROOT / 'research') else
                         ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research')
                         else session.parent)
-        instructions = (ROOT / 'research/AGENTS.md').read_text()
+        instructions = (ROOT / 'research-program-feature/role-instructions/RESEARCHER.md').read_text()
         if args.backend == 'claude':
             instructions = (ROOT / 'AGENTS.md').read_text() + '\n' + instructions
         instructions += (f'\nSession artifacts: {session}\n'
-                         f'Write the research record to {session / "research.md"} and final report to {session / "report.md"}.\n'
+                         f'Write the report to {session / "report.md"}; keep working notes in {session / "scratchbook"}.\n'
                          f'Keep the searchable abstract at {session / "abstract.md"} current too.\n'
                          'This launcher started a fresh native world. Conversation resume does not restore physics checkpoints.\n')
         full_prompt = prompt or ''
@@ -514,7 +514,6 @@ def main():
         session_created = True
         (session / 'session.json').write_text(json.dumps(session_manifest(session, args.backend, args.machine), indent=2) + '\n')
         (session / 'prompt.txt').write_text(full_prompt)
-        (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the agent conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')
         (session / 'abstract.md').write_text(initial_abstract(topic))
         write_index(catalog_root)
         if args.physics_backend == 'headless-js':

@@ -21,26 +21,16 @@ def session_name(topic):
 
 def initial_abstract(topic):
     title = ' '.join(topic.split())[:120]
-    return (f'# {title}\n\n'
-            'Status: not yet summarized.\n\n'
-            '## Abstract\n\n'
-            'The session has started. No research result is available yet.\n\n'
-            '## Topics\n\n'
-            f'{title}\n\n'
-            '## Tested hypotheses\n\n'
-            '| Hypothesis | Experiment IDs | Outcome | Evidence |\n'
-            '| --- | --- | --- | --- |\n'
-            '| None recorded yet | None | Not tested | None |\n\n'
-            '## Decision handoff\n\n'
-            'No research decision yet. Scope, review and the next observation '
-            'have not been recorded.\n\n'
-            '## References\n\n'
-            '- [Original task](prompt.txt)\n'
-            '- [Research notebook](research.md)\n')
+    return f'# {title}\n\nNo research result is available yet.\n\n[Full report](report.md)\n'
+
+
+def catalog_root(root):
+    root = Path(root)
+    return root.parent if root.name == 'sessions' and root.parent.name == 'research' else root
 
 
 def catalog_entries(root):
-    root = Path(root)
+    root = catalog_root(root)
     candidates = [p for parent in (root, root / 'sessions') if parent.is_dir()
                   for p in parent.iterdir() if p.is_dir()]
     # Prefer a descriptive alias over its old hash, and include each session once.
@@ -62,37 +52,35 @@ def catalog_entries(root):
 
 
 def render_index(root, search=''):
-    root = Path(root)
+    root = catalog_root(root)
     parts = ['# Research session catalog\n\n'
-             'Short abstracts and tested hypotheses from local sessions. '
-             'Missing or pending summaries are not evidence of completed experiments.\n\n'
-             'Regenerate with `.venv/bin/python scripts/research_index.py`.\n']
-    for directory, summary in catalog_entries(root):
-        if search.casefold() not in (directory.name + '\n' + summary).casefold():
+             'One result sentence per session; follow the report for evidence.\n']
+    for directory, abstract in catalog_entries(root):
+        if search.casefold() not in (directory.name + '\n' + abstract).casefold():
             continue
+        paragraphs = abstract.strip().split('\n\n')
+        title = paragraphs[0].lstrip('# ').strip()
+        summary = next((' '.join(p.split()) for p in paragraphs[1:]
+                        if not p.startswith(('#', 'Status:', '[', '|', '-'))), 'No result summary available.')
+        summary = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', summary)
+        summary = re.split(r'(?<=[.!?])\s+', summary, maxsplit=1)[0]
         relative = directory.relative_to(root).as_posix()
-        parts.append(f'## [{directory.name}]({quote(relative)}/)\n')
-        links = [f'[{name}]({quote(relative)}/{name})' for name in
-                 ('abstract.md', 'report.md', 'research.md') if (directory / name).is_file()]
-        if links:
-            parts.append(' · '.join(links) + '\n')
-        # Anchor relative evidence links at their session while embedding its abstract.
-        summary = re.sub(r'\]\(([^)]+)\)', lambda m: '](' + (
-            quote(relative) + '/' + m[1] if not m[1].startswith(('/', '#')) and ':' not in m[1]
-            else m[1]) + ')', summary)
-        summary = re.sub(r'^(#+) ', r'##\1 ', summary, flags=re.MULTILINE)
-        parts.append(summary)
+        report = next((name for name in ('report.md', 'research.md', 'abstract.md')
+                       if (directory / name).is_file()), '')
+        parts.append(f'- [{title}]({quote(relative)}/{report}) — {summary}\n')
     return '\n'.join(parts).rstrip() + '\n'
 
 
 def write_index(root):
-    root = Path(root)
+    root = catalog_root(root)
     root.mkdir(parents=True, exist_ok=True)
     content = render_index(root)
-    # Concurrent launchers must not leave a partly written catalog.
     with tempfile.NamedTemporaryFile(mode='w', dir=root, prefix='.index-', delete=False) as temporary:
         temporary.write(content)
     os.replace(temporary.name, root / 'index.md')
+    duplicate = root / 'sessions/index.md'
+    if duplicate.is_file() and duplicate.read_text().startswith('# Research session catalog\n'):
+        duplicate.unlink()
 
 
 def saved_autocal_status(path):

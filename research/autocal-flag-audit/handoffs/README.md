@@ -15,7 +15,7 @@ The original E1–E7 labels remain in the [assessment](../report.md); lane 06 co
 
 ## Common execution contract
 
-Read the root AGENTS.md, research/AGENTS.md, research/README.md and recording-performance guidance. The original [inventory](../inventory.md), [usage excerpts](../usage.json) and [assessment](../report.md) provide source leads and prior research. Read relevant prior negative results before repeating a rejected idea. No lane requires another lane to complete its work.
+Read the root AGENTS.md, research-program-feature/role-instructions/RESEARCHER.md, research/README.md and recording-performance guidance. The original [inventory](../inventory.md), [usage excerpts](../usage.json) and [assessment](../report.md) provide source leads and prior research. Read relevant prior negative results before repeating a rejected idea. No lane requires another lane to complete its work.
 
 Use the same starting source snapshot, defaults and development/validation partition. The static audit's revision is in usage.json; do not assume today's checkout still matches it. Before starting, record actual HEAD, dirty diff and hashes of `autocal/*.py`, tool scripts and fixture inputs. If source differs from the audit, note the difference and use one agreed current snapshot for all six lanes. Do not silently compare runs from different code.
 
