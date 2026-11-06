@@ -24,7 +24,7 @@ source .agents/skills/cloud-research-client/scripts/env.sh
 
 The installer prepares:
 
-- Node **23.11.1**, Rust **1.99.1** with `llvm-tools-preview` for default PGO builds, and `wasm32-unknown-unknown`, outside the checkout.
+- Node **26.13.0** by default, Rust **1.99.1** with `llvm-tools-preview` for default PGO builds, and `wasm32-unknown-unknown`, outside the checkout.
 - Python dependencies in `.venv`, including the optional **CPU Warp and JAX**
   requirements, plus CMake **4.4.4** and PyYAML **6.0.3** (for skill helper scripts).
   Python requirements are ranges, not a lockfile.
@@ -42,17 +42,13 @@ not downloaded or replaced by setup. A modified existing Playwright skill is
 preserved; its installer stops with a message rather than overwriting it.
 
 Defaults put tools under `/workspace/.tools` and caches under `/workspace/.cache`.
-Set `HP_SIM5_CLOUD_TOOLS` and `HP_SIM5_CLOUD_CACHE` before installation and in each
+Set `HP_SIM5_CLOUD_TOOLS`, `HP_SIM5_CLOUD_CACHE` and optionally `HP_SIM5_NODE_VERSION` before installation and in each
 later shell to use other writable locations. `HP_SIM5_BUILD_JOBS` controls RRF
 build parallelism. Proxy and CA settings are inherited; TLS and checksum
 verification stay enabled. Required downloads use `nodejs.org`, `sh.rustup.rs`,
 `static.rust-lang.org`, GitHub (including `raw.githubusercontent.com`), GitLab,
 PyPI and npm package hosts.
 
-Node 23 matches the CI major version used during onboarding. The supplied and
-official Node 24.19.0 binaries both aborted in `napi_detach_arraybuffer` with the
-native addon on October 16. Keep the explicit Node pin until compatibility is
-rechecked; the main README's Node 24 quick start has a different assumption.
 The native build includes its Node-API C headers in the checkout, so new shells
 do not need `NODE_INCLUDE_DIR` or a system Node development package.
 GPU/CUDA support, firmware flashing and optional Klipper setup are outside this

@@ -17,8 +17,6 @@ test -x "$PUPPETEER_EXECUTABLE_PATH" || {
 mkdir -p "$HP_SIM5_CLOUD_TOOLS/node" "$XDG_CACHE_HOME" "$MPLCONFIGDIR" \
   "$WARP_CACHE_PATH" "$PIP_CACHE_DIR" "$npm_config_cache" output/cloud
 
-# Node 24.19.0 aborted in napi_detach_arraybuffer during October 2026 onboarding.
-# Node 23 matches the repository CI major version used for that validation.
 if [[ ! -x "$HP_SIM5_CLOUD_TOOLS/node/node-v$HP_SIM5_NODE_VERSION-linux-x64/bin/node" ]]; then
   (
     cd "$HP_SIM5_CLOUD_TOOLS/node"

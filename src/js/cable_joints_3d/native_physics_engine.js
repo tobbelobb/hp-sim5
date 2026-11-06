@@ -40,12 +40,12 @@ export class NativePhysicsEngine extends RustPhysicsEngine {
   physicsEngine = 'rust-native';
   constructor({ addonPath } = {}) {
     const { addon, artifact, info } = loadNativePhysicsAddon(addonPath);
-    const { markAsUntransferable } = process.getBuiltinModule('worker_threads');
-    const view = data => { markAsUntransferable(data.buffer); return data; };
+    // Node rejects transfer of external ArrayBuffers. Do not mark them as
+    // untransferable: newer V8 also prevents the addon's required detachment.
     let host;
     super({
       create(bodies, paths, count) { host = addon.create(bodies, paths, count); },
-      entities: () => view(host.entities()), options: () => view(host.options()), path: index => view(host.path(index)),
+      entities: () => host.entities(), options: () => host.options(), path: index => host.path(index),
       step: dt => host.step(dt), destroy: () => { host?.dispose(); host = null; },
     });
     this.artifact = artifact;

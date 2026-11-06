@@ -222,7 +222,7 @@ class WorkerDispatcher:
                       ('\nCloud worker setup (cloud only): in every shell, run '
                        '`source .agents/skills/cloud-research-client/scripts/env.sh` before Python, Node, '
                        'native, recorder or physics commands. '
-                       'Use its pinned Node 23.11.1 toolchain. Run simulation jobs one at a time; do not launch concurrent trials.\n'
+                       'Use its Node toolchain. Run simulation jobs one at a time; do not launch concurrent trials.\n'
                        if research_client() == 'cloud' else '') +
                       '\n\n' + instructions)
             prompt_path = directory / 'prompt.txt'

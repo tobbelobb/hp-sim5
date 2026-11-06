@@ -244,7 +244,7 @@ class WorkerTests(unittest.TestCase):
         cloud_prompt = (Path(cloud_record['details']['attempt_dir']) / 'prompt.txt').read_text()
         self.assertIn('Cloud worker setup (cloud only)', cloud_prompt)
         self.assertIn('source .agents/skills/cloud-research-client/scripts/env.sh', cloud_prompt)
-        self.assertIn('pinned Node 23.11.1', cloud_prompt)
+        self.assertIn('Use its Node toolchain', cloud_prompt)
 
     def test_nonzero_auth_and_missing_executable(self):
         for mode in ('nonzero', 'auth', 'missing'):

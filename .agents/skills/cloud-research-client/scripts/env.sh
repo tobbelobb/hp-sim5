@@ -3,7 +3,7 @@
 export HP_SIM5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 export HP_SIM5_CLOUD_TOOLS="${HP_SIM5_CLOUD_TOOLS:-/workspace/.tools}"
 export HP_SIM5_CLOUD_CACHE="${HP_SIM5_CLOUD_CACHE:-/workspace/.cache}"
-export HP_SIM5_NODE_VERSION=23.11.1
+export HP_SIM5_NODE_VERSION="${HP_SIM5_NODE_VERSION:-26.13.0}"
 export HP_SIM5_RUST_VERSION=1.99.1
 
 export CARGO_HOME="${CARGO_HOME:-$HP_SIM5_CLOUD_TOOLS/cargo}"

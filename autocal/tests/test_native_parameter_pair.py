@@ -5,8 +5,8 @@ from autocal.tools import collect_native_parameter_pair as pair
 
 
 def test_unsupported_node_fails_before_output_or_simulation(tmp_path, monkeypatch):
-    monkeypatch.setattr(pair.shutil, 'which', lambda _: '/node24')
-    monkeypatch.setattr(pair.subprocess, 'check_output', lambda *a, **k: 'v24.19.0\n')
+    monkeypatch.setattr(pair.shutil, 'which', lambda _: '/node23')
+    monkeypatch.setattr(pair.subprocess, 'check_output', lambda *a, **k: 'v23.11.1\n')
     monkeypatch.setattr(pair, 'HeadlessSimulation', lambda *a, **k: pytest.fail('must not start physics'))
     destination=tmp_path/'unused'
     with pytest.raises(SystemExit) as error:
@@ -16,7 +16,7 @@ def test_unsupported_node_fails_before_output_or_simulation(tmp_path, monkeypatc
 
 
 def test_existing_output_fails_before_simulation(tmp_path, monkeypatch):
-    monkeypatch.setattr(pair, 'node_identity', lambda: ('/node23','v23.11.1'))
+    monkeypatch.setattr(pair, 'node_identity', lambda: ('/node26','v26.13.0'))
     monkeypatch.setattr(pair, 'HeadlessSimulation', lambda *a, **k: pytest.fail('must not start physics'))
     marker=tmp_path/'keep';marker.write_text('prior evidence')
     with pytest.raises(FileExistsError):
@@ -28,9 +28,9 @@ def test_node_identity_records_resolved_command(monkeypatch):
     monkeypatch.setattr(pair.shutil, 'which', lambda _: '/pinned/node')
     def command(argv, **kwargs):
         assert argv == ['/pinned/node','--version']
-        return 'v23.11.1\n'
+        return 'v26.13.0\n'
     monkeypatch.setattr(pair.subprocess,'check_output',command)
-    assert pair.node_identity() == ('/pinned/node','v23.11.1')
+    assert pair.node_identity() == ('/pinned/node','v26.13.0')
 
 
 def test_scene_field_readback_uses_all_cable_paths():
@@ -50,7 +50,7 @@ def test_nonfinite_or_missing_measurements_never_count_as_complete():
 
 
 def test_keyboard_interrupt_does_not_launch_second_world(tmp_path, monkeypatch):
-    monkeypatch.setattr(pair, 'node_identity', lambda: ('/node23','v23.11.1'))
+    monkeypatch.setattr(pair, 'node_identity', lambda: ('/node26','v26.13.0'))
     worlds=[]
     def simulation(*args):
         worlds.append(args)

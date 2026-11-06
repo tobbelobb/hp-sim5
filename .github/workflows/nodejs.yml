@@ -13,7 +13,7 @@ jobs:
       RUN_RRF_HTTP_ENDPOINT_TESTS: "1"
     strategy:
       matrix:
-        node-version: [23.x]
+        node-version: [24.x, 26.x]
     steps:
       - uses: actions/checkout@v3
       - name: Fetch required submodules (https)
