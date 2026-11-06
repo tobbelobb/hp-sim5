@@ -106,7 +106,7 @@ it stopped, then acknowledge with `cloud_client_bridge.py cancelled REQUEST_ID
 evidence. The launcher/reviewer guard owns the recorded deadline; no bridge
 acknowledgement means actor shutdown is unconfirmed.
 
-Follow the returned shared manager instructions for result saving and continued
+Follow the returned shared manager instructions for result delivery and continued
 iterations. Keep the parent manager chat active while brokering actors. Platform
 permissions apply to all actors; review instructions do not create a separate
 OS sandbox. The controller retains the permissions of the process that opened

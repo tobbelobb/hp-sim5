@@ -7,7 +7,7 @@ import os
 import sys
 
 from .environment import activate
-from hp_sim5_research.program import ProgramError, _json
+from program.store import ProgramError, _json
 
 
 def codex_command(root, session, *, batch=False, codex_args=(), model=None,
@@ -68,3 +68,21 @@ def ensure_runtime_ready(root, settings, check):
     if not checked['ok']:
         raise ProgramError('Cloud runtime is not ready; no worker attempt was charged. '
                            'Call runtime_check for diagnostics. ' + _json(checked))
+
+
+def worker_instructions():
+    return ('\nCloud worker setup (cloud only): in every shell, run '
+            '`source .agents/skills/cloud-research-client/scripts/env.sh` before Python, Node, '
+            'native, recorder or physics commands. '
+            'Use its Node toolchain. Run simulation jobs one at a time; do not launch concurrent trials.\n')
+
+
+def check_capacity(workers, reviews):
+    if workers or reviews:
+        raise ProgramError('Cloud research runs sequentially; wait for the active worker or review to finish')
+
+
+def check_jobs(operation, active):
+    if active:
+        raise ValueError(f'Cloud research runs one job at a time; {operation} is blocked by an active '
+                         f'{", ".join(active)} job')

@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
 
 from hp_sim5_research.experiments import encode, write_json
-from hp_sim5_research.client_transport import research_client
+from hp_sim5_research.client_transport import client_adapter
 from hp_sim5_research.services import free_port, request, stop_process, wait_ready, register_test_process
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.browser import BrowserConnection
@@ -401,7 +401,7 @@ class Runtime:
 
     async def dispatch(self, operation, args):
         if operation in ('collect', 'start_collection', 'start_autocal', 'start_test'):
-            self._check_cloud_sequential(operation)
+            self._check_client_capacity(operation)
         if operation == 'preflight':
             if set(args) - {'expected_configuration'}:
                 raise ValueError('Supply only expected_configuration')
@@ -547,15 +547,13 @@ class Runtime:
             if operation != 'start_collection' or self.active_job is None:
                 self.busy = False
 
-    def _check_cloud_sequential(self, operation):
-        if research_client() != 'cloud':
-            return
-        active = [name for name, value in (('collection', self.active_job),
-                                           ('autocal', self.autocal.active),
-                                           ('test', self.tests.active)) if value]
-        if active:
-            raise ValueError(f'Cloud research runs one job at a time; {operation} is blocked by an active '
-                             f'{", ".join(active)} job')
+    def _check_client_capacity(self, operation):
+        adapter = client_adapter()
+        if adapter:
+            active = [name for name, value in (('collection', self.active_job),
+                                               ('autocal', self.autocal.active),
+                                               ('test', self.tests.active)) if value]
+            adapter.check_jobs(operation, active)
 
     async def connection(self, reader, writer):
         task = asyncio.current_task()

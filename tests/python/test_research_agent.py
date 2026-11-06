@@ -291,7 +291,7 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     assert plan['mode'] == 'worktree'
     assert plan['worktree']['path'].startswith(str(target))
     assert plan['worktree']['branch'].startswith('research/optimize-anchor-layout-')
-    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build', 'output',
+    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build', 'output', 'research/sessions',
                                                'src/wasm/cable_solver/target/native/physics.node'}
     assert isinstance(plan['worktree']['includes'], list)
     assert not target.exists()
@@ -522,9 +522,10 @@ def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(tmp_pat
     assert not any(value.startswith('hooks.') for value in json.loads(disabled.stdout)['argv'])
 
 
+@pytest.mark.parametrize('managed', [False, True])
 @pytest.mark.parametrize('real_runtime', [False, pytest.param(True, marks=pytest.mark.slow)])
 @pytest.mark.parametrize('batch', [False, True])
-def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch, real_runtime, batch):
+def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch, real_runtime, batch, managed):
     codex = tmp_path / 'codex'
     codex.write_text(f'#!{sys.executable}\n' + '''
 import json
@@ -601,7 +602,8 @@ else:
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
-    session = tmp_path / session_name('HP3 held-out validation')
+    session_root = tmp_path / 'research/sessions' if managed else tmp_path
+    session = session_root / session_name('HP3 held-out validation')
     monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--codex', '--viewer', 'none', '--prompt', 'preservation check',
                                     '--session-dir', str(session),
                                     '--sidebar-section', '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'] + (['--batch'] if batch else []))
@@ -612,7 +614,7 @@ else:
         assert services[0].closed
     assert services[0].directory.parent == session
     assert 'Status: not yet summarized' in (session / 'abstract.md').read_text()
-    catalog_root = ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research') else tmp_path
+    catalog_root = tmp_path / 'research' if managed else tmp_path
     assert (catalog_root / 'index.md').is_file()
     # The catalog deliberately skips nested test/session artifacts.
     if catalog_root == tmp_path:
@@ -629,7 +631,7 @@ else:
     import tomllib
     attachment = tomllib.loads((session / 'attachment.toml').read_text())
     assert attachment['sandbox_workspace_write']['network_access'] is True
-    assert attachment['sandbox_workspace_write']['writable_roots'] == [str((ROOT / 'output').resolve())]
+    assert attachment['sandbox_workspace_write']['writable_roots'] == [str((ROOT / 'output').resolve()), str(catalog_root if managed else session.resolve())]
     assert attachment['features']['default_mode_request_user_input'] == (not batch)
     assert attachment['hooks']['UserPromptSubmit'][0]['hooks'][0]['input']['threadId'] == '${session_id}'
     launch = (session / 'launch.json').read_text()

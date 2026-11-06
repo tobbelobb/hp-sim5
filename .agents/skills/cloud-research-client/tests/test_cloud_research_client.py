@@ -4,13 +4,14 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
 import subprocess
 import sys
 import time
 
 import pytest
 
-from hp_sim5_research.program_prompts import role_instructions
+from program.prompts import role_instructions
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -221,7 +222,7 @@ def test_cloud_worker_and_service_plans_need_no_standalone_cli(tmp_path, mode):
 
 
 def test_cloud_mode_survives_fresh_cli_shells(tmp_path):
-    from hp_sim5_research.program_host import live, request
+    from program.host import live, request
     store = tmp_path / 'store'
     environment = {k: v for k, v in os.environ.items()
                    if k not in ('CODEX_CLOUD', 'CODEX_HOME', 'HP_SIM5_RESEARCH_CLIENT')}
@@ -245,3 +246,4 @@ def test_cloud_mode_survives_fresh_cli_shells(tmp_path):
     finally:
         request(attachment, 'shutdown')
         wait_for(lambda: not live(attachment))
+        shutil.rmtree(Path(attachment['session']).parent.parent)

@@ -3,9 +3,9 @@ import time
 
 import pytest
 
-from hp_sim5_research.program import ProgramError
-from python.test_research_program_review import context
-from python.test_research_program_controller import local_manager, ready
+from program.store import ProgramError
+from test_research_program_review import context
+from test_research_program_controller import local_manager, ready
 
 
 def test_cloud_setup_failure_does_not_allocate_or_charge_attempt(context, monkeypatch):
@@ -13,7 +13,7 @@ def test_cloud_setup_failure_does_not_allocate_or_charge_attempt(context, monkey
     ready(m, 'new')
     monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
     blocked = {'ok': False, 'checks': {'launcher_sockets': {'ok': False, 'error': 'EPERM'}}}
-    monkeypatch.setattr('hp_sim5_research.program_controller.runtime_check', lambda *a, **kw: blocked)
+    monkeypatch.setattr('program.controller.runtime_check', lambda *a, **kw: blocked)
     before = m.store.snapshot('p')['records']
     with pytest.raises(ProgramError, match='no worker attempt was charged'):
         m.controller.run_once('p', 'new', settings={'machine': 'hp3'})
@@ -34,7 +34,7 @@ def test_cloud_setup_failure_holds_queue_without_repeated_dispatch(context, monk
     def blocked(*args, **kwargs):
         calls.append(True)
         return {'ok': False}
-    monkeypatch.setattr('hp_sim5_research.program_controller.runtime_check', blocked)
+    monkeypatch.setattr('program.controller.runtime_check', blocked)
     allocation = m.controller.allocate('p', 1, 10)
     m.controller.run_within_allocation('p', allocation['id'], ['new'], settings={'machine': 'hp3'})
     m.controller.poll()
@@ -57,7 +57,7 @@ def test_slow_cloud_setup_check_renews_lease_without_extending_wall_budget(conte
     def checked(*args, **kwargs):
         clock[0] += 20
         return {'ok': True}
-    monkeypatch.setattr('hp_sim5_research.program_controller.runtime_check', checked)
+    monkeypatch.setattr('program.controller.runtime_check', checked)
     attempt = m.controller.run_once('p', 'new', allocation_id=allocation['id'], settings={'machine': 'hp3'})
     m.workers.children[attempt['id']].wait(timeout=5)
     details = m.controller.current(allocation['id'])['details']

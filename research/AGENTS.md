@@ -39,6 +39,7 @@ not build a prompt-restart loop for it. Assigned workers stay within their
 assignment; the manager owns dispatch, budgets and separate reviews.
 Keep `research.md` in the supplied session directory current with objective, hypothesis, constraints, movement/experiment/compute budgets, experiment IDs, accepted steering and the next decision.
 Update it when steering changes the experiment choice.
+Keep other working notes inside this session's `scratchbook/`; keep reports beside the evidence.
 Preserve the conversation and prior evidence across turns.
 
 # Make research discoverable

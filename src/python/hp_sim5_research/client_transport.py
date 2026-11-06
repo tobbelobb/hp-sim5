@@ -19,6 +19,9 @@ def client_adapter():
         scripts = Path(__file__).resolve().parents[3] / '.agents/skills/cloud-research-client/scripts'
         if not (scripts / 'codex_cloud/adapter.py').is_file():
             raise ValueError('Cloud research requires the cloud-research-client skill in .agents/skills')
+        feature = scripts.parents[3] / 'research-program-feature'
+        if str(feature) not in sys.path:
+            sys.path.insert(0, str(feature))
         if str(scripts) not in sys.path:
             sys.path.insert(0, str(scripts))
         from codex_cloud import adapter

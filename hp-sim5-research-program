@@ -1,21 +1,10 @@
 #!/usr/bin/env bash
 set -e
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-client=${HP_SIM5_RESEARCH_CLIENT:-local}
-for argument in "$@"; do
-    case "$argument" in
-        --) break ;;
-        --cloud) client=cloud ;;
-        --codex|--claude) client=local ;;
-    esac
-done
-if [[ "$client" == cloud ]]; then
-    source "$repo_dir/.agents/skills/cloud-research-client/scripts/env.sh"
-fi
 # Program bookkeeping uses only the standard library. Worker physics still
 # requires the fully installed project environment.
 python="$repo_dir/.venv/bin/python"
 if [[ ! -x "$python" ]]; then
     python=python3
 fi
-exec "$python" "$repo_dir/scripts/research_program.py" "$@"
+exec "$python" "$repo_dir/research-program-feature/scripts/research_program.py" "$@"

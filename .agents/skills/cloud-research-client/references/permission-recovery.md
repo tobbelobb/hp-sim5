@@ -16,6 +16,6 @@ shutdown`, wait for cleanup, and reopen the same program with `--cloud --program
 PROGRAM_ID` in the permitted context. Run `runtime_check` there. Keep the same
 store, history and bound transport.
 
-Worker worktrees and `save --commit` need write permission for the checkout's
+Worker worktrees and Git commits need write permission for the checkout's
 Git metadata. Use the platform's supported permission mechanism when access is
-denied; retain the actual diagnostic instead of treating a failed save as success.
+denied; retain the actual diagnostic instead of treating a failed commit as success.

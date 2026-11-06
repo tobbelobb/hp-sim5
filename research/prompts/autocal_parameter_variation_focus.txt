@@ -63,7 +63,7 @@ What earlier runs have already established
   output/research/sessions/2026-10-20-interactive-research-ae0174ce/report.md.
 - Generic ranking and finite-prediction-only consensus membership have mixed
   results. Validation must use compatible whole sweeps unseen by every member
-  of the actual applied anchor-plus-spool model. See research/autocal-agenda.md
+  of the actual applied anchor-plus-spool model. See relevant earlier reports in research/catalog.md
   and output/research/sessions/2026-10-23-consensus-membership/report.md.
 
 - The 2026-11-05 guide-friction study tested a bounded preload change in an

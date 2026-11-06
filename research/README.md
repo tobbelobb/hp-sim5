@@ -10,12 +10,8 @@ Start with the [execution architecture map](architecture.md) for ownership,
 configuration flow and recording scope across the five research workflows.
 This README contains the operating instructions and tool arguments.
 
-For a manager above this worker, use the [program guide](program.md).
-
-The single-agent workflow remains available through
-`src/python/hp_sim5_research/program_instructions/single_agent.md`. It connects
-evidence discovery, one bounded investigation, review and a durable handoff in
-one conversation.
+For a manager above this worker, see the
+[program guide](../human_docs/research-programs.md).
 
 ## Setup and interactive use
 
@@ -303,30 +299,15 @@ constraints/budgets, experiment IDs, accepted steering and next decision.
 
 ## Finding previous research
 
-For incremental improvements to this workflow, use the
-[one-task development backlog](program-tasks/README.md). Its first changes reuse
-saved evidence and existing prompts; later infrastructure is conditional on use.
-
-For the next autocal research allocation, start with the
-[living autocal agenda](autocal-agenda.md): scoped evidence, competing routes,
-one bounded next assignment and an example of reconsidering withdrawn evidence.
-
-Use the [assignment role contract](../src/python/hp_sim5_research/program_instructions/assignment.md)
-with a broad research question, notes and constraints to get one bounded proposal
-from saved evidence. The contract prepares a brief for the existing agent;
-execution is a separate step.
-
-`research/prompts/` contains only reusable research missions. Its
-[`portfolio.json`](prompts/portfolio.json) registry drives the Research
-Program's prompt triage and records each prompt's intent, expected delivery,
-novelty, readiness and related evidence. Role and workflow instructions are
-packaged under `src/python/hp_sim5_research/program_instructions/`.
+`research/prompts/` contains reusable research questions. Program role
+instructions and implementation live in [`research-program-feature/`](../research-program-feature/).
+Keep new working notes inside the assigned session's `scratchbook/` directory.
 
 Open the [research topic guide](catalog.md) for the main investigations and
-the local [session catalog](../output/research/index.md) for short abstracts,
-tested hypotheses, outcomes and evidence links. The local catalog includes
-sessions under `output/research/sessions/` and explicitly named sessions directly
-under `output/research/`. It reads `abstract.md`, so searching it does not require
+the local [session catalog](index.md) for short abstracts,
+tested hypotheses, outcomes and evidence links. The catalog includes sessions under `research/sessions/` and existing
+investigations directly under `research/`. Older standalone sessions under
+`output/research/` can be searched with `--root output/research`. It reads `abstract.md`, so searching it does not require
 reading long reports or raw telemetry:
 
 ```bash
@@ -375,9 +356,10 @@ Batch mode retains `codex exec`, prompt input, JSONL events and the separate
 store. Both routes keep `prompt.txt`, `launch.json`, the research record/report,
 service logs and `exit.json` in their session directory. Private attachment
 credentials live in mode-600 `connection.json`. Default directories are under
-`output/research/sessions/`; fresh trials are under `output/research/experiments/`,
+`research/sessions/`; fresh low-level trials are under `output/research/experiments/`,
 and continuing collection evidence is under each session's `native/` directory.
-All are ignored by Git. The explicit doctor checks dependencies/login/Viewer
+Reports and evidence can be committed with ordinary Git; live connection files
+are ignored. Older sessions and low-level trial outputs remain under `output/`. The explicit doctor checks dependencies/login/Viewer
 MCP and performs real RRF/native HP4 collection with autocal validation; it takes
 about fourteen minutes on the historical Python backend; the default backend
 has since changed. It does not establish calibration accuracy or model

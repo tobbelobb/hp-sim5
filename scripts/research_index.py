@@ -10,7 +10,7 @@ from hp_sim5_research.archive import render_index, write_index
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root', type=Path, default=ROOT / 'output/research')
+    parser.add_argument('--root', type=Path, default=ROOT / 'research')
     parser.add_argument('--search', help='Print abstracts matching this phrase, including hypotheses and references')
     args = parser.parse_args()
     if args.search is not None:

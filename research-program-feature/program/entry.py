@@ -1,0 +1,155 @@
+"""Use the current chat as manager, or open one local coding-client chat."""
+import argparse
+import json
+import os
+from pathlib import Path
+import sqlite3
+import subprocess
+import sys
+
+from hp_sim5_research import coding_client
+from hp_sim5_research.client_transport import activate, client_adapter
+from .store import ProgramStore, _json
+from .host import open_manager, read_json, request
+from .manager import failure
+from .prompts import role_instructions
+from .communication import manager_policy
+
+
+class Parser(argparse.ArgumentParser):
+    def error(self, message):
+        self.exit(2, _json(failure('invalid_request', message)) + '\n')
+
+
+def client_plan(root, attachment, backend, *, model=None, model_provider='openai',
+                dont_ask=False, client_args=(), grill_me=False, ask_questions=False):
+    """Local managers use ordinary program CLI calls, without a manager MCP."""
+    adapter = client_adapter()
+    if adapter:
+        adapter.validate_manager(local_client=True)
+    session = Path(attachment['session'])
+    instructions = ('Bound execution mode: LOCAL. This is a local installed coding-client manager.\n'
+                    'Bound manager connection: ' + attachment['connection'] +
+                    '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
+                    '\n\n' +
+                    role_instructions('manager') +
+                    manager_policy(grill_me=grill_me, ask_questions=ask_questions and not dont_ask))
+    dont_ask = not (grill_me or (ask_questions and not dont_ask))
+    if backend == 'codex':
+        forwarded, forwarded_model = coding_client.forwarded_settings(client_args)
+        command = coding_client.codex_command(
+            root, session, instructions=instructions, dont_ask=dont_ask, goal_mode=True,
+            model_provider=None if 'model_provider' in forwarded else model_provider,
+            model=None if forwarded_model else model,
+            settings=coding_client.disabled_research_mcp_settings(root), codex_args=client_args)
+        provider = forwarded.get('model_provider', model_provider)
+    else:
+        command = coding_client.claude_command(session, model=model, dont_ask=dont_ask, goal_mode=True,
+                                               allowed_tools='Read,Glob,Grep,Bash', codex_args=client_args)
+        provider = None
+    return {'argv': command, 'instructions': instructions,
+            'backend': backend, 'model_provider': provider, 'physics_world': False}
+
+
+def main(argv, root):
+    root = Path(root).resolve()
+    parser = Parser(description=__doc__)
+    parser.add_argument('--store', type=Path, default=root / '.research-programs')
+    probe = argparse.ArgumentParser(add_help=False)
+    probe.add_argument('--store')
+    _, remainder = probe.parse_known_args(argv[:argv.index('--')] if '--' in argv else argv)
+    if remainder and remainder[0] == 'tool':
+        parser.add_argument('command', choices=['tool'])
+        parser.add_argument('connection', type=Path)
+        parser.add_argument('operation')
+        parser.add_argument('--params', default='{}')
+        args = parser.parse_args(argv)
+        try:
+            result = request(read_json(args.connection), args.operation, json.loads(args.params),
+                             timeout=60 if args.operation in ('runtime_check', 'worker_start', 'run_once') else 10)
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            result = failure('invalid_request', str(error))
+        print(_json(result))
+        return 0 if result['ok'] else 2
+    backend = parser.add_mutually_exclusive_group()
+    backend.add_argument('--codex', action='store_const', const='codex', dest='backend')
+    backend.add_argument('--claude', action='store_const', const='claude', dest='backend')
+    backend.add_argument('--cloud', action='store_true', help='Cloud prompt entry: current chat manages authenticated subagents')
+    entry = parser.add_mutually_exclusive_group(required=True)
+    entry.add_argument('--question', help='Create a program from this question')
+    entry.add_argument('--program', help='Open the existing program ID')
+    parser.add_argument('--constraints', type=json.loads, default={})
+    parser.add_argument('--dry-run', action='store_true', help='Plan without creating files, host, clients or workers')
+    parser.add_argument('--model')
+    parser.add_argument('--model-provider', default='openai')
+    parser.add_argument('--grill-me', action=argparse.BooleanOptionalAction, default=False,
+                        help='Interview the human before dispatch (default: --no-grill-me)')
+    questions = parser.add_mutually_exclusive_group()
+    questions.add_argument('--ask-questions', '--ask-questions-along-the-way',
+                           action=argparse.BooleanOptionalAction, default=False,
+                           help='Ask about consequential decisions during research (default: off)')
+    questions.add_argument('--dont-ask', action='store_true', help='Legacy alias for --no-ask-questions')
+    split = argv.index('--') if '--' in argv else len(argv)
+    args = parser.parse_args(argv[:split])
+    client_args = argv[split + 1:]
+    if client_args and not args.backend:
+        parser.error('Forwarded client arguments require a local --codex or --claude manager')
+    if args.backend == 'claude' and any(a.startswith('--model-provider') for a in argv[:split]):
+        parser.error('--model-provider requires --codex')
+    try:
+        if args.cloud:
+            os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'cloud'
+        elif args.backend:
+            os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'local'
+        activate(root)
+        transport = coding_client.research_client()
+        adapter = client_adapter()
+        if adapter:
+            try:
+                adapter.validate_manager(model=args.model, model_provider=args.model_provider)
+            except ValueError as error:
+                parser.error(str(error))
+        if args.dry_run:
+            attachment = {'program_id': args.program or 'PROGRAM_ID',
+                          'session': str(root / 'research/programs/dry-run/manager'),
+                          'connection': str(args.store.absolute() / 'managers' / (args.program or 'PROGRAM_ID') / 'connection.json')}
+            opened = {'attachment': attachment, 'overview': None}
+        else:
+            with ProgramStore(args.store, create=bool(args.question)) as store:
+                program = (store.create_program(args.question, args.constraints) if args.question
+                           else store.get_program(args.program))
+            response = open_manager(args.store, root, program['id'])
+            if not response['ok']:
+                print(_json(response))
+                return 2
+            opened = response['result']
+            attachment = opened['attachment']
+        plan = client_plan(root, attachment, args.backend, model=args.model, model_provider=args.model_provider,
+                           dont_ask=args.dont_ask, client_args=client_args,
+                           grill_me=args.grill_me, ask_questions=args.ask_questions) if args.backend else None
+        if not args.dry_run and plan:
+            session = Path(attachment['session'])
+            (session / 'attachment.json').write_text('{"mcpServers":{}}\n')
+            (session / 'instructions.md').write_text(plan['instructions'])
+            (session / 'launch.json').write_text(_json(plan) + '\n')
+        result = {'ok': True, 'result': dict(opened, client=plan, client_transport=transport,
+                                            dry_run=args.dry_run, physics_world=False,
+                                            communication={'grill_me': args.grill_me,
+                                                           'ask_questions': args.ask_questions and not args.dont_ask})}
+        if not plan:
+            # Current-chat managers receive the same policy as installed clients.
+            result['result']['manager_instructions'] = (
+                role_instructions('manager') +
+                manager_policy(grill_me=args.grill_me, ask_questions=args.ask_questions and not args.dont_ask))
+        if not args.backend or args.dry_run:
+            print(_json(result))
+            return 0
+        print(_json(result), file=sys.stderr, flush=True)
+        environment = (coding_client.codex_environment(plan['model_provider'], root=root, env_file=root / '.env')
+                       if args.backend == 'codex' else coding_client.claude_environment(env_file=root / '.env'))
+        environment['HP_SIM5_RESEARCH_CLIENT'] = transport
+        return subprocess.run(plan['argv'] + ['Open the bound program overview and manage this question.'],
+                              cwd=root, env=environment).returncode
+    except (OSError, ValueError, sqlite3.Error, subprocess.SubprocessError) as error:
+        print(_json(failure('operation_failed', str(error))))
+        return 2

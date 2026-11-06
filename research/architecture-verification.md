@@ -2,7 +2,7 @@
 
 Verified on 6 October 2026 with the repository's `.venv/bin/python`, Codex CLI
 0.160.1 and Rerun 0.38.1. The implementation follows
-[the architecture investigation](../research-agent-architecture.md).
+[the architecture investigation](../done/research-agent-architecture.md).
 
 The default launcher now gives the terminal to interactive Codex. `--batch`
 retains the JSONL `codex exec` route; `--serve` supplies private, explicit MCP

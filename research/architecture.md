@@ -5,17 +5,9 @@ ownership, configuration and recording contracts. Update it when those contracts
 change. The [research README](README.md) contains commands and tool arguments;
 [research instructions](AGENTS.md) describe how to conduct and report experiments.
 
-The [research program](program.md) places one manager conversation above this
-worker layer. The current cloud chat delegates to authenticated subagents;
-local manager chats use installed coding clients. Both use ordinary program CLI
-calls, with no manager MCP server. The per-store host owns reservations and
-process cleanup; SQLite holds questions, evidence, reviews and decisions. The
-existing launcher continues owning worker physics services. Save completed small
-results in Git with `hp-sim5-research-program save PROGRAM_ID --commit`.
-See the [current architecture](program-tasks/MANAGER.md) and
-[cloud transport](../.agents/skills/cloud-research-client/SKILL.md). Parallel pools and patch integration
-are advanced optional tools. Historical verification below describes the worker
-execution layer, not a live validation of the current manager transport.
+The [Research Program](../human_docs/research-programs.md) places a manager
+above this worker layer. Its implementation is in
+[`research-program-feature/`](../research-program-feature/).
 
 ## Who owns execution
 
@@ -31,7 +23,7 @@ flowchart TD
     manager --> controller[Program CLI and retained host]
     controller --> memory[SQLite program and evidence graph]
     controller --> launcher[Existing hp-sim5-research-agent]
-    launcher --> chat[Worker local client or cloud subagent]
+    launcher --> chat[Research worker]
     controller --> review[Separate fixed-evidence reviewer]
     review --> controller
     controller --> integration[Combined candidate and relevant checks]
@@ -177,7 +169,7 @@ At the checked revision, these boundaries still need attention:
 | Understand collector units, firmware barriers, clocks and cancellation | [Continuing collection](native-collection.md) |
 | Work in the exact shared browser page | [Browser workflow](More_on_browser_based_work.md) |
 | Understand the production calibration stages | [Autocal README](../autocal/README.md#independent-stage-experiments) |
-| Inspect the original architectural reasoning | [October 5 integration investigation](investigation.md) and [October 6 interactive-agent proposal](../research-agent-architecture.md) |
+| Inspect the original architectural reasoning | [October 5 integration investigation](investigation.md) and [October 6 interactive-agent proposal](../done/research-agent-architecture.md) |
 | Check what was actually exercised | [Interactive architecture verification](architecture-verification.md), [full-autocal verification](autocal-jobs-verification.md), [settling/bake follow-up](autocal-settling-review.md), [configurable-world verification](configurable-worlds.md) and [preflight/test verification](preflight-tests-verification.md) |
 
 The investigations describe decisions and earlier implementation gaps. Verification

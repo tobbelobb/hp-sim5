@@ -22,7 +22,7 @@
       "readiness": "General-purpose. Read the current agenda and recent admissions first so established profiling, stopping and ranking work is not repeated.",
       "last_reviewed": "2026-11-05",
       "related_evidence": [
-        "research/autocal-agenda.md",
+        "research/catalog.md",
         "research/autocal-recording-performance.md"
       ]
     },
@@ -46,7 +46,7 @@
       "readiness": "Use for an explicitly exploratory assignment, not as a default when a narrower unresolved hypothesis already exists.",
       "last_reviewed": "2026-11-05",
       "related_evidence": [
-        "research/autocal-agenda.md",
+        "research/catalog.md",
         "output/research/sessions"
       ]
     },
@@ -69,7 +69,7 @@
       "readiness": "The six-primary fixed4mid matrix is complete. Development/evaluation accuracy gains transfer, but the preserved nominal workflow failure rejects force-default adoption. Keep5mid and do not repeat this exact matrix. A minimal explicit-encoder-budget transport candidate has fresh real-WebSocket before/after evidence and passed45JS/2noncollection headless checks; fixed review/integration remains manager-owned. Future physical work needs a different observable force policy, measured motors or corrected model. No full-autocal-with-fix confirmation was run.",
       "last_reviewed": "2026-11-05",
       "related_evidence": [
-        "research/autocal-agenda.md",
+        "research/catalog.md",
         "research/autocal-recording-performance.md",
         "research/autocal-physical-model-cleanup/report.md",
         "research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md"

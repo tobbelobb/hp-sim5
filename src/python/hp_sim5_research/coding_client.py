@@ -113,7 +113,17 @@ def disabled_research_mcp_settings(root):
             'mcp_servers.rerun': {'enabled': False, 'command': str(root / '.venv/bin/rerun'),
                                   'args': ['viewer-mcp']},
             'mcp_servers.hp_sim5_program': {'enabled': False, 'command': str(root / '.venv/bin/python'),
-                                            'args': [str(root / 'scripts/research_program.py')]}}
+                                            'args': [str(root / 'research-program-feature/scripts/research_program.py')]}}
+
+
+def writable_roots(root, session):
+    roots = [(root / 'output').resolve()]
+    session = session.resolve()
+    if not session.is_relative_to(root.resolve()) and not session.is_relative_to(roots[0]):
+        # Managed worktrees keep evidence and its catalog in the owning checkout.
+        research = session.parent.parent
+        roots.append(research if session.parent.name == 'sessions' and research.name == 'research' else session)
+    return [str(path) for path in roots]
 
 
 def codex_command(root, session, *, batch=False, dont_ask=False, goal_mode=False,
@@ -128,7 +138,7 @@ def codex_command(root, session, *, batch=False, dont_ask=False, goal_mode=False
     if batch:
         command += ['--json', '--output-last-message', str(session / 'final-message.md')]
     options = {'sandbox_workspace_write.network_access': True,
-               'sandbox_workspace_write.writable_roots': [str((root / 'output').resolve())],
+               'sandbox_workspace_write.writable_roots': writable_roots(root, session),
                'features.default_mode_request_user_input': not (dont_ask or batch),
                'features.goals': goal_mode}
     options.update(settings or {})

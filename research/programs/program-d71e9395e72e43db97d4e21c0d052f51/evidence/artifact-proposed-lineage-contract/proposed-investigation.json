@@ -1,0 +1,105 @@
+{
+  "status": "proposed; not commissioned or dispatched",
+  "objective": "Find whether saved observations can provide a compatible common unseen whole-sweep set for the three changed CM-E1 applied models.",
+  "scope": [
+    "flexible_lines_2000",
+    "ten_points_w_buildup",
+    "ten_points_w_buildup2"
+  ],
+  "rationale": "CM-E1 reports no common unseen sweep for any changed applied-model comparison. Data lineage feasibility can change the next research decision without numerical experiments.",
+  "explanations": [
+    {
+      "approach_id": "approach-common-unseen-lineage",
+      "explanation": "Training overlap or inconsistent validation folds obscures a useful predictive distinction."
+    },
+    {
+      "approach_id": "approach-model-adequacy",
+      "explanation": "Model bias/identifiability dominates, so fair prediction may remain uninformative about physical accuracy."
+    }
+  ],
+  "route_plans": [
+    {
+      "approach_id": "approach-common-unseen-lineage",
+      "priority": 1,
+      "exact_scope": "Identity and lineage inspection of three archived CM-E1 histories plus at most twelve additional saved dataset/manifest files.",
+      "discriminating_observation": "An observation-matched compatible common whole-sweep set is verifiably outside both applied models' complete training and preprocessing/selection lineage.",
+      "reopening_condition": "Verified compatible unseen saved data, or separately authorized later collection/holdout construction.",
+      "limitation": "Finding a common fold establishes feasibility only, not model accuracy."
+    },
+    {
+      "approach_id": "approach-model-adequacy",
+      "priority": 2,
+      "exact_scope": "Preserve as an alternative; no numerical experiment or source modification in this trial.",
+      "discriminating_observation": "A saved-data feasibility failure would prioritize scoping a separate model-adequacy assignment.",
+      "reopening_condition": "Reviewed feasibility outcome, with later numerical work separately scoped."
+    }
+  ],
+  "worker_contract": {
+    "wall_minutes": 12,
+    "startup_margin_minutes": 3,
+    "base_histories": 3,
+    "additional_files": 12,
+    "fresh_fits": 0,
+    "prediction_evaluations": 0,
+    "physics_runs": 0,
+    "physics_steps": 0,
+    "collections": 0,
+    "movements": 0,
+    "recordings": 0
+  },
+  "proposed_capacity": {
+    "task_limit": 1,
+    "wall_minutes": 25,
+    "review_minutes": 6,
+    "cleanup_seconds": 190,
+    "manager_and_dispatch_margin_minutes": 3,
+    "allocated": false
+  },
+  "method": [
+    "Verify compressed and raw input hashes using CM-E1 inputs.json. Decode saved envelopes without fitting or residual scoring.",
+    "Search only the producer session named by inputs.json and matching repository dataset files; inspect at most twelve additional files.",
+    "Compare observation contents and full training lineage, including anchor contributors, chosen spool fit and preprocessing/selection use. Check machine/frame/units, encoder origin, spool/layering and collection settings. Unknown lineage is unverified, never unseen.",
+    "Return a source/lineage matrix with hashes and evidence links; preserve missing data and stop at budget. Make no new membership rule."
+  ],
+  "outcomes": {
+    "found": {
+      "observation": "A compatible common unseen set is verified.",
+      "decision": "Keep current defaults; record feasibility. A later scoring experiment requires separate scope because this trial forbids new numerical experiments."
+    },
+    "absent_or_unknown": {
+      "observation": "No set qualifies within the named sources or lineage is unknown.",
+      "decision": "Predictive safety remains inconclusive; park further membership-rule tuning and scope the model-adequacy alternative."
+    },
+    "tool_failure": {
+      "observation": "A reader or launch failure prevents the scoped inspection.",
+      "decision": "Preserve partial evidence, repair the named capability, and make no scientific inference."
+    }
+  },
+  "review": "A separately dispatched fresh-context reviewer must inspect frozen selected evidence first. No numerical repetition is requested. No review has occurred.",
+  "sources": [
+    {
+      "path": "research/autocal-agenda.md",
+      "sha256": "1cdd8d6673f1311456d0c61fd579b30bfe8e433409a78072c0342253379aff49",
+      "bytes": 13637,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    },
+    {
+      "path": "output/research/sessions/2026-10-23-consensus-membership/report.md",
+      "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+      "bytes": 10751,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    },
+    {
+      "path": "output/research/sessions/2026-10-23-consensus-membership/inputs.json",
+      "sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+      "bytes": 9801,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    },
+    {
+      "path": "output/research/sessions/2026-10-23-consensus-membership/results.json",
+      "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+      "bytes": 178725,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    }
+  ]
+}

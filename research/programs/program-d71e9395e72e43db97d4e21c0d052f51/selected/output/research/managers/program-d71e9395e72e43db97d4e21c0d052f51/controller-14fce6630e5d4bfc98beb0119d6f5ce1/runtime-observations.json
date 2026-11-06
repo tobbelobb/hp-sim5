@@ -1,0 +1,53 @@
+{
+  "observed_at": "2026-10-26T11:21:47.562644+00:00",
+  "program_id": "program-d71e9395e72e43db97d4e21c0d052f51",
+  "source_revision": "d513aaddc1d03b1389c4c1ec03493eb6fd9d8f07",
+  "current_pid_namespace": "pid:[4026533229]",
+  "descriptor_pid_visible": false,
+  "controller_lock_held": true,
+  "controller_transport": "local",
+  "controller_log_bytes": 0,
+  "tool_overview": {
+    "ok": false,
+    "code": "controller_unavailable"
+  },
+  "reopen_cloud": {
+    "ok": false,
+    "code": "operation_failed",
+    "message": "Controller startup failed; inspect controller.log"
+  },
+  "capabilities": {
+    "ok": false,
+    "code": "controller_unavailable"
+  },
+  "interpretation": "Existing controller cannot be verified from the per-command PID namespace; held lock prevents replacement. Its actual external process health is unknown. No signals or descriptor modifications were made.",
+  "new_attempts_started": 0,
+  "new_reviewers_started": 0,
+  "numerical_experiments": 0,
+  "sources": [
+    {
+      "path": "research/autocal-agenda.md",
+      "sha256": "1cdd8d6673f1311456d0c61fd579b30bfe8e433409a78072c0342253379aff49",
+      "bytes": 13637,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    },
+    {
+      "path": "output/research/sessions/2026-10-23-consensus-membership/report.md",
+      "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+      "bytes": 10751,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    },
+    {
+      "path": "output/research/sessions/2026-10-23-consensus-membership/inputs.json",
+      "sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+      "bytes": 9801,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    },
+    {
+      "path": "output/research/sessions/2026-10-23-consensus-membership/results.json",
+      "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+      "bytes": 178725,
+      "inspection": "report/agenda/manifest read; results file retained without recomputation"
+    }
+  ]
+}

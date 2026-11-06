@@ -9,33 +9,37 @@ import sys
 
 import pytest
 
-from hp_sim5_research.program_workers import runtime_check
+from program.workers import runtime_check
 
 ROOT = Path(__file__).resolve().parents[4]
 
 
 @pytest.mark.parametrize('launcher,arguments,cloud', [
-    ('hp-sim5-research-program', ['--cloud', '--question', 'fixture'], True),
-    ('hp-sim5-research-program', ['--codex', '--question', 'fixture'], False),
-    ('hp-sim5-research-agent', ['--codex', '--batch'], True),
+    ('hp-sim5-research-program', ['--cloud', '--question', 'fixture', '--dry-run'], True),
+    ('hp-sim5-research-program', ['--codex', '--question', 'fixture', '--dry-run'], False),
+    ('hp-sim5-research-agent', ['--codex', '--batch', '--machine', 'hp3', '--prompt', 'fixture', '--dry-run'], True),
 ])
 def test_entry_loads_cloud_environment_without_parent_sourcing(tmp_path, launcher, arguments, cloud):
-    (tmp_path / '.agents/skills/cloud-research-client/scripts').mkdir(parents=True)
-    (tmp_path / 'scripts').mkdir(exist_ok=True)
+    scripts = tmp_path / '.agents/skills/cloud-research-client/scripts'
+    scripts.mkdir(parents=True)
+    marker = tmp_path / 'loaded'
+    (scripts / 'env.sh').write_text(
+        f'printf loaded > "{marker}"\n' + (ROOT / '.agents/skills/cloud-research-client/scripts/env.sh').read_text())
     shutil.copy2(ROOT / launcher, tmp_path / launcher)
-    shutil.copy2(ROOT / '.agents/skills/cloud-research-client/scripts/env.sh', tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh')
-    script = 'research_program.py' if launcher.endswith('program') else 'research_agent.py'
-    (tmp_path / 'scripts' / script).write_text('import json, os; print(json.dumps(dict(path=os.environ["PATH"])))')
-    if launcher.endswith('agent'):
-        (tmp_path / '.venv/bin').mkdir(parents=True)
-        (tmp_path / '.venv/bin/python').symlink_to(sys.executable)
-    tools = tmp_path / 'cloud-tools'
-    # Simulate a host that started before env.sh was sourced. A local manager
-    # explicitly overrides the inherited mode and must not inject cloud paths.
+    for directory in ('scripts', 'research-program-feature/scripts'):
+        (tmp_path / directory).mkdir(parents=True, exist_ok=True)
+    for script in ('scripts/research_agent.py', 'research-program-feature/scripts/research_program.py'):
+        shutil.copy2(ROOT / script, tmp_path / script)
+    for directory in ('src/python', 'research-program-feature/program', 'research-program-feature/role-instructions',
+                      'research', 'hp-sim-3d'):
+        (tmp_path / directory).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / directory).symlink_to(ROOT / directory, target_is_directory=True)
+    (tmp_path / '.venv/bin').mkdir(parents=True)
+    (tmp_path / '.venv/bin/python').symlink_to(sys.executable)
     result = subprocess.run([str(tmp_path / launcher), *arguments], capture_output=True, text=True,
-                            env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT='cloud', HP_SIM5_CLOUD_TOOLS=str(tools)),
-                            check=True, timeout=5)
-    assert (str(tools / 'node') in json.loads(result.stdout)['path']) is cloud
+                            env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT='cloud'), timeout=10)
+    assert result.returncode == 0, result.stderr
+    assert marker.exists() is cloud
 
 
 def test_runtime_check_reloads_environment_of_existing_host(tmp_path, monkeypatch):

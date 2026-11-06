@@ -133,7 +133,7 @@ def test_hard_bridge_owner_loss_closes_real_mcp_relay(relay, tmp_path):
         process.wait(timeout=5)
         descriptor = bridge.read(tool_connection)
         until(lambda: Path(descriptor['directory'], 'closed.json').exists())
-        from hp_sim5_research.program_workers import process_live
+        from program.workers import process_live
         until(lambda: not process_live(descriptor['relay_process']))
         assert runtime.call('status')['step'] == 0
     finally:

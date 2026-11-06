@@ -16,11 +16,9 @@ configured providers, such as OpenCode Go with DeepSeek, are selected with
 The [research architecture map](research/architecture.md) explains which tools
 own each world, how configuration reaches physics and what gets recorded.
 
-To give a research question to a manager that remembers approaches and delegates
-to that same worker, use the [question-only program guide](research/program.md).
-The manager implements graph memory, strategy, bounded workers and reviewed patch
-checks. Its [live release gate](research/program-tasks/016-live-manager-release.md)
-is blocked on runtime/client prerequisites; the full release is not yet verified.
+For a manager that delegates research and arranges review, see
+[Research Programs](human_docs/research-programs.md). The feature's code and two
+role prompts live in [`research-program-feature/`](research-program-feature/).
 
 Example usecases:
  - **Automate and Validate Hardware Design**
@@ -101,7 +99,6 @@ hp-sim5 has added quite a bit to each of its sub-projects:
 
 ## Quick Start
 
-For a Codex cloud machine, use the reusable [cloud setup and startup instructions](.agents/skills/cloud-research-client/references/setup.md).
 
 ### Running Demos Locally
 1. Install Node.js. Run for example:
@@ -260,46 +257,6 @@ By default, all datasets run in parallel even if one fails, and score/fit
 direction mismatches are reported as warnings. Use `--no-keep-going` to run
 sequentially and stop after the first failure, and `--fail-score-mismatch` to
 make direction mismatches fail the run. Both options can be used together.
-
-
-## Hottest Part of the Repo Right Now
-
-The hottest and coolest part of the repo right now is the Research Agent and Research Program features.
-
-### Research programs
-
-A manager chat investigates a continuing question through bounded workers and
-separate evidence reviews. The human supplies the question and steering.
-
-#### Start locally
-
-```bash
-./hp-sim5-research-program --codex --question 'Your question'
-# Or use --claude.
-./hp-sim5-research-program --codex --program PROGRAM_ID
-```
-
-Add `--grill-me` for a startup interview or `--ask-questions` for consequential
-human decisions during research; both default to off. See `--codex --help` or the optional
-[communication guide](program-communication.md) for details.
-
-In cloud, say "Launch a Research Program on this question: …" to use the
-[cloud skill](../.agents/skills/cloud-research-client/SKILL.md).
-
-#### Continue and steer
-
-Keep the program ID. Ask the manager to continue, explain findings, change
-approach, pause dispatch or stop. Reopening a program restores its records,
-not a model conversation or physics world.
-
-#### Save research in Git
-
-```bash
-./hp-sim5-research-program save PROGRAM_ID --commit
-```
-
-This commits the program's result archive only; code changes are separate.
-See [saving details](program-saving.md) for extra files and evidence limits.
 
 
 ## hp-sim5 context: the Hangprinter Project

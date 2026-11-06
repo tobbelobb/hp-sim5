@@ -28,7 +28,7 @@ ENV_FILE = ROOT / '.env'
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
 # Shared runtime pieces; output can also contain tracked research files.
-WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output',
+WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output', 'research/sessions',
                   'src/wasm/cable_solver/target/native/physics.node')
 
 
@@ -130,10 +130,12 @@ def create_worktree(topic, directory=None):
         check=True, capture_output=True, text=True)
     shared_output = Path(common_git.stdout.strip()).parent / 'output'
     shared_output.mkdir(exist_ok=True)
+    shared_sessions = Path(common_git.stdout.strip()).parent / 'research/sessions'
+    shared_sessions.mkdir(parents=True, exist_ok=True)
     for entry in WORKTREE_LINKS:
         source, target = ROOT / entry, plan['path'] / entry
-        if entry == 'output':
-            source = shared_output.resolve()
+        if entry in ('output', 'research/sessions'):
+            source = (shared_output if entry == 'output' else shared_sessions).resolve()
             # This is a fresh checkout: discard only Git's checked-out copy,
             # before any includes or session artifacts can be written there.
             if target.is_symlink():
@@ -487,8 +489,10 @@ def main():
         topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else
                               'service research' if args.serve else 'interactive research')
         session = (args.session_dir.resolve() if args.session_dir else
-                   ROOT / 'output/research/sessions' / ('dry-run' if args.dry_run else session_name(topic)))
-        catalog_root = (ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research')
+                   ROOT / 'research/sessions' / ('dry-run' if args.dry_run else session_name(topic)))
+        catalog_root = (session.parent.parent if session.parent.name == 'sessions' and session.parent.parent.name == 'research' else
+                        ROOT / 'research' if session.is_relative_to(ROOT / 'research') else
+                        ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research')
                         else session.parent)
         instructions = (ROOT / 'research/AGENTS.md').read_text()
         if args.backend == 'claude':
@@ -533,7 +537,7 @@ def main():
                                           'runtime_endpoint': runtime.endpoint, 'runtime_token': runtime.token,
                                           'viewer_endpoint': endpoint}) + '\n')
         attachment = ('[sandbox_workspace_write]\nnetwork_access = true\n'
-                      f'writable_roots = {toml_literal([str((ROOT / "output").resolve())])}\n\n'
+                      f'writable_roots = {toml_literal(coding_client.writable_roots(ROOT, session))}\n\n'
                       '[features]\n'
                       f'default_mode_request_user_input = {toml_literal(not (args.dont_ask or args.batch))}\n\n'
                       f'[mcp_servers.hp_sim5]\ncommand = {json.dumps(sys.executable)}\n'

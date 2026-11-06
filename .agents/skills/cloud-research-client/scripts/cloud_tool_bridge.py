@@ -82,7 +82,8 @@ async def serve(connection_path):
     directory = Path(connection['directory'])
     root = Path(connection['root'])
     sys.path.insert(0, str(root / 'src/python'))
-    from hp_sim5_research.program_workers import process_live
+    sys.path.insert(0, str(root / 'research-program-feature'))
+    from program.workers import process_live
     descriptor = Path(connection['session']) / 'connection.json'
     loop = asyncio.get_running_loop()
     owner_task = asyncio.current_task()
@@ -171,7 +172,8 @@ def start(root, session, owner_request):
     directory.mkdir(mode=0o700)
     connection_path = owner_request.parent / 'tool-connection.json'
     sys.path.insert(0, str(root / 'src/python'))
-    from hp_sim5_research.program_workers import process_identity
+    sys.path.insert(0, str(root / 'research-program-feature'))
+    from program.workers import process_identity
     from hp_sim5_research.services import register_test_process
     connection = {'version': 1, 'request_id': owner['request_id'], 'directory': str(directory),
                   'root': str(root), 'session': str(session), 'owner_request': str(owner_request),
@@ -190,6 +192,7 @@ def stop(process):
     if process is not None:
         root = Path(__file__).resolve().parents[4]
         sys.path.insert(0, str(root / 'src/python'))
+        sys.path.insert(0, str(root / 'research-program-feature'))
         from hp_sim5_research.services import stop_process
         stop_process(process)
 

@@ -16,16 +16,15 @@ references. Local research does not read or import this package.
 
 ## Shared core
 
-The shared `program*.py` code owns SQLite memory, assignments, budgets, dispatch
-ownership, fixed evidence, review admission and saving. The existing worker
+The shared `research-program-feature/program/` code owns SQLite memory, assignments, budgets, dispatch
+ownership, fixed evidence, review admission and integration checks. The existing worker
 launcher, supervisor, native engines, RRF, collection, autocal and Rerun stay in
 the core. Their shared correctness fixes remain there too.
 
 `client_transport.py` is the lazy selection seam: local returns no adapter;
 cloud adds this skill's scripts directory to Python's import path and imports
 `codex_cloud.adapter`. Core callers use its existing optional hooks. There is
-no platform autodetection or general plugin registry. The two shell launchers
-source this skill's env.sh only for explicit cloud mode. Host descriptors retain
+no platform autodetection or general plugin registry. The Python entries call the adapter to load env.sh for explicit cloud mode. Host descriptors retain
 the selected transport through recovery.
 
 A cloud open returns the canonical shared manager prompt as `manager_instructions`.
@@ -41,7 +40,7 @@ removing public cloud support. Keep the shared role prompts, research services
 and correctness fixes. The local-boundary regression opens a real controller
 and plans local managers from a checkout copy without this skill.
 
-Run `.venv/bin/python -m pytest tests/python/test_research_program*.py
+Run `.venv/bin/python -m pytest research-program-feature/tests
 .agents/skills/cloud-research-client/tests tests/python/test_research_agent.py`
 for the program/launcher/adapter checks. These are not evidence of a live model
-research trial. Historical cloud evidence remains in research archives.
+research trial. Historical cloud pilot evidence lives in this skill's archive/.

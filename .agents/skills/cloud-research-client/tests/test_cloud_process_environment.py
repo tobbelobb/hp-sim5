@@ -50,14 +50,19 @@ def test_direct_python_from_stale_parent_loads_setup(tmp_path, script, arguments
     # The real dispatcher invokes Python directly, bypassing the shell wrapper.
     (tmp_path / '.agents/skills/cloud-research-client/scripts').mkdir(parents=True)
     (tmp_path / 'scripts').mkdir(exist_ok=True)
-    shutil.copy2(ROOT / 'scripts' / script, tmp_path / 'scripts' / script)
+    relative = Path('research-program-feature/scripts' if script == 'research_program.py' else 'scripts') / script
+    (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / relative, tmp_path / relative)
+    (tmp_path / 'research-program-feature').mkdir(exist_ok=True)
+    (tmp_path / 'research-program-feature/program').symlink_to(ROOT / 'research-program-feature/program', target_is_directory=True)
+    (tmp_path / 'research-program-feature/role-instructions').symlink_to(ROOT / 'research-program-feature/role-instructions', target_is_directory=True)
     (tmp_path / 'src').mkdir()
     (tmp_path / 'src/python').symlink_to(ROOT / 'src/python', target_is_directory=True)
     marker = tmp_path / 'loaded'
     (tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh').write_text(
         f'printf loaded > "{marker}"\n' + (ROOT / '.agents/skills/cloud-research-client/scripts/env.sh').read_text())
     env = dict(os.environ, PATH='/usr/bin:/bin', HP_SIM5_RESEARCH_CLIENT='cloud')
-    result = subprocess.run([sys.executable, str(tmp_path / 'scripts' / script), *arguments],
+    result = subprocess.run([sys.executable, str(tmp_path / relative), *arguments],
                             env=env, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
     assert marker.read_text() == 'loaded'
