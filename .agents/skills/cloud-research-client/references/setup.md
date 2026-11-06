@@ -24,7 +24,7 @@ source .agents/skills/cloud-research-client/scripts/env.sh
 
 The installer prepares:
 
-- The latest Node LTS, Rust **1.99.1** with `llvm-tools-preview` for default PGO builds, and `wasm32-unknown-unknown`, outside the checkout.
+- The latest Node LTS and stable Rust, with `llvm-tools-preview` for default PGO builds and `wasm32-unknown-unknown`, outside the checkout.
 - Python dependencies in `.venv`, including the optional **CPU Warp and JAX**
   requirements, plus CMake **4.4.4** and PyYAML **6.0.3** (for skill helper scripts).
   Python requirements are ranges, not a lockfile.
@@ -49,8 +49,8 @@ verification stay enabled. Required downloads use `nodejs.org`, `sh.rustup.rs`,
 `static.rust-lang.org`, GitHub (including `raw.githubusercontent.com`), GitLab,
 PyPI and npm package hosts.
 
-Rerun the installer to select and install the latest Node LTS; sourcing `env.sh`
-uses the version from the most recent installation without a network request.
+Rerun the installer to update Node LTS and stable Rust; sourcing `env.sh` uses
+the versions from the most recent installation without a network request.
 
 The native build includes its Node-API C headers in the checkout, so new shells
 do not need `NODE_INCLUDE_DIR` or a system Node development package.

@@ -28,12 +28,10 @@ npm ci
 if [[ ! -x "$CARGO_HOME/bin/rustup" ]]; then
   curl -fsSL https://sh.rustup.rs -o "$HP_SIM5_CLOUD_TOOLS/rustup-init.sh"
   sh "$HP_SIM5_CLOUD_TOOLS/rustup-init.sh" -y --no-modify-path --profile minimal \
-    --default-toolchain "$HP_SIM5_RUST_VERSION" --target wasm32-unknown-unknown
+    --default-toolchain stable --target wasm32-unknown-unknown
 fi
-rustup toolchain install "$HP_SIM5_RUST_VERSION" --profile minimal
-rustup default "$HP_SIM5_RUST_VERSION"
-rustup component add llvm-tools-preview --toolchain "$HP_SIM5_RUST_VERSION"
-rustup target add wasm32-unknown-unknown
+rustup toolchain install stable --profile minimal --component llvm-tools-preview --target wasm32-unknown-unknown
+rustup default stable
 
 # Scope SSH-to-HTTPS rewriting to this command; reuse platform Git authentication.
 git -c url.https://github.com/.insteadOf=git@github.com: \
