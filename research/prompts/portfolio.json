@@ -53,7 +53,7 @@
     {
       "id": "autocal-parameter-variation",
       "path": "autocal_parameter_variation_focus.txt",
-      "title": "HP3 autocalibration across physical variation",
+      "title": "Diagnose and improve sub-millimetre HP3 autocalibration",
       "kind": "experiment",
       "intent": "implementation",
       "machines": [
@@ -64,15 +64,15 @@
         "reviewable code change or a scoped negative decision",
         "failure-rate and collection-cost comparison"
       ],
-      "decision_value": "Tests whether a calibration improvement survives friction, perturbation and sensor-noise variation instead of fitting one nominal world.",
-      "novelty": "Targets unresolved cross-machine failure and per-anchor accuracy. It explicitly supersedes general collection profiling unless new evidence identifies another bottleneck.",
-      "readiness": "The six-primary fixed4mid matrix is complete. Development/evaluation accuracy gains transfer, but the preserved nominal workflow failure rejects force-default adoption. Keep5mid and do not repeat this exact matrix. A minimal explicit-encoder-budget transport candidate has fresh real-WebSocket before/after evidence and passed45JS/2noncollection headless checks; fixed review/integration remains manager-owned. Future physical work needs a different observable force policy, measured motors or corrected model. No full-autocal-with-fix confirmation was run.",
-      "last_reviewed": "2026-11-05",
+      "decision_value": "Separates numerical, geometric, physical-model and selection causes of anchor error, then tests encoder-only remedies across friction and layout variation.",
+      "novelty": "Prioritizes uncompleted production-fitter exact-data and precision checks, true-anchor residual breakdowns, instrumented zero-force projection and controlled physical-effect ablations. Earlier intervention outcomes are recorded in the prompt.",
+      "readiness": "The 2026-11-06 program did not achieve under 1 mm on every anchor. Projection data-selection was corrected, but its physical trial worsened accuracy. Start from the four proposed discriminators in the mission prompt and the linked reports; distinguish diagnostics from established causes and preserve no-manual-measurement and no-truth-selection constraints.",
+      "last_reviewed": "2026-11-06",
       "related_evidence": [
-        "research/catalog.md",
-        "research/autocal-recording-performance.md",
-        "research/autocal-physical-model-cleanup/report.md",
-        "research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md"
+        "research/programs/program-4cfc6d5bf6a2484f976521ab8a321e92/summary.html",
+        "research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/report.md",
+        "research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/report.md",
+        "research/autocal-recording-performance.md"
       ]
     },
     {

@@ -16,8 +16,8 @@ Human priorities and success criteria
 Prioritize correctness and robustness across physical setups and investigate both
 practical improvements and their causes. Aim for less than 1 mm Euclidean error
 on every anchor in every simulated trial. More than 20 mm on any anchor is a
-practical failure and the
-earlier benchmark was less than 5 mm on every anchor. Report all per-anchor errors
+practical failure; the earlier benchmark was less than 5 mm on every anchor.
+Report all per-anchor errors
 and their maximum; RMSE alone is insufficient. Emphasize uneven motor friction,
 different anchor layouts and simulated sensor noise. Collection time is secondary
 to obtaining reliable results; there is no 20% increase cap. A small simulation
@@ -25,6 +25,38 @@ matrix cannot establish hardware reliability.
 
 What earlier runs have already established
 
+- The 2026-11-06 program distinguished an exact scale gauge from weak
+  conditioning in an idealized model. Known 30 mm radii made the tested wide
+  geometry locally identifiable; an unknown common radius retained an exact
+  scale symmetry. Narrow motion weakened the smallest projected singular value
+  from 0.0371 to 0.000923. This is not proof of production or global
+  identifiability. A local production-objective Jacobian on one recorded world
+  was full rank; its weakest direction was not mainly uniform scale. See
+  research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/report.md.
+- The same program tested more collection, wider spacing, lower force,
+  half-turn retreat, point filtering, robust fitting and zero-tension
+  projection. None achieved every anchor below 1 mm across trials. Half-turn
+  retreat reduced the worst error in two worlds but a zero-injected-noise
+  trial failed while an encoder continued moving. In one 6301 world,
+  projection with a longer settling deadline increased maximum applied error
+  from 8.103 to 16.337 mm. The projection/noise-mean selection bug was fixed
+  in production by commit 678f7659; this does not establish an accuracy gain.
+  Avoid repeating these exact interventions without a new discriminator.
+  See research/programs/program-4cfc6d5bf6a2484f976521ab8a321e92/summary.html.
+- A subsequent point-specific fixed-encoder ellipse fit changed applied errors
+  on one matched 9301 world from 5.924/1.672/0.810/1.118 mm to
+  4.536/2.014/0.763/3.797 mm. The maximum improved but B and D worsened;
+  this is not a validated production improvement. An idealized example with
+  large fixed-axis motion is not evidence that such motion is physically
+  feasible. See research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/report.md.
+- Turning off injected Gaussian encoder noise left the stock automatic
+  workflow with up to 3.678 mm applied error in one world. Stretch, motor
+  behaviour, vibration, quantization and other modeled effects remained, and
+  automatic force tuning changed. This does not isolate any cause. The
+  simulator's physics model and autocal's ideal geometric fitting model are
+  distinct: a residual against the latter does not by itself prove a defect
+  in either. No production end-to-end numerical precision audit, true-anchor
+  residual breakdown or instrumented projection trace was completed.
 - Collection profiling is complete enough to guide a new experiment. Settling,
   pull-outs, force tuning and travel all matter. Native Rust, headless collection
   and cheaper recording modes are available. Do not start another general
@@ -88,6 +120,76 @@ Several older reports refer to external worktrees or absent artifacts.
 
 Remaining promising questions
 
+Priority: why does the production workflow miss the true anchors?
+
+Treat numerical errors, weak conditioning, physical-model mismatch and
+optimizer/selection behaviour as competing explanations. Do not assume the
+simulator is wrong or that a zero-noise run has removed physical imperfections.
+The following are proposed experiments, not established findings. They may be
+commissioned separately or sequenced; retain the exact data and code needed to
+reproduce each result. Pursue a supported remedy, not diagnosis alone.
+
+A. Can the actual production fitter recover an exact, self-consistent answer?
+   Generate sweep data from the same production geometry and parameterization
+   used by its objective, including encoder-reference and coordinate-frame
+   conventions. Verify the objective at generating anchors and check the
+   analytic/autodiff gradients against independent finite differences over
+   several step sizes. Fit both from the generating anchors and from realistic
+   initial guesses without using truth to seed the operational experiment.
+   Vary floating-point precision where supported, solver tolerances, stopping
+   rules and conditioning; report objective residuals, convergence, per-anchor
+   errors, sensitivity and failure cases. Include gauge-fixed known-radii and
+   explicitly separate unknown-radii cases. If the exact self-consistent case
+   fails, reduce it to a reproducible numerical, implementation or optimizer
+   defect before attributing errors to physical modelling. An ideal static
+   point-range calculation alone does not exercise the production pipeline.
+
+B. Does the true geometry explain the recorded measurements?
+   On preserved simulated sweeps, evaluate the same production objective at
+   the true plant geometry and at the applied answer, using the correct
+   reference, frame, radii and units. Break signed and absolute residuals down
+   by sweep, point, role and force setting; distinguish individual candidates,
+   final consensus and automatic stop. Assess whether a lower residual at an
+   incorrect geometry indicates bias or weak conditioning, and whether the
+   true geometry itself has substantial systematic residuals. Compare with an
+   exact production-generated control and explicitly check filtering, invalid
+   ellipses, weighting and numerical scaling. Truth is permitted only for this
+   simulation diagnosis and scoring, never for measurement choice or the
+   applied answer.
+
+C. Why does zero-force projection fail in the tested world?
+   First verify which ten force-trial measurements are actually retained; add
+   a research-only trace if necessary. At selected repeatable measurement
+   points, record commanded force and all encoder readings, together with
+   simulated actual cable tensions, cable extension, motor deflection, mover
+   position and settling/vibration over time. Compare the fitted linear
+   intercept with the observed force-response curve and physical quantities;
+   repeat force sequences in both directions and, where feasible, with matched
+   positions and return-to-start controls. Test linearity, hysteresis, slack,
+   motion during the force sequence and repeatability. Distinguish commanded
+   motor force from measured cable tension: simulated truth is diagnostic, not
+   an extra operational sensor. Fixed lengths are still one post-sweep scalar
+   on the known-radius path, not per-point projected fixed lengths; measure
+   that approximation separately. Do not equate role-swapped endpoint indices
+   with the same physical position: the earlier reconstruction found they can
+   occupy different branches. Use the corrected production projection handling
+   and report settling failures as outcomes. Only develop an encoder-only
+   correction when a falsifiable mechanism and independent validation support it.
+
+D. Which physical effects cause the discrepancy, singly and together?
+   Use matched, fresh worlds and verify each intervention reaches the baked
+   engine. Hold measurement path and commanded forces fixed where feasible,
+   so disabling noise does not silently change force tuning or the collected
+   data. Starting from a declared control, vary injected encoder noise,
+   quantization, cable elasticity, motor friction/compliance, vibration and
+   settling one at a time where independently configurable, then test relevant
+   combinations and interactions. Record actual settings, trajectories,
+   model residuals at true and applied geometry, final per-anchor errors and
+   failed workflows. Do not label an unsupported or unverified switch a
+   negative result. Follow a diagnosed contribution with a feasible remedy,
+   freeze its operational rules without truth, and evaluate on different
+   friction settings and anchor layouts.
+
 1. Which force and measurement choices avoid large errors across machines?
    The fixed-force study already sampled motor Coulomb/stiction variation and
    noisy encoder reads in three worlds; its two completed pairs are encouraging
@@ -123,9 +225,9 @@ Remaining promising questions
    at repeated encoder configurations before fitting geometry. Treat commanded
    forces as commands, not calibrated tension measurements. Test whether a
    correction transfers to unseen sweeps/worlds and improves actual anchors.
-   Pointwise fixed-encoder variation was ignored in an older objective audit,
-   but was negligible on a later nominal reference. Establish its size in the
-   target regime before implementing a larger objective model.
+   The 2026-11-06 point-specific experiments measured deviations and tested
+   two fitting approaches; neither established a reliable improvement. Use
+   those results to distinguish a physical/model mechanism before revisiting.
 
 Prioritize the scaling gauge, weak geometry directions and other barriers to
 sub-millimetre accuracy. Distinguish exact ambiguity from weak conditioning and
