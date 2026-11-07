@@ -25,6 +25,9 @@ RRF/build*
 RRF/.cache
 */compile_commands.json
 RRF/run/vsd/logs/
+# Research evidence archives are not read directly. Keep the raw files instead.
+*.tar.gz
+research/programs/*/recovery-originals/
 autocal/data/*.png
 autocal/tests/data/*.png
 autocal/old_data
