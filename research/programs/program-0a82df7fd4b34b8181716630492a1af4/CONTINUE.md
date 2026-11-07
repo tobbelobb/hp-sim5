@@ -49,8 +49,10 @@ commits and initial failed checks are preserved. Do not rewrite those receipts
 as checks against a later commit. A separate final fixed-evidence review and
 exact combined-candidate integration checks remain required.
 
-Final combined compact bundle: lower-force/combined-review-evidence.tar.gz.
-SHA256 c015b06839f6cfb9cb03682b54405eb3f8b3be4d11811a3f764a5a550b5c35c2,
+The final combined compact bundle is preserved on the
+`research/autocal-originals-2026-11-05-0a82df7f` and
+`research/autocal-recovery-2026-11-05-0a82df7f` branches. SHA256
+c015b06839f6cfb9cb03682b54405eb3f8b3be4d11811a3f764a5a550b5c35c2,
 515 members, 5,304,588 bytes. Its duplicate view omits large events.jsonl only;
 every complete journal remains in the hash-verified pushed per-run raw archives.
 Presentation-only corrections followed successful numerical recomputation.

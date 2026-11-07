@@ -40,6 +40,6 @@ a paired improvement in failures or applied geometry, with relevant checks.
 ## References
 
 - [Producer report](../attempt-939c073f49004eb6949910600200be51/report.md): exact design, failures, sources and limits.
-- [Durable original archive](../../../../research/programs/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/README.md):407 original files with verified restoration.
+- Durable original archive: 407 original files with verified restoration, preserved on the `research/autocal-originals-2026-11-05-0a82df7f` and `research/autocal-recovery-2026-11-05-0a82df7f` branches.
 - [Program archive](../../../../research/programs/program-0a82df7fd4b34b8181716630492a1af4/report.md): scoped memory, fixed submission and review.
 - [Research notebook](research.md): interview, decisions and recovery chronology.

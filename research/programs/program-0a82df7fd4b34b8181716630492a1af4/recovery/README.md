@@ -1,7 +1,8 @@
 # Autocal research recovery, 2026-11-05
 
-Update: the original files were subsequently recovered and pushed. See
-[the original artifact archive](../recovery-originals/README.md). The text below
+Update: the original files were subsequently recovered and pushed to the
+`research/autocal-originals-2026-11-05-0a82df7f` and
+`research/autocal-recovery-2026-11-05-0a82df7f` branches. The text below
 records the earlier conversation-only recovery phase, not the current data state.
 
 This is a recovery archive published through the GitHub connector after command access to the research workspace failed. The contents were recovered from conversation tool output and the completed worker/reviewer responses. It is not the original sealed 32-file submission, and it does not contain the raw datasets or journals.
