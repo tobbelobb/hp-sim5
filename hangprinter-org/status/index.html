@@ -82,53 +82,267 @@
 
   <main id="MainContent" class="half-width">
     <h3 id="SiteName">Hangprinter State of the Art</h3>
-    <p>Hangprinter is a cable-driven 3D printer. The project now combines full-size machines, firmware for predicting cable behavior, a detailed simulator, and two unfinished reference-hardware projects.</p>
-    <p>Thi status snapshot was written down on September 23, 2026. Follow the linked project pages and sometimes my <a href="https://www.youtube.com/@torbjrnludvigsen-hangprint7605">youtube channel</a> for ongoing design work.</p>
-
-    <h3 id="system-heading">How the pieces fit together</h3>
-    <p>A Hangprinter moves its tool by changing the lengths of lines connected to fixed anchors. Software coordinates the motion and estimates the forces acting through those lines.</p>
-    <h4>Machine and geometry</h4>
-    <p>HP4 is the established full-size Hangprinter design. Anchor layout, line routing, motor and spool details shape the model each machine uses. <a href="../doc/v4/">HP4 documentation</a></p>
-    <h4>Firmware and motion transforms</h4>
-    <p>RepRapFirmware and tobbelobb’s Klipper fork support Hangprinter motion. A forward transform estimates tool position from line lengths; the current firmware implementations use the quadratic approach. <a href="https://github.com/tobbelobb/hp-sim5">Implementation map in hp-sim5</a></p>
-    <h4>Flex compensation</h4>
-    <p>QP and Tikhonov algorithms calculate line tensions within configured minimum and maximum bounds, then account for line stretch in the commanded lengths. Their trade-offs differ near the bounds. <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper configuration guide</a></p>
-    <h4>Simulation and calibration development</h4>
-    <p><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> brings together detailed cable, spool, motor, and firmware simulation with development work on transforms, flex compensation, and automatic calibration. It is the project’s main software and simulation workbench.</p>
-
-    <h3 id="status-heading">What is implemented, and what is still underway?</h3>
-    <p class="q">HP4: Established design</p>
-    <p class="a">Full-size machine with published build documentation. Start with the <a href="../doc/v4/">V4 manual</a> and <a href="../FAQ/">FAQ</a>.</p>
-    <p class="q">Flex compensation: Implemented</p>
-    <p class="a">QP and Tikhonov are available in official RepRapFirmware and tobbelobb’s Klipper fork. See the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper config guide</a> for algorithm behavior.</p>
-    <p class="q">Forward transform: Firmware-integrated</p>
-    <p class="a">The quadratic method was selected after comparisons with other approaches; hp-sim5 documents tests on simulated Slideprinter, HP3, HP4, CubeCorners, and SkyCam setups.</p>
-    <p class="q">Autocalibration: In development</p>
-    <p class="a">Automatic calibration methods and data collection are being developed in hp-sim5, with simulation and firmware API workflows.</p>
-    <p class="q">RefWinch: In progress</p>
-    <p class="a">Experiments seek a more predictable winch, with a controlled line path and stable transmission behavior. There is not yet a finished reference design. <a href="https://refwinch.hangprinter.org/">RefWinch project</a></p>
-    <p class="q">RefRig: In progress</p>
-    <p class="a">A compact desktop machine intended to bring winches, firmware, calibration, diagnostics, and simulation together. Its build, tests, and documentation are not complete. <a href="https://refrig.hangprinter.org/">RefRig project</a></p>
-    <p>“Implemented” means the feature is present in the named firmware implementation. Simulation results and physical-machine maturity are called out separately where known.</p>
-
-    <h3 id="work-heading">The current hardware direction</h3>
-    <p>I sometimes loosely refer to this as "HP5", but it's really a collection of cable driven robotics building blocks that are developed separately and will be made to fit together later. Various "full versions" might be implemented by combining these building blocks to fit more detailed specifications, based on verified use cases.</p>
-    <p>So recent work has shifted toward building a repeatable foundation beneath future Hangprinters. RefWinch, RefRig, and hp-sim5 form a development path from one actuator to a complete machine:</p>
-    <h4><a href="https://refwinch.hangprinter.org/">RefWinch</a>: prove a winch</h4>
-    <p>Compare mechanisms and line-handling strategies against requirements for predictable line travel, a stable exit point, smooth operation, low added cost, and serviceability. Design findings and experiments are ongoing. I'm currently searching for a reliable odometer or equivalent mechanism.</p>
-    <h4><a href="https://refrig.hangprinter.org/">RefRig</a>: combine the parts</h4>
-    <p>Build a compact working printer around reference winches. The aim is a documented physical platform where motion, firmware, calibration, and diagnostics can be exercised together. It is not yet a finished build recipe.</p>
-    <h4><a href="../">Hangprinter</a>: scale the verified motion</h4>
-    <p>Carry tested mechanisms and software into the larger work volumes that motivate Hangprinter.</p>
-    <h4><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a>: simulate all of it</h4>
-    <p>A simulation environment connecting actuator behavior, machine geometry, firmware, and physical development across these steps.</p>
-      <p>RefWinch and RefRig are active projects, not finished products. The project pages and <a href="https://torbjornludvigsen.com/blog/2026/">development blog</a> describe their current design work.</p>
-
-    <h3 id="priorities-heading">Current modeling priorities</h3>
-    <p>Flex compensation now predicts cable forces and stretch. Catenary sag computation has lower priority because Hangprinter uses light Dyneema line; it can be revisited if the remaining sag effect proves important for a particular machine or span.</p>
-    <p>The two flex algorithms and their configuration are described in the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper fork’s config documentation</a>. The <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 README</a> maps the broader software and simulation work.</p>
-
-    <h3 id="start-heading">Where to go next</h3>
+    <p><i>Updated November 9, 2026</i></p>
+    <p>
+      Hangprinter is a cable-driven 3D printer and robotics project.
+      We're working toward cable driven machines that are cheap, reliable, and easy to build.
+    </p>
+    <p>
+      The project currently has a documented full-size but somewhat old and underdeveloped machine design (HP4),
+      and a range of very advanced software projects related to most aspects of cable driven robotics.
+    </p>
+    <p>
+      The latest software developments focus on:
+    </p>
+    <ul>
+      <li>a physics simulator, and</li>
+      <li>an AI-assisted research system.</li>
+    </ul>
+    <p>
+      Thre research system is being used to tackle remainig software challenges,
+      like one-click calibration with minimal hardware.
+    </p>
+    <p>
+      The latest hardware developments focus on prototyping two reference hardware projects:
+    </p>
+    <ul>
+      <li>one for winches, called <a href="https://refwinch.hangprinter.org/">RefWinch</a>, and</li>
+      <li>one for an assembled reference machine, called <a href="https://refrig.hangprinter.org/">RefRig</a>.</li>
+    </ul>
+    <p>
+      In short, after developing HP4 i 2018-2020, I've switched from developing full designs all at once to developing
+      and testing building blocks separately.
+    </p>
+    <h3 id="where_to_start_for_builders">Where To Start For Builders</h3>
+    <p>
+      HP4 is the established full-size Hangprinter design.
+      It remains the starting point for anyone wanting to build an existing Hangprinter and is documented at the
+      <a href="../doc/v4/">HP4 documentation page</a>.
+    </p>
+    <figure>
+      <img src="Hangprinter_HP4_large_photos_minimal.png" alt="Hangprinter HP4" loading="lazy" width="500">
+      <figcaption>^My old Hangprinter HP4 with a 3D Potter syringe style clay extruder mounted. Tool head development is outside the Hangprinter Project's scope but just mount whatever you need and can get for your particular use case. The circular markers you see are part of the hp-mark position tracking system. It's nice but it's a bit hard to build and not strictly required.</figcaption>
+    </figure>
+    <h4>Shortcomings</h4>
+    <p>
+      The current HP4 design was developed and tested as a prototype machine.
+      It's fully functional but was meant to be followed by an equivalent design with cheaper more modern electronics.
+      The more streamlines "HP4.1" design was planned in detail but never executed upon, as I (tobben) shifted
+      my personal focus to more fundamental problems within cable driven robotics.
+    </p>
+    <h3 id="machines_and_hardware">Machines and hardware building blocks</h3>
+    <p>
+      The work on <a href="https://refwinch.hangprinter.org/">RefWinch</a> has made clear the need for reliable odometry.
+      So the RefWinch project has included a lot of work on odometry.
+    </p>
+    <p>
+      A separate drag-wire encoder, measuring distance with its own separate wire in each direction of travel,
+      is my (tobben's) current favorite idea, after having failed at making other odometry ideas reliable enough.
+      But the drag-wire implementation remains at the sketch level in November 2026.
+    </p>
+    <h4>Shortcomings</h4>
+    <p>
+      A <a href="https://refrig.hangprinter.org/">RefRig</a> frame has been built out of openbeams.
+      A more complete physical RefRig build depends on RefWinches to exist first.
+    </p>
+    <figure>
+      <img src="Refrig.jpg" alt="RefRig not finished" loading="lazy" width="500">
+      <figcaption>^Current state of the RefRig.</figcaption>
+    </figure>
+    <p>
+      RefWinch will be a tool for bridging the sim2real gap, and simulated RefRigs should be easy to prototype.
+      The work with simulated RefWinches has not yet started.
+    </p>
+    <h3 id="firmware_and_motion_transforms">Firmware and motion transform building blocks</h3>
+    <p>
+      Stock <a href="https://github.com/Duet3D/RepRapFirmware">ReprapFirmware</a> and <a href="https://github.com/tobbelobb/klipper">my (tobben's) fork of Klipper</a> has extensive support for
+      (translational) cable driven robotics thanks to our work.
+    </p>
+    <p>
+      ReprapFirmware supports up to 8 anochors, and Klipper supports 26 anchors.
+      Anchors can now be put in any configuration.
+      So Hangprinter is no longer constrained to the old three-low, one-high configuration that older
+      Hangprinters version 4 and earlier were bound to.
+    </p>
+    <p>
+      The quadratic forward transform is state-of-the art in terms of accuracy and performance.
+      It was selected after comparisons with other methods across several simulated cable robot geometries.
+    </p>
+    <p>
+      <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">QP and Tikhonov style flex compensation algorithms</a> estimate cable tensions and compensate for elastic stretch.
+      They are imperfect approximationas because they rely on two simplified assumptions:
+    </p>
+    <ol>
+      <li>That lines act like linear springs, and</li>
+      <li>that lines are connected to a central point mass.</li>
+    </ol>
+    <p>
+      Despite that, they're very practical because they work with any anchor number and placements, and they use
+      much less processor power than previous compensation algorithms.
+      This enables us to use cheaper electronics.
+      Especially the QP one works better for Hangprinter than everything else I could find in literature.
+    </p>
+    <h4>Shortcomings</h4>
+    <p>
+      Klipper still lacks direct driver-controller communication,
+      so torque mode and encoder readings remain unavailable in Klipper.
+    </p>
+    <p>
+      Rotational DOF and cable sag effects has remained out of scope for the Hangprinter Project.
+    </p>
+    <p>
+      IMU measurements has also remained untested in practice, although some firmware support is inherited from general firmware features like input shaping.
+      Stock input shaping fetures are not expected to work well for cable driven robots, so work remains there for those who want to do input shaping-like vibration compensation with Hangprinter.
+    </p>
+    <p>
+      Working software features do not mean everything's tested end-to-end on hardware.
+      Expect minor software bugs to turn up during early test, both unrelated to,
+      and related to the specific thing you want to test.
+      Calibration is also a separate concern adressed later.
+    </p>
+    <h3 id="physics_simulation">Physics simulation building blocks</h3>
+    <p>
+      <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> simulates cables, motors, spools, machine geometry, and firmware behavior.
+    </p>
+    <p>
+      It includes interactive 2D and 3D simulations, as well as headless experiments using a native Rust physics engine. Experiments can record measurements and motion histories for later inspection with <a href="https://rerun.io/">Rerun</a>.
+    </p>
+    <figure>
+      <img src="simulator-showcase-v2-optimized.gif" alt="Agent using the simulator" loading="lazy" width="500">
+      <figcaption>^I told a research agent to show visually some of the things it can do with the simulator. (Parts of my prompt are actually visible in the background you look closely.) Agents will normally not use graphical tools, and they will speed up simulated time 20-30x for faster results.</figcaption>
+    </figure>
+    <p>
+      A particularly useful capability is running real firmware against simulated machine physics,
+      in both batched and interactive modes.
+      This lets both humans and AI agents investigate control and calibration methods before trying them on hardware.
+    </p>
+    <h4>Shortcomings</h4>
+    <p>
+      Simulation performance remains an issue for machines who does lots of block-and-tackle style gearing.
+      It's also still hard to simulate friction correctly in such machines.
+    </p>
+    <p>
+      We're very lucky that Nvidia's new Newton physics engine soon includes a
+      cable simulation strategy very similar to hp-sim5's.
+      We borrowed it from Nvidia's researchers in the first place, so this is expected.
+    </p>
+    <p>
+      They first pre-released their version on <a href="https://github.com/newton-physics/newton/releases/tag/v1.8.0rc1">November 4, 2026</a>, which is only 5 days agon at time of writing,
+      and so their work remains to be folded back into hp-sim5's engine.
+      But we should expect at least some of our cable simulation shortcomings to be mitigated soon.
+    </p>
+    <p>
+      Primary sources is <a href="https://newton-physics.github.io/newton/latest/tendons.html">Newton's new docs on the subject</a> and <a href="https://github.com/newton-physics/newton/pull/4132">the PR that merges "massless tendons" into Newton</a>.
+      We're getting awesome info from eg <a href="https://reports.mmacklin.com/cable-sim-research/index.html?v=20260511T073312Z">this report</a> and <a href="https://reports.mmacklin.com/cable-sim-research/xpbd_cable_requirements.html?v=20260602T031313Z">this requirements document</a>.
+    </p>
+    <h3 id="research_program">Automated research building blocks</h3>
+    <p>
+      A major recent development is that hp-sim5 can now run <a href="https://github.com/tobbelobb/hp-sim5/blob/main/human_docs/research-programs.md">AI-assisted Research Programs</a>,
+      and it can run in a repeatable environment on OpenAI's cloud.
+    </p>
+    <p>
+      OpenAI cloud environments are shareable, which means anyone with an OpenAI subscription can get a full
+      Hangprinter development environment set up with one click.
+      They can then ask a research question in natural language and have implementations and rigorous
+      numerical experimentation served.
+    </p>
+    <p>
+      It's like a support bot on steroids.
+      Instead of asking me of my opinion on an idea,
+      people can ask the automated research manager first.
+      So by the time they ask me (if they still want to talk to me), they have a working first implementation
+      and a report on extensive numerical testing of their idea and implementation.
+      All this with almost no effort or prior knowledge about Hangprinter required.
+      All in a chat. Almost no setup. Costs nothing extra for those who already have OpenAI subscriptions.
+    </p>
+    <figure>
+      <img src="Research_prompt_examle.png" alt="Launching a research program" loading="lazy" width="500">
+      <figcaption>^Launching a research program in the cloud. Just ask the research manager agent whatever. It will launch researcher subagents and reviewers when it sees fit.</figcaption>
+    </figure>
+    <figure>
+      <img src="Asking_questions.png" alt="Research Manager asking questions" loading="lazy" width="500">
+      <figcaption>^It's possible to instruct the agent to interview the human and/or ask clarifying questions along the way, like here.</figcaption>
+    </figure>
+    <figure>
+      <img src="Results_example.png" alt="Research Manager reporting results" loading="lazy" width="500">
+      <figcaption>^Sample of the output from the research program. Not particularly groundbreaking but at least it has done laborious experiments and won some insights for further investigations.</figcaption>
+    </figure>
+    <p>
+      A Research Program currently has three complementary roles:
+    </p>
+    <ul>
+      <li><b>Research manager:</b> Chooses research questions, delegates investigations, and coordinates results.</li>
+      <li><b>Researcher:</b> Develops hypotheses, runs experiments, investigates failures, and proposes improvements. Can be launched independently by the user if desired.</li>
+      <li><b>Reviewer:</b>Independently examines the evidence and proposed changes before they are accepted.</li>
+    </ul>
+    <p>
+      Research results include reports, original measurements, and supporting evidence. Useful code changes can be tested and integrated into the project.
+    </p>
+    <p>
+      The goal is not simply to generate more code. It's to make experimental research faster, more systematic, and easier to check.
+      The driving idea behind the <a href="https://torbjornludvigsen.com/blog/2026/">"Automated Researcher"</a> has been to write down how I (tobben) works and have an agent do that instead.
+      The driving idea behind the "Automater Research Manager" has been to write down how I work with managing the now "automated researchers", commanding them, gathering their work, reviewing it etc, and to have an agent do that instead as well.
+      There are turtles all the way down.
+    </p>
+    <p>
+      The Research Program feature is operational but still under development. Its reliability, scientific usefulness, and ability to carry investigations through to completed changes are themselves being tested.
+    </p>
+    <h4>Shortcomings</h4>
+    <p>
+      It's obviously not ideal to be tied to OpenAI subscriptions.
+      Work is underway to extend the principle to private computers and servers, like VPS services.
+      These cost much more money than OpenAI Codex cloud servers but are more flexible and predictable.
+    </p>
+    <p>
+      Also, in the OpenAI Cloud I've not been able to reliably run several simulators in parallel.
+      We only get 2 cores anyway so I didn't bother making parallelism work there yet.
+    </p>
+    <p>
+      A bigger shortcoming/challenge is that it's very hard to quantify how good the automated research programs really are since double blind tests would be prohibitively expensive to conduct.
+      Also, the lack of real RefRigs to test on leaves the sim2real gap unresearched, which makes the generated research less tested and interested than it could have been.
+    </p>
+    <p>
+      It's all very new and will change quite frequently, due to new models and best-pracices being constantly released, and partly because the research program is more than capable of improving itself.
+    </p>
+    <p>
+      I expect systems like these to become better and better at morphing themselves into what they need to be in order to most efficiently handle the specific task at hand.
+      The only force working against that is of course that the models themselves become better and better, and therefore become able to handle things straight off the bat, with no praparatory morphing/framework or other tricks needed.
+      Instead of building too many specific mechanisms and features into the auto-researcher I mainly rely on asking it to record wisdom it collects and build the tools it needs for itself.
+    </p>
+    <p>
+      My own diffuse role in all of this eventually becomes a shortcoming of the whole approach, since the intention, the need, and the desire for the produced outcome is supposed to reside in me.
+      It risks getting harder to stay in touch with my own work.
+    </p>
+    <h3 id="recent_research">Recent research in November 2026: Mostly autocal</h3>
+    <p>
+      Apart from the meta-research going on with the automated research programs, I'm focusing a lot on <a href="https://github.com/tobbelobb/hp-sim5/blob/main/research/index.md">autocalibration</a>.
+      Calibration is the main blocker for cable driven robotics in my view.
+      Others have solved it with very expensive equipment and expertise.
+      We try to solve it with only cheap encoder data that would be required for normal operation anyways,
+      and clever software.
+      A mounted machine should be able to "wiggle around" and find out whatever it needs to find out in
+      order to work well on its own.
+    </p>
+    <p>
+      A user story is central to guiding the development:
+    </p>
+    <ul>
+      <li>User has built the machine.</li>
+      <li>User clicks a button.</li>
+      <li>Machine needs to wiggle around for a while, user can go do something else.</li>
+      <li>When the user comes back, the machine should "just work".</li>
+      <li>No extra cost, no hand measurements, no expertise needed, just max performance for every user.</li>
+    </ul>
+    <p>
+      The <a href="https://hp-sim-3d.hangprinter.org/">simulator</a> and AI assisted research is improving autocal algorithms and procedures all the time.
+      But at time of writing it's not one-click-always-works even in simulation.
+      That is, I'm making the simulated scenarios progrssively less idealized, adding random noise and friction and so on, so that the research questions remain just hard enough for the AIs to hill-climb them in reasonable amount of time.
+    </p>
+    <h4>Shortcomings</h4>
+    <p>
+      It's hard to know how the sim2real transfer will look like until we actually do it.
+    </p>
+    <h3 id="where_to_go_next">Where to go next</h3>
     <ul>
       <li>For questions and basic orientation: <a href="../FAQ/">Frequently Asked Questions</a>.</li>
       <li>For project links, simulators, and documented builds: <a href="../resources/">Resources</a>.</li>
