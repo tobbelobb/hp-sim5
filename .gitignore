@@ -27,7 +27,7 @@ RRF/.cache
 RRF/run/vsd/logs/
 # Research evidence archives are not read directly. Keep the raw files instead.
 *.tar.gz
-research/programs/*/recovery-originals/
+research/output/*/recovery-originals/
 autocal/data/*.png
 autocal/tests/data/*.png
 autocal/old_data
@@ -67,23 +67,24 @@ autocal/tools/experiment_progressive_fitting.py
 .worktreeinclude
 
 # Live supervisor credentials are not research evidence.
-/research/sessions/**/connection.json
+/research/output/**/connection.json
 # Generated catalog; research/catalog.md is the curated topic guide.
-/research/index.md
+/research/output/index.md
 # Launcher bookkeeping stays local; publish reports and original evidence instead.
-/research/sessions/*/session.json
-/research/sessions/*/launch.json
-/research/sessions/*/exit.json
-/research/sessions/*/prompt.txt
-/research/sessions/*/instructions.md
-/research/sessions/*/attachment.toml
-/research/sessions/*/attachment.json
-/research/sessions/*/events.jsonl
-/research/sessions/*/final-message.md
-/research/sessions/*/viewer.log
-/research/sessions/*/manager-question.json
-/research/sessions/*/manager-answer.json
-/research/sessions/*/native/runtime.log
+/research/output/scratch/
+/research/output/**/session.json
+/research/output/**/launch.json
+/research/output/**/exit.json
+/research/output/**/prompt.txt
+/research/output/**/instructions.md
+/research/output/**/attachment.toml
+/research/output/**/attachment.json
+/research/output/**/events.jsonl
+/research/output/**/final-message.md
+/research/output/**/viewer.log
+/research/output/**/manager-question.json
+/research/output/**/manager-answer.json
+/research/output/**/native/runtime.log
 hangprinter-org/status/Ceiling_unit_HP4_March_2025.jpg
 hangprinter-org/status/Ceiling_unit_Jimmys.JPG
 hangprinter-org/status/HP4_real_photo_composite.png
@@ -93,4 +94,3 @@ hangprinter-org/status/Hangprinter_HP4_authentic_photo_layout.png
 hangprinter-org/status/Hangprinter_HP4_original_photo_composite.png
 hangprinter-org/status/My_Ceiling_Unit_Jan_2022.JPG
 hangprinter-org/status/Texas_ceiling_unit_HP4_Dec_2023.jpg
-research/sessions/2026-11-09-interactive-research-e7b03767/

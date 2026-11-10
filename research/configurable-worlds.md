@@ -21,4 +21,4 @@ Supported scenes are stock HP3/HP4. Custom radii require layering disabled;
 layered worlds use stock radii/buildup. Custom anchors and arbitrary layered
 spool designs are explicitly unsupported. See [API examples and recovery](README.md).
 
-[Full report, hypotheses, source provenance and preserved failures](../output/research/sessions/2026-10-12-configurable-research-worlds-fee56c1a/report.md).
+[Full report, hypotheses, source provenance and preserved failures](../research/output/session-2026-10-12-configurable-research-worlds-fee56c1a/report.md).

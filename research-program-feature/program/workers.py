@@ -187,7 +187,7 @@ class WorkerDispatcher:
             raise ProgramError('instructions must be a string')
         attempt_id = _identity('attempt')
         directory = self.store.directory / 'workers' / attempt_id
-        session = (self.root / 'research/sessions' / attempt_id).resolve()
+        session = (self.root / 'research/output' / program_id / f'session-{attempt_id}').resolve()
         if session.exists():
             raise ProgramError('Worker session directory must be new')
         revision = subprocess.run(['git', '-C', str(self.root), 'rev-parse', 'HEAD'],

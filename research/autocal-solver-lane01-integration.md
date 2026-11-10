@@ -35,7 +35,7 @@ The historical `examples/usd_scenes/hp3.usda` at `0a5a0f6d` and current
 `public/usd_scenes/hp3_rigid_body.usda` agree. Maximum difference from the runner's
 rounded B/C X is 0.001733 mm. A parametrized regression checks every current
 branch. The historical source audit and raw scene hashes are in
-[truth-verification.json](../output/research/sessions/2026-10-22-autocal-solver-integration/truth-verification.json).
+[truth-verification.json](../research/output/session-2026-10-22-autocal-solver-integration/truth-verification.json).
 
 This does not prove which browser overrides were active during original
 collection. It disproves the claim that the inspected nominal scene differs by
@@ -104,33 +104,33 @@ specific retry fix.
 
 | Hypothesis | Experiment ID | Outcome | Evidence |
 | --- | --- | --- | --- |
-| Nominal HP3 scene agrees with effective-anchor truth | T1 | Supported for historical/current source | [Derivation and rescoring](../output/research/sessions/2026-10-22-autocal-solver-integration/truth-verification.json) |
+| Nominal HP3 scene agrees with effective-anchor truth | T1 | Supported for historical/current source | [Derivation and rescoring](../research/output/session-2026-10-22-autocal-solver-integration/truth-verification.json) |
 | A fitted reference establishes replacement simulation truth | T2 | Rejected as an inference | Same scene derivation; reference agreement is a separate metric |
-| Diagnostic propagation preserves cold-fit numerics | D1 | Supported on three controls and two targeted variants | [Controls](../output/research/sessions/2026-10-22-autocal-solver-integration/replay-checks.json), [variants](../output/research/sessions/2026-10-22-autocal-solver-integration/followup-checks.json) |
+| Diagnostic propagation preserves cold-fit numerics | D1 | Supported on three controls and two targeted variants | [Controls](../research/output/session-2026-10-22-autocal-solver-integration/replay-checks.json), [variants](../research/output/session-2026-10-22-autocal-solver-integration/followup-checks.json) |
 | Lower seventh iteration budget is non-binding | I1 | Rejected on the measured trajectory | Variant trace has two first-stage limit terminations |
 | Layered alternative actually invokes TRF | M1 | Supported for this replay | Variant trace |
-| Retry activates and may retain a better primary | F1 | Supported as scalar route control | [Control](../output/research/sessions/2026-10-22-autocal-solver-integration/forced-fallback.json) |
+| Retry activates and may retain a better primary | F1 | Supported as scalar route control | [Control](../research/output/session-2026-10-22-autocal-solver-integration/forced-fallback.json) |
 | Finite converged but invalid primary bypasses retry | F2 | Reproduced by function-level test; fixed | `test_trf_fallback_retries_failed_or_invalid_primary` |
 
-[134 targeted tests](../output/research/sessions/2026-10-22-autocal-solver-integration/pytest.log)
+[134 targeted tests](../research/output/session-2026-10-22-autocal-solver-integration/pytest.log)
 cover solver dispatch, fallback activation, calibration serialization, CLI, stage
 replay, regression output and all nine scene branches. The
-[three-fixture regression](../output/research/sessions/2026-10-22-autocal-solver-integration/regression.log)
+[three-fixture regression](../research/output/session-2026-10-22-autocal-solver-integration/regression.log)
 passes with unchanged fitted parameters and all iteration parameters within the
 reference tolerance; 21 sweeps and 350 points consumed match the references.
-[JSONL readback](../output/research/sessions/2026-10-22-autocal-solver-integration/jsonl-checks.json)
+[JSONL readback](../research/output/session-2026-10-22-autocal-solver-integration/jsonl-checks.json)
 confirms 26 measured run entries retain 156 restart trace records.
 No physics, motor, cable transport or scene dynamics implementation was changed.
 
 Source baseline: `4f175079aaefe20db697ac3d74fa66bd1084ebb9`; local changes are the
 small diagnostic/fallback patch and documentation/tests. The lane's artifacts
-remain untouched in `/home/torbjorn/repos/hp-sim5-worktrees/research-edf7c713/output/research/sessions/2026-10-22-autocal-flags-01-solvers/`.
+remain untouched in `/home/torbjorn/repos/hp-sim5-worktrees/research-edf7c713/research/output/session-2026-10-22-autocal-flags-01-solvers/`.
 That worktree's output directory was not symlinked into this checkout when read.
 Artifact paths and hashes are recorded in the rescoring evidence. Scripts and the
-[notebook](../output/research/sessions/2026-10-22-autocal-solver-integration/research.md)
+[notebook](../research/output/session-2026-10-22-autocal-solver-integration/research.md)
 are retained beside the evidence.
 
-Further references: [original flag assessment](autocal-flag-audit/report.md),
+Further references: [original flag assessment](output/session-autocal-flag-audit/report.md),
 [fixture provenance](../autocal/data/references/README.md),
 [regression truth and metrics](../autocal/tools/regress_calibration_logs.py),
 [solver implementation](../autocal/ellipse_solver.py), and

@@ -85,8 +85,8 @@ def retire(attachments):
             pass
 
         session = Path(attachment['session'])
-        if session.is_relative_to(ROOT / 'research/programs'):
-            shutil.rmtree(session.parent.parent)
+        if session.is_relative_to(ROOT / 'research/output'):
+            shutil.rmtree(session.parent)
 
 
 @pytest.fixture
@@ -221,6 +221,9 @@ def test_fresh_cli_calls_retain_owned_worker_share_attachment_pause_then_cancel(
     worker = tool(first, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     assert time.monotonic() - started_at < 2
     assert worker['details']['state'] == 'running'
+    session = Path(worker['details']['session_dir'])
+    assert session.parent == manager['root'] / 'research/output/p'
+    assert session.name == f'session-{worker["id"]}'
     until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
     second = attach(manager)
     assert first == second

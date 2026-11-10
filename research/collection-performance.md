@@ -70,9 +70,9 @@ tests actual browser stepping; it is not a timed browser collection.
 ./hp-sim5-research-agent --physics-backend native-python
 
 .venv/bin/python scripts/replay_collection.py SCENE_USDA EVENTS_JSONL \
-  --output output/research/replay-recorded
+  --output research/output/scratch/replay-recorded
 .venv/bin/python scripts/replay_collection.py SCENE_USDA EVENTS_JSONL \
-  --output output/research/replay-numeric --no-record
+  --output research/output/scratch/replay-numeric --no-record
 ```
 
 Output directories must be new. Failed replays preserve evidence. The numerical
@@ -95,7 +95,7 @@ fast fresh trials with an explicit observation-rate contract. Calibration
 identifiability, hardware fidelity and model mismatch remain separate issues.
 
 Evidence is retained in
-`output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/`: `P01-profile.pstats`,
+`research/output/session-fdb616a454af4a6d9c1db074fbdc207d/`: `P01-profile.pstats`,
 `P02-matrix.json`, `performance_matrix.py`, `P03-final-recorded/replay.json`,
 `P03-final-numeric/replay.json`, `P03-rerun.png` and `tooling-tests.txt`.
 

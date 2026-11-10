@@ -60,8 +60,8 @@ recording. Observations are reported separately, and CPU samples exclude startup
 and warmup. Future optimization comparisons must preserve inputs and numerical
 behavior before accepting speed changes.
 
-The [full report](../output/research/sessions/2026-10-13-headless-js-profiling/report.md)
-and [matrix](../output/research/sessions/2026-10-13-headless-js-profiling/matrix.json)
+The [full report](../research/output/session-2026-10-13-headless-js-profiling/report.md)
+and [matrix](../research/output/session-2026-10-13-headless-js-profiling/matrix.json)
 retain all 19 system timings, CPU/allocation summaries, GC/memory measurements,
 checkpoint files and source/input hashes. Raw profiles, frozen workloads and the
 sequential runner are in that session directory. Input origins identify the

@@ -153,14 +153,14 @@ KEEP  --headless-sim        Run simulated RRF and production JS physics/collecto
 ## Investigation, 2026-10-22
 
 The KEEP annotations above are preserved. Start with the
-[flag assessment and experiment handoff](research/autocal-flag-audit/report.md).
+[flag assessment and experiment handoff](research/output/session-autocal-flag-audit/report.md).
 It covers purpose, activation, removal candidates, coupled tuning, limitations
 in the underlying ideas, and bounded experiments with acceptance criteria.
 
-The [complete inventory](research/autocal-flag-audit/inventory.md) records parser
+The [complete inventory](research/output/session-autocal-flag-audit/inventory.md) records parser
 defaults and local literal-use evidence for 92 option spellings. The
-[raw excerpts](research/autocal-flag-audit/usage.json) and
-[reproducible audit](research/autocal-flag-audit/audit_usage.py) distinguish search
+[raw excerpts](research/output/session-autocal-flag-audit/usage.json) and
+[reproducible audit](research/output/session-autocal-flag-audit/audit_usage.py) distinguish search
 evidence from an assertion that an option ran or helped. Default-enabled features
 can be used without appearing in commands.
 
@@ -168,7 +168,7 @@ No numerical experiments were run and no default was proved optimal. The propose
 first tests are scale-polish placement, filtering/noise normalization, and solver
 budgets. No runtime flags or user KEEP decisions were changed.
 
-Six researchers can start from the [parallel handoff index](research/autocal-flag-audit/handoffs/README.md),
+Six researchers can start from the [parallel handoff index](research/output/session-autocal-flag-audit/handoffs/README.md),
 which assigns exclusive topics, isolated outputs, budgets and integration checks.
 
 Lane 01 follow-up: [truth verification and solver integration](research/autocal-solver-lane01-integration.md).
@@ -208,7 +208,7 @@ Legacy point calibration and the explicit flex plotting helper remain separate.
 `--project-zero-tension` now rejects failed projections and requires projected
 angle fields during fitting instead of silently using raw angles.
 
-See the [integration report](research/autocal-physical-model-cleanup/report.md)
+See the [integration report](research/output/session-autocal-physical-model-cleanup/report.md)
 for preserved lane evidence, fit-free equivalence checks, regression results and
 the saved-geometry sentinel probe. The earlier inventory is historical evidence.
 

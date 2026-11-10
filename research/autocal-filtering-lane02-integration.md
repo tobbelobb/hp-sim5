@@ -59,12 +59,12 @@ physics, motor, cable transport or scene dynamics implementation was changed.
 
 | ID | Question | Result | Evidence |
 | --- | --- | --- | --- |
-| T1 | Does the unused threshold affect a layered frozen fit? | 0.01 versus saved 250 gives identical anchors, radii, raw and normalized costs | [Before checks](../output/research/sessions/2026-10-22-autocal-filtering-integration/before-checks.json) |
+| T1 | Does the unused threshold affect a layered frozen fit? | 0.01 versus saved 250 gives identical anchors, radii, raw and normalized costs | [Before checks](../research/output/session-2026-10-22-autocal-filtering-integration/before-checks.json) |
 | S1 | Is sigma-used entirely inert in the fit output? | No: 1 mm preserves anchors/radii and normalized cost 216.8664530720463; raw cost changes 0.6610055028693824 to 0.6825968215144017 | Same before checks |
-| C1 | Does the cleanup preserve the default frozen fit? | Post-change anchors, radii and both costs exactly match control | [After checks](../output/research/sessions/2026-10-22-autocal-filtering-integration/after-checks.json) |
-| H1 | Does the claimed layered accuracy gap establish a fallback regression? | No: compares an individual fit with final consensus; both historical provenance and Lane 02's own summary contradict that inference | [Summary comparison](../output/research/sessions/2026-10-22-autocal-filtering-integration/summary-comparison.json), [revision ancestry](../output/research/sessions/2026-10-22-autocal-filtering-integration/fallback-history.json) |
-| V1 | Are parser inheritance, artifacts and numerical paths preserved? | 258 targeted tests and 9 plotting tests pass | [Core tests](../output/research/sessions/2026-10-22-autocal-filtering-integration/targeted-tests.log), [plot tests](../output/research/sessions/2026-10-22-autocal-filtering-integration/plot-tests.log) |
-| R1 | Are complete replay outputs preserved? | All three fixture regressions pass; final and iteration parameter deltas zero, unchanged scores, 21 sweeps/350 points | [Regression](../output/research/sessions/2026-10-22-autocal-filtering-integration/regression.log) |
+| C1 | Does the cleanup preserve the default frozen fit? | Post-change anchors, radii and both costs exactly match control | [After checks](../research/output/session-2026-10-22-autocal-filtering-integration/after-checks.json) |
+| H1 | Does the claimed layered accuracy gap establish a fallback regression? | No: compares an individual fit with final consensus; both historical provenance and Lane 02's own summary contradict that inference | [Summary comparison](../research/output/session-2026-10-22-autocal-filtering-integration/summary-comparison.json), [revision ancestry](../research/output/session-2026-10-22-autocal-filtering-integration/fallback-history.json) |
+| V1 | Are parser inheritance, artifacts and numerical paths preserved? | 258 targeted tests and 9 plotting tests pass | [Core tests](../research/output/session-2026-10-22-autocal-filtering-integration/targeted-tests.log), [plot tests](../research/output/session-2026-10-22-autocal-filtering-integration/plot-tests.log) |
+| R1 | Are complete replay outputs preserved? | All three fixture regressions pass; final and iteration parameter deltas zero, unchanged scores, 21 sweeps/350 points | [Regression](../research/output/session-2026-10-22-autocal-filtering-integration/regression.log) |
 
 These four fits are activation/equivalence controls, not an optimizer accuracy
 matrix. Timings were not used as evidence. The initial targeted test run exposed
@@ -98,13 +98,13 @@ scene-frame mismatch.
 
 ## Sources and next work
 
-- [Lane 02 source report copy](../output/research/sessions/2026-10-22-autocal-filtering-integration/lane02/report.md),
-  [proposals](../output/research/sessions/2026-10-22-autocal-filtering-integration/lane02/proposed-changes.md)
-  and [ideas](../output/research/sessions/2026-10-22-autocal-filtering-integration/lane02/ideas.md):
+- [Lane 02 source report copy](../research/output/session-2026-10-22-autocal-filtering-integration/lane02/report.md),
+  [proposals](../research/output/session-2026-10-22-autocal-filtering-integration/lane02/proposed-changes.md)
+  and [ideas](../research/output/session-2026-10-22-autocal-filtering-integration/lane02/ideas.md):
   original findings and limitations. Originals were read in worktree
-  `/home/torbjorn/repos/hp-sim5-worktrees/research-1b0b6208/output/research/sessions/2026-10-22-interactive-research-51d5356b/`;
+  `/home/torbjorn/repos/hp-sim5-worktrees/research-1b0b6208/research/output/session-2026-10-22-interactive-research-51d5356b/`;
   this checkout did not have them at the initially reported symlinked path.
-- [Notebook and commands](../output/research/sessions/2026-10-22-autocal-filtering-integration/research.md):
+- [Notebook and commands](../research/output/session-2026-10-22-autocal-filtering-integration/research.md):
   scope, bounded trials and reproduction. Probe scripts/results are retained locally.
 - [Fixture provenance](../autocal/data/references/README.md), reference-log headers,
   [cost implementation](../autocal/ellipse_cost.py),

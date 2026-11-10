@@ -60,7 +60,7 @@ class ProgramTests(unittest.TestCase):
                                                    '--reason', 'Compare decision value').stdout))
         assignment = json.loads(self.cli('assignment', 'pilot', 'Inspect saved candidates', '--approach', approaches[0]['id'],
                                           '--allocation', '{"wall_minutes":5,"fresh_fits":0}').stdout)
-        artifact = json.loads(self.cli('artifact', 'pilot', 'output/research/sessions/example/metrics.json',
+        artifact = json.loads(self.cli('artifact', 'pilot', 'research/output/session-example/metrics.json',
                                       '--sha256', 'a' * 64, '--evidence-type', 'synthetic',
                                       '--source-revision', 'candidate-123', '--provenance', '{"dataset":"shared-input"}').stdout)
         self.cli('decision', 'pilot', 'Prefer saved evidence', '--subject', approaches[0]['id'], '--evidence', artifact['id'])

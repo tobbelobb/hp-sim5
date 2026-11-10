@@ -73,8 +73,8 @@ table supplies the throughput evidence.
   ownership and shared solver reuse across worlds.
 - `git diff --check` passed.
 
-The [session report](../../output/research/sessions/2026-10-13-reuse-attachment-transform-scratch/report.md)
-and [machine-readable summary](../../output/research/sessions/2026-10-13-reuse-attachment-transform-scratch/summary.json)
+The [session report](../../research/output/session-2026-10-13-reuse-attachment-transform-scratch/report.md)
+and [machine-readable summary](../../research/output/session-2026-10-13-reuse-attachment-transform-scratch/summary.json)
 retain repetition distributions, exact checkpoint hashes, source/input hashes,
 frozen inputs, before/after source snapshots, raw profiles and sequential runners.
 These local generated artifacts are ignored by Git. Measured source hash prefixes

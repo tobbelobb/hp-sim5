@@ -56,7 +56,7 @@ immutability and offline export of the actual consensus anchors. `git diff
 
 ## References
 
-- [Lane 04 report](/home/torbjorn/repos/hp-sim5-worktrees/research-878b9086/output/research/sessions/2026-10-22-interactive-research-30b803ad/report.md): prior screen and limitations, source 4f175079.
-- [Lane 04 proposals](/home/torbjorn/repos/hp-sim5-worktrees/research-878b9086/output/research/sessions/2026-10-22-autocal-flags-04-ranking-cli/proposed-changes.md): integration candidates.
-- [Checks and artifact hashes](../output/research/sessions/2026-10-22-autocal-lane04-cleanup/checks.json): three exact selection comparisons and the noise-metric presence audit, integration baseline a194e540.
-- [Reproduction script](../output/research/sessions/2026-10-22-autocal-lane04-cleanup/check_histories.py): no fitting or collection; reads the source worktree artifacts directly.
+- [Lane 04 report](/home/torbjorn/repos/hp-sim5-worktrees/research-878b9086/research/output/session-2026-10-22-interactive-research-30b803ad/report.md): prior screen and limitations, source 4f175079.
+- [Lane 04 proposals](/home/torbjorn/repos/hp-sim5-worktrees/research-878b9086/research/output/session-2026-10-22-autocal-flags-04-ranking-cli/proposed-changes.md): integration candidates.
+- [Checks and artifact hashes](../research/output/session-2026-10-22-autocal-lane04-cleanup/checks.json): three exact selection comparisons and the noise-metric presence audit, integration baseline a194e540.
+- [Reproduction script](../research/output/session-2026-10-22-autocal-lane04-cleanup/check_histories.py): no fitting or collection; reads the source worktree artifacts directly.

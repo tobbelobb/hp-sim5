@@ -26,13 +26,21 @@ def initial_abstract(topic):
 
 def catalog_root(root):
     root = Path(root)
-    return root.parent if root.name == 'sessions' and root.parent.name == 'research' else root
+    if root.name == 'sessions' and root.parent.name == 'research':
+        return root.parent
+    if root.parent.name.startswith('program-') and root.parent.parent.name == 'output':
+        return root.parent.parent
+    return root
 
 
 def catalog_entries(root):
     root = catalog_root(root)
-    candidates = [p for parent in (root, root / 'sessions') if parent.is_dir()
-                  for p in parent.iterdir() if p.is_dir()]
+    candidates = [p for p in root.iterdir()
+                  if p.is_dir() and p.name != 'sessions' and not p.name.startswith('scratch')]
+    candidates += [p for p in root.glob('program-*/session-*') if p.is_dir()]
+    legacy = root / 'sessions'
+    if legacy.is_dir():
+        candidates += [p for p in legacy.iterdir() if p.is_dir()]
     # Prefer a descriptive alias over its old hash, and include each session once.
     candidates.sort(key=lambda p: (bool(re.fullmatch(r'[0-9a-f]{32}', p.name)), p.name))
     seen = set()

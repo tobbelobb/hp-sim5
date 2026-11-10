@@ -93,7 +93,7 @@ parallelism, with one ordered solve per world; that batching API is not provided
 ## Evidence and reproduction
 
 Evidence and retained early trials are in
-`output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/`:
+`research/output/session-fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/`:
 `C03-timing.json`, `C03-timing-v1.json`, final-state files, `benchmark.py`,
 `C03-warp-profile.pstats`, `C02-parity-v1.txt`, and regression output.
 
@@ -101,7 +101,7 @@ Evidence and retained early trials are in
 WARP_CACHE_PATH=/tmp/hp-sim5-warp-cache .venv/bin/python -m pytest -q \
   tests/python/cable_joints_3d/test_warp_solver.py
 PYTHONPATH=src/python WARP_CACHE_PATH=/tmp/hp-sim5-warp-cache .venv/bin/python \
-  output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/benchmark.py
+  research/output/session-fdb616a454af4a6d9c1db074fbdc207d/compiled-solver/benchmark.py
 ```
 
 The implementation uses Warp's documented native compilation and structured

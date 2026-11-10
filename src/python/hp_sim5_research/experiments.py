@@ -3,6 +3,7 @@ import hashlib
 from importlib.metadata import version
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import re
@@ -48,7 +49,10 @@ def run_directory(root, run_id):
         raise ValueError('Use the run_id returned by run_experiment')
     # Launcher worktrees deliberately share output with the original checkout.
     # Inputs stay inside the worktree; run IDs stay inside its approved output.
-    output = (Path(root) / 'output/research/experiments').resolve()
+    # A launcher session owns its experiments; loose runs use shared scratch.
+    session = os.environ.get('HP_SIM5_SESSION_DIR')
+    base = Path(session) if session else Path(root) / 'research/output/scratch'
+    output = (base / 'experiments').resolve()
     directory = (output / run_id).resolve()
     if not directory.is_relative_to(output):
         raise ValueError('Experiment paths must stay inside the experiment output directory')

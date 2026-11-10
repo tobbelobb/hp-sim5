@@ -120,10 +120,10 @@ contract.
 
 ## Evidence and limitations
 
-The [session report](../output/research/sessions/2026-10-13-rust-wasm/report.md),
-[matrix](../output/research/sessions/2026-10-13-rust-wasm/matrix/matrix.json),
-[raw runs/checkpoints](../output/research/sessions/2026-10-13-rust-wasm/matrix/) and
-[notebook](../output/research/sessions/2026-10-13-rust-wasm/research.md) retain
+The [session report](../research/output/session-2026-10-13-rust-wasm/report.md),
+[matrix](../research/output/session-2026-10-13-rust-wasm/matrix/matrix.json),
+[raw runs/checkpoints](../research/output/session-2026-10-13-rust-wasm/matrix/) and
+[notebook](../research/output/session-2026-10-13-rust-wasm/research.md) retain
 repeat distributions, flags, source/binary/scene/input hashes and encoder checks.
 The measured source snapshot and binary are archived in the session's `source/`
 directory. Research artifacts are local and Git-ignored, following the original

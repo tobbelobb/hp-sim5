@@ -28,7 +28,7 @@ ENV_FILE = ROOT / '.env'
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
 # Shared runtime pieces; output can also contain tracked research files.
-WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output', 'research/sessions',
+WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output', 'research/output',
                   'src/wasm/cable_solver/target/native/physics.node')
 
 
@@ -130,12 +130,12 @@ def create_worktree(topic, directory=None):
         check=True, capture_output=True, text=True)
     shared_output = Path(common_git.stdout.strip()).parent / 'output'
     shared_output.mkdir(exist_ok=True)
-    shared_sessions = Path(common_git.stdout.strip()).parent / 'research/sessions'
-    shared_sessions.mkdir(parents=True, exist_ok=True)
+    shared_research = Path(common_git.stdout.strip()).parent / 'research/output'
+    shared_research.mkdir(parents=True, exist_ok=True)
     for entry in WORKTREE_LINKS:
         source, target = ROOT / entry, plan['path'] / entry
-        if entry in ('output', 'research/sessions'):
-            source = (shared_output if entry == 'output' else shared_sessions).resolve()
+        if entry in ('output', 'research/output'):
+            source = (shared_output if entry == 'output' else shared_research).resolve()
             # This is a fresh checkout: discard only Git's checked-out copy,
             # before any includes or session artifacts can be written there.
             if target.is_symlink():
@@ -249,7 +249,7 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
     runtime = None
     if checks.get('physics', {}).get('ok'):
         try:
-            runtime = RuntimeService(ROOT, ROOT / 'output/research/preflight' / uuid.uuid4().hex).start()
+            runtime = RuntimeService(ROOT, ROOT / 'research/output/scratch/preflight' / uuid.uuid4().hex).start()
             collection = runtime.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
             from hp_sim5_research.validation import validate_collection
             validation = validate_collection(collection['artifacts']['dataset'])
@@ -413,7 +413,7 @@ def main():
     mode.add_argument('--serve', action='store_true', help='Supervise services for desktop MCP attachment until interrupted')
     parser.add_argument('--session-dir', type=Path, help='New session artifact directory (must not exist)')
     parser.add_argument('--name', help='Short research topic used in the default session directory name')
-    parser.add_argument('--sidebar-section', help='Desktop sidebar section UUID, or none; defaults to output/research/sidebar.json')
+    parser.add_argument('--sidebar-section', help='Desktop sidebar section UUID, or none; defaults to research/output/sidebar.json')
     # Everything after -- belongs to the selected backend, including resume and its normal options.
     argv = sys.argv[1:]
     split = argv.index('--') if '--' in argv else len(argv)
@@ -475,7 +475,7 @@ def main():
         if args.serve and (prompt or codex_args):
             parser.error('--serve accepts neither a task nor agent arguments')
         sidebar_section = args.sidebar_section if args.backend == 'codex' else None
-        sidebar_config = ROOT / 'output/research/sidebar.json'
+        sidebar_config = ROOT / 'research/output/sidebar.json'
         if args.backend == 'codex' and sidebar_section is None and sidebar_config.exists():
             sidebar_section = json.loads(sidebar_config.read_text())['section_id']
         if sidebar_section == 'none':
@@ -489,11 +489,9 @@ def main():
         topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else
                               'service research' if args.serve else 'interactive research')
         session = (args.session_dir.resolve() if args.session_dir else
-                   ROOT / 'research/sessions' / ('dry-run' if args.dry_run else session_name(topic)))
-        catalog_root = (session.parent.parent if session.parent.name == 'sessions' and session.parent.parent.name == 'research' else
-                        ROOT / 'research' if session.is_relative_to(ROOT / 'research') else
-                        ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research')
-                        else session.parent)
+                   ROOT / 'research/output' / ('dry-run' if args.dry_run else f'session-{session_name(topic)}'))
+        output_root = (ROOT / 'research/output').resolve()
+        catalog_root = output_root if session.resolve().is_relative_to(output_root) else session.parent
         instructions = (ROOT / 'research-program-feature/role-instructions/RESEARCHER.md').read_text()
         if args.backend == 'claude':
             instructions = (ROOT / 'AGENTS.md').read_text() + '\n' + instructions

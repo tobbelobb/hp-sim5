@@ -456,7 +456,7 @@ def test_detected_detached_child_holds_lease_without_claiming_shutdown(integrati
 
 def delivery_candidate(c):
     """Use real canonical session paths, not a published copy of review snapshots."""
-    session = c['root'] / 'research/sessions/fixture'
+    session = c['root'] / 'research/output/session-fixture'
     session.mkdir(parents=True)
     report = session / 'report.md'
     evidence = session / 'evidence.json'
@@ -464,9 +464,9 @@ def delivery_candidate(c):
     evidence.write_text('{"before": 4, "after": 3}\n')
     revision = candidate(c, 'final-result', {
         'improvement.txt': 'Useful change\n',
-        'research/sessions/fixture/report.md': report.read_text(),
-        'research/sessions/fixture/evidence.json': evidence.read_text(),
-        'research/programs/p/summary.html': '<p>Improved the result. <a href="../../sessions/fixture/report.md">Evidence</a></p>',
+        'research/output/session-fixture/report.md': report.read_text(),
+        'research/output/session-fixture/evidence.json': evidence.read_text(),
+        'research/output/p/summary.html': '<p>Improved the result. <a href="session-fixture/report.md">Evidence</a></p>',
     })
     session.mkdir(parents=True, exist_ok=True)
     report.write_text('# Result\n\nThe measured improvement.\n')
@@ -508,7 +508,7 @@ def test_delivery_is_one_squash_with_the_checked_tree_and_canonical_results(inte
     assert git(c, 'status', '--porcelain') == ''
     assert c['store'].get_program('p')['state'] == 'completed'
     paths = git(c, 'ls-tree', '-r', '--name-only', 'main').splitlines()
-    assert [p for p in paths if p.endswith('report.md')] == ['research/sessions/fixture/report.md']
+    assert [p for p in paths if p.endswith('report.md')] == ['research/output/session-fixture/report.md']
     assert c['integration'].finish('p', prepared['job']['id'], 'Retry')['job']['details']['delivered_revision'] == revision
     restored = ProgramStore(c['tmp'] / 'delivered-restore', create=True)
     try:
@@ -527,13 +527,13 @@ def test_delivery_blocks_incomplete_or_changed_results(integration, blocker):
     if blocker in ('missing_summary', 'different_evidence'):
         files = {'improvement.txt': 'Useful change\n'}
         if blocker == 'different_evidence':
-            files['research/programs/p/summary.html'] = '<p>Summary</p>'
+            files['research/output/p/summary.html'] = '<p>Summary</p>'
         sub = reviewed(c, 'incomplete-result', files)
         if blocker == 'different_evidence':
             # A selected canonical report must actually be in the checked tree.
             # Re-submit its fixed original content from a canonical session path.
             old = sub['details']['manifest']
-            source = c['root'] / 'research/sessions/source/report.md'
+            source = c['root'] / 'research/output/session-source/report.md'
             source.parent.mkdir(parents=True)
             source.write_bytes((c['store'].directory / 'submissions' / sub['id'] / 'report').read_bytes())
             selected = [dict(id=a['id'], role=a['role'], path=str(source) if a['role'] == 'report'

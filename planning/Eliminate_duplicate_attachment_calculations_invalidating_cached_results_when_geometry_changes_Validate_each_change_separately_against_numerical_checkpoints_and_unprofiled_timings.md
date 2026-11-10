@@ -83,7 +83,7 @@ lifecycle owners; undertake that only if subsequent profiles justify the complex
 ## Validation and relation to the other plans
 
 Use [the profiling recipe](../tests/benchmark/HEADLESS_JS_PROFILING.md) and existing
-frozen inputs under `output/research/sessions/2026-10-13-headless-js-profiling/inputs/`.
+frozen inputs under `research/output/session-2026-10-13-headless-js-profiling/inputs/`.
 Measure the bounded over-correction reuse separately from endpoint-preparation
 reuse or a broader cache. For each, compare exact checkpoint hashes using
 `--compare` and plain repeat distributions across both machines, workloads and

@@ -5,7 +5,7 @@ Status: complete; verified 2026-10-10.
 Reviewed commit `383c6d453a2027fb99ebc7936862053878661e57` after fixing the
 settling failure retained by [the implementer](autocal-jobs-verification.md).
 Experiments E11–E12 continue the
-[encoder-autocalibration session](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/report.md).
+[encoder-autocalibration session](../research/output/session-2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/report.md).
 
 ## Settling failure and fix
 
@@ -86,8 +86,8 @@ Independent RRD inspection verified all 360 measurements, seven complete
 collections, 300,551 physical samples, the stop boundary at step 3,005,509,
 twelve embedded stage artifacts, frozen scene/firmware hashes, recorded bake
 hashes and exact final dataset/log content. The finalized RRD is 1,582,674,623
-bytes. See [acceptance](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-acceptance.json)
-and [recording audit](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-rrd-verification.json).
+bytes. See [acceptance](../research/output/session-2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-acceptance.json)
+and [recording audit](../research/output/session-2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-rrd-verification.json).
 
 This is a complete workflow/geometry check, not a paired speed benchmark.
 It used 360 points versus the supplied reference's 180. Reliable point-count
@@ -105,8 +105,8 @@ npm test -- --runInBand tests/js/hp-sim-3d/headlessWorld.test.js tests/js/hp-sim
 .venv/bin/python -m pytest -q tests/python/test_autocal_jobs.py -m slow
 .venv/bin/python -m pytest -q tests/python/test_research_agent.py -k stdio
 .venv/bin/python autocal/tools/regress_calibration_logs.py --dataset-name fifth_hp3_dataset --dataset-name seventh_hp3_dataset --jobs 1 --color never
-.venv/bin/python output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-supervised-verification.py
-.venv/bin/python output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-inspect-recording.py
+.venv/bin/python research/output/session-2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-supervised-verification.py
+.venv/bin/python research/output/session-2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-inspect-recording.py
 ```
 
 This chat has no attached research connector; verification uses the real SDK
@@ -115,4 +115,4 @@ calibration. A new launcher session is still needed to check direct Codex or
 desktop attachment. Existing score-versus-geometry selection limitations remain.
 
 Commands, complete/failed traces, settings, source diff and results are retained
-in the [session notebook](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/research.md).
+in the [session notebook](../research/output/session-2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/research.md).

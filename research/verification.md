@@ -24,7 +24,7 @@ the command hash differed. Neither trial reported missed steps.
 The event log records successful `capabilities`, `run_experiment`,
 `compare_experiments` and `read_experiment` calls. The session completed with
 exit code zero. Its artifacts are under
-`output/research/sessions/93c49db478ae4885aae10d8d4205eaa8/`.
+`research/output/session-93c49db478ae4885aae10d8d4205eaa8/`.
 
 ## Live Codex Rerun inspection
 
@@ -36,7 +36,7 @@ was visually inspected: it shows the HP4 cable geometry and all five trace
 panels at step 200. This session completed with exit code zero.
 
 Artifacts are under
-`output/research/sessions/338606b11fde452bb3886bb861a7e96c/`, including
+`research/output/session-338606b11fde452bb3886bb861a7e96c/`, including
 `events.jsonl`, `report.md`, `viewer.log` and the screenshot. These generated
 files remain locally available and are excluded from Git by `/output`.
 

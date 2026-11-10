@@ -487,7 +487,7 @@ collect two production bootstrap datasets without fitting or applying parameters
 
 ```bash
 source .agents/skills/cloud-research-client/scripts/env.sh
-.venv/bin/python -m autocal.tools.collect_native_parameter_pair --output output/research/new-native-pair
+.venv/bin/python -m autocal.tools.collect_native_parameter_pair --output research/output/scratch/new-native-pair
 ```
 
 This helper uses stiffness 20000/8000 N, fixed 30 mm spools, zero cable width and

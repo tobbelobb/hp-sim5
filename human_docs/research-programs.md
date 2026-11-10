@@ -33,23 +33,25 @@ budget-accounting step. Human constraints remain part of the task.
 ## Where the output goes
 
 ```text
-research/
+research/output/
   index.md                         # One catalog: title, result sentence, report link
-  sessions/SESSION/
+  session-SESSION/                 # A standalone launcher session
     report.md                      # Canonical researcher explanation and evidence links
     abstract.md                    # Title and one result sentence for search/cataloging
     scratchbook/                    # Optional notes and small helpers
     ...                            # Original data, plots and runtime evidence
-  programs/PROGRAM_ID/
+  program-PROGRAM_ID/
     summary.html                   # Short human result, plots if useful, links to sessions
+    session-ATTEMPT/               # A researcher session dispatched by the program
+
 .research-programs/                 # Ignored tool state, launches, reviews and checks
 ```
 
 Read the program summary first, then follow its links to the original reports.
 There is no second program report or narrative ledger. Regenerate the catalog
-with `.venv/bin/python scripts/research_index.py`; even a `--root
-research/sessions` request updates the same `research/index.md`. Older saved
-investigations stay where they are and can still appear in that catalog.
+with `.venv/bin/python scripts/research_index.py`; it updates
+`research/output/index.md`. All research output lives under `research/output/`
+so it can be browsed, searched and ignored as one tree.
 
 The reviewer checks the researcher's existing report, evidence and committed
 candidate. The manager and reviewer resolve gaps, include the useful evidence

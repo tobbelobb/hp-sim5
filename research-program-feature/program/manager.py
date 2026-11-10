@@ -149,7 +149,7 @@ class ProgramManager:
                 'integrations': [{'id': r['id'], 'state': r['details']['state'],
                                   'delivered_revision': r['details'].get('delivered_revision')}
                                  for r in records if r['kind'] == 'integration_job'],
-                'summary': str(self.root / 'research/programs' / program_id / 'summary.html'),
+                'summary': str(self.root / 'research/output' / program_id / 'summary.html'),
                 'manager': {'program_id': program_id, 'controller_id': self.controller_id,
                             'client_transport': research_client(), 'stopping': self.stopping,
                             'physics_world': False, 'cleanup_errors': self.cleanup_errors,

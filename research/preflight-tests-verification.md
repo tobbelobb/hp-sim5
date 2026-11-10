@@ -2,7 +2,7 @@
 
 Revalidated after command networking was enabled on 2026-10-12. Socket creation,
 loopback binding and HTTP round trip now all pass in the actual command context
-(0.013 seconds). The [follow-up report](../output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/report.md)
+(0.013 seconds). The [follow-up report](../research/output/session-2026-10-12-network-enabled-preflight-revalidation-31a423c7/report.md)
 preserves the reproductions, fixes, JUnit results and current evidence.
 
 Two bugs were reproduced and fixed:
@@ -32,7 +32,7 @@ research MCP connector; SDK stdio tests do not establish a live Codex attachment
 
 Validated on Linux, 2026-10-12. Implementation request:
 [tooling improvement 3](prompts/tooling_improvement_3.txt).
-The [session report](../output/research/sessions/2026-10-12-preflight-and-supervised-integration-tests-718724fb/report.md)
+The [session report](../research/output/session-2026-10-12-preflight-and-supervised-integration-tests-718724fb/report.md)
 contains the exact commands, job results, failed trials and limitations.
 
 The final non-moving MCP preflight took **0.737 seconds**; supervisor startup took

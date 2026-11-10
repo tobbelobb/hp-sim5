@@ -20,7 +20,7 @@ mcp = MCPServer('hp-sim5', instructions=(
     'run_experiment starts fresh; collection jobs and G-code use the launcher-owned persistent session. '
     'Experiments write immutable inputs, JSON telemetry and Rerun recordings. '
     'Use Rerun MCP for Viewer inspection. Motor angles are radians, geometry metres, forces newtons. '
-    + f'\nSession artifacts: {os.environ.get("HP_SIM5_SESSION_DIR", ROOT / "output/research")}.'
+    + f'\nSession artifacts: {os.environ.get("HP_SIM5_SESSION_DIR", ROOT / "research/output")}.'
 ))
 READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=False)
 MUTATION = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_world_hint=False)
@@ -279,7 +279,7 @@ def capture_native_context(message: str, step: int | None = None, selected_entit
                'scene_generation': manifest.get('scene_generation'), 'scene_sha256': manifest['scene_sha256'],
                'selected_entity': selected_entity, 'message': message,
                'observation': read_run(ROOT, run_id, selected_step, 1)['samples'][0]}
-    directory = Path(os.environ.get('HP_SIM5_SESSION_DIR', ROOT / 'output/research'))
+    directory = Path(os.environ.get('HP_SIM5_SESSION_DIR', ROOT / 'research/output/scratch'))
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / 'native-context.jsonl').open('a') as output:
         output.write(json.dumps(context, allow_nan=False) + '\n')

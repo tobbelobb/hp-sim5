@@ -475,7 +475,7 @@ class IntegrationController:
         if checked['outcome'] != 'passed':
             raise ProgramError('Delivery requires passing checks on the reviewed candidate')
         _, prepared, _ = self._fixed(program_id, d)
-        summary = f'research/programs/{program_id}/summary.html'
+        summary = f'research/output/{program_id}/summary.html'
         git(d['worktree'], 'cat-file', '-e', prepared['combined_revision'] + ':' + summary)
         # The reviewed files remain the canonical result; do not publish copies
         # from the private submission snapshots under a second results tree.
@@ -483,7 +483,7 @@ class IntegrationController:
             manifest = self.store.get_record(program_id, source['submission_id'], 'submission')['details']['manifest']
             for asset in manifest['assets']:
                 path = Path(asset['source'])
-                if asset['missing'] or not path.is_relative_to(self.root / 'research/sessions'):
+                if asset['missing'] or not path.is_relative_to(self.root / 'research/output'):
                     continue
                 relative = path.relative_to(self.root).as_posix()
                 raw = git(d['worktree'], 'show', prepared['combined_revision'] + ':' + relative)

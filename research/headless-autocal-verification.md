@@ -98,7 +98,7 @@ to become empty and a backlog-sensitive transport disconnect. The physics wait
 now resumes when sample capacity is available, with a progress-based
 acknowledgement watchdog. Extended transport uses that watchdog instead of
 WebSocket keepalive. Partial RRDs and failed trials remain in the
-[validation notebook](../output/research/headless-extended-autocal-validation/research.md).
+[validation notebook](../research/output/session-headless-extended-autocal-validation/research.md).
 A real SIGTERM after the first bootstrap measurement passed in 53.44 seconds,
 retaining partial points and a finalized incomplete RRD while stopping services.
 Live checks also cover an external recorder, every-step/full geometry, explicit
@@ -124,7 +124,7 @@ owned services. Fast Python checks passed 75 tests; collector regressions passed
 the simulation clock. The two extended checks passed too.
 
 Artifacts are retained in [headless verification output](../output/headless-verification/).
-The [notebook](../output/research/headless-autocal-validation/research.md) records
+The [notebook](../research/output/session-headless-autocal-validation/research.md) records
 failed trials, tolerance decisions and completed work. Per-run manifests contain
 the actual scene/config/source hashes and clock bounds; earlier failed runs
 remain in numbered directories.

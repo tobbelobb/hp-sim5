@@ -98,22 +98,22 @@ rotor damping, cable transport or full-print tracking limitations.
 
 ## Evidence and reproduction
 
-- [Session report](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/report.md)
-  and [notebook](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/research.md):
+- [Session report](../research/output/session-2026-10-21-interactive-research-cdfb5278/report.md)
+  and [notebook](../research/output/session-2026-10-21-interactive-research-cdfb5278/research.md):
   H1–H6 decisions, budgets, inputs, measured outcomes and failed trials.
-- E01/E03 [baseline analytic failures](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E01-baseline-analytic.log)
-  and [combined candidate passes](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E03-candidate-analytic.log):
+- E01/E03 [baseline analytic failures](../research/output/session-2026-10-21-interactive-research-cdfb5278/E01-baseline-analytic.log)
+  and [combined candidate passes](../research/output/session-2026-10-21-interactive-research-cdfb5278/E03-candidate-analytic.log):
   independent torque/damping evidence.
-- E02/E03/E06 [baseline](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E02-baseline.json),
-  [combined corrections](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E03-candidate.json)
-  and [retained correction](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E06-inertia-only.json):
+- E02/E03/E06 [baseline](../research/output/session-2026-10-21-interactive-research-cdfb5278/E02-baseline.json),
+  [combined corrections](../research/output/session-2026-10-21-interactive-research-cdfb5278/E03-candidate.json)
+  and [retained correction](../research/output/session-2026-10-21-interactive-research-cdfb5278/E06-inertia-only.json):
   matched commands, hashes, numerical samples and motor diagnostics.
-- E04/E05 [combined failure](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E04-candidate-physics-gate.log)
-  and [damping-only failure](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E05-damping-only-physics-gate.log):
+- E04/E05 [combined failure](../research/output/session-2026-10-21-interactive-research-cdfb5278/E04-candidate-physics-gate.log)
+  and [damping-only failure](../research/output/session-2026-10-21-interactive-research-cdfb5278/E05-damping-only-physics-gate.log):
   reason for deferring the damping correction.
-- E06 [passing mandatory gate](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E06-inertia-only-physics-gate.log),
-  E07 [projection audit](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E07-equilibrium-audit.json)
-  and E08 [20 s Squares prefixes](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E08-inertia-only-20s.json):
+- E06 [passing mandatory gate](../research/output/session-2026-10-21-interactive-research-cdfb5278/E06-inertia-only-physics-gate.log),
+  E07 [projection audit](../research/output/session-2026-10-21-interactive-research-cdfb5278/E07-equilibrium-audit.json)
+  and E08 [20 s Squares prefixes](../research/output/session-2026-10-21-interactive-research-cdfb5278/E08-inertia-only-20s.json):
   accepted stability, remaining numerical error and motion scope.
 - [Equilibrium regression](../tests/benchmark/open_loop_torque_balance.test.mjs)
   and [Python/Warp check](../tests/python/cable_joints_3d/test_open_loop_torque_balance.py):
