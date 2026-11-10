@@ -62,10 +62,11 @@ command/noise journals, solver histories, source snapshots, failed trials and
 partial recordings. Every archived file was verified by SHA-256 readback.
 Six live connection/control files were deliberately excluded.
 
-The [archive and restore instructions](recovery-originals/README.md) explain how
-to verify and recover the evidence from a fresh Git checkout. Both remote
-research branches contain the originals. Subsequent experiments use remote
-checkpoints instead of relying on a single end-of-turn save.
+The original archive is not stored in `main`; it is preserved on the
+`research/autocal-originals-2026-11-05-0a82df7f` and
+`research/autocal-recovery-2026-11-05-0a82df7f` branches. Subsequent
+experiments use remote checkpoints instead of relying on a single end-of-turn
+save.
 
 The [controller export](report.md) preserves the full decision and admission
 history. This README is the concise entry point; generated controller records

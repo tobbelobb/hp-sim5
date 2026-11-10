@@ -14,6 +14,11 @@ BUILD_DIR="$ROOT_DIR/RRF/build"
 VSD_DIR="$ROOT_DIR/RRF/run/vsd"
 BASE_LOG="$VSD_DIR/logs/Hangprinter_logo6_slideprinter.csv"
 TEST_LOG="$VSD_DIR/logs/Hangprinter_logo6_slideprinter_2.csv"
+# The reference baseline is stored compressed to keep the checkout small.
+BASE_LOG_GZ="$BASE_LOG.gz"
+if [[ ! -f "$BASE_LOG" && -f "$BASE_LOG_GZ" ]]; then
+    gzip -dc "$BASE_LOG_GZ" > "$BASE_LOG"
+fi
 
 echo "Building rrf_simulator once..."
 cmake --build "$BUILD_DIR" --target rrf_simulator -j

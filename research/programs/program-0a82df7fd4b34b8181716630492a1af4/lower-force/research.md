@@ -151,8 +151,9 @@ What earlier runs have already established
   The independent reviewer kept the scoped report-only result. No production
   change was adopted, and hardware robustness remains unresolved.
   The original workspace files were recovered after an execution-attachment
-  failure. The full original evidence and raw journals are committed in
-  research/programs/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/README.md.
+  failure. The full original evidence and raw journals are preserved on the
+  research/autocal-originals-2026-11-05-0a82df7f and
+  research/autocal-recovery-2026-11-05-0a82df7f branches.
   Do not repeat the same preload/guide matrix as an untested improvement.
 
 - The fresh2026-11-05 lower-force continuation at a68d6adf has a controlled four-attempt partial. In development,4mid improved final applied maximum error3.6959→2.8529mm at1.0641times simulated effort; both completed arms had every anchor below5mm. A nominal4mid attempt failed before fitting with a5000ms M569.3 transport timeout and remains a practical workflow failure. No force default was adopted. Evaluation calibration is NOT TESTED; only its two frozen jobs remain, followed by a separately authorized transport-budget discriminator. Do not repeat the completed primary jobs or erase the failure with a later pass. See research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md and CONTINUE.md.

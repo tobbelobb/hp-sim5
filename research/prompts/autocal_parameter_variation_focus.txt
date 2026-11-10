@@ -109,7 +109,7 @@ What earlier runs have already established
   change was adopted, and hardware robustness remains unresolved.
   The original workspace files were recovered after an execution-attachment
   failure. The full original evidence and raw journals are committed in
-  research/programs/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/README.md.
+  the research/autocal-originals-2026-11-05-0a82df7f and research/autocal-recovery-2026-11-05-0a82df7f branches.
   Do not repeat the same preload/guide matrix as an untested improvement.
 
 - The 2026-11-05 fixed lower-force matrix is complete: six primary attempts in three frozen HP3 worlds. Development maximum applied error improved 3.6959 to 2.8529 mm at 1.0641 times simulated effort. Evaluation improved 3.4116 to 2.7518 mm at 1.0709 times effort, with B worsening 1.1409 to 2.4098 mm. All five completed calibrations had every anchor below 5 mm. The nominal 4mid workflow failed before fitting on a 5000 ms M569.3 transport timeout, so the no-new-failure gate rejects force-default adoption. Keep 5mid. One invalid import-path startup is preserved separately and counted against the seven-collection allocation. Do not repeat this exact fixed4 matrix or the rejected preload matrix. A separate real-WebSocket discriminator reproduced an explicit 120-second encoder budget being capped at 5 seconds. The narrow transport candidate accepts the same valid six-second reply while preserving the effective 5-second default, shorter deadlines and bounded missing/disconnected failures. It passed 45 JavaScript and two noncollection headless checks. No full-autocal-with-fix or hardware reliability claim is made. See research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md.
