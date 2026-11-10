@@ -1,21 +1,15 @@
-// Executable oracle: import production JS systems, never duplicate physics here.
+// Executable fixture runner for the production Rust pipeline.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as ecs from '../../src/js/cable_joints_3d/ecs.js';
-import * as commonSystems from '../../src/js/cable_joints_3d/commonSystems.js';
-import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
-import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
 import * as rigid from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import * as spools from '../../hp-sim-3d/app/hangprinter_spools.js';
-import { StepperMotorComponent, StepperMotorSystem } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
-import { TorqueModeSystem } from '../../hp-sim-3d/app/torqueModeSystem.js';
-import { MissedStepTrackingSystem, getMachineMotorDiagnostics, resetMachineMotorDiagnostics } from '../../hp-sim-3d/app/motor-diagnostics.js';
+import { StepperMotorComponent } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { getMachineMotorDiagnostics, resetMachineMotorDiagnostics } from '../../hp-sim-3d/app/motor-diagnostics.js';
 import { ExtruderComponent, ExtruderSystem, estimateEffectorRotation } from '../../hp-sim-3d/app/hangprinter_extruder.js';
 import { RemoteSpoolSystem } from '../../hp-sim-3d/app/remoteSpoolSystem.js';
 import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
 import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
-import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
@@ -23,18 +17,10 @@ import { OpenText } from '../../src/js/usd/stage.js';
 import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../../hp-sim-3d/app/scene/machineScenePipeline.js';
 import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
 import { captureFlightRecorderSnapshot } from '../../hp-sim-3d/app/flightRecorderSnapshot.js';
-import { PBDBallBallCollisions } from '../../src/js/cable_joints_3d/pbd_ball_ball_collisions.js';
-import { PBDBallObstacleCollisions } from '../../src/js/cable_joints_3d/pbd_ball_obstacle_collisions.js';
-import { BallObstacleBumpSystem } from '../../src/js/cable_joints_3d/ball_obstacle_bump_system.js';
-import { CableSlackSystem, SlideLooseCableSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools, ...cable, StepperMotorComponent, ExtruderComponent };
-const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem, TorqueModeSystem, MissedStepTrackingSystem, ExtruderSystem, RemoteSpoolSystem,
-  PBDBallBallCollisions, PBDBallObstacleCollisions, BallObstacleBumpSystem, CableSlackSystem, SlideLooseCableSystem,
-  CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem,
-  PBDCableConstraintSolver: cable.PBDCableConstraintSolver };
 const vector = (value) => value == null ? null : new Vector3(...value);
 const quaternion = (value) => value == null ? null : new Quaternion(...value);
 
@@ -137,22 +123,9 @@ export function runFixture(fixture, { cableSolverBackend = null } = {}) {
     for (const [name, args] of Object.entries(entity.components)) add(entity.name, name, args);
   }
   for (const addition of fixture.addComponents ?? []) add(...addition);
-  for (const { names: pathNames, args } of fixture.createPaths ?? []) {
-    const values = args.slice(1);
-    values[2] = decode(values[2], 'parameter');
-    const created = createCablePaths(world, args[0].map(name => ids[name]), ...values);
-    if (created.length !== pathNames.length) throw new Error('Unexpected number of split paths');
-    created.forEach((id, i) => { ids[pathNames[i]] = id; names[id] = pathNames[i]; });
-  }
   mutate(fixture.initialSet);
   for (const name of fixture.initializeRigidBodies ?? []) rigid.initializeRigidBodySyncState(world, ids[name]);
-  for (const definition of fixture.systems) {
-    const name = typeof definition === 'string' ? definition : definition.name;
-    const args = typeof definition === 'string' ? [] : definition.args ?? [];
-    if (!systems[name]) throw new Error(`Unsupported system ${name}`);
-    world.registerSystem(name === 'PBDCableConstraintSolver'
-      ? new cable.PBDCableConstraintSolver(cableSolverBackend) : new systems[name](...args));
-  }
+  if (fixture.systems.length && !fixture.pipeline) throw new Error('Only the production Rust pipeline is supported');
   if (fixture.pipeline) {
     if (fixture.systems.length) throw new Error('Pipeline fixtures must use production system registration');
     registerSimulationSystems(world, { cableSolverBackend });
@@ -281,10 +254,6 @@ export function runFixture(fixture, { cableSolverBackend = null } = {}) {
     for (const [entity, type] of step.removeComponents ?? []) world.removeComponent(ids[entity], components[type]);
     for (const machine of step.resetMotorDiagnostics ?? []) resetMachineMotorDiagnostics(world, machine);
     commandActions(step.commandActions);
-    for (const operation of step.topology ?? []) {
-      if (!['split', 'merge'].includes(operation)) throw new Error(`Unknown topology operation ${operation}`);
-      cable[operation === 'split' ? '_splitJoints' : '_mergeJoints'](world);
-    }
     world.update(step.dt);
     snapshots.push(snapshot(index + 1));
   }

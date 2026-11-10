@@ -71,15 +71,10 @@ headless Node, with the same fixed steps, forces, motors, encoders and cables
 as the browser. JavaScript handles scene preparation, commands and observations.
 See the [native host implementation](rust-native-engine.md) and the earlier
 [Wasm engine measurements](rust-wasm-engine.md). `--machine hp3` selects the HP3 scene and matching RRF
-configuration; `--machine` is required. Use `--physics-backend native-python`
-for the independent Python engine, or `--viewer none --no-record` for numerical
-batches without Rerun logging. Fresh `run_experiment` trials also default to native
-Rust; `physics_backend='native-python'` selects the independent reference.
-Fresh trials can select `cable_solver_device='cpu'` for the optional compiled
-Warp cable solver. Continuing sessions use `--physics-backend native-warp`;
-`native-warp-cuda` is experimental and requires a CUDA device. Other physics
-systems still execute in Python. See the [compiled solver measurements and
-limits](compiled-python-solver.md) and [measured collection performance](collection-performance.md).
+configuration; `--machine` is required. Use `--viewer none --no-record` for
+numerical batches without Rerun logging. Fresh `run_experiment` trials and
+continuing sessions use the same native Rust engine hosted in Node. See
+[measured collection performance](collection-performance.md).
 
 The terminal goes directly to Codex. Continue talking and steering in that same
 conversation; services remain alive between turns. Background services have
@@ -153,11 +148,11 @@ the worktree instead of the original checkout:
 
 It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
 links the shared runtime pieces a bare checkout lacks (`.venv`, `.env`,
-`node_modules`, `RRF/build`, `output/` and the compiled native physics addon).
-The shared `output/` link replaces the fresh checkout's tracked output files,
-makes prior local research available and keeps new session artifacts in the
+`node_modules`, `RRF/build`, `output/`, `research/output/` and the compiled native physics addon).
+The shared links replace the fresh checkout's tracked output files,
+make prior local research available and keep new session artifacts in the
 main checkout, including when launching from another worktree. Codex also gets
-sandbox write access to the shared output directory. It copies any additional
+sandbox write access to the shared output directories. It copies any additional
 repository paths listed in `.worktreeinclude` (when present) into the new
 worktree. It then re-executes the
 worktree's own launcher. The default
@@ -165,7 +160,7 @@ parent directory is a sibling named `<repo>-worktrees`; override it with
 `--worktree-dir`. The shared addon is only a starting build: each worktree has
 local build metadata and build output, so rebuilding its native physics does
 not change another worktree. Each launched supervisor owns its own physics
-process; new session artifacts are stored in shared `research/sessions/`. The branch
+process; new session artifacts are stored in shared `research/output/`. The branch
 name derives from `--name`, otherwise from the prompt's first line, otherwise
 `research`. `.worktreeinclude` accepts comments, plain relative paths and
 simple globs; missing entries are ignored.
@@ -213,7 +208,7 @@ Categorization uses a `UserPromptSubmit` MCP lifecycle hook, outside the model's
 instructions. It passes the exact `${session_id}` from the lifecycle event to
 `codex_app.move_thread_to_sidebar_section`. Select an existing section with
 `--sidebar-section SECTION_UUID`, or save `{"section_id":"SECTION_UUID"}` in
-the ignored local file `output/research/sidebar.json`. Use `--sidebar-section none`
+the ignored local file `research/output/sidebar.json`. Use `--sidebar-section none`
 to disable it. The launcher includes the hook in its Codex configuration and the
 desktop `attachment.toml`; merge that hook only into a dedicated research
 worktree's configuration when using desktop attachment.
@@ -271,7 +266,7 @@ provider in its client configuration.
 Start a supervisor in a dedicated worktree and keep its terminal open:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex --serve --session-dir output/research/my-chat
+./hp-sim5-research-agent --machine hp4 --codex --serve --session-dir research/output/session-my-chat
 ```
 
 The directory must be new. The launcher prints the path to `attachment.toml`.
@@ -305,10 +300,10 @@ instructions and implementation live in [`research-program-feature/`](../researc
 Keep new working notes inside the assigned session's `scratchbook/` directory.
 
 Open the [research topic guide](catalog.md) for the main investigations and
-the local [session catalog](index.md) for one result sentence and a report link
-per session. The catalog includes sessions under `research/sessions/` and existing
-investigations directly under `research/`. Older standalone sessions under
-`output/research/` can be searched with `--root output/research`. It reads `abstract.md`, so searching it does not require
+the local [session catalog](output/index.md) for one result sentence and a
+report link per session. The catalog includes standalone `session-*` directories
+and `program-*/session-*` researcher sessions. Search it with `--root
+research/output`. It reads `abstract.md`, so searching it does not require
 reading long reports or raw telemetry:
 
 ```bash
@@ -323,7 +318,8 @@ reads historical `job.json` outcomes without a running supervisor. A saved
 `running` observation does not establish current liveness, and CLI acceptance
 does not establish calibration accuracy.
 
-New default directories use `YYYY-MM-DD-topic-unique-suffix`, with a UTC date. The topic comes
+New default directories live directly under `research/output/` and use
+`session-YYYY-MM-DD-topic-unique-suffix`, with a UTC date. The topic comes
 from `--name` or the first prompt line. Use `--name` for a short, specific topic;
 interactive sessions without an initial prompt start as `interactive-research`.
 `--session-dir` still selects an exact new directory. Runtime world IDs and
@@ -339,8 +335,8 @@ Older hash paths contain absolute references in reports, manifests, attachment
 configuration and conversation history. Descriptive directory aliases let readers
 browse those sessions without moving the evidence. The catalog lists each
 physical session once and prefers its descriptive alias. Keep both paths stable
-while a supervisor is running. Older output/ session artifacts and aliases remain ignored by Git. New reports
-and original evidence under research/sessions/ can be committed.
+while a supervisor is running. New reports and original evidence under
+`research/output/` can be committed.
 
 ## Batch mode and diagnostics
 
@@ -356,10 +352,11 @@ Batch mode retains `codex exec`, prompt input, JSONL events and the separate
 store. Both routes keep `prompt.txt`, `launch.json`, the research record/report,
 service logs and `exit.json` in their session directory. Private attachment
 credentials live in mode-600 `connection.json`. Default directories are under
-`research/sessions/`; fresh low-level trials are under `output/research/experiments/`,
+`research/output/session-*`; fresh trials stay in each session's `experiments/`,
+loose trials use `research/output/scratch/experiments/`,
 and continuing collection evidence is under each session's `native/` directory.
 Reports and evidence can be committed with ordinary Git; live connection files
-are ignored. Older sessions and low-level trial outputs remain under `output/`. The explicit doctor checks dependencies/login/Viewer
+are ignored. The explicit doctor checks dependencies/login/Viewer
 MCP and performs real RRF/native HP4 collection with autocal validation; it takes
 about fourteen minutes on the historical Python backend; the default backend
 has since changed. It does not establish calibration accuracy or model
@@ -746,7 +743,7 @@ measurements and Rerun inspection from this checkout.
 .venv/bin/python -m pytest -q tests/python/test_research_agent.py
 .venv/bin/python -m pytest -q tests/python/test_native_collector.py
 .venv/bin/python -m pytest -q tests/python/test_native_collector.py -m slow
-.venv/bin/python -m pytest -q tests/python/cable_joints_3d/test_machine_recording.py
+.venv/bin/python -m pytest -q tests/python/test_research_preflight.py
 ```
 
 The first exercises real native experiments, deterministic replay, validation,

@@ -16,7 +16,7 @@ test('profiling selects the requested engine and records the loaded native artif
   const input = path.join(directory, 'commands.json');
   fs.writeFileSync(input, JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ type: 'Move', A: i * .0001 }))));
   const script = fileURLToPath(new URL('../../scripts/profile_headless.mjs', import.meta.url));
-  for (const solver of ['js', 'wasm', 'native']) {
+  for (const solver of ['wasm', 'native']) {
     const output = path.join(directory, `${solver}.json`);
     execFileSync(process.execPath, [script, '--solver', solver, '--machine', 'hp3', '--commands', input,
       '--warmup', '0', '--repeats', '1', '--checkpoint-every', '2', '--output', output], {

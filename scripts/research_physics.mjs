@@ -3,8 +3,10 @@
 import fs from 'node:fs';
 import readline from 'node:readline';
 import { PositionComponent, OrientationComponent, VelocityComponent, AngularVelocityComponent,
-  EncoderComponent, RigidBodyMemberComponent, SceneEntityInfoComponent } from '../src/js/cable_joints_3d/ecs.js';
+  EncoderComponent, RigidBodyMemberComponent, SceneEntityInfoComponent, RadiusComponent,
+  MachineTagComponent, RenderableComponent } from '../src/js/cable_joints_3d/ecs.js';
 import { CableJointComponent, CablePathComponent } from '../src/js/cable_joints_3d/cable_joints_core.js';
+import { SpoolStateComponent } from '../hp-sim-3d/app/hangprinter_spools.js';
 import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
 import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { ExtruderComponent } from '../hp-sim-3d/app/hangprinter_extruder.js';
@@ -15,6 +17,7 @@ const { world, remote } = createHeadlessWorld(fs.readFileSync(process.argv[2], '
   lineLayeringEnabled: process.argv[3] !== 'false',
   scenePrimPath: process.argv[4] || undefined, requireRrfTimestep: false,
 });
+world.systems.find(system => system.constructor.name === 'ExtruderSystem')?.update(world, 0);
 let step = 0;
 let physicsWallS = 0;
 const xyz = v => [v.x, v.y, v.z];
@@ -25,7 +28,7 @@ const fields = [
   [VelocityComponent, c => ({vel: xyz(c.vel)})],
   [AngularVelocityComponent, c => ({omega: xyz(c.omega)})],
   [EncoderComponent, c => ({angle: c.angle})],
-  [RigidBodyMemberComponent, c => ({local_position: xyz(c.localPosition), local_orientation: xyzw(c.localOrientation)})],
+  [RigidBodyMemberComponent, c => ({body_entity: c.bodyEntity, local_position: xyz(c.localPosition), local_orientation: xyzw(c.localOrientation)})],
   [StepperMotorComponent, c => ({commanded_angle: c.commandedAngle, delta_angle: c.deltaAngle,
     torque_mode: c.torqueMode, target_torque: c.targetTorque, missed_steps: c.missedSteps,
     current_missed_steps: c.currentMissedSteps, missed_step_encoder_offset: c.missedStepEncoderOffset ?? null})],
@@ -33,7 +36,12 @@ const fields = [
     attachment_point_b_world: xyz(c.attachmentPointB_world), constraint_lambda: c.constraintLambda,
     constraint_force: xyz(c.constraintForce), constraint_force_magnitude: c.constraintForceMagnitude,
     transferred_constraint_force_magnitude: c.transferredConstraintForceMagnitude})],
-  [CablePathComponent, c => ({stored: c.stored})],
+  [CablePathComponent, c => ({stored: c.stored, cable_half_width: c.cableHalfWidth, link_types: c.linkTypes, joint_entities: c.jointEntities})],
+  [SpoolStateComponent, c => ({axis: c.axis})],
+  [RadiusComponent, c => ({radius: c.radius})],
+  [MachineTagComponent, c => ({id: c.id})],
+  [SceneEntityInfoComponent, c => ({name: c.name, tags: c.tags})],
+  [RenderableComponent, c => ({shape: c.shape, color: c.color})],
   [ExtruderComponent, c => ({extrusions: c.extrusions.map(r => ({...r, pos: xyz(r.pos)})),
     ...Object.fromEntries(['machineEffectorCenters', 'machineCenters', 'machineTips', 'machineColdEnds'].map(key => [
       key.replace(/[A-Z]/g, s => '_' + s.toLowerCase()),
@@ -43,6 +51,10 @@ const fields = [
 function state() {
   return {step, dt_s: world.getResource('dt'), physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), physics_wall_s: physicsWallS, queue_length: remote.getQueueLength(),
     identities: world.query([SceneEntityInfoComponent]).map(id => [id, world.getComponent(id, SceneEntityInfoComponent).name]),
+    axes: Object.fromEntries(Object.entries(remote.axisToEntity).map(([axis, ids]) => [axis, ids])),
+    cable_half_widths: [...new Set(world.query([CablePathComponent]).map(id => world.getComponent(id, CablePathComponent).cableHalfWidth))].sort((a,b)=>a-b),
+    layering_flags: Object.fromEntries(['enableLayering','layeringFrictionEffectiveRadius','layeringRenderWraps'].map(key => [key, world.getResource(key)])),
+    scene_generation: world.getResource('sceneGeneration') ?? null,
     components: fields.map(([type, read]) => [type.name, world.query([type]).map(id => [id, read(world.getComponent(id, type))])])};
 }
 for await (const line of readline.createInterface({input: process.stdin})) {

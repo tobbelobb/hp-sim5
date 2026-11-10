@@ -47,8 +47,8 @@ inputs through the existing CLI, without replacing its workflow or stopping rule
 .venv/bin/python -m pytest -q autocal/tests/test_autocal_no_collect.py autocal/tests/test_autocal_score_ui.py autocal/tests/test_autocal_cli.py tests/python/test_research_agent.py tests/python/test_native_collector.py -m 'not slow'
 .venv/bin/python -m pytest -q autocal/tests/test_headless_sim.py -m 'not slow'
 .venv/bin/python autocal/tools/regress_calibration_logs.py --dataset-name fifth_hp3_dataset --dataset-name seventh_hp3_dataset --jobs 1 --color never
-.venv/bin/python output/research/sessions/2026-10-10-supervised-full-autocal/verify.py
-.venv/bin/python output/research/sessions/2026-10-10-supervised-full-autocal/inspect_evidence.py
+.venv/bin/python research/output/session-2026-10-10-supervised-full-autocal/verify.py
+.venv/bin/python research/output/session-2026-10-10-supervised-full-autocal/inspect_evidence.py
 .venv/bin/python scripts/research_index.py
 ```
 
@@ -64,10 +64,10 @@ The accepted supervisor retained an earlier progress counter reporting only its
 a focused regression test. Final dataset and RRD counts independently verify
 320 measurements. Restart launcher/MCP processes to load edited Python sources.
 
-The [session report](../output/research/sessions/2026-10-10-supervised-full-autocal/report.md)
+The [session report](../research/output/session-2026-10-10-supervised-full-autocal/report.md)
 contains exact commands, retained failures, limitations and artifact links;
-[acceptance summary](../output/research/sessions/2026-10-10-supervised-full-autocal/acceptance.json)
-and [archive verification](../output/research/sessions/2026-10-10-supervised-full-autocal/rrd-verification.json)
+[acceptance summary](../research/output/session-2026-10-10-supervised-full-autocal/acceptance.json)
+and [archive verification](../research/output/session-2026-10-10-supervised-full-autocal/rrd-verification.json)
 provide numerical evidence. Session artifacts are ignored by Git and can be
 absent in another checkout. Calibration accuracy, default-autotuning settling,
 full HP4 calibration and hardware transfer remain separate research work.

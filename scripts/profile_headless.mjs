@@ -167,7 +167,7 @@ async function main() {
   } });
   if (!args.output || Boolean(args.commands) === Boolean(args.events) || !['hp3', 'hp4'].includes(args.machine)
     || !['on', 'off'].includes(args.layering)) {
-    throw new Error('Usage: node [--cpu-prof] scripts/profile_headless.mjs --solver native|wasm|js --machine hp3|hp4 --commands ARRAY.json|--events TRACE.jsonl --layering on|off --output NEW.json [--native-addon PATH] [--systems] [--heap-sampling] [--compare BASELINE.json]');
+    throw new Error('Usage: node [--cpu-prof] scripts/profile_headless.mjs --solver native|wasm --machine hp3|hp4 --commands ARRAY.json|--events TRACE.jsonl --layering on|off --output NEW.json [--native-addon PATH] [--systems] [--heap-sampling] [--compare BASELINE.json]');
   }
   const numeric = (key, fallback, minimum = 1) => {
     const value = Number(args[key] ?? fallback);
@@ -182,7 +182,7 @@ async function main() {
   const checkpointEvery = numeric('checkpoint-every', 1000);
   const sceneFile = args.scene ?? path.join(root, `public/usd_scenes/${args.machine}_rigid_body.usda`);
   const scene = fs.readFileSync(sceneFile, 'utf8');
-  if (!['js', 'wasm', 'native'].includes(args.solver)) throw new Error('Expected --solver js, wasm or native');
+  if (!['wasm', 'native'].includes(args.solver)) throw new Error('Expected --solver wasm or native');
   if (args['native-addon'] && args.solver !== 'native') throw new Error('--native-addon requires --solver native');
   const nativeArtifact = args.solver === 'native' ? loadNativePhysicsAddon(args['native-addon']).artifact : null;
   const wasmBytes = args.solver === 'wasm' ? fs.readFileSync(path.join(root, 'public/wasm/cable_solver.wasm')) : null;
@@ -191,7 +191,7 @@ async function main() {
     profiling: { enabled: args.systems, logEverySteps: 0, slowStepMs: Infinity } };
   const createInstance = (profiling = options.profiling) => createHeadlessWorld(scene, {
     ...options, profiling, cableSolverBackend: nativeArtifact ? new NativePhysicsEngine({ addonPath: nativeArtifact })
-      : wasmModule ? new WasmPhysicsEngine(wasmModule) : null,
+      : wasmModule ? new WasmPhysicsEngine(wasmModule) : undefined,
   });
   if (fs.existsSync(args.output)) throw new Error('Output already exists; preserve earlier measurements');
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
@@ -222,7 +222,7 @@ async function main() {
   const result = { contract, node: process.version, v8: process.versions.v8, platform: `${os.platform()} ${os.release()} ${os.arch()}`,
     cpu: os.cpus()[0]?.model, execArgv: process.execArgv, revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     sourceSha256: sourceHash.digest('hex'), solver: args.solver, wasmSha256: wasmBytes ? sha(wasmBytes) : null,
-    physicsEngine: args.solver === 'native' ? 'rust-native' : args.solver === 'wasm' ? 'rust-wasm' : 'javascript',
+    physicsEngine: args.solver === 'native' ? 'rust-native' : 'rust-wasm',
     nativeArtifact, nativeSha256: nativeArtifact ? sha(fs.readFileSync(nativeArtifact)) : null,
     nativeBuild: nativeArtifact && fs.existsSync(`${nativeArtifact}.json`) ? JSON.parse(fs.readFileSync(`${nativeArtifact}.json`)) : null,
     runs: [] };

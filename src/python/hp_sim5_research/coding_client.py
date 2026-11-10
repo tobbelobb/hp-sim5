@@ -117,12 +117,10 @@ def disabled_research_mcp_settings(root):
 
 
 def writable_roots(root, session):
-    roots = [(root / 'output').resolve()]
+    roots = [(root / 'output').resolve(), (root / 'research/output').resolve()]
     session = session.resolve()
-    if not session.is_relative_to(root.resolve()) and not session.is_relative_to(roots[0]):
-        # Managed worktrees keep evidence and its catalog in the owning checkout.
-        research = session.parent.parent
-        roots.append(research if session.parent.name == 'sessions' and research.name == 'research' else session)
+    if not any(session.is_relative_to(item) for item in roots):
+        roots.append(session)
     return [str(path) for path in roots]
 
 

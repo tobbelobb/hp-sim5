@@ -44,8 +44,8 @@ explicit CPU flags are respected. The profiler still selects `--solver
 native|wasm|js` and an exact `--native-addon`; it never rebuilds or substitutes
 an engine. [Build and profiling controls](rust-native-engine.md).
 
-- [Full report](../output/research/sessions/2026-10-15-native-optimization/report.md)
-- [Paired timings and all repetitions](../output/research/sessions/2026-10-15-native-optimization/summary.json)
-- [Numerical and recording audits](../output/research/sessions/2026-10-15-native-optimization/final-recording-audit.json)
-- [Source/artifact manifest](../output/research/sessions/2026-10-15-native-optimization/source-manifest.json)
-- [Previous study](../output/research/sessions/2026-10-14-native-throughput/report.md)
+- [Full report](../research/output/session-2026-10-15-native-optimization/report.md)
+- [Paired timings and all repetitions](../research/output/session-2026-10-15-native-optimization/summary.json)
+- [Numerical and recording audits](../research/output/session-2026-10-15-native-optimization/final-recording-audit.json)
+- [Source/artifact manifest](../research/output/session-2026-10-15-native-optimization/source-manifest.json)
+- [Previous study](../research/output/session-2026-10-14-native-throughput/report.md)

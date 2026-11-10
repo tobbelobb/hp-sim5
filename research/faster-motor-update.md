@@ -15,7 +15,7 @@ The experimental motor update compensates a spring load evaluated at a predicted
 
 ## Origin and local theory
 
-The [October 19 investigation](../output/research/sessions/2026-10-19-interactive-research-8d7a82a2/report.md) introduced this correction, then withheld it after poor calibration fits. The [October 20 study](../output/research/sessions/2026-10-20-interactive-research-62300644/report.md) revisited its mechanics. This formula is not from the Cable Joints paper.
+The [October 19 investigation](../research/output/session-2026-10-19-interactive-research-8d7a82a2/report.md) introduced this correction, then withheld it after poor calibration fits. The [October 20 study](../research/output/session-2026-10-20-interactive-research-62300644/report.md) revisited its mechanics. This formula is not from the Cable Joints paper.
 
 Let `h` be the physics substep duration, `I` the rotor inertia, `w` angular velocity, `K` reflected cable stiffness, `D` reflected cable damping, `T` the drive torque, and `L` the recorded cable torque. The code forms `S = L + D*w`, intended to remove the old damping contribution from `L` and leave a spring-like load.
 
@@ -89,8 +89,8 @@ Combining accumulated feedback with the alternative reduced one-substep X at ten
 
 ## References
 
-- [October 19 report](../output/research/sessions/2026-10-19-interactive-research-8d7a82a2/report.md) and [original experimental patch](../output/research/sessions/2026-10-19-interactive-research-8d7a82a2/rejected-motor-correction.patch): origin and prior calibration outcomes.
-- [October 20 experiment manifest](../output/research/sessions/2026-10-20-interactive-research-62300644/provenance.json), [motion summary](../output/research/sessions/2026-10-20-interactive-research-62300644/motion-summary.json), [E35 combined trial](../output/research/sessions/2026-10-20-interactive-research-62300644/E35.json): measured values above. E19/E20/E26 use the original motor; E29/E30/E31 use the archived alternative native artifact. Inputs derive from revision `c6f0b5a1bb501100706ecdc5e47294b74dac5ab8` plus the recorded variants.
-- [Current motor source](../hp-sim-3d/app/torqueModeSystem.js) and [experimental native source](../output/research/sessions/2026-10-20-interactive-research-62300644/motor-no-slip-engine.rs): exact implemented formulas. The local derivation in this report is an interpretation of this code.
+- [October 19 report](../research/output/session-2026-10-19-interactive-research-8d7a82a2/report.md) and [original experimental patch](../research/output/session-2026-10-19-interactive-research-8d7a82a2/rejected-motor-correction.patch): origin and prior calibration outcomes.
+- [October 20 experiment manifest](../research/output/session-2026-10-20-interactive-research-62300644/provenance.json), [motion summary](../research/output/session-2026-10-20-interactive-research-62300644/motion-summary.json), [E35 combined trial](../research/output/session-2026-10-20-interactive-research-62300644/E35.json): measured values above. E19/E20/E26 use the original motor; E29/E30/E31 use the archived alternative native artifact. Inputs derive from revision `c6f0b5a1bb501100706ecdc5e47294b74dac5ab8` plus the recorded variants.
+- [Current motor source](../hp-sim-3d/app/torqueModeSystem.js) and [experimental native source](../research/output/session-2026-10-20-interactive-research-62300644/motor-no-slip-engine.rs): exact implemented formulas. The local derivation in this report is an interpretation of this code.
 - Müller, Chentanez, Jeschke and Macklin (2018), *Cable Joints*, [DOI 10.1111/cgf.13507](https://doi.org/10.1111/cgf.13507): the rolling/pinhole model; it does not supply this motor update.
 - Macklin, Müller and Chentanez (2016), *XPBD*, [DOI 10.1145/2994258.2994272](https://doi.org/10.1145/2994258.2994272): constraint projection and force estimation, used to explain the distinction between the local rotor model and the complete solver.

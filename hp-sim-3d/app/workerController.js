@@ -4,7 +4,7 @@ import { createKlipperRawBridge } from '../../integrations/klipper/klipperSimula
 // broke preview/prod builds before by emitting worker files with unresolved relative imports.
 import klipperMcuCommandPlayerWorkerUrl from '../../integrations/klipper/klipperMcuCommandPlayer.js?worker&url';
 import rrfCanPlayerWorkerUrl from '../../integrations/rrf/rrfCanPlayer.js?worker&url';
-import moveCommanderWorkerUrl from '../../example_apps/js/slideprinter/moveCommander.js?worker&url';
+import moveCommanderWorkerUrl from './workers/moveCommander.js?worker&url';
 
 export const KLIPPER_UPLOAD_PIPELINE = 'player';
 

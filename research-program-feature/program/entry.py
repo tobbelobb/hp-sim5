@@ -28,10 +28,7 @@ def client_plan(root, attachment, backend, *, model=None, model_provider='openai
     if adapter:
         adapter.validate_manager(local_client=True)
     session = Path(attachment['session'])
-    instructions = ('Bound execution mode: LOCAL. This is a local installed coding-client manager.\n'
-                    'Bound manager connection: ' + attachment['connection'] +
-                    '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
-                    '\n\n' +
+    instructions = ('Bound manager connection: ' + attachment['connection'] + '\n\n' +
                     role_instructions('manager') +
                     manager_policy(grill_me=grill_me, ask_questions=ask_questions and not dont_ask))
     dont_ask = not (grill_me or (ask_questions and not dont_ask))
@@ -78,7 +75,6 @@ def main(argv, root):
     entry = parser.add_mutually_exclusive_group(required=True)
     entry.add_argument('--question', help='Create a program from this question')
     entry.add_argument('--program', help='Open the existing program ID')
-    parser.add_argument('--constraints', type=json.loads, default={})
     parser.add_argument('--dry-run', action='store_true', help='Plan without creating files, host, clients or workers')
     parser.add_argument('--model')
     parser.add_argument('--model-provider', default='openai')
@@ -116,7 +112,7 @@ def main(argv, root):
             opened = {'attachment': attachment, 'overview': None}
         else:
             with ProgramStore(args.store, create=bool(args.question)) as store:
-                program = (store.create_program(args.question, args.constraints) if args.question
+                program = (store.create_program(args.question) if args.question
                            else store.get_program(args.program))
             response = open_manager(args.store, root, program['id'])
             if not response['ok']:

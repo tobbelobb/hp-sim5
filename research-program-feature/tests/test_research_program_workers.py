@@ -88,7 +88,7 @@ class WorkerTests(unittest.TestCase):
                         'commit', '--allow-empty', '-qm', 'fixture'], check=True)
         self.store = ProgramStore(self.directory / 'manager', create=True)
         self.addCleanup(self.store.close)
-        self.store.create_program('Which evidence changes the decision?', {'keep': '$literal'}, program_id='p', question_id='q')
+        self.store.create_program('Which evidence changes the decision?', program_id='p', question_id='q')
         self.store.add_approach('p', 'q', 'Inspect one input', 'Cheap scoped observation', record_id='route')
         self.new_assignment('a')
         self.dispatchers = []
@@ -96,7 +96,7 @@ class WorkerTests(unittest.TestCase):
 
     def new_assignment(self, identity):
         self.store.add_assignment('p', 'route', 'Inspect a "quoted" input\nPreserve `text` and $variables',
-                                  {'wall_minutes': 2, 'fresh_fits': 0, 'collections': 0}, record_id=identity)
+                                  2, record_id=identity)
         self.store.transition('p', identity, 'ready', 'Fixture is ready')
 
     def dispatcher(self, mode='normal', missing=False):
@@ -136,8 +136,6 @@ class WorkerTests(unittest.TestCase):
         started = dispatcher.start('p', 'a', settings={'machine': 'hp4'})
         record = self.until(dispatcher, started['id'], lambda r: r.get('manager_question'))
         self.assertEqual(record['manager_question'], {'id': 'q1', 'question': 'Which baseline?'})
-        prompt = (Path(record['details']['attempt_dir']) / 'prompt.txt').read_text()
-        self.assertIn('research manager, never the human', prompt)
         # A stale answer must not dismiss the worker's new question.
         answer = Path(record['manager_answer_path'])
         answer.write_text(json.dumps({'id': 'older', 'answer': 'old baseline'}))
@@ -177,7 +175,7 @@ class WorkerTests(unittest.TestCase):
                                    settings={'backend': 'codex', 'viewer': 'none', 'record': False,
                                              'model_provider': 'openai', 'model': 'chosen-model',
                                              'worktree': True, 'worktree_dir': str(self.directory / 'work trees'),
-                                             'machine': 'hp3', 'physics_backend': 'native-python',
+                                             'machine': 'hp3', 'physics_backend': 'headless-js',
                                              'client_args': ['--resume', 'thread', '-c', 'custom="$literal"']})
         record = self.finish(dispatcher, started['id'])
         d = record['details']

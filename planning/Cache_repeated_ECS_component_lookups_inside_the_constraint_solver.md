@@ -61,7 +61,7 @@ a global ECS cache or app-level plumbing.
 ## Validation and relation to the other plans
 
 Use [the headless profiling recipe](../tests/benchmark/HEADLESS_JS_PROFILING.md)
-with the frozen inputs in `output/research/sessions/2026-10-13-headless-js-profiling/inputs/`.
+with the frozen inputs in `research/output/session-2026-10-13-headless-js-profiling/inputs/`.
 Take fresh plain baselines, then use `--compare` with identical settings across
 HP3/HP4, logo/autocal, layering on/off. Compare uninstrumented repeat distributions;
 reprofile separately to confirm that the intended lookup cost fell.
@@ -89,4 +89,4 @@ matched checkpoints exactly. HP4 median physics time decreased 2.8–4.7%; HP3
 changes were smaller and mixed. Layered HP4 `getComponent` sampled self time fell
 from 7.20% to 5.89% across all systems. Autocal runs cover 60-second prefixes;
 background simulation jobs limit timing precision. See the
-[report and repeat distributions](../output/research/sessions/2026-10-13-solver-component-stores/report.md).
+[report and repeat distributions](../research/output/session-2026-10-13-solver-component-stores/report.md).

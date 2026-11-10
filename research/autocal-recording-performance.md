@@ -102,19 +102,19 @@ CLI options alone does not establish equivalent work.
 
 ## Evidence and reproduction
 
-- [Raw matrix and equality gates](../output/research/sessions/2026-10-15-autocal-recording-modes/matrix/results.json): per-trial timings, bytes, hashes, event counts, host and native artifact metadata.
-- [Final harness verification](../output/research/sessions/2026-10-15-autocal-recording-modes/revalidation/results.json): matching hashes for all four modes; separate from the headline timing sample.
-- [Frozen inputs and source contract](../output/research/sessions/2026-10-15-autocal-recording-modes/matrix/input/contract.json): prefix and original trace SHA-256, original scene and source manifest beside it.
-- [Research report](../output/research/sessions/2026-10-15-autocal-recording-modes/report.md), [notebook](../output/research/sessions/2026-10-15-autocal-recording-modes/research.md) and [abstract](../output/research/sessions/2026-10-15-autocal-recording-modes/abstract.md): hypotheses, method audit and limitations.
-- [Original accepted job](../output/research/sessions/2026-10-10-supervised-full-autocal/native/autocal/2ec0b06774624962a18bdbd2818eb134/sweeps.headless/manifest.json): source workload only, not a performance baseline.
+- [Raw matrix and equality gates](../research/output/session-2026-10-15-autocal-recording-modes/matrix/results.json): per-trial timings, bytes, hashes, event counts, host and native artifact metadata.
+- [Final harness verification](../research/output/session-2026-10-15-autocal-recording-modes/revalidation/results.json): matching hashes for all four modes; separate from the headline timing sample.
+- [Frozen inputs and source contract](../research/output/session-2026-10-15-autocal-recording-modes/matrix/input/contract.json): prefix and original trace SHA-256, original scene and source manifest beside it.
+- [Research report](../research/output/session-2026-10-15-autocal-recording-modes/report.md), [notebook](../research/output/session-2026-10-15-autocal-recording-modes/research.md) and [abstract](../research/output/session-2026-10-15-autocal-recording-modes/abstract.md): hypotheses, method audit and limitations.
+- [Original accepted job](../research/output/session-2026-10-10-supervised-full-autocal/native/autocal/2ec0b06774624962a18bdbd2818eb134/sweeps.headless/manifest.json): source workload only, not a performance baseline.
 - [Python orchestrator](../tests/benchmark/autocal_recording_modes.py) and [Node replay](../tests/benchmark/autocal_recording_modes.mjs): reproducible harness. The measured versions are archived in the session's `harness-v1/`; `matrix/working.diff` and `results.json` identify the dirty checkout and hashes at measurement time, based on Git `aba370774108cd856e88b524e4b65658021b4d7c`.
 
 From the repository root, with localhost sockets available:
 
 ```bash
 .venv/bin/python tests/benchmark/autocal_recording_modes.py \
-  --source-headless output/research/sessions/2026-10-10-supervised-full-autocal/native/autocal/2ec0b06774624962a18bdbd2818eb134/sweeps.headless \
-  --output output/research/recording-mode-comparison-new \
+  --source-headless research/output/session-2026-10-10-supervised-full-autocal/native/autocal/2ec0b06774624962a18bdbd2818eb134/sweeps.headless \
+  --output research/output/scratch/recording-mode-comparison-new \
   --steps 200000 --repeats 4
 ```
 

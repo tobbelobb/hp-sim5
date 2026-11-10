@@ -46,7 +46,7 @@ Manifests and stale-source checks include Rust and the Wasm artifact.
 Three fresh-world repeats per backend, with a separate 5,000-step warmup.
 **48 trajectories, 7,544,232 measured updates.** Baseline Wasm/bridge came from
 `8e0f788d`, using the current unchanged JS physics reference systems. Inputs are
-from the original [profiling session](../output/research/sessions/2026-10-13-headless-js-profiling/inputs/).
+from the original [profiling session](../research/output/session-2026-10-13-headless-js-profiling/inputs/).
 Timers include JS command dispatch, Rust stepping, view maintenance, extrusion
 observations and GC. Construction, observations, firmware, transport, rendering
 and recording are excluded. Node 24.14.1/V8 13.6, i7-12700K, sequential runs.
@@ -86,7 +86,7 @@ in the baseline; its original-read error is not an engine-parity measure.
 HP4 autocal length differences stay below 0.88 micrometres, sampled motor encoder
 differences below 3.5e-5 rad, and force differences below 0.00061 N. Free-wheel
 rotations and angular velocities also differ; raw quaternion component errors
-include equivalent q/−q representations. The [rotation analysis](../output/research/sessions/2026-10-14-rust-engine/rotation-errors.json)
+include equivalent q/−q representations. The [rotation analysis](../research/output/session-2026-10-14-rust-engine/rotation-errors.json)
 measures angular differences independently of quaternion sign.
 
 Two bounded fork checks isolate one-step equations from feedback amplification.
@@ -116,13 +116,13 @@ This corrects checkpoint timing and changes hashes without changing stepping.
 - Jest's full run had 762 passes and two obsolete wiring expectations; their
   affected suites now pass (29 checks). One existing test remains skipped.
 
-[Final matrix](../output/research/sessions/2026-10-14-rust-engine/matrix-precision/matrix.json),
-[baseline/raw checkpoints](../output/research/sessions/2026-10-14-rust-engine/matrix-final/),
-[early fork](../output/research/sessions/2026-10-14-rust-engine/one-step-forks.json),
-[late fork](../output/research/sessions/2026-10-14-rust-engine/late-forks.json),
-[browser check](../output/research/sessions/2026-10-14-rust-engine/browser.json),
-[source manifest](../output/research/sessions/2026-10-14-rust-engine/final-source-manifest.json)
-and [notebook](../output/research/sessions/2026-10-14-rust-engine/research.md) retain
+[Final matrix](../research/output/session-2026-10-14-rust-engine/matrix-precision/matrix.json),
+[baseline/raw checkpoints](../research/output/session-2026-10-14-rust-engine/matrix-final/),
+[early fork](../research/output/session-2026-10-14-rust-engine/one-step-forks.json),
+[late fork](../research/output/session-2026-10-14-rust-engine/late-forks.json),
+[browser check](../research/output/session-2026-10-14-rust-engine/browser.json),
+[source manifest](../research/output/session-2026-10-14-rust-engine/final-source-manifest.json)
+and [notebook](../research/output/session-2026-10-14-rust-engine/research.md) retain
 measurements, failed trials, settings and revisions. The source and binary are
 archived alongside the report. The [previous solver report](rust-wasm-solver.md)
 explains the old boundary; the [native collection contract](native-collection.md)

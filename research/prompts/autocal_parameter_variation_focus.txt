@@ -32,7 +32,7 @@ What earlier runs have already established
   from 0.0371 to 0.000923. This is not proof of production or global
   identifiability. A local production-objective Jacobian on one recorded world
   was full rank; its weakest direction was not mainly uniform scale. See
-  research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/report.md.
+  research/output/program-4cfc6d5bf6a2484f976521ab8a321e92/session-attempt-c18177d871fb404895e32c03363c8a5e/report.md.
 - The same program tested more collection, wider spacing, lower force,
   half-turn retreat, point filtering, robust fitting and zero-tension
   projection. None achieved every anchor below 1 mm across trials. Half-turn
@@ -42,13 +42,13 @@ What earlier runs have already established
   from 8.103 to 16.337 mm. The projection/noise-mean selection bug was fixed
   in production by commit 678f7659; this does not establish an accuracy gain.
   Avoid repeating these exact interventions without a new discriminator.
-  See research/programs/program-4cfc6d5bf6a2484f976521ab8a321e92/summary.html.
+  See research/output/program-4cfc6d5bf6a2484f976521ab8a321e92/summary.html.
 - A subsequent point-specific fixed-encoder ellipse fit changed applied errors
   on one matched 9301 world from 5.924/1.672/0.810/1.118 mm to
   4.536/2.014/0.763/3.797 mm. The maximum improved but B and D worsened;
   this is not a validated production improvement. An idealized example with
   large fixed-axis motion is not evidence that such motion is physically
-  feasible. See research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/report.md.
+  feasible. See research/output/program-4cfc6d5bf6a2484f976521ab8a321e92/session-attempt-8c3c74b7641e45c2acd1cd976f572e08/report.md.
 - Turning off injected Gaussian encoder noise left the stock automatic
   workflow with up to 3.678 mm applied error in one world. Stretch, motor
   behaviour, vibration, quantization and other modeled effects remained, and
@@ -62,23 +62,23 @@ What earlier runs have already established
   and cheaper recording modes are available. Do not start another general
   profiling or engine-rewrite project without identifying a new bottleneck.
   See research/autocal-recording-performance.md and
-  output/research/sessions/2026-10-15-native-optimization/abstract.md.
+  research/output/session-2026-10-15-native-optimization/abstract.md.
 - Earlier warm-start work improved simulated HP3 fits without new measurements.
   Blind point thinning, more restarts and simply collecting at half density did
   not reliably preserve accuracy. Offline thinning and fresh coarse collection
   are different interventions. See
-  output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/report.md.
+  research/output/session-2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/report.md.
 - A distinct-fit consensus-spread stopping rule has been investigated and
   implemented. Agreement can still reflect two biased fits. A new stopping rule
   needs evidence beyond remeasuring convergence on the same nominal world. See
-  output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b75b3bdf/report.md.
+  research/output/session-2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b75b3bdf/report.md.
 - It is no longer true that every experiment used one physical setup. A paired
   ten-world study varied mover mass 0.80-1.25x and gravity 8.5-11.0 m/s^2, keeping
   anchor layout, friction and stiffness fixed. Mean applied anchor RMSE was
   2.967 mm for L-BFGS-B and 2.874 mm for TRF. Neither solver had a candidate
   above 20 mm. These mild load changes do not establish robustness to large
   failures or other machine properties. See section 10 of
-  output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md.
+  research/output/session-2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md.
 - TRF is available, but a global solver switch and per-restart fallback were
   rejected after legacy-data regressions. Better intermediate fits can create a
   tight biased consensus and worsen the final answer. Keep final applied error,
@@ -94,11 +94,11 @@ What earlier runs have already established
   while increasing points from 140 to 180. An asymmetric reference was worse.
   Retrospective rebasing changes reference/noise assumptions and is not an
   equivalent substitute for fresh collection. See
-  output/research/sessions/2026-10-20-interactive-research-ae0174ce/report.md.
+  research/output/session-2026-10-20-interactive-research-ae0174ce/report.md.
 - Generic ranking and finite-prediction-only consensus membership have mixed
   results. Validation must use compatible whole sweeps unseen by every member
   of the actual applied anchor-plus-spool model. See relevant earlier reports in research/catalog.md
-  and output/research/sessions/2026-10-23-consensus-membership/report.md.
+  and research/output/session-2026-10-23-consensus-membership/report.md.
 
 - The 2026-11-05 guide-friction study tested a bounded preload change in an
   isolated harness. It preserved nominal accuracy but did not recover collection.
@@ -112,7 +112,7 @@ What earlier runs have already established
   the research/autocal-originals-2026-11-05-0a82df7f and research/autocal-recovery-2026-11-05-0a82df7f branches.
   Do not repeat the same preload/guide matrix as an untested improvement.
 
-- The 2026-11-05 fixed lower-force matrix is complete: six primary attempts in three frozen HP3 worlds. Development maximum applied error improved 3.6959 to 2.8529 mm at 1.0641 times simulated effort. Evaluation improved 3.4116 to 2.7518 mm at 1.0709 times effort, with B worsening 1.1409 to 2.4098 mm. All five completed calibrations had every anchor below 5 mm. The nominal 4mid workflow failed before fitting on a 5000 ms M569.3 transport timeout, so the no-new-failure gate rejects force-default adoption. Keep 5mid. One invalid import-path startup is preserved separately and counted against the seven-collection allocation. Do not repeat this exact fixed4 matrix or the rejected preload matrix. A separate real-WebSocket discriminator reproduced an explicit 120-second encoder budget being capped at 5 seconds. The narrow transport candidate accepts the same valid six-second reply while preserving the effective 5-second default, shorter deadlines and bounded missing/disconnected failures. It passed 45 JavaScript and two noncollection headless checks. No full-autocal-with-fix or hardware reliability claim is made. See research/programs/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md.
+- The 2026-11-05 fixed lower-force matrix is complete: six primary attempts in three frozen HP3 worlds. Development maximum applied error improved 3.6959 to 2.8529 mm at 1.0641 times simulated effort. Evaluation improved 3.4116 to 2.7518 mm at 1.0709 times effort, with B worsening 1.1409 to 2.4098 mm. All five completed calibrations had every anchor below 5 mm. The nominal 4mid workflow failed before fitting on a 5000 ms M569.3 transport timeout, so the no-new-failure gate rejects force-default adoption. Keep 5mid. One invalid import-path startup is preserved separately and counted against the seven-collection allocation. Do not repeat this exact fixed4 matrix or the rejected preload matrix. A separate real-WebSocket discriminator reproduced an explicit 120-second encoder budget being capped at 5 seconds. The narrow transport candidate accepts the same valid six-second reply while preserving the effective 5-second default, shorter deadlines and bounded missing/disconnected failures. It passed 45 JavaScript and two noncollection headless checks. No full-autocal-with-fix or hardware reliability claim is made. See research/output/program-0a82df7fd4b34b8181716630492a1af4/lower-force/report.md.
 
 These are inspected historical reports, not fresh replications at current HEAD.
 Check that linked raw inputs and harnesses exist before budgeting a replay.

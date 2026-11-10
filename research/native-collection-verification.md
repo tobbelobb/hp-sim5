@@ -36,10 +36,10 @@ subsequently rejects it. Its B encoder remained at 128.63 degrees while A swept.
 JSON validity alone was insufficient. The selected implementation defaults to
 1 N and requires measurable physical sensor response in each direction.
 
-Evidence: [baseline manifest](../output/research/native-probe2/db3d704e2b42457f8e1a9c50f1e98059/7171d8122bdd4f27b92f351b5a297475/manifest.json),
-[baseline replay](../output/research/native-probe2/browser-replay.json),
-[trial manifest](../output/research/native-preload-trial/e3c99789fe704e7b9bf9a154a869d85e/bde3f48929e942dfa6587d60c6eafb3e/manifest.json),
-[trial replay](../output/research/native-preload-trial/browser-replay.json).
+Evidence: [baseline manifest](../research/output/scratch/native-probe2/db3d704e2b42457f8e1a9c50f1e98059/7171d8122bdd4f27b92f351b5a297475/manifest.json),
+[baseline replay](../research/output/scratch/native-probe2/browser-replay.json),
+[trial manifest](../research/output/scratch/native-preload-trial/e3c99789fe704e7b9bf9a154a869d85e/bde3f48929e942dfa6587d60c6eafb3e/manifest.json),
+[trial replay](../research/output/scratch/native-preload-trial/browser-replay.json).
 The trial is an immutable copy from pytest's temporary directory; original
 manifest paths are retained. All raw artifacts are local and ignored by Git.
 
@@ -64,10 +64,10 @@ The returned 175,311,618-byte RRD is finalized: `RrdReader.store()` and blueprin
 loading succeed. Recording rotation preserves the world and leaves previously
 returned collection evidence immutable.
 
-Evidence: [doctor result](../output/research/native-doctor.json),
-[collection manifest](../output/research/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/manifest.json),
-[collector JSON](../output/research/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/sweeps.json),
-[browser replay](../output/research/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/browser-replay.json).
+Evidence: [doctor result](../research/output/scratch/native-doctor.json),
+[collection manifest](../research/output/scratch/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/manifest.json),
+[collector JSON](../research/output/scratch/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/sweeps.json),
+[browser replay](../research/output/scratch/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/browser-replay.json).
 Manifest hashes identify the loaded code; subsequent changes add explicit live
 Viewer flushing and clearer telemetry/version documentation.
 
@@ -88,8 +88,8 @@ matches within floating-point roundoff. This proves unit conversion, not radius
 estimation. Firmware M669 coordinates are guesses; distributed anchor/pulley
 geometry has no unique equivalent point-anchor ground truth.
 
-Evidence: [fit and direction audit](../output/research/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/fit-audit.json),
-[bounded solver result](../output/research/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/bounded-fit.json).
+Evidence: [fit and direction audit](../research/output/scratch/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/fit-audit.json),
+[bounded solver result](../research/output/scratch/preflight/f6ed2a82ea6648ea849cafb13acff2aa/ab4d67c4e69d49aa88c35c87f33ca75f/9c91f1b45e3a45f392f833ccc89cb376/bounded-fit.json).
 
 ## Live view and regression checks
 
@@ -100,9 +100,9 @@ per-view warnings or errors; logs include a transient initial missing-timeline
 warning before data arrives. Long collector advances explicitly flush live data
 periodically; interactive steps flush before returning.
 
-Evidence: [live screenshot](../output/research/native-viewer-proof/native-live.png),
-[Viewer state](../output/research/native-viewer-proof/rerun_get_viewer_state.json),
-[time selection](../output/research/native-viewer-proof/rerun_set_time_cursor.json).
+Evidence: [live screenshot](../research/output/scratch/native-viewer-proof/native-live.png),
+[Viewer state](../research/output/scratch/native-viewer-proof/rerun_get_viewer_state.json),
+[time selection](../research/output/scratch/native-viewer-proof/rerun_set_time_cursor.json).
 
 Checks passed:
 

@@ -10,7 +10,7 @@ from hp_sim5_research.archive import catalog_root, render_index, write_index
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root', type=Path, default=ROOT / 'research')
+    parser.add_argument('--root', type=Path, default=ROOT / 'research/output')
     parser.add_argument('--search', help='Print matching result sentences and report links')
     args = parser.parse_args()
     args.root = catalog_root(args.root)

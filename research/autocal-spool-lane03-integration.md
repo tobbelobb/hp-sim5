@@ -16,7 +16,7 @@ on parameter tolerances or stalled improvement; 30 remains its safety cap.
 ## Evidence checked
 
 The supplied lane 03 report and proposed-changes document were read directly from
-[the investigator's worktree report](/home/torbjorn/repos/hp-sim5-worktrees/research-85d64aa0/output/research/sessions/2026-10-22-autocal-flags-03-spool/report.md).
+[the investigator's worktree report](/home/torbjorn/repos/hp-sim5-worktrees/research-85d64aa0/research/output/session-2026-10-22-autocal-flags-03-spool/report.md).
 Contrary to the supplied path expectation, that session was not present under
 this checkout's output directory. No investigator artifacts were modified.
 
@@ -69,10 +69,10 @@ No physics, motor, cable transport or scene dynamics implementation changed.
 
 ## Reproduction and retained evidence
 
-- [Integration notebook](../output/research/sessions/2026-10-22-autocal-spool-simplification/research.md).
-- [Validation harness](../output/research/sessions/2026-10-22-autocal-spool-simplification/harness/validate.py): exact options, reference fixture selection, holdout split, counting wrapper and metrics.
-- [Pre-change trial records](../output/research/sessions/2026-10-22-autocal-spool-simplification/before.log) and [post-change records](../output/research/sessions/2026-10-22-autocal-spool-simplification/after.log), with per-trial stage artifacts/results beneath their respective directories.
-- [Lane 03 handoff](autocal-flag-audit/handoffs/03-spool.md) and [reference provenance](../autocal/data/references/README.md).
+- [Integration notebook](../research/output/session-2026-10-22-autocal-spool-simplification/research.md).
+- [Validation harness](../research/output/session-2026-10-22-autocal-spool-simplification/harness/validate.py): exact options, reference fixture selection, holdout split, counting wrapper and metrics.
+- [Pre-change trial records](../research/output/session-2026-10-22-autocal-spool-simplification/before.log) and [post-change records](../research/output/session-2026-10-22-autocal-spool-simplification/after.log), with per-trial stage artifacts/results beneath their respective directories.
+- [Lane 03 handoff](output/session-autocal-flag-audit/handoffs/03-spool.md) and [reference provenance](../autocal/data/references/README.md).
 
 The pre-change `off` and `inner60` controls require the recorded pre-change
 source. The new runtime intentionally cannot rerun removed policies. Restore
@@ -90,9 +90,9 @@ run failed 13 socket-opening checks; all passed when rerun with localhost
 sockets available. The initially interrupted supervisor lifecycle attempt was
 also superseded by a complete passing run outside the sandbox.
 
-- [Recorded regressions](../output/research/sessions/2026-10-22-autocal-spool-simplification/regression.log).
-- [Autocal tests](../output/research/sessions/2026-10-22-autocal-spool-simplification/autocal-tests-unsandboxed.log).
-- [Supervisor tests](../output/research/sessions/2026-10-22-autocal-spool-simplification/supervisor-tests-unsandboxed.log).
+- [Recorded regressions](../research/output/session-2026-10-22-autocal-spool-simplification/regression.log).
+- [Autocal tests](../research/output/session-2026-10-22-autocal-spool-simplification/autocal-tests-unsandboxed.log).
+- [Supervisor tests](../research/output/session-2026-10-22-autocal-spool-simplification/supervisor-tests-unsandboxed.log).
 
 These checks establish preserved baseline behavior and integration, not an
 improvement in physical accuracy or runtime. Further removal of outer budgets,

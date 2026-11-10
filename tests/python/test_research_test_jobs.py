@@ -76,7 +76,6 @@ async def test_spawn_failure_and_private_environment(tmp_path, monkeypatch):
     assert result['status'] == 'passed'
     assert 'private-sentinel' not in json.dumps(result)
     environment = json.loads(result['log_tail']['stdout.log'])
-    assert environment['WARP_CACHE_PATH'] == str(Path(next_job['directory']) / 'cache/warp')
     assert environment['XDG_CACHE_HOME'] == str(Path(next_job['directory']) / 'cache')
     assert Path(job['directory']).exists()  # failed trial retained
 

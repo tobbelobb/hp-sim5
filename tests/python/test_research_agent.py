@@ -124,7 +124,7 @@ def test_invalid_experiments_do_not_write_success_artifacts(experiment_root, opt
     from hp_sim5_research.experiments import run_experiment
     with pytest.raises(ValueError, match=message):
         run_experiment(experiment_root, record=False, **options)
-    assert not (experiment_root / 'output').exists()
+    assert not (experiment_root / 'research/output').exists()
 
 
 def test_input_and_artifact_path_boundaries(experiment_root):
@@ -139,7 +139,8 @@ def test_fresh_experiment_and_readback_with_shared_worktree_output(experiment_ro
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     shared = tmp_path.parent / (tmp_path.name + '-shared-output')
     shared.mkdir()
-    (experiment_root / 'output').symlink_to(shared, target_is_directory=True)
+    (experiment_root / 'research').mkdir()
+    (experiment_root / 'research/output').symlink_to(shared, target_is_directory=True)
     first = run_experiment(experiment_root, steps=3, record=False)
     second = run_experiment(experiment_root, steps=3, record=False)
     assert Path(first['artifacts']['manifest']).is_relative_to(shared)
@@ -148,24 +149,9 @@ def test_fresh_experiment_and_readback_with_shared_worktree_output(experiment_ro
     assert all(value == 0 for value in compare_runs(experiment_root, first['run_id'], second['run_id'])[
         'metric_delta_candidate_minus_baseline'].values())
     escaped_id = 'f' * 32
-    (shared / 'research/experiments' / escaped_id).symlink_to(tmp_path.parent, target_is_directory=True)
+    (shared / 'scratch/experiments' / escaped_id).symlink_to(tmp_path.parent, target_is_directory=True)
     with pytest.raises(ValueError, match='inside the experiment output'):
         read_run(experiment_root, escaped_id)
-
-
-def test_compiled_fresh_experiment_records_backend(experiment_root):
-    from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
-    pytest.importorskip('warp')
-    trial = run_experiment(experiment_root, steps=5, record=False, cable_solver_device='cpu')
-    assert trial['status'] == 'complete'
-    assert trial['backend'] == 'native-warp' and trial['cable_solver_device'] == 'cpu'
-    assert trial['packages']['warp-lang']
-    assert read_run(experiment_root, trial['run_id']) == trial
-    baseline = run_experiment(experiment_root, steps=5, record=False, physics_backend='native-python')
-    comparison = compare_runs(experiment_root, baseline['run_id'], trial['run_id'])
-    assert comparison['changed_inputs'] == ['packages', 'backend', 'cable_solver_device', 'physics_engine']
-    with pytest.raises(ValueError, match='cable_solver_device'):
-        run_experiment(experiment_root, cable_solver_device='automatic')
 
 
 @pytest.mark.asyncio
@@ -291,7 +277,7 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     assert plan['mode'] == 'worktree'
     assert plan['worktree']['path'].startswith(str(target))
     assert plan['worktree']['branch'].startswith('research/optimize-anchor-layout-')
-    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build', 'output', 'research/sessions',
+    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build', 'output', 'research/output',
                                                'src/wasm/cable_solver/target/native/physics.node'}
     assert isinstance(plan['worktree']['includes'], list)
     assert not target.exists()
@@ -311,13 +297,13 @@ def test_create_worktree_links_shared_runtime_pieces(tmp_path, monkeypatch, trac
     (repo / 'tracked.txt').write_text('tracked\n')
     (repo / 'local').mkdir()
     (repo / 'local/notes.md').write_text('prior research\n')
-    (repo / 'output/research').mkdir(parents=True)
-    (repo / 'output/research/index.md').write_text('shared catalog\n')
+    (repo / 'research/output').mkdir(parents=True)
+    (repo / 'research/output/index.md').write_text('shared catalog\n')
     (repo / '.worktreeinclude').write_text('# local research to copy\nlocal/notes.md\n')
     subprocess.run(['git', '-C', str(repo), 'init', '-q', '-b', 'main'], check=True, capture_output=True)
     subprocess.run(['git', '-C', str(repo), 'add', '-A'], check=True, capture_output=True)
     if tracked_output:
-        subprocess.run(['git', '-C', str(repo), 'add', '-f', 'output/research/index.md'],
+        subprocess.run(['git', '-C', str(repo), 'add', '-f', 'research/output/index.md'],
                        check=True, capture_output=True)
     subprocess.run(['git', '-C', str(repo), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'init'],
                    check=True, capture_output=True)
@@ -348,20 +334,22 @@ def test_create_worktree_links_shared_runtime_pieces(tmp_path, monkeypatch, trac
     assert copied.read_text() == 'prior research\n' and not copied.is_symlink()
     output = plan['path'] / 'output'
     assert output.is_symlink() and output.resolve() == (repo / 'output').resolve()
-    assert (output / 'research/index.md').read_text() == 'shared catalog\n'
-    (output / 'research/new-result.txt').write_text('new evidence\n')
-    assert (repo / 'output/research/new-result.txt').read_text() == 'new evidence\n'
+    research_output = plan['path'] / 'research/output'
+    assert research_output.is_symlink() and research_output.resolve() == (repo / 'research/output').resolve()
+    assert (research_output / 'index.md').read_text() == 'shared catalog\n'
+    (research_output / 'new-result.txt').write_text('new evidence\n')
+    assert (repo / 'research/output/new-result.txt').read_text() == 'new evidence\n'
     # Even a launcher in an older worktree with private output must use the
     # main checkout's output when it creates another worktree.
     monkeypatch.setattr(launcher, 'ROOT', plan['path'])
     command = launcher.codex_command(output / 'research/session', None, goal_mode=False)
-    assert ('sandbox_workspace_write.writable_roots=' + json.dumps([str(repo / 'output')])) in command
+    assert ('sandbox_workspace_write.writable_roots=' + json.dumps([str(repo / 'output'), str(repo / 'research/output')])) in command
     output.unlink()
     output.mkdir()
     (output / 'private.txt').write_text('old private output\n')
     nested = launcher.create_worktree('Nested Topic', tmp_path / 'worktrees')
     assert (nested['path'] / 'output').resolve() == (repo / 'output').resolve()
-    assert (nested['path'] / 'output/research/new-result.txt').read_text() == 'new evidence\n'
+    assert (nested['path'] / 'research/output/new-result.txt').read_text() == 'new evidence\n'
     assert (repo / 'local/notes.md').read_text() == 'prior research\n'
     assert plan['branch'] in subprocess.run(['git', '-C', str(repo), 'worktree', 'list'],
                                             capture_output=True, text=True).stdout
@@ -603,7 +591,7 @@ else:
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
-    session_root = tmp_path / 'research/sessions' if managed else tmp_path
+    session_root = tmp_path / 'research/output' if managed else tmp_path
     session = session_root / session_name('HP3 held-out validation')
     monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--codex', '--viewer', 'none', '--prompt', 'preservation check',
                                     '--session-dir', str(session),
@@ -616,7 +604,7 @@ else:
     assert services[0].directory.parent == session
     assert 'No research result is available yet' in (session / 'abstract.md').read_text()
     assert not (session / 'research.md').exists()
-    catalog_root = tmp_path / 'research' if managed else tmp_path
+    catalog_root = tmp_path / 'research/output' if managed else tmp_path
     assert (catalog_root / 'index.md').is_file()
     # The catalog deliberately skips nested test/session artifacts.
     if catalog_root == tmp_path:
@@ -633,7 +621,8 @@ else:
     import tomllib
     attachment = tomllib.loads((session / 'attachment.toml').read_text())
     assert attachment['sandbox_workspace_write']['network_access'] is True
-    assert attachment['sandbox_workspace_write']['writable_roots'] == [str((ROOT / 'output').resolve()), str(catalog_root if managed else session.resolve())]
+    assert attachment['sandbox_workspace_write']['writable_roots'] == [
+        str((ROOT / 'output').resolve()), str((ROOT / 'research/output').resolve()), str(session.resolve())]
     assert attachment['features']['default_mode_request_user_input'] == (not batch)
     assert attachment['hooks']['UserPromptSubmit'][0]['hooks'][0]['input']['threadId'] == '${session_id}'
     launch = (session / 'launch.json').read_text()

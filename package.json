@@ -2,7 +2,7 @@
   "name": "cable_joints",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/js/cable_joints/cable_joints_core.js",
+  "main": "src/js/cable_joints_3d/cable_joints_core.js",
   "scripts": {
     "build:wasm": "node scripts/build_cable_wasm.mjs",
     "build:native": "node scripts/build_native_physics.mjs",

@@ -47,7 +47,7 @@ def main():
     for index, check in enumerate(plan['checks']):
         remaining = plan['deadline'] - time.time()
         if remaining <= 0:
-            (directory / 'wall-expired').write_text('Check wall allocation expired\n')
+            (directory / 'wall-expired').write_text('Check wall timeout expired\n')
             finish_group(directory, subreaper)
         with (directory / f'check-{index:02d}.log').open('wb') as output:
             try:
@@ -55,7 +55,7 @@ def main():
                                            stdout=output, stderr=output, env=environment)
                 code = process.wait(timeout=remaining)
             except subprocess.TimeoutExpired:
-                (directory / 'wall-expired').write_text('Check wall allocation expired\n')
+                (directory / 'wall-expired').write_text('Check wall timeout expired\n')
                 finish_group(directory, subreaper)
             except OSError as error:
                 output.write((str(error) + '\n').encode())

@@ -3,6 +3,7 @@ import hashlib
 from importlib.metadata import version
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import re
@@ -11,14 +12,9 @@ import time
 import uuid
 import warnings
 
-from cable_joints_3d.__main__ import _blueprint
-from cable_joints_3d.ecs import EncoderComponent
-from cable_joints_3d.machine_simulation import load_machine_world, register_machine_systems
-from cable_joints_3d.machine_snapshot import capture_machine_snapshot, entity_name
-from cable_joints_3d.remote_spool_system import RemoteSpoolSystem
-from cable_joints_3d.spools import SpoolStateComponent
-from cable_joints_3d.stepper_motor import StepperMotorComponent
-from usd.cable_scene_loader import open_cable_scene
+from .js_physics import JSPhysics
+from .mirror import World, apply_state, capture_snapshot, sample  # noqa: F401 - re-exported API
+from .recording import RerunSystem, blueprint
 
 DEFAULT_SCENE = 'public/usd_scenes/hp4_rigid_body.usda'
 MAX_STEPS = 10_000
@@ -48,7 +44,10 @@ def run_directory(root, run_id):
         raise ValueError('Use the run_id returned by run_experiment')
     # Launcher worktrees deliberately share output with the original checkout.
     # Inputs stay inside the worktree; run IDs stay inside its approved output.
-    output = (Path(root) / 'output/research/experiments').resolve()
+    # A launcher session owns its experiments; loose runs use shared scratch.
+    session = os.environ.get('HP_SIM5_SESSION_DIR')
+    base = Path(session) if session else Path(root) / 'research/output/scratch'
+    output = (base / 'experiments').resolve()
     directory = (output / run_id).resolve()
     if not directory.is_relative_to(output):
         raise ValueError('Experiment paths must stay inside the experiment output directory')
@@ -80,32 +79,6 @@ def validate_commands(commands, axes, steps):
             raise ValueError('Motor angle commands require type Move or Add to reference')
 
 
-def sample(world, step, dt, *, snapshot=None):
-    if snapshot is None:
-        snapshot = capture_machine_snapshot(world)
-    motors = []
-    for entity in world.query([StepperMotorComponent, SpoolStateComponent]):
-        motor = world.get_component(entity, StepperMotorComponent)
-        state = world.get_component(entity, SpoolStateComponent)
-        encoder = world.get_component(entity, EncoderComponent)
-        measured = None if encoder is None else encoder.angle - (motor.missed_step_encoder_offset or 0.)
-        target = motor.commanded_angle - motor.delta_angle
-        motors.append({'name': entity_name(world, entity), 'axis': state.axis,
-                       'mode': 'torque' if motor.torque_mode else 'position',
-                       'target_angle_rad': None if motor.torque_mode else target,
-                       'encoder_angle_rad': None if encoder is None else encoder.angle,
-                       'diagnostic_encoder_angle_rad': measured,
-                       'diagnostic_encoder_offset_rad': motor.missed_step_encoder_offset or 0.,
-                       'tracking_error_rad': None if motor.torque_mode or measured is None else measured - target,
-                       'peak_missed_steps': motor.missed_steps})
-    return {'step': step, 'sim_time_s': step * dt,
-            'effectors': [frame for frame in snapshot['frames'] if frame['kind'] == 'effector'],
-            'motors': motors,
-            'cables': [{'name': f"{cable['machine']}/{cable['name']}", 'lengths_m': cable['lengths'],
-                        'segment_forces_n': [segment['force_n'] for segment in cable['segments']]}
-                       for cable in snapshot['cables']]}
-
-
 def metrics(samples):
     initial, final = samples[0], samples[-1]
     positions = {frame['path']: frame['position'] for frame in initial['effectors']}
@@ -122,42 +95,17 @@ def metrics(samples):
     }
 
 
-def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=None, label='', record=True,
-                   cable_solver_device=None, physics_backend=None):
+def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=None, label='', record=True):
     root = Path(root).resolve()
-    if cable_solver_device not in (None, 'cpu', 'cuda:0'):
-        raise ValueError('cable_solver_device must be cpu, cuda:0, or None')
-    backend = physics_backend if physics_backend is not None else {
-        None: 'headless-js', 'cpu': 'native-warp', 'cuda:0': 'native-warp-cuda'}[cable_solver_device]
-    if backend not in ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'):
-        raise ValueError('Unknown physics_backend')
-    device = {'native-warp': 'cpu', 'native-warp-cuda': 'cuda:0'}.get(backend)
-    if cable_solver_device is not None and cable_solver_device != device:
-        raise ValueError('cable_solver_device conflicts with physics_backend')
-    cable_solver_device = device
     if isinstance(steps, bool) or not isinstance(steps, int) or not 1 <= steps <= MAX_STEPS:
         raise ValueError(f'steps must be an integer in [1, {MAX_STEPS}]')
     if dt is not None and (isinstance(dt, bool) or not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0):
         raise ValueError('dt must be positive and finite')
     scene_path = repo_path(root, scene)
     commands = [] if commands is None else commands
-    # Freeze composed USD inputs, including referenced layers and baked cable initialization.
+    validate_commands(commands, set('ABCD'), steps)
+    frozen_scene = scene_path.read_text()
     started = time.perf_counter()
-    stage = open_cable_scene(scene_path)
-    layer = stage.Flatten()
-    layer.documentation = stage.GetMetadata('doc') or ''
-    frozen_scene = layer.ExportToString()
-    world = load_machine_world(frozen_scene, cable_solver_device=cable_solver_device)
-    dt = world.get_resource('dt') if dt is None else dt
-    if not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0:
-        raise ValueError('Authored dt must be positive and finite')
-    world.set_resource('dt', dt)
-    axes = {world.get_component(entity, SpoolStateComponent).axis
-            for entity in world.query([StepperMotorComponent, SpoolStateComponent])}
-    validate_commands(commands, axes, steps)
-    if not axes or not capture_machine_snapshot(world)['cables']:
-        raise ValueError('The scene must contain driven spools and cable paths')
-    construction_s = time.perf_counter() - started
     run_id = uuid.uuid4().hex
     directory = run_directory(root, run_id)
     directory.mkdir(parents=True)
@@ -167,64 +115,56 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     for path in sorted((root / 'src/python').rglob('*.py')):
         source.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
     revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True)
-    manifest = {'schema_version': 2, 'backend': backend, 'physics_engine': 'rust-native' if backend == 'headless-js' else backend,
-                'cable_solver_device': cable_solver_device,
+    manifest = {'schema_version': 2, 'backend': 'headless-js', 'physics_engine': 'rust-native',
                 'run_id': run_id, 'label': label, 'status': 'running',
-                'scene': str(scene_path.relative_to(root)), 'scene_generation': world.get_resource('sceneGeneration'), 'steps': steps, 'dt_s': dt,
+                'scene': str(scene_path.relative_to(root)), 'scene_generation': 0, 'steps': steps, 'dt_s': dt,
                 'commands_sha256': digest(encode(commands).encode()), 'scene_sha256': digest(frozen_scene.encode()),
                 'python_source_sha256': source.hexdigest(), 'git_revision': revision.stdout.strip(),
                 'python': platform.python_version(), 'platform': platform.platform(),
-                'packages': {name: version(name) for name in ('numpy', 'usd-core', 'rerun-sdk')},
-                'construction_wall_s': construction_s, 'record': record,
+                'packages': {name: version(name) for name in ('numpy', 'rerun-sdk')},
+                'construction_wall_s': time.perf_counter() - started, 'record': record,
                 'artifacts': {name: str(directory / file) for name, file in
                               [('manifest', 'manifest.json'), ('scene', 'scene.usda'), ('commands', 'commands.json'),
                                ('telemetry', 'telemetry.jsonl'), ('snapshot', 'final.json')]}}
-    if cable_solver_device is not None:
-        manifest['packages']['warp-lang'] = version('warp-lang')
     recording = None
     physics = None
     write_json(directory / 'manifest.json', manifest)
     try:
-        if backend == 'headless-js':
-            from .js_physics import JSPhysics
-            native_started = time.perf_counter()
-            physics = JSPhysics(root, directory, world, dt=dt)
-            manifest['construction_wall_s'] += time.perf_counter() - native_started
-            manifest.update(physics_engine=physics.physics_engine, physics_artifact=physics.physics_artifact,
-                            js_physics_source_sha256=physics.physics_host_sha256)
+        native_started = time.perf_counter()
+        physics = JSPhysics(root, directory, scene_path, dt=dt)
+        state = physics.request(dt=dt)
+        dt = state['dt_s'] if dt is None else dt
+        manifest.update(dt_s=dt, scene_generation=state.get('scene_generation', 0),
+                        physics_engine=physics.physics_engine, physics_artifact=physics.physics_artifact,
+                        js_physics_source_sha256=physics.physics_host_sha256)
+        manifest['construction_wall_s'] += time.perf_counter() - native_started
+        world = World()
+        apply_state(world, state)
         if record:
             import rerun as rr
             recording = rr.RecordingStream('hp-sim5 research', recording_id=run_id)
-            recording.set_sinks(rr.FileSink(directory / 'recording.rrd'), default_blueprint=_blueprint())
+            recording.set_sinks(rr.FileSink(directory / 'recording.rrd'), default_blueprint=blueprint())
             recording.log('experiment', rr.TextDocument(encode(manifest)), static=True)
-            register_machine_systems(world, recording)
             manifest['artifacts']['rrd'] = str(directory / 'recording.rrd')
-        if physics is None:
-            world.get_system(RemoteSpoolSystem).commands = commands
+            recorder = RerunSystem(recording)
         samples = []
         started = time.perf_counter()
         with warnings.catch_warnings(record=True) as caught, (directory / 'telemetry.jsonl').open('w') as output:
             warnings.simplefilter('always')
             for step in range(steps + 1):
-                snapshot = None
                 if step:
-                    if physics is None:
-                        world.update(dt)
-                    else:
-                        physics.apply(physics.request(steps=1, commands=commands if step == 1 else ()))
-                        if record:
-                            # Record the mirror without advancing its independent physics.
-                            from cable_joints_3d.rerun_system import RerunSystem
-                            snapshot = world.get_system(RerunSystem).update(world, dt)
-                row = sample(world, step, dt, snapshot=snapshot)
+                    state = physics.request(steps=1, commands=commands if step == 1 else ())
+                    apply_state(world, state)
+                if record:
+                    recorder.update(world, dt if step else 0.)
+                row = sample(world, step, dt)
                 output.write(encode(row) + '\n')  # rejects non-finite state
                 samples.append(row)
             manifest['warnings'] = sorted({str(item.message) for item in caught})
         if recording is not None:
-            from cable_joints_3d.rerun_system import RerunSystem
-            world.get_system(RerunSystem).flush()
+            recorder.flush()
         manifest.update(status='complete', metrics=metrics(samples), simulation_wall_s=time.perf_counter() - started)
-        write_json(directory / 'final.json', capture_machine_snapshot(world))
+        write_json(directory / 'final.json', capture_snapshot(world))
         if recording is not None:
             recording.flush(timeout_sec=5)
     except Exception as error:
@@ -234,10 +174,7 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
         if physics is not None:
             physics.close()
         if recording is not None:
-            from cable_joints_3d.rerun_system import RerunSystem
-            recorder = world.get_system(RerunSystem)
-            if recorder is not None:
-                recorder.flush()
+            recorder.flush()
             recording.disconnect()
         write_json(directory / 'manifest.json', manifest)
     return manifest
@@ -267,7 +204,7 @@ def compare_runs(root, baseline_id, candidate_id):
         raise ValueError('Compare runs with identical effector identities')
     return {'baseline_id': baseline_id, 'candidate_id': candidate_id,
             'changed_inputs': [key for key in ('scene_sha256', 'commands_sha256', 'python_source_sha256', 'packages',
-                                              'record', 'backend', 'cable_solver_device', 'physics_engine', 'physics_artifact',
+                                              'record', 'backend', 'physics_engine', 'physics_artifact',
                                               'js_physics_source_sha256')
                                if baseline.get(key) != candidate.get(key)],
             'metric_delta_candidate_minus_baseline': {key: candidate['metrics'][key] - value

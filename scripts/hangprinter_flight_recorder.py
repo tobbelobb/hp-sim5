@@ -21,7 +21,7 @@ from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src/python'))
-from cable_joints_3d.columnar_recording import ColumnarRecording
+from hp_sim5_research.columnar_recording import ColumnarRecording
 
 
 def blueprint(extended=False):

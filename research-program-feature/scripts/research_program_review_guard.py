@@ -10,7 +10,7 @@ import time
 def main():
     deadline, marker, *argv = sys.argv[1:]
     if float(deadline) <= time.time():
-        Path(marker).write_text('Review wall allocation expired before client startup\n')
+        Path(marker).write_text('Review wall timeout expired before client startup\n')
         return 124
     try:
         process = subprocess.Popen(argv)
@@ -20,7 +20,7 @@ def main():
     try:
         return process.wait(timeout=max(.001, float(deadline) - time.time()))
     except subprocess.TimeoutExpired:
-        Path(marker).write_text('Review wall allocation expired\n')
+        Path(marker).write_text('Review wall timeout expired\n')
         # The controller spawned this guard as its own session/group. Only
         # descendants of this review share it, never a producer or supervisor.
         os.killpg(os.getpgrp(), signal.SIGKILL)

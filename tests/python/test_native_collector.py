@@ -5,40 +5,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from cable_joints_3d.ecs import EncoderComponent
-from cable_joints_3d.stepper_motor import StepperMotorComponent
+from hp_sim5_research.mirror import EncoderComponent, StepperMotorComponent, capture_snapshot as capture_machine_snapshot
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.services import RuntimeService
 from hp_sim5_research.validation import validate_collection
 from hp_sim5_research.experiments import sample
 
 ROOT = Path(__file__).resolve().parents[2]
-
-
-@pytest.mark.asyncio
-async def test_compiled_session_encoder_barrier_reset_and_cancel(tmp_path):
-    pytest.importorskip('warp')
-    from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
-    session = NativeSession(ROOT, tmp_path, backend='native-warp', record=False)
-    try:
-        compiled = session.world.get_system(PBDCableConstraintSolver).compiled
-        assert compiled.device.is_cpu
-        await session.handle({'commands': [{'type': 'Move', 'A': -.001}, {},
-                                          {'type': 'SetTorqueMode', 'axis': 'B', 'torqueNm': -.003}]})
-        result = await session.handle({'type': 'encoder_request', 'requestId': 1, 'axes': list('ABCD')})
-        assert session.step == 3 and all(math.isfinite(v) for v in result['anglesDeg'])
-        assert session.status()['backend'] == 'native-warp'
-        await session.handle({'type': 'reset'})
-        assert session.step == 0
-        assert session.world.get_system(PBDCableConstraintSolver).compiled is not compiled
-        await session.advance(.004)
-        assert session.step == 2
-        await session.stop_at_boundary()
-        with pytest.raises(RuntimeError, match='cancel'):
-            await session.advance(.002)
-        assert session.step == 2
-    finally:
-        session.close()
 
 
 @pytest.mark.asyncio
@@ -259,40 +232,27 @@ async def test_cancel_freezes_at_fixed_step_boundary_and_rejects_later_payloads(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('machine', ['hp3', 'hp4'])
-async def test_headless_js_encoder_motion_and_recording_match_python(tmp_path, machine):
-    import numpy as np
-    from cable_joints_3d.machine_snapshot import capture_machine_snapshot
-    sessions = [NativeSession(ROOT, tmp_path / backend, backend=backend,
-                              scene=f'public/usd_scenes/{machine}_rigid_body.usda')
-                for backend in ('native-python', 'headless-js')]
+async def test_headless_js_encoder_motion_and_recording(tmp_path, machine):
+    session = NativeSession(ROOT, tmp_path / 'session', scene=f'public/usd_scenes/{machine}_rigid_body.usda')
     try:
         commands = [{'type': 'Move', 'A': index * .0002, 'E': .00001} for index in range(60)]
         commands += [{'type': 'SetTorqueMode', 'axis': 'B', 'torqueNm': -.003}] + [{}] * 39
         commands += [{'type': 'SetPositionMode', 'axis': 'B'}, {'type': 'Add to reference', 'A': .001}]
-        for session in sessions:
-            await session.handle({'commands': commands})
-            await session.advance(.01)
-            assert session.queue_length() == len(commands) - 5
-            response = await session.handle({'type': 'encoder_request', 'requestId': 1, 'axes': list('ABCD')})
-            assert session.step == len(commands) and session.queue_length() == 0
-            assert len(response['anglesDeg']) == 4
-        assert sessions[1].encoder_angles('ABCD') == pytest.approx(sessions[0].encoder_angles('ABCD'), abs=.01)
-        snapshots = [capture_machine_snapshot(session.world) for session in sessions]
-        for first, second in zip(snapshots[0]['frames'], snapshots[1]['frames']):
-            assert first['path'] == second['path']
-            np.testing.assert_allclose(first['position'], second['position'], atol=5e-5, rtol=0)
-        for first, second in zip(snapshots[0]['cables'], snapshots[1]['cables']):
-            for key in ('actual', 'geometric', 'commanded', 'stretch'):
-                assert first['lengths'][key] == pytest.approx(second['lengths'][key], abs=5e-5)
-        js = sessions[1]
-        world = js.world
-        await js.handle({'type': 'reset'})
-        assert js.step == 0 and js.epoch == 1 and js.world is not world
-        await js.advance(.002)
-        assert js.step == 1
+        await session.handle({'commands': commands})
+        await session.advance(.01)
+        assert session.queue_length() == len(commands) - 5
+        response = await session.handle({'type': 'encoder_request', 'requestId': 1, 'axes': list('ABCD')})
+        assert session.step == len(commands) and session.queue_length() == 0
+        assert len(response['anglesDeg']) == 4 and all(math.isfinite(value) for value in response['anglesDeg'])
+        snapshot = capture_machine_snapshot(session.world)
+        assert snapshot['frames'] and snapshot['cables']
+        world = session.world
+        await session.handle({'type': 'reset'})
+        assert session.step == 0 and session.epoch == 1 and session.world is not world
+        await session.advance(.002)
+        assert session.step == 1
     finally:
-        for session in sessions:
-            session.close()
+        session.close()
 
 
 @pytest.mark.asyncio

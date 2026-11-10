@@ -10,23 +10,19 @@ from pathlib import Path
 import rerun as rr
 from websockets.asyncio.client import connect
 
-from cable_joints_3d.__main__ import _blueprint
-from cable_joints_3d.ecs import EncoderComponent
-from cable_joints_3d.machine_simulation import load_machine_world
-from cable_joints_3d.remote_spool_system import RemoteSpoolSystem
-from cable_joints_3d.rerun_system import RerunSystem
-from usd.cable_scene_loader import open_cable_scene
+from . import mirror
 from .experiments import DEFAULT_SCENE, encode, repo_path, sample, validate_commands
+from .js_physics import JSPhysics
+from .recording import RerunSystem, blueprint
 
 
 class NativeSession:
     def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='headless-js', record=True, frozen_scene=None, layering=True):
-        if backend not in ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda'):
-            raise ValueError('Unknown physics backend')
+        if backend != 'headless-js':
+            raise ValueError('Only the native Rust physics backend is available')
         self.backend = backend
-        self.cable_solver_device = {'native-warp': 'cpu', 'native-warp-cuda': 'cuda:0'}.get(backend)
         self.recording_enabled = record
-        self.root = Path(root)
+        self.root = Path(root).resolve()
         self.js_physics = None
         self.worker_lock = asyncio.Lock()
         self.physics_wall_s = 0.
@@ -36,22 +32,13 @@ class NativeSession:
         self.directory.mkdir(parents=True, exist_ok=True)
         self.layering = layering
         if frozen_scene is None:
-            stage = open_cable_scene(repo_path(root, scene), **({} if layering else
-                {'derive_all': True, 'cable_path_half_width_override': 0.}))
-            layer = stage.Flatten()
-            # Flatten appends a multiline provenance doc unsupported by the JS serializer.
-            layer.documentation = stage.GetMetadata('doc') or ''
-            frozen_scene = layer.ExportToString()
+            frozen_scene = repo_path(self.root, scene).read_text()
         self.frozen_scene = frozen_scene
-        (self.directory / 'scene.usda').write_text(self.frozen_scene)
-        self.world = self.create_world()
-        self.dt = self.world.get_resource('dt')
-        if not math.isclose(self.dt, .002, abs_tol=1e-12):
-            raise ValueError('RRF bridge requires a 0.002 s physics timestep')
-        self.remote = self.world.get_system(RemoteSpoolSystem)
-        self.remote._ensure_axis_mapping(self.world)
-        if set(self.remote.axis_to_entity) != set('ABCD'):
-            raise ValueError('Collection requires one Hangprinter with axes A/B/C/D')
+        self.scene_path = self.directory / 'scene.usda'
+        self.scene_path.write_text(self.frozen_scene)
+        self.world = mirror.World()
+        self.remote = mirror.RemoteSpoolSystem()
+        self.dt = None
         self.step = 0
         self.epoch = 0
         self.collector_time_s = 0.
@@ -66,19 +53,23 @@ class NativeSession:
         self.recording = None
         self.recorder = None
         try:
-            if backend == 'headless-js':
-                from .js_physics import JSPhysics
-                self.js_physics = JSPhysics(Path(root), self.directory, self.world, layering=self.layering)
+            self._start_physics()
             self.start_recording(self.directory / 'recording.rrd')
         except Exception:
             self.close()
             raise
 
-    def create_world(self):
-        world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
-        for key in ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps'):
-            world.set_resource(key, self.layering)
-        return world
+    def _start_physics(self):
+        self.js_physics = JSPhysics(self.root, self.directory, self.scene_path, layering=self.layering, dt=self.dt)
+        state = self.js_physics.request(dt=self.dt)
+        self.dt = state['dt_s']
+        if not math.isclose(self.dt, .002, abs_tol=1e-12):
+            raise ValueError('RRF bridge requires a 0.002 s physics timestep')
+        mirror.apply_state(self.world, state)
+        self.remote.axis_to_entity = {axis: list(ids) for axis, ids in state.get('axes', {}).items()}
+        self.remote.set_queue_length(state.get('queue_length', 0))
+        if set(self.remote.axis_to_entity) != set('ABCD'):
+            raise ValueError('Collection requires one Hangprinter with axes A/B/C/D')
 
     def start_recording(self, path):
         if self.recording is not None:
@@ -99,7 +90,7 @@ class NativeSession:
         self.next_live_flush = time.monotonic() + 5
         if viewer:
             sinks.append(rr.GrpcSink(viewer.replace('http://', 'rerun+http://') + '/proxy'))
-        self.recording.set_sinks(*sinks, default_blueprint=_blueprint())
+        self.recording.set_sinks(*sinks, default_blueprint=blueprint())
         self.recorder = RerunSystem(self.recording)
         self.last_observed = None
         self.observe()
@@ -117,12 +108,11 @@ class NativeSession:
             return
         started = time.monotonic()
         self.last_observed = (self.epoch, self.step)
-        snapshot = None
         if self.recorder is not None:
             self.recorder.step = self.step
             self.recorder.elapsed = self.step * self.dt
-            snapshot = self.recorder.update(self.world, 0.)
-        self.event('observation', sample=sample(self.world, self.step, self.dt, snapshot=snapshot),
+            self.recorder.update(self.world, 0.)
+        self.event('observation', sample=sample(self.world, self.step, self.dt),
                    recording=str(self.recording_path) if self.recording is not None else None)
         if self.recording is not None and self.live_viewer and time.monotonic() >= self.next_live_flush:
             # Explicit delivery also updates the Viewer during long collector advances.
@@ -137,7 +127,7 @@ class NativeSession:
         for axis in axes:
             angle = None
             for entity in self.remote.axis_to_entity.get(axis, []):
-                encoder = self.world.get_component(entity, EncoderComponent)
+                encoder = self.world.get_component(entity, mirror.EncoderComponent)
                 if encoder is not None and math.isfinite(encoder.angle):
                     angle = math.degrees(encoder.angle)
                     break
@@ -149,9 +139,10 @@ class NativeSession:
         self.cancel_requested = True
         queued = self.queue_length()
         self.remote.clear_command_queue()
-        if self.js_physics:
-            self.js_physics.request(clear_commands=True)
-        self.js_queue_length = 0
+        if self.js_physics is not None:
+            state = self.js_physics.request(clear_commands=True)
+            mirror.apply_state(self.world, state)
+            self.remote.set_queue_length(state.get('queue_length', 0))
         self.error = 'Collection cancelled; reset_session is required'
         self.observe()
         self.event('execution_cancelled', discarded_commands=queued)
@@ -162,7 +153,6 @@ class NativeSession:
     async def stop_at_boundary(self):
         self.cancel_requested = True
         # JS yields between bounded batches; report the observed stopped step.
-        # No subsequent batch is submitted. Python yields between fixed steps.
         async with self.worker_lock:
             return self.stop_execution()
 
@@ -188,10 +178,10 @@ class NativeSession:
                 self.js_physics.physics_wall_s = state['physics_wall_s']
                 if state['step'] != self.step + batch:
                     raise RuntimeError('JS worker did not execute the requested fixed steps')
-                self.js_physics.apply(state)
+                mirror.apply_state(self.world, state)
+                self.remote.set_queue_length(state.get('queue_length', 0))
                 self.step = state['step']
                 self.collector_time_s += batch * self.dt / self.speed
-                self.js_queue_length = state['queue_length']
                 if self.step % 50 == 0:
                     self.observe()
             remaining -= batch
@@ -203,7 +193,7 @@ class NativeSession:
         return self.status()
 
     def queue_length(self):
-        return self.remote.get_queue_length() + (getattr(self, 'js_queue_length', 0) if self.js_physics else 0)
+        return self.remote.get_queue_length()
 
     async def advance(self, seconds=0., *, drain=False):
         if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or not 0 <= seconds <= 120:
@@ -212,37 +202,18 @@ class NativeSession:
             count = max(math.ceil(seconds / self.dt - 1e-9), self.queue_length() if drain else 0)
             if count > 60_000:
                 raise ValueError('Motion exceeds the 60,000-step completion bound')
-            if self.js_physics:
-                return await self.advance_js(count)
-            for index in range(count):
-                if self.cancel_requested:
-                    raise RuntimeError(self.error)
-                if self.deadline is not None and time.monotonic() > self.deadline:
-                    raise TimeoutError('Collection exceeded its wall-time budget')
-                started = time.monotonic()
-                self.world.update(self.dt)
-                self.physics_wall_s += time.monotonic() - started
-                self.step += 1
-                self.collector_time_s += self.dt / self.speed
-                if self.step % 50 == 0:
-                    self.observe()  # JSON encoding also rejects non-finite physical state
-                if index % 10 == 0:
-                    await asyncio.sleep(0)
-            if self.recording is not None and self.live_viewer:
-                self.recorder.flush()
-            return self.status()
+            return await self.advance_js(count)
 
     def status(self):
-        from cable_joints_3d.cable_joints_components import CablePathComponent
         return {'connected': self.connected.is_set(), 'epoch': self.epoch, 'step': self.step,
                 'sim_time_s': self.step * self.dt, 'collector_time_s': self.collector_time_s,
                 'dt_s': self.dt, 'speed_scale': self.speed, 'queue_length': self.queue_length(),
                 'layering_flags': {key: self.world.get_resource(key) for key in
                     ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps')},
-                'cable_half_widths_m': sorted({self.world.get_component(entity, CablePathComponent).cable_half_width
-                                              for entity in self.world.query([CablePathComponent])}),
-                'backend': self.backend, 'physics_engine': self.js_physics.physics_engine if self.js_physics else self.backend,
-                'physics_artifact': self.js_physics.physics_artifact if self.js_physics else None,
+                'cable_half_widths_m': sorted({self.world.get_component(entity, mirror.CablePathComponent).cable_half_width
+                                              for entity in self.world.query([mirror.CablePathComponent])}),
+                'backend': self.backend, 'physics_engine': self.js_physics.physics_engine,
+                'physics_artifact': self.js_physics.physics_artifact,
                 'physics_wall_s': self.physics_wall_s,
                 'worker_wall_s': self.worker_wall_s,
                 'observation_wall_s': self.observation_wall_s,
@@ -265,17 +236,16 @@ class NativeSession:
                     'axes': payload['axes'], 'anglesDeg': angles}
         if kind == 'reset':
             async with self.lock:
-                self.world = self.create_world()
+                old_world = self.world
+                self.world = mirror.World()
                 self.epoch += 1
                 self.world.set_resource('sceneGeneration', self.epoch + 1)
-                self.remote = self.world.get_system(RemoteSpoolSystem)
-                self.remote._ensure_axis_mapping(self.world)
-                if self.js_physics:
-                    self.js_physics.close()
-                    from .js_physics import JSPhysics
-                    self.js_physics = JSPhysics(self.root, self.directory, self.world, layering=self.layering)
-                    self.js_queue_length = 0
+                self.js_physics.close()
+                self.dt = None
+                self._start_physics()
+                assert self.world is not old_world
                 self.step = 0
+                self.remote.clear_command_queue()
                 self.observe()
             return None
         if kind == 'set_speed_scale':
@@ -318,4 +288,3 @@ class NativeSession:
                 self.recorder.flush()
             self.recording.flush(timeout_sec=5)
             self.recording.disconnect()
-        self.events.close()

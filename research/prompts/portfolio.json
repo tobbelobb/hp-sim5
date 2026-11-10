@@ -47,7 +47,7 @@
       "last_reviewed": "2026-11-05",
       "related_evidence": [
         "research/catalog.md",
-        "output/research/sessions"
+        "research/output"
       ]
     },
     {
@@ -69,9 +69,9 @@
       "readiness": "The 2026-11-06 program did not achieve under 1 mm on every anchor. Projection data-selection was corrected, but its physical trial worsened accuracy. Start from the four proposed discriminators in the mission prompt and the linked reports; distinguish diagnostics from established causes and preserve no-manual-measurement and no-truth-selection constraints.",
       "last_reviewed": "2026-11-06",
       "related_evidence": [
-        "research/programs/program-4cfc6d5bf6a2484f976521ab8a321e92/summary.html",
-        "research/sessions/attempt-c18177d871fb404895e32c03363c8a5e/report.md",
-        "research/sessions/attempt-8c3c74b7641e45c2acd1cd976f572e08/report.md",
+        "research/output/program-4cfc6d5bf6a2484f976521ab8a321e92/summary.html",
+        "research/output/program-4cfc6d5bf6a2484f976521ab8a321e92/session-attempt-c18177d871fb404895e32c03363c8a5e/report.md",
+        "research/output/program-4cfc6d5bf6a2484f976521ab8a321e92/session-attempt-8c3c74b7641e45c2acd1cd976f572e08/report.md",
         "research/autocal-recording-performance.md"
       ]
     },

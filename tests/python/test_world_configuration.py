@@ -10,8 +10,7 @@ import pytest
 from hp_sim5_research.configuration import prepare_world, world_configuration
 from hp_sim5_research.services import RuntimeService
 from hp_sim5_research.session import NativeSession
-from cable_joints_3d.cable_joints_components import CablePathComponent
-from cable_joints_3d.ecs import RadiusComponent
+from hp_sim5_research.mirror import CablePathComponent, RadiusComponent
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -64,7 +63,7 @@ process.stdout.write(bakedScene);
 
 def test_custom_unlayered_radii_reach_geometry_and_frozen_firmware(tmp_path):
     config = world_configuration(ROOT, {'machine': 'hp3', 'layering': False,
-                                'base_radii_mm': [31, 32, 33, 34]}, backend='native-python')
+                                'base_radii_mm': [31, 32, 33, 34]}, backend='headless-js')
     metadata = prepare_world(ROOT, tmp_path, config)
     session = NativeSession(ROOT, tmp_path, record=False,
                             frozen_scene=(tmp_path / 'scene.usda').read_text(), layering=False)

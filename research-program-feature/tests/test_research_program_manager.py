@@ -85,8 +85,8 @@ def retire(attachments):
             pass
 
         session = Path(attachment['session'])
-        if session.is_relative_to(ROOT / 'research/programs'):
-            shutil.rmtree(session.parent.parent)
+        if session.is_relative_to(ROOT / 'research/output'):
+            shutil.rmtree(session.parent)
 
 
 @pytest.fixture
@@ -136,7 +136,7 @@ def attach(c, program='p'):
 def assignment(a, identity='work'):
     route = tool(a, 'approach', {'question_id': 'q', 'title': 'Inspect saved data', 'reason': 'Cheapest discriminator'})
     result = tool(a, 'assignment', {'approach_id': route['id'], 'objective': 'Compare frozen baselines',
-                                    'record_id': identity, 'allocation': {'wall_minutes': 1}})
+                                    'record_id': identity})
     tool(a, 'transition', {'record_id': result['id'], 'target': 'ready', 'reason': 'Explicit bounded assignment'})
     return result
 
@@ -221,6 +221,9 @@ def test_fresh_cli_calls_retain_owned_worker_share_attachment_pause_then_cancel(
     worker = tool(first, 'worker_start', {'settings': {'machine': 'hp3'}, 'assignment_id': work['id']})
     assert time.monotonic() - started_at < 2
     assert worker['details']['state'] == 'running'
+    session = Path(worker['details']['session_dir'])
+    assert session.parent == manager['root'] / 'research/output/p'
+    assert session.name == f'session-{worker["id"]}'
     until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
     second = attach(manager)
     assert first == second
@@ -409,7 +412,6 @@ def test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert(
     assert 'research_program_mcp.py' not in command
     assert 'research_attach.py' not in command
     assert 'hp-sim5-research-program tool' in plan['instructions']
-    assert plan['instructions'].startswith('Bound execution mode: LOCAL.')
     assert '.agents/skills/cloud-research-client/scripts/' not in plan['instructions']
     if backend == 'codex':
         for name in ('hp_sim5', 'rerun', 'hp_sim5_program'):
@@ -480,7 +482,7 @@ def test_manager_answers_worker_question_through_bound_cli(manager):
     answer = 'Use the "saved" baseline.\nDo not refit.'
     response = tool(a, 'worker_answer', {'attempt_id': worker['id'], 'question_id': 'baseline', 'answer': answer})
     assert response['manager_question'] is None
-    assert response['details']['runtime']['wall_deadline'] == worker['details']['runtime']['wall_deadline']
+    assert response['details']['runtime'] == worker['details']['runtime']
     assert json.loads(Path(status['manager_answer_path']).read_text()) == {'id': 'baseline', 'answer': answer}
 
 

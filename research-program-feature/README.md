@@ -15,8 +15,8 @@ review the result, check the useful change and squash it onto main.
 | `reference/` | Implementation details, read when needed |
 | `archive/` | Historical designs and audits; never runtime instructions |
 
-Results live in `research/sessions/SESSION/`. The manager writes only a short
-`research/programs/PROGRAM_ID/summary.html` linking to them. Controller state and
+Results live in `research/output/session-SESSION/`. The manager writes only a short
+`research/output/PROGRAM_ID/summary.html` linking to them. Controller state and
 launch transcripts stay in ignored `.research-programs/` storage.
 
 [Launch and output guide](../human_docs/research-programs.md).

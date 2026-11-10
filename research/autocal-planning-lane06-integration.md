@@ -25,8 +25,8 @@ non-finite values fall back to the default. Patience, finite spread-stop values,
 consensus and sparse-recovery selection policies otherwise retain their defaults.
 
 Evidence and replay/test outcomes will be recorded in the
-[integration session](../output/research/sessions/2026-10-22-autocal-lane06-integration/report.md).
-The [preceding lane report](../output/research/sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md)
+[integration session](../research/output/session-2026-10-22-autocal-lane06-integration/report.md).
+The [preceding lane report](../research/output/session-2026-10-22-autocal-flags-06-planning-stopping/report.md)
 was produced at an earlier revision; current-source controls are recorded separately.
 
 ## Validation and retained policies

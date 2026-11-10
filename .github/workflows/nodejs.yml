@@ -31,7 +31,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Install Python, pytest, numpy, scipy, matplotlib, warp-lang[extras], websockets, pytest-asyncio, and usd-core
+      - name: Install Python, pytest, numpy, scipy, matplotlib, websockets, pytest-asyncio, and usd-core
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip python3-venv build-essential
@@ -39,7 +39,6 @@ jobs:
           source .venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          python -m pip install -r requirements-warp.txt
           python -m pip install -r autocal/requirements-jax-cpu.txt
       - name: Configure rrf_simulator build
         run: cmake -S RRF -B RRF/build

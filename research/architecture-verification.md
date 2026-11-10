@@ -21,13 +21,13 @@ accepted steering for the next trial in the same conversation:
 | Baseline | `aeb62bbdbdda4527978599f294bb852d` | Two steps, hold targets, no recording |
 | Steered | `165d697d3d5f4e18b62065fa65ec5703` | Three steps, absolute A target 0.001 rad, no recording |
 
-The [session research record](../output/research/architecture-interactive-3/research.md)
+The [session research record](../research/output/session-architecture-interactive-3/research.md)
 retains both IDs and their numeric telemetry. This is an interface verification,
 not an optimization comparison: duration, command schedule and source hashes
 differ. Resuming that conversation through the launcher retained both IDs and
 returned a fresh native world at step zero with an empty queue. The resumed
 session and batch session both exited with status zero. The
-[batch report](../output/research/architecture-batch/report.md) records a live
+[batch report](../research/output/session-architecture-batch/report.md) records a live
 capabilities/runtime-status round trip.
 
 Attachment tests exercised the exact wrapper named in generated project MCP
@@ -40,7 +40,7 @@ user configuration. Desktop window interaction itself was not automated.
 
 The final cancellation test stopped run
 `4a06d737b90a42728b29449c4246c232` before physics step 136, at step 135 / 0.27 s.
-Its [manifest](../output/research/architecture-cancellation-tests/test_live_collection_job_cance0/8124a29de2e0436d887645c8b38f21e7/4a06d737b90a42728b29449c4246c232/manifest.json)
+Its [manifest](../research/output/scratch/architecture-cancellation-tests/test_live_collection_job_cance0/8124a29de2e0436d887645c8b38f21e7/4a06d737b90a42728b29449c4246c232/manifest.json)
 records both the native timestep boundary and collector command boundary.
 The test verified unchanged subsequent step count, empty native queue, retired
 RRF/bridge processes, finalized RRD/event evidence, and an explicit reset
@@ -57,7 +57,7 @@ not calibration parameter accuracy.
 
 ## Shared browser and Rerun
 
-The [browser evidence](../output/research/architecture-validation/browser-latest-evidence.json)
+The [browser evidence](../research/output/session-architecture-validation/browser-latest-evidence.json)
 records motor commands, exact bounded stepping, an immutable context at step 20,
 subsequent motion to step 30, loading HP3 through the existing scene controller,
 and rejecting an unknown scene without clearing the world. Native physics
@@ -69,9 +69,9 @@ The final browser recording ID was `260a12ac86e247a0ade8d62ad9ba8b9e`, for brows
 session `84066f74-17f2-4b17-af84-a9dfdb4b6b70`, scene generation 3. Its finalized
 RRD spans steps 0–30. The supervisor's assigned Viewer received that same ID,
 selected the captured `sim_step=20`, and saved a
-[screenshot](../output/research/architecture-viewer-final/selected-step-20.png).
-The [context/recording mapping](../output/research/architecture-viewer-final/context-evidence.json)
-and [Viewer state](../output/research/architecture-viewer-final/viewer-selected.json)
+[screenshot](../research/output/session-architecture-viewer-final/selected-step-20.png).
+The [context/recording mapping](../research/output/session-architecture-viewer-final/context-evidence.json)
+and [Viewer state](../research/output/session-architecture-viewer-final/viewer-selected.json)
 prove the recording and selected time match. Native selections are captured
 with an explicit run/session and observed step; an unavailable historical step
 is rejected rather than approximated.

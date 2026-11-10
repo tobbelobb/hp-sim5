@@ -67,7 +67,7 @@ class ProgramManager:
 
     def runtime_check(self, program_id, *, physics_backend='headless-js'):
         """Check dependencies and launcher socket permissions before work; no motion."""
-        if physics_backend not in ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'):
+        if physics_backend not in ('headless-js',):
             raise ProgramError(f'Unsupported physics_backend: {physics_backend}')
         return runtime_check(self.root, physics_backend=physics_backend)
 
@@ -136,7 +136,7 @@ class ProgramManager:
         self.poll()
         snapshot = self.store.snapshot(program_id)
         records = snapshot['records']
-        program = snapshot['program']
+        program = {key: value for key, value in snapshot['program'].items() if key != 'constraints'}
         return {'program': program,
                 'work': [{'id': r['id'], 'question': r['title'],
                           'state': r['details']['execution_state']} for r in records if r['kind'] == 'assignment'],
@@ -149,7 +149,7 @@ class ProgramManager:
                 'integrations': [{'id': r['id'], 'state': r['details']['state'],
                                   'delivered_revision': r['details'].get('delivered_revision')}
                                  for r in records if r['kind'] == 'integration_job'],
-                'summary': str(self.root / 'research/programs' / program_id / 'summary.html'),
+                'summary': str(self.root / 'research/output' / program_id / 'summary.html'),
                 'manager': {'program_id': program_id, 'controller_id': self.controller_id,
                             'client_transport': research_client(), 'stopping': self.stopping,
                             'physics_world': False, 'cleanup_errors': self.cleanup_errors,
@@ -203,7 +203,7 @@ class ProgramManager:
         return self.reviews.apply(program_id, review_id)
 
     def steering(self, program_id, text, *, subject_id=None, actor='human'):
-        """Save human direction without prescribing experiments or allocations."""
+        """Save human direction without prescribing experiments."""
         return self.store.record_note(program_id, 'steering', text, subject_id=subject_id, actor=actor)
 
     def decision(self, program_id, text, *, subject_id=None, evidence_ids=None, actor='manager',

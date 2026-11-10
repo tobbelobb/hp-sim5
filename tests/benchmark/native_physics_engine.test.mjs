@@ -8,7 +8,7 @@ import { NativePhysicsEngine, loadNativePhysicsAddon } from '../../src/js/cable_
 import { PositionComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { runTrajectory } from '../../scripts/profile_headless.mjs';
 
-const fixtures = new URL('../fixtures/python_3d_parity/', import.meta.url);
+const fixtures = new URL('../fixtures/engine_parity/', import.meta.url);
 test('local defaults are native, isolated, editable and safe to clear', () => {
   const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url), 'utf8');
   const first = createHeadlessWorld(scene), second = createHeadlessWorld(scene);

@@ -87,7 +87,7 @@ for the remaining commands plus ten seconds of holding (5500 samples). The
 corrected checkpoint continuation also exactly matches the full run. Both
 settle to zero angular speed; last-five-second vertical range is 2.45e-13 m.
 This reproduces the ending limitation in the original engine; it is not an
-independent full baseline replay. See the [comparison](../output/research/sessions/2026-10-20-interactive-research-62300644/integration/tail-comparison.json).
+independent full baseline replay. See the [comparison](../research/output/session-2026-10-20-interactive-research-62300644/integration/tail-comparison.json).
 
 The actual `npm test -- --runInBand` invocation passes the six-case gate and
 all 800 active Jest tests. No hardware or autocal accuracy claim is made.
@@ -97,8 +97,8 @@ The experimental faster motor update was never merged.
 
 ## Evidence
 
-- [S01–S06 session notebook](../output/research/sessions/2026-10-20-interactive-research-62300644/research.md): decisions, budgets, user steering and failed trials.
-- [Detailed session report](../output/research/sessions/2026-10-20-interactive-research-62300644/report.md): preceding mechanics experiments and historical failed acceptance.
-- [Numerical trials and validation logs](../output/research/sessions/2026-10-20-interactive-research-62300644/integration/): source/artifact provenance, logo trajectories, negative control and passing checks.
+- [S01–S06 session notebook](../research/output/session-2026-10-20-interactive-research-62300644/research.md): decisions, budgets, user steering and failed trials.
+- [Detailed session report](../research/output/session-2026-10-20-interactive-research-62300644/report.md): preceding mechanics experiments and historical failed acceptance.
+- [Numerical trials and validation logs](../research/output/session-2026-10-20-interactive-research-62300644/integration/): source/artifact provenance, logo trajectories, negative control and passing checks.
 - [Production logo gate](../tests/benchmark/hp4_logo_stability.test.mjs), [command scheduling](../tests/benchmark/hp4_logo_commands.mjs), [loaded-state test](../tests/benchmark/hp4_stability.test.mjs): executable acceptance criteria.
 - [Faster motor formulation report](faster-motor-update.md): separate experimental theory, not part of this correction.

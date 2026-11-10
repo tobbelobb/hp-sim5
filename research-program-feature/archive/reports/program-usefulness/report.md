@@ -72,11 +72,11 @@ Representative results:
 
 | Direct session | Retained result and producer verification | Practical limitation |
 | --- | --- | --- |
-| [Exact spool-model reuse](../../../output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/report.md) | Three-repeat median replay savings of 2.54% and 10.36%; reports unchanged eleven-fixture results and 5,184 numerical fields | Fitting throughput; no collection or accuracy improvement. I recomputed those percentages from saved timings. |
-| [Guarded encoder settling](../../../output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9/report.md) | Matched 36-point collection: 429.668 → 320.364 simulated seconds, 25.4% shorter | One simulated collection pair; equal final calibration accuracy on new data was not established. |
-| [Stable encoder averaging](../../../output/research/sessions/2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/report.md) | Small averaging fix; complete automatic simulated collection and more stable repeated fits | The fresh-baseline comparison took more time for lower anchor error; the report explicitly rejects an unconditional speed claim. |
-| [Warm-started anchor solve](../../../output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/report.md) | Matched jobs with identical 180-point datasets: 2.706 → 2.420 mm applied-anchor RMSE | Simulation, single matched pairs and limited machine/settings scope. Its notebook explicitly continues the same investigation across four turns. |
-| [Constant-objective shortcut](../../../output/research/sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/report.md) | Four complete regression suites: 2.81% less mean wall time and 4.31% less child CPU; reports unchanged numerical results | Conditional compute saving; no collection-time or accuracy improvement. I recomputed the timing gains from saved trials. |
+| [Exact spool-model reuse](../../../research/output/session-2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/report.md) | Three-repeat median replay savings of 2.54% and 10.36%; reports unchanged eleven-fixture results and 5,184 numerical fields | Fitting throughput; no collection or accuracy improvement. I recomputed those percentages from saved timings. |
+| [Guarded encoder settling](../../../research/output/session-2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9/report.md) | Matched 36-point collection: 429.668 → 320.364 simulated seconds, 25.4% shorter | One simulated collection pair; equal final calibration accuracy on new data was not established. |
+| [Stable encoder averaging](../../../research/output/session-2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/report.md) | Small averaging fix; complete automatic simulated collection and more stable repeated fits | The fresh-baseline comparison took more time for lower anchor error; the report explicitly rejects an unconditional speed claim. |
+| [Warm-started anchor solve](../../../research/output/session-2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/report.md) | Matched jobs with identical 180-point datasets: 2.706 → 2.420 mm applied-anchor RMSE | Simulation, single matched pairs and limited machine/settings scope. Its notebook explicitly continues the same investigation across four turns. |
+| [Constant-objective shortcut](../../../research/output/session-2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/report.md) | Four complete regression suites: 2.81% less mean wall time and 4.31% less child CPU; reports unchanged numerical results | Conditional compute saving; no collection-time or accuracy improvement. I recomputed the timing gains from saved trials. |
 
 Relevant historical implementation commits, including `54e88492`, `854430c6`,
 `9422620c`, `294e24c8` and `79e53cbb`, are ancestors of this checkout. That
@@ -93,7 +93,7 @@ The cloud pilot and audit target platform operation. They cannot fairly be
 graded as failed attempts at the much broader old autocal task.
 
 The completed local audit repeats a conclusion already present in the
-[October 23 CM-E1 report](../../../output/research/sessions/2026-10-23-consensus-membership/report.md):
+[October 23 CM-E1 report](../../../research/output/session-2026-10-23-consensus-membership/report.md):
 a small aggregate gain coexists with two per-dataset regressions. Its new value
 is fixed independent review and durable admission. If you already knew that
 finding, its marginal research value is understandably small. Both statements
@@ -231,7 +231,7 @@ Run from the repository root:
 .venv/bin/python research/reports/program-usefulness/audit.py
 ```
 
-The script needs this machine's ignored `output/research` evidence as well as
+The script needs this machine's ignored `research/output` evidence as well as
 committed archives. The saved JSON retains the counts, paths, classifications
 and hashes when those raw files are unavailable elsewhere. It deliberately
 excludes live connection descriptors, credentials and client configuration.
@@ -240,15 +240,15 @@ programs already included above and add no independent runs.
 
 Primary program evidence:
 
-- [Original live gate](../../../output/research/sessions/2026-10-24-live-manager-release/report.md)
-  and its [snapshot](../../../output/research/sessions/2026-10-24-live-manager-release/program-export.json).
+- [Original live gate](../../../research/output/session-2026-10-24-live-manager-release/report.md)
+  and its [snapshot](../../../research/output/session-2026-10-24-live-manager-release/program-export.json).
 - [October 24 cloud pilot](../../cloud-client-pilot/2026-10-24/README.md)
   and [snapshot](../../cloud-client-pilot/2026-10-24/program-export.json).
-- Initial local program [snapshot](../../programs/program-d71e9395e72e43db97d4e21c0d052f51/program.json).
-- [Completed local evidence audit](../../../output/research/sessions/2026-10-26-cm-saved-evidence-review/report.md)
-  and [snapshot](../../programs/program-e31e5321be5940baacf677409b2579e0/program.json).
-- [Cloud audit](../../programs/program-7aa80aa18f10499e85cb24ffeae712cb/selected/output/research/sessions/2026-10-26-cloud-platform-audit/report.md)
-  and [snapshot](../../programs/program-7aa80aa18f10499e85cb24ffeae712cb/program.json).
+- Initial local program [snapshot](../../../research/output/program-d71e9395e72e43db97d4e21c0d052f51/program.json).
+- [Completed local evidence audit](../../../research/output/session-2026-10-26-cm-saved-evidence-review/report.md)
+  and [snapshot](../../../research/output/program-e31e5321be5940baacf677409b2579e0/program.json).
+- [Cloud audit](../../../research/output/program-7aa80aa18f10499e85cb24ffeae712cb/selected/output/research/sessions/2026-10-26-cloud-platform-audit/report.md)
+  and [snapshot](../../../research/output/program-7aa80aa18f10499e85cb24ffeae712cb/program.json).
 
 No external publications or undocumented platform behavior are needed for these
 findings. The recommendations above are hypotheses to test, not measured gains.
