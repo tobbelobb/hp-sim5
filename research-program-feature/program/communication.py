@@ -10,17 +10,11 @@ def manager_policy(*, grill_me=False, ask_questions=False):
 
 def worker_policy(session):
     return (
-        '\nYour clarification contact is the research manager, never the human. '
-        'Do not use human question tools. Resolve repository facts yourself. For a blocking '
-        'manager decision, atomically write ' + str(session / 'manager-question.json') +
-        ' as {"id":"a unique question id","question":"question, context and recommended answer"}. '
-        'The manager polls worker_status and atomically writes ' + str(session / 'manager-answer.json') +
-        ' as {"id":"the same question id","answer":"manager decision"}. '
-        'Accept only an answer matching your current id. Ask one question at a time; keep '
-        'unique ids so old answers cannot answer new questions. Continue independent work '
-        'while waiting. '
-        'Never assume silence grants authority. If no answer arrives, '
-        'retain the question and report blocked/partial evidence. Keep useful notes in scratchbook/.\n'
+        '\nBlocking decision? Write {"id":"...","question":"... and your recommendation"} to '
+        + str(session / 'manager-question.json') +
+        ' and poll ' + str(session / 'manager-answer.json') +
+        ' for the same id. Do not ask the human. Keep working meanwhile; '
+        'if unanswered, report blocked or partial evidence.\n'
     )
 
 

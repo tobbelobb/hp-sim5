@@ -397,13 +397,13 @@ class ReviewController:
                 raise ProgramError('Refusing to stop unverified review process')
             os.killpg(process.pid, signal.SIGKILL)
             process.wait(timeout=5)
-            d.update(state='timed_out', returncode=process.returncode, error='Review wall allocation expired')
+            d.update(state='timed_out', returncode=process.returncode, error='Review wall timeout expired')
         elif code is None:
             return record
         else:
             d['returncode'] = code
             if (Path(d['directory']) / 'wall-expired').exists():
-                d.update(state='timed_out', error='Review wall allocation expired')
+                d.update(state='timed_out', error='Review wall timeout expired')
                 self._save(program_id, run_id, d)
                 return self.store.get_record(program_id, run_id)
             try:

@@ -398,7 +398,7 @@ class IntegrationController:
                 if d.get('cancel_requested'):
                     outcome, reason = 'cancelled', d['cancel_requested']
                 elif (directory / 'wall-expired').exists():
-                    outcome, reason = 'timed_out', 'Check wall allocation expired'
+                    outcome, reason = 'timed_out', 'Check wall timeout expired'
                 elif not (directory / 'execution.json').exists():
                     reason = 'Check runner exited ' + str(process.returncode)
                 else:

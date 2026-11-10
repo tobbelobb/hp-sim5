@@ -39,7 +39,7 @@ def context(tmp_path, monkeypatch):
     store = ProgramStore(tmp_path / 'memory', create=True)
     store.create_program('Which scoped result changes our route?', program_id='p', question_id='q')
     store.add_approach('p', 'q', 'Saved evidence', 'No new physics needed', record_id='route')
-    store.add_assignment('p', 'route', 'Inspect saved inputs', {'wall_minutes': 1}, record_id='work')
+    store.add_assignment('p', 'route', 'Inspect saved inputs', 1, record_id='work')
     store.transition('p', 'work', 'ready', 'Fixture dispatch')
     worker = tmp_path / 'worker'
     worker.write_text(f'#!{sys.executable}\nimport sys\n# Success does not self-admit.\nsys.exit(0)\n')

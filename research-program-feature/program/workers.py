@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 
-from .store import ProgramError, _allocation, _identity, _json, _now, _object, _text
+from .store import ProgramError, _allocation, _identity, _json, _now, _object, _text, _wall_minutes
 from . import pool
 from hp_sim5_research.client_transport import client_adapter
 from .communication import pending_question, worker_policy
@@ -70,11 +70,11 @@ def validate_attempts(records):
         if record['kind'] != 'attempt':
             continue
         details = record['details']
-        required = {'assignment_id', 'state', 'scientific_state', 'allocation', 'owner', 'process',
+        required = {'assignment_id', 'state', 'scientific_state', 'owner', 'process',
                     'source_revision', 'source_dirty', 'settings', 'argv', 'session_dir', 'attempt_dir',
                     'prompt_sha256', 'observations', 'artifacts', 'started_at', 'exited_at',
                     'returncode', 'cleanup', 'diagnostics'}
-        if not required <= details.keys():
+        if not required <= details.keys() or ('wall_minutes' not in details and 'allocation' not in details):
             raise ProgramError('Missing required attempt fields')
         assignment = records.get(details.get('assignment_id'))
         if assignment is None or assignment['kind'] != 'assignment':
@@ -83,7 +83,10 @@ def validate_attempts(records):
             raise ProgramError('Invalid attempt state')
         if details.get('scientific_state') != 'unassessed':
             raise ProgramError('Worker execution cannot admit scientific knowledge')
-        _allocation(details.get('allocation'))
+        if 'wall_minutes' in details:
+            _wall_minutes(details['wall_minutes'])
+        else:
+            _allocation(details['allocation'])
         for name in ('owner', 'settings'):
             _object(details.get(name), name)
         for name in ('session_dir', 'attempt_dir', 'source_revision', 'prompt_sha256', 'cleanup'):
@@ -204,13 +207,15 @@ class WorkerDispatcher:
             pool.check_worker(self.store, program_id, assignment_id, exclusive=options['shared_runtime_write'])
             if pool.limit(self.store) > 1 and not options['worktree']:
                 raise ProgramError('A parallel worker pool requires separate launcher worktrees')
-            _allocation(assignment['details']['allocation'])
+            minutes = assignment['details'].get('wall_minutes')
+            if minutes is None and isinstance(assignment['details'].get('allocation'), dict):
+                minutes = assignment['details']['allocation'].get('wall_minutes')
+            minutes = _wall_minutes(minutes)
             directory.mkdir(mode=0o700, parents=True)
             contract = {'program_id': program_id, 'question': assignment['title'],
-                        'constraints': program['constraints'], 'session_dir': str(session)}
+                        'session_dir': str(session)}
             prompt = ('# Research question\n\n' + assignment['title'] +
-                      '\n\nHuman constraints: ' + _json(program['constraints']) +
-                      '\nSession artifacts: ' + str(session) +
+                      '\n\nSession artifacts: ' + str(session) +
                       worker_policy(session) +
                       (client_adapter().worker_instructions() if client_adapter() else '') +
                       '\n\n' + instructions)
@@ -220,7 +225,6 @@ class WorkerDispatcher:
             argv = [self.executable, '--' + options['backend'], '--batch', '--prompt-file', str(prompt_path),
                     '--session-dir', str(session), '--physics-backend', options['physics_backend'],
                     '--machine', options['machine'], '--viewer', options['viewer']]
-            minutes = assignment['details']['allocation'].get('wall_minutes')
             wall_deadline = time.time() + minutes * 60 if minutes is not None else None
             if runtime and runtime.get('wall_deadline') is not None:
                 wall_deadline = min(wall_deadline, runtime['wall_deadline']) if wall_deadline else runtime['wall_deadline']
@@ -242,7 +246,7 @@ class WorkerDispatcher:
             if options['client_args']:
                 argv += ['--', *options['client_args']]
             details = {'assignment_id': assignment_id, 'state': 'starting', 'scientific_state': 'unassessed',
-                       'allocation': assignment['details']['allocation'], 'owner': self.owner, 'process': None,
+                       'wall_minutes': minutes, 'owner': self.owner, 'process': None,
                        'source_revision': revision, 'source_dirty': bool(dirty), 'settings': options,
                        'argv': argv, 'session_dir': str(session), 'attempt_dir': str(directory),
                        'prompt_sha256': hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
