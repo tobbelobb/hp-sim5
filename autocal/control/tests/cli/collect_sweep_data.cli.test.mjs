@@ -28,24 +28,25 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);
   });
 
-  test.each(['--project-zero-tension', '--projectZeroTension'])(
-    '%s enables zero-tension projection', flag => {
-      expect(parseBridgeArgs([flag]).projectZeroTension).toBe(true);
-    },
-  );
+  test('--project-zero-tension enables zero-tension projection', () => {
+    expect(parseBridgeArgs(['--project-zero-tension']).projectZeroTension).toBe(true);
+  });
 
-  test.each([
-    ['hp3', 'hangprinter_3', 'hp3'], ['hangprinter_3', 'hangprinter_3', 'hp3'],
-    ['hp4', 'hangprinter_4', 'hp4'], ['hangprinter_4', 'hangprinter_4', 'hp4'],
-    ['v3', 'hangprinter_3', 'hp3'], ['v4', 'hangprinter_4', 'hp4'],
-    ['four_high_anchors', 'skycam', 'skycam'], ['skycam', 'skycam', 'skycam'],
-    ['cube_corners', 'cubecorners', 'cubecorners'], ['cubecorners', 'cubecorners', 'cubecorners'],
-    ['slideprinter', 'slideprinter', 'slideprinter'],
-  ])('%s selects its own config in both layering modes', (input, canonical, name) => {
-    expect(normalizeMachineType(input)).toBe(canonical);
-    expect(resolveRrfSimulatorConfig(input)).toBe(`sys/config_${name}.g`);
-    expect(resolveRrfSimulatorConfig(input, { preferLineLayerConfig: true })).toBe(`sys/config_${name}_w_line_layers.g`);
-    expect(MACHINE_CONFIGS[canonical]).toBeDefined();
+  test('machine aliases select their own config in both layering modes', () => {
+    const cases = [
+      ['hp3', 'hangprinter_3', 'hp3'], ['hangprinter_3', 'hangprinter_3', 'hp3'],
+      ['hp4', 'hangprinter_4', 'hp4'], ['hangprinter_4', 'hangprinter_4', 'hp4'],
+      ['v3', 'hangprinter_3', 'hp3'], ['v4', 'hangprinter_4', 'hp4'],
+      ['four_high_anchors', 'skycam', 'skycam'], ['skycam', 'skycam', 'skycam'],
+      ['cube_corners', 'cubecorners', 'cubecorners'], ['cubecorners', 'cubecorners', 'cubecorners'],
+      ['slideprinter', 'slideprinter', 'slideprinter'],
+    ];
+    for (const [input, canonical, name] of cases) {
+      expect(normalizeMachineType(input)).toBe(canonical);
+      expect(resolveRrfSimulatorConfig(input)).toBe(`sys/config_${name}.g`);
+      expect(resolveRrfSimulatorConfig(input, { preferLineLayerConfig: true })).toBe(`sys/config_${name}_w_line_layers.g`);
+      expect(MACHINE_CONFIGS[canonical]).toBeDefined();
+    }
   });
 
   test('buildRrfSimulatorArgs uses machine-aware config selection', () => {

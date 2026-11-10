@@ -1,9 +1,10 @@
 import { OpenText, getAttribute, getRelationship } from '../../../src/js/usd/stage.js';
 
 describe('USD authored attribute precision', () => {
-  test.each(['float', 'float2', 'float3', 'float4', 'point3f', 'vector3f',
-    'normal3f', 'color3f', 'color4f', 'texCoord2f', 'texCoord3f', 'quatf'])(
-    '%s values retain their USD single-precision opinions', type => {
+  test('single-precision types retain their USD opinions', () => {
+    const types = ['float', 'float2', 'float3', 'float4', 'point3f', 'vector3f',
+      'normal3f', 'color3f', 'color4f', 'texCoord2f', 'texCoord3f', 'quatf'];
+    for (const type of types) {
       const arity = type === 'float' ? 1 : /[24]/.test(type) ? Number(type.match(/[24]/)[0]) : type === 'quatf' ? 4 : 3;
       const literal = arity === 1 ? '0.1' : `(${['0.1', '0.2', '-0.3', '0.8'].slice(0, arity).join(', ')})`;
       const stage = OpenText(`#usda 1.0
@@ -19,7 +20,8 @@ def Xform "Prim" {
       expect(getAttribute(prim, 'value')).toEqual(expected);
       expect(getAttribute(prim, 'values')).toEqual([expected, expected]);
       expect(prim.statements.find(statement => statement.reference === 'value').value).toEqual(expected);
-    });
+    }
+  });
 
   test('double values, metadata and relationships retain their values', () => {
     const stage = OpenText(`#usda 1.0

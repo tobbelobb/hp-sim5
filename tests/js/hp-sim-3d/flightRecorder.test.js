@@ -46,16 +46,18 @@ function drivenCable({ driveAtEnd = false, clockwise = true } = {}) {
 }
 
 describe('flight recorder ECS snapshot', () => {
-  test.each([
-    [false, true, 0.97], [true, true, 1.03],
-    [false, false, 1.03], [true, false, 0.97],
-  ])('motor winding has the correct payout sign (end=%s, cw=%s)', (driveAtEnd, clockwise, commanded) => {
-    const { world } = drivenCable({ driveAtEnd, clockwise });
-    const { lengths } = captureFlightRecorderSnapshot(world).cables[0];
-    expect(lengths.actual).toBe(1);
-    expect(lengths.geometric).toBe(1);
-    expect(lengths.commanded).toBeCloseTo(commanded, 12);
-    expect(lengths.error).toBeCloseTo(1 - commanded, 12);
+  test('motor winding has the correct payout sign for every end and direction', () => {
+    for (const [driveAtEnd, clockwise, commanded] of [
+      [false, true, 0.97], [true, true, 1.03],
+      [false, false, 1.03], [true, false, 0.97],
+    ]) {
+      const { world } = drivenCable({ driveAtEnd, clockwise });
+      const { lengths } = captureFlightRecorderSnapshot(world).cables[0];
+      expect(lengths.actual).toBe(1);
+      expect(lengths.geometric).toBe(1);
+      expect(lengths.commanded).toBeCloseTo(commanded, 12);
+      expect(lengths.error).toBeCloseTo(1 - commanded, 12);
+    }
   });
 
   test('logs transferred cable force even without force overlays, and omits torque-mode targets', () => {

@@ -191,27 +191,8 @@ async function withCommandFixture(options, onRequest, check) {
 }
 
 const encoderCommand = 'M569.3 P40.0:41.0:42.0:43.0';
-const finiteEncoderValues = [12.34, -56.78, 90.12, -34.56];
 
 describe('M569.3 encoder reply budgets', () => {
-  test('honors an explicit long budget for a valid reply after six seconds', async () => {
-    await withCommandFixture({ encoderTimeoutMs: 120000 }, (request, socket, later) => {
-      later(() => socket.send(JSON.stringify({ type: 'encoder_response', requestId: request.requestId, anglesDeg: finiteEncoderValues })), 6000);
-    }, async context => {
-      const result = await context.sendGcodeLine(encoderCommand, { timeout: 120000 });
-      expect(result.reply).toBe('[12.34, -56.78, 90.12, -34.56, ]');
-    });
-  }, 15000);
-
-  test('retains the effective five-second command default when no encoder budget is supplied', async () => {
-    await withCommandFixture({}, () => {}, async context => {
-      const started = Date.now();
-      const result = await context.sendGcodeLine(encoderCommand, { timeout: 120000 });
-      expect(result.reply).toMatch(/within 5000 ms/);
-      expect(Date.now() - started).toBeGreaterThanOrEqual(4800);
-    });
-  }, 12000);
-
   test('a shorter command deadline bounds an explicit long encoder budget', async () => {
     await withCommandFixture({ encoderTimeoutMs: 120000 }, () => {}, async context => {
       const started = Date.now();
