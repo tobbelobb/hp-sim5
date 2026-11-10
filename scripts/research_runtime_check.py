@@ -26,8 +26,6 @@ def check(backend='headless-js'):
 
     python = ROOT / '.venv/bin/python'
     modules = ['numpy', 'scipy', 'pxr', 'rerun', 'websockets', 'mcp', 'jax']
-    if backend.startswith('native-warp'):
-        modules.append('warp')
     command('python_dependencies', [str(python), '-c',
             'import importlib; ' + '; '.join(f'importlib.import_module({name!r})' for name in modules)])
     command('node_dependencies', ['node', '--input-type=module', '-e',
@@ -63,7 +61,7 @@ def check(backend='headless-js'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--physics-backend', default='headless-js',
-                        choices=('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'))
+                        choices=('headless-js',))
     result = check(parser.parse_args().physics_backend)
     print(json.dumps(result, indent=2))
     raise SystemExit(0 if result['ok'] else 1)

@@ -9,9 +9,8 @@ executes those motor records, and the collector observes actual encoders.
 The default backend is `headless-js`: the production native Rust physics engine
 runs in Node without rendering; JavaScript owns commands and observations. Python supervises it and mirrors detached
 observation fields for the existing numerical telemetry and Rerun recorder;
-Python does not advance that mirror. `--physics-backend native-python` retains
-the slower independent Python engine for differential experiments. Backend
-identity is explicit in status, context, point journals and manifests. The
+Python does not advance that mirror. Backend identity is explicit in status,
+context, point journals and manifests. The
 transport backend name remains `headless-js`; `physics_engine: rust-native` names
 the core. Manifests and stale-source checks include Rust, the native host adapter and the loaded native artifact. Build it with
 `npm run build:native`; missing/stale builds fail explicitly. Browser worlds still
@@ -104,7 +103,7 @@ records a selection at that time; later slip recovery may adjust collection
 forces. Inspect its timestamp and context before any explicit reuse. The
 collector does not load it automatically.
 `runtime_status` reports stale source changes: restart the launcher to load changed
-Python physics; reset the session to reload changed JS bridge/collector code.
+the browser physics engine; reset the session to reload changed JS bridge/collector code.
 `start_browser_service` supervises Vite on a free loopback port. Its ordinary web
 scene is independent of the native world; native visualization uses Rerun.
 

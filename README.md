@@ -25,24 +25,19 @@ Example usecases:
  - **Digital Twin**
  - **Automate and Validate Software Design**
 
-Try the apps:
-- A family of Slideprinters (2d Hangprinters) is currently deployed here: [hp-sim](https://tobbelobb.github.io/hp-sim5/hp-sim/).
+Try the app:
 - The 3D Hangprinter simulator is under [`hp-sim-3d/`](hp-sim-3d/), with current architecture and physics notes in [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
-- A flipper game that tests the Cable Physics engine here: [flipper](https://tobbelobb.github.io/hp-sim5/example_apps/js/flipper/index.html).
 
 ## Cable Joints and Physics Engine
 hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias
 Müller](https://matthias-research.github.io/pages/index.html).
 
-hp-sim5 includes JavaScript and Python implementations of the Cable Joints
-physics. Python can load authored 3D Hangprinter USD machines and run the headless
-cable, rigid-body and motor pipeline. The [parity checklist](PYTHON_3D_PARITY.md)
-records cross-language evidence, tolerances and remaining work; see also
-[`hp-sim-3d/README.md`](hp-sim-3d/README.md).
-
-The physics engine is the heart of hp-sim5, and lives in the src directory.
-For a deeper dive into the physics engine and the flipper demo see
-`README_adv.md`.
+The physics engine is shared by the browser and headless workflows: one Rust
+crate compiles to WebAssembly for the browser and to a native Node addon for
+research, autocal and regression tests. JavaScript owns scene loading, commands,
+rendering and the ECS application layer; it does not contain a second physics
+implementation. See [`src/wasm/cable_solver/README.md`](src/wasm/cable_solver/README.md)
+and [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
 
 hp-sim5 also includes lots of other code (subrepos, or "sub-projects") to make the best use of the simulation within the Hangprinter Project:
  - **klipper (fork)**
@@ -112,10 +107,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    npm install        # only needed the first time
    npx vite           # Needed every time to serve the html and js
    ```
-3. Open one of the current entry points:
-   - 2D simulator: <http://localhost:5173/hp-sim5/hp-sim/>
-   - 3D simulator: <http://localhost:5173/hp-sim5/hp-sim-3d/>
-   - Flipper demo: <http://localhost:5173/hp-sim5/example_apps/js/flipper/index.html>
+3. Open <http://localhost:5173/hp-sim5/hp-sim-3d/>.
 4. Ready to hack away on the js side!
 
 ### Using the 3D Hangprinter simulator
@@ -126,9 +118,9 @@ The default machine is Hangprinter v4, authored in
 | Goal | Workflow |
 | --- | --- |
 | Print a logo, load G-code or interact with machines | Open the 3D browser app and use **Print Logo**, **Print Squares**, **Upload File** or **Machines**. |
-| Inspect a browser print step by step | Run the Python flight-recorder receiver, then connect with the browser's **Rerun** button. JS still runs the physics. |
-| Run machine physics without a browser or firmware | Use the native Python CLI with the same USDA and a JSON sequence of motor commands. |
-| Check numerical agreement between JS and Python | Run the headless differential tests; visual inspection alone does not establish parity. |
+| Inspect a browser print step by step | Run the Python flight-recorder receiver, then connect with the browser's **Rerun** button. The browser's Wasm core still runs the physics. |
+| Run machine physics without a browser or firmware | Use the native Rust headless worker with the same USDA and a JSON sequence of motor commands. |
+| Check numerical agreement between Wasm and native | Run the headless differential tests; visual inspection alone does not establish parity. |
 
 To record a browser print, keep Vite running and start this in another terminal
 after installing the [Python dependencies](#python-dependencies):
@@ -143,19 +135,14 @@ Click **Rerun** again to finish. The receiver prints the saved `.rrd` path.
 Opening that file with `.venv/bin/rerun PATH.rrd` replays it; it does not start
 another simulation or recording.
 
-For native Python, start with the reproducible
-[motion-and-extrusion recipe](hp-sim-3d/FLIGHT_RECORDER.md#record-a-visible-motion-and-extrusion-run).
-It generates motor commands, records two seconds of HP4 motion and explains the
-expected displacement, extrusion and plots. Native commands use **motor radians
-and metres of extrusion**. The native CLI does not consume G-code directly.
+For headless native Rust work, use `hp_sim5_research.experiments.run_experiment`
+or the MCP tools described in [`research/README.md`](research/README.md). Native
+commands use **motor radians and metres of extrusion**. The headless worker does
+not consume G-code directly; use the firmware players or the browser uploader.
 
-The [recording and manual-test guide](hp-sim-3d/FLIGHT_RECORDER.md) covers both
-workflows, CLI options, torque transitions, live/saved viewing and locating the
-effector marker. The [3D README](hp-sim-3d/README.md) lists machine presets and
-the manual checklist. The [advanced guide](README_adv.md#native-python-3d-experiments)
-shows Python stepping, diagnostics and multi-machine scene loading. Geometry,
-physics and known presentation differences are described in the
-[parity inventory](PYTHON_3D_PARITY.md).
+The [recording and manual-test guide](hp-sim-3d/FLIGHT_RECORDER.md) covers the
+browser recorder, viewer and locating the effector marker. The
+[3D README](hp-sim-3d/README.md) lists machine presets and the manual checklist.
 
 
 ## Python dependencies
@@ -168,9 +155,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
-
-# Optional dependency for the warp version of the python version of the physics engine:
-.venv/bin/python -m pip install -r requirements-warp.txt
 
 # Optional CPU JAX dependency for autocal's fast optimizer mode:
 .venv/bin/python -m pip install -r autocal/requirements-jax-cpu.txt

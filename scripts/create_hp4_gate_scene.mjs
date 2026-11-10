@@ -8,7 +8,7 @@ import { bakeCableSceneUsdaSource } from '../src/js/usd/cable_scene_baker.js';
 import { OpenText, getAttribute } from '../src/js/usd/stage.js';
 const source = fs.readFileSync(new URL('../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
 const stage = OpenText(bakeCableSceneUsdaSource(source).source);
-const { world } = createHeadlessWorld(source, { cableSolverBackend: null });
+const { world } = createHeadlessWorld(source);
 const entities = new Map(world.query([SceneEntityInfoComponent]).map(id => [world.getComponent(id, SceneEntityInfoComponent).name, id]));
 // Original HP4 encoder replay shows the two reeving bearings counter-rotating.
 // The bottom/top magnitude is a provisional visual approximation; the original

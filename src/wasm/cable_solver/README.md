@@ -59,12 +59,9 @@ Native views use external Float64Array buffers; steps do not copy entity state.
 In a browser, await `loadDefaultCableSolverBackend()` before scene registration,
 as appBootstrap does. Browser rendering, edits and connections remain JavaScript.
 
-For an explicit JavaScript reference, use `createHeadlessWorld(sceneText,
-{ cableSolverBackend: null })`, `?solver=js` in the app, or `--solver js` in the
-profiler. Pass `new WasmPhysicsEngine(module)` for a Wasm world in Node.
-`WasmCableSolver` remains a standalone kernel adapter for differential fixtures.
-The profiler offers `--solver native|wasm|js`, plus `--native-addon PATH` to select
-an exact native build. `HP_SIM5_NATIVE_ENGINE=PATH` selects a custom native artifact
+Pass `new WasmPhysicsEngine(module)` for a Wasm world in Node. The profiler
+offers `--solver native|wasm`, plus `--native-addon PATH` to select an exact
+native build. `HP_SIM5_NATIVE_ENGINE=PATH` selects a custom native artifact
 for local services. These explicit artifacts may come from other revisions; their
 actual artifact hashes and build metadata are recorded.
 

@@ -68,7 +68,7 @@ test('stateful gate flow has static friction, inertia, drag and unilateral stopp
 });
 
 test('HP4 gate scene has six condensed units and twelve visual cylinders', () => {
-  const { world } = createHeadlessWorld(source, { cableSolverBackend: null });
+  const { world } = createHeadlessWorld(source);
   try {
     const gateIds = world.query([PinholeGateComponent]);
     const wheelIds = world.query([GateWheelComponent]);
@@ -105,7 +105,6 @@ const trajectories = [];
 for (const [name, makeBackend] of [
   ['Native', () => undefined],
   ['Wasm', () => new WasmPhysicsEngine(module)],
-  ['JS', () => null],
 ]) {
   test(`HP4 gate production prefix agrees across backends: ${name}`, () => {
     const backend = makeBackend();

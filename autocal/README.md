@@ -192,18 +192,17 @@ For autonomous headless HP3/HP4/RRF research, use
 [`hp-sim5-research-agent`](../research/README.md) and its `start_collection` MCP
 operation. Poll the returned job with `collection_status`.
 The launcher supervises firmware and a continuing physics world.
-Collection defaults to the production JavaScript engine in headless Node.
+Collection defaults to the production native Rust engine in headless Node.
 Collector waits advance simulation time. `--doctor` checks collection and
 autocal measurement ingestion. See the [native collection guide](../research/native-collection.md)
 for encoder references, force settings and calibration limits.
 
-Follow the root README to start Vite. For a Slideprinter, open
-<http://localhost:5173/hp-sim5/hp-sim/>. For a 3D machine, use
+Follow the root README to start Vite, then open
 <http://localhost:5173/hp-sim5/hp-sim-3d/>.
 
 Browser simulation requires a WebSocket connection to the open simulator. Add
-`?gcode_ws=ws://localhost:8790` to the selected simulator URL; for example:
-<http://localhost:5173/hp-sim5/hp-sim/?gcode_ws=ws://localhost:8790>.
+`?gcode_ws=ws://localhost:8790` to the simulator URL; for example:
+<http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790>.
 
 If you see this, you're good to go:
 ![Image of hp-sim app](doc/hp-sim-startscreen.png)

@@ -7,7 +7,7 @@ import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntity
 import { registerSimulationSystems } from '../../../hp-sim-3d/app/simulationSystems.js';
 import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
 
-const minimalSource = () => readFileSync('tests/fixtures/python_3d_parity/usd_scene_minimal.usda', 'utf8');
+const minimalSource = () => readFileSync('tests/fixtures/engine_parity/usd_scene_minimal.usda', 'utf8');
 
 function applyScene(world, source, root = '/World/Scene', options = {}) {
   const stage = OpenText(bakeCableSceneUsdaSource(source).source);

@@ -71,15 +71,10 @@ headless Node, with the same fixed steps, forces, motors, encoders and cables
 as the browser. JavaScript handles scene preparation, commands and observations.
 See the [native host implementation](rust-native-engine.md) and the earlier
 [Wasm engine measurements](rust-wasm-engine.md). `--machine hp3` selects the HP3 scene and matching RRF
-configuration; `--machine` is required. Use `--physics-backend native-python`
-for the independent Python engine, or `--viewer none --no-record` for numerical
-batches without Rerun logging. Fresh `run_experiment` trials also default to native
-Rust; `physics_backend='native-python'` selects the independent reference.
-Fresh trials can select `cable_solver_device='cpu'` for the optional compiled
-Warp cable solver. Continuing sessions use `--physics-backend native-warp`;
-`native-warp-cuda` is experimental and requires a CUDA device. Other physics
-systems still execute in Python. See the [compiled solver measurements and
-limits](compiled-python-solver.md) and [measured collection performance](collection-performance.md).
+configuration; `--machine` is required. Use `--viewer none --no-record` for
+numerical batches without Rerun logging. Fresh `run_experiment` trials and
+continuing sessions use the same native Rust engine hosted in Node. See
+[measured collection performance](collection-performance.md).
 
 The terminal goes directly to Codex. Continue talking and steering in that same
 conversation; services remain alive between turns. Background services have
@@ -746,7 +741,7 @@ measurements and Rerun inspection from this checkout.
 .venv/bin/python -m pytest -q tests/python/test_research_agent.py
 .venv/bin/python -m pytest -q tests/python/test_native_collector.py
 .venv/bin/python -m pytest -q tests/python/test_native_collector.py -m slow
-.venv/bin/python -m pytest -q tests/python/cable_joints_3d/test_machine_recording.py
+.venv/bin/python -m pytest -q tests/python/test_research_preflight.py
 ```
 
 The first exercises real native experiments, deterministic replay, validation,

@@ -100,7 +100,6 @@ export function createHpSimApp({
   }
 
   const urlParams = ownerWindow?.location ? new URLSearchParams(ownerWindow.location.search) : null;
-  const solverBackend = urlParams?.get('solver') === 'js' ? 'js' : 'wasm';
   const state = createAppState({
     qualityEnabled: Boolean(dom.qualityToggle?.checked),
     showConstraintForces: Boolean(dom.showForcesToggle?.checked),
@@ -244,11 +243,10 @@ export function createHpSimApp({
   let started = false;
   function loadDefaultScene() {
     defaultScenePromise ||= (async () => {
-      if (solverBackend === 'wasm' && !world.getResource('cableSolverBackend')) {
+      if (!world.getResource('cableSolverBackend')) {
         world.setResource('cableSolverBackend', await loadDefaultCableSolverBackend(
           ownerWindow?.fetch ?? globalThis.fetch, ownerWindow ?? globalThis));
       }
-      if (solverBackend === 'js') world.setResource('cableSolverBackend', null);
       return controllers.machines.loadDefaultMachine();
     })();
     return defaultScenePromise;

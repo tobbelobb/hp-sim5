@@ -143,7 +143,7 @@ class WorkerDispatcher:
         if 'machine' not in result:
             raise ProgramError('Workers require an explicit machine (hp3/hp4): set settings.machine in commission or worker_start')
         for name, choices in (('backend', ('codex', 'claude')),
-                              ('physics_backend', ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda')),
+                              ('physics_backend', ('headless-js',)),
                               ('machine', ('hp3', 'hp4')), ('viewer', ('none', 'headless', 'window'))):
             if result[name] not in choices:
                 raise ProgramError(f'Unsupported {name}: {result[name]}')

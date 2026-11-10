@@ -1,5 +1,4 @@
 import { setPhysicsSubsteps } from './physics-substeps.js';
-import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
@@ -32,7 +31,7 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
       state.lineLayeringEnabled = next;
     }
     setLineLayeringFeatureFlags(world, next);
-    _updateAttachmentPoints(world);
+    world.getResource('cableSolverBackend')?.invalidate?.();
     if (!fromToggle && toggles.lineLayeringToggle) {
       toggles.lineLayeringToggle.checked = next;
     }

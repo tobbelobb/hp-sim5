@@ -4,16 +4,12 @@ import hashlib
 import subprocess
 from pathlib import Path
 
-import numpy as np
-
-from cable_joints_3d.quaternion import Quaternion
-from .services import register_test_process
-
 
 class JSPhysics:
-    def __init__(self, root, directory, world, *, layering=True, dt=None, scene_prim=None):
-        self.world = world
+    def __init__(self, root, directory, scene_path, *, layering=True, dt=None, scene_prim=None):
+        self.directory = Path(directory)
         self.physics_wall_s = 0.
+        self.queue_length = 0
         worker = (root / 'scripts/research_physics.mjs').resolve()
         source_root = worker.parents[1]
         sources = sorted([worker, *(path for directory in ('src/js', 'hp-sim-3d/app')
@@ -22,24 +18,16 @@ class JSPhysics:
         for path in sources:
             digest.update(str(path.relative_to(source_root)).encode() + b'\0' + path.read_bytes())
         self.physics_host_sha256 = digest.hexdigest()
-        self.log = (directory / 'physics-js.log').open('a')
-        self.process = subprocess.Popen(['node', str(root / 'scripts/research_physics.mjs'),
-                                         str(directory / 'scene.usda'), str(layering).lower(), scene_prim or ''], cwd=root,
-                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        self.log = (self.directory / 'physics-js.log').open('a')
+        self.process = subprocess.Popen(['node', str(worker), str(scene_path), str(layering).lower(), scene_prim or ''],
+                                        cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=self.log, text=True, bufsize=1)
+        from .services import register_test_process
         register_test_process(self.process)
         try:
             state = self.request(dt=dt)
-            if state['dt_s'] != world.get_resource('dt'):
-                raise ValueError('Rust/Python observation timesteps differ')
             self.physics_engine = state['physics_engine']
             self.physics_artifact = state['physics_artifact']
-            from cable_joints_3d.ecs import SceneEntityInfoComponent
-            expected = [[entity, world.get_component(entity, SceneEntityInfoComponent).name]
-                        for entity in world.query([SceneEntityInfoComponent])]
-            if state['identities'] != expected:
-                raise ValueError('JS/Python scene entity identities differ; cannot mirror telemetry')
-            self.apply(state)
         except Exception:
             self.close()
             raise
@@ -57,25 +45,8 @@ class JSPhysics:
         state = json.loads(line)
         if 'error' in state:
             raise RuntimeError(state['error'])
+        self.queue_length = state.get('queue_length', 0)
         return state
-
-    def apply(self, state):
-        # Only detached observation fields are copied. Python never advances this world.
-        stores = {component.__name__: store for component, store in self.world.components.items()}
-        for name, rows in state['components']:
-            for entity, values in rows:
-                component = stores[name][entity]
-                for key, value in values.items():
-                    previous = getattr(component, key)
-                    if isinstance(previous, np.ndarray):
-                        value = np.asarray(value, dtype=float)
-                    elif isinstance(previous, Quaternion):
-                        value = Quaternion(*value)
-                    elif key.startswith('machine_'):
-                        value = {machine: np.asarray(position) for machine, position in value.items()}
-                    elif key == 'extrusions':
-                        value = [{**record, 'pos': np.asarray(record['pos'])} for record in value]
-                    setattr(component, key, value)
 
     def close(self):
         if self.process.poll() is None:

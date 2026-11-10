@@ -40,7 +40,6 @@ describe('hp-sim-3d wiring', () => {
     const commandJobs = readWorkspaceFile('hp-sim-3d/app/commandJobController.js');
 
     expect(bootstrap).toContain("../../src/js/cable_joints_3d/ecs.js");
-    expect(featureFlags).toContain("../../src/js/cable_joints_3d/cable_joints_core.js");
     expect(sceneRuntime).toContain("./runner.js");
     expect(machineScene).toContain("./setupScene.js");
     expect(readWorkspaceFile('hp-sim-3d/app/scene/extruderSceneBinding.js')).toContain("../hangprinter_extruder.js");

@@ -32,7 +32,7 @@ def main(argv=None):
     check = commands.add_parser('runtime-check', help='Check research runtime setup and launcher sockets without motion')
     check.add_argument('--cloud', action='store_true', help='Load the explicit cloud toolchain environment')
     check.add_argument('--physics-backend', default='headless-js',
-                       choices=('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'))
+                       choices=('headless-js',))
     create = commands.add_parser('create', help='Create a program from one question')
     create.add_argument('question')
     create.add_argument('--constraints', type=json.loads, default={})
