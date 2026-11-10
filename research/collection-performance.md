@@ -1,7 +1,7 @@
 # Collection throughput, 2026-10-07
 
 Continuing research collection now defaults to `headless-js`, using the production
-JavaScript physics pipeline in Node. The Python engine remains available for
+native Rust physics pipeline in Node. Python does not provide a second engine for
 differential research. This changes execution backend, not the physics timestep,
 solver iterations, force settings, winding, encoder semantics or collector.
 
@@ -67,7 +67,7 @@ tests actual browser stepping; it is not a timed browser collection.
 ```bash
 ./hp-sim5-research-agent --machine hp3
 ./hp-sim5-research-agent --machine hp3 --viewer none --no-record
-./hp-sim5-research-agent --physics-backend native-python
+./hp-sim5-research-agent
 
 .venv/bin/python scripts/replay_collection.py SCENE_USDA EVENTS_JSONL \
   --output research/output/scratch/replay-recorded

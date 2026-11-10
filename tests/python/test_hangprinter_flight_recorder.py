@@ -20,7 +20,7 @@ from websockets.sync.client import connect
 async def test_live_viewer_receives_a_partial_batch_while_the_source_is_idle(tmp_path, monkeypatch):
     import rerun as rr
     from scripts.hangprinter_flight_recorder import run
-    from cable_joints_3d.columnar_recording import ColumnarRecording
+    from hp_sim5_research.columnar_recording import ColumnarRecording
     from types import SimpleNamespace
     from websockets.asyncio.client import connect as async_connect
 

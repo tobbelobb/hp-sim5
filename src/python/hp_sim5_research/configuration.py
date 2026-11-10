@@ -9,7 +9,7 @@ import subprocess
 
 from .experiments import encode, repo_path
 
-BACKENDS = ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda')
+BACKENDS = ('headless-js',)
 LAYERED_BUILDUP = 2 / math.pi
 
 
@@ -88,12 +88,14 @@ def world_configuration(root, args, *, backend):
 
 def prepare_world(root, directory, config):
     """Freeze sources and bake with the production JS baker before constructing physics."""
-    from usd.cable_scene_loader import open_stage
+    from pxr import Sdf, Usd
     root, directory = Path(root), Path(directory)
     authored = repo_path(root, config.scene).read_text()
     (directory / 'authored-scene.usda').write_text(authored)
     design = authored
-    stage = open_stage(authored)
+    layer = Sdf.Layer.CreateAnonymous('.usda')
+    layer.ImportFromString(authored)
+    stage = Usd.Stage.Open(layer)
     source_radii = []
     for axis in 'ABCD':
         prim = stage.GetPrimAtPath(f'/World/HangprinterScene/Spool{axis}')

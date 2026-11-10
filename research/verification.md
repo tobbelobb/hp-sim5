@@ -61,7 +61,7 @@ prompt preservation, and real native RRD telemetry/lifecycle behavior. Run:
 ```bash
 .venv/bin/python -m pytest -q \
   tests/python/test_research_agent.py \
-  tests/python/cable_joints_3d/test_machine_recording.py
+  tests/python/test_native_collector.py
 ```
 
 All 25 focused checks passed in this checkout. A launcher regression also proves

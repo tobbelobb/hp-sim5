@@ -2,11 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { runFixture } from '../parity3d/oracle.mjs';
-import { WasmCableSolver } from '../../src/js/cable_joints_3d/wasm_cable_solver.js';
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 import { NativePhysicsEngine } from '../../src/js/cable_joints_3d/native_physics_engine.js';
 
-const fixture = JSON.parse(fs.readFileSync(new URL('../fixtures/python_3d_parity/open_loop_static_load.json', import.meta.url)));
+const fixture = JSON.parse(fs.readFileSync(new URL('../fixtures/engine_parity/open_loop_static_load.json', import.meta.url)));
 const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 
 // A 30 mm spool, 10 kN/m cable and 0.2 Nm initial load must balance
@@ -22,8 +21,6 @@ for (let i = 0; i < 60; i++) {
 const expectedAngle = (low + high) / 2;
 
 for (const [engine, createBackend] of [
-  ['JavaScript', () => null],
-  ['Wasm kernel', () => new WasmCableSolver(module)],
   ['Wasm physics', () => new WasmPhysicsEngine(module)],
   ['native physics', () => new NativePhysicsEngine()],
 ]) for (const substeps of [1, 2, 4, 8, 16]) {

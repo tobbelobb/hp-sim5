@@ -2,22 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { runFixture } from '../parity3d/oracle.mjs';
-import { World } from '../../src/js/cable_joints_3d/ecs.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
-import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
-import { WasmCableSolver } from '../../src/js/cable_joints_3d/wasm_cable_solver.js';
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 import { NativePhysicsEngine } from '../../src/js/cable_joints_3d/native_physics_engine.js';
 
-const fixture = JSON.parse(fs.readFileSync(new URL('../fixtures/python_3d_parity/mounted_rotor_momentum.json', import.meta.url)));
+const fixture = JSON.parse(fs.readFileSync(new URL('../fixtures/engine_parity/mounted_rotor_momentum.json', import.meta.url)));
 const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
-const world = new World();
-registerSimulationSystems(world, { cableSolverBackend: null });
-const systems = world.systems.map(system => system.constructor.name);
 const near = (actual, expected, tolerance = 1e-12) => assert(Math.abs(actual - expected) < tolerance, `${actual} != ${expected}`);
 
-for (const backend of ['JavaScript', 'Wasm cable kernel', 'Wasm physics', 'native physics']) {
+for (const backend of ['Wasm physics', 'native physics']) {
   for (const configuration of ['planar', 'tilted', 'tensor', 'passive', 'fixed']) {
     const tilted = configuration === 'tilted';
     test(`${backend}: mounted rotors conserve momentum and coast, ${configuration}`, () => {
@@ -52,10 +46,7 @@ for (const backend of ['JavaScript', 'Wasm cable kernel', 'Wasm physics', 'nativ
         }
         if (c.CableJointComponent) for (const i of [3, 4]) c.CableJointComponent[i] = rotate(c.CableJointComponent[i]);
       }
-      const engine = backend === 'native physics' ? new NativePhysicsEngine()
-        : backend === 'Wasm physics' ? new WasmPhysicsEngine(module)
-        : backend === 'Wasm cable kernel' ? new WasmCableSolver(module) : null;
-      if (backend === 'Wasm cable kernel') { input.pipeline = false; input.systems = systems; }
+      const engine = backend === 'native physics' ? new NativePhysicsEngine() : new WasmPhysicsEngine(module);
       try {
         const snapshots = runFixture(input, { cableSolverBackend: engine }).snapshots;
         // Carrier inertia 0.7, active rotor 0.1, passive rotor 0.2.

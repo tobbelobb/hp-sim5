@@ -12,7 +12,6 @@ const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.us
 const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 
 for (const [name, createBackend, steps, substeps] of [
-  ['JavaScript', () => null, 150, 4],
   ['Wasm', () => new WasmPhysicsEngine(module), 10000, 2],
   ['Wasm', () => new WasmPhysicsEngine(module), 10000, 4],
   ['Wasm', () => new WasmPhysicsEngine(module), 10000, 16],

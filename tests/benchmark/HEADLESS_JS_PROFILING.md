@@ -123,10 +123,10 @@ rerun attribution. A numerical change needs an explicit tolerance/physics review
 and the relevant parity tests; this harness does not silently relax equality.
 No optimization is accepted solely because a profiled run became faster.
 
-## Native, Wasm and JavaScript selection
+## Native and Wasm selection
 
 Local headless worlds and the profiling CLI default to native Rust. Select the
-measured backend explicitly with `--solver native`, `--solver wasm` or `--solver js`.
+measured backend explicitly with `--solver native` or `--solver wasm`.
 The CLI passes that exact backend into the shared pipeline; it never builds or
 substitutes another engine. Missing/stale native defaults require
 `npm run build:native`. `--native-addon PATH` selects a specific native binary
@@ -152,16 +152,15 @@ perf record -g --call-graph dwarf -- node scripts/profile_headless.mjs \
 ```
 
 V8 `--cpu-prof` and `--heap-sampling` measure the JS host and managed heap; they do
-not attribute Rust internals or Rust allocations. Use `--solver js` for a full JS
-physics profile, or `--solver wasm` for the browser build. `--systems` times the
+not attribute Rust internals or Rust allocations. Use `--solver wasm` for the
+browser build or `--solver native` for the native addon. `--systems` times the
 Rust step as one production system. Keep unprofiled timings separate. A custom
 native artifact is an explicit revision/profile choice, and its metadata is
 preserved even when its source differs from the current checkout.
 
-The browser loads the checked-in Wasm binary at startup; use `?solver=js` to
-select JavaScript. Build Wasm with `npm run build:wasm`.
-For comparisons, use `--solver js` to make a reference and `--compare` it with a
-`--solver wasm` or `--solver native` run. Repeats of one backend must retain exact checkpoint hashes. Across
+The browser loads the checked-in Wasm binary at startup. Build Wasm with
+`npm run build:wasm`. For comparisons, record a native reference and `--compare`
+it with a `--solver wasm` run, or vice versa. Repeats of one backend must retain exact checkpoint hashes. Across
 backends, the harness requires finite values, equal observation structure,
 exact discrete metadata, and numerical agreement within the declared tolerance.
 Defaults are `--absolute-tolerance 0.000001 --relative-tolerance 0.000001`;

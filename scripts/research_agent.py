@@ -234,16 +234,23 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
         result = subprocess.run([str(rerun), 'viewer-mcp', '--help'], capture_output=True, timeout=15)
         checks['viewer_mcp']['ok'] = result.returncode == 0
     if all(checks[name]['ok'] for name in ('numpy', 'usd-core', 'rerun-sdk')):
+        import tempfile
         try:
-            from hp_sim5_research.experiments import DEFAULT_SCENE, encode, sample
-            from cable_joints_3d.machine_simulation import load_machine_world
-            world = load_machine_world(ROOT / DEFAULT_SCENE)
-            dt = world.get_resource('dt')
-            world.update(dt)
-            observed = sample(world, 1, dt)
-            encode(observed)
-            checks['physics'] = {'ok': bool(observed['cables'] and observed['effectors'] and observed['motors']),
-                                 'dt_s': dt, 'cable_paths': len(observed['cables'])}
+            from hp_sim5_research.experiments import DEFAULT_SCENE, encode
+            from hp_sim5_research.js_physics import JSPhysics
+            from hp_sim5_research import mirror
+            with tempfile.TemporaryDirectory() as directory:
+                physics = JSPhysics(ROOT, Path(directory), ROOT / DEFAULT_SCENE)
+                try:
+                    state = physics.request(steps=1)
+                    world = mirror.World()
+                    mirror.apply_state(world, state)
+                    observed = mirror.sample(world, 1, state['dt_s'])
+                    encode(observed)
+                    checks['physics'] = {'ok': bool(observed['cables'] and observed['effectors'] and observed['motors']),
+                                         'dt_s': state['dt_s'], 'cable_paths': len(observed['cables'])}
+                finally:
+                    physics.close()
         except Exception as error:
             checks['physics'] = {'ok': False, 'error': str(error)}
     runtime = None
@@ -392,8 +399,8 @@ def main():
     parser.add_argument('--preflight', action='store_true', help='Run bounded non-moving supervised checks and exit; command networking remains untested')
     parser.add_argument('--dry-run', action='store_true', help='Show the agent command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
-    parser.add_argument('--physics-backend', choices=['headless-js', 'native-python', 'native-warp', 'native-warp-cuda'], default='headless-js',
-                        help='Continuing physics: native Rust by default; native-warp compiles the Python cable solver (CUDA experimental)')
+    parser.add_argument('--physics-backend', choices=['headless-js'], default='headless-js',
+                        help='Continuing physics: native Rust hosted in Node')
     parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
     parser.add_argument('--wall-deadline', type=float, help='Finite Unix wall deadline; expiration enters normal launcher cleanup')
     parser.add_argument('--machine', choices=['hp3', 'hp4'], required=True,

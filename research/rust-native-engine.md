@@ -40,7 +40,7 @@ the host adapter, build recipe and binary. Continuing-world command ordering,
 2 ms buckets, encoder observations, 50-step cancellation boundaries, coordinated
 resets and recording contracts remain in the [collection service](native-collection.md).
 Python supplies a detached telemetry mirror and never advances its physics in
-the Rust path. Explicit Python and Warp backends remain available.
+the Rust path. Python remains an observation and research layer only.
 
 The profiler exposes `--solver native|wasm|js` and `--native-addon PATH`. A
 separate `--profile profiling` build contains optimized code and debug symbols

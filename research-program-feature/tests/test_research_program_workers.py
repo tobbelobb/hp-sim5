@@ -177,7 +177,7 @@ class WorkerTests(unittest.TestCase):
                                    settings={'backend': 'codex', 'viewer': 'none', 'record': False,
                                              'model_provider': 'openai', 'model': 'chosen-model',
                                              'worktree': True, 'worktree_dir': str(self.directory / 'work trees'),
-                                             'machine': 'hp3', 'physics_backend': 'native-python',
+                                             'machine': 'hp3', 'physics_backend': 'headless-js',
                                              'client_args': ['--resume', 'thread', '-c', 'custom="$literal"']})
         record = self.finish(dispatcher, started['id'])
         d = record['details']

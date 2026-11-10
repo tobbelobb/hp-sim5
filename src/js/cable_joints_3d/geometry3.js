@@ -1,11 +1,11 @@
 import Vector3 from './vector3.js';
-import Vector2 from '../cable_joints/vector2.js';
+import Vector2 from './planar_math.js';
 import {
   _tangentPointCircle,
   tangentFromCircleToCircle,
   signedArcLengthOnWheel as signedArcLengthOnWheel2D,
   rightOfLine
-} from '../cable_joints/geometry.js';
+} from './planar_math.js';
 
 const EPSILON = 1e-9;
 

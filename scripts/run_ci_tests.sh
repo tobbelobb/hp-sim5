@@ -27,7 +27,7 @@ echo "== Python unit tests (autocal) =="
 (cd "$ROOT" && .venv/bin/python -m pytest autocal/tests)
 
 echo ""
-echo "== Python unit tests (cable_joints/slideprinter/flipper) =="
+echo "== Python research, service and integration tests =="
 (cd "$ROOT" && .venv/bin/python -m pytest tests/python .agents/skills/cloud-research-client/tests)
 
 run_with_retries() {

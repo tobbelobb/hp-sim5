@@ -1,9 +1,10 @@
 # 3D Hangprinter simulator
 
-hp-sim-3d is the 3D Hangprinter application built on the shared JavaScript
-cable-joints PBD/XPBD code in `src/js/cable_joints_3d/`. Machine geometry and
-physics properties come from USDA scenes; application controllers turn print
-commands into motor input and render the resulting ECS world with Three.js.
+hp-sim-3d is the 3D Hangprinter application built on the shared Rust physics
+engine in `src/wasm/cable_solver/`. The browser loads its WebAssembly build;
+headless tools load the native Node addon. Machine geometry and physics
+properties come from USDA scenes; JavaScript controllers turn print commands
+into motor input and render the resulting ECS world with Three.js.
 
 The simulation is intentionally specialized for Hangprinter cable paths,
 rigid assemblies, and driven spools. It is not a general-purpose rigid-body
@@ -33,15 +34,16 @@ The setting survives scene resets. Autocal can set it explicitly with
 Without that flag, collection preserves the simulator's setting (initially 1).
 Remote `simulation_settings` messages use the integer `physicsSubsteps` field
 (1–16); encoder replies acknowledge the applied count. Programmatic world
-creation accepts `{ physicsSubsteps: 4 }`; Python worlds use the
+creation accepts `{ physicsSubsteps: 4 }`; headless worlds use the
 `physicsSubsteps` resource.
 
 To record a browser print, run
 `.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer
 URL, then click **Rerun** in the simulator before starting the print. This records
-JS physics. For native Python physics, use the CLI or API below. Both read the
-same authored machine data, but the native CLI consumes timestep-scheduled motor
-JSON rather than G-code and has no browser print/upload UI.
+the browser's WebAssembly physics. For headless native Rust physics, use the
+research API below. Both read the same authored machine data, but the headless
+worker consumes timestep-scheduled motor JSON rather than G-code and has no
+browser print/upload UI.
 
 The [recording guide](FLIGHT_RECORDER.md) has complete copy-and-run recipes for
 browser logo recording, native settling, two-second motion/extrusion, torque
@@ -51,7 +53,7 @@ replays saved state; it does not run or record another simulation.
 
 ### Authored machine presets
 
-All files are under `public/usd_scenes/`. The native CLI selects one by path.
+All files are under `public/usd_scenes/`. The browser and headless tools select one by path.
 The scene's default root is used automatically; `--scene-prim` overrides it.
 
 | Browser label | USDA file |
@@ -91,50 +93,40 @@ command source and RRD path with any result you report.
   and their return when position mode resumes.
 - [ ] **Another machine and lifecycle:** record HP3 or single-pinhole Slideprinter
   into a separate file. In the browser, add/remove machines and reset while
-  recording; check file boundaries and names. For native append/replacement,
-  follow the [API example](../README_adv.md#append-or-replace-authored-machines).
+  recording; check file boundaries and names.
 - [ ] **Numerical confirmation:** run the focused differential commands below;
   shape/plot similarity alone cannot establish ordering/frame/constraint parity.
 
 ```bash
-.venv/bin/python -m pytest -q \
-  tests/python/cable_joints_3d/test_machine_scene_parity.py \
-  tests/python/cable_joints_3d/test_machine_pipeline_parity.py \
-  tests/python/cable_joints_3d/test_machine_lifecycle_parity.py \
-  tests/python/cable_joints_3d/test_machine_snapshot.py \
-  tests/python/cable_joints_3d/test_machine_recording.py
+npm run test:physics
+node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs \
+  tests/benchmark/physics_engine_ui.test.mjs tests/benchmark/profile_headless.test.mjs
 ```
 
-These execute the live JS oracle in Node and/or read real saved RRD data. The
-[harness README](../tests/parity3d/README.md) explains fixtures, numerical bounds
-and running the whole 3D suite. The [main README](../README.md#tests) lists the
-full JS, Python and autocal suites.
+These run the production browser and native pipelines without a browser. The
+[harness README](../tests/parity3d/README.md) explains the Wasm/native
+comparisons. The [main README](../README.md#tests) lists the full JS, Python and
+autocal suites.
 
 ## Runtime and Scene Construction
 
 For firmware-driven logo runs, repeatable performance measurements and CPU
 profiles, see the [native HP4 logo benchmark](../tests/benchmark/README.md).
 
-The native Python headless entry point loads the same authored machine files:
+The headless entry point uses the same native Rust world as the browser:
 
 ```bash
 PYTHONPATH=src/python .venv/bin/python - <<'PY'
-from cable_joints_3d.machine_simulation import load_machine_world
+from hp_sim5_research.experiments import read_run, run_experiment
 
-world = load_machine_world('public/usd_scenes/hp4_rigid_body.usda')
-for _ in range(200):
-    world.update(world.get_resource('dt'))
+manifest = run_experiment('.', steps=200, record=False)
+print(manifest['physics_engine'], manifest['metrics'])
+print(read_run('.', manifest['run_id'], 0, 1)['samples'][0]['effectors'])
 PY
 ```
 
-It registers the meaningful simulation systems in the JS app's order. Optional
-`recording=` accepts a Rerun recording stream. See the
-[Python parity checklist](../PYTHON_3D_PARITY.md) for covered machines, numerical
-bounds, fixture coverage and explicit differences. For primary native Rerun recording,
-use `PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d PATH --steps 200`;
-the [recording guide](FLIGHT_RECORDER.md) describes saved files, commands and live sinks.
-
-`app/hp-sim-3d.js` boots the application assembled by `app/appBootstrap.js`.
+See the [recording guide](FLIGHT_RECORDER.md) for headless recordings and
+[`README_adv.md`](../README_adv.md) for the advanced workflow. `app/hp-sim-3d.js` boots the application assembled by `app/appBootstrap.js`.
 The bootstrap is a composition root for controllers that own machine loading,
 print jobs, workers, feature flags, quality checks, inspection tools, and view
 state.
@@ -167,34 +159,25 @@ frames.
 `app/sceneSystems.js`. For an active local simulation step, the order is:
 
 1. Process pointer/input state.
-2. Save previous final positions and orientations.
-3. Consume queued spool commands and run position-mode stepper motors.
-4. Apply gravity, then integrate predicted linear and angular poses.
-5. Sync rigid-body members from their parent bodies and enforce spool-axis
-   projections.
-6. Rebuild cable attachment geometry and cache attachment data.
-7. Redistribute adjacent cable-segment rest lengths in
-   `CableFrictionSystem` before constraint solving.
-8. Solve cable constraints using each path's `solverIterations`, then resolve
-   cable over-corrections.
-9. Derive linear and angular velocities from the corrected poses.
-10. Run torque-mode motors using cable loads recorded by the cable solver.
-11. Update extrusion, encoders, and missed-step diagnostics.
+2. Consume queued spool commands and update motor targets.
+3. Run the Rust physics system: integration, attachment geometry, friction,
+   cable constraints, over-correction, velocity updates, torque motors and
+   encoder updates.
+4. Sync rigid-body members and render-facing state.
+5. Update extrusion and missed-step diagnostics.
+6. Render when the runner requests a frame.
 
-The central position solve still has the usual PBD/XPBD shape:
+The Rust core keeps the usual PBD/XPBD shape:
 
 ```txt
 save previous pose -> integrate pose -> solve constraints -> update velocities
 ```
 
-Torque mode is a specialized velocity update after that sequence. Its angular
-velocity change affects subsequent simulation steps.
-
-There is no global substep loop around the complete system sequence. The runner
-repeatedly calls `world.update(dt)` with the fixed scene timestep, either from a
-real-time accumulator or in time-budgeted ASAP batches. Cable paths can request
-different solver iteration counts through `cablePath:solverIterations`, while
-friction work per step is scaled with `dt`.
+Torque mode is a specialized velocity update after the cable solve. There is no
+global substep loop around the complete system sequence. The runner repeatedly
+calls `world.update(dt)` with the fixed scene timestep, either from a real-time
+accumulator or in time-budgeted ASAP batches. Cable paths can request different
+solver iteration counts through `cablePath:solverIterations`.
 
 ## Cable Paths
 
@@ -202,12 +185,12 @@ A `CablePathComponent` joins ordered cable segments and stores link types,
 winding direction, stored length, stiffness/compliance, damping, cable width,
 and its solver iteration count.
 
-Before the position solve, `CableFrictionSystem` redistributes rest length
-between adjacent segments. With no active friction barrier it tends toward
-equal PBD extension; at pinholes and non-free rolling links it limits the
-tension ratio using the configured coefficient of friction and wrap angle.
-Cable attachment updating also handles rolling geometry, hybrid link state,
-and optional line layering.
+Before the position solve, the Rust core redistributes rest length between
+adjacent segments. With no active friction barrier it tends toward equal PBD
+extension; at pinholes and non-free rolling links it limits the tension ratio
+using the configured coefficient of friction and wrap angle. Attachment
+updating also handles rolling geometry, hybrid link state and optional line
+layering.
 
 The cable solver maps ordinary rigid-body-member endpoints to the parent body,
 applies translational and tensor-based angular corrections, and treats supported

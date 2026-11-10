@@ -67,7 +67,7 @@ class ProgramManager:
 
     def runtime_check(self, program_id, *, physics_backend='headless-js'):
         """Check dependencies and launcher socket permissions before work; no motion."""
-        if physics_backend not in ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'):
+        if physics_backend not in ('headless-js',):
             raise ProgramError(f'Unsupported physics_backend: {physics_backend}')
         return runtime_check(self.root, physics_backend=physics_backend)
 

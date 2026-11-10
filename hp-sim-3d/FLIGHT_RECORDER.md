@@ -22,179 +22,47 @@ There are two recording workflows:
 | Workflow | Physics runs in | Start recording with | Output |
 | --- | --- | --- | --- |
 | Browser print | Rust/Wasm in hp-sim-3d, with JS application systems | Receiver process, then the **Rerun** button | A new `.rrd` for each connection/scene generation |
-| Native machine | Native Rust hosted in Node; Python records observations, without Vite | `.venv/bin/python -m cable_joints_3d` | One `.rrd`, plus an optional final JSON snapshot |
+| Headless machine | Native Rust hosted in Node; Python records observations, without Vite | `run_experiment(..., record=True)` or the research MCP tools | One `.rrd`, plus a final JSON snapshot |
 
 Running `.venv/bin/rerun FILE.rrd` **opens an existing recording**. It does not
 run physics, create a recording or connect to the simulator. Recording happens
 only when you explicitly run one of the workflows below.
 
-## Native simulation
+## Headless simulation
 
-The recording CLI defaults to native Rust. Select `--physics-backend python`
-for the independent Python reference, or `--cable-solver-device cpu` for the
-explicit Python/Warp path. The default keeps scene preparation and physics in
-the shared headless pipeline; Python does not advance the observation mirror.
-
-### Record a settling run yourself
-
-This starts a fresh HP4 at its authored motor targets and records initial
-settling. With HP4's `timeCodesPerSecond = 500`, one step is 0.002 seconds:
-200 steps cover **0.4 seconds**, 1,000 cover **2 seconds**. These are simulation
-durations; computation and recording can take longer than playback.
+Headless recording uses the same native Rust world as the browser without Vite.
+Python owns the observation mirror and Rerun recording; it does not advance a
+second physics implementation.
 
 ```bash
-PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d \
-  public/usd_scenes/hp4_rigid_body.usda --steps 200 \
-  --output output/rerun/hp4-python.rrd --snapshot output/rerun/hp4-python.json
-.venv/bin/rerun output/rerun/hp4-python.rrd
-```
+PYTHONPATH=src/python .venv/bin/python - <<'PY'
+from hp_sim5_research.experiments import read_run, run_experiment
 
-The first command loads USDA, constructs the ECS, registers the production
-pipeline, advances physics and writes the recording. The second opens it.
-Holding the initial targets produces little visible travel. Use the following
-motion run to check commanded motion and extrusion.
-
-### Record a visible motion and extrusion run
-
-First create a JSON command file. This is the same two-second HP4 ramp exercised
-by the sustained cross-language test; it drives all four motors and deposits
-ten extrusion records. The angles are absolute motor radians, not XYZ positions
-or cable lengths.
-
-```bash
-.venv/bin/python - <<'PY'
-import json
-from pathlib import Path
-
-rates = {'A': .0016, 'B': -.0012, 'C': .0008, 'D': .0004}
-commands = [dict(type='Move', **{axis: rate * i for axis, rate in rates.items()},
-                 **({'E': .001} if i % 100 == 0 else {})) for i in range(1000)]
-path = Path('output/commands/hp4-motion.json')
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(commands, indent=2) + '\n')
-print(f'Wrote {len(commands)} commands: {path}')
+manifest = run_experiment('.', steps=200, record=True)
+print(manifest['artifacts']['rrd'])
+print(read_run('.', manifest['run_id'], 0, 5)['samples'][-1]['effectors'])
 PY
+.venv/bin/rerun output/research/experiments/*/recording.rrd
 ```
 
-Then run and open your recording:
+The `steps` argument selects the number of updates. Commands are scheduled one
+per unpaused timestep and use motor radians plus metres of extrusion:
+`{"type":"Move","A":0.1,"B":-0.05}`, `{"type":"SetTorqueMode","axis":"D","torqueNm":-0.01}`,
+`{"type":"SetPositionMode","axis":"D"}`, `{"type":"Add to reference","A":0.01}`,
+and `{}` to hold targets for one step. The headless worker does not parse G-code;
+use the browser uploader or firmware command players for G-code prints.
 
-```bash
-PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d \
-  public/usd_scenes/hp4_rigid_body.usda --steps 1000 \
-  --commands output/commands/hp4-motion.json \
-  --output output/rerun/hp4-motion.rrd --snapshot output/rerun/hp4-motion.json
-.venv/bin/rerun output/rerun/hp4-motion.rrd
-```
-
-Expect `Recorded 1000 steps (2 s)` in the terminal and native timelines spanning
-`sim_step` 0–1,000 / `sim_time` 0–2 seconds. The tested ramp moves the effector
-about **29 mm**, has ten deposits totaling **0.01 m**, tracks the motor angles
-and reports zero missed steps. Zoom in around the effector to see that travel.
-Deposition is represented by points at the tool tip, with deposited length in
-the `extrusion_lengths` trace. This example exercises the physics command path;
-it is not a G-code logo print.
-
-Every step is recorded. The two-second HP4 example can produce roughly 170 MB
-of RRD data. Use short runs first. Explicit output names above are reused on
-reruns; omit `--output` when you want a new timestamped file each time.
-
-### Command records and CLI options
-
-`--commands PATH` reads a JSON array and consumes **one record per unpaused
-timestep**. Records are motor inputs already scheduled at the simulation rate;
-the native CLI does not parse G-code, plan Cartesian paths or drive firmware.
-For a logo/G-code print, use the browser workflow below. Firmware conversion
-and the browser's upload/worker UI are outside the native physics port.
-
-| Record | Meaning |
-| --- | --- |
-| `{"type":"Move","A":0.1,"B":-0.05}` | Set absolute position-mode targets, in radians; omitted axes retain their targets. `"axes":{"A":0.1}` is also accepted. |
-| `{"type":"Move","A":0.1,"E":0.001}` | Also deposit this increment of extrusion length, in metres, at the tip before this step's physics. Positive `E` is required for a deposit. |
-| `{"type":"SetTorqueMode","axis":"D","torqueNm":-0.01}` | Enter torque mode with signed motor torque in N m. Cable loads and body reactions remain active. |
-| `{"type":"SetPositionMode","axis":"D"}` | Leave torque mode, clear requested torque and resume the retained position target. It does not capture the current encoder angle as a new target. |
-| `{"type":"Add to reference","A":0.01}` | Add radians to the motor reference offset; the position target is `commanded_angle - delta_angle`. |
-| `null` | Consume one timestep without a command; use this to leave time between mode changes. |
-
-A `Move` angle is ignored for an axis currently in torque mode. It does not
-switch that axis back to position mode. Once the queue is empty, remaining
-`--steps` still advance physics with the retained motor state. Too few steps
-leave commands unconsumed. Do not space a long move with a single large target
-jump when you intend a smooth ramp; supply successive targets as above.
-
-For a short torque/position transition, generate a separate command file and
-run it for 500 steps (one second):
-
-```bash
-.venv/bin/python - <<'PY'
-import json
-from pathlib import Path
-
-commands = ([{'type': 'SetTorqueMode', 'axis': 'D', 'torqueNm': -.01}]
-            + [None] * 199 + [{'type': 'SetPositionMode', 'axis': 'D'}]
-            + [None] * 299)
-path = Path('output/commands/hp4-torque.json')
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(commands, indent=2) + '\n')
-PY
-PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d \
-  public/usd_scenes/hp4_rigid_body.usda --steps 500 \
-  --commands output/commands/hp4-torque.json --output output/rerun/hp4-torque.rrd
-.venv/bin/rerun output/rerun/hp4-torque.rrd
-```
-
-The D motor's `torque_mode` trace is 1 through step 200 and 0 from step 201.
-During torque mode the D cable has no commanded-length/error series, while
-actual/geometric lengths and forces remain. A negative D request loads the
-cable in this authored HP4; torque signs depend on the scene's winding/axis.
-
-| CLI option | Use |
-| --- | --- |
-| `SCENE.usda` | Load the same authored machine description as JS, baking the cable initialization through OpenUSD. |
-| `--steps N` | Number of updates; default 200. `--steps 0` records only the initial state. |
-| `--dt SECONDS` | Override both the update timestep and cable-solver `dt` resource; positive and finite. Prefer the authored timestep for comparisons. |
-| `--scene-prim /World/HangprinterScene` | Select a machine root explicitly instead of its authored default. |
-| `--commands PATH` | JSON array described above. |
-| `--output PATH.rrd` | Save the recording. Omit for a timestamped file in `output/rerun`. |
-| `--snapshot PATH.json` | Save detached final **frames and cable telemetry**. This is not an ECS checkpoint and cannot resume a run. |
-| `--connect URI` | Add a live Rerun gRPC sink alongside the saved file. |
-
-Run `PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d --help` for the
-installed entry point's options. To view a native run live, start a viewer server
-in one terminal, open the viewer URL it prints, then run the simulation in another:
-
-```bash
-.venv/bin/rerun --serve-web --bind 127.0.0.1 --port 9878 --web-viewer-port 9091
-```
-
-```bash
-PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d \
-  public/usd_scenes/hp4_rigid_body.usda --steps 1000 \
-  --commands output/commands/hp4-motion.json \
-  --connect rerun+http://127.0.0.1:9878/proxy
-```
-
-These ports allow this viewer to coexist with the browser receiver's defaults.
-Live viewing does not pace native physics to real time. The saved file remains
-available after the process exits.
-
-The native recording includes the initial state and every completed step, with
-live rigid-member hierarchies, cable lengths/forces, motor and encoder state,
-stored ECS velocities, tool points and extrusion deposits. `sim_time` and
-`sim_step` advance on positive unpaused updates; scene resets restart them and
-set the `scene_generation` timeline. Use a separate recording stream/file for
-independent scene runs. Removed geometry clears both static and temporal data.
+The recording includes the initial state and every completed step, with live
+rigid-member hierarchies, cable lengths/forces, motor and encoder state, tool
+points and extrusion deposits. `sim_time` and `sim_step` advance on positive
+unpaused updates; scene resets restart them and set the `scene_generation`
+timeline. Use a separate recording stream/file for independent scene runs.
 
 Native visuals use straight constraint spans, points and frame axes. Stored
 intermediate wraps remain in length traces; browser sag and wrap tessellation are
 presentation differences. Each scalar/segment has a stable plot path. Entering
 torque mode clears only the commanded/error traces and preserves actual/geometric
-series identities. Snapshots and scalar traces retain Python numerical precision;
-Rerun's transform/geometry archetypes encode float32 values.
-
-The optional JSON contains detached final frames and cable telemetry. The
-native recording path reads the ECS without synchronizing members or mutating
-physics state. See [the parity checklist](../PYTHON_3D_PARITY.md) for cross-language
-recording checks and numerical bounds.
+series identities.
 
 ## Browser simulation
 

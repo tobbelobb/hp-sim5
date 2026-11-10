@@ -12,8 +12,6 @@ export default defineConfig(async () => {
       'attic/**',
       'dist/**',
       'dist-hangprinter-org/**',
-      'example_apps/js/flipper/flipper_with_sliding_beads.html',
-      'example_apps/js/flipper/flipper_with_attached_beads.html',
       'RRF/**',
       '**/.venv/**',
       '**/RRF/**',

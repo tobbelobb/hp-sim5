@@ -18,7 +18,6 @@ const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm
 for (const [name, createBackend, steps] of [
   ['native', () => undefined, 10000],
   ['browser Wasm', () => new WasmPhysicsEngine(module), 10000],
-  ['JavaScript fallback', () => null, 1000],
 ]) test(`HP4 Print Logo remains stable at browser defaults: ${name}`, () => {
   const { world, remote, dt } = createHeadlessWorld(scene, { cableSolverBackend: createBackend() });
   try {

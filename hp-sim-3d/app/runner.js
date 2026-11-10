@@ -1,4 +1,4 @@
-import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
+import { dumpWorldState } from '../../src/js/cable_joints_3d/debugUtils.js';
 import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { InputSystem } from './hangprinter_input.js';
 

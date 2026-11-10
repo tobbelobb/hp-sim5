@@ -4,7 +4,7 @@ The implementation uses the production cable baker, machine scene pipeline,
 simulation system registration and command/encoder controller in Node. The
 ordinary collector CLI uses a remote simulation clock; the full-auto fitting,
 selection, recovery and patience logic is unchanged. No browser or independent
-Python physics engine runs during headless calibration.
+native Rust physics engine runs during headless calibration.
 
 ## Verification contract
 
