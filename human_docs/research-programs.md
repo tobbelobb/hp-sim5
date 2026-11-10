@@ -27,8 +27,7 @@ manager instructions and `attachment.connection`. Use that path as CONNECTION:
 
 Calls return while work continues. Inspect status before retrying a timed-out
 change. Commissioned researchers use a separate worktree by default.
-A question and launcher settings suffice; there is no route-planning or
-budget-accounting step. Human constraints remain part of the task.
+A question and launcher settings suffice.
 
 ## Where the output goes
 

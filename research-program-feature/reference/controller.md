@@ -1,8 +1,7 @@
 # Execution and recovery
 
-Dispatch goes directly to the existing researcher launcher. There are no route
-plans, runtime allocations, experiment counters or review-funding records.
-`ProgramController` only configures concurrency and observes lost owners.
+Dispatch goes directly to the existing researcher launcher. `ProgramController`
+only configures concurrency and observes lost owners.
 
 Commissioned researchers default to separate worktrees. Worker concurrency defaults to one. `configure_pool` can select up to four;
 parallel launches use separate worktrees. Shared runtime changes and combined

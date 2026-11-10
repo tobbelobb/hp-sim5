@@ -201,7 +201,6 @@ def test_local_launcher_selects_local_despite_inherited_cloud_settings(tmp_path,
     plan = json.loads(result.stdout)['result']
     assert plan['client_transport'] == 'local'
     assert plan['client']['argv'][0] == backend
-    assert 'Bound execution mode: LOCAL' in plan['client']['instructions']
     assert '--cloud --question' not in plan['client']['instructions']
     assert not store.exists()
 

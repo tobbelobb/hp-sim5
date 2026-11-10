@@ -12,6 +12,8 @@ import uuid
 
 
 SCHEMA_VERSION = 1
+# route_plan, investigation, strategy_event and runtime_allocation are legacy
+# import kinds from older programs; current runs do not create them.
 KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering',
          'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt',
          'submission', 'submission_event', 'review_run', 'review', 'admission',
@@ -52,15 +54,23 @@ def _object(value, label):
     return value
 
 
+def _wall_minutes(value):
+    if value is None:
+        return None
+    if (isinstance(value, bool) or not isinstance(value, (int, float)) or
+            not math.isfinite(value) or value <= 0):
+        raise ProgramError('wall_minutes must be a positive finite number')
+    return value
+
+
 def _allocation(value):
+    """Validate legacy allocation objects retained in saved programs."""
     _object(value, 'allocation')
     for name, amount in value.items():
         if not isinstance(name, str) or isinstance(amount, bool) or not isinstance(amount, (int, float)):
             raise ProgramError('Allocation entries must be named finite nonnegative numbers')
         if (isinstance(amount, float) and not math.isfinite(amount)) or amount < 0:
             raise ProgramError('Allocation entries must be finite and nonnegative')
-    if 'wall_minutes' in value and value['wall_minutes'] <= 0:
-        raise ProgramError('An assignment requires a positive finite wall_minutes allocation')
     return value
 
 
@@ -246,13 +256,12 @@ class ProgramStore:
                                 (identity, program_id, kind, _text(title, 'title'), _json(details), timestamp, timestamp))
         return self.get_record(program_id, identity)
 
-    def create_program(self, question, constraints=None, *, program_id=None, question_id=None):
+    def create_program(self, question, *, program_id=None, question_id=None):
         _text(question, 'question')
-        constraints = {} if constraints is None else _object(constraints, 'constraints')
         identity, root_id, timestamp = _identity('program', program_id), _identity('question', question_id), _now()
         with self.transaction():
             self.connection.execute('INSERT INTO programs VALUES (?, ?, ?, ?, ?, 1, ?, ?)',
-                                    (identity, root_id, question, _json(constraints), 'active', timestamp, timestamp))
+                                    (identity, root_id, question, _json({}), 'active', timestamp, timestamp))
             self._insert(identity, 'question', question, {'scope': {}, 'knowledge_state': 'unassessed'}, root_id)
         return self.get_program(identity)
 
@@ -270,8 +279,8 @@ class ProgramStore:
             return self._insert(program_id, 'approach', title,
                                 {'question_id': question_id, 'state': 'live', 'reason': _text(reason, 'reason')}, record_id)
 
-    def add_assignment(self, program_id, approach_id, objective, allocation=None, *, settings=None, record_id=None, expected_revision=None):
-        allocation = _allocation({} if allocation is None else allocation)
+    def add_assignment(self, program_id, approach_id, objective, wall_minutes=None, *, settings=None, record_id=None, expected_revision=None):
+        wall_minutes = _wall_minutes(wall_minutes)
         settings = _object({} if settings is None else settings, 'settings')
         with self.transaction():
             program = self._touch(program_id, expected_revision)
@@ -280,7 +289,7 @@ class ProgramStore:
                 raise ProgramError('Assignments require an active program and live/promising approach')
             return self._insert(program_id, 'assignment', objective,
                                 {'approach_id': approach_id, 'question_id': approach['details']['question_id'],
-                                 'allocation': allocation, 'settings': settings, 'execution_state': 'planned',
+                                 'wall_minutes': wall_minutes, 'settings': settings, 'execution_state': 'planned',
                                  'review_state': 'unreviewed', 'knowledge_state': 'unassessed'}, record_id)
 
     def add_artifact(self, program_id, reference, sha256, evidence_type, source_revision, *,
@@ -334,7 +343,7 @@ class ProgramStore:
                 self.connection.execute('UPDATE programs SET state=? WHERE id=?', (target, program_id))
             else:
                 if kind == 'assignment' and target in ('ready', 'running'):
-                    _allocation(details['allocation'])
+                    _wall_minutes(details.get('wall_minutes'))
                     approach = self.get_record(program_id, details['approach_id'], 'approach')
                     if program['state'] != 'active' or approach['details']['state'] not in ('live', 'promising'):
                         raise ProgramError('Ready/running assignments require an active program and approach')
@@ -432,7 +441,7 @@ class ProgramStore:
                 require(details.get('question_id'), 'question')
                 if details['question_id'] != approach['details'].get('question_id'):
                     raise ProgramError('Assignment and approach question differ')
-                _allocation(details.get('allocation'))
+                _wall_minutes(details.get('wall_minutes'))
                 if (details.get('execution_state') not in tuple(TRANSITIONS['assignment']) or
                         details.get('review_state') != 'unreviewed' or details.get('knowledge_state') != 'unassessed'):
                     raise ProgramError('Invalid execution/review/knowledge state')

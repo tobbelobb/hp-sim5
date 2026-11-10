@@ -8,7 +8,7 @@
 - Ask a separate reviewer to check useful results and proposed code.
 - Preserve measurements and link claims to the evidence that supports them.
 - Keep research findings separate from whether code is ready to use.
-- Respect human constraints, steering and stop requests.
+- Respect human steering and stop requests.
 - Deliver tested improvements and a short account of what changed.
 - Add management machinery only when its benefit justifies its cost.
 

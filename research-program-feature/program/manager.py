@@ -136,7 +136,7 @@ class ProgramManager:
         self.poll()
         snapshot = self.store.snapshot(program_id)
         records = snapshot['records']
-        program = snapshot['program']
+        program = {key: value for key, value in snapshot['program'].items() if key != 'constraints'}
         return {'program': program,
                 'work': [{'id': r['id'], 'question': r['title'],
                           'state': r['details']['execution_state']} for r in records if r['kind'] == 'assignment'],
@@ -203,7 +203,7 @@ class ProgramManager:
         return self.reviews.apply(program_id, review_id)
 
     def steering(self, program_id, text, *, subject_id=None, actor='human'):
-        """Save human direction without prescribing experiments or allocations."""
+        """Save human direction without prescribing experiments."""
         return self.store.record_note(program_id, 'steering', text, subject_id=subject_id, actor=actor)
 
     def decision(self, program_id, text, *, subject_id=None, evidence_ids=None, actor='manager',

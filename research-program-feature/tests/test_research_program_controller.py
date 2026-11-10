@@ -20,7 +20,7 @@ def local_manager(c):
 
 def ready(m, identity, minutes=.01):
     s = m.store
-    s.add_assignment('p', 'route', 'Distinct bounded observation ' + identity, {'wall_minutes': minutes}, record_id=identity)
+    s.add_assignment('p', 'route', 'Distinct bounded observation ' + identity, minutes, record_id=identity)
     s.transition('p', identity, 'ready', 'Fixture selection')
 
 

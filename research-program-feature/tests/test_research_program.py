@@ -38,7 +38,6 @@ class ProgramTests(unittest.TestCase):
 
     def test_question_alone_and_fresh_process_cli(self):
         created = json.loads(self.cli('create', 'Can the same data improve calibration?').stdout)
-        self.assertEqual(created['constraints'], {})
         identity = created['id']
         for command in ('open', 'status', 'overview'):
             overview = json.loads(self.cli(command, identity).stdout)
@@ -51,15 +50,14 @@ class ProgramTests(unittest.TestCase):
         self.assertEqual((self.store_path / 'programs.sqlite3').stat().st_mode & 0o777, 0o600)
 
     def test_cli_vertical_slice_and_lossless_export_import(self):
-        constraints = {'goal': 'same data', 'hardware': False, 'max_fits': 2}
-        program = json.loads(self.cli('create', 'Compare approaches', '--constraints', json.dumps(constraints), '--id', 'pilot').stdout)
+        program = json.loads(self.cli('create', 'Compare approaches', '--id', 'pilot').stdout)
         question = json.loads(self.cli('question', 'pilot', 'Which observations distinguish routes?', '--scope', '{"machine":"HP3"}').stdout)
         approaches = []
         for title in ('Screen saved candidates', 'Change the fit'):
             approaches.append(json.loads(self.cli('approach', 'pilot', title, '--question', question['id'],
                                                    '--reason', 'Compare decision value').stdout))
         assignment = json.loads(self.cli('assignment', 'pilot', 'Inspect saved candidates', '--approach', approaches[0]['id'],
-                                          '--allocation', '{"wall_minutes":5,"fresh_fits":0}').stdout)
+                                          '--wall-minutes', '5').stdout)
         artifact = json.loads(self.cli('artifact', 'pilot', 'output/research/sessions/example/metrics.json',
                                       '--sha256', 'a' * 64, '--evidence-type', 'synthetic',
                                       '--source-revision', 'candidate-123', '--provenance', '{"dataset":"shared-input"}').stdout)
@@ -72,7 +70,6 @@ class ProgramTests(unittest.TestCase):
             self.assertEqual(result['details']['knowledge_state'], 'unassessed')
         self.cli('transition', 'pilot', approaches[1]['id'], 'parked', '--reason', 'Too costly for now')
         before = json.loads(self.cli('overview', 'pilot').stdout)
-        self.assertEqual(before['program']['constraints'], constraints)
         self.assertEqual(before['live_alternatives'], [approaches[0]['id']])
         self.assertEqual(before['assignments'], [assignment['id']])
         self.assertEqual(before['program']['question_id'], program['question_id'])
@@ -88,25 +85,23 @@ class ProgramTests(unittest.TestCase):
         self.assertIn('Preserve the input data', markdown)
         self.assertIn('No scientific result', markdown)
 
-    def test_invalid_allocations_do_not_mutate_program(self):
+    def test_invalid_wall_minutes_do_not_mutate_program(self):
         with self.store() as store:
             program = store.create_program('Bound assignments')
             approach = store.add_approach(program['id'], program['question_id'], 'Inspect', 'Cheap')
             before = store.snapshot(program['id'])
-            for allocation in ({'wall_minutes': 0}, {'wall_minutes': -1},
-                               {'wall_minutes': float('inf')}, {'wall_minutes': float('nan')},
-                               {'wall_minutes': True}, {'wall_minutes': 1, 'fresh_fits': -1}, []):
-                with self.subTest(allocation=allocation), self.assertRaises(ProgramError):
-                    store.add_assignment(program['id'], approach['id'], 'Invalid', allocation)
+            for wall_minutes in (0, -1, float('inf'), float('nan'), True, '5'):
+                with self.subTest(wall_minutes=wall_minutes), self.assertRaises(ProgramError):
+                    store.add_assignment(program['id'], approach['id'], 'Invalid', wall_minutes)
                 self.assertEqual(store.snapshot(program['id']), before)
-            valid = store.add_assignment(program['id'], approach['id'], 'Small probe', {'wall_minutes': 2})
-            self.assertNotIn('fresh_fits', valid['details']['allocation'])
+            valid = store.add_assignment(program['id'], approach['id'], 'Small probe', 2)
+            self.assertEqual(valid['details']['wall_minutes'], 2)
 
     def test_rejections_are_atomic_and_revisions_detect_stale_views(self):
         with self.store() as store:
             program = store.create_program('Check transactions', program_id='program', question_id='root')
             approach = store.add_approach('program', 'root', 'Route A', 'Reason', record_id='route')
-            assignment = store.add_assignment('program', 'route', 'Inspect', {'wall_minutes': 2}, record_id='work')
+            assignment = store.add_assignment('program', 'route', 'Inspect', 2, record_id='work')
             before = store.snapshot('program')
             requests = [
                 lambda: store.create_program('Duplicate', program_id='program'),
@@ -136,12 +131,12 @@ class ProgramTests(unittest.TestCase):
             program = store.create_program('State guards')
             identity = program['id']
             approach = store.add_approach(identity, program['question_id'], 'Route', 'Reason')
-            work = store.add_assignment(identity, approach['id'], 'Probe', {'wall_minutes': 1})
+            work = store.add_assignment(identity, approach['id'], 'Probe', 1)
             store.transition(identity, approach['id'], 'parked', 'Higher cost')
             with self.assertRaises(ProgramError):
                 store.transition(identity, work['id'], 'ready', 'Must reject parked route')
             with self.assertRaises(ProgramError):
-                store.add_assignment(identity, approach['id'], 'Must reject', {'wall_minutes': 1})
+                store.add_assignment(identity, approach['id'], 'Must reject', 1)
             store.transition(identity, approach['id'], 'live', 'New information')
             store.transition(identity, identity, 'paused', 'Human pause')
             with self.assertRaises(ProgramError):

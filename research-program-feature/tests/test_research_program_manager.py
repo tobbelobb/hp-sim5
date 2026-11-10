@@ -136,7 +136,7 @@ def attach(c, program='p'):
 def assignment(a, identity='work'):
     route = tool(a, 'approach', {'question_id': 'q', 'title': 'Inspect saved data', 'reason': 'Cheapest discriminator'})
     result = tool(a, 'assignment', {'approach_id': route['id'], 'objective': 'Compare frozen baselines',
-                                    'record_id': identity, 'allocation': {'wall_minutes': 1}})
+                                    'record_id': identity})
     tool(a, 'transition', {'record_id': result['id'], 'target': 'ready', 'reason': 'Explicit bounded assignment'})
     return result
 
@@ -409,7 +409,6 @@ def test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert(
     assert 'research_program_mcp.py' not in command
     assert 'research_attach.py' not in command
     assert 'hp-sim5-research-program tool' in plan['instructions']
-    assert plan['instructions'].startswith('Bound execution mode: LOCAL.')
     assert '.agents/skills/cloud-research-client/scripts/' not in plan['instructions']
     if backend == 'codex':
         for name in ('hp_sim5', 'rerun', 'hp_sim5_program'):

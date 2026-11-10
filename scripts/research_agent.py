@@ -500,7 +500,7 @@ def main():
         instructions += (f'\nSession artifacts: {session}\n'
                          f'Write the report to {session / "report.md"}; keep working notes in {session / "scratchbook"}.\n'
                          f'Keep the searchable abstract at {session / "abstract.md"} current too.\n'
-                         'This launcher started a fresh native world. Conversation resume does not restore physics checkpoints.\n')
+                         'This launcher started a fresh native world.\n')
         full_prompt = prompt or ''
         if args.dry_run:
             endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'

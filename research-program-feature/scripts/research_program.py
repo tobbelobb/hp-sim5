@@ -35,7 +35,6 @@ def main(argv=None):
                        choices=('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'))
     create = commands.add_parser('create', help='Create a program from one question')
     create.add_argument('question')
-    create.add_argument('--constraints', type=json.loads, default={})
     create.add_argument('--id')
     for name in ('open', 'status', 'overview', 'export'):
         command = commands.add_parser(name)
@@ -91,7 +90,7 @@ def main(argv=None):
             command.add_argument('--reason', required=True)
         elif name == 'assignment':
             command.add_argument('--approach', required=True)
-            command.add_argument('--allocation', type=json.loads, help='Optional wall_minutes timeout as JSON')
+            command.add_argument('--wall-minutes', type=float, help='Optional positive wall timeout')
         elif name == 'artifact':
             command.add_argument('--sha256', required=True)
             command.add_argument('--evidence-type', choices=('simulated', 'synthetic', 'analytic', 'hardware', 'imported'), required=True)
@@ -118,7 +117,7 @@ def main(argv=None):
             command = args.command
             options = {'expected_revision': getattr(args, 'expected_revision', None)}
             if command == 'create':
-                result = store.create_program(args.question, args.constraints, program_id=args.id)
+                result = store.create_program(args.question, program_id=args.id)
             elif command == 'import':
                 result = store.import_snapshot(json.loads(args.source.read_text()))
             elif command in ('open', 'status', 'overview'):
@@ -151,7 +150,8 @@ def main(argv=None):
                 elif command == 'approach':
                     result = store.add_approach(args.program, args.question, args.text, args.reason, **options)
                 elif command == 'assignment':
-                    result = store.add_assignment(args.program, args.approach, args.text, args.allocation, **options)
+                    result = store.add_assignment(args.program, args.approach, args.text,
+                                                  wall_minutes=args.wall_minutes, **options)
                 elif command == 'artifact':
                     result = store.add_artifact(args.program, args.text, args.sha256, args.evidence_type,
                                                 args.source_revision, provenance=args.provenance, **options)
