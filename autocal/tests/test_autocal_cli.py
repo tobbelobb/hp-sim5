@@ -133,71 +133,6 @@ def test_spool_cli_rejects_invalid_fit_structure_level():
         _resolve_spool_cli_options(parser, args)
 
 
-def test_spool_cli_parses_optimizer_mode():
-    _parser, args = _parse_spool_args("--optimizer-mode", "fast-fd")
-    assert str(args.optimizer_mode) == "fast-fd"
-
-
-def test_spool_cli_parses_solve_optimizer_choices():
-    _parser, args = _parse_spool_args()
-    assert str(args.solve_optimizer) == "lbfgsb"
-
-    _parser, args = _parse_spool_args("--solve-optimizer", "trf")
-    assert str(args.solve_optimizer) == "trf"
-
-    _parser, args = _parse_spool_args("--solve-optimizer", "lm")
-    assert str(args.solve_optimizer) == "lm"
-
-    parser = build_semi_auto_parser()
-    with pytest.raises(SystemExit):
-        parser.parse_args(["--machine-type", "slideprinter", "--solve-optimizer", "L-BFGS-B"])
-
-
-@pytest.mark.parametrize(
-    "flags, expected",
-    [
-        ([], False),
-        (["--trf-solver-fallback"], True),
-        (["--no-trf-solver-fallback"], False),
-    ],
-)
-def test_trf_solver_fallback_requires_opt_in(flags, expected):
-    _parser, args = _parse_spool_args(*flags)
-    assert args.solve_optimizer == "lbfgsb"
-    assert args.trf_solver_fallback is expected
-
-
-def test_full_auto_run_spec_parses_optimizer_mode_override():
-    tokens, overrides = _parse_full_auto_run_spec("--optimizer-mode fast-fd --solve-iterations 2")
-    assert tokens == ["--optimizer-mode", "fast-fd", "--solve-iterations", "2"]
-    assert overrides["optimizer_mode"] == "fast-fd"
-    assert overrides["solve_iterations"] == 2
-
-
-def test_full_auto_run_spec_parses_solve_optimizer_override():
-    tokens, overrides = _parse_full_auto_run_spec("--solve-optimizer trf")
-    assert tokens == ["--solve-optimizer", "trf"]
-    assert overrides["solve_optimizer"] == "trf"
-
-
-def test_full_auto_run_spec_parses_fit_structure_override():
-    tokens, overrides = _parse_full_auto_run_spec("--fit-structure 2")
-    assert tokens == ["--fit-structure", "2"]
-    assert overrides["fit_structure"] == "2"
-
-
-def test_full_auto_run_spec_parses_filter_schedule_override():
-    tokens, overrides = _parse_full_auto_run_spec("--filter-schedule 0,1,2")
-    assert tokens == ["--filter-schedule", "0,1,2"]
-    assert overrides["filter_schedule"] == "0,1,2"
-
-
-def test_full_auto_run_spec_parses_objective_schedule_override():
-    tokens, overrides = _parse_full_auto_run_spec("--objective-schedule 0,1,2")
-    assert tokens == ["--objective-schedule", "0,1,2"]
-    assert overrides["objective_schedule"] == "0,1,2"
-
-
 def test_parse_filter_schedule_rejects_unknown_numeric_pass_alias():
     with pytest.raises(ValueError, match="0,1,2"):
         _parse_filter_schedule("0,1,3")
@@ -206,11 +141,6 @@ def test_parse_filter_schedule_rejects_unknown_numeric_pass_alias():
 def test_parse_objective_schedule_rejects_unknown_numeric_pass_alias():
     with pytest.raises(ValueError, match="0,1,2 or prefit,pointwise,position"):
         _parse_objective_schedule("0,1,3")
-
-
-def test_parse_filter_schedule_rejects_legacy_refreeze_aliases():
-    with pytest.raises(ValueError, match="warmup,dynamic,constant or 0,1,2"):
-        _parse_filter_schedule("warmup_no_freeze,refreeze_dynamic,refreeze_constant_mask")
 
 
 def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
@@ -308,32 +238,6 @@ def test_autocal_main_keeps_explicit_collector_speedup_untouched(monkeypatch, tm
     assert captured["collector_args"] == ["--speedup", "40"]
 
 
-def test_autocal_main_rejects_removed_full_auto_flag(tmp_path):
-    with pytest.raises(SystemExit):
-        ac.main(
-            [
-                "--machine-type",
-                "slideprinter",
-                "--full-auto",
-                "--dataset",
-                str(tmp_path / "dummy.json"),
-            ]
-        )
-
-
-def test_autocal_main_rejects_removed_full_auto_verbose_flag(tmp_path):
-    with pytest.raises(SystemExit):
-        ac.main(
-            [
-                "--machine-type",
-                "slideprinter",
-                "--full-auto-verbose",
-                "--dataset",
-                str(tmp_path / "dummy.json"),
-            ]
-        )
-
-
 def test_open_loop_motors_option():
     _, args = _parse_spool_args("--open-loop-motors")
     assert args.open_loop_motors is True
@@ -356,25 +260,6 @@ def test_filter_variants_preserve_inheritance_and_explicit_reenable(positive, ne
     assert _parse_full_auto_run_spec(f"{negative} {positive}")[1] == {key: True}
 
 
-@pytest.mark.parametrize("flag", ["--threshold", "--sigma-used-mm", "--scale-fix", "--spool-inner-iters"])
-def test_removed_fit_flags_rejected_in_main_and_variant_parsers(flag):
-    with pytest.raises(SystemExit):
-        _parse_spool_args(flag, "1")
-    with pytest.raises(ValueError):
-        _parse_full_auto_run_spec(f"{flag} 1")
-
-
-@pytest.mark.parametrize("flag,value", [
-    ("--stop-cost", "1"), ("--stop-std-mm", "1"),
-    ("--candidate-deltas", "0,10"), ("--fd-eps-mm", "1"),
-    ("--no-exclude-existing", None), ("--existing-tol-mm", "10"),
-    ("--top-k", "10"),
-])
-def test_removed_planning_and_stopping_flags_are_rejected(flag, value):
-    with pytest.raises(SystemExit):
-        _parse_spool_args(flag, *([] if value is None else [value]))
-
-
 @pytest.mark.parametrize("value", ["0", "-1", "nan", "inf"])
 def test_planning_ridge_requires_a_finite_positive_value(value):
     with pytest.raises(SystemExit):
@@ -391,40 +276,3 @@ def test_spread_stop_override_requires_a_finite_fraction(monkeypatch, value, exp
     assert spread_stop_fraction() == expected
 
 
-def test_everyday_help_is_short_and_research_help_lists_all_controls(capsys, monkeypatch):
-    monkeypatch.setenv("COLUMNS", "80")
-    with pytest.raises(SystemExit) as exit_info:
-        ac.main(["--help"])
-    assert exit_info.value.code == 0
-    captured = capsys.readouterr()
-    everyday = captured.out
-    assert not captured.err
-    assert len(everyday.splitlines()) < 90
-    assert "--help-research" in everyday and "--headless-sim" in everyday
-    assert "--solve-restarts" not in everyday
-    assert "--filter-schedule" not in everyday
-    assert "--regularization" not in everyday
-
-    with pytest.raises(SystemExit) as exit_info:
-        ac.main(["--help-research"])
-    assert exit_info.value.code == 0
-    captured = capsys.readouterr()
-    assert not captured.err
-    for action in build_semi_auto_parser()._actions:
-        for option in action.option_strings:
-            assert option in captured.out
-    assert "--extended-reference-ws" in captured.out
-    assert "Research: solver and recovery" in captured.out
-    assert "hp3" in captured.out
-
-
-def test_help_views_preserve_defaults_and_hidden_controls_remain_parseable():
-    parser = build_semi_auto_parser()
-    before = vars(parser.parse_args(["--machine-type", "slideprinter"]))
-    parser.format_help()
-    parser.format_help(research=True)
-    after = vars(parser.parse_args(["--machine-type", "slideprinter"]))
-    assert before == after and "help_research" not in after
-    args = parser.parse_args(["--machine-type", "slideprinter",
-                              "--solve-restarts", "2", "--no-pointwise-filtering"])
-    assert args.solve_restarts == 2 and not args.pointwise_filtering

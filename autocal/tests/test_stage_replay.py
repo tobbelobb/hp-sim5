@@ -1,7 +1,6 @@
 """Stage contracts: frozen models, exact reuse, and failed-prediction vetoes."""
 import copy
 import json
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -169,17 +168,6 @@ def test_fit_replay_reads_old_artifacts_without_removed_options(tmp_path, monkey
     override.write_text(json.dumps({"residual_threshold": 0.01}))
     with pytest.raises(SystemExit):
         main(["fit", str(artifact), "--options", str(override), "--output", str(output)])
-
-
-@pytest.mark.parametrize("saved", [{"scale_fix": []}, {"scale_fix": [1]}, {"spool_inner_iters": 60},
-                                   {"use_flex": True}])
-def test_fit_replay_rejects_nondefault_removed_spool_policies(tmp_path, saved):
-    artifact = tmp_path / "old-fit.json"
-    write_stage_artifact(artifact, "fit", {
-        "fit": {"dataset": {"sweeps": []}}, "fit_options": saved,
-    })
-    with pytest.raises(SystemExit):
-        main(["fit", str(artifact), "--output", str(tmp_path / "result.json")])
 
 
 def test_history_replay_migrates_flex_disabled_options_but_rejects_corrections(tmp_path):

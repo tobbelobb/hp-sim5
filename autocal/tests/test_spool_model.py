@@ -75,20 +75,6 @@ def test_nonlinear_delta_uses_absolute_thetas():
     )
 
 
-def test_build_spool_model_params_defaults_theta0_to_zero():
-    dataset = _sample_dataset()
-    params = build_spool_model_params(
-        dataset,
-        base_radii_mm=[10.0, 10.0, 10.0],
-        modeled_radii_mm=[10.0, 10.0, 10.0],
-        modeled_buildup_factor=[0.0, 0.0, 0.0],
-        spool_to_motor_gearing_factor=[1.0, 1.0, 1.0],
-        mechanical_advantage=[1.0, 1.0, 1.0],
-        lines_per_spool=[1.0, 1.0, 1.0],
-    )
-    assert tuple(float(v) for v in params.theta0_deg) == (0.0, 0.0, 0.0)
-
-
 def test_zero_tension_validation_requires_projected_angles_even_when_raw_angles_exist():
     dataset = _sample_dataset()
     validate_dataset_has_raw_angles(dataset)

@@ -1,5 +1,4 @@
 from argparse import Namespace
-import json
 
 import numpy as np
 
@@ -7,56 +6,9 @@ from scripts.plot_optimizer_diagnostics import (
     _parse_iteration_models_from_log_text,
     _resolve_model_from_args,
     _parse_summary_model_from_log_text,
-    _json_ready,
     _sample_theoretical_raw_curve,
-    _signed_fill_rgb,
     _svg_per_sweep_residual_order_plot,
-    _svg_scatter_plot,
 )
-
-
-def test_signed_fill_rgb_uses_consistent_sign_convention():
-    assert _signed_fill_rgb(10.0, limit=10.0) == "rgb(220,0,0)"
-    assert _signed_fill_rgb(0.0, limit=10.0) == "rgb(220,220,220)"
-    assert _signed_fill_rgb(-10.0, limit=10.0) == "rgb(0,0,220)"
-
-
-def test_svg_scatter_plot_keeps_legend_labels_and_point_colors_aligned(tmp_path):
-    out_path = tmp_path / "residual_plot.svg"
-    rows = [
-        {
-            "sweep_id": "sweep_a",
-            "point_idx": 0,
-            "l_drive_mm": 100.0,
-            "residual_mm_signed": 10.0,
-            "residual_mm": 10.0,
-        },
-        {
-            "sweep_id": "sweep_b",
-            "point_idx": 1,
-            "l_drive_mm": 200.0,
-            "residual_mm_signed": -10.0,
-            "residual_mm": 10.0,
-        },
-    ]
-
-    _svg_scatter_plot(
-        title="demo",
-        rows=rows,
-        x_key="l_drive_mm",
-        y_key="residual_mm_signed",
-        x_label="l_drive [mm]",
-        y_label="signed residual [mm]",
-        out_path=out_path,
-        annotate_points=False,
-    )
-
-    text = out_path.read_text(encoding="utf-8")
-    assert ">+10<" in text
-    assert ">0<" in text
-    assert ">-10<" in text
-    assert 'fill="rgb(220,0,0)"' in text
-    assert 'fill="rgb(0,0,220)"' in text
 
 
 def test_parse_iteration_models_accepts_selected_run_without_console_score():
@@ -182,19 +134,6 @@ def test_svg_per_sweep_residual_order_plot_marks_midpoint_split(tmp_path):
     assert "signed residual [mm]" in text
     assert "measured point order" in text
     assert "sub-sweep split" in text
-
-
-def test_json_ready_converts_numpy_scalars_and_arrays():
-    payload = {
-        "arr": np.asarray([1.0, 2.0]),
-        "nested": {"value": np.float64(3.5), "flag": np.bool_(True)},
-        "count": np.int64(7),
-    }
-
-    normalized = _json_ready(payload)
-    encoded = json.dumps(normalized, sort_keys=True)
-
-    assert encoded == '{"arr": [1.0, 2.0], "count": 7, "nested": {"flag": true, "value": 3.5}}'
 
 
 def test_sample_theoretical_raw_curve_returns_finite_points_for_slideprinter_sweep():

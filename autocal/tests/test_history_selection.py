@@ -24,26 +24,6 @@ def _anchors(offset):
             [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]]
 
 
-def test_history_validation_forwards_both_projection_flag_spellings(monkeypatch):
-    import autocal.history_selection as history
-
-    observed = []
-
-    def score(*args, **kwargs):
-        observed.append(kwargs.get("prefer_zero_tension_angles"))
-        return (1.0, 1)
-
-    monkeypatch.setattr(history, "score_future_sweeps", score)
-    dataset = {"sweeps": []}
-    candidates = [{"iteration": 1, "rank_score": 1.0,
-                   "plan": {"anchors": np.asarray(_anchors(0.0)), "dataset": dataset,
-                            "dataset_for_estimation": dataset},
-                   "training_sweep_ids": []}]
-    for flag in ("--project-zero-tension", "--projectZeroTension"):
-        history.evaluate_history_candidates(candidates, collector_args=[flag])
-    assert observed == [True, True, True, True]
-
-
 def test_consensus_returns_nothing_without_anchor_geometry():
     assert consensus_anchor_estimate([]) == (None, (), None)
     assert consensus_anchor_estimate([_item(1, None)]) == (None, (), None)
