@@ -482,7 +482,7 @@ def test_manager_answers_worker_question_through_bound_cli(manager):
     answer = 'Use the "saved" baseline.\nDo not refit.'
     response = tool(a, 'worker_answer', {'attempt_id': worker['id'], 'question_id': 'baseline', 'answer': answer})
     assert response['manager_question'] is None
-    assert response['details']['runtime']['wall_deadline'] == worker['details']['runtime']['wall_deadline']
+    assert response['details']['runtime'] == worker['details']['runtime']
     assert json.loads(Path(status['manager_answer_path']).read_text()) == {'id': 'baseline', 'answer': answer}
 
 
