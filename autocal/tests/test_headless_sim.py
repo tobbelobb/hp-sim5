@@ -76,6 +76,7 @@ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
     assert partial.read_text() == '{"point":{"l_drive":1}}\n'
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('layering', [False, True])
 def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering):
     from argparse import Namespace
@@ -115,6 +116,7 @@ def recorded_events(path, source):
     return sorted(events, key=lambda event: (event['wall_time_ms'], event.get('monotonic_ms', 0)))
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('mode', [None, 'none', 'events', 'sampled', 'full'])
 def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_path, monkeypatch, mode):
     from argparse import Namespace
@@ -203,6 +205,7 @@ def test_unapplied_run_is_not_a_normal_completion(tmp_path):
     assert not service.manifest['normal_completion']
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('keep_alive', [False, True])
 def test_extended_headless_rejects_crash_after_last_request(tmp_path, monkeypatch, keep_alive):
     from argparse import Namespace
@@ -252,6 +255,7 @@ def test_extended_headless_requires_drain_even_with_zero_exit_status(tmp_path, m
     assert service.manifest['physics_returncode'] == 0
 
 
+@pytest.mark.slow
 def test_extended_headless_continues_when_recorder_disconnects(tmp_path, monkeypatch):
     from argparse import Namespace
     monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
@@ -284,6 +288,7 @@ def test_recorder_readiness_failure_is_nonfatal(tmp_path, monkeypatch):
     assert 'AUTOCAL_REFERENCE_WS' not in os.environ
 
 
+@pytest.mark.slow
 def test_headless_uses_external_recorder_and_preserves_collector_clock(tmp_path, monkeypatch):
     from argparse import Namespace
     from autocal.headless_sim import free_port
@@ -336,6 +341,7 @@ def test_headless_uses_external_recorder_and_preserves_collector_clock(tmp_path,
 
 
 @pytest.mark.slow
+@pytest.mark.heavy
 def test_fresh_hp3_full_auto_global_radii_and_matched_browser_collection(tmp_path):
     """No seed dataset, manual stopping, shortened collection or acceptance threshold."""
     dataset = tmp_path / 'hp3' / 'sweeps.json'
@@ -392,6 +398,7 @@ def test_fresh_hp3_full_auto_global_radii_and_matched_browser_collection(tmp_pat
 
 
 @pytest.mark.slow
+@pytest.mark.heavy
 def test_interrupted_bootstrap_preserves_points_and_stops_owned_services(tmp_path):
     dataset = tmp_path / 'sweeps.json'
     output = (tmp_path / 'stdout.log').open('w')

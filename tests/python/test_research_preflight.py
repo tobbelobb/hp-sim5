@@ -194,6 +194,7 @@ async def test_recorder_probe_timeout_retires_group(tmp_path, monkeypatch):
     await retire_group(process)
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_live_mcp_preflight_test_cancel_timeout_and_disconnection(tmp_path):
     from mcp import Client, StdioServerParameters

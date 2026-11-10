@@ -175,11 +175,17 @@ async def test_autocal_retires_children_even_when_owner_crashes(tmp_path, stop):
     result = await finished(manager, job)
     assert result['status'] == ('failed' if stop == 'crash' else 'budget_exhausted' if stop == 'timeout' else 'cancelled')
     child = Path(f'/proc/{pid_file.read_text()}/stat')
+    def gone_or_zombie():
+        # The child can exit between exists() and read_text(), so both errors mean it is gone.
+        try:
+            return child.read_text().split()[2] == 'Z'
+        except (FileNotFoundError, ProcessLookupError):
+            return True
     for _ in range(100):
-        if not child.exists() or child.read_text().split()[2] == 'Z':
+        if gone_or_zombie():
             break
         await asyncio.sleep(.01)
-    assert not child.exists() or child.read_text().split()[2] == 'Z'
+    assert gone_or_zombie()
     with pytest.raises(ProcessLookupError):
         os.kill(owned['process'].pid, 0)
 

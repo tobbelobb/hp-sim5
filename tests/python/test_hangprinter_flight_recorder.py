@@ -16,6 +16,7 @@ from scripts.hangprinter_flight_recorder import FlightRecording
 from websockets.sync.client import connect
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_live_viewer_receives_a_partial_batch_while_the_source_is_idle(tmp_path, monkeypatch):
     import rerun as rr
@@ -268,6 +269,7 @@ def test_event_batches_preserve_envelopes_order_clocks_and_completion(tmp_path):
     assert clock_rows == [[4.2], [4.3], [4.4]]
 
 
+@pytest.mark.slow
 def test_live_recorder_negotiates_sampling_and_drains_collector_events(tmp_path):
     with socket.socket() as port_socket:
         port_socket.bind(('127.0.0.1', 0))
@@ -349,6 +351,7 @@ def test_live_recorder_negotiates_sampling_and_drains_collector_events(tmp_path)
     assert [event for _, event in sorted(stored)] == burst
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('events', [[], [None], [dict(version=1, type='autocal_event', source='unknown', wall_time_ms=1)],
                                   [dict(version=1, type='autocal_event')] * 257])
 def test_live_recorder_rejects_invalid_batches_without_acknowledging(tmp_path, events):

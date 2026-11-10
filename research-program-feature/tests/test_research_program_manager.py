@@ -21,6 +21,8 @@ from program import host as program_host
 ROOT = Path(__file__).resolve().parents[2]
 CLI = ROOT / 'hp-sim5-research-program'
 
+pytestmark = pytest.mark.slow
+
 
 def until(predicate, timeout=5):
     deadline = time.monotonic() + timeout

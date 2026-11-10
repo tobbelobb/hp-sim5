@@ -12,6 +12,9 @@ from autocal.theoretical_ellipse import (
     get_anchor_opt_bounds,
 )
 
+# JAX compilation is slow and memory-hungry; keep it out of the fast default run.
+pytestmark = pytest.mark.slow
+
 
 def _synthetic_slideprinter_dataset():
     anchors = np.asarray(

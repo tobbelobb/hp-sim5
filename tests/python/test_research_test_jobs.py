@@ -200,6 +200,7 @@ async def test_cleanup_retires_stubborn_children_even_after_owner_exit(tmp_path,
     assert manager.active is None and result['artifacts']['child.pid']
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 @pytest.mark.parametrize('stop', ['shutdown', 'signal'])
 async def test_live_supervisor_shutdown_retires_test_owned_services(tmp_path, stop):

@@ -1007,27 +1007,49 @@ def test_resolve_sim_config_prefers_line_layer_config_for_spool_search(monkeypat
 
 
 @pytest.mark.parametrize("machine_type,name", [
-    ("hangprinter_3", "hp3"), ("hp3", "hp3"), ("v3", "hp3"),
-    ("hangprinter_4", "hp4"), ("hp4", "hp4"), ("v4", "hp4"),
-    ("four_high_anchors", "skycam"), ("skycam", "skycam"),
-    ("cube_corners", "cubecorners"), ("cubecorners", "cubecorners"),
+    ("hangprinter_3", "hp3"), ("hangprinter_4", "hp4"),
+    ("four_high_anchors", "skycam"), ("cube_corners", "cubecorners"),
     ("slideprinter", "slideprinter"),
 ])
-@pytest.mark.parametrize("layered", [False, True])
-@pytest.mark.parametrize("firmware", ["rrf", "klipper"])
-def test_resolve_sim_config_maps_machine_versions(monkeypatch, machine_type, name, layered, firmware):
+def test_resolve_sim_config_maps_machine_versions(monkeypatch, machine_type, name):
     monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
     monkeypatch.delenv("AUTOCAL_KLIPPER_SIM_CONFIG", raising=False)
-    for mode in ("off", "global") if layered else ("off",):
-        result = ac._resolve_sim_config(machine_type=machine_type, find_radii_mode=mode,
-                                        find_buildup_mode="off", layering=layered and mode == "off", firmware=firmware)
-        if firmware == "rrf":
-            expected = f"sys/config_{name}{'_w_line_layers' if layered else ''}.g"
-            assert (ac.REPO_ROOT / ac.RRF_SIM_VSD_PATH / expected).is_file()
-        else:
-            expected = f"public/klipper/{name}/printer-{name}-linux-mcu{'-with-buildup' if layered else ''}.cfg"
-            assert (ac.REPO_ROOT / expected).is_file()
-        assert result == expected
+    assert ac._resolve_sim_config(machine_type=machine_type, find_radii_mode="off",
+                                  find_buildup_mode="off") == f"sys/config_{name}.g"
+
+
+@pytest.mark.parametrize("alias,name", [
+    ("hp3", "hp3"), ("v3", "hp3"), ("hp4", "hp4"), ("v4", "hp4"),
+    ("skycam", "skycam"), ("cubecorners", "cubecorners"),
+])
+def test_resolve_sim_config_accepts_machine_aliases(monkeypatch, alias, name):
+    monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
+    monkeypatch.delenv("AUTOCAL_KLIPPER_SIM_CONFIG", raising=False)
+    result = ac._resolve_sim_config(machine_type=alias, find_radii_mode="off",
+                                    find_buildup_mode="off")
+    assert result == f"sys/config_{name}.g"
+
+
+@pytest.mark.parametrize("layered", [False, True])
+@pytest.mark.parametrize("firmware", ["rrf", "klipper"])
+def test_resolve_sim_config_selects_layering_and_firmware(monkeypatch, layered, firmware):
+    monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
+    monkeypatch.delenv("AUTOCAL_KLIPPER_SIM_CONFIG", raising=False)
+    result = ac._resolve_sim_config(machine_type="hangprinter_3", find_radii_mode="off",
+                                    find_buildup_mode="off", layering=layered, firmware=firmware)
+    if firmware == "rrf":
+        expected = f"sys/config_hp3{'_w_line_layers' if layered else ''}.g"
+        assert (ac.REPO_ROOT / ac.RRF_SIM_VSD_PATH / expected).is_file()
+    else:
+        expected = f"public/klipper/hp3/printer-hp3-linux-mcu{'-with-buildup' if layered else ''}.cfg"
+        assert (ac.REPO_ROOT / expected).is_file()
+    assert result == expected
+
+
+def test_resolve_sim_config_spool_modes_enable_layering(monkeypatch):
+    monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
+    assert ac._resolve_sim_config(machine_type="hangprinter_3", find_radii_mode="global",
+                                  find_buildup_mode="off") == "sys/config_hp3_w_line_layers.g"
 
 
 def test_resolve_sim_config_uses_env_override(monkeypatch):

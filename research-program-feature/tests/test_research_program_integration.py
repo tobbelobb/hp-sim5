@@ -25,6 +25,8 @@ from program.host import open_manager, request, live
 from test_research_program_review import context, submit, reviewer, state, CASES
 from test_research_program_controller import local_manager
 
+pytestmark = pytest.mark.slow
+
 
 def git(c, *args):
     return subprocess.check_output(['git', '-C', str(c['root']), *args], stderr=subprocess.PIPE).decode().strip()
