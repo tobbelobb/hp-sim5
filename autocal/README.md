@@ -203,6 +203,8 @@ Follow the root README to start Vite, then open
 Browser simulation requires a WebSocket connection to the open simulator. Add
 `?gcode_ws=ws://localhost:8790` to the simulator URL; for example:
 <http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790>.
+If the page is missing that parameter, collection waits for the connection and
+prints the URL to open.
 
 If you see this, you're good to go:
 ![Image of hp-sim app](doc/hp-sim-startscreen.png)

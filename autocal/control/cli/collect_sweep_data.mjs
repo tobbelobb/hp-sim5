@@ -443,7 +443,7 @@ Options:
   --no-ws                    Disable hp-sim websocket bridge
   --ws-port <port>           WebSocket port (default: 8790)
   --hp-sim-reset             Reset hp-sim on start
-  --wait-ws <ms>             Wait for hp-sim websocket connection (default: 0)
+  --wait-ws <ms>             Wait for hp-sim websocket connection (default: 0 = wait forever)
   --debug                    Verbose logging (includes G-code replies)
   --debug-gcode              Echo sent G-code
   --debug-gcode-responses    Echo G-code responses

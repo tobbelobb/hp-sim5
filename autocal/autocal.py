@@ -320,6 +320,31 @@ def full_auto_loop(
         )
         provider.wait_for_ready(f"http://localhost:{target_port}")
 
+    if (
+        sim
+        and not no_collect
+        and headless_sim is None
+        and not _arg_has_flag(collector_args_eff, "--no-ws")
+    ):
+        ws_port = 8790
+        raw_ws_port = _arg_value(collector_args_eff, "--ws-port")
+        if raw_ws_port is not None:
+            try:
+                ws_port = int(raw_ws_port)
+            except (TypeError, ValueError):
+                ws_port = 8790
+        if ws_port > 0:
+            simulator_url = (
+                f"http://localhost:5173/hp-sim5/hp-sim-3d/"
+                f"?gcode_ws=ws://localhost:{ws_port}"
+            )
+            _log_console(
+                f"; --sim: collection waits for a browser connected to ws://localhost:{ws_port}"
+            )
+            _log_console(
+                f";        open {simulator_url} and keep the simulator page open"
+            )
+
     def _finalize(code: int) -> int:
         nonlocal cleanup_registered
         extended_reference.artifact(work_path)

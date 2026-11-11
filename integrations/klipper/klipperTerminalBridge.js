@@ -339,6 +339,13 @@ function buildWsHelpers({
     if (!wss || hasReadyWsClients()) {
       return Promise.resolve();
     }
+    if (!quiet) {
+      const hint = buildKlippyBridgeWsHint(wsPort);
+      console.log(`Waiting for hp-sim WebSocket client on ws://localhost:${wsPort} ...`);
+      console.log(`  Collection is blocked until the simulator page connects. Open it with ${hint}`);
+      console.log(`  (for example http://localhost:5173/hp-sim5/hp-sim-3d/${hint}) and keep the page open.`);
+      console.log('  Press Ctrl-C to abort.');
+    }
     let settled = false;
     const resolveOnce = (resolve) => {
       if (settled) {
