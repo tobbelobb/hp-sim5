@@ -30,6 +30,10 @@ echo ""
 echo "== Python research, service and integration tests =="
 (cd "$ROOT" && .venv/bin/python -m pytest tests/python .agents/skills/cloud-research-client/tests)
 
+echo ""
+echo "== Python slow integration tests (simulators, recorders, MCP, hosts) =="
+(cd "$ROOT" && .venv/bin/python -m pytest -m "slow and not heavy")
+
 run_with_retries() {
   local label="$1"
   local cmd="$2"

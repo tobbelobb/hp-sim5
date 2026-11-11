@@ -54,6 +54,7 @@ def experiment_root(tmp_path):
     return tmp_path
 
 
+@pytest.mark.slow
 def test_real_physics_measurements_recording_and_reproducible_inputs(experiment_root):
     from rerun.chunk import RrdReader
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
@@ -91,6 +92,7 @@ def test_real_physics_measurements_recording_and_reproducible_inputs(experiment_
     assert frozen['metrics'] == first['metrics']
 
 
+@pytest.mark.slow
 def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experiment_root):
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     root = experiment_root
@@ -135,6 +137,7 @@ def test_input_and_artifact_path_boundaries(experiment_root):
         read_run(experiment_root, '../outside')
 
 
+@pytest.mark.slow
 def test_fresh_experiment_and_readback_with_shared_worktree_output(experiment_root, tmp_path):
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     shared = tmp_path.parent / (tmp_path.name + '-shared-output')
@@ -154,6 +157,7 @@ def test_fresh_experiment_and_readback_with_shared_worktree_output(experiment_ro
         read_run(experiment_root, escaped_id)
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_browser_interventions_keep_a_valid_mcp_object_result(tmp_path):
     from mcp import Client, StdioServerParameters
@@ -172,6 +176,7 @@ async def test_browser_interventions_keep_a_valid_mcp_object_result(tmp_path):
         assert not observed.is_error and observed.structured_content == {'backend': 'browser-js'}
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_stdio_mcp_discovery_execution_readback_and_error():
     from mcp import Client, StdioServerParameters

@@ -30,6 +30,7 @@ def test_recording_alias_owns_browser_recorder(tmp_path, monkeypatch, flag):
     assert calls == [("start", dataset), ("stop", dataset)]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("fail", [False, True])
 def test_owned_recorder_drains_browser_and_finalizes(tmp_path, monkeypatch, fail):
     monkeypatch.delenv("AUTOCAL_REFERENCE_WS", raising=False)

@@ -13,6 +13,8 @@ from hp_sim5_research.experiments import sample
 
 ROOT = Path(__file__).resolve().parents[2]
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.mark.asyncio
 async def test_bridge_encoder_order_unwrapping_and_diagnostic_offset(tmp_path):
@@ -88,7 +90,6 @@ async def test_collection_rrd_rotation_finalizes_files_and_preserves_physics(tmp
         session.close()
 
 
-@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_live_viewer_receives_collector_advances_and_can_seek(tmp_path):
     import asyncio
@@ -124,7 +125,6 @@ async def test_live_viewer_receives_collector_advances_and_can_seek(tmp_path):
         launcher.stop_process(viewer)
 
 
-@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_supervised_services_stdio_gcode_and_browser(tmp_path):
     from mcp import Client, StdioServerParameters
@@ -172,7 +172,6 @@ async def test_supervised_services_stdio_gcode_and_browser(tmp_path):
     assert service.process.poll() == 0
 
 
-@pytest.mark.slow
 def test_real_rrf_native_collection_autocal_and_process_cleanup(tmp_path):
     service = RuntimeService(ROOT, tmp_path)
     try:
@@ -337,7 +336,6 @@ async def test_failed_collection_finalizes_evidence_with_optional_recording(tmp_
         runtime.session.close()
 
 
-@pytest.mark.slow
 def test_live_collection_job_cancel_preserves_boundary_and_requires_reset(tmp_path):
     import time
     from rerun.chunk import RrdReader
@@ -374,7 +372,6 @@ def test_live_collection_job_cancel_preserves_boundary_and_requires_reset(tmp_pa
         service.close()
 
 
-@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_attachment_reconnect_isolation_reset_and_dead_supervisor(tmp_path):
     import subprocess

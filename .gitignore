@@ -3,7 +3,7 @@
 .venv
 tags
 attic/
-node_modules/
+node_modules
 done
 someday_maybe
 tankespørsmål

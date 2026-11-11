@@ -47,6 +47,7 @@ def relay(tmp_path):
         runtime.close()
 
 
+@pytest.mark.slow
 def test_real_mcp_tools_work_without_sockets_in_requester(relay, monkeypatch):
     process, connection, owner, runtime = relay
     with monkeypatch.context() as patch:
@@ -109,6 +110,7 @@ def test_reviewer_has_no_tool_attachment(tmp_path):
     assert process is None and connection is None
 
 
+@pytest.mark.slow
 def test_hard_bridge_owner_loss_closes_real_mcp_relay(relay, tmp_path):
     _, connection, _, runtime = relay
     session = Path(bridge.read(connection)['session'])

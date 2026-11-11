@@ -30,6 +30,7 @@ def test_invalid_world_settings(args):
         world_configuration(ROOT, args, backend='headless-js')
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 @pytest.mark.parametrize('machine', ['hp3', 'hp4'])
 async def test_disabled_layering_bakes_zero_width_and_matches_production(tmp_path, machine):
@@ -61,6 +62,7 @@ process.stdout.write(bakedScene);
         session.close()
 
 
+@pytest.mark.slow
 def test_custom_unlayered_radii_reach_geometry_and_frozen_firmware(tmp_path):
     config = world_configuration(ROOT, {'machine': 'hp3', 'layering': False,
                                 'base_radii_mm': [31, 32, 33, 34]}, backend='headless-js')
@@ -76,6 +78,7 @@ def test_custom_unlayered_radii_reach_geometry_and_frozen_firmware(tmp_path):
         session.close()
 
 
+@pytest.mark.slow
 def test_preparation_reloads_authored_sources_and_rejects_changed_firmware(tmp_path):
     root = tmp_path / 'repo'
     for source in ('public/usd_scenes/hp3_rigid_body.usda', 'RRF/run/vsd/sys/config_hp3.g'):
@@ -142,6 +145,7 @@ def test_real_reconfiguration_reset_active_job_and_evidence(tmp_path):
         service.close()
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_active_autocal_and_failed_restart_remain_recoverable(tmp_path, monkeypatch):
     spec = importlib.util.spec_from_file_location('research_runtime', ROOT / 'scripts/research_runtime.py')
@@ -189,6 +193,7 @@ async def test_active_autocal_and_failed_restart_remain_recoverable(tmp_path, mo
         await runtime.close_session()
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, monkeypatch):
     spec = importlib.util.spec_from_file_location('research_runtime', ROOT / 'scripts/research_runtime.py')

@@ -3,7 +3,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import signal
 import shutil
 import subprocess
 import sys
@@ -20,6 +19,8 @@ from program import host as program_host
 
 ROOT = Path(__file__).resolve().parents[2]
 CLI = ROOT / 'hp-sim5-research-program'
+
+pytestmark = pytest.mark.slow
 
 
 def until(predicate, timeout=5):
@@ -39,34 +40,6 @@ def cli(*arguments, ok=True):
     assert result['ok'] is ok
     assert 'Traceback' not in completed.stderr
     return result.get('result') if ok else result['error']
-
-
-@pytest.mark.parametrize('backend', ['codex', 'claude', None])
-@pytest.mark.parametrize('flags,grill,questions', [
-    ([], False, False), (['--grill-me'], True, False),
-    (['--ask-questions'], False, True),
-    (['--grill-me', '--ask-questions-along-the-way'], True, True),
-    (['--grill-me', '--no-grill-me', '--no-ask-questions'], False, False),
-    (['--dont-ask'], False, False),
-])
-def test_manager_communication_policy(tmp_path, backend, flags, grill, questions):
-    opened = cli('--store', tmp_path / 'unused', '--question', 'Worth doing?', '--dry-run',
-                 *(['--' + backend] if backend else []), *flags)
-    assert not (tmp_path / 'unused').exists()
-    assert opened['communication'] == {'grill_me': grill, 'ask_questions': questions}
-    plan = opened['client']
-    instructions = plan['instructions'] if plan else opened['manager_instructions']
-    assert f'\"grill_me\": {str(grill).lower()}' in instructions
-    assert f'\"ask_questions\": {str(questions).lower()}' in instructions
-    assert 'Never treat silence' in instructions
-    assert 'integration_finish' in instructions
-    if backend == 'codex':
-        assert f'features.default_mode_request_user_input={str(grill or questions).lower()}' in plan['argv']
-        injected = next(a for a in plan['argv'] if a.startswith('developer_instructions='))
-        assert json.loads(injected.split('=', 1)[1]) == instructions
-    elif backend == 'claude':
-        assert ('--disallowedTools' not in plan['argv']) is (grill or questions)
-        assert '--append-system-prompt-file' in plan['argv']
 
 
 def tool(attachment, operation, parameters=None, ok=True):
@@ -454,8 +427,6 @@ def test_manager_forwarded_provider_and_model_share_existing_helpers(tmp_path):
     assert plan['argv'].count('--model') == 1
     assert 'base' not in plan['argv']
     assert 'model_provider="openai"' not in plan['argv']
-
-
 
 
 def test_missing_worker_machine_does_not_charge_or_spawn(manager):

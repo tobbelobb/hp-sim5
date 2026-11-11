@@ -9,6 +9,7 @@ import sys
 import pytest
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('mode', ['default', 'disabled', 'custom', 'verbose'])
 def test_jax_cache_and_native_logging_settings(tmp_path, mode):
     pytest.importorskip('jax')
@@ -38,7 +39,8 @@ print(jax.jit(lambda x: jnp.sum(x*x))(jnp.ones(100)))
 warnings.warn('Python warning remains visible')
 os.write(2, b'Unrelated stderr remains visible\\n')
 """
-    for repeat in range(2):
+    # The second run only adds signal for the verbose stderr assertion.
+    for repeat in range(2 if mode == 'verbose' else 1):
         result = subprocess.run([sys.executable, '-c', code], env=env,
                                 capture_output=True, text=True, check=True)
         lines = result.stdout.splitlines()

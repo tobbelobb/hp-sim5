@@ -115,7 +115,9 @@ class TestJobs:
         job_id = uuid.uuid4().hex
         directory = self.directory / 'tests' / job_id
         directory.mkdir(parents=True, exist_ok=False)
-        argv = [str(self.root / '.venv/bin/python'), '-m', 'pytest', '-q', '-m', 'not slow',
+        # Test jobs are the integration lane, so keep slow suites and drop only the
+        # multi-minute full-auto runs that do not fit a bounded test job.
+        argv = [str(self.root / '.venv/bin/python'), '-m', 'pytest', '-q', '-m', 'not heavy',
                 *SUITES[suite], '--basetemp', str(directory / 'pytest-temp'),
                 '--junitxml', str(directory / 'junit.xml')]
         job = dict(job_id=job_id, kind='integration_tests', suite=suite, status='running',
