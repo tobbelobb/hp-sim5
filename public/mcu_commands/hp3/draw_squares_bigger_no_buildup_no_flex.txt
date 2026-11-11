@@ -1,29 +1,25 @@
-allocate_oids count=14
-config_analog_in oid=5 pin=analog1
-config_digital_out oid=6 pin=gpiochip1/gpio17 value=0 default_value=0 max_duration=150000000
-set_digital_out_pwm_cycle oid=6 cycle_ticks=5000000
+allocate_oids count=12
+config_digital_out oid=5 pin=gpiochip1/gpio17 value=0 default_value=0 max_duration=150000000
+set_digital_out_pwm_cycle oid=5 cycle_ticks=5000000
 config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=7 pin=gpiochip1/gpio2 value=0 default_value=0 max_duration=0
+config_digital_out oid=6 pin=gpiochip1/gpio2 value=0 default_value=0 max_duration=0
 config_stepper oid=1 step_pin=gpiochip1/gpio3 dir_pin=gpiochip1/gpio4 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=8 pin=gpiochip1/gpio5 value=0 default_value=0 max_duration=0
+config_digital_out oid=7 pin=gpiochip1/gpio5 value=0 default_value=0 max_duration=0
 config_stepper oid=2 step_pin=gpiochip1/gpio6 dir_pin=gpiochip1/gpio7 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=9 pin=gpiochip1/gpio8 value=0 default_value=0 max_duration=0
+config_digital_out oid=8 pin=gpiochip1/gpio8 value=0 default_value=0 max_duration=0
 config_stepper oid=3 step_pin=gpiochip1/gpio9 dir_pin=gpiochip1/gpio10 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=10 pin=gpiochip1/gpio11 value=0 default_value=0 max_duration=0
-config_analog_in oid=11 pin=analog0
-config_digital_out oid=12 pin=gpiochip1/gpio15 value=0 default_value=0 max_duration=150000000
-set_digital_out_pwm_cycle oid=12 cycle_ticks=5000000
-config_stepper oid=4 step_pin=gpiochip1/gpio12 dir_pin=gpiochip1/gpio13 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=13 pin=gpiochip1/gpio14 value=0 default_value=0 max_duration=0
-finalize_config crc=1985421987
-query_analog_in oid=5 clock=52500000 sample_ticks=50000 sample_count=8 rest_ticks=15000000 min_value=12005 max_value=32303 range_check_count=4
-queue_digital_out oid=6 clock=10000000 on_ticks=0
-query_analog_in oid=11 clock=55500000 sample_ticks=50000 sample_count=8 rest_ticks=15000000 min_value=1034 max_value=32303 range_check_count=4
-queue_digital_out oid=12 clock=10000000 on_ticks=0
+config_digital_out oid=9 pin=gpiochip1/gpio11 value=0 default_value=0 max_duration=0
+config_digital_out oid=10 pin=gpiochip1/gpio27 value=0 default_value=0 max_duration=150000000
+set_digital_out_pwm_cycle oid=10 cycle_ticks=5000000
+config_stepper oid=4 step_pin=gpiochip1/gpio24 dir_pin=gpiochip1/gpio25 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=11 pin=gpiochip1/gpio26 value=0 default_value=0 max_duration=0
+finalize_config crc=3290920665
+queue_digital_out oid=5 clock=10000000 on_ticks=0
+queue_digital_out oid=10 clock=10000000 on_ticks=0
+queue_digital_out oid=6 clock=12500000 on_ticks=1
 queue_digital_out oid=7 clock=12500000 on_ticks=1
 queue_digital_out oid=8 clock=12500000 on_ticks=1
 queue_digital_out oid=9 clock=12500000 on_ticks=1
-queue_digital_out oid=10 clock=12500000 on_ticks=1
 set_next_step_dir oid=0 dir=1
 queue_step oid=0 interval=12764895 count=1 add=0
 set_next_step_dir oid=1 dir=0
@@ -123,7 +119,7 @@ queue_step oid=0 interval=19646 count=128 add=-1
 queue_step oid=2 interval=41174 count=147 add=-8
 queue_step oid=3 interval=123949 count=33 add=-248
 queue_step oid=0 interval=19592 count=127 add=-1
-queue_digital_out oid=13 clock=86502051 on_ticks=1
+queue_digital_out oid=11 clock=86502051 on_ticks=1
 set_next_step_dir oid=4 dir=1
 queue_step oid=4 interval=86727358 count=1 add=0
 queue_step oid=1 interval=15632 count=374 add=0
@@ -162,9 +158,9 @@ queue_step oid=2 interval=137166 count=2 add=27485
 queue_step oid=1 interval=66316 count=3 add=8188
 set_next_step_dir oid=3 dir=0
 queue_step oid=3 interval=1652862 count=1 add=0
-queue_step oid=0 interval=85717 count=2 add=13307
+queue_step oid=0 interval=85717 count=2 add=13308
 queue_step oid=2 interval=216907 count=1 add=0
-queue_step oid=0 interval=117673 count=1 add=0
+queue_step oid=0 interval=117672 count=1 add=0
 queue_step oid=1 interval=96051 count=2 add=25729
 queue_step oid=0 interval=157282 count=1 add=0
 queue_step oid=2 interval=566994 count=1 add=0
@@ -1516,13 +1512,13 @@ queue_step oid=0 interval=412928 count=4 add=13302
 queue_step oid=1 interval=18945 count=123 add=-1
 queue_step oid=3 interval=533838 count=3 add=24523
 queue_step oid=2 interval=18475 count=181 add=0
-queue_step oid=0 interval=470633 count=3 add=18920
+queue_step oid=0 interval=470634 count=3 add=18918
 queue_step oid=3 interval=614978 count=1 add=0
-queue_step oid=0 interval=533469 count=2 add=27800
+queue_step oid=0 interval=533031 count=2 add=28680
 queue_step oid=1 interval=18902 count=121 add=-1
 queue_step oid=3 interval=649642 count=1 add=0
 queue_step oid=3 interval=692217 count=1 add=0
-queue_step oid=0 interval=592469 count=1 add=0
+queue_step oid=0 interval=592468 count=1 add=0
 queue_step oid=3 interval=744456 count=1 add=0
 queue_step oid=0 interval=630646 count=1 add=0
 queue_step oid=2 interval=18528 count=175 add=0
@@ -1544,11 +1540,11 @@ queue_step oid=0 interval=1417907 count=1 add=0
 queue_step oid=1 interval=18780 count=120 add=-1
 set_next_step_dir oid=3 dir=1
 queue_step oid=3 interval=7142761 count=1 add=0
-queue_step oid=0 interval=2916126 count=1 add=0
+queue_step oid=0 interval=2916127 count=1 add=0
 queue_step oid=2 interval=18637 count=173 add=0
 queue_step oid=1 interval=18741 count=120 add=-1
 set_next_step_dir oid=0 dir=1
-queue_step oid=0 interval=1185297 count=1 add=0
+queue_step oid=0 interval=1185296 count=1 add=0
 queue_step oid=1 interval=18702 count=118 add=-1
 queue_step oid=2 interval=18692 count=172 add=0
 queue_step oid=0 interval=2916126 count=1 add=0
@@ -1588,74 +1584,74 @@ queue_step oid=0 interval=400782 count=5 add=-9138
 queue_step oid=1 interval=18455 count=117 add=-1
 queue_step oid=2 interval=18977 count=159 add=0
 queue_step oid=3 interval=426236 count=5 add=-9312
-queue_step oid=0 interval=355833 count=6 add=-6446
+queue_step oid=0 interval=355831 count=6 add=-6445
 queue_step oid=1 interval=18376 count=109 add=0
 queue_step oid=3 interval=380207 count=6 add=-6652
-queue_step oid=0 interval=317727 count=8 add=-4609
+queue_step oid=0 interval=317726 count=8 add=-4609
 queue_step oid=2 interval=19036 count=162 add=0
 queue_step oid=1 interval=18324 count=186 add=0
 queue_step oid=4 interval=31406 count=398 add=0
 queue_step oid=3 interval=340746 count=8 add=-4817
-queue_step oid=0 interval=282552 count=8 add=-3422
+queue_step oid=0 interval=282549 count=8 add=-3420
 queue_step oid=2 interval=19096 count=157 add=0
 queue_step oid=1 interval=18273 count=190 add=0
 queue_step oid=3 interval=303933 count=7 add=-3611
-queue_step oid=0 interval=256603 count=9 add=-2576
+queue_step oid=0 interval=256576 count=9 add=-2567
 queue_step oid=2 interval=19157 count=159 add=0
 queue_step oid=3 interval=278990 count=10 add=-2662
-queue_step oid=0 interval=234399 count=11 add=-1935
+queue_step oid=0 interval=234301 count=11 add=-1911
 queue_step oid=1 interval=18223 count=187 add=0
 queue_step oid=3 interval=252666 count=12 add=-1987
-queue_step oid=0 interval=213818 count=13 add=-1457
+queue_step oid=0 interval=213638 count=14 add=-1425
 queue_step oid=2 interval=19219 count=155 add=0
 queue_step oid=1 interval=18178 count=154 add=0
-queue_step oid=0 interval=195303 count=16 add=-1099
+queue_step oid=0 interval=194046 count=16 add=-1074
 queue_step oid=3 interval=229227 count=14 add=-1497
 queue_step oid=2 interval=19281 count=152 add=0
 queue_step oid=4 interval=31406 count=398 add=0
 queue_step oid=1 interval=18135 count=194 add=0
-queue_step oid=0 interval=178131 count=18 add=-839
+queue_step oid=0 interval=177123 count=19 add=-816
 queue_step oid=3 interval=208746 count=16 add=-1144
 queue_step oid=2 interval=19344 count=153 add=0
 queue_step oid=1 interval=18086 count=197 add=0
-queue_step oid=0 interval=163319 count=22 add=-644
 queue_step oid=2 interval=19408 count=149 add=0
+queue_step oid=0 interval=161892 count=22 add=-627
 queue_step oid=3 interval=191020 count=17 add=-892
 queue_step oid=1 interval=18038 count=198 add=0
 queue_step oid=2 interval=19472 count=147 add=0
-queue_step oid=0 interval=149618 count=21 add=-511
 queue_step oid=3 interval=176289 count=20 add=-697
+queue_step oid=0 interval=148444 count=24 add=-490
 queue_step oid=2 interval=19537 count=146 add=0
-queue_step oid=0 interval=139095 count=28 add=-398
 queue_step oid=1 interval=17991 count=200 add=0
 queue_step oid=3 interval=162721 count=23 add=-548
+queue_step oid=0 interval=137002 count=27 add=-386
 queue_step oid=4 interval=31406 count=398 add=0
 queue_step oid=2 interval=19603 count=144 add=0
 queue_step oid=1 interval=17944 count=205 add=0
-queue_step oid=0 interval=128184 count=31 add=-314
 queue_step oid=3 interval=150463 count=25 add=-435
+queue_step oid=0 interval=126849 count=31 add=-306
 queue_step oid=2 interval=19670 count=145 add=0
 queue_step oid=1 interval=17898 count=204 add=0
-queue_step oid=0 interval=118695 count=34 add=-251
 queue_step oid=3 interval=139793 count=31 add=-344
 queue_step oid=2 interval=19738 count=140 add=0
+queue_step oid=0 interval=117640 count=33 add=-246
 queue_step oid=2 interval=19806 count=140 add=0
 queue_step oid=1 interval=17854 count=191 add=0
-queue_step oid=0 interval=110434 count=26 add=-206
+queue_step oid=0 interval=109824 count=23 add=-207
 queue_step oid=3 interval=129449 count=19 add=-282
 queue_step oid=2 interval=19875 count=137 add=0
-queue_step oid=0 interval=104943 count=51 add=-166
+queue_step oid=0 interval=104963 count=49 add=-167
 queue_step oid=3 interval=123850 count=43 add=-232
 queue_step oid=1 interval=17811 count=213 add=0
 queue_step oid=4 interval=31407 count=398 add=0
 queue_step oid=2 interval=19945 count=137 add=0
 queue_step oid=1 interval=17766 count=212 add=0
 queue_step oid=2 interval=20016 count=135 add=0
+queue_step oid=0 interval=96926 count=49 add=-135
 queue_step oid=3 interval=114033 count=42 add=-187
-queue_step oid=0 interval=96656 count=47 add=-135
 queue_step oid=2 interval=20087 count=131 add=0
 queue_step oid=1 interval=17722 count=216 add=0
-queue_step oid=0 interval=90480 count=34 add=-111
+queue_step oid=0 interval=90496 count=34 add=-112
 queue_step oid=3 interval=106450 count=26 add=-161
 queue_step oid=2 interval=20159 count=126 add=0
 queue_step oid=1 interval=17678 count=222 add=0
@@ -1668,7 +1664,7 @@ queue_step oid=1 interval=17653 count=34 add=0
 queue_step oid=3 interval=99276 count=6 add=3929
 queue_step oid=4 interval=31806 count=18 add=421
 queue_step oid=1 interval=17969 count=31 add=131
-queue_step oid=0 interval=85741 count=6 add=2727
+queue_step oid=0 interval=85744 count=6 add=2726
 queue_step oid=2 interval=20887 count=25 add=166
 queue_step oid=0 interval=102932 count=5 add=5130
 queue_step oid=2 interval=25461 count=17 add=295
@@ -3364,14 +3360,14 @@ queue_step oid=3 interval=1104805 count=1 add=0
 queue_step oid=3 interval=1365387 count=1 add=0
 queue_step oid=0 interval=1710186 count=1 add=0
 queue_step oid=3 interval=2016719 count=1 add=0
-queue_step oid=0 interval=3989364 count=1 add=0
+queue_step oid=0 interval=3989363 count=1 add=0
 set_next_step_dir oid=3 dir=1
 queue_step oid=3 interval=5072527 count=1 add=0
 queue_step oid=1 interval=15729 count=341 add=0
 queue_step oid=2 interval=15724 count=353 add=0
 set_next_step_dir oid=0 dir=1
-queue_step oid=0 interval=287117 count=1 add=0
-queue_step oid=0 interval=3989364 count=1 add=0
+queue_step oid=0 interval=287119 count=1 add=0
+queue_step oid=0 interval=3989363 count=1 add=0
 queue_step oid=3 interval=2016718 count=1 add=0
 queue_step oid=1 interval=15755 count=345 add=0
 queue_step oid=2 interval=15698 count=367 add=0
@@ -4811,10 +4807,10 @@ queue_step oid=3 interval=975142 count=1 add=0
 queue_step oid=0 interval=1087035 count=1 add=0
 queue_step oid=3 interval=867442 count=1 add=0
 queue_step oid=2 interval=15432 count=415 add=0
-queue_step oid=0 interval=965915 count=1 add=0
+queue_step oid=0 interval=965916 count=1 add=0
 queue_step oid=3 interval=789098 count=1 add=0
 queue_step oid=3 interval=728790 count=1 add=0
-queue_step oid=0 interval=878047 count=1 add=0
+queue_step oid=0 interval=878046 count=1 add=0
 queue_step oid=3 interval=680507 count=1 add=0
 queue_step oid=1 interval=15521 count=393 add=0
 queue_step oid=0 interval=810532 count=1 add=0
@@ -5396,13 +5392,13 @@ queue_step oid=3 interval=99242 count=4 add=8194
 queue_step oid=0 interval=32468 count=10 add=860
 queue_step oid=4 interval=78747 count=4 add=5082
 queue_step oid=1 interval=36218 count=9 add=988
-queue_step oid=2 interval=53086 count=6 add=2168
+queue_step oid=2 interval=53084 count=6 add=2169
 queue_step oid=4 interval=100292 count=3 add=10534
 queue_step oid=0 interval=41312 count=7 add=1900
-queue_step oid=2 interval=67620 count=4 add=4788
+queue_step oid=2 interval=67616 count=4 add=4791
 queue_step oid=1 interval=46556 count=6 add=2119
 queue_step oid=3 interval=138617 count=2 add=19180
-queue_step oid=2 interval=88951 count=3 add=11631
+queue_step oid=2 interval=88946 count=3 add=11636
 queue_step oid=4 interval=138598 count=2 add=27696
 queue_step oid=0 interval=55777 count=4 add=4518
 queue_step oid=3 interval=186472 count=1 add=0
@@ -5410,7 +5406,7 @@ queue_step oid=1 interval=62308 count=3 add=4696
 queue_step oid=3 interval=243832 count=1 add=0
 queue_step oid=1 interval=77555 count=3 add=12220
 queue_step oid=0 interval=76133 count=2 add=11132
-queue_step oid=2 interval=135947 count=1 add=0
+queue_step oid=2 interval=135942 count=1 add=0
 queue_step oid=4 interval=218624 count=1 add=0
 queue_step oid=0 interval=100670 count=2 add=28853
 set_next_step_dir oid=3 dir=0
@@ -5595,17 +5591,17 @@ queue_step oid=2 interval=19972 count=150 add=0
 queue_step oid=0 interval=252999 count=8 add=3853
 queue_step oid=1 interval=20901 count=144 add=-1
 queue_step oid=3 interval=408461 count=5 add=10789
-queue_step oid=0 interval=284633 count=6 add=5455
+queue_step oid=0 interval=284635 count=6 add=5454
 queue_step oid=2 interval=20036 count=150 add=0
 queue_step oid=1 interval=20822 count=142 add=-1
 queue_step oid=3 interval=465777 count=3 add=15355
-queue_step oid=0 interval=317674 count=6 add=7762
+queue_step oid=0 interval=317676 count=6 add=7761
 queue_step oid=3 interval=512413 count=3 add=21560
 queue_step oid=2 interval=20101 count=147 add=0
-queue_step oid=0 interval=367456 count=4 add=11221
+queue_step oid=0 interval=367462 count=4 add=11217
 queue_step oid=1 interval=20746 count=140 add=-1
 queue_step oid=3 interval=578806 count=3 add=30923
-queue_step oid=0 interval=415792 count=3 add=16720
+queue_step oid=0 interval=415798 count=3 add=16716
 queue_step oid=3 interval=682365 count=1 add=0
 queue_step oid=2 interval=20166 count=145 add=0
 queue_step oid=0 interval=467527 count=3 add=24761
@@ -6382,9 +6378,9 @@ queue_step oid=3 interval=865106 count=1 add=0
 queue_step oid=0 interval=1223059 count=1 add=0
 queue_step oid=3 interval=970035 count=1 add=0
 queue_step oid=3 interval=1126051 count=1 add=0
-queue_step oid=0 interval=1489908 count=1 add=0
+queue_step oid=0 interval=1489907 count=1 add=0
 queue_step oid=3 interval=1396325 count=1 add=0
-queue_step oid=0 interval=2093062 count=1 add=0
+queue_step oid=0 interval=2093063 count=1 add=0
 queue_step oid=3 interval=2089448 count=1 add=0
 queue_step oid=1 interval=15263 count=462 add=0
 set_next_step_dir oid=0 dir=1
@@ -6831,8 +6827,8 @@ queue_step oid=1 interval=92072 count=2 add=22942
 queue_step oid=0 interval=133506 count=1 add=0
 queue_step oid=0 interval=193913 count=1 add=0
 queue_step oid=1 interval=165917 count=1 add=0
+queue_digital_out oid=6 clock=229240168 on_ticks=0
 queue_digital_out oid=7 clock=229240168 on_ticks=0
 queue_digital_out oid=8 clock=229240168 on_ticks=0
 queue_digital_out oid=9 clock=229240168 on_ticks=0
-queue_digital_out oid=10 clock=229240168 on_ticks=0
-queue_digital_out oid=13 clock=229240168 on_ticks=0
+queue_digital_out oid=11 clock=229240168 on_ticks=0
