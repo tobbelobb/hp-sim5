@@ -343,7 +343,7 @@ def claude_command(session, viewer_endpoint=None, runtime=None, *, batch=False, 
 
 
 def claude_environment():
-    return coding_client.claude_environment(env_file=ENV_FILE)
+    return coding_client.claude_environment()
 
 
 def start_viewer(mode, session):

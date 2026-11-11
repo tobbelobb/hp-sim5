@@ -86,12 +86,10 @@ def codex_environment(provider=CHATGPT_SIGN_IN, *, root, env_file):
     return environment
 
 
-def claude_environment(*, env_file):
+def claude_environment():
+    # A key in the repo .env must not silently override Claude Code's account
+    # login. API billing is opt-in through an explicitly exported key.
     environment = dict(os.environ)
-    if not environment.get('ANTHROPIC_API_KEY'):
-        key = dotenv_values(env_file).get('ANTHROPIC_API_KEY')
-        if key:
-            environment['ANTHROPIC_API_KEY'] = key
     # Match the supervisor's long-running experiment tool budget (milliseconds).
     environment['MCP_TOOL_TIMEOUT'] = '14500000'
     return environment
