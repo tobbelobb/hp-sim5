@@ -191,7 +191,8 @@ Default Python runs exclude tests marked `slow` (simulators, recorders, MCP
 servers and research hosts) and `heavy` (multi-minute full auto-calibration).
 Use `-m slow` for the integration lane, `-m heavy` for the long runs, or
 `-m ""` to include all tests. CI runs the fast suites first, then
-`-m "slow and not heavy"`. The
+`-m "slow and not heavy"`. Tests that need a real headless rerun viewer
+skip unless `HP_SIM5_TEST_RERUN_VIEWER=1` is set. The
 [3D harness guide](tests/parity3d/README.md) lists the opt-in lifecycle
 repeatability command; short lifecycle and loaded-torque checks remain in CI.
 
