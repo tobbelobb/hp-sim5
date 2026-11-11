@@ -1,0 +1,13 @@
+# Regenerable telemetry and launcher/viewer state; see report.md for how to reproduce.
+*.json.gz
+scratchbook/can/old_logo_hp4_layered.can
+native/
+viewer-cache/
+viewer.log
+launch.json
+attachment.*
+connection.*
+instructions.md
+prompt.txt
+viewer-config/
+viewer-data/

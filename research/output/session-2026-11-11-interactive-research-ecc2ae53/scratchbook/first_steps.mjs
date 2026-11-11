@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import { Readable } from 'node:stream';
+import { parseRrfMotorAxisMapFromConfigText } from '../../../../integrations/rrf/rrfFirmwareModel.js';
+import { FileFormat } from '../../../../integrations/shared/fileFormatUtils.js';
+const root = new URL('../../../../', import.meta.url);
+globalThis.self = { addEventListener() {} }; globalThis.postMessage = () => {};
+const { RrfCanPlayer } = await import('../../../../integrations/rrf/rrfCanPlayer.js');
+const player = new RrfCanPlayer(); player.setDt(.002); player.setAsapMode(true);
+player.setDriverToAxis(parseRrfMotorAxisMapFromConfigText(fs.readFileSync(new URL('RRF/run/vsd/sys/config_hp4.g', root), 'utf8')));
+const commands = [];
+player.sendCommand = async c => { if (commands.length < 40) commands.push(c); };
+await player.run(Readable.toWeb(fs.createReadStream(new URL('public/RRF_CAN_commands/draw_squares_bigger_hp4_no_buildup.can', root))), FileFormat.RRF_CAN_BINARY);
+commands.forEach((c, i) => console.log(i + 1, JSON.stringify(c)));
