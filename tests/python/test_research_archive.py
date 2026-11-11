@@ -1,6 +1,6 @@
 import re
 
-from hp_sim5_research.archive import catalog_entries, initial_abstract, render_index, session_name, write_index
+from hp_sim5_research.archive import catalog_entries, initial_abstract, render_index, render_topics, session_name, write_index
 
 
 def test_session_names_are_descriptive_safe_and_unique():
@@ -64,3 +64,15 @@ def test_sessions_root_refreshes_only_the_canonical_catalog(tmp_path):
     assert not duplicate.exists()
     assert '[Topic](sessions/topic/abstract.md) — A result.' in (research / 'index.md').read_text()
     assert 'Another sentence' not in (research / 'index.md').read_text()
+
+
+def test_topics_group_sessions_by_abstract_topic(tmp_path):
+    for name, topics in (('a', 'Winding, HP3.'), ('b', 'hp3')):
+        session = tmp_path / f'session-{name}'
+        session.mkdir()
+        (session / 'abstract.md').write_text(f'# Title {name}\n\nA result.\n\n## Topics\n\n{topics}\n\n## Other\n\nx\n')
+    topics = render_topics(tmp_path)
+    assert '## winding' not in topics
+    assert topics.count('(session-a/abstract.md)') == 1 and '[Title b](session-b/abstract.md)' in topics
+    write_index(tmp_path)
+    assert (tmp_path / 'topics.md').read_text() == topics

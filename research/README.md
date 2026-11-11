@@ -311,6 +311,10 @@ reading long reports or raw telemetry:
 .venv/bin/python scripts/research_index.py --search "winding"
 ```
 
+The same run writes `output/topics.md`, one hub per topic shared by two or more
+sessions. Browse both, plus your own notes, in Obsidian: see
+[Using Obsidian with research output](../human_docs/obsidian.md).
+
 For worktree/session turnover, use the [portable handoff procedure](handoffs.md):
 `scripts/research_handoff.py export` copies explicitly selected evidence with
 hashes and relative references; `show` verifies a relocated bundle and `job`

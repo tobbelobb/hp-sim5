@@ -59,6 +59,15 @@ def catalog_entries(root):
         yield directory, summary
 
 
+def _entry_link(root, directory, abstract):
+    paragraphs = abstract.strip().split('\n\n')
+    title = paragraphs[0].lstrip('# ').strip()
+    relative = directory.relative_to(root).as_posix()
+    report = next((name for name in ('report.md', 'research.md', 'abstract.md')
+                   if (directory / name).is_file()), '')
+    return paragraphs, title, f'[{title}]({quote(relative)}/{report})'
+
+
 def render_index(root, search=''):
     root = catalog_root(root)
     parts = ['# Research session catalog\n\n'
@@ -66,26 +75,51 @@ def render_index(root, search=''):
     for directory, abstract in catalog_entries(root):
         if search.casefold() not in (directory.name + '\n' + abstract).casefold():
             continue
-        paragraphs = abstract.strip().split('\n\n')
-        title = paragraphs[0].lstrip('# ').strip()
+        paragraphs, _, link = _entry_link(root, directory, abstract)
         summary = next((' '.join(p.split()) for p in paragraphs[1:]
                         if not p.startswith(('#', 'Status:', '[', '|', '-'))), 'No result summary available.')
         summary = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', summary)
         summary = re.split(r'(?<=[.!?])\s+', summary, maxsplit=1)[0]
-        relative = directory.relative_to(root).as_posix()
-        report = next((name for name in ('report.md', 'research.md', 'abstract.md')
-                       if (directory / name).is_file()), '')
-        parts.append(f'- [{title}]({quote(relative)}/{report}) — {summary}\n')
+        parts.append(f'- {link} — {summary}\n')
     return '\n'.join(parts).rstrip() + '\n'
+
+
+def abstract_topics(abstract):
+    """Comma-separated words under an abstract's '## Topics' heading."""
+    match = re.search(r'^## Topics\s*\n+(.+?)(?:\n\s*\n|\Z)', abstract, re.MULTILINE | re.DOTALL)
+    if not match:
+        return []
+    words = (' '.join(match.group(1).split())).rstrip('.').split(',')
+    return [word.strip() for word in words if word.strip()]
+
+
+def render_topics(root):
+    """Topic hubs for browsing sessions in a notes tool such as Obsidian."""
+    root = catalog_root(root)
+    topics = {}
+    for directory, abstract in catalog_entries(root):
+        _, _, link = _entry_link(root, directory, abstract)
+        for topic in abstract_topics(abstract):
+            topics.setdefault(topic.casefold(), []).append(link)
+    parts = ['# Research topics\n\nTopics shared by at least two session abstracts.\n']
+    for topic, links in sorted(topics.items(), key=lambda item: (-len(item[1]), item[0])):
+        if len(links) < 2:
+            continue
+        parts.append(f'## {topic}\n\n' + ''.join(f'- {link}\n' for link in links))
+    return '\n'.join(parts).rstrip() + '\n'
+
+
+def _replace_file(root, name, content):
+    with tempfile.NamedTemporaryFile(mode='w', dir=root, prefix='.index-', delete=False) as temporary:
+        temporary.write(content)
+    os.replace(temporary.name, root / name)
 
 
 def write_index(root):
     root = catalog_root(root)
     root.mkdir(parents=True, exist_ok=True)
-    content = render_index(root)
-    with tempfile.NamedTemporaryFile(mode='w', dir=root, prefix='.index-', delete=False) as temporary:
-        temporary.write(content)
-    os.replace(temporary.name, root / 'index.md')
+    _replace_file(root, 'index.md', render_index(root))
+    _replace_file(root, 'topics.md', render_topics(root))
     duplicate = root / 'sessions/index.md'
     if duplicate.is_file() and duplicate.read_text().startswith('# Research session catalog\n'):
         duplicate.unlink()

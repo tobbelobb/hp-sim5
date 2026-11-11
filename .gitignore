@@ -70,6 +70,10 @@ autocal/tools/experiment_progressive_fitting.py
 /research/output/**/connection.json
 # Generated catalog; research/catalog.md is the curated topic guide.
 /research/output/index.md
+/research/output/topics.md
+# Obsidian vault is research/; share only its link and ignore settings.
+/research/.obsidian/*
+!/research/.obsidian/app.json
 # Launcher bookkeeping stays local; publish reports and original evidence instead.
 /research/output/scratch/
 /research/output/**/session.json
