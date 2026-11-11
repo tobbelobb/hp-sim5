@@ -1,5 +1,6 @@
 import json
 import math
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -90,6 +91,8 @@ async def test_collection_rrd_rotation_finalizes_files_and_preserves_physics(tmp
         session.close()
 
 
+@pytest.mark.skipif(not os.environ.get('HP_SIM5_TEST_RERUN_VIEWER'),
+                    reason='Requires an installed headless graphics driver')
 @pytest.mark.asyncio
 async def test_live_viewer_receives_collector_advances_and_can_seek(tmp_path):
     import asyncio
