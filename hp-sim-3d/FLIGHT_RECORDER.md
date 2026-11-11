@@ -177,8 +177,8 @@ The default native layout includes motor and encoder plots; add a time-series
 view for `velocities` or `extrusion_lengths` when inspecting those quantities.
 Motor plots mix radians, N m, boolean mode values and step counts; select the
 individual metric rather than interpreting all curves as the same unit.
-`current_missed_steps` estimates current tracking error; `peak_missed_steps`
-retains the diagnostic maximum. See the [simulation notes](README.md#spools-and-motors)
+Open-loop motors count slips (whole electrical cycles, four full steps each)
+in either direction; `current_missed_steps` is the signed net slip offset. See the [simulation notes](README.md#spools-and-motors)
 for position/torque behavior and the specialized spool model.
 
 ## Lengths, forces and frames

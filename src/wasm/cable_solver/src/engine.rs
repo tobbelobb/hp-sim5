@@ -1670,6 +1670,8 @@ impl PhysicsWorld {
                 continue;
             }
             let e = *e;
+            // 125 counts slips (electrical cycles the rotor fell into another
+            // detent, in either direction); 126 is the signed net offset.
             let old = if e[125].is_finite() {
                 (e[125] + 0.5).floor().max(0.0)
             } else {
@@ -1692,9 +1694,10 @@ impl PhysicsWorld {
                 unwrap(target, spool_angle(reference, local, v(&e, 76)))
             };
             let pairs = (e[110] + 0.5).floor().abs().max(1.0);
-            let steps = ((measured - target) / (TAU / pairs) + 0.5).floor().abs();
-            self.entities[id][126] = steps;
-            self.entities[id][125] = old.max(steps);
+            let offset = ((measured - target) / (TAU / pairs) + 0.5).floor();
+            let previous = if e[126].is_finite() { e[126] } else { 0.0 };
+            self.entities[id][126] = offset;
+            self.entities[id][125] = old + (offset - previous).abs();
         }
     }
     /// Classify every interior link for this step. Frictionless links and

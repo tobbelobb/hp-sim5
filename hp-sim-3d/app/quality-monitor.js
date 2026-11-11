@@ -10,52 +10,15 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function distancePointToSegment3D(px, py, pz, ax, ay, az, bx, by, bz) {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const abz = bz - az;
-  const apx = px - ax;
-  const apy = py - ay;
-  const apz = pz - az;
-  const abLenSq = abx * abx + aby * aby + abz * abz;
-  if (abLenSq <= 1e-16) {
-    const dx = px - ax;
-    const dy = py - ay;
-    const dz = pz - az;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  }
-  let t = (apx * abx + apy * aby + apz * abz) / abLenSq;
-  t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * abx;
-  const cy = ay + t * aby;
-  const cz = az + t * abz;
-  const dx = px - cx;
-  const dy = py - cy;
-  const dz = pz - cz;
-  return Math.sqrt(dx * dx + dy * dy + dz * dz);
-}
-
-function angleBetweenUnitVectors3D(a, b) {
-  if (!Array.isArray(a) || !Array.isArray(b) || a.length < 3 || b.length < 3) {
-    return 0;
-  }
-  const dot = clamp(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], -1, 1);
-  return Math.acos(dot);
-}
-
-function voxelIndex(grid, ix, iy, iz) {
-  return ((iz * grid.height) + iy) * grid.width + ix;
-}
-
 function formatLengthMm(lengthMeters) {
   if (!Number.isFinite(lengthMeters)) {
     return '--';
   }
   const mm = lengthMeters * 1000;
   if (Math.abs(mm) >= 10) {
-    return `${mm.toFixed(1)} mm`;
+    return `${mm.toFixed(1)}`;
   }
-  return `${mm.toFixed(2)} mm`;
+  return `${mm.toFixed(2)}`;
 }
 
 function formatPercent(value) {
@@ -88,141 +51,83 @@ function sanitizeHexColor(value) {
   return null;
 }
 
-class StreamingQuantile {
-  constructor(probability) {
-    const clamped = clamp(Number(probability), 0, 1);
-    this._prob = clamped > 0 && clamped < 1 ? clamped : 0.95;
+function now() {
+  return globalThis.performance?.now?.() ?? Date.now();
+}
+
+// Distances binned on a log scale (2 % wide bins from 0.1 µm to 10 m), so any
+// percentile is read off to within one bin, in O(1) memory and time per sample.
+class DistanceHistogram {
+  constructor() {
+    this.min = 1e-7;
+    this.logRatio = Math.log(1.02);
+    this.counts = new Float64Array(Math.ceil(Math.log(10 / this.min) / this.logRatio) + 1);
     this.reset();
   }
 
   reset() {
-    this._count = 0;
-    this._initialized = false;
-    this._initial = [];
-    this._q = [0, 0, 0, 0, 0];
-    this._n = [0, 0, 0, 0, 0];
-    this._np = [0, 0, 0, 0, 0];
-    this._dn = [0, 0, 0, 0, 0];
+    this.counts.fill(0);
+    this.count = 0;
+    this.sumSquares = 0;
+    this.max = 0;
   }
 
-  observe(value) {
-    if (!Number.isFinite(value)) {
-      return;
-    }
-    this._count += 1;
-    if (!this._initialized) {
-      this._initial.push(value);
-      this._initial.sort((a, b) => a - b);
-      if (this._initial.length === 5) {
-        this._initializeMarkers();
-      }
-      return;
-    }
-
-    let k;
-    if (value < this._q[0]) {
-      this._q[0] = value;
-      k = 0;
-    } else if (value < this._q[1]) {
-      k = 0;
-    } else if (value < this._q[2]) {
-      k = 1;
-    } else if (value < this._q[3]) {
-      k = 2;
-    } else if (value <= this._q[4]) {
-      k = 3;
-    } else {
-      this._q[4] = value;
-      k = 3;
-    }
-
-    for (let i = k + 1; i < 5; i += 1) {
-      this._n[i] += 1;
-    }
-    for (let i = 0; i < 5; i += 1) {
-      this._np[i] += this._dn[i];
-    }
-
-    for (let i = 1; i <= 3; i += 1) {
-      const delta = this._np[i] - this._n[i];
-      const shouldIncrement = delta >= 1 && this._n[i + 1] - this._n[i] > 1;
-      const shouldDecrement = delta <= -1 && this._n[i - 1] - this._n[i] < -1;
-      if (!shouldIncrement && !shouldDecrement) {
-        continue;
-      }
-      const direction = delta >= 0 ? 1 : -1;
-      const candidate = this._parabolic(i, direction);
-      if (candidate > this._q[i - 1] && candidate < this._q[i + 1]) {
-        this._q[i] = candidate;
-      } else {
-        this._q[i] = this._linear(i, direction);
-      }
-      this._n[i] += direction;
+  observe(distance) {
+    const bin = distance <= this.min
+      ? 0
+      : Math.min(this.counts.length - 1, Math.ceil(Math.log(distance / this.min) / this.logRatio));
+    this.counts[bin] += 1;
+    this.count += 1;
+    this.sumSquares += distance * distance;
+    if (distance > this.max) {
+      this.max = distance;
     }
   }
 
-  getEstimate() {
-    if (this._count === 0) {
+  rms() {
+    return this.count > 0 ? Math.sqrt(this.sumSquares / this.count) : NaN;
+  }
+
+  // Upper edge of the bin holding the p-quantile, capped by the exact maximum.
+  quantile(p) {
+    if (this.count === 0) {
       return NaN;
     }
-    if (!this._initialized) {
-      const arr = this._initial;
-      if (arr.length === 0) {
-        return NaN;
+    const rank = p * this.count;
+    let cumulative = 0;
+    for (let bin = 0; bin < this.counts.length; bin += 1) {
+      cumulative += this.counts[bin];
+      if (cumulative >= rank) {
+        return Math.min(this.max, bin === 0 ? this.min : this.min * Math.exp(bin * this.logRatio));
       }
-      if (arr.length === 1) {
-        return arr[0];
-      }
-      const rank = this._prob * (arr.length - 1);
-      const lower = Math.floor(rank);
-      const upper = Math.min(arr.length - 1, lower + 1);
-      const weight = rank - lower;
-      if (upper === lower) {
-        return arr[lower];
-      }
-      return arr[lower] + (arr[upper] - arr[lower]) * weight;
     }
-    return this._q[2];
-  }
-
-  _initializeMarkers() {
-    if (this._initial.length < 5) {
-      return;
-    }
-    const sorted = this._initial;
-    this._q = sorted.slice(0, 5);
-    this._n = [1, 2, 3, 4, 5];
-    const p = this._prob;
-    this._np = [1, 1 + 2 * p, 1 + 4 * p, 3 + 2 * p, 5];
-    this._dn = [0, p / 2, p, (1 + p) / 2, 1];
-    this._initialized = true;
-  }
-
-  _parabolic(i, direction) {
-    const q = this._q;
-    const n = this._n;
-    const denom = n[i + 1] - n[i - 1];
-    if (denom === 0) {
-      return q[i];
-    }
-    const forwardDen = n[i + 1] - n[i];
-    const backwardDen = n[i] - n[i - 1];
-    const forward = forwardDen === 0 ? 0 : direction * (n[i] - n[i - 1] + direction) * (q[i + 1] - q[i]) / forwardDen;
-    const backward = backwardDen === 0 ? 0 : direction * (n[i + 1] - n[i] - direction) * (q[i] - q[i - 1]) / backwardDen;
-    return q[i] + (forward + backward) / denom;
-  }
-
-  _linear(i, direction) {
-    const q = this._q;
-    const n = this._n;
-    const denom = n[i + direction] - n[i];
-    if (denom === 0) {
-      return q[i];
-    }
-    return q[i] + (direction * (q[i + direction] - q[i])) / denom;
+    return this.max;
   }
 }
 
+function distancePointToSegment(px, py, pz, ax, ay, az, bx, by, bz) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const abz = bz - az;
+  const lengthSq = abx * abx + aby * aby + abz * abz;
+  let t = 0;
+  if (lengthSq > 0) {
+    t = clamp(((px - ax) * abx + (py - ay) * aby + (pz - az) * abz) / lengthSq, 0, 1);
+  }
+  return Math.hypot(px - (ax + t * abx), py - (ay + t * aby), pz - (az + t * abz));
+}
+
+// Compares where each extrusion sample was deposited with the G-code it came
+// from. The cumulative extrusion (E) of the command stream locates every sample
+// on the reference path, which gives:
+// - position error: distance to the intended point at that instant (tracking
+//   error), with its along-path part (lag) and its mean (systematic offset);
+// - path deviation: distance to the intended path near that point (contour
+//   error, as ISO 9283 path accuracy), split into horizontal and vertical;
+// - per sharp corner: deviation of the attained path from the corner point,
+//   the largest deviation after it, and the distance travelled until the path
+//   stays within tolerance (ISO 9283 cornering deviations / stabilization).
+// The score is the share of extruded samples within the tolerance.
 export class QualityMonitor {
   constructor({ hudElement = null } = {}) {
     this.hudElement = hudElement || null;
@@ -235,12 +140,10 @@ export class QualityMonitor {
     this.visibilityCallback = null;
     this._lastHudHidden = null;
 
-    this.referenceSegments = [];
-    this.segmentData = [];
-    this.cornerData = [];
-    this.referenceBounds = null;
+    this.entries = [];
+    this.corners = [];
+    this.totalExtrusion = 0;
 
-    this.lastSegmentIndex = 0;
     this.pendingExtrusionCount = 0;
     this.pendingExtrusionCapacity = 0;
     this.pendingExtrusionsX = new Float64Array(0);
@@ -248,16 +151,9 @@ export class QualityMonitor {
     this.pendingExtrusionsZ = new Float64Array(0);
     this.pendingExtrusionsLength = new Float64Array(0);
     this.enabled = true;
-    this.projectionHintValid = false;
 
-    this.straightStats = {
-      count: 0,
-      sumSquares: 0,
-      percentile95: new StreamingQuantile(0.95),
-    };
-
-    this.coverageGrid = null;
-    this.coverageStats = null;
+    this.contourHistogram = new DistanceHistogram();
+    this.trackingHistogram = new DistanceHistogram();
 
     this.remoteSystem = null;
     this.boundExtrusionListener = (event) => this.recordExtrusion(event);
@@ -268,35 +164,23 @@ export class QualityMonitor {
     this.boundHudClick = (event) => this._handleHudClick(event);
     if (this.hudElement && typeof this.hudElement.addEventListener === 'function') {
       this.hudElement.addEventListener('pointerdown', this.boundHudPointerDown);
-    }
-    if (this.hudElement && typeof this.hudElement.addEventListener === 'function') {
       this.hudElement.addEventListener('click', this.boundHudClick);
     }
 
     this.metrics = null;
     this.metricsDirty = true;
-    this.extrusionsSinceHud = 0;
+    this.lastHudRefreshMs = -Infinity;
 
     // Tunable heuristics
-    this.straightAngleThreshold = 2.5 * DEG_TO_RAD; // degrees
-    this.cornerAngleThreshold = 12 * DEG_TO_RAD;
-    this.cornerRadiusWindow = 0.006; // meters (6 mm)
-    this.cornerRingingStart = 0.0008; // meters (0.8 mm)
-    this.cornerRingingWindow = 0.004; // meters (4 mm)
-    this.cornerRingingTail = 0.016; // meters (16 mm)
-    this.cornerMinSamples = 3;
-    this.cornerRingingMinAmplitude = 0.00005; // 0.05 mm
+    this.tolerance = 0.00025; // meters: within-tolerance score, settling, extrusion tint starts
+    this.penaltyHardThreshold = 0.0015; // meters (1.5 mm) saturates the extrusion tint
+    this.contourSearchWindow = 0.005; // meters of path either side of the intended point
+    this.cornerAngleThreshold = 45 * DEG_TO_RAD;
+    this.cornerWindow = 0.006; // meters of path before/after a corner for corner deviation
+    this.cornerSettleWindow = 0.016; // meters of path after a corner; its end is the settled reference
+    this.hudRefreshIntervalMs = 250;
 
-    this.segmentSearchRadius = 20; // segments to scan around hint
-    this.projectionFallbackDistance = 0.02; // meters before forcing full search
-    this.penaltySoftThreshold = 0.00025; // meters (0.25 mm) before coloring
-    this.penaltyHardThreshold = 0.0015; // meters (1.5 mm) saturates penalty
-
-    this.coverageStep = 0.001; // 1 mm grid
-    this.coverageMargin = 0.015; // 15 mm margin
-    this.assumedBeadWidth = 0.0008; // 0.8 mm bead -> radius 0.4 mm
-
-    this.hudUpdateInterval = 12;
+    this._resetAccumulators();
   }
 
   setVisibilityCallback(callback) {
@@ -385,38 +269,40 @@ export class QualityMonitor {
     this.remoteSystem = null;
   }
 
+  _resetAccumulators() {
+    this.extrusionCursor = 0;
+    this.entryIndex = 0;
+    this.nextCornerIndex = 0;
+    this.activeCorners = [];
+    this.sampleCount = 0;
+    this.withinToleranceCount = 0;
+    this.contourHistogram.reset();
+    this.trackingHistogram.reset();
+    this.contourHorizontalSumSquares = 0;
+    this.contourVerticalSumSquares = 0;
+    this.trackingSum = [0, 0, 0];
+    this.alongPathSum = 0;
+    this.cornerStats = {
+      count: 0,
+      deviationSum: 0,
+      deviationMax: 0,
+      overshootSum: 0,
+      overshootMax: 0,
+      settleSum: 0,
+      settleMax: 0,
+    };
+  }
+
   reset({ keepReference = false } = {}) {
-    this.lastSegmentIndex = 0;
-    this.projectionHintValid = false;
     this.pendingExtrusionCount = 0;
     this.metricsDirty = true;
     this.metrics = null;
-    this.extrusionsSinceHud = 0;
-
-    this.straightStats.count = 0;
-    this.straightStats.sumSquares = 0;
-    if (this.straightStats.percentile95) {
-      this.straightStats.percentile95.reset();
-    }
-
-    for (const corner of this.cornerData) {
-      corner.samples = [];
-      corner.ringingSamples = [];
-    }
-
-    if (this.coverageGrid && this.coverageStats) {
-      this.coverageGrid.extrMask.fill(0);
-      this.coverageStats.extruderCount = 0;
-      this.coverageStats.intersectionCount = 0;
-    }
+    this._resetAccumulators();
 
     if (!keepReference) {
-      this.referenceSegments = [];
-      this.segmentData = [];
-      this.cornerData = [];
-      this.referenceBounds = null;
-      this.coverageGrid = null;
-      this.coverageStats = null;
+      this.entries = [];
+      this.corners = [];
+      this.totalExtrusion = 0;
     }
 
     this.refreshHud();
@@ -436,21 +322,16 @@ export class QualityMonitor {
     this.reset({ keepReference: false });
   }
 
-  setReferenceSegments(segments, metadata = null) {
+  // Segments in G-code order, each with the filament `extrusion` it consumes.
+  // Zero-length segments are extrusion without motion (primes after retracts).
+  setReferenceSegments(segments) {
     if (!Array.isArray(segments) || segments.length === 0) {
       this.clearReference();
       return;
     }
-    this.referenceSegments = segments.slice();
-    this._prepareSegmentData();
-    this._prepareCornerData();
-
-    const bounds = metadata?.bounds || this._computeBoundsFromSegments();
-    this.referenceBounds = bounds;
-    this._buildCoverageGrid(bounds);
-
+    this._prepareEntries(segments);
+    this._prepareCorners();
     this.reset({ keepReference: true });
-    this.refreshHud();
   }
 
   recordExtrusion(extrusionEvent) {
@@ -463,14 +344,21 @@ export class QualityMonitor {
         return;
       }
     }
-    if (!this.enabled) {
-      const normalized = this._normalizeExtrusionEvent(extrusionEvent);
-      if (normalized) {
-        this._queueNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length);
-      }
+    const normalized = this._normalizeExtrusionEvent(extrusionEvent);
+    if (!normalized) {
       return;
     }
-    this._recordExtrusionActive(extrusionEvent);
+    if (!this.enabled) {
+      this._queueNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length);
+      return;
+    }
+    if (this.entries.length === 0) {
+      return;
+    }
+    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length, extrusionEvent);
+    if (now() - this.lastHudRefreshMs >= this.hudRefreshIntervalMs) {
+      this.refreshHud();
+    }
   }
 
   setEnabled(flag) {
@@ -480,7 +368,6 @@ export class QualityMonitor {
     }
     this.enabled = next;
     if (this.enabled) {
-      this.projectionHintValid = false;
       this._drainPendingExtrusions();
       this.refreshHud(true);
     } else if (this.hudElement) {
@@ -490,13 +377,16 @@ export class QualityMonitor {
   }
 
   runFinalCheck() {
-    if (this.segmentData.length === 0) {
+    if (this.entries.length === 0) {
       return;
     }
     this._drainPendingExtrusions();
+    for (const corner of this.activeCorners) {
+      this._finalizeCorner(corner);
+    }
+    this.activeCorners = [];
     this.metricsDirty = true;
     this.refreshHud(true);
-    this.extrusionsSinceHud = 0;
   }
 
   getMetrics() {
@@ -507,37 +397,17 @@ export class QualityMonitor {
   }
 
   _normalizeExtrusionEvent(extrusionEvent) {
-    if (!extrusionEvent) {
+    const pos = extrusionEvent.pos;
+    if (!Array.isArray(pos) || pos.length < 3) {
       return null;
     }
-    if (typeof extrusionEvent.x === 'number' && typeof extrusionEvent.y === 'number') {
-      const x = Number(extrusionEvent.x);
-      const y = Number(extrusionEvent.y);
-      const z = Number.isFinite(extrusionEvent.z) ? Number(extrusionEvent.z) : 0;
-      if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        return null;
-      }
-      const length = Number.isFinite(extrusionEvent.length) ? Number(extrusionEvent.length) : 0;
-      return { x, y, z, length };
-    }
-
-    const posSource = Array.isArray(extrusionEvent.pos)
-      ? extrusionEvent.pos
-      : extrusionEvent.pos && typeof extrusionEvent.pos === 'object'
-        ? [extrusionEvent.pos.x, extrusionEvent.pos.y, extrusionEvent.pos.z]
-        : null;
-    if (!posSource || posSource.length < 2) {
+    const x = Number(pos[0]);
+    const y = Number(pos[1]);
+    const z = Number(pos[2]);
+    const length = Number(extrusionEvent.length);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) || !(length > 0)) {
       return null;
     }
-    const x = Number(posSource[0]);
-    const y = Number(posSource[1]);
-    const z = Number.isFinite(posSource[2]) ? Number(posSource[2]) : 0;
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      return null;
-    }
-    const length = Number.isFinite(extrusionEvent.length)
-      ? Number(extrusionEvent.length)
-      : 0;
     return { x, y, z, length };
   }
 
@@ -567,68 +437,325 @@ export class QualityMonitor {
   }
 
   _queueNormalizedExtrusion(x, y, z, length) {
-    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
-      return;
-    }
-    const safeLength = Number.isFinite(length) ? length : 0;
     const index = this.pendingExtrusionCount;
     this._ensurePendingExtrusionCapacity(index + 1);
     this.pendingExtrusionsX[index] = x;
     this.pendingExtrusionsY[index] = y;
     this.pendingExtrusionsZ[index] = z;
-    this.pendingExtrusionsLength[index] = safeLength;
+    this.pendingExtrusionsLength[index] = length;
     this.pendingExtrusionCount = index + 1;
   }
 
-  _recordNormalizedExtrusion(x, y, z, length, sourceEvent = null) {
-    const projection = this._projectToPath(x, y, z);
-    if (!projection) {
-      return;
-    }
-
-    const nearestCornerDelta = this._accumulateCornerSamples(projection);
-    const penalty = this._computeExtrusionPenalty(projection, nearestCornerDelta);
-    this._applyPenaltyToExtrusion(sourceEvent, penalty);
-
-    this._accumulateStraightError(projection);
-    this._updateCoverageForExtrusion(x, y, z, length);
-
-    this.metricsDirty = true;
-    this.extrusionsSinceHud += 1;
-    if (this.enabled && this.extrusionsSinceHud >= this.hudUpdateInterval) {
-      this.refreshHud();
-      this.extrusionsSinceHud = 0;
-    }
-  }
-
-  _recordExtrusionActive(extrusionEvent) {
-    if (this.segmentData.length === 0) {
-      return;
-    }
-    const normalized = this._normalizeExtrusionEvent(extrusionEvent);
-    if (!normalized) {
-      return;
-    }
-    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length, extrusionEvent);
-  }
-
   _drainPendingExtrusions() {
-    if (this.pendingExtrusionCount === 0) {
+    if (this.pendingExtrusionCount === 0 || this.entries.length === 0) {
+      this.pendingExtrusionCount = 0;
       return;
     }
-    const count = this.pendingExtrusionCount;
-    const xs = this.pendingExtrusionsX;
-    const ys = this.pendingExtrusionsY;
-    const zs = this.pendingExtrusionsZ;
-    const lengths = this.pendingExtrusionsLength;
-    for (let i = 0; i < count; i += 1) {
-      this._recordNormalizedExtrusion(xs[i], ys[i], zs[i], lengths[i]);
+    for (let i = 0; i < this.pendingExtrusionCount; i += 1) {
+      this._recordNormalizedExtrusion(
+        this.pendingExtrusionsX[i],
+        this.pendingExtrusionsY[i],
+        this.pendingExtrusionsZ[i],
+        this.pendingExtrusionsLength[i],
+      );
     }
     this.pendingExtrusionCount = 0;
   }
 
+  _prepareEntries(segments) {
+    this.entries = [];
+    let arcLength = 0;
+    let extrusion = 0;
+    for (const segment of segments) {
+      const start = segment?.start;
+      const end = segment?.end;
+      const segmentExtrusion = Number(segment?.extrusion);
+      if (!Array.isArray(start) || !Array.isArray(end) || !(segmentExtrusion > 0)) {
+        continue;
+      }
+      const s = [Number(start[0]), Number(start[1]), Number(start[2])];
+      const e = [Number(end[0]), Number(end[1]), Number(end[2])];
+      if (!s.every(Number.isFinite) || !e.every(Number.isFinite)) {
+        continue;
+      }
+      const delta = [e[0] - s[0], e[1] - s[1], e[2] - s[2]];
+      const length = Math.hypot(delta[0], delta[1], delta[2]);
+      const tangent = length > 0 ? delta.map((value) => value / length) : [0, 0, 0];
+      const previous = this.entries[this.entries.length - 1];
+      const contiguous = Boolean(previous) && previous.length > 0 && length > 0
+        && Math.hypot(s[0] - previous.end[0], s[1] - previous.end[1], s[2] - previous.end[2]) < 1e-9;
+      this.entries.push({
+        start: s,
+        end: e,
+        delta,
+        length,
+        tangent,
+        contiguous,
+        arcStart: arcLength,
+        extrusionStart: extrusion,
+        extrusion: segmentExtrusion,
+      });
+      arcLength += length;
+      extrusion += segmentExtrusion;
+    }
+    this.totalExtrusion = extrusion;
+  }
+
+  _prepareCorners() {
+    this.corners = [];
+    const entries = this.entries;
+    // Bounds of each contiguous run, so corner windows never cross a travel.
+    const runStart = new Float64Array(entries.length);
+    const runEnd = new Float64Array(entries.length);
+    for (let i = 0; i < entries.length; i += 1) {
+      runStart[i] = entries[i].contiguous ? runStart[i - 1] : entries[i].arcStart;
+    }
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+      runEnd[i] = i + 1 < entries.length && entries[i + 1].contiguous
+        ? runEnd[i + 1]
+        : entries[i].arcStart + entries[i].length;
+    }
+    for (let i = 1; i < entries.length; i += 1) {
+      const entry = entries[i];
+      if (!entry.contiguous) {
+        continue;
+      }
+      const a = entries[i - 1].tangent;
+      const b = entry.tangent;
+      const angle = Math.acos(clamp(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], -1, 1));
+      if (angle < this.cornerAngleThreshold) {
+        continue;
+      }
+      this.corners.push({
+        arcLength: entry.arcStart,
+        vertex: entry.start,
+        angle,
+        windowStart: Math.max(runStart[i], entry.arcStart - this.cornerWindow),
+        windowEnd: Math.min(runEnd[i], entry.arcStart + Math.max(this.cornerWindow, this.cornerSettleWindow)),
+        settleEnd: Math.min(runEnd[i], entry.arcStart + this.cornerSettleWindow),
+      });
+    }
+    // A later corner cuts short the settling window of the one before it.
+    for (let i = 0; i + 1 < this.corners.length; i += 1) {
+      const next = this.corners[i + 1].arcLength;
+      this.corners[i].settleEnd = Math.min(this.corners[i].settleEnd, next);
+    }
+  }
+
+  // Intended point for the extrusion consumed so far. The sample's own
+  // extrusion picks the entry, so a sample right after a travel belongs to
+  // the line it starts, not the end of the previous one.
+  _locateIntended(length) {
+    const entries = this.entries;
+    const cursor = this.extrusionCursor;
+    const upcoming = cursor + 0.5 * length;
+    let index = this.entryIndex;
+    while (index + 1 < entries.length && entries[index + 1].extrusionStart <= upcoming) {
+      index += 1;
+    }
+    this.entryIndex = index;
+    const entry = entries[index];
+    const fraction = clamp((cursor - entry.extrusionStart) / entry.extrusion, 0, 1);
+    return {
+      index,
+      entry,
+      arcLength: entry.arcStart + fraction * entry.length,
+      x: entry.start[0] + fraction * entry.delta[0],
+      y: entry.start[1] + fraction * entry.delta[1],
+      z: entry.start[2] + fraction * entry.delta[2],
+    };
+  }
+
+  // Nearest point of the reference within the search window around the
+  // intended arc length. Returns the deviation vector.
+  _contourDeviation(x, y, z, intended) {
+    const entries = this.entries;
+    const low = intended.arcLength - this.contourSearchWindow;
+    const high = intended.arcLength + this.contourSearchWindow;
+    let best = Infinity;
+    let bestDx = 0;
+    let bestDy = 0;
+    let bestDz = 0;
+    const consider = (entry) => {
+      let t = 0;
+      if (entry.length > 0) {
+        t = clamp(
+          ((x - entry.start[0]) * entry.delta[0] + (y - entry.start[1]) * entry.delta[1] + (z - entry.start[2]) * entry.delta[2])
+            / (entry.length * entry.length),
+          0,
+          1,
+        );
+      }
+      const dx = x - (entry.start[0] + t * entry.delta[0]);
+      const dy = y - (entry.start[1] + t * entry.delta[1]);
+      const dz = z - (entry.start[2] + t * entry.delta[2]);
+      const distSq = dx * dx + dy * dy + dz * dz;
+      if (distSq < best) {
+        best = distSq;
+        bestDx = dx;
+        bestDy = dy;
+        bestDz = dz;
+      }
+    };
+    for (let i = intended.index; i >= 0 && entries[i].arcStart + entries[i].length >= low; i -= 1) {
+      consider(entries[i]);
+    }
+    for (let i = intended.index + 1; i < entries.length && entries[i].arcStart <= high; i += 1) {
+      consider(entries[i]);
+    }
+    return { distance: Math.sqrt(best), dx: bestDx, dy: bestDy, dz: bestDz };
+  }
+
+  _recordNormalizedExtrusion(x, y, z, length, sourceEvent = null) {
+    const intended = this._locateIntended(length);
+    this.extrusionCursor += length;
+
+    const tx = x - intended.x;
+    const ty = y - intended.y;
+    const tz = z - intended.z;
+    const tangent = intended.entry.tangent;
+    this.trackingHistogram.observe(Math.hypot(tx, ty, tz));
+    this.trackingSum[0] += tx;
+    this.trackingSum[1] += ty;
+    this.trackingSum[2] += tz;
+    this.alongPathSum += tx * tangent[0] + ty * tangent[1] + tz * tangent[2];
+
+    const contour = this._contourDeviation(x, y, z, intended);
+    this.contourHistogram.observe(contour.distance);
+    this.contourHorizontalSumSquares += contour.dx * contour.dx + contour.dy * contour.dy;
+    this.contourVerticalSumSquares += contour.dz * contour.dz;
+    this.sampleCount += 1;
+    if (contour.distance <= this.tolerance) {
+      this.withinToleranceCount += 1;
+    }
+
+    this._accumulateCorners(x, y, z, intended.arcLength, contour);
+
+    if (sourceEvent && typeof sourceEvent === 'object') {
+      const penalty = contour.distance > this.tolerance
+        ? clamp((contour.distance - this.tolerance) / (this.penaltyHardThreshold - this.tolerance), 0, 1)
+        : 0;
+      sourceEvent.penalty = penalty;
+      sourceEvent.qualityColor = this._colorFromPenalty(penalty);
+    }
+    this.metricsDirty = true;
+  }
+
+  _accumulateCorners(x, y, z, arcLength, contour) {
+    while (this.nextCornerIndex < this.corners.length && this.corners[this.nextCornerIndex].windowStart <= arcLength) {
+      const corner = this.corners[this.nextCornerIndex];
+      this.nextCornerIndex += 1;
+      this.activeCorners.push({
+        corner,
+        deviation: Infinity,
+        overshoot: 0,
+        settleSamples: [],
+        before: false,
+        after: false,
+        lastSample: null,
+      });
+    }
+    if (this.activeCorners.length === 0) {
+      return;
+    }
+    const remaining = [];
+    for (const active of this.activeCorners) {
+      const corner = active.corner;
+      if (arcLength > corner.windowEnd) {
+        this._finalizeCorner(active);
+        continue;
+      }
+      const [vx, vy, vz] = corner.vertex;
+      const deviation = active.lastSample
+        ? distancePointToSegment(vx, vy, vz, active.lastSample[0], active.lastSample[1], active.lastSample[2], x, y, z)
+        : Math.hypot(x - vx, y - vy, z - vz);
+      if (arcLength - corner.arcLength <= this.cornerWindow) {
+        active.deviation = Math.min(active.deviation, deviation);
+      }
+      active.lastSample = [x, y, z];
+      if (arcLength < corner.arcLength) {
+        active.before = true;
+      } else if (arcLength > corner.arcLength) {
+        active.after = true;
+        if (arcLength - corner.arcLength <= this.cornerWindow) {
+          active.overshoot = Math.max(active.overshoot, contour.distance);
+        }
+        if (arcLength <= corner.settleEnd) {
+          active.settleSamples.push(arcLength - corner.arcLength, contour.dx, contour.dy, contour.dz);
+        }
+      }
+      remaining.push(active);
+    }
+    this.activeCorners = remaining;
+  }
+
+  _finalizeCorner(active) {
+    if (!active.before || !active.after || !Number.isFinite(active.deviation)) {
+      return;
+    }
+    // Settled once the deviation stays within tolerance of where it ends up on
+    // the outgoing line (the mean of the window's last quarter), so a steady
+    // offset is not mistaken for ringing.
+    const samples = active.settleSamples;
+    const count = samples.length / 4;
+    const tail = Math.max(1, Math.floor(count / 4));
+    const final = [0, 0, 0];
+    for (let k = count - tail; k < count; k += 1) {
+      final[0] += samples[4 * k + 1] / tail;
+      final[1] += samples[4 * k + 2] / tail;
+      final[2] += samples[4 * k + 3] / tail;
+    }
+    let settle = 0;
+    for (let k = count - 1; k >= 0; k -= 1) {
+      const drift = Math.hypot(samples[4 * k + 1] - final[0], samples[4 * k + 2] - final[1], samples[4 * k + 3] - final[2]);
+      if (drift > this.tolerance) {
+        settle = k + 1 < count ? samples[4 * (k + 1)] : samples[4 * k];
+        break;
+      }
+    }
+    const stats = this.cornerStats;
+    stats.count += 1;
+    stats.deviationSum += active.deviation;
+    stats.deviationMax = Math.max(stats.deviationMax, active.deviation);
+    stats.overshootSum += active.overshoot;
+    stats.overshootMax = Math.max(stats.overshootMax, active.overshoot);
+    stats.settleSum += settle;
+    stats.settleMax = Math.max(stats.settleMax, settle);
+  }
+
+  _computeMetrics() {
+    const n = this.sampleCount;
+    const corners = this.cornerStats;
+    const withinTolerance = n > 0 ? this.withinToleranceCount / n : NaN;
+    return {
+      samples: n,
+      progress: this.totalExtrusion > 0 ? this.extrusionCursor / this.totalExtrusion : NaN,
+      tolerance: this.tolerance,
+      withinTolerance,
+      score: n > 0 ? 100 * withinTolerance : NaN,
+      contourRms: this.contourHistogram.rms(),
+      contourP95: this.contourHistogram.quantile(0.95),
+      contourMax: n > 0 ? this.contourHistogram.max : NaN,
+      contourHorizontalRms: n > 0 ? Math.sqrt(this.contourHorizontalSumSquares / n) : NaN,
+      contourVerticalRms: n > 0 ? Math.sqrt(this.contourVerticalSumSquares / n) : NaN,
+      trackingRms: this.trackingHistogram.rms(),
+      trackingP95: this.trackingHistogram.quantile(0.95),
+      trackingMax: n > 0 ? this.trackingHistogram.max : NaN,
+      meanOffset: n > 0 ? this.trackingSum.map((value) => value / n) : [NaN, NaN, NaN],
+      meanLag: n > 0 ? -this.alongPathSum / n : NaN,
+      cornerCount: corners.count,
+      cornerDeviationAvg: corners.count > 0 ? corners.deviationSum / corners.count : NaN,
+      cornerDeviationMax: corners.count > 0 ? corners.deviationMax : NaN,
+      cornerOvershootAvg: corners.count > 0 ? corners.overshootSum / corners.count : NaN,
+      cornerOvershootMax: corners.count > 0 ? corners.overshootMax : NaN,
+      settleDistanceAvg: corners.count > 0 ? corners.settleSum / corners.count : NaN,
+      settleDistanceMax: corners.count > 0 ? corners.settleMax : NaN,
+    };
+  }
+
   refreshHud(force = false) {
-    if (this.segmentData.length === 0) {
+    this.lastHudRefreshMs = now();
+    if (this.entries.length === 0) {
       this.metrics = null;
       this.metricsDirty = false;
       if (this.hudElement) {
@@ -650,36 +777,19 @@ export class QualityMonitor {
       this._notifyHudVisibility();
       return;
     }
-    const metrics = this.metrics;
-    if (!metrics) {
-      this.hudElement.textContent = 'Collecting metrics...';
-      this.hudElement.classList.remove('sim-hidden');
-      this._notifyHudVisibility();
-      return;
-    }
-    const {
-      rmseStraight,
-      p95Straight,
-      cornerRadiusAvg,
-      cornerRadiusMax,
-      ringingAmplitude,
-      ringingDecay,
-      coverage,
-      iou,
-      score,
-    } = metrics;
+    const m = this.metrics;
     const motorDiagnostics = this._getMotorDiagnostics();
     const qualityArrow = this.qualityDetailsExpanded ? '▲' : '▼';
     const missedStepsArrow = this.missedStepsExpanded ? '▲' : '▼';
-    const missedSteps = Number.isFinite(motorDiagnostics.totalMissedSteps)
-      ? Math.max(0, Math.round(motorDiagnostics.totalMissedSteps))
-      : 0;
 
     const headerLabel = escapeHtml(this.machineLabel || this.machineId || 'Machine');
     const accent = sanitizeHexColor(this.machineTintColor) || this.hudAccentColor || DEFAULT_HUD_ACCENT;
-    if (this.hudElement) {
-      this.hudElement.style.setProperty('--quality-accent', accent);
-    }
+    this.hudElement.style.setProperty('--quality-accent', accent);
+
+    const metric = (label, value) => `<div class="quality-hud__metric"><span>${label}</span><span>${value}</span></div>`;
+    const triple = (a, b, c) => `${formatLengthMm(a)} / ${formatLengthMm(b)} / ${formatLengthMm(c)} mm`;
+    const pair = (a, b) => `${formatLengthMm(a)} / ${formatLengthMm(b)} mm`;
+    const score = Number.isFinite(m.score) ? m.score.toFixed(0) : '--';
 
     const lines = [];
     lines.push(
@@ -692,23 +802,27 @@ export class QualityMonitor {
     );
     lines.push(
       `<div class="quality-hud__summary quality-hud__summary--primary">` +
-        `<span class="quality-hud__summary-copy">Quality <strong>${score.toFixed(0)}</strong></span>` +
+        `<span class="quality-hud__summary-copy">Quality <strong>${score}</strong>` +
+        ` <span title="Share of extruded path within ${formatLengthMm(m.tolerance)} mm of the G-code path">% within ${formatLengthMm(m.tolerance)} mm</span></span>` +
         `<button type="button" class="quality-hud__toggle" data-section="quality-details" aria-expanded="${this.qualityDetailsExpanded ? 'true' : 'false'}" aria-label="${this.qualityDetailsExpanded ? 'Hide quality details' : 'Show quality details'}">${qualityArrow}</button>` +
       `</div>`
     );
     lines.push(
       `<div class="quality-hud__details${this.qualityDetailsExpanded ? '' : ' quality-hud__details--hidden'}">` +
-        `<div class="quality-hud__metric"><span>RMSE_n (straight)</span><span>${formatLengthMm(rmseStraight)}</span></div>` +
-        `<div class="quality-hud__metric"><span>95th |e_n|</span><span>${formatLengthMm(p95Straight)}</span></div>` +
-        `<div class="quality-hud__metric"><span>Corner radius avg / max</span><span>${formatLengthMm(cornerRadiusAvg)} / ${formatLengthMm(cornerRadiusMax)}</span></div>` +
-        `<div class="quality-hud__metric"><span>Ringing amplitude</span><span>${formatLengthMm(ringingAmplitude)}</span></div>` +
-        `<div class="quality-hud__metric"><span>Damping estimate</span><span>${Number.isFinite(ringingDecay) ? ringingDecay.toFixed(2) : '--'}</span></div>` +
-        `<div class="quality-hud__metric"><span>Coverage / IoU</span><span>${formatPercent(coverage)} / ${formatPercent(iou)}</span></div>` +
+        metric('Path deviation RMS / 95% / max', triple(m.contourRms, m.contourP95, m.contourMax)) +
+        metric('Path deviation RMS horiz. / vert.', pair(m.contourHorizontalRms, m.contourVerticalRms)) +
+        metric('Position error RMS / 95% / max', triple(m.trackingRms, m.trackingP95, m.trackingMax)) +
+        metric('Mean offset X / Y / Z', triple(m.meanOffset[0], m.meanOffset[1], m.meanOffset[2])) +
+        metric('Mean lag along path', `${formatLengthMm(m.meanLag)} mm`) +
+        metric(`Corner deviation avg / max (${m.cornerCount})`, pair(m.cornerDeviationAvg, m.cornerDeviationMax)) +
+        metric('Corner overshoot avg / max', pair(m.cornerOvershootAvg, m.cornerOvershootMax)) +
+        metric('Corner settling avg / max', pair(m.settleDistanceAvg, m.settleDistanceMax)) +
+        metric('Progress', formatPercent(m.progress)) +
       `</div>`
     );
     lines.push(
       `<div class="quality-hud__summary quality-hud__summary--secondary">` +
-        `<span class="quality-hud__summary-copy">Missed Steps <strong>${missedSteps}</strong></span>` +
+        `<span class="quality-hud__summary-copy">Missed Steps <strong>${motorDiagnostics.totalMissedSteps}</strong></span>` +
         `<button type="button" class="quality-hud__toggle" data-section="missed-steps" aria-expanded="${this.missedStepsExpanded ? 'true' : 'false'}" aria-label="${this.missedStepsExpanded ? 'Hide missed step details' : 'Show missed step details'}">${missedStepsArrow}</button>` +
       `</div>`
     );
@@ -729,28 +843,10 @@ export class QualityMonitor {
     }
     try {
       const diagnostics = this.motorDiagnosticsProvider();
-      const motors = Array.isArray(diagnostics?.motors)
-        ? diagnostics.motors
-            .map((motor) => {
-              const axis = typeof motor?.axis === 'string' && motor.axis.trim().length > 0
-                ? motor.axis.trim()
-                : null;
-              if (!axis) {
-                return null;
-              }
-              const missedSteps = Number.isFinite(motor?.missedSteps)
-                ? Math.max(0, Math.round(motor.missedSteps))
-                : 0;
-              return {
-                axis,
-                missedSteps,
-              };
-            })
-            .filter(Boolean)
-            .sort((a, b) => a.axis.localeCompare(b.axis, undefined, { numeric: true, sensitivity: 'base' }))
-        : [];
-      const totalMissedSteps = motors.reduce((sum, motor) => sum + motor.missedSteps, 0);
-      return { totalMissedSteps, motors };
+      return {
+        totalMissedSteps: diagnostics.totalMissedSteps,
+        motors: diagnostics.motors,
+      };
     } catch (_err) {
       return { totalMissedSteps: 0, motors: [] };
     }
@@ -761,9 +857,12 @@ export class QualityMonitor {
       return `<div class="quality-hud__metric"><span>No motors</span><span>--</span></div>`;
     }
     return motors
-      .map((motor) => (
-        `<div class="quality-hud__metric"><span>${escapeHtml(motor.axis)}</span><span>${motor.missedSteps}</span></div>`
-      ))
+      .map((motor) => {
+        const value = motor.closedLoop
+          ? 'closed loop'
+          : `${motor.missedSteps} (${motor.slips} slips, net ${motor.netSlips >= 0 ? '+' : ''}${motor.netSlips})`;
+        return `<div class="quality-hud__metric"><span>${escapeHtml(motor.axis)}</span><span>${value}</span></div>`;
+      })
       .join('');
   }
 
@@ -803,523 +902,11 @@ export class QualityMonitor {
     this._toggleHudSection(button.dataset?.section);
   }
 
-  _prepareSegmentData() {
-    this.segmentData = [];
-    let cumulative = 0;
-    let prevTangent = null;
-    for (const segment of this.referenceSegments) {
-      if (!segment || !Array.isArray(segment.start) || !Array.isArray(segment.end)) {
-        continue;
-      }
-      const start = segment.start;
-      const end = segment.end;
-      const sx = Number(start[0]);
-      const sy = Number(start[1]);
-      const sz = Number.isFinite(start[2]) ? Number(start[2]) : 0;
-      const ex = Number(end[0]);
-      const ey = Number(end[1]);
-      const ez = Number.isFinite(end[2]) ? Number(end[2]) : 0;
-      if (!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(sz) || !Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) {
-        continue;
-      }
-      const dx = ex - sx;
-      const dy = ey - sy;
-      const dz = ez - sz;
-      const length = Math.hypot(dx, dy, dz);
-      if (!(length > 1e-9)) {
-        continue;
-      }
-      const tangentX = dx / length;
-      const tangentY = dy / length;
-      const tangentZ = dz / length;
-      const normalX = -tangentY;
-      const normalY = tangentX;
-      const tangent = [tangentX, tangentY, tangentZ];
-      const deltaAngle = prevTangent == null ? 0 : angleBetweenUnitVectors3D(prevTangent, tangent);
-      const isStraight = prevTangent == null || Math.abs(deltaAngle) < this.straightAngleThreshold;
-
-      this.segmentData.push({
-        start: [sx, sy, sz],
-        end: [ex, ey, ez],
-        length,
-        tangent,
-        normal: [normalX, normalY],
-        deltaAngle,
-        isStraight,
-        cumulativeStart: cumulative,
-        cumulativeEnd: cumulative + length,
-      });
-      cumulative += length;
-      prevTangent = tangent;
-    }
-  }
-
-  _prepareCornerData() {
-    this.cornerData = [];
-    for (let i = 1; i < this.segmentData.length; i += 1) {
-      const seg = this.segmentData[i];
-      if (Math.abs(seg.deltaAngle) < this.cornerAngleThreshold) {
-        continue;
-      }
-      this.cornerData.push({
-        index: i,
-        arcLength: seg.cumulativeStart,
-        angle: seg.deltaAngle,
-        pivot: [...seg.start],
-        samples: [],
-        ringingSamples: [],
-      });
-    }
-  }
-
-  _computeBoundsFromSegments() {
-    if (this.segmentData.length === 0) {
-      return null;
-    }
-    let minX = Infinity;
-    let minY = Infinity;
-    let minZ = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    let maxZ = -Infinity;
-    for (const seg of this.segmentData) {
-      minX = Math.min(minX, seg.start[0], seg.end[0]);
-      minY = Math.min(minY, seg.start[1], seg.end[1]);
-      minZ = Math.min(minZ, seg.start[2], seg.end[2]);
-      maxX = Math.max(maxX, seg.start[0], seg.end[0]);
-      maxY = Math.max(maxY, seg.start[1], seg.end[1]);
-      maxZ = Math.max(maxZ, seg.start[2], seg.end[2]);
-    }
-    return {
-      minX,
-      minY,
-      minZ,
-      maxX,
-      maxY,
-      maxZ,
-    };
-  }
-
-  _buildCoverageGrid(bounds) {
-    if (!bounds) {
-      this.coverageGrid = null;
-      this.coverageStats = null;
-      return;
-    }
-    const margin = this.coverageMargin;
-    const minX = bounds.minX - margin;
-    const maxX = bounds.maxX + margin;
-    const minY = bounds.minY - margin;
-    const maxY = bounds.maxY + margin;
-    const minZ = (Number.isFinite(bounds.minZ) ? bounds.minZ : 0) - margin;
-    const maxZ = (Number.isFinite(bounds.maxZ) ? bounds.maxZ : 0) + margin;
-    const step = this.coverageStep;
-    const width = Math.max(1, Math.ceil((maxX - minX) / step) + 1);
-    const height = Math.max(1, Math.ceil((maxY - minY) / step) + 1);
-    const depth = Math.max(1, Math.ceil((maxZ - minZ) / step) + 1);
-    const refMask = new Uint8Array(width * height * depth);
-    const extrMask = new Uint8Array(width * height * depth);
-    this.coverageGrid = {
-      step,
-      originX: minX,
-      originY: minY,
-      originZ: minZ,
-      width,
-      height,
-      depth,
-      refMask,
-      extrMask,
-    };
-    this.coverageStats = {
-      referenceCount: 0,
-      extruderCount: 0,
-      intersectionCount: 0,
-    };
-    this._rasterizeReferenceMask();
-  }
-
-  _rasterizeReferenceMask() {
-    if (!this.coverageGrid) {
-      return;
-    }
-    const grid = this.coverageGrid;
-    const stats = this.coverageStats;
-    const beadRadius = this.assumedBeadWidth * 0.5;
-    const effectiveRadius = beadRadius + (Math.sqrt(3) * grid.step * 0.5);
-    for (const seg of this.segmentData) {
-      const minX = Math.min(seg.start[0], seg.end[0]) - beadRadius;
-      const maxX = Math.max(seg.start[0], seg.end[0]) + beadRadius;
-      const minY = Math.min(seg.start[1], seg.end[1]) - beadRadius;
-      const maxY = Math.max(seg.start[1], seg.end[1]) + beadRadius;
-      const minZ = Math.min(seg.start[2], seg.end[2]) - beadRadius;
-      const maxZ = Math.max(seg.start[2], seg.end[2]) + beadRadius;
-      const ix0 = clamp(Math.floor((minX - grid.originX) / grid.step), 0, grid.width - 1);
-      const ix1 = clamp(Math.ceil((maxX - grid.originX) / grid.step), 0, grid.width - 1);
-      const iy0 = clamp(Math.floor((minY - grid.originY) / grid.step), 0, grid.height - 1);
-      const iy1 = clamp(Math.ceil((maxY - grid.originY) / grid.step), 0, grid.height - 1);
-      const iz0 = clamp(Math.floor((minZ - grid.originZ) / grid.step), 0, grid.depth - 1);
-      const iz1 = clamp(Math.ceil((maxZ - grid.originZ) / grid.step), 0, grid.depth - 1);
-      for (let ix = ix0; ix <= ix1; ix += 1) {
-        const cx = grid.originX + (ix + 0.5) * grid.step;
-        for (let iy = iy0; iy <= iy1; iy += 1) {
-          const cy = grid.originY + (iy + 0.5) * grid.step;
-          for (let iz = iz0; iz <= iz1; iz += 1) {
-            const cz = grid.originZ + (iz + 0.5) * grid.step;
-            const dist = distancePointToSegment3D(
-              cx,
-              cy,
-              cz,
-              seg.start[0],
-              seg.start[1],
-              seg.start[2],
-              seg.end[0],
-              seg.end[1],
-              seg.end[2],
-            );
-            if (dist <= effectiveRadius) {
-              const index = voxelIndex(grid, ix, iy, iz);
-              if (grid.refMask[index] === 0) {
-                grid.refMask[index] = 1;
-                stats.referenceCount += 1;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  _estimateExtrusionRadius(length) {
-    if (!Number.isFinite(length) || length <= 0) {
-      return this.assumedBeadWidth * 0.5;
-    }
-    return Math.max(
-      this.assumedBeadWidth * 0.4,
-      Math.sqrt(length / Math.PI) * 0.01 * 0.5,
-    );
-  }
-
-  _updateCoverageForExtrusion(x, y, z, length) {
-    if (!this.coverageGrid || !this.coverageStats) {
-      return;
-    }
-    const radius = this._estimateExtrusionRadius(length);
-    const grid = this.coverageGrid;
-    const stats = this.coverageStats;
-    const effectiveRadius = radius + (Math.sqrt(3) * grid.step * 0.5);
-    const minX = x - radius;
-    const maxX = x + radius;
-    const minY = y - radius;
-    const maxY = y + radius;
-    const minZ = z - radius;
-    const maxZ = z + radius;
-    const ix0 = clamp(Math.floor((minX - grid.originX) / grid.step), 0, grid.width - 1);
-    const ix1 = clamp(Math.ceil((maxX - grid.originX) / grid.step), 0, grid.width - 1);
-    const iy0 = clamp(Math.floor((minY - grid.originY) / grid.step), 0, grid.height - 1);
-    const iy1 = clamp(Math.ceil((maxY - grid.originY) / grid.step), 0, grid.height - 1);
-    const iz0 = clamp(Math.floor((minZ - grid.originZ) / grid.step), 0, grid.depth - 1);
-    const iz1 = clamp(Math.ceil((maxZ - grid.originZ) / grid.step), 0, grid.depth - 1);
-    for (let ix = ix0; ix <= ix1; ix += 1) {
-      const cx = grid.originX + (ix + 0.5) * grid.step;
-      for (let iy = iy0; iy <= iy1; iy += 1) {
-        const cy = grid.originY + (iy + 0.5) * grid.step;
-        for (let iz = iz0; iz <= iz1; iz += 1) {
-          const cz = grid.originZ + (iz + 0.5) * grid.step;
-          const dx = cx - x;
-          const dy = cy - y;
-          const dz = cz - z;
-          if (dx * dx + dy * dy + dz * dz <= effectiveRadius * effectiveRadius) {
-            const index = voxelIndex(grid, ix, iy, iz);
-            if (grid.extrMask[index] === 0) {
-              grid.extrMask[index] = 1;
-              stats.extruderCount += 1;
-              if (grid.refMask[index] === 1) {
-                stats.intersectionCount += 1;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  _projectToPath(x, y, z = 0) {
-    if (this.segmentData.length === 0) {
-      return null;
-    }
-    let best = null;
-    let bestDistSq = Infinity;
-    const segments = this.segmentData;
-    const count = segments.length;
-    const searchRadius = Math.max(0, Math.floor(this.segmentSearchRadius));
-    const hasHint = this.projectionHintValid && Number.isInteger(this.lastSegmentIndex);
-    const hint = clamp(this.lastSegmentIndex, 0, count - 1);
-
-    const evaluateSegment = (index) => {
-      const seg = segments[index];
-      const sx = seg.start[0];
-      const sy = seg.start[1];
-      const sz = seg.start[2];
-      const ex = seg.end[0];
-      const ey = seg.end[1];
-      const ez = seg.end[2];
-      const vx = ex - sx;
-      const vy = ey - sy;
-      const vz = ez - sz;
-      const lengthSq = seg.length * seg.length;
-      if (!(lengthSq > 1e-16)) {
-        return;
-      }
-      let t = ((x - sx) * vx + (y - sy) * vy + (z - sz) * vz) / lengthSq;
-      t = Math.max(0, Math.min(1, t));
-      const nx = sx + t * vx;
-      const ny = sy + t * vy;
-      const nz = sz + t * vz;
-      const dx = x - nx;
-      const dy = y - ny;
-      const dz = z - nz;
-      const distSq = dx * dx + dy * dy + dz * dz;
-      if (distSq < bestDistSq) {
-        const planarNormalError = dx * seg.normal[0] + dy * seg.normal[1];
-        const tangentialError = dx * seg.tangent[0] + dy * seg.tangent[1] + dz * seg.tangent[2];
-        const radialError = Math.sqrt(distSq);
-        const sign = Math.abs(planarNormalError) > 1e-12
-          ? Math.sign(planarNormalError)
-          : (Math.abs(dz) > 1e-12 ? Math.sign(dz) : 1);
-        bestDistSq = distSq;
-        best = {
-          segmentIndex: index,
-          normalError: radialError * sign,
-          tangentialError,
-          point: [nx, ny, nz],
-          t,
-          arcLength: seg.cumulativeStart + t * seg.length,
-          isStraight: seg.isStraight,
-        };
-      }
-    };
-
-    const startIdx = hasHint ? Math.max(0, hint - searchRadius) : 0;
-    const endIdx = hasHint ? Math.min(count - 1, hint + searchRadius) : count - 1;
-    for (let i = startIdx; i <= endIdx; i += 1) {
-      evaluateSegment(i);
-    }
-
-    const fallbackDistanceSq = Number.isFinite(this.projectionFallbackDistance) && this.projectionFallbackDistance > 0
-      ? this.projectionFallbackDistance * this.projectionFallbackDistance
-      : Infinity;
-    const searchedFullRange = !hasHint;
-    const needFallbackSearch = !searchedFullRange && bestDistSq > fallbackDistanceSq;
-    if (needFallbackSearch) {
-      for (let i = 0; i < count; i += 1) {
-        if (i >= startIdx && i <= endIdx) {
-          continue;
-        }
-        evaluateSegment(i);
-      }
-    }
-    if (best) {
-      this.lastSegmentIndex = best.segmentIndex;
-      this.projectionHintValid = true;
-    }
-    return best;
-  }
-
-  _accumulateStraightError(projection) {
-    if (!projection.isStraight) {
-      return;
-    }
-    const err = projection.normalError;
-    this.straightStats.count += 1;
-    this.straightStats.sumSquares += err * err;
-    if (this.straightStats.percentile95) {
-      this.straightStats.percentile95.observe(Math.abs(err));
-    }
-  }
-
-  _accumulateCornerSamples(projection) {
-    if (this.cornerData.length === 0) {
-      return Infinity;
-    }
-    let closestAbsDelta = Infinity;
-    for (const corner of this.cornerData) {
-      const delta = projection.arcLength - corner.arcLength;
-      const absDelta = Math.abs(delta);
-      if (absDelta < closestAbsDelta) {
-        closestAbsDelta = absDelta;
-      }
-      if (absDelta <= this.cornerRadiusWindow) {
-        corner.samples.push({
-          delta,
-          normalError: projection.normalError,
-        });
-      }
-      if (delta >= this.cornerRingingStart && delta <= this.cornerRingingTail) {
-        corner.ringingSamples.push({
-          s: delta,
-          normalError: projection.normalError,
-        });
-      }
-    }
-    return closestAbsDelta;
-  }
-
-  _computeMetrics() {
-    const stats = this.straightStats;
-    const rmse = stats.count > 0 ? Math.sqrt(stats.sumSquares / stats.count) : NaN;
-    let p95 = NaN;
-    if (stats.percentile95) {
-      const estimate = stats.percentile95.getEstimate();
-      if (Number.isFinite(estimate)) {
-        p95 = estimate;
-      }
-    }
-
-    const radiusValues = [];
-    const radiusMaxValues = [];
-    const amplitudeValues = [];
-    const dampingValues = [];
-
-    for (const corner of this.cornerData) {
-      const windowSamples = corner.samples.filter((sample) => Math.abs(sample.delta) <= this.cornerRadiusWindow);
-      if (windowSamples.length >= this.cornerMinSamples) {
-        const avg = windowSamples.reduce((sum, sample) => sum + Math.abs(sample.normalError), 0) / windowSamples.length;
-        const max = windowSamples.reduce((acc, sample) => Math.max(acc, Math.abs(sample.normalError)), 0);
-        radiusValues.push(avg);
-        radiusMaxValues.push(max);
-      }
-
-      const ringingSamples = corner.ringingSamples;
-      if (ringingSamples.length > 0) {
-        let firstWindowMax = 0;
-        let secondWindowMax = 0;
-        for (const sample of ringingSamples) {
-          if (sample.s <= this.cornerRingingStart + this.cornerRingingWindow) {
-            firstWindowMax = Math.max(firstWindowMax, Math.abs(sample.normalError));
-          } else if (sample.s <= this.cornerRingingStart + 2 * this.cornerRingingWindow) {
-            secondWindowMax = Math.max(secondWindowMax, Math.abs(sample.normalError));
-          }
-        }
-        if (firstWindowMax > this.cornerRingingMinAmplitude) {
-          amplitudeValues.push(firstWindowMax);
-        }
-        if (firstWindowMax > this.cornerRingingMinAmplitude && secondWindowMax > this.cornerRingingMinAmplitude) {
-          const delta = Math.log(firstWindowMax / secondWindowMax);
-          if (Number.isFinite(delta) && delta > 0) {
-            const damping = delta / Math.sqrt(4 * Math.PI * Math.PI + delta * delta);
-            dampingValues.push(damping);
-          }
-        }
-      }
-    }
-
-    const radiusAvg = radiusValues.length > 0
-      ? radiusValues.reduce((sum, value) => sum + value, 0) / radiusValues.length
-      : NaN;
-    const radiusMax = radiusMaxValues.length > 0
-      ? radiusMaxValues.reduce((max, value) => Math.max(max, value), 0)
-      : NaN;
-    const amplitude = amplitudeValues.length > 0
-      ? amplitudeValues.reduce((sum, value) => sum + value, 0) / amplitudeValues.length
-      : NaN;
-    const damping = dampingValues.length > 0
-      ? dampingValues.reduce((sum, value) => sum + value, 0) / dampingValues.length
-      : NaN;
-
-    let coverage = NaN;
-    let iou = NaN;
-    if (this.coverageStats) {
-      const ref = this.coverageStats.referenceCount;
-      const extr = this.coverageStats.extruderCount;
-      const inter = this.coverageStats.intersectionCount;
-      const union = ref + extr - inter;
-      coverage = ref > 0 ? inter / ref : NaN;
-      iou = union > 0 ? inter / union : NaN;
-    }
-
-    const score = this._composeScore({
-      rmse,
-      p95,
-      radiusAvg,
-      amplitude,
-      coverage,
-      iou,
-    });
-
-    return {
-      rmseStraight: rmse,
-      p95Straight: p95,
-      cornerRadiusAvg: radiusAvg,
-      cornerRadiusMax: radiusMax,
-      ringingAmplitude: amplitude,
-      ringingDecay: damping,
-      coverage,
-      iou,
-      score,
-    };
-  }
-
-  _computeExtrusionPenalty(projection, nearestCornerDelta = Infinity) {
-    const errorAbs = Math.abs(projection.normalError);
-    const soft = Number.isFinite(this.penaltySoftThreshold) && this.penaltySoftThreshold > 0
-      ? this.penaltySoftThreshold
-      : 0;
-    const hard = Number.isFinite(this.penaltyHardThreshold) && this.penaltyHardThreshold > soft
-      ? this.penaltyHardThreshold
-      : soft + 1e-6;
-    let penalty = 0;
-    if (errorAbs > soft) {
-      penalty = clamp((errorAbs - soft) / (hard - soft), 0, 1);
-    }
-    if (Number.isFinite(nearestCornerDelta) && nearestCornerDelta <= this.cornerRadiusWindow) {
-      const proximity = clamp(1 - nearestCornerDelta / this.cornerRadiusWindow, 0, 1);
-      penalty = clamp(penalty + 0.35 * proximity, 0, 1);
-    }
-    return penalty;
-  }
-
   _colorFromPenalty(penalty) {
-    const p = clamp(Number.isFinite(penalty) ? penalty : 0, 0, 1);
-    if (p <= 0) {
+    if (penalty <= 0) {
       return '#ffffff';
     }
-    const channel = Math.round(255 * (1 - 0.75 * p));
+    const channel = Math.round(255 * (1 - 0.75 * penalty));
     return `rgb(255, ${channel}, ${channel})`;
-  }
-
-  _applyPenaltyToExtrusion(extrusionEvent, penalty) {
-    if (!extrusionEvent || typeof extrusionEvent !== 'object') {
-      return;
-    }
-    const safePenalty = clamp(Number.isFinite(penalty) ? penalty : 0, 0, 1);
-    extrusionEvent.penalty = safePenalty;
-    extrusionEvent.qualityColor = this._colorFromPenalty(safePenalty);
-  }
-
-  _composeScore({ rmse, p95, radiusAvg, amplitude, coverage, iou }) {
-    let score = 100;
-    if (Number.isFinite(rmse)) {
-      const rmseMm = rmse * 1000;
-      score -= clamp(rmseMm * 10, 0, 35);
-    }
-    if (Number.isFinite(p95)) {
-      const p95Mm = p95 * 1000;
-      score -= clamp(Math.max(0, p95Mm - 0.2) * 8, 0, 25);
-    }
-    if (Number.isFinite(radiusAvg)) {
-      const radiusMm = radiusAvg * 1000;
-      score -= clamp(radiusMm * 6, 0, 20);
-    }
-    if (Number.isFinite(amplitude)) {
-      const ampMm = amplitude * 1000;
-      score -= clamp(ampMm * 8, 0, 15);
-    }
-    if (Number.isFinite(coverage)) {
-      score -= clamp((1 - coverage) * 60, 0, 15);
-    }
-    if (Number.isFinite(iou)) {
-      score -= clamp((1 - iou) * 50, 0, 15);
-    }
-    return clamp(score, 0, 100);
   }
 }

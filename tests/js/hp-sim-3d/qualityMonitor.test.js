@@ -48,76 +48,143 @@ describe('QualityMonitor 3D extrusion scoring', () => {
     };
   }
 
-  function createMonitor(referenceSegments) {
+  // A segment consuming 1 unit of filament per metre.
+  function segment(start, end) {
+    return { start, end, extrusion: Math.hypot(end[0] - start[0], end[1] - start[1], end[2] - start[2]) };
+  }
+
+  // Feed samples the way RemoteSpoolSystem does: the tip at the start of each
+  // 0.1 mm step together with that step's extrusion; `offset(point, tangent)`
+  // displaces the tip from where it should be.
+  function print(monitor, segments, offset = () => [0, 0, 0], step = 0.0001) {
+    for (const seg of segments) {
+      const d = seg.end.map((value, i) => value - seg.start[i]);
+      const length = Math.hypot(...d);
+      if (length === 0) {
+        const o = offset(seg.start, [0, 0, 0]);
+        monitor.recordExtrusion({ pos: seg.start.map((value, i) => value + o[i]), length: seg.extrusion });
+        continue;
+      }
+      const tangent = d.map((value) => value / length);
+      const count = Math.round(length / step);
+      for (let i = 0; i < count; i += 1) {
+        const point = seg.start.map((value, k) => value + d[k] * (i / count));
+        const o = offset(point, tangent);
+        monitor.recordExtrusion({ pos: point.map((value, k) => value + o[k]), length: seg.extrusion / count });
+      }
+    }
+    monitor.runFinalCheck();
+    return monitor.metrics;
+  }
+
+  function createMonitor(segments) {
     const monitor = new QualityMonitor();
-    monitor.setReferenceSegments(referenceSegments);
+    monitor.setReferenceSegments(segments);
     return monitor;
   }
 
-  test('normalizes 3D extrusion points and projects them onto 3D reference segments', () => {
-    const monitor = createMonitor([
-      { start: [0, 0, -0.001], end: [0.1, 0, -0.001] },
-    ]);
-
-    const normalized = monitor._normalizeExtrusionEvent({
-      pos: [0.05, 0, -0.001],
-      length: 0.0005,
-    });
-    const projection = monitor._projectToPath(0.05, 0, -0.001);
-
-    expect(normalized).toEqual({
-      x: 0.05,
-      y: 0,
-      z: -0.001,
-      length: 0.0005,
-    });
-    expect(projection).not.toBeNull();
-    expect(projection.normalError).toBeCloseTo(0, 9);
-    expect(projection.point[2]).toBeCloseTo(-0.001, 9);
+  test('a print on the path scores 100 with zero error and full progress', () => {
+    const reference = [segment([0, 0, 0], [0.05, 0, 0]), segment([0.05, 0, 0], [0.05, 0.05, 0])];
+    const metrics = print(createMonitor(reference), reference);
+    expect(metrics.score).toBe(100);
+    expect(metrics.contourMax).toBeLessThan(1e-9);
+    expect(metrics.trackingMax).toBeLessThan(1e-9);
+    expect(metrics.progress).toBeCloseTo(1, 9);
+    expect(metrics.cornerCount).toBe(1);
   });
 
-  test('z offsets affect both distance error and coverage metrics', () => {
+  test('a vertical offset is reported as vertical path deviation and mean Z offset', () => {
+    const reference = [segment([0, 0, 0], [0.1, 0, 0])];
+    const metrics = print(createMonitor(reference), reference, () => [0, 0, 0.002]);
+    expect(metrics.contourRms).toBeCloseTo(0.002, 9);
+    expect(metrics.contourVerticalRms).toBeCloseTo(0.002, 9);
+    expect(metrics.contourHorizontalRms).toBeCloseTo(0, 9);
+    expect(metrics.meanOffset[2]).toBeCloseTo(0.002, 9);
+    expect(metrics.score).toBe(0);
+  });
+
+  test('lag along the path is position error, not path deviation', () => {
+    const reference = [segment([0, 0, 0], [0.1, 0, 0])];
+    const metrics = print(createMonitor(reference), reference, (point, tangent) => (
+      point[0] >= 0.001 ? tangent.map((value) => -0.001 * value) : [0, 0, 0]
+    ));
+    expect(metrics.meanLag).toBeGreaterThan(0.00098);
+    expect(metrics.trackingP95).toBeGreaterThan(0.00098);
+    expect(metrics.contourMax).toBeLessThan(1e-9);
+    expect(metrics.score).toBe(100);
+  });
+
+  test('the first sample after a travel belongs to the line it starts', () => {
+    const reference = [segment([0, 0, 0], [0.01, 0, 0]), segment([0.2, 0.2, 0], [0.21, 0.2, 0])];
+    const metrics = print(createMonitor(reference), reference);
+    expect(metrics.trackingMax).toBeLessThan(1e-9);
+  });
+
+  test('extrusion without motion (a prime) keeps the stream in sync with the path', () => {
     const reference = [
-      { start: [0, 0, 0], end: [0.1, 0, 0] },
+      segment([0, 0, 0], [0.01, 0, 0]),
+      { start: [0.02, 0, 0], end: [0.02, 0, 0], extrusion: 0.005 },
+      segment([0.02, 0, 0], [0.03, 0, 0]),
     ];
-    const onPath = createMonitor(reference);
-    const offPlane = createMonitor(reference);
+    const metrics = print(createMonitor(reference), reference);
+    expect(metrics.trackingMax).toBeLessThan(1e-9);
+    expect(metrics.progress).toBeCloseTo(1, 9);
+  });
 
-    onPath.recordExtrusion({ pos: [0.05, 0, 0], length: 0.0005 });
-    onPath.runFinalCheck();
+  test('a deviation toward the neighbouring infill line is not mistaken for that line', () => {
+    const reference = [
+      segment([0, 0, 0], [0.05, 0, 0]),
+      segment([0.05, 0, 0], [0.05, 0.002, 0]),
+      segment([0.05, 0.002, 0], [0, 0.002, 0]),
+    ];
+    const metrics = print(createMonitor(reference), reference, (point) => (
+      point[1] === 0 && point[0] < 0.04 ? [0, 0.0015, 0] : [0, 0, 0]
+    ));
+    expect(metrics.contourMax).toBeCloseTo(0.0015, 6);
+  });
 
-    offPlane.recordExtrusion({ pos: [0.05, 0, 0.002], length: 0.0005 });
-    offPlane.runFinalCheck();
+  test('corner rounding shows up as corner deviation', () => {
+    const reference = [segment([0, 0, 0], [0.05, 0, 0]), segment([0.05, 0, 0], [0.05, 0.05, 0])];
+    // Cut the corner: pull samples within 2 mm of it toward the inside.
+    const metrics = print(createMonitor(reference), reference, (point) => {
+      const distance = Math.hypot(point[0] - 0.05, point[1]);
+      return distance < 0.002 ? [-(0.002 - distance) / 2, (0.002 - distance) / 2, 0] : [0, 0, 0];
+    });
+    expect(metrics.cornerCount).toBe(1);
+    expect(metrics.cornerDeviationMax).toBeGreaterThan(0.001);
+    expect(metrics.settleDistanceMax).toBeLessThan(0.002);
+  });
 
-    expect(onPath.metrics.rmseStraight).toBeCloseTo(0, 9);
-    expect(onPath.metrics.coverage).toBeGreaterThan(0);
-    expect(offPlane.metrics.rmseStraight).toBeGreaterThan(0.0019);
-    expect(offPlane.metrics.coverage).toBe(0);
-    expect(offPlane.metrics.score).toBeLessThan(onPath.metrics.score);
+  test('tints extrusions by their path deviation', () => {
+    const monitor = createMonitor([segment([0, 0, 0], [0.1, 0, 0])]);
+    const onPath = { pos: [0.01, 0, 0], length: 0.0001 };
+    const offPath = { pos: [0.01, 0.003, 0], length: 0.0001 };
+    monitor.recordExtrusion(onPath);
+    monitor.recordExtrusion(offPath);
+    expect(onPath.penalty).toBe(0);
+    expect(offPath.penalty).toBe(1);
   });
 
   test('renders missed-step diagnostics in the 3D HUD card', () => {
     const hudElement = createHudElement();
     const monitor = new QualityMonitor({ hudElement });
-    monitor.setReferenceSegments([
-      { start: [0, 0, 0], end: [0.1, 0, 0] },
-    ]);
+    monitor.setReferenceSegments([segment([0, 0, 0], [0.1, 0, 0])]);
     monitor.setMotorDiagnosticsProvider(() => ({
-      totalMissedSteps: 5,
+      totalMissedSteps: 20,
       motors: [
-        { axis: 'A', missedSteps: 4 },
-        { axis: 'B', missedSteps: 1 },
+        { axis: 'A', closedLoop: false, slips: 4, netSlips: 4, missedSteps: 16 },
+        { axis: 'B', closedLoop: false, slips: 1, netSlips: -1, missedSteps: 4 },
       ],
     }));
 
-    monitor.recordExtrusion({ pos: [0.05, 0, 0], length: 0.0005 });
+    monitor.recordExtrusion({ pos: [0, 0, 0], length: 0.0005 });
     monitor.runFinalCheck();
 
-    expect(hudElement.innerHTML).toContain('Missed Steps <strong>5</strong>');
+    expect(hudElement.innerHTML).toContain('Missed Steps <strong>20</strong>');
 
     hudElement.clickSection('missed-steps');
     expect(monitor.missedStepsExpanded).toBe(true);
-    expect(hudElement.innerHTML).toContain('<span>A</span><span>4</span>');
-    expect(hudElement.innerHTML).toContain('<span>B</span><span>1</span>');
+    expect(hudElement.innerHTML).toContain('<span>A</span><span>16 (4 slips, net +4)</span>');
+    expect(hudElement.innerHTML).toContain('<span>B</span><span>4 (1 slips, net -1)</span>');
   });
 });

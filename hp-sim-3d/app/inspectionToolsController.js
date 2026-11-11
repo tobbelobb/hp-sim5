@@ -2,7 +2,6 @@ import { PRESET_GCODE_MAP } from './commandPresetResolver.js';
 
 const GCODE_MM_TO_SIM_SCALE = 0.001;
 const GCODE_EXTRUSION_EPSILON = 1e-6;
-const GCODE_MOVE_EPSILON = 1e-9;
 const GCODE_INLINE_COMMENT_RE = /\(.*?\)/g;
 
 function createEmptyBounds() {
@@ -165,7 +164,9 @@ export function parseGcodeText(text) {
     const deltaY = nextPos.Y - startPos.Y;
     const deltaZ = nextPos.Z - startPos.Z;
     const moveDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
-    if (extrusionDelta > GCODE_EXTRUSION_EPSILON && moveDistance > GCODE_MOVE_EPSILON) {
+    // Extrusion without motion (a prime after a retract) stays as a
+    // zero-length segment so the reference accounts for all filament.
+    if (extrusionDelta > GCODE_EXTRUSION_EPSILON) {
       const segment = {
         start: [startPos.X, startPos.Y, startPos.Z],
         end: [nextPos.X, nextPos.Y, nextPos.Z],
@@ -294,7 +295,7 @@ export function createInspectionToolsController({
     }
     updateReferenceToggleUI();
     quality?.forEachQualityMonitor?.((monitor) => {
-      monitor.setReferenceSegments(overlay.segments, overlay.metadata);
+      monitor.setReferenceSegments(overlay.segments);
     });
     syncToRenderSystem({ force: true });
   }

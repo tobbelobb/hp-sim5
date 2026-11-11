@@ -91,7 +91,7 @@ def metrics(samples):
                                         if cable['lengths_m']['error'] is not None), default=0.),
         'peak_abs_tracking_error_rad': max((abs(motor['tracking_error_rad']) for row in samples for motor in row['motors']
                                             if motor['tracking_error_rad'] is not None), default=0.),
-        'peak_total_missed_steps': max(sum(motor['peak_missed_steps'] for motor in row['motors']) for row in samples),
+        'total_missed_step_slips': max(sum(motor['missed_step_slips'] for motor in row['motors']) for row in samples),
     }
 
 

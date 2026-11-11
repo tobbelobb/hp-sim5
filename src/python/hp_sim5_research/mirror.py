@@ -257,7 +257,7 @@ def sample(world, step, dt):
                        'diagnostic_encoder_angle_rad': measured,
                        'diagnostic_encoder_offset_rad': motor.missed_step_encoder_offset or 0.,
                        'tracking_error_rad': None if motor.torque_mode or measured is None else measured - target,
-                       'peak_missed_steps': motor.missed_steps})
+                       'missed_step_slips': motor.missed_steps})
     return {'step': step, 'sim_time_s': step * dt,
             'effectors': [frame for frame in snapshot['frames'] if frame['kind'] == 'effector'],
             'motors': motors,

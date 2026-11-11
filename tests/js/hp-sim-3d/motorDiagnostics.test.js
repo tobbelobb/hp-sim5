@@ -1,8 +1,6 @@
 import {
   World,
-  EncoderComponent,
   MachineTagComponent,
-  OrientationComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   SpoolStateComponent,
@@ -10,187 +8,60 @@ import {
 import {
   StepperMotorComponent,
 } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { STEPPER_CLOSED_LOOP_RESOURCE } from '../../../hp-sim-3d/app/hangprinter_runtime.js';
 import {
+  FULL_STEPS_PER_SLIP,
   getMachineMotorDiagnostics,
   resetMachineMotorDiagnostics,
 } from '../../../hp-sim-3d/app/motor-diagnostics.js';
 
+// The physics engine counts slips; these tests set its outputs directly.
 describe('getMachineMotorDiagnostics (3D)', () => {
-  test('reports per-axis missed steps from local spool rotation angles', () => {
+  function addStepper(world, machineId, axis, slips, netSlips) {
+    const entity = world.createEntity();
+    const stepper = new StepperMotorComponent(0.0, 0.0);
+    stepper.missedSteps = slips;
+    stepper.currentMissedSteps = netSlips;
+    world.addComponent(entity, new MachineTagComponent(machineId));
+    world.addComponent(entity, new SpoolStateComponent(axis));
+    world.addComponent(entity, stepper);
+    return stepper;
+  }
+
+  test('reports slips per axis in full steps for one machine', () => {
     const world = new World();
-    const axisA = world.createEntity();
-    const axisB = world.createEntity();
-    const stepAngle = (Math.PI * 2) / 50;
-
-    const stepperA = new StepperMotorComponent(0.75, 0.1);
-    const stepperB = new StepperMotorComponent(0.25, 0.0);
-
-    world.addComponent(axisA, new MachineTagComponent('machine-1'));
-    world.addComponent(axisA, new SpoolStateComponent('A'));
-    world.addComponent(axisA, stepperA);
-    const orientA = new OrientationComponent();
-    orientA.quaternion.setFromAxisAngle({ x: 0.0, y: 0.0, z: 1.0 }, 0.65 - (4 * stepAngle));
-    world.addComponent(axisA, orientA);
-
-    world.addComponent(axisB, new MachineTagComponent('machine-1'));
-    world.addComponent(axisB, new SpoolStateComponent('B'));
-    world.addComponent(axisB, stepperB);
-    const orientB = new OrientationComponent();
-    orientB.quaternion.setFromAxisAngle({ x: 0.0, y: 0.0, z: 1.0 }, 0.25 + (1 * stepAngle));
-    world.addComponent(axisB, orientB);
-
-    const diagnostics = getMachineMotorDiagnostics(world, 'machine-1');
-
-    expect(diagnostics).toEqual({
-      totalMissedSteps: 5,
-      motors: [
-        { axis: 'A', missedSteps: 4 },
-        { axis: 'B', missedSteps: 1 },
-      ],
-    });
-  });
-
-  test('ignores full-turn encoder offsets when computing missed steps', () => {
-    const world = new World();
-    const axisA = world.createEntity();
-
-    world.addComponent(axisA, new MachineTagComponent('machine-1'));
-    world.addComponent(axisA, new SpoolStateComponent('A'));
-    world.addComponent(axisA, new StepperMotorComponent((2 * Math.PI) + 0.25, 0.0));
-    const orientA = new OrientationComponent();
-    orientA.quaternion.setFromAxisAngle({ x: 0.0, y: 0.0, z: 1.0 }, 0.25);
-    world.addComponent(axisA, orientA);
-    world.addComponent(axisA, new EncoderComponent((2 * Math.PI) + 0.25));
-
-    const diagnostics = getMachineMotorDiagnostics(world, 'machine-1');
-
-    expect(diagnostics).toEqual({
-      totalMissedSteps: 0,
-      motors: [
-        { axis: 'A', missedSteps: 0 },
-      ],
-    });
-  });
-
-  test('still reports local error after removing a full-turn encoder offset', () => {
-    const world = new World();
-    const axisA = world.createEntity();
-    const stepAngle = (Math.PI * 2) / 50;
-
-    world.addComponent(axisA, new MachineTagComponent('machine-1'));
-    world.addComponent(axisA, new SpoolStateComponent('A'));
-    world.addComponent(axisA, new StepperMotorComponent(0.25, 0.0));
-    const orientA = new OrientationComponent();
-    orientA.quaternion.setFromAxisAngle({ x: 0.0, y: 0.0, z: 1.0 }, 0.25 + stepAngle);
-    world.addComponent(axisA, orientA);
-    world.addComponent(axisA, new EncoderComponent((2 * Math.PI) + 0.25 + stepAngle));
-
-    const diagnostics = getMachineMotorDiagnostics(world, 'machine-1');
-
-    expect(diagnostics).toEqual({
-      totalMissedSteps: 1,
-      motors: [
-        { axis: 'A', missedSteps: 1 },
-      ],
-    });
-  });
-
-  test('counts full-turn encoder slips after the initial encoder offset is established', () => {
-    const world = new World();
-    const axisA = world.createEntity();
-
-    world.addComponent(axisA, new MachineTagComponent('machine-1'));
-    world.addComponent(axisA, new SpoolStateComponent('A'));
-    world.addComponent(axisA, new StepperMotorComponent(0.0, 0.0));
-    world.addComponent(axisA, new OrientationComponent());
-    const encoder = new EncoderComponent(0.0);
-    world.addComponent(axisA, encoder);
+    addStepper(world, 'machine-1', 'B', 1, -1);
+    addStepper(world, 'machine-1', 'A', 3, 1);
+    addStepper(world, 'machine-2', 'A', 7, 7);
 
     expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
-      totalMissedSteps: 0,
+      totalMissedSteps: 4 * FULL_STEPS_PER_SLIP,
       motors: [
-        { axis: 'A', missedSteps: 0 },
-      ],
-    });
-
-    encoder.angle = Math.PI * 2.0;
-
-    expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
-      totalMissedSteps: 50,
-      motors: [
-        { axis: 'A', missedSteps: 50 },
+        { axis: 'A', closedLoop: false, slips: 3, netSlips: 1, missedSteps: 3 * FULL_STEPS_PER_SLIP },
+        { axis: 'B', closedLoop: false, slips: 1, netSlips: -1, missedSteps: FULL_STEPS_PER_SLIP },
       ],
     });
   });
 
-  test('keeps the peak missed-step count after transient slip is corrected', () => {
+  test('marks motors as closed loop when the world runs servos', () => {
     const world = new World();
-    const axisA = world.createEntity();
-    const stepAngle = (Math.PI * 2) / 50;
+    addStepper(world, 'machine-1', 'A', 0, 0);
+    world.setResource(STEPPER_CLOSED_LOOP_RESOURCE, true);
 
-    world.addComponent(axisA, new MachineTagComponent('machine-1'));
-    world.addComponent(axisA, new SpoolStateComponent('A'));
-    world.addComponent(axisA, new StepperMotorComponent(0.0, 0.0));
-    world.addComponent(axisA, new OrientationComponent());
-    const encoder = new EncoderComponent(0.0);
-    world.addComponent(axisA, encoder);
-
-    getMachineMotorDiagnostics(world, 'machine-1');
-    encoder.angle = 3.0 * stepAngle;
-    expect(getMachineMotorDiagnostics(world, 'machine-1').totalMissedSteps).toBe(3);
-
-    encoder.angle = 0.0;
-    expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
-      totalMissedSteps: 3,
-      motors: [
-        { axis: 'A', missedSteps: 3 },
-      ],
-    });
+    expect(getMachineMotorDiagnostics(world, 'machine-1').motors[0].closedLoop).toBe(true);
   });
 
-  test('reset clears accumulated missed-step counts and rebaselines encoder turns', () => {
+  test('reset restarts the slip count but keeps the encoder baseline and net offset', () => {
     const world = new World();
-    const axisA = world.createEntity();
-
-    world.addComponent(axisA, new MachineTagComponent('machine-1'));
-    world.addComponent(axisA, new SpoolStateComponent('A'));
-    world.addComponent(axisA, new StepperMotorComponent(0.0, 0.0));
-    world.addComponent(axisA, new OrientationComponent());
-    const encoder = new EncoderComponent(0.0);
-    world.addComponent(axisA, encoder);
-
-    getMachineMotorDiagnostics(world, 'machine-1');
-    encoder.angle = Math.PI * 2.0;
-    expect(getMachineMotorDiagnostics(world, 'machine-1').totalMissedSteps).toBe(50);
+    const a = addStepper(world, 'machine-1', 'A', 5, 5);
+    const other = addStepper(world, 'machine-2', 'A', 2, 2);
+    a.missedStepEncoderOffset = 6.28;
 
     resetMachineMotorDiagnostics(world, 'machine-1');
 
-    expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
-      totalMissedSteps: 0,
-      motors: [
-        { axis: 'A', missedSteps: 0 },
-      ],
-    });
-  });
-
-  test('unwraps the fallback quaternion angle near the target when no encoder is present', () => {
-    const world = new World();
-    const axisA = world.createEntity();
-
-    world.addComponent(axisA, new MachineTagComponent('machine-1'));
-    world.addComponent(axisA, new SpoolStateComponent('A'));
-    world.addComponent(axisA, new StepperMotorComponent((2 * Math.PI) + 0.25, 0.0));
-    const orientA = new OrientationComponent();
-    orientA.quaternion.setFromAxisAngle({ x: 0.0, y: 0.0, z: 1.0 }, 0.25);
-    world.addComponent(axisA, orientA);
-
-    const diagnostics = getMachineMotorDiagnostics(world, 'machine-1');
-
-    expect(diagnostics).toEqual({
-      totalMissedSteps: 0,
-      motors: [
-        { axis: 'A', missedSteps: 0 },
-      ],
-    });
+    expect(a.missedSteps).toBe(0);
+    expect(a.currentMissedSteps).toBe(5);
+    expect(a.missedStepEncoderOffset).toBe(6.28);
+    expect(other.missedSteps).toBe(2);
   });
 });

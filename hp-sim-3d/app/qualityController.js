@@ -5,6 +5,7 @@ import {
 } from './motor-diagnostics.js';
 
 export const QUALITY_HISTORY_MAX_ENTRIES = 20;
+const IDLE_HUD_REFRESH_MS = 500;
 
 export function createQualityController({
   document,
@@ -81,7 +82,7 @@ export function createQualityController({
     machineQualityMonitors.set(machine.id, { monitor });
     const referenceOverlayState = getReferenceOverlayState?.();
     if (referenceOverlayState?.segments) {
-      monitor.setReferenceSegments(referenceOverlayState.segments, referenceOverlayState.metadata);
+      monitor.setReferenceSegments(referenceOverlayState.segments);
     }
     updateQualityHudVisibility();
     return monitor;
@@ -241,6 +242,13 @@ export function createQualityController({
       setQualityEnabledState(qualityToggle.checked, { fromToggle: true });
     });
     setQualityEnabledState(qualityToggle.checked, { fromToggle: true });
+    // Extrusions refresh the HUD while printing; this keeps missed steps
+    // current when nothing is extruding (travel, idle, dragging the effector).
+    document.defaultView?.setInterval(() => {
+      if (isEnabled()) {
+        refreshAllQualityMonitors();
+      }
+    }, IDLE_HUD_REFRESH_MS);
   }
 
   return {
