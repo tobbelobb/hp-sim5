@@ -1,13 +1,14 @@
-# Regenerable telemetry and launcher/viewer state; see report.md for how to reproduce.
+# Telemetry above 5 MB is regenerable with scratchbook/squares_replay.mjs (see report.md).
 *.json.gz
+!scratchbook/logo_old_ol.json.gz
+!scratchbook/logo_new_ol.json.gz
+!scratchbook/logo_i3_ol.json.gz
+!scratchbook/logo_new_cl.json.gz
+# Recoverable with: git show ba4a8101:public/RRF_CAN_commands/Hangprinter_logo6_hp4_w_line_layers.can
 scratchbook/can/old_logo_hp4_layered.can
-native/
+# Rerun viewer cache and analytics, not research evidence.
 viewer-cache/
-viewer.log
-launch.json
-attachment.*
-connection.*
-instructions.md
-prompt.txt
 viewer-config/
 viewer-data/
+# Launcher lock file.
+connection.lease
