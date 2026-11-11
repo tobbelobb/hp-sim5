@@ -16,8 +16,8 @@ describe('CablePathAPI schema', () => {
     expect(schemaText).toContain('token[] cablePath:storedMode');
     expect(schemaText).toContain('token cablePath:initPolicy = "deriveMissing"');
     expect(schemaText).toContain('double cablePath:totalLength');
-    expect(schemaText).toContain('double cablePath:stiffness = 1000.0');
-    expect(schemaText).toContain('double cablePath:damping = 0.0');
+    expect(schemaText).toContain('double cablePath:stiffnessPerUnitLength = 1000.0');
+    expect(schemaText).toContain('double cablePath:dampingPerUnitLength = 0.0');
     expect(schemaText).toContain('double cablePath:halfWidth = 0.0');
     expect(schemaText).toContain('double cablePath:tension = 0.0');
 

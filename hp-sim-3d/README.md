@@ -182,13 +182,26 @@ solver iteration counts through `cablePath:solverIterations`.
 ## Cable Paths
 
 A `CablePathComponent` joins ordered cable segments and stores link types,
-winding direction, stored length, stiffness/compliance, damping, cable width,
+winding direction, stored length, axial stiffness and damping, cable width,
 and its solver iteration count.
 
-Before the position solve, the Rust core redistributes rest length between
-adjacent segments. With no active friction barrier it tends toward equal PBD
-extension; at pinholes and non-free rolling links it limits the tension ratio
-using the configured coefficient of friction and wrap angle. Attachment
+`cablePath:stiffnessPerUnitLength` is the cable's axial stiffness EA (N) and
+`cablePath:dampingPerUnitLength` its axial damping B (N·s). A free span of
+length L has spring constant EA / L and damping B / L, as in the firmware's
+`springKPerUnitLength / distance`, so a line's stiffness depends on its length
+and not on how many guides it passes.
+
+Each step classifies the links inside a path. Material crosses a frictionless
+pinhole or roller, or a free-spinning wheel, at equal tension; it crosses a
+frictional guide once the tension ratio reaches the capstan limit exp(μθ),
+where θ is the turn from incoming to outgoing span, and then keeps slipping
+until its flow would reverse. Segments joined by such links share one XPBD row
+whose constraint is their total length minus their total material, so the
+tension is equal (or at the capstan ratio) along the row within the implicit
+solve. After the solve the row's material is shared out to match. Sticking
+guides, attachments, motorized spools and pinhole gates separate rows. Slack
+spans share their slack in proportion to length, so slack slides over guides.
+Free wheels inside a row turn with the material that passes them. Attachment
 updating also handles rolling geometry, hybrid link state and optional line
 layering.
 

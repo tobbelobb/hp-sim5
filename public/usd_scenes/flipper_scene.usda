@@ -116,8 +116,8 @@ def Xform "World"
             custom double cablePath:halfWidth = 0.0025
             custom double[] cablePath:stored = [0, 0, 0, 0]
             custom token[] cablePath:storedMode = ["manual", "auto", "auto", "manual"]
-            custom double cablePath:stiffness = 200
-            custom double cablePath:damping = 0.0
+            custom double cablePath:stiffnessPerUnitLength = 200
+            custom double cablePath:dampingPerUnitLength = 0.0
             custom token cablePath:initPolicy = "deriveMissing"
         }
 

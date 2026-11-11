@@ -56,9 +56,6 @@ for (const branch of ['AL','AR','BL','BR','CL','CR']) {
     .replace(/custom token\[\] cablePath:linkTypes = .*/, 'custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole_gate", "attachment"]')
     .replace(/custom bool\[\] cablePath:clockwise = .*/, 'custom bool[] cablePath:clockwise = [1, 1, 1, 1]')
     .replace(/custom double\[\] cablePath:stored = .*/, `custom double[] cablePath:stored = [2.0, 0, ${hidden}, 0]`)
-    .replace(/custom token\[\] cablePath:storedMode = .*/, 'custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual"]')
-    // Preserve six identical original Kelvin-Voigt spans in series.
-    .replace('stiffness = 20000.0', 'stiffness = 3333.3333333333335')
-    .replace('damping = 5.0', 'damping = 0.8333333333333334'));
+    .replace(/custom token\[\] cablePath:storedMode = .*/, 'custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual"]'));
 }
 fs.writeFileSync(new URL('../public/usd_scenes/hp4_pinhole_gate.usda', import.meta.url), scene);

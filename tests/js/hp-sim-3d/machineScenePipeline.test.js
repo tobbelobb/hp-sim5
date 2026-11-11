@@ -21,8 +21,8 @@ test('the authored scene builder retains zero cable stiffness', () => {
   const paths = world.query([CablePathComponent]);
   expect(paths).toHaveLength(1);
   const path = world.getComponent(paths[0], CablePathComponent);
-  expect(path.spring_constant).toBe(0);
-  expect(path.compliance).toBe(Infinity);
+  expect(path.stiffnessPerUnitLength).toBe(0);
+  expect(path.compliancePerUnitLength).toBe(Infinity);
 });
 
 test('the legacy rigid-group spelling resolves its member relationships', () => {

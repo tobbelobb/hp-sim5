@@ -182,8 +182,8 @@
     {
       "dt": 0.002,
       "set": [
-        ["path", "CablePathComponent", "compliance", "Infinity"],
-        ["path", "CablePathComponent", "spring_constant", 0]
+        ["path", "CablePathComponent", "compliancePerUnitLength", "Infinity"],
+        ["path", "CablePathComponent", "stiffnessPerUnitLength", 0]
       ]
     },
     {

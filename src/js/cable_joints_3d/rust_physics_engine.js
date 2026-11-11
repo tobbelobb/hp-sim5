@@ -5,8 +5,8 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 
 // See engine.rs. Only scene preparation crosses this boundary; live numeric
 // components are views of persistent Rust records, including interactive edits.
-// Path: first/count/iterations/flags/alpha/gamma/dampingStep/invDt²/spring/
-// damping 0..9, then gate link/q/qdot/inertia/damping/Coulomb force 10..15.
+// See engine.rs `Row` for how the per-unit-length cable properties become
+// per-row XPBD compliance and damping.
 const E = 160, H = 16, L = 5, J = 16;
 const kinds = ['attachment', 'rolling', 'pinhole', 'hybrid', 'hybrid-attachment', 'pinhole_gate'];
 const putV = (a, o, v) => { if (v) a.set([v.x, v.y, v.z], o); };
@@ -133,7 +133,7 @@ export class RustPhysicsEngine {
       if (!machines.has(machine)) machines.set(machine, machines.size);
       const gate = c.linkTypes.includes('pinhole_gate') ? getGateComponent(world, c) : null;
       if (c.linkTypes.includes('pinhole_gate') && !gate) throw new Error('pinhole_gate component is missing at its entry port');
-      data.set([n, id, c.spring_constant, c.compliance, c.damping, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine),
+      data.set([n, id, c.stiffnessPerUnitLength, c.compliancePerUnitLength, c.dampingPerUnitLength, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine),
         gate ? c.linkTypes.indexOf('pinhole_gate') : -1, gate?.flow ?? 0, gate?.flowVelocity ?? 0,
         gate?.effectiveInertia ?? 0, gate?.damping ?? 0, gate?.coulombForce ?? 0]);
       for (let li = 0; li <= n; li++) {
@@ -210,7 +210,7 @@ export class RustPhysicsEngine {
       path.cw = Array.from({ length: n + 1 }, (_, i) => Boolean(data[o + H + i * L + 1]));
       path.stored = Array.from({ length: n + 1 }, (_, i) => data[o + H + i * L + 2]);
       this.pathShapes.push({ path, arrays: [path.jointEntities, path.linkTypes, path.cw, path.stored], count: n });
-      for (const [i, key] of ['spring_constant', 'compliance', 'damping', 'solverIterations', 'cableHalfWidth', 'totalRestLength'].entries()) this.bind(path, key, o + i + 2, group);
+      for (const [i, key] of ['stiffnessPerUnitLength', 'compliancePerUnitLength', 'dampingPerUnitLength', 'solverIterations', 'cableHalfWidth', 'totalRestLength'].entries()) this.bind(path, key, o + i + 2, group);
       for (let li = 0; li <= n; li++) {
         this.bind(path.linkTypes, li, o + H + li * L, group, x => kinds[x], x => kinds.indexOf(x));
         this.bind(path.cw, li, o + H + li * L + 1, group, Boolean, Number);

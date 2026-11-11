@@ -95,8 +95,8 @@ def Xform "World" {
             bool[] cablePath:clockwise = [1, 0, 0, 0]
             double[] cablePath:stored = [1, 0, 0, 0]
             token[] cablePath:storedMode = ["manual", "auto", "manual", "manual"]
-            double cablePath:stiffness = 0
-            double cablePath:damping = 0
+            double cablePath:stiffnessPerUnitLength = 0
+            double cablePath:dampingPerUnitLength = 0
             double cablePath:halfWidth = 0.001
         }
         def Xform "Extruder" {

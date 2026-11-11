@@ -50,13 +50,15 @@ for (const backend of ['Wasm physics', 'native physics']) {
       try {
         const snapshots = runFixture(input, { cableSolverBackend: engine }).snapshots;
         // Carrier inertia 0.7, active rotor 0.1, passive rotor 0.2.
-        // Friction shares the 1 mm extension equally between the two segments.
-        // J M^-1 J^T = 1/m + r²/Ir + r²/Icarrier; alpha = 250.
+        // The frictionless pinhole joins both spans into one row carrying the
+        // whole 1 mm extension. J M^-1 J^T = 1/m + r²/Ir + r²/Icarrier;
+        // alpha = Σlength / (EA dt²) with EA = 1000 N.
         // Eliminate x/y analytically for the non-diagonal carrier tensor.
         const xFactor = tensor ? -(.9 * .1 - .02 * .05) / (.8 * .9 - .02**2) : 0;
         const yFactor = tensor ? -(.8 * .05 - .02 * .1) / (.8 * .9 - .02**2) : 0;
         const carrierInertia = fixed ? Infinity : .7 + .1 * xFactor + .05 * yFactor;
-        const lambda = -.0005 / ((fixed ? 0 : 1) + .1**2 / .1 + .1**2 / carrierInertia + 250);
+        const alpha = (2 + Math.hypot(.99, .099498743710662)) / 1000 / .002**2;
+        const lambda = -.001 / ((fixed ? 0 : 1) + .1**2 / .1 + .1**2 / carrierInertia + alpha);
         const bodyAngle = lambda * .1 / carrierInertia;
         const activeAngle = -lambda * .1 * (1 / .1 + 1 / carrierInertia);
         const passiveAngle = -bodyAngle;

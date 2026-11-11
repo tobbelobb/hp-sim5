@@ -28,10 +28,10 @@ function applyCablePaths(world, context, registry) {
             jointEntities,
             getAttribute(prim, "cablePath:linkTypes") ? [...getAttribute(prim, "cablePath:linkTypes")] : null,
             getAttribute(prim, "cablePath:clockwise") ? [...getAttribute(prim, "cablePath:clockwise")] : null,
-            getAttribute(prim, "cablePath:stiffness") ?? Infinity,
+            getAttribute(prim, "cablePath:stiffnessPerUnitLength") ?? Infinity,
             getAttribute(prim, "cablePath:stored") ? [...getAttribute(prim, "cablePath:stored")] : null,
             getAttribute(prim, "cablePath:halfWidth") ?? 0.0,
-            readNumericAttribute(prim, "cablePath:damping") ?? 0.0,
+            readNumericAttribute(prim, "cablePath:dampingPerUnitLength") ?? 0.0,
             readNumericAttribute(prim, "cablePath:solverIterations") ?? 1,
         );
         const cablePath = world.createEntity();

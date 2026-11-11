@@ -12,7 +12,6 @@ import {
   CablePathComponent,
   GateWheelComponent,
   PinholeGateComponent,
-  advanceGateFlow,
   gateWheelVisualAngle,
 } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
@@ -23,50 +22,8 @@ import { commands } from './hp4_logo_commands.mjs';
 const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 const source = fs.readFileSync(new URL('../../public/usd_scenes/hp4_pinhole_gate.usda', import.meta.url), 'utf8');
 
-test('stateful gate flow has static friction, inertia, drag and unilateral stopping', () => {
-  const gate = {
-    effectiveInertia: 2.0,
-    damping: 3.0,
-    coulombForce: 4.0,
-    flow: 0.0,
-    flowVelocity: 0.0,
-  };
-  advanceGateFlow(gate, 4.0, 0.1);
-  assert.equal(gate.flow, 0.0);
-  assert.equal(gate.flowVelocity, 0.0);
-
-  advanceGateFlow(gate, 4.1, 0.1);
-  assert(gate.flowVelocity > 0.0);
-  assert(gate.flow > 0.0);
-  const flowWhileStopping = gate.flow;
-  advanceGateFlow(gate, -20.0, 0.1);
-  assert.equal(gate.flowVelocity, 0.0);
-  assert.equal(gate.flow, flowWhileStopping);
-
-  const inertial = {
-    effectiveInertia: 2.0,
-    damping: 0.0,
-    coulombForce: 0.0,
-    flow: 0.0,
-    flowVelocity: 0.0,
-  };
-  advanceGateFlow(inertial, 1.0, 0.1);
-  assert(Math.abs(inertial.flowVelocity - 0.05) < 1e-12);
-  assert(Math.abs(inertial.flow - 0.005) < 1e-12);
-  advanceGateFlow(inertial, 1.0, 0.1);
-  assert(Math.abs(inertial.flowVelocity - 0.1) < 1e-12);
-
-  const dragged = {
-    effectiveInertia: 1e-6,
-    damping: 2.0,
-    coulombForce: 0.5,
-    flow: 0.0,
-    flowVelocity: 0.0,
-  };
-  for (let i = 0; i < 2000; i++) advanceGateFlow(dragged, 1.5, 0.01);
-  assert(Math.abs(dragged.flowVelocity - 0.5) < 1e-5);
-});
-
+// The bearing flow law (inertia, drag, dry friction) is checked against
+// analytic Atwood results in src/wasm/cable_solver/tests/cable_physics.rs.
 test('HP4 gate scene has six condensed units and twelve visual cylinders', () => {
   const { world } = createHeadlessWorld(source);
   try {

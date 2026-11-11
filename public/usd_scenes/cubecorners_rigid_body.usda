@@ -494,8 +494,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointA_0>, </World/HangprinterScene/JointA_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0 ,0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -509,8 +509,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointB_0>, </World/HangprinterScene/JointB_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -524,8 +524,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointC_0>, </World/HangprinterScene/JointC_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -539,8 +539,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointD_0>, </World/HangprinterScene/JointD_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -554,8 +554,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointI_0>, </World/HangprinterScene/JointI_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0 ,0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -569,8 +569,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointJ_0>, </World/HangprinterScene/JointJ_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0 ,0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -584,8 +584,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointL_0>, </World/HangprinterScene/JointL_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0 ,0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -599,8 +599,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointO_0>, </World/HangprinterScene/JointO_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0 ,0]
-            custom double cablePath:stiffness = 20000.0
-            custom double cablePath:damping = 5.0
+            custom double cablePath:stiffnessPerUnitLength = 20000.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"

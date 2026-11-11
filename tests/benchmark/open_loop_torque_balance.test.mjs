@@ -8,14 +8,17 @@ import { NativePhysicsEngine } from '../../src/js/cable_joints_3d/native_physics
 const fixture = JSON.parse(fs.readFileSync(new URL('../fixtures/engine_parity/open_loop_static_load.json', import.meta.url)));
 const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 
-// A 30 mm spool, 10 kN/m cable and 0.2 Nm initial load must balance
-// H*sin(p*theta) = r*k*(extension-r*theta) = 0.2-9*theta.
-// Use one projection per step to isolate motor/cable torque balance from
-// nonlinear repeated-projection error. The physical law has no timestep factor.
+// A 30 mm spool and EA = 10 kN cable over span length d must balance
+// H*sin(p*theta) = r*(EA/d)*(extension-r*theta), as the firmware's
+// springKPerUnitLength / distance. Use one projection per step to isolate
+// motor/cable torque balance from nonlinear repeated-projection error.
+// The physical law has no timestep factor.
+const [, , rest, anchor, tangent] = fixture.entities.find(e => e.name === 'joint').components.CableJointComponent;
+const span = Math.hypot(...anchor.map((x, i) => x - tangent[i]));
 let low = 0, high = .02;
 for (let i = 0; i < 60; i++) {
   const middle = (low + high) / 2;
-  if (.5 * Math.sin(50 * middle) < .2 - 9 * middle) low = middle;
+  if (.5 * Math.sin(50 * middle) < .03 * 1e4 / span * (span - rest - .03 * middle)) low = middle;
   else high = middle;
 }
 const expectedAngle = (low + high) / 2;

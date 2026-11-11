@@ -13,20 +13,26 @@ with six condensed gate units. Each unit has distinct entry and exit ports and
 no internal CableJoints. This reduces the HP4 ABC topology from 51 to 33 cable
 joints while retaining unilateral cable behaviour on both sides.
 
-The hidden reeving has one material-flow coordinate `q`. Entry and exit use
-separate unilateral constraints with rest lengths biased by `q`; `q` is held
-fixed during the position solve and advanced from the final entry/exit
-constraint multipliers. The resulting hidden flow law is
+The hidden reeving has one material-flow coordinate `q`, and material crosses
+the gate only through it. Entry and exit are separate unilateral rows whose
+available span is biased by `q`. `q` is a generalized coordinate of both rows
+with the reflected bearing inertia as its mass, so it is integrated implicitly
+with the cable solve; dry friction is an XPBD friction row on `q`, and viscous
+drag acts on its velocity afterwards. The resulting hidden flow law is
 
 ```text
 Tin - Tout = M qdd + B qdot + Fc sign(qdot)
 ```
 
 where `M` is the summed bearing inertia reflected through the cable radius, `B`
-is viscous drag and `Fc` is dry friction. Static friction and a non-reversal
-condition hold `q` when the tension difference cannot overcome the breakaway
-force. This preserves small differences between entering and exiting CableJoints
-without recreating the long internal constraint chain.
+is viscous drag and `Fc` is dry friction. The friction row holds `q` while the
+tension difference stays below `Fc` and opposes slip with `Fc` otherwise; the
+cable may carry the flow through zero. This preserves small differences between
+entering and exiting CableJoints without recreating the long internal
+constraint chain. An earlier explicit update of `q` after the solve became
+unstable at the cable's physical stiffness (EA / L with EA = 20 kN gives
+ω·dt ≈ 2.2 for `M` above), which is why the gate scene previously divided its
+stiffness and damping by six.
 
 The HP4 values are **provisional synthetic values**, not hardware calibration:
 `M = 0.023668639053254437 kg`, `B = 0.9467455621301777 Ns/m`,
@@ -34,9 +40,9 @@ The HP4 values are **provisional synthetic values**, not hardware calibration:
 bearing inertia tensors; the friction values are placeholders for later
 measurement.
 
-The JS, Native Rust and Wasm implementations use the same state law. The
-native/Wasm path ABI is version 3 and its path header includes gate link, flow,
-flow velocity, inertia, damping and Coulomb force.
+Native Rust and Wasm compile the same law. The native/Wasm path ABI is version
+3 and its path header includes gate link, flow, flow velocity, inertia, damping
+and Coulomb force.
 
 ## Visualization
 
@@ -56,10 +62,12 @@ The animation is render-only and does not add physical rotor DOFs.
 
 `npm run test:physics` rebuilds Native Rust and Wasm and runs the production HP4
 Print Logo stability checks plus loaded-state settling at one, two and four
-substeps. The gate-specific checks cover the state law, six gate units, twelve
-visual cylinders, transport-driven wheel angles and Native/Wasm/JS parity.
+substeps. The flow law is checked against analytic Atwood results (inertia,
+dry-friction slip and static holding) in `src/wasm/cable_solver/tests/cable_physics.rs`.
+The gate-specific JS checks cover six gate units, twelve visual cylinders,
+transport-driven wheel angles and Native/Wasm agreement.
 
-At the final source state, all 11 physics-gate tests passed. Short HP4 prefix
+With the earlier explicit flow law, all 11 physics-gate tests passed. Short HP4 prefix
 evidence found a nonzero gate tension difference (maximum `0.0781 N`, mean
 absolute `0.0090 N` over 200 steps), while the isolated summed-friction probe
 showed breakaway and a `0.0157 N` peak difference. A matched 1000-step native

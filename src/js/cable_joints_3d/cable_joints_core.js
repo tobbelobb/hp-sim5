@@ -103,33 +103,6 @@ export function getGateComponent(world, path, gateLinkIndex = findGateLinkIndex(
   return world.getComponent(incoming?.entityB, PinholeGateComponent);
 }
 
-export function advanceGateFlow(gate, tensionDifference, dt) {
-  const inertia = gate.effectiveInertia;
-  if (!(Number.isFinite(inertia) && inertia > 0.0)) throw new Error('pinhole_gate effectiveInertia must be positive');
-  if (!(Number.isFinite(dt) && dt > 0.0)) return gate.flow;
-  const damping = Math.max(0.0, gate.damping);
-  const coulombForce = Math.max(0.0, gate.coulombForce);
-  const drive = Number.isFinite(tensionDifference) ? tensionDifference : 0.0;
-  const velocity = gate.flowVelocity;
-  const moving = Math.abs(velocity) > 1e-9;
-  // Static friction holds the reeving still until the port tension difference
-  // exceeds the summed dry-bearing threshold. Once slipping, resistance
-  // opposes the hidden flow, and drag is integrated implicitly.
-  if (!moving && Math.abs(drive) <= coulombForce) {
-    gate.flowVelocity = 0.0;
-    return gate.flow;
-  }
-  const resistance = moving ? Math.sign(velocity) * coulombForce : Math.sign(drive) * coulombForce;
-  let next = (velocity + dt * (drive - resistance) / inertia)
-    / (1.0 + dt * damping / inertia);
-  // Bearing friction can stop the flow within one step but cannot reverse it.
-  if (moving && Math.sign(next) !== Math.sign(velocity)) next = 0.0;
-  else if (!moving && Math.sign(next) !== Math.sign(drive)) next = 0.0;
-  gate.flow += next * dt;
-  gate.flowVelocity = next;
-  return gate.flow;
-}
-
 // Represents a single segment constraint between two entities
 export class CableJointComponent {
   constructor(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
@@ -172,19 +145,21 @@ export class CablePathComponent {
     jointEntities = [],
     linkTypes = [],
     cw = [],
-    spring_constant = 1e6,
+    stiffnessPerUnitLength = 1e6,
     stored = null,
     cableHalfWidth = 0.0,
-    damping = 0.0,
+    dampingPerUnitLength = 0.0,
     solverIterations = 1
   ) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
     this.linkTypes = linkTypes; // Ordered. linkTypes.length === jointEntities.length + 1
     this.cw = cw; // Ordered. cw.length === linkTypes.length
-    this.spring_constant = spring_constant;
-    this.compliance = 1.0 / spring_constant;
-    this.damping = Number.isFinite(damping) ? Math.max(0.0, damping) : 0.0;
+    // Axial stiffness EA (N) and damping (N*s): a span of rest length L has
+    // spring constant EA / L and damping coefficient B / L.
+    this.stiffnessPerUnitLength = stiffnessPerUnitLength;
+    this.compliancePerUnitLength = 1.0 / stiffnessPerUnitLength;
+    this.dampingPerUnitLength = Number.isFinite(dampingPerUnitLength) ? Math.max(0.0, dampingPerUnitLength) : 0.0;
     this.solverIterations = Number.isFinite(solverIterations)
       ? Math.max(1, Math.floor(solverIterations))
       : 1;
