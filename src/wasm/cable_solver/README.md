@@ -105,7 +105,7 @@ in `wasm_cable_solver.js`; additional entity fields are:
 | 104–106 | Radius, friction coefficient, member physical mass (NaN means absent) |
 | 107–120 | Motor command, reference delta, holding torque, pole pairs, damping, speed limit, closed loop, torque target, windage, Coulomb friction, stiction torque/speed, cogging torque/frequency |
 | 121–127 | Encoder axis, mass, missed-step maximum/current/reference offset |
-| 128–135 | Public ID, machine index, reserved, member order, reserved, knot presence, reserved, count of path-specific knots |
+| 128–136 | Public ID, machine index, servo integral torque, member order, servo error, knot presence, reserved, count of path-specific knots, servo engaged |
 
 Optional motor friction parameters and absent missed-step reference offsets use
 NaN sentinels internally; these are not non-finite physical observations.
@@ -123,8 +123,8 @@ refresh after a topology version change. Native records are valid prepared data;
 constructors do not parse or validate arbitrary scene documents.
 
 Options 0–2 hold gravity; 3 enables layering; 4 attachment updates; 5 rest-length
-clamping; 6 merging; 7 splitting; 8 hybrid transitions; 9 grabbed public entity ID
-(-1 for none); 10 next public ID; 11 closed-loop constraint stiffness; 12 open-loop
+clamping; 6 merging; 7 splitting; 8 hybrid transitions; 9 reserved;
+10 next public ID; 11 reserved; 12 open-loop
 constraint stiffness scale; 13 holding torque scale; 14 global closed-loop mode;
 15 constraint timestep (NaN selects the `step` argument); 16–18 default encoder
 axis. Merge/split remain disabled by default, matching the shared JS pipeline.

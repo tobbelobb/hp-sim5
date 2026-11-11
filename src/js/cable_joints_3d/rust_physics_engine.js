@@ -115,6 +115,7 @@ export class RustPhysicsEngine {
         m?.stictionSpeed ?? NaN, m?.coggingTorque ?? NaN, m?.coggingFreq ?? NaN], 107);
       putV(a, 121, c.encoder?.axis); a[124] = c.mass?.mass ?? 0;
       a[125] = m?.missedSteps ?? 0; a[126] = m?.currentMissedSteps ?? 0; a[127] = m?.missedStepEncoderOffset ?? NaN;
+      a[130] = m?.servoIntegralTorque ?? 0; a[132] = m?.servoError ?? 0; a[136] = +Boolean(m?.servoEngaged);
       a[133] = +Boolean(get(id, ecs.HybridKnotAngleComponent));
       a[135] = Object.keys(get(id, ecs.HybridKnotAngleComponent)?.pathAngles ?? {}).filter(k => k !== '__default__').length;
       a[128] = id;
@@ -190,6 +191,8 @@ export class RustPhysicsEngine {
         this.bind(c.motor, 'torqueMode', o + 57, null, Boolean, Number);
         this.bind(c.motor, 'missedSteps', o + 125); this.bind(c.motor, 'currentMissedSteps', o + 126);
         this.bind(c.motor, 'missedStepEncoderOffset', o + 127, null, x => Number.isNaN(x) ? null : x, x => x ?? NaN);
+        this.bind(c.motor, 'servoIntegralTorque', o + 130); this.bind(c.motor, 'servoError', o + 132);
+        this.bind(c.motor, 'servoEngaged', o + 136, null, Boolean, Number);
       }
     }
   }
@@ -276,8 +279,8 @@ export class RustPhysicsEngine {
     putV(data, o, world.getResource('gravity') ?? { x: 0, y: 0, z: 0 });
     data.set([+flag('enableLayering', true), +flag('layeringAttachmentUpdatePoints', true),
       +flag('layeringClampJointRestLength', true), +flag('layeringMergeJoints', false), +flag('layeringSplitJoints', false),
-      +flag('layeringHybridLinkStates', true), world.getResource('grabbedBall') ?? -1, world.nextEntityId,
-      finite('closedLoopStepperConstraintStiffness', 1e8), 0 /* reserved ABI slot; open-loop torque uses physical inertia */,
+      +flag('layeringHybridLinkStates', true), -1 /* reserved: a grabbed body stays dynamic */, world.nextEntityId,
+      0, 0 /* reserved ABI slots; motors derive their own stiffness */,
       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
     data[o + 15] = world.getResource('dt') ?? -1;

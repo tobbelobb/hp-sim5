@@ -736,9 +736,6 @@ impl AngularResponse {
             put_q(&mut es[id], 3, raw);
             es[id][64] = 1.0;
             es[id][65] = 1.0;
-            if es[id][67] != 0.0 {
-                es[id][66] += angle;
-            }
         }
     }
 }
@@ -898,9 +895,6 @@ fn correct_spin(es: &mut [Entity], s: &Spin, l: f64) {
         put_q(&mut es[s.id], 3, result);
         es[s.id][64] = 1.0;
         update_local(es, s.id);
-        if angle.is_finite() && es[s.id][67] != 0.0 {
-            es[s.id][66] += angle;
-        }
     }
 }
 /// A row's current geometry: its bodies and spins, total error, and each

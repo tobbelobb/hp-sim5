@@ -15,6 +15,10 @@ import {
 import { SpoolTagComponent } from './hangprinter_spools.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
+// A grab is a short cord from the pointer to the grabbed body. Its axial
+// stiffness EA (N) bounds the pull: it rises with drag distance toward a firm
+// human pull, enough to make open-loop motors skip steps.
+export const HAND_CORD_STIFFNESS_PER_UNIT_LENGTH = 100.0;
 
 export class RemoteInputSystem {
   runInPause = true;
@@ -1024,7 +1028,8 @@ export class InputSystem {
     const pathE = this.world.createEntity();
     this.world.addComponent(
       pathE,
-      new CablePathComponent(this.world, [jointE], ['attachment', 'attachment'], [true, true], 10.0)
+      new CablePathComponent(this.world, [jointE], ['attachment', 'attachment'], [true, true],
+        HAND_CORD_STIFFNESS_PER_UNIT_LENGTH)
     );
 
     this.grabSpring = { ptrE, jointE, pathE, ballE: closestBall };

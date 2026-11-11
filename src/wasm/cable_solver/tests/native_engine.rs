@@ -94,11 +94,16 @@ fn native_position_and_torque_motors_use_the_same_core() {
     e[111] = 0.01;
     e[112] = 600.0;
     e[113] = 1.0;
-    e[107] = 0.1;
     e[67] = 1.0;
     let mut w = world(vec![e], vec![]);
+    // A closed-loop servo engages where the rotor is, then moves the unloaded
+    // rotor to its commanded angle.
     w.step(0.002);
-    assert!((w.entities[0][66] - 0.1).abs() < 1e-12);
+    w.entities[0][107] = 0.1;
+    for _ in 0..5000 {
+        w.step(0.002);
+    }
+    assert!((w.entities[0][66] - 0.1).abs() < 1e-4);
     w.entities[0][57] = 1.0;
     w.entities[0][114] = 0.2;
     w.step(0.002);

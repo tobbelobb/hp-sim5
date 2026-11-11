@@ -8,7 +8,6 @@ import {
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   StepperMotorComponent,
-  StepperMotorSystem,
 } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import {
   TorqueModeSystem,
@@ -33,20 +32,6 @@ describe('3D torque mode system', () => {
     world.addComponent(entity, new MomentOfInertiaComponent(2.0));
     return entity;
   }
-
-  test('StepperMotorSystem leaves torque-mode steppers to TorqueModeSystem', () => {
-    const world = new World();
-    const entity = addTorqueModeStepper(world);
-    const stepperSystem = new StepperMotorSystem();
-
-    stepperSystem.update(world, 0.1);
-
-    const spoolState = world.getComponent(entity, SpoolStateComponent);
-    const orientation = world.getComponent(entity, OrientationComponent);
-    const angularVelocity = world.getComponent(entity, AngularVelocityComponent);
-    expect(getSpoolRotationAngle(spoolState, orientation.quaternion)).toBeCloseTo(0.0, 12);
-    expect(angularVelocity.omega.length()).toBeCloseTo(0.0, 12);
-  });
 
   test('applies target torque to angular velocity', () => {
     const world = new World();

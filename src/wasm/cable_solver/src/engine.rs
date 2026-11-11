@@ -156,6 +156,10 @@ const STICK: f64 = 0.0;
 const RIGHT: f64 = 1.0;
 const LEFT: f64 = -1.0;
 const FREE: f64 = 2.0;
+/// Closed-loop servos integrate their error with this time constant (s): slow
+/// enough not to hunt in the soft sag modes of a cable robot, fast enough to
+/// pull a loaded motor back to its target within seconds.
+const SERVO_INTEGRAL_TIME: f64 = 1.0;
 impl Cable {
     fn count(&self) -> usize {
         self.data[0] as usize
@@ -629,14 +633,13 @@ impl PhysicsWorld {
     }
     fn integrate(&mut self, dt: f64) {
         let gravity = v(&self.options, 0);
-        let grabbed = self.options[9];
         let frames: Vec<Q> = self
             .entities
             .iter()
             .map(|e| if e[54] != 0.0 { q(e, 10) } else { q(e, 3) })
             .collect();
         for e in &mut self.entities {
-            if e[50] < 0.0 && e[128] != grabbed {
+            if e[50] < 0.0 {
                 if has(e, VEL | GRAVITY) && has(e, VEL) && has(e, GRAVITY) {
                     let vel = add(v(e, 69), scale(gravity, dt));
                     put_v(e, 69, vel);
@@ -761,9 +764,6 @@ impl PhysicsWorld {
         }
         for id in 0..self.entities.len() {
             let mut e = self.entities[id];
-            if e[128] == self.options[9] {
-                continue;
-            }
             let parent = e[50];
             if parent >= 0.0 && !has(&e, SPOOL) {
                 continue;
@@ -1499,29 +1499,30 @@ impl PhysicsWorld {
             let omega = dot(v(&e, 72), axis);
             let inertia = axis_inertia(&e, orientation, axis);
             let closed = e[113] != 0.0 || self.options[14] != 0.0;
-            if !torque_mode && closed {
-                let target = e[107] - e[108];
-                let delta = -wrap(angle - target);
-                self.reaction(id, axis, delta, dt, true, inertia);
-                let new = spool_compose(reference, v(&e, 76), target);
-                if e[50] >= 0.0 {
-                    put_q(&mut self.entities[id], 17, new);
-                    let orient = qnorm(mul(q(&self.entities[e[50] as usize], 3), new));
-                    put_q(&mut self.entities[id], 3, orient);
-                } else {
-                    put_q(&mut self.entities[id], 3, new);
-                }
-                if e[67] != 0.0 && delta.abs() > 1e-12 {
-                    self.entities[id][66] += delta;
-                }
-                put_v(&mut self.entities[id], 72, [0.0; 3]);
-                continue;
-            }
             if inertia <= if torque_mode { 0.0 } else { 1e-12 } {
                 continue;
             }
+            let valid_dt = dt.is_finite() && dt > 0.0;
+            let target = e[107] - e[108];
+            // Position modes give a torque and its stiffness ∂τ/∂θ, which the
+            // spool's step and the cable solve both treat implicitly.
+            let (drive, stiffness) = if torque_mode {
+                self.entities[id][136] = 0.0;
+                (0.0, 0.0)
+            } else if closed {
+                self.servo(id, target, angle, inertia, dt)
+            } else {
+                self.entities[id][136] = 0.0;
+                // Open loop: the rotor sits in a detent of the stator field and
+                // skips to the next one when pulled past its holding torque.
+                let error = wrap(angle - target);
+                (
+                    -e[109] * sin(e[110] * error) - e[111] * omega,
+                    (e[109] * e[110] * cos(e[110] * error)).max(0.0),
+                )
+            };
             let drive = if !torque_mode {
-                -e[109] * sin(e[110] * wrap(angle - (e[107] - e[108]))) - e[111] * omega
+                drive
             } else {
                 let speed = e[112].max(1e-6);
                 let droop = (1.0 - omega.abs() / speed).clamp(0.0, 1.0);
@@ -1563,22 +1564,24 @@ impl PhysicsWorld {
             } else if torque_mode {
                 (drive + e[59]) / inertia * dt
             } else {
-                // Linearly implicit Euler for the holding spring of a spool on
-                // the fixed frame: the cable solve sees the same stiffness (see
-                // `constraints`), so steady torque balance is exact and the
-                // stiff spring stays stable. A mounted spool's spring reacts on
-                // its moving carrier and stays explicit.
-                let stiffness = if e[50] >= 0.0 {
-                    0.0
+                // Linearly implicit Euler on the rotor's angle relative to its
+                // housing: the cable solve sees the same stiffness (see
+                // `constraints`), so steady torque balance is exact, and a stiff
+                // motor stays stable even when its housing is a light body.
+                self.entities[id][47] = if valid_dt { stiffness } else { 0.0 };
+                let housing = if e[50] >= 0.0 {
+                    let moi = self.aggregate_inertia(e[50] as usize);
+                    dot(axis, world_inverse(&moi, axis)).max(0.0)
                 } else {
-                    (e[109] * e[110] * cos(e[110] * wrap(angle - (e[107] - e[108])))).max(0.0)
+                    0.0
                 };
-                self.entities[id][47] = if dt.is_finite() && dt > 0.0 { stiffness } else { 0.0 };
-                drive / (inertia + stiffness * dt * dt) * dt
+                drive / (1.0 + stiffness * dt * dt * (1.0 / inertia + housing)) / inertia * dt
             };
             let next = add(v(&self.entities[id], 72), scale(axis, delta));
             put_v(&mut self.entities[id], 72, next);
-            self.reaction(id, axis, drive, dt, false, inertia);
+            // The housing on a moving body takes the torque the rotor received.
+            let applied = if torque_mode || !valid_dt { drive } else { delta * inertia / dt };
+            self.reaction(id, axis, applied, dt, false, inertia);
             if e[50] >= 0.0 {
                 let new = spool_compose(reference, v(&e, 76), angle + dot(next, axis) * dt);
                 put_q(&mut self.entities[id], 17, new);
@@ -1586,6 +1589,44 @@ impl PhysicsWorld {
                 put_q(&mut self.entities[id], 3, orient);
             }
         }
+    }
+    /// A closed-loop stepper: a current-limited PID servo on the multi-turn
+    /// encoder angle, tuned from the motor itself. Full current (the holding
+    /// torque) is reached about one electrical radian off target, the rotor
+    /// alone is critically damped, and the integrator pulls a loaded motor back
+    /// to target. Overpowered, it yields and later returns: it never loses
+    /// steps. Returns the torque and its stiffness ∂τ/∂θ.
+    fn servo(&mut self, id: usize, target: f64, angle: f64, inertia: f64, dt: f64) -> (f64, f64) {
+        let encoded = self.entities[id][67] != 0.0 && self.entities[id][66].is_finite();
+        if self.entities[id][136] == 0.0 {
+            // Engaging calibrates the encoder to the step position the rotor
+            // holds, to the nearest electrical cycle, then tracks it multi-turn.
+            let e = &mut self.entities[id];
+            let cycle = TAU / (e[110] + 0.5).floor().abs().max(1.0);
+            e[127] = if encoded { ((e[66] - target) / cycle + 0.5).floor() * cycle } else { 0.0 };
+            e[130] = 0.0;
+            e[132] = 0.0;
+            e[136] = 1.0;
+        }
+        let e = &self.entities[id];
+        let measured = if encoded { e[66] - e[127] } else { unwrap(target, angle) };
+        let error = target - measured;
+        let limit = e[109].max(0.0);
+        let kp = limit * e[110];
+        let kd = 2.0 * (kp * inertia).sqrt();
+        let ki = kp / SERVO_INTEGRAL_TIME;
+        let valid_dt = dt.is_finite() && dt > 0.0;
+        let rate = if valid_dt { (error - e[132]) / dt } else { 0.0 };
+        let command = kp * error + e[130] + kd * rate;
+        let saturated = command.abs() >= limit;
+        let e = &mut self.entities[id];
+        // Integrate only while the current is not limited (anti-windup).
+        if !saturated && valid_dt {
+            e[130] = (e[130] + ki * error * dt).clamp(-limit, limit);
+        }
+        e[132] = error;
+        let stiffness = if saturated || !valid_dt { 0.0 } else { kp + kd / dt };
+        (command.clamp(-limit, limit), stiffness)
     }
     fn encoders(&mut self) {
         for id in 0..self.entities.len() {
@@ -1615,6 +1656,7 @@ impl PhysicsWorld {
                     ),
                 )
             };
+            // Like a fast-sampled encoder: follow the shaft pose turn by turn.
             if angle.is_finite() {
                 self.entities[id][66] = unwrap(e[66], angle);
                 put_v(&mut self.entities[id], 121, axis);
@@ -1633,7 +1675,8 @@ impl PhysicsWorld {
             } else {
                 0.0
             };
-            if e[57] != 0.0 {
+            // Torque mode and closed-loop servos do not lose steps.
+            if e[57] != 0.0 || e[113] != 0.0 || self.options[14] != 0.0 {
                 self.entities[id][126] = 0.0;
                 self.entities[id][125] = old;
                 continue;
@@ -1719,17 +1762,15 @@ impl PhysicsWorld {
             let inverse_mass = if e[124] > 0.0 { 1.0 / e[124] } else { 0.0 };
             let motor = has(e, MOTOR) && e[57] == 0.0;
             let closed = e[113] != 0.0 || self.options[14] != 0.0;
-            let stiffness = if !motor {
-                0.0
-            } else if closed {
-                self.options[11]
-            } else {
-                // The holding spring's linearization from motors(), which
-                // scales the open-loop torque by the same effective inertia.
-                e[47]
-            };
-            let limit = if !motor || closed {
+            // The motor's linearization from motors(), which scales its torque
+            // by the same effective inertia.
+            let stiffness = if motor { e[47] } else { 0.0 };
+            // Beyond its torque a motor yields: an open-loop rotor skips
+            // detents, a closed-loop one is overpowered until the load drops.
+            let limit = if !motor {
                 f64::INFINITY
+            } else if closed {
+                e[109].max(0.0)
             } else {
                 e[109].max(0.0) * self.options[13].max(0.0)
             };
