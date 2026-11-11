@@ -131,18 +131,20 @@ class "CablePathAPI" (
         """
     )
 
-    uniform double cablePath:stiffness = 1000.0 (
-        doc = """Stiffness of the cable path constraint in N/m.
+    uniform double cablePath:stiffnessPerUnitLength = 1000.0 (
+        doc = """Axial stiffness EA of the cable in N.
 
-        Higher values make the path resist stretching more strongly.
+        A free span of rest length L has spring constant EA / L, as in the
+        firmware's springKPerUnitLength, so a line's stiffness depends on its
+        length and not on how many guides it passes.
         """
     )
 
-    uniform double cablePath:damping = 0.0 (
-        doc = """XPBD damping coefficient for the cable path.
+    uniform double cablePath:dampingPerUnitLength = 0.0 (
+        doc = """Axial damping of the cable in N*s.
 
-        Used by the cable constraint solver together with compliance to
-        damp oscillations along the path's generalized motion.
+        A free span of rest length L has damping coefficient B / L, so every
+        span relaxes with the same time constant B / EA.
         """
     )
 
