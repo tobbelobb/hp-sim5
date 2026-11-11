@@ -108,8 +108,7 @@ measured directly above, so isolated percentages are not added.
 ```bash
 rustup target add wasm32-unknown-unknown
 npm run build:wasm
-node --test tests/benchmark/profile_headless.test.mjs tests/benchmark/wasm_cable_solver.test.mjs
-node scripts/benchmark_cable_wasm.mjs --inputs FROZEN_INPUT_DIR --output NEW_DIR
+node --test tests/benchmark/profile_headless.test.mjs
 ```
 
 For a JS baseline, use `--solver js` with the

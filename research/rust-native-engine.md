@@ -75,6 +75,6 @@ against JS remains documented in the [Wasm report](rust-wasm-engine.md).
 npm run build:native
 npm run build:wasm
 cargo test --manifest-path src/wasm/cable_solver/Cargo.toml
-node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs tests/benchmark/wasm_cable_solver.test.mjs tests/benchmark/profile_headless.test.mjs
+node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs tests/benchmark/profile_headless.test.mjs
 .venv/bin/python -m pytest -q tests/python/test_research_agent.py tests/python/test_native_collector.py tests/python/test_world_configuration.py autocal/tests/test_headless_sim.py -m 'not slow'
 ```

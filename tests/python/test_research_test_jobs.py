@@ -67,7 +67,7 @@ async def test_spawn_failure_and_private_environment(tmp_path, monkeypatch):
     result = await finished(manager, job)
     assert result['status'] == 'blocked' and result['next_step']
     for key in ('HP_SIM5_RUNTIME_TOKEN', 'OPENAI_API_KEY', 'AUTOCAL_REFERENCE_WS', 'PYTEST_ADDOPTS',
-                'WARP_CACHE_PATH', 'XDG_CACHE_HOME'):
+                'XDG_CACHE_HOME'):
         monkeypatch.setenv(key, 'private-sentinel')
     next_job = manager.start({'suite': 'research-services'})
     manager.jobs[next_job['job_id']]['command'] = [str(ROOT / '.venv/bin/python'), '-c',

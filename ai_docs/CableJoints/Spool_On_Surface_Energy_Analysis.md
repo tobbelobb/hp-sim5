@@ -46,7 +46,9 @@ That is exactly where sudden fling events usually originate.
 
 ## Minimal Repro Scene
 
-Use `example_apps/js/flipper/spool_energy_debug.html`.
+The original flipper repro scene was removed with the legacy physics examples.
+The analysis below documents the observed failure mode and the remaining
+headless spool-energy probes.
 
 Scene definition:
 

@@ -23,7 +23,7 @@ npm run build:native
 npm run build:wasm
 cargo build --manifest-path src/wasm/cable_solver/Cargo.toml --release
 cargo test --manifest-path src/wasm/cable_solver/Cargo.toml
-node --test tests/benchmark/native_physics_engine.test.mjs tests/benchmark/wasm_cable_solver.test.mjs
+node --test tests/benchmark/native_physics_engine.test.mjs
 ```
 
 The checked-in `public/wasm/cable_solver.wasm` runs without a Rust toolchain.

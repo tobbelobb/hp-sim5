@@ -15,13 +15,13 @@ test -x "$PUPPETEER_EXECUTABLE_PATH" || {
   exit 1
 }
 mkdir -p "$HP_SIM5_CLOUD_TOOLS/node" "$XDG_CACHE_HOME" "$MPLCONFIGDIR" \
-  "$WARP_CACHE_PATH" "$PIP_CACHE_DIR" "$npm_config_cache" output/cloud
+  "$PIP_CACHE_DIR" "$npm_config_cache" output/cloud
 
 bash .agents/skills/cloud-research-client/scripts/install-node.sh
 if [[ ! -x .venv/bin/python ]]; then
   python3 -m venv .venv
 fi
-.venv/bin/python -m pip install -r requirements-warp.txt -r autocal/requirements-jax-cpu.txt cmake==4.4.4 PyYAML==6.0.3
+.venv/bin/python -m pip install -r autocal/requirements-jax-cpu.txt cmake==4.4.4 PyYAML==6.0.3
 .venv/bin/python -m pip check
 npm ci
 

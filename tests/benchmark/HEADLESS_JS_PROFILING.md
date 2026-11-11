@@ -178,11 +178,10 @@ core, ABI, bridge and build recipe. Timers include command dispatch, Rust steppi
 view maintenance and extrusion observations. There is no per-step state packing
 or pose copy-back in the default engine.
 
-Run the complete matrix sequentially with:
+Run the profiling and Wasm solver checks sequentially with:
 
 ```bash
-node scripts/benchmark_cable_wasm.mjs --inputs FROZEN_INPUT_DIR --output NEW_DIR
-node --test tests/benchmark/wasm_cable_solver.test.mjs
+node --test tests/benchmark/profile_headless.test.mjs
 ```
 
 See [the Rust crate](../../src/wasm/cable_solver/README.md) for setup, the
