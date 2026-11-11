@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define PATH_HEADER 16
+#define PATH_HEADER 9
 #define PATH_LINK 5
 #define PATH_JOINT 16
 
@@ -176,7 +176,7 @@ static napi_value create(napi_env env, napi_callback_info info) {
         double n = path_data[cursor];
         if (!index_valid(n, len) || len != PATH_HEADER + ((size_t)n + 1) * PATH_LINK + (size_t)n * PATH_JOINT) goto invalid;
         for (size_t i = 0; i <= (size_t)n; i++)
-            if (!index_valid(path_data[cursor + PATH_HEADER + i * PATH_LINK], 6)) goto invalid;
+            if (!index_valid(path_data[cursor + PATH_HEADER + i * PATH_LINK], 5)) goto invalid;
         for (size_t i = 0; i < (size_t)n; i++) {
             size_t joint = cursor + PATH_HEADER + ((size_t)n + 1) * PATH_LINK + i * PATH_JOINT;
             if (!index_valid(path_data[joint + 1], count) || !index_valid(path_data[joint + 2], count)) goto invalid;

@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import Vector3 from './vector3.js';
-import { computeWorldAttachment } from './rigid_bodies.js';
 import {
   PositionComponent,
   RadiusComponent,
@@ -17,9 +16,6 @@ import {
   CablePathComponent,
   CableJointComponent,
   CableLinkComponent,
-  PinholeGateComponent,
-  GateWheelComponent,
-  gateWheelVisualAngle
 } from './cable_joints_core.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 import {
@@ -2784,7 +2780,6 @@ export class RenderSystem3D {
         continue;
       }
       const spoolState = world.getComponent(entityId, SpoolStateComponent);
-      const gateWheel = world.getComponent(entityId, GateWheelComponent);
       const orientationComp = world.getComponent(entityId, OrientationComponent);
       const isCylinder = renderComp.shape === 'cylinder';
 
@@ -2822,22 +2817,7 @@ export class RenderSystem3D {
         : radius;
       mesh.scale.set(radius, isCylinder ? height : radius, radius);
 
-      if (gateWheel) {
-        const path = world.getComponent(gateWheel.pathEntity, CablePathComponent);
-        const axisLocal = gateWheel.axisLocal;
-        const axisVector = new THREE.Vector3(axisLocal.x, axisLocal.y, axisLocal.z).normalize();
-        const localAlignment = new THREE.Quaternion().setFromUnitVectors(CYLINDER_LOCAL_UP, axisVector);
-        const wheelRotation = new THREE.Quaternion().setFromAxisAngle(
-          CYLINDER_LOCAL_UP,
-          gateWheelVisualAngle(gateWheel, path),
-        );
-        mesh.quaternion.set(
-          orientationComp?.quaternion.x ?? 0.0,
-          orientationComp?.quaternion.y ?? 0.0,
-          orientationComp?.quaternion.z ?? 0.0,
-          orientationComp?.quaternion.w ?? 1.0,
-        ).multiply(localAlignment).multiply(wheelRotation);
-      } else if (orientationComp?.quaternion) {
+      if (orientationComp?.quaternion) {
         const q = orientationComp.quaternion;
         if (isCylinder) {
           const axisLocal = getSpoolLocalAxis(spoolState);
@@ -2986,19 +2966,6 @@ export class RenderSystem3D {
 
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
         const linkType = path.linkTypes[i];
-        if (linkType === 'pinhole_gate') {
-          const incoming = world.getComponent(path.jointEntities[i - 1], CableJointComponent);
-          const outgoing = world.getComponent(path.jointEntities[i], CableJointComponent);
-          const gate = world.getComponent(incoming.entityB, PinholeGateComponent);
-          if (!gate?.visible) continue;
-          const points = gate.visualRoute.length ? gate.visualRoute.map(p => computeWorldAttachment(world, incoming.entityB, p))
-            : [incoming.attachmentPointB_world, outgoing.attachmentPointA_world];
-          for (let k = 1; k < points.length; k++) jointSpecs.push({
-            joint: { attachmentPointA_world: points[k - 1], attachmentPointB_world: points[k], restLength: points[k - 1].distanceTo(points[k]) },
-            color: DEFAULT_CABLE_COLOR,
-          });
-          continue;
-        }
         if (linkType !== 'rolling' && linkType !== 'hybrid') continue;
         if (i - 1 < 0 || i >= path.jointEntities.length) continue;
 

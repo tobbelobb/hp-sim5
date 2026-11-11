@@ -759,8 +759,8 @@ fn mechanical(es: &[Entity], bodies: &[Body], spins: &[Spin], response: &Angular
 /// One XPBD row. A single cable segment, or several segments that share one
 /// tension because the guides between them slip (frictionless, or at the
 /// capstan limit). Material moves freely inside a row, so its constraint is
-/// the row's total length C = Σdᵢ − Σrᵢ (plus a gate's hidden flow), while
-/// segment i pulls with ρᵢ·T: forces use the weighted gradient Σρᵢ∇dᵢ.
+/// the row's total length C = Σdᵢ − Σrᵢ, while segment i pulls with ρᵢ·T:
+/// forces use the weighted gradient Σρᵢ∇dᵢ.
 #[derive(Clone, Copy, Default)]
 pub(crate) struct Row {
     pub start: usize,
@@ -777,34 +777,6 @@ pub(crate) struct Row {
     /// Row stiffness and damping seen by motors.
     pub spring: f64,
     pub damping: f64,
-    /// A gate's hidden flow coordinate shared with the row on its other side
-    /// (`usize::MAX` for none). It adds `flow_sign * q` of available span.
-    pub flow: usize,
-    pub flow_sign: f64,
-}
-/// A gate's hidden material flow q through its reeving, with the reflected
-/// bearing inertia as its mass and dry bearing friction as a friction row.
-#[derive(Clone, Copy, Default)]
-pub(crate) struct Flow {
-    pub q: f64,
-    pub start: f64,
-    pub w: f64,
-    /// Friction multiplier bound (Coulomb force · dt²) and its accumulation.
-    pub limit: f64,
-    pub friction: f64,
-}
-impl Flow {
-    /// Dry friction resists this step's flow, holding it while the tension
-    /// difference stays below breakaway and opposing it with the Coulomb
-    /// force while it slips.
-    pub(crate) fn solve_friction(&mut self) {
-        if self.w <= 0.0 || self.limit <= 0.0 {
-            return;
-        }
-        let total = (self.friction - (self.q - self.start) / self.w).clamp(-self.limit, self.limit);
-        self.q += self.w * (total - self.friction);
-        self.friction = total;
-    }
 }
 fn lambda(row: &Row, error: f64, disp: f64, denom: f64, previous: f64) -> Option<f64> {
     // Cable damping may cancel tension while shortening, but cannot push.
@@ -906,11 +878,11 @@ struct Gathered {
     directions: [V; 16],
     joint_flags: [u32; 16],
 }
-fn gather(es: &[Entity], js: &[Joint], row: &Row, flow: &Flow) -> Gathered {
+fn gather(es: &[Entity], js: &[Joint], row: &Row) -> Gathered {
     let mut g = Gathered {
         bodies: Vec::with_capacity(4),
         spins: Vec::with_capacity(2),
-        error: row.flow_sign * flow.q,
+        error: 0.0,
         directions: [[0.0; 3]; 16],
         joint_flags: [1; 16],
     };
@@ -977,19 +949,17 @@ pub(crate) fn solve_row(
     es: &mut [Entity],
     js: &mut [Joint],
     members: &[Vec<usize>],
-    flows: &mut [Flow],
     row: &Row,
     iter: usize,
     accumulated: &mut f64,
 ) {
-    let flow = flows.get(row.flow).copied().unwrap_or_default();
-    let Gathered { mut bodies, mut spins, error, directions, joint_flags } = gather(es, js, row, &flow);
+    let Gathered { mut bodies, mut spins, error, directions, joint_flags } = gather(es, js, row);
     if error <= EPS && *accumulated == 0.0 {
         return;
     }
     // XPBD damping acts on the row's lengthening this step at the current
-    // iterate: ∇C·(x − xⁿ) over every body, spool and gate flow it touches.
-    let mut disp = spins.iter().map(|s| s.disp).sum::<f64>() - row.flow_sign * (flow.q - flow.start);
+    // iterate: ∇C·(x − xⁿ) over every body and spool it touches.
+    let mut disp = spins.iter().map(|s| s.disp).sum::<f64>();
     for b in &bodies {
         let e = &es[b.id];
         if e[53] != 0.0 {
@@ -999,7 +969,7 @@ pub(crate) fn solve_row(
     }
 
     let mut response = angular_response(es, members, &mut bodies, &spins);
-    let Some(mut l) = lambda(row, error, disp, mechanical(es, &bodies, &spins, &response) + flow.w, *accumulated) else {
+    let Some(mut l) = lambda(row, error, disp, mechanical(es, &bodies, &spins, &response), *accumulated) else {
         return;
     };
     let mut released = false;
@@ -1018,7 +988,7 @@ pub(crate) fn solve_row(
     if released {
         response = angular_response(es, members, &mut bodies, &spins);
         let Some(new_l) =
-            lambda(row, error, disp, mechanical(es, &bodies, &spins, &response) + flow.w, *accumulated)
+            lambda(row, error, disp, mechanical(es, &bodies, &spins, &response), *accumulated)
         else {
             return;
         };
@@ -1038,9 +1008,6 @@ pub(crate) fn solve_row(
         put_v(j, 32, scale(directions[k], share * row.inv_dt2));
         j[35] = share.abs() * row.inv_dt2;
     }
-    if let Some(f) = flows.get_mut(row.flow) {
-        f.q += f.w * l * row.flow_sign;
-    }
     if mechanical(es, &bodies, &spins, &response) <= EPS {
         return;
     }
@@ -1056,7 +1023,7 @@ pub(crate) fn solve_row(
 }
 #[no_mangle]
 pub extern "C" fn abi_version() -> u32 {
-    3
+    2
 }
 #[no_mangle]
 pub extern "C" fn alloc_buffer(len: usize) -> *mut f64 {

@@ -9,13 +9,10 @@ import {
 
 import {
   RadiusComponent,
-  MassComponent,
   OrientationComponent,
   RigidBodyMemberComponent,
   HybridKnotAngleComponent,
-  MomentOfInertiaComponent,
   MachineTagComponent,
-  CoefficientOfFrictionComponent,
   layeringEnabled,
 } from './ecs.js';
 import {
@@ -24,12 +21,6 @@ import {
   getEntityWorldPosition,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
-import {
-  hasAnyInverseInertia,
-} from './inertia_tensor.js';
-import {
-  SpoolStateComponent,
-} from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 export class CableLinkComponent {
   constructor(
@@ -46,61 +37,6 @@ export class CableLinkComponent {
     this.cablePlaneNormal = planeNormal ? planeNormal.clone() : new Vector3(0, 0, 1);
     this.cablePlaneNormalLocal = planeNormalLocal ? planeNormalLocal.clone().normalize() : null;
   }
-}
-
-// A condensed cable guide with independent, rigidly mounted ports. The hidden
-// reeving is represented by one cable-flow coordinate q. visualRoute is
-// body-local decoration and never adds physical constraints.
-export class PinholeGateComponent {
-  constructor(exitEntity, internalLength = 0) {
-    this.exitEntity = exitEntity;
-    this.internalLength = internalLength;
-    // Equivalent translational quantities, summed over the hidden bearings:
-    // M = sum(I/r^2), B = sum(b/r^2), Fc = sum(tau_c/r).
-    this.effectiveInertia = 1e-6;
-    this.damping = 0.0;
-    this.coulombForce = 0.0;
-    this.radius = 0.0065;
-    this.flow = 0.0;
-    this.flowVelocity = 0.0;
-    this.visualRoute = [];
-    this.visible = true;
-  }
-}
-
-// Visual-only hidden bearing. It follows material transported past the carrier
-// spool without adding a rotor DOF or a cable constraint.
-export class GateWheelComponent {
-  constructor(gateEntity, pathEntity, radius = 0.0065, axisLocal = null, rotationScale = 1.0, initialStored = 0.0) {
-    this.gateEntity = gateEntity;
-    this.pathEntity = pathEntity;
-    this.radius = Number.isFinite(radius) && radius > 0.0 ? radius : 0.0065;
-    this.axisLocal = axisLocal ? axisLocal.clone().normalize() : new Vector3(0, 0, 1);
-    this.rotationScale = Number.isFinite(rotationScale) ? rotationScale : 1.0;
-    this.initialStored = Number.isFinite(initialStored) ? initialStored : 0.0;
-  }
-}
-
-// The hidden bearings follow material transported past the carrier spool, not
-// the small differential gate state q. Positive transport unwinds stored cable.
-export function gateWheelVisualAngle(wheel, path) {
-  const stored = path?.stored?.[0];
-  const initial = Number.isFinite(wheel?.initialStored) ? wheel.initialStored : stored;
-  if (!Number.isFinite(stored) || !Number.isFinite(initial) || !(wheel.radius > 0.0)) return 0.0;
-  return wheel.rotationScale * (initial - stored) / wheel.radius;
-}
-
-export function findGateLinkIndex(path) {
-  const index = path.linkTypes.indexOf('pinhole_gate');
-  if (index <= 0 || index >= path.linkTypes.length - 1) {
-    throw new Error('pinhole_gate must be an interior cable path link');
-  }
-  return index;
-}
-
-export function getGateComponent(world, path, gateLinkIndex = findGateLinkIndex(path)) {
-  const incoming = world.getComponent(path.jointEntities[gateLinkIndex - 1], CableJointComponent);
-  return world.getComponent(incoming?.entityB, PinholeGateComponent);
 }
 
 // Represents a single segment constraint between two entities
@@ -177,16 +113,6 @@ export class CablePathComponent {
       const joint_i_plus_1 = world.getComponent(jointId_i_plus_1, CableJointComponent);
       const linkId = joint_i.entityB;
       const linkId2 = joint_i_plus_1.entityA;
-      if (linkTypes[i + 1] === 'pinhole_gate') {
-        const a = world.getComponent(linkId, RigidBodyMemberComponent)?.bodyEntity;
-        const b = world.getComponent(linkId2, RigidBodyMemberComponent)?.bodyEntity;
-        if (linkId !== linkId2 && (a === undefined || a !== b)) throw new Error('pinhole_gate ports must share one rigid body');
-        const hidden = stored?.[i + 1] ?? 0;
-        const separation = getEntityWorldPosition(world, linkId).distanceTo(getEntityWorldPosition(world, linkId2));
-        if (!Number.isFinite(hidden) || hidden + 1e-9 < separation) throw new Error('pinhole_gate internal length must cover the port separation');
-        world.addComponent(linkId, new PinholeGateComponent(linkId2, hidden));
-        continue;
-      }
       if (linkId !== linkId2) {
         console.warn("CablePathComponent constructor: Links don't match up. There's something wrong with this cable path.");
         return;
@@ -222,19 +148,6 @@ export class CablePathComponent {
       }
     }
 
-    if (this.linkTypes.includes('pinhole_gate')) {
-      const dynamic = new Set();
-      for (const id of this.jointEntities) for (const entity of [world.getComponent(id, CableJointComponent).entityA, world.getComponent(id, CableJointComponent).entityB]) {
-        const body = world.getComponent(entity, RigidBodyMemberComponent)?.bodyEntity ?? entity;
-        if ((world.getComponent(body, MassComponent)?.mass ?? 0) > 0 || hasAnyInverseInertia(world.getComponent(body, MomentOfInertiaComponent)) || world.getComponent(entity, SpoolStateComponent)) dynamic.add(body);
-      }
-      if (dynamic.size > 2) throw new Error('pinhole_gate supports one carrier and one external rotor');
-      if (this.linkTypes.slice(1, -1).some(t => t !== 'pinhole' && t !== 'pinhole_gate')) throw new Error('pinhole_gate requires frictionless interior guides');
-      for (let i = 1; i < this.linkTypes.length - 1; i++) {
-        const id = world.getComponent(this.jointEntities[i - 1], CableJointComponent).entityB;
-        if ((world.getComponent(id, CoefficientOfFrictionComponent)?.mu ?? 0) !== 0) throw new Error('pinhole_gate does not support guide friction yet');
-      }
-    }
     const lastLinkIndex = this.linkTypes.length - 1;
     if (lastLinkIndex >= 0) {
       _ensureHybridKnotAngleComponentForEndpoint(world, this, 0);

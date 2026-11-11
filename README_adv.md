@@ -18,7 +18,7 @@ engine.
 
 The engine implements (extended) Position-Based Dynamics. Cable segments slide
 over wheels, wrap, and maintain tension through constraints solved with XPBD.
-Cable paths, rigid assemblies, spools, motors and pinhole gates are described in
+Cable paths, rigid assemblies, spools and motors are described in
 [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
 
 ### Repository Layout

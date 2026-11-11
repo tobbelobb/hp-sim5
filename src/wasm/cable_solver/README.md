@@ -110,15 +110,14 @@ in `wasm_cable_solver.js`; additional entity fields are:
 Optional motor friction parameters and absent missed-step reference offsets use
 NaN sentinels internally; these are not non-finite physical observations.
 
-A path has a sixteen-slot header (joint count, public path ID, axial stiffness
+A path has a nine-slot header (joint count, public path ID, axial stiffness
 EA, compliance per unit length 1/EA, damping per unit length B, iterations, half
-width, total rest length, machine index, then gate link, hidden flow, flow
-velocity, reflected inertia, drag and dry friction force), then `count + 1`
+width, total rest length, machine index), then `count + 1`
 five-slot links (kind, clockwise, stored length, knot angle, knot
 initialization marker), then `count` sixteen-slot joints (public ID, endpoint
 indices, rest length, two attachment vectors, lambda, force magnitude,
 transferred magnitude, force vector). Kinds are attachment 0, rolling 1, pinhole 2,
-hybrid 3, hybrid-attachment 4, pinhole gate 5. Missing knot angles use NaN. Joint/link views must
+hybrid 3, hybrid-attachment 4. Missing knot angles use NaN. Joint/link views must
 refresh after a topology version change. Native records are valid prepared data;
 constructors do not parse or validate arbitrary scene documents.
 
@@ -141,16 +140,13 @@ row tension) and Kelvin–Voigt damping B / EA. Its force direction is
 Σ ρᵢ ∇dᵢ, so material moves within the implicit solve instead of lagging a
 step behind it; `redistribute` then shares the row's material out to match.
 Spools and wheels at a row boundary keep their spin coupling; a free wheel
-inside a row turns with the material passing it. A pinhole gate separates two
-rows that share its hidden flow q, solved implicitly with its reflected bearing
-inertia; dry bearing friction is an XPBD friction row on q and drag acts on its
-velocity. Open-loop holding springs of spools on the fixed frame use a linearly
-implicit step consistent with the cable solve.
+inside a row turns with the material passing it. Open-loop holding springs of
+spools on the fixed frame use a linearly implicit step consistent with the
+cable solve.
 
 `tests/cable_physics.rs` checks these against closed-form results: EA / L line
 stiffness independent of guide count, Atwood capstan friction over pinholes and
-rollers, gates with inertia and dry friction, energy behaviour, slack sliding
-and vanishing spans. Its ignored `replay_prepared_world` test replays records
+rollers, energy behaviour, slack sliding and vanishing spans. Its ignored `replay_prepared_world` test replays records
 dumped from a production world (`HP_SIM5_REPLAY`, `HP_SIM5_STEPS`) for
 profiling, for example under callgrind with the `profiling` cargo profile.
 

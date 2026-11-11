@@ -1,5 +1,5 @@
 import * as ecs from './ecs.js';
-import { CableLinkComponent, CableJointComponent, CablePathComponent, getGateComponent } from './cable_joints_core.js';
+import { CableLinkComponent, CableJointComponent, CablePathComponent } from './cable_joints_core.js';
 import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 
@@ -7,8 +7,8 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 // components are views of persistent Rust records, including interactive edits.
 // See engine.rs `Row` for how the per-unit-length cable properties become
 // per-row XPBD compliance and damping.
-const E = 160, H = 16, L = 5, J = 16;
-const kinds = ['attachment', 'rolling', 'pinhole', 'hybrid', 'hybrid-attachment', 'pinhole_gate'];
+const E = 160, H = 9, L = 5, J = 16;
+const kinds = ['attachment', 'rolling', 'pinhole', 'hybrid', 'hybrid-attachment'];
 const putV = (a, o, v) => { if (v) a.set([v.x, v.y, v.z], o); };
 const putQ = (a, o, q) => { if (q) a.set([q.x, q.y, q.z, q.w], o); };
 export class RustPhysicsEngine {
@@ -132,11 +132,7 @@ export class RustPhysicsEngine {
       const data = new Float64Array(H + (n + 1) * L + n * J);
       const machine = get(id, ecs.MachineTagComponent)?.id ?? null;
       if (!machines.has(machine)) machines.set(machine, machines.size);
-      const gate = c.linkTypes.includes('pinhole_gate') ? getGateComponent(world, c) : null;
-      if (c.linkTypes.includes('pinhole_gate') && !gate) throw new Error('pinhole_gate component is missing at its entry port');
-      data.set([n, id, c.stiffnessPerUnitLength, c.compliancePerUnitLength, c.dampingPerUnitLength, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine),
-        gate ? c.linkTypes.indexOf('pinhole_gate') : -1, gate?.flow ?? 0, gate?.flowVelocity ?? 0,
-        gate?.effectiveInertia ?? 0, gate?.damping ?? 0, gate?.coulombForce ?? 0]);
+      data.set([n, id, c.stiffnessPerUnitLength, c.compliancePerUnitLength, c.dampingPerUnitLength, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine)]);
       for (let li = 0; li <= n; li++) {
         const j = n ? get(c.jointEntities[li === n ? n - 1 : li], CableJointComponent) : null;
         const entity = j ? (li === n ? j.entityB : j.entityA) : null;
@@ -242,13 +238,6 @@ export class RustPhysicsEngine {
         joint.constraintForce = new ecs.PositionComponent(...data.slice(jo + 13, jo + 16)).pos;
         this.vector(joint, 'attachmentPointA_world', jo + 4, group); this.vector(joint, 'attachmentPointB_world', jo + 7, group);
         this.vector(joint, 'constraintForce', jo + 13, group);
-      }
-      if (path.linkTypes.includes('pinhole_gate')) {
-        const gate = getGateComponent(world, path);
-        if (!gate) throw new Error('pinhole_gate component is missing at its entry port');
-        for (const [key, offset] of [['flow', 10], ['flowVelocity', 11], ['effectiveInertia', 12], ['damping', 13], ['coulombForce', 14]]) {
-          this.bind(gate, key, o + offset, group);
-        }
       }
       for (const li of [0, n]) {
         if (!n || !Number.isFinite(data[o + H + li * L + 3]) || data[o + H + li * L + 4] === 2) continue;
