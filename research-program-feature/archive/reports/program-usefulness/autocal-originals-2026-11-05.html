@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research Program vs Research Agent · 2026-11-05</title>
+  <style>
+    :root {
+      --ink: #17262b;
+      --muted: #617176;
+      --paper: #f5f0e7;
+      --card: #fffdf8;
+      --line: #ded7c9;
+      --teal: #0d766e;
+      --teal-soft: #dceeea;
+      --coral: #c6583f;
+      --coral-soft: #f6e1da;
+      --amber: #a86d12;
+      --amber-soft: #f6e9cb;
+      --blue: #315f83;
+      --blue-soft: #deeaf2;
+      --shadow: 0 18px 50px rgba(31, 42, 45, 0.10);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 2%, rgba(13, 118, 110, 0.12), transparent 27rem),
+        radial-gradient(circle at 94% 10%, rgba(198, 88, 63, 0.10), transparent 27rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-underline-offset: 0.18em; }
+    a:hover { color: #07554f; }
+
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.91em;
+    }
+
+    code {
+      background: rgba(23, 38, 43, 0.06);
+      border-radius: 6px;
+      padding: 0.12em 0.34em;
+      overflow-wrap: anywhere;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 34px 0 70px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      color: #f8fbf9;
+      background:
+        linear-gradient(120deg, rgba(13, 118, 110, 0.92), rgba(20, 43, 49, 0.98) 66%),
+        #173139;
+      border-radius: 30px;
+      padding: clamp(30px, 5vw, 58px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      right: -90px;
+      bottom: -210px;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 50%;
+      box-shadow: 0 0 0 60px rgba(255,255,255,0.035), 0 0 0 120px rgba(255,255,255,0.025);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 24px;
+      color: #c7e9e2;
+      font-size: 0.78rem;
+      font-weight: 760;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: #f2ae8f;
+    }
+
+    h1, h2, h3 { line-height: 1.12; }
+
+    h1 {
+      max-width: 920px;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.25rem, 5.6vw, 4.45rem);
+      font-weight: 500;
+      letter-spacing: -0.038em;
+    }
+
+    .hero p.lede {
+      max-width: 850px;
+      margin: 24px 0 0;
+      color: #dddfd8;
+      font-size: clamp(1.02rem, 1.7vw, 1.23rem);
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      margin-top: 30px;
+      color: #bfcfca;
+      font-size: 0.86rem;
+    }
+
+    .hero-meta span { display: inline-flex; align-items: center; gap: 8px; }
+    .hero-meta .mono { overflow-wrap: anywhere; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f2ae8f; }
+
+    .verdict {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: -22px 24px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .verdict-card {
+      min-height: 166px;
+      padding: 24px;
+      background: var(--card);
+      border: 1px solid rgba(222, 215, 201, 0.82);
+      border-radius: 18px;
+      box-shadow: 0 13px 35px rgba(31, 42, 45, 0.065);
+    }
+
+    .verdict-card strong {
+      display: block;
+      margin: 5px 0 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.42rem;
+      font-weight: 500;
+      line-height: 1.16;
+    }
+
+    .verdict-card p { margin: 0; color: var(--muted); font-size: 0.91rem; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.69rem;
+      font-weight: 800;
+      letter-spacing: 0.075em;
+      text-transform: uppercase;
+    }
+
+    .tag.teal { color: #07574f; background: var(--teal-soft); }
+    .tag.coral { color: #963d29; background: var(--coral-soft); }
+    .tag.amber { color: #79500c; background: var(--amber-soft); }
+    .tag.blue { color: #244d6e; background: var(--blue-soft); }
+
+    section { margin-top: 68px; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(320px, 1.18fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 26px;
+    }
+
+    .kicker {
+      margin: 0 0 9px;
+      color: var(--teal);
+      font-size: 0.74rem;
+      font-weight: 820;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.8rem, 3.1vw, 2.7rem);
+      font-weight: 500;
+      letter-spacing: -0.025em;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 32px rgba(31, 42, 45, 0.055);
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+    }
+
+    .big-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .stat {
+      min-height: 150px;
+      padding: 25px;
+      background: var(--card);
+    }
+
+    .stat .number {
+      display: block;
+      margin-bottom: 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.15rem, 4vw, 3.4rem);
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .stat .number.coral { color: var(--coral); }
+    .stat .number.teal { color: var(--teal); }
+    .stat .number.blue { color: var(--blue); }
+    .stat .label { color: var(--muted); font-size: 0.87rem; }
+
+    .mix-card { padding: 27px 28px 25px; }
+    .mix-card h3 { margin: 0 0 5px; font-size: 1.08rem; }
+    .mix-card > p { margin: 0 0 24px; color: var(--muted); font-size: 0.87rem; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 142px 1fr 48px;
+      gap: 12px;
+      align-items: center;
+      margin: 13px 0;
+      font-size: 0.84rem;
+    }
+
+    .bar-track {
+      height: 12px;
+      overflow: hidden;
+      background: #ece6da;
+      border-radius: 999px;
+    }
+
+    .bar-fill { height: 100%; border-radius: 999px; }
+    .bar-fill.teal { background: var(--teal); }
+    .bar-fill.coral { background: var(--coral); }
+    .bar-fill.amber { background: var(--amber); }
+    .bar-fill.blue { background: var(--blue); }
+    .bar-fill.grey { background: #9da7a6; }
+    .bar-count { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+    .callout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 17px;
+      align-items: start;
+      padding: 22px 24px;
+      border-left: 4px solid var(--amber);
+      background: #fff8e9;
+      border-radius: 0 16px 16px 0;
+    }
+
+    .callout-icon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 50%;
+      color: #79500c;
+      background: #f3dcae;
+      font-weight: 850;
+    }
+
+    .callout p { margin: 1px 0 0; }
+
+    .timeline-card { padding: 32px 32px 28px; }
+    .timeline-title {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 27px;
+    }
+
+    .timeline-title h3 { margin: 0; font-size: 1.18rem; }
+    .timeline-title span { color: var(--muted); font-size: 0.85rem; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 0 16px;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 12px;
+      bottom: 12px;
+      left: 95px;
+      width: 2px;
+      background: linear-gradient(var(--teal), var(--coral));
+      opacity: 0.3;
+    }
+
+    .time {
+      padding: 7px 0 22px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      text-align: right;
+    }
+
+    .event {
+      position: relative;
+      padding: 5px 0 22px 25px;
+      border-bottom: 1px dashed rgba(97, 113, 118, 0.20);
+    }
+
+    .event:last-of-type { border-bottom: 0; }
+
+    .event::before {
+      content: "";
+      position: absolute;
+      top: 11px;
+      left: -5px;
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--card);
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 1px var(--teal);
+    }
+
+    .event.warn::before { background: var(--coral); box-shadow: 0 0 0 1px var(--coral); }
+    .event strong { display: block; margin-bottom: 3px; font-size: 0.94rem; }
+    .event p { margin: 0; color: var(--muted); font-size: 0.86rem; overflow-wrap: anywhere; }
+    .event .elapsed {
+      display: inline-block;
+      margin-left: 6px;
+      color: var(--teal);
+      font-size: 0.73rem;
+      font-weight: 750;
+      letter-spacing: 0.02em;
+    }
+
+    .timeline-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      margin-top: 9px;
+      padding: 17px 20px;
+      color: var(--muted);
+      background: #f7f2e9;
+      border-radius: 14px;
+      font-size: 0.82rem;
+    }
+
+    .timeline-legend strong { color: var(--ink); }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .list-card { padding: 29px 30px; }
+    .list-card h3 {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 20px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.48rem;
+      font-weight: 500;
+    }
+
+    .icon-badge {
+      display: inline-grid;
+      width: 29px;
+      height: 29px;
+      place-items: center;
+      border-radius: 50%;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 850;
+    }
+
+    .icon-badge.good { color: #07574f; background: var(--teal-soft); }
+    .icon-badge.bad { color: #963d29; background: var(--coral-soft); }
+
+    ul.clean { margin: 0; padding: 0; list-style: none; }
+    ul.clean li {
+      position: relative;
+      margin: 0 0 15px;
+      padding: 0 0 0 21px;
+      color: #334448;
+      font-size: 0.93rem;
+    }
+
+    ul.clean li::before {
+      content: "";
+      position: absolute;
+      top: 0.56em;
+      left: 0;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .bad-list li::before { background: var(--coral); }
+    ul.clean li strong { color: var(--ink); }
+
+    .finding-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: 0 12px 32px rgba(31, 42, 45, 0.055);
+    }
+
+    .table-scroll { width: 100%; overflow-x: auto; border-radius: var(--radius); }
+
+    .finding-table th, .finding-table td {
+      padding: 17px 19px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid #e7e0d4;
+      font-size: 0.89rem;
+    }
+
+    .finding-table th {
+      color: var(--muted);
+      background: #f8f3e9;
+      font-size: 0.71rem;
+      font-weight: 820;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .finding-table td:first-child { font-weight: 700; }
+    .finding-table tr:last-child td { border-bottom: 0; }
+    .finding-table .negative { color: #9a402d; font-weight: 700; }
+    .finding-table .positive { color: #087067; font-weight: 700; }
+
+    .patterns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .pattern-card { padding: 25px; }
+    .pattern-card .num {
+      color: var(--coral);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 2.3rem;
+      line-height: 1;
+    }
+
+    .pattern-card h3 { margin: 14px 0 8px; font-size: 1rem; }
+    .pattern-card p { margin: 0; color: var(--muted); font-size: 0.86rem; }
+
+    .recommendation-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .rec-card { padding: 26px 27px; }
+    .rec-card, .list-card, .callout, .pattern-card { min-width: 0; }
+    .rec-card.wide { grid-column: 1 / -1; }
+    .rec-card h3 {
+      margin: 12px 0 13px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.45rem;
+      font-weight: 500;
+    }
+
+    .rec-card p { margin: 0 0 12px; color: var(--muted); font-size: 0.91rem; }
+    .rec-card ol, .rec-card ul { margin: 0; padding-left: 20px; }
+    .rec-card li { margin: 0 0 10px; padding-left: 3px; font-size: 0.9rem; }
+    .rec-card li:last-child { margin-bottom: 0; }
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 2px; }
+    .pill {
+      padding: 4px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #faf6ee;
+      font-size: 0.71rem;
+      font-weight: 720;
+    }
+
+    .protocol {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+
+    .protocol-step {
+      display: contents;
+    }
+
+    .protocol-step > div {
+      padding: 18px 20px;
+      border-bottom: 1px solid #e7e0d4;
+      font-size: 0.9rem;
+    }
+
+    .protocol-step:last-child > div { border-bottom: 0; }
+
+    .protocol-step .step-label {
+      color: var(--teal);
+      background: #f8f3e9;
+      font-weight: 820;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 0.69rem;
+    }
+
+    .protocol-step .step-body strong { display: block; margin-bottom: 2px; }
+    .protocol-step .step-body span { color: var(--muted); }
+
+    details.methodology {
+      margin-top: 68px;
+      overflow: hidden;
+      background: rgba(255, 253, 248, 0.62);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    details.methodology summary {
+      cursor: pointer;
+      padding: 22px 25px;
+      font-weight: 760;
+      list-style: none;
+    }
+
+    details.methodology summary::-webkit-details-marker { display: none; }
+    details.methodology summary::after {
+      content: "+";
+      float: right;
+      color: var(--teal);
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    details.methodology[open] summary::after { content: "−"; }
+
+    .method-body {
+      padding: 0 25px 25px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .source-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin: 17px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .source-list li {
+      padding: 13px 15px;
+      background: #f8f3e9;
+      border-radius: 12px;
+    }
+
+    .source-list a { font-weight: 650; }
+    .source-list span { display: block; margin-top: 3px; font-size: 0.8rem; }
+
+    footer {
+      margin-top: 60px;
+      padding-top: 23px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .small-note { color: var(--muted); font-size: 0.81rem; }
+
+    @media (max-width: 900px) {
+      .verdict, .scoreboard, .split, .patterns, .recommendation-grid { grid-template-columns: 1fr; }
+      .section-head { grid-template-columns: 1fr; gap: 14px; }
+      .verdict { margin: -18px 10px 0; }
+      .big-stats { grid-template-columns: 1fr 1fr; }
+      .rec-card.wide { grid-column: auto; }
+      .source-list { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .page { width: min(100% - 24px, 1180px); padding-top: 18px; }
+      .hero { border-radius: 22px; padding: 28px 23px 46px; }
+      .verdict { grid-template-columns: 1fr; margin: -30px 6px 0; }
+      .verdict-card { min-height: 0; }
+      .big-stats { grid-template-columns: 1fr; }
+      .stat { min-height: 120px; }
+      .timeline { grid-template-columns: 62px minmax(0, 1fr); gap: 0 8px; }
+      .timeline::before { left: 74px; }
+      .time { font-size: 0.69rem; }
+      .finding-table { display: block; overflow-x: auto; }
+      .finding-table th, .finding-table td { min-width: 0; white-space: normal; }
+      .finding-table thead { display: none; }
+      .finding-table tbody, .finding-table tr, .finding-table td { display: block; width: 100%; }
+      .finding-table tr { padding: 12px 0; border-bottom: 1px solid #e7e0d4; }
+      .finding-table tr:last-child { border-bottom: 0; }
+      .finding-table td { padding: 7px 17px; border-bottom: 0; }
+      .finding-table td:first-child { color: var(--teal); font-size: 0.72rem; font-weight: 820; letter-spacing: 0.07em; text-transform: uppercase; }
+      .bar-row { grid-template-columns: 110px 1fr 38px; }
+      .protocol { grid-template-columns: 1fr; }
+      .protocol-step { display: block; }
+      .protocol-step .step-label { border-bottom: 0; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; padding: 0; }
+      .hero, .panel, .finding-table, .verdict-card { box-shadow: none; }
+      section { break-inside: avoid; }
+      details.methodology { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Evidence review · Research Program vs Research Agent</p>
+      <h1>Useful science, weaker delivery.</h1>
+      <p class="lede">Your experience of lower usefulness is supported by the saved record, but the evidence does not show that an extra manager is inherently worse. It shows that Program runs have mostly produced reviewed knowledge and orchestration work, while the direct agent more often produced retained implementation changes.</p>
+      <div class="hero-meta">
+        <span><i class="dot"></i>Branch: <span class="mono">research/autocal-originals-2026-11-05-0a82df7f</span></span>
+        <span><i class="dot"></i>HEAD: <span class="mono">ca0217c1</span></span>
+        <span><i class="dot"></i>Prepared: 5 November 2026</span>
+      </div>
+    </header>
+
+    <section class="verdict" aria-label="Top findings">
+      <article class="verdict-card">
+        <span class="tag teal">Supported descriptively</span>
+        <strong>The old agent cohort has more visible delivery.</strong>
+        <p>12 complete direct-agent summaries include 10 producer-reported retained changes. Program admissions are still mostly report-only.</p>
+      </article>
+      <article class="verdict-card">
+        <span class="tag amber">Not causal</span>
+        <strong>Tasks, budgets, dates and platforms differ.</strong>
+        <p>The archive cannot prove a success-rate or elapsed-time effect. A matched trial is still missing.</p>
+      </article>
+      <article class="verdict-card">
+        <span class="tag coral">This run confirms the risk</span>
+        <strong>More time did not mean more delivery.</strong>
+        <p>The worker received 100 minutes and ran for 87.9. The branch still contains no production code or test change.</p>
+      </article>
+    </section>
+
+    <section id="scoreboard">
+      <div class="section-head">
+        <div>
+          <p class="kicker">The ledger</p>
+          <h2>Activity is not the same as usefulness.</h2>
+        </div>
+        <p>The clearest signal is the outcome mix, not raw worker minutes. The direct-agent cohort is earlier and differently scoped, so treat this as a retrospective comparison rather than a controlled experiment.</p>
+      </div>
+
+      <div class="scoreboard">
+        <div class="panel big-stats">
+          <div class="stat">
+            <span class="number teal">10</span>
+            <div class="label">direct-agent sessions reporting a retained implementation change</div>
+          </div>
+          <div class="stat">
+            <span class="number coral">0</span>
+            <div class="label">integration records in the saved Program snapshots, including this branch</div>
+          </div>
+          <div class="stat">
+            <span class="number coral">5 / 7</span>
+            <div class="label">Program admissions that are report-only after adding this run</div>
+          </div>
+          <div class="stat">
+            <span class="number blue">90</span>
+            <div class="label">files changed on this branch, with zero production source or test files</div>
+          </div>
+        </div>
+
+        <div class="panel mix-card">
+          <h3>Direct-agent cohort</h3>
+          <p>16 launcher sessions; 12 have completed summaries. Labels are producer reports, not re-verification.</p>
+          <div class="bar-row">
+            <span>Retained change</span>
+            <div class="bar-track"><div class="bar-fill teal" style="width:62.5%"></div></div>
+            <span class="bar-count">10</span>
+          </div>
+          <div class="bar-row">
+            <span>No change</span>
+            <div class="bar-track"><div class="bar-fill amber" style="width:6.25%"></div></div>
+            <span class="bar-count">1</span>
+          </div>
+          <div class="bar-row">
+            <span>Tooling repair</span>
+            <div class="bar-track"><div class="bar-fill blue" style="width:6.25%"></div></div>
+            <span class="bar-count">1</span>
+          </div>
+          <div class="bar-row">
+            <span>Unsummarized</span>
+            <div class="bar-track"><div class="bar-fill grey" style="width:25%"></div></div>
+            <span class="bar-count">4</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:18px">
+        <div class="callout-icon">!</div>
+        <p><strong>Interpretation.</strong> The evidence supports your lived experience as a delivery problem, not as “the Program cannot do science.” The branch found a real model-validity concern and had it independently reviewed. The missing piece is turning that knowledge into an implemented, checked, integrated change.</p>
+      </div>
+    </section>
+
+    <section id="branch-run">
+      <div class="section-head">
+        <div>
+          <p class="kicker">The 5 November run</p>
+          <h2>Three hours, one reviewed negative result, no patch.</h2>
+        </div>
+        <p>The worker adapted well after failures, but the end-to-end loop spent almost as long recovering and reviewing as it did investigating. That overhead is part of the usefulness problem.</p>
+      </div>
+
+      <div class="panel timeline-card">
+        <div class="timeline-title">
+          <h3>Program timeline</h3>
+          <span>All times UTC · controller records</span>
+        </div>
+        <div class="timeline">
+          <div class="time">08:48</div>
+          <div class="event">
+            <strong>Program created</strong>
+            <p>Autocal robustness question opened; no worker dispatched.</p>
+          </div>
+          <div class="time">08:51</div>
+          <div class="event">
+            <strong>Human steering names an existing prompt</strong>
+            <p>Prompt portfolio selection is not automated by the manager; the steering points at <code>autocal_parameter_variation_focus.txt</code>.</p>
+          </div>
+          <div class="time">08:59</div>
+          <div class="event">
+            <strong>Worker dispatched</strong>
+            <p>100-minute allocation, goal mode on, worktree on, Viewer off, recording off. <span class="elapsed">11 min after creation</span></p>
+          </div>
+          <div class="time">09:10</div>
+          <div class="event warn">
+            <strong>First execution-failure cluster</strong>
+            <p>Recorder acknowledgement timeout, SIGTERM under host contention, recorder readiness failure, and a canceled nominal wrapper before collection.</p>
+          </div>
+          <div class="time">09:16</div>
+          <div class="event">
+            <strong>Environment repaired</strong>
+            <p>Pinned Node 23.11.1, required <code>env.sh</code>, sequential jobs, and a verified session-local guide-friction intervention.</p>
+          </div>
+          <div class="time">09:24</div>
+          <div class="event">
+            <strong>First accepted calibration</strong>
+            <p>Nominal default: 3.841 mm maximum anchor error, 140 points, 4,183.208 simulated seconds.</p>
+          </div>
+          <div class="time">10:21</div>
+          <div class="event warn">
+            <strong>Numerical work ends without an improvement</strong>
+            <p>3 accepted runs, 4 active-guide collection failures, and one new guide-transport/spool-load concern. No production diff.</p>
+          </div>
+          <div class="time">10:27</div>
+          <div class="event">
+            <strong>Worker exits</strong>
+            <p>87.9 observed worker minutes. <span class="elapsed">98.9 min after program creation</span></p>
+          </div>
+          <div class="time">10:29</div>
+          <div class="event warn">
+            <strong>First review starts, then times out</strong>
+            <p>The reviewer produced a response, but controller acknowledgement was lost during the execution outage.</p>
+          </div>
+          <div class="time">11:42</div>
+          <div class="event">
+            <strong>Replacement review runs</strong>
+            <p>Separate saved-evidence review completed after the original files were recovered.</p>
+          </div>
+          <div class="time">11:47</div>
+          <div class="event">
+            <strong>Report-only admission applied</strong>
+            <p>Finding supported; code readiness <code>report_only</code>; no production change. <span class="elapsed">80 min after worker exit</span></p>
+          </div>
+          <div class="time">11:56</div>
+          <div class="event">
+            <strong>Second assignment commissioned</strong>
+            <p>Lower-force candidate is <code>ready</code>, not attempted. The branch ends before any numerical result for it.</p>
+          </div>
+        </div>
+        <div class="timeline-legend">
+          <span><strong>Program span:</strong> 3.14 h</span>
+          <span><strong>Worker:</strong> 87.9 min</span>
+          <span><strong>Review + recovery:</strong> about 80 min after worker exit</span>
+          <span><strong>Production change:</strong> none</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="worked">
+      <div class="section-head">
+        <div>
+          <p class="kicker">What worked</p>
+          <h2>The Program did better science than its final usefulness suggests.</h2>
+        </div>
+        <p>Several controls, provenance checks and failure preserves are genuinely good. They reduce the chance of adopting a false improvement. They do not remove the human’s remaining work.</p>
+      </div>
+
+      <div class="split">
+        <article class="panel list-card">
+          <h3><span class="icon-badge good">✓</span>Strengths</h3>
+          <ul class="clean">
+            <li><strong>Prompt refresh had substance.</strong> The manager checked prior reports and rewrote the prompt to retire settled profiling, blind thinning and unconditional solver/default proposals.</li>
+            <li><strong>Experimental discipline was strong.</strong> It declared development and evaluation worlds, froze the candidate before held-out scoring, and kept truth out of selection.</li>
+            <li><strong>The intervention was verified.</strong> Stock guide-friction material did not affect the capstan solve; the worker used isolated ECS injection and checked native readbacks and hashes.</li>
+            <li><strong>The negative result is useful.</strong> The probe shows torque can coexist with tens of millimetres of local slack, which is a concrete model-boundary concern rather than a vague tool complaint.</li>
+            <li><strong>Independent review did its job.</strong> The reviewer recalculated saved geometry, checked hashes and source, and returned <code>supported / keep / report_only</code> with explicit limits.</li>
+            <li><strong>Budgeting and durability recovered well.</strong> The worker stayed inside its numerical budget, and 407 original files were recovered with verified hashes after the workspace access failure.</li>
+          </ul>
+        </article>
+
+        <article class="panel list-card">
+          <h3><span class="icon-badge bad">×</span>Weaknesses</h3>
+          <ul class="clean bad-list">
+            <li><strong>No delivered change.</strong> The branch adds a prompt revision and 63.4 MiB of research evidence, but no source, test or integration record.</li>
+            <li><strong>The first assignment was a screen, not a delivery mission.</strong> “Test robustness” made a report-only ending predictable; the implementation-oriented assignment was only commissioned at the end.</li>
+            <li><strong>Most visible work reconfirmed known ground.</strong> Two accepted nominal calibrations and a matched control establish that defaults still work; the genuinely new signal is the guide-transport concern.</li>
+            <li><strong>Operational failures were mostly hidden in the notebook.</strong> The concise README mentions command access but not the recorder timeout, SIGTERM, recorder-readiness failure, probe crashes or review timeout.</li>
+            <li><strong>Review and recovery dominated the tail.</strong> Roughly 80 minutes passed between worker exit and admission, largely because of a timeout and workspace outage.</li>
+            <li><strong>One status is overstated.</strong> The readable entry point says the second worker was “dispatched”; the controller says the assignment is only <code>ready</code>, with no attempt record.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="why">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Why it feels like regurgitation</p>
+          <h2>Science can be valid and still not be decision-value.</h2>
+        </div>
+        <p>The final report is careful because it is an experiment report. But from the product side, only a small part of it changes what you should do next.</p>
+      </div>
+
+      <div class="patterns">
+        <article class="panel pattern-card">
+          <div class="num">03</div>
+          <h3>Accepted calibrations, all expected</h3>
+          <p>Maximum errors were 3.841, 3.873 and 4.349 mm. All are useful controls, but none establishes a new robustness policy.</p>
+        </article>
+        <article class="panel pattern-card">
+          <div class="num">04</div>
+          <h3>Collection failures before geometry</h3>
+          <p>These are preserved and correctly scoped, but they cannot be converted into a delivered algorithm change without resolving the model boundary.</p>
+        </article>
+        <article class="panel pattern-card">
+          <div class="num">01</div>
+          <h3>New decision-changing observation</h3>
+          <p>The torque-with-slack diagnostic. It is a real finding, but it currently points to another investigation rather than an integrated fix.</p>
+        </article>
+      </div>
+
+      <div class="table-scroll" style="margin-top:18px">
+      <table class="finding-table" aria-label="What the branch delivered">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Observed on this branch</th>
+            <th>Why it matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Production delivery</td>
+            <td class="negative">0 source/test files; 0 integration records</td>
+            <td>The human still owns implementation, checks and merge.</td>
+          </tr>
+          <tr>
+            <td>Prompt automation</td>
+            <td class="negative">Human named the prompt file</td>
+            <td>Portfolio choice remains a human chore, despite being a core Program goal.</td>
+          </tr>
+          <tr>
+            <td>Evidence quality</td>
+            <td class="positive">Strong controls, hashes, review and retention</td>
+            <td>The negative result is trustworthy and reusable.</td>
+          </tr>
+          <tr>
+            <td>Environment visibility</td>
+            <td class="negative">Most failures only in worker notebook</td>
+            <td>The manager’s summary looks cleaner than the run actually was.</td>
+          </tr>
+          <tr>
+            <td>Resumability</td>
+            <td class="positive">407 files recovered and verified</td>
+            <td>Durability after failure worked, but only after expensive recovery.</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <section id="recommendations">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Recommendations</p>
+          <h2>Change the contract before adding more orchestration.</h2>
+        </div>
+        <p>The highest-value fixes are delivery authority, prompt triage, checkpointing and a real worker-context canary. Longer time is useful only after those are in place.</p>
+      </div>
+
+      <div class="recommendation-grid">
+        <article class="panel rec-card">
+          <div class="pill-row"><span class="pill">Priority 1</span><span class="pill">Both local &amp; cloud</span></div>
+          <h3>Make “ship or falsify” the default assignment.</h3>
+          <p>Every assignment should name a concrete deliverable before dispatch: a patch, a new decision-changing finding, or a precise blocker. A report-only result is allowed only when it changes the next decision.</p>
+          <ol>
+            <li>Require a novelty statement: the three prior artifacts checked and why this question is still open.</li>
+            <li>Require a candidate diff and relevant checks if the hypothesis survives.</li>
+            <li>Require the worker to state at the start whether it is on a delivery path or an evidence-only path.</li>
+          </ol>
+        </article>
+
+        <article class="panel rec-card">
+          <div class="pill-row"><span class="pill">Priority 1</span><span class="pill">Product gap</span></div>
+          <h3>Finish the review-to-merge loop.</h3>
+          <p>The controller can prepare and check frozen patches, but it explicitly does not merge or push them. That leaves one of the original Program goals unfinished.</p>
+          <ol>
+            <li>Add an explicit delivery-authority option for a designated integration branch.</li>
+            <li>Run <code>integration_prepare</code>, <code>integration_check</code>, then merge/cherry-pick the verified commit.</li>
+            <li>Return the delivered commit and checks, not just the archive commit.</li>
+          </ol>
+        </article>
+
+        <article class="panel rec-card">
+          <div class="pill-row"><span class="pill">Priority 2</span><span class="pill">Prompt selection</span></div>
+          <h3>Add prompt-portfolio triage.</h3>
+          <p>The manager workflow tells it to choose a cheap investigation, but there is no automatic scan/ranking of the already-written prompts. This run was steered to a prompt by name.</p>
+          <ol>
+            <li>Scan <code>research/prompts/</code>, the research catalog and recent admissions.</li>
+            <li>Score each candidate on expected delivered delta, novelty, tool readiness and time to a decision.</li>
+            <li>Reject prompts whose likely result is “known result, no change.”</li>
+          </ol>
+        </article>
+
+        <article class="panel rec-card">
+          <div class="pill-row"><span class="pill">Priority 2</span><span class="pill">Reliability</span></div>
+          <h3>Checkpoint after every collection.</h3>
+          <p>End-of-turn saving is not enough. This run needed a 407-file recovery because the durable copy lagged the experiment.</p>
+          <ol>
+            <li>Push small result files, manifests and failure records immediately.</li>
+            <li>Compress large journals separately and record omissions.</li>
+            <li>Make the manager refuse a second collection until the first checkpoint is pushed.</li>
+          </ol>
+        </article>
+
+        <article class="panel rec-card">
+          <div class="pill-row"><span class="pill">Cloud</span><span class="pill">Fail fast</span></div>
+          <h3>Run a real worker-context canary before the main budget.</h3>
+          <p>Manager-side checks were not enough. The worker hit recorder and Node-version failures after dispatch. A short canary would have exposed them cheaply.</p>
+          <ol>
+            <li>Start from <code>env.sh</code>; pin Node 23.11.1.</li>
+            <li>Run preflight, a socket probe, one tiny collection, a recorder acknowledgement check and one reviewer spawn.</li>
+            <li>Use <code>viewer: none</code> and <code>record: false</code> for numerical work unless recording is the experiment.</li>
+            <li>If the canary fails, return the blocker instead of spending the full allocation.</li>
+          </ol>
+        </article>
+
+        <article class="panel rec-card">
+          <div class="pill-row"><span class="pill">Cloud</span><span class="pill">Review</span></div>
+          <h3>Treat review as a recoverable artifact.</h3>
+          <p>The first reviewer produced a response, but the controller timed out and a second review was run later. Preserve and reuse completed reviewer output whenever provenance still verifies.</p>
+          <ol>
+            <li>Save the reviewer final message before acknowledgement.</li>
+            <li>On timeout, verify the submission hash and apply or reattach the existing response.</li>
+            <li>Keep review separate, but do not make it an all-or-nothing live RPC.</li>
+          </ol>
+        </article>
+
+        <article class="panel rec-card wide">
+          <div class="pill-row"><span class="pill">Operating model</span><span class="pill">Use each tool where it wins</span></div>
+          <h3>Use the direct agent for implementation; use the Program for portfolio and governance.</h3>
+          <p>Until the Program demonstrates the full delivery cycle, the direct Research Agent is the better default for “take this prompt and make it real.” The Program is better suited to comparing prompts, maintaining the evidence graph, and running independent reviews—especially when several investigations or worktrees must be managed.</p>
+          <div class="split" style="margin-top:18px">
+            <div>
+              <span class="tag teal">Cloud</span>
+              <ul class="clean" style="margin-top:13px">
+                <li>Use a 3-hour outer budget with roughly 90–120 minutes for a capable worker, 15–20 for review, and 20–30 for checks/integration.</li>
+                <li>Run one worker at a time on the two-core host; contention already caused cancellations.</li>
+                <li>Keep the parent chat active while the worker and reviewer are live, but do not use it as the execution sandbox.</li>
+                <li>Require remote checkpoints and an explicit blocker report if setup breaks.</li>
+              </ul>
+            </div>
+            <div>
+              <span class="tag blue">Local</span>
+              <ul class="clean" style="margin-top:13px">
+                <li>Use the direct agent for a single implementation prompt; use Program when there is genuine portfolio choice or multi-worktree coordination.</li>
+                <li>Keep goal mode on and allow enough time, but measure delivery rather than elapsed time.</li>
+                <li>Use worktrees plus <code>integration_prepare</code>/<code>integration_check</code> for the merge path.</li>
+                <li>Run an A/B trial before deciding the Program is or is not worth it.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="trial">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Suggested validation</p>
+          <h2>A three-pair trial will settle more than another anecdote.</h2>
+        </div>
+        <p>Pick three modest, open implementation tasks. Run direct-agent and Program versions from the same base, with the same prompt, model where controllable, permission profile, worker time and delivery authority.</p>
+      </div>
+
+      <div class="protocol">
+        <div class="protocol-step">
+          <div class="step-label">Freeze</div>
+          <div class="step-body"><strong>Predeclare acceptance.</strong><span>Same task, base revision, prompt, tools, budget and merge target. No posthoc criteria.</span></div>
+        </div>
+        <div class="protocol-step">
+          <div class="step-label">Measure</div>
+          <div class="step-body"><strong>Record delivery, not activity.</strong><span>Integrated commit or verified decision-changing negative finding; human minutes; setup, worker and review minutes; silent failures; required checks.</span></div>
+        </div>
+        <div class="protocol-step">
+          <div class="step-label">Decide</div>
+          <div class="step-body"><strong>Use a simple product gate.</strong><span>Program wins only if it delivers at least two of three changes, exposes every blocker, and cuts your worktree/review/merge time without adding more than one extra human intervention.</span></div>
+        </div>
+        <div class="protocol-step">
+          <div class="step-label">Keep</div>
+          <div class="step-body"><strong>Do not count rereading known evidence.</strong><span>An “existing-evidence review” is useful only when it changes a decision. Otherwise it is a failure of prompt selection.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <details class="methodology">
+      <summary>Method, sources and limitations</summary>
+      <div class="method-body">
+        <p><strong>Method.</strong> I inspected the branch’s controller records, worker notebook and report, review and admission records, recovered artifact README, branch diff and the existing 27 October Program-usefulness audit. I recomputed the branch timeline and aggregate outcome counts. I ran no simulations, fits or production services.</p>
+        <p><strong>Main limitation.</strong> The direct-agent cohort and Program runs are not matched experiments: tasks, dates, platforms, permissions and budgets differ. The direct “retained change” labels are producer reports, and several sessions overlap. The Program snapshots include intentional lifecycle tests and report-only audits. The branch Program is still active and has a second assignment queued, so its final outcome could change. This report therefore supports a descriptive diagnosis, not a causal success-rate estimate.</p>
+        <ul class="source-list">
+          <li><a href="report.md">Existing Program-usefulness assessment</a><span>27 October 2026; direct-agent cohort and five Program snapshots.</span></li>
+          <li><a href="data.json">Existing audit data</a><span>Counts, classifications, source hashes and arithmetic checks.</span></li>
+          <li><a href="../../../research/output/program-0a82df7fd4b34b8181716630492a1af4/README.md">Branch result entry point</a><span>Readable summary, recovery state and queued experiment.</span></li>
+          <li><a href="../../../research/output/program-0a82df7fd4b34b8181716630492a1af4/program.json">Controller export</a><span>Timestamps, allocations, attempts, review timeout and admission.</span></li>
+          <li><a href="../../../research/output/program-0a82df7fd4b34b8181716630492a1af4/workers/attempt-939c073f49004eb6949910600200be51/research.md">Worker notebook</a><span>Execution failures, adaptations, measurements and final handoff.</span></li>
+          <li><a href="../../../research/output/program-0a82df7fd4b34b8181716630492a1af4/workers/attempt-939c073f49004eb6949910600200be51/report.md">Experiment report</a><span>Design, controls, model-boundary evidence and limitations.</span></li>
+          <li><a href="../../../research/output/program-0a82df7fd4b34b8181716630492a1af4/recovery-originals/README.md">Recovery record</a><span>407 files, verified hashes and durability correction.</span></li>
+          <li><a href="../../prompts/autocal_parameter_variation_focus.txt">Updated prompt</a><span>The branch’s main durable product artifact besides evidence.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <footer>
+      Prepared from saved evidence at <span class="mono">ca0217c1</span> on branch <span class="mono">research/autocal-originals-2026-11-05-0a82df7f</span>. No production behavior was changed by this review.
+    </footer>
+  </main>
+</body>
+</html>
