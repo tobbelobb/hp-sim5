@@ -1,12 +1,17 @@
 # hp-sim5 - Hangprinter Simulator
 
-![Demo](slideprinter_Hangprinter_logo_wiggling_and_losing_steps2.gif)
+![A research agent driving the hp-sim5 browser simulator](hangprinter-org/status/simulator-showcase-v2-optimized.gif)
 
 hp-sim5 simulates the physics of [Hangprinter](https://hangprinter.org).
 Lines, spools, motors, and firmware are all simulated in great detail.
 
 Simulation makes experimentation fast and cheap.
 Structured experiments enable us to improve Hangprinter.
+
+[![Physics Detectives: a research agent investigating cable robot physics in hp-sim5](hangprinter-org/status/physics-detectives-poster.jpg)](https://youtu.be/EF6ysAlkPC4)
+
+*A research agent using hp-sim5 to investigate cable robot physics.
+Click to watch [Physics Detectives on YouTube](https://youtu.be/EF6ysAlkPC4).*
 
 Run prompt-driven simulation research with [`hp-sim5-research-agent`](research/README.md).
 It connects Codex to native experiment tools and the Rerun Viewer, saves numeric
@@ -26,11 +31,18 @@ Example usecases:
  - **Automate and Validate Software Design**
 
 Try the app:
-- The 3D Hangprinter simulator is under [`hp-sim-3d/`](hp-sim-3d/), with current architecture and physics notes in [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
+- [Live 3D Hangprinter simulator](https://hp-sim-3d.hangprinter.org/)
+- The simulator source is under [`hp-sim-3d/`](hp-sim-3d/), with current architecture and physics notes in [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
 
 ## Cable Joints and Physics Engine
 hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias
 Müller](https://matthias-research.github.io/pages/index.html).
+
+The cable model uses a massless-tendon approach similar to the one Nvidia's
+[Newton physics engine](https://newton-physics.github.io/newton/latest/tendons.html)
+is now upstreaming ([PR #4132](https://github.com/newton-physics/newton/pull/4132)).
+hp-sim5 borrowed the approach from Nvidia's researchers, and their new work is
+expected to be folded back into hp-sim5's engine.
 
 The physics engine is shared by the browser and headless workflows: one Rust
 crate compiles to WebAssembly for the browser and to a native Node addon for
@@ -251,3 +263,5 @@ make direction mismatches fail the run. Both options can be used together.
 hp-sim5 is part of an effort to automate the Hangprinter Project.
 We want to automate everything except the actual users,
 and digitize everything except the finished working machines and their output.
+For the broader state of Hangprinter hardware, firmware, and research, see the
+[Hangprinter status page](https://hangprinter.org/status/).
