@@ -1,0 +1,39 @@
+--- a/src/Movement/Kinematics/HangprinterKinematics.cpp	2026-11-11 22:16:11.860088468 +0100
++++ b/src/Movement/Kinematics/HangprinterKinematics.cpp	2026-11-12 11:52:28.775545460 +0100
+@@ -6,6 +6,9 @@
+  */
+ 
+ #include "HangprinterKinematics.h"
++#include <cstdio>
++#include <cstdlib>
++static const bool hpdbg = std::getenv("HPDBG") != nullptr;
+ 
+ #if SUPPORT_HANGPRINTER
+ 
+@@ -418,6 +421,11 @@
+ 		}
+ 	}
+ 
++	if (hpdbg) {
++		float fl[HANGPRINTER_MAX_ANCHORS] = {0}; float Fd[HANGPRINTER_MAX_ANCHORS] = {0};
++		if (flexEnabled) { FlexDistances(machinePos, distances, fl); StaticForces(machinePos, Fd); }
++		std::fprintf(stderr, "IK %.4f %.4f %.4f F %.3f %.3f %.3f %.3f flex %.5f %.5f %.5f %.5f lp %.5f %.5f %.5f %.5f\n", machinePos[0], machinePos[1], machinePos[2], Fd[0], Fd[1], Fd[2], Fd[3], fl[0], fl[1], fl[2], fl[3], linePos[0], linePos[1], linePos[2], linePos[3]);
++	}
+ 	MovementError rslt = MovementError::ok;
+ 	for (size_t i = 0; i < numAnchors; ++i)
+ 	{
+@@ -697,12 +705,14 @@
+ 
+ 	float guess[3] = { 0.0F };
+ 	SolverResult const res = SolveHybrid(linePositions, guess, 1e-3F, 1e-3F, 3, 30);
++	if (hpdbg) std::fprintf(stderr, "FK steps %ld %ld %ld %ld lp %.5f %.5f %.5f %.5f\n", (long)motorPos[0], (long)motorPos[1], (long)motorPos[2], (long)motorPos[3], linePositions[0], linePositions[1], linePositions[2], linePositions[3]);
+ 	if (!res.converged || res.cost > 10.0F) {
+ 		return;
+ 	}
+ 	machinePos[0] = res.pos[0];
+ 	machinePos[1] = res.pos[1];
+ 	machinePos[2] = res.pos[2];
++	if (hpdbg) std::fprintf(stderr, "FKres %.4f %.4f %.4f cost %.6f\n", res.pos[0], res.pos[1], res.pos[2], res.cost);
+ }
+ 
+ // End of forward kinematics stuff

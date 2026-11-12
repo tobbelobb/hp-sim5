@@ -1,0 +1,11 @@
+# Rerun viewer cache and analytics, not research evidence.
+viewer-cache/
+viewer-config/
+viewer-data/
+# Launcher connection bookkeeping.
+connection.lease
+connection.json
+# Per-run traces (118 MB) and CAN variants (13 MB) are regenerable with scratchbook/gen.sh and logo_qc.mjs;
+# the QC metrics of every run are kept in scratchbook/runs/*.log.
+scratchbook/runs/*.json.gz
+scratchbook/can/*.can.gz

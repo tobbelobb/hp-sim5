@@ -1,0 +1,19 @@
+Output buffers: size=1024 count=400 reserved=16
+Using configuration file: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/08774432-9f2e-49c4-adc5-f6122a8fe5da/scratchpad/v/sys/config_hp3.g
+CAN capture enabled: "/home/torbjorn/repos/hp-sim5/research/output/session-2026-11-12-interactive-research-04b803d9/scratchbook/can/hp3_base.csv"
+Host Platform Initialized.
+RepRapFirmware for x86_64 (host) version 3.7.0-alpha.5
+Executing config.g... 
+G10 P0 S0 R0
+Done!
+Failed to bind HTTP socket: Address already in use
+RepRapFirmware for x86_64 (host) is up and running.
+Starting G-code 'logo.gcode'
+Started printing file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/08774432-9f2e-49c4-adc5-f6122a8fe5da/scratchpad/v/gcodes/logo.gcode
+[wait] captures=0 captureIdle=0 seen=0 fileIdle=1 moveIdle=1 scheduled=0 completed=0 scheduled-completed=0 Move.GetSimulationTime()=0 GetVirtualStepClocks()=0
+Finished printing file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/08774432-9f2e-49c4-adc5-f6122a8fe5da/scratchpad/v/gcodes/logo.gcode, print time was 0h 34m
+Completed G-code 'logo.gcode' in 1773 ms
+Final machine position: X=8.19045e-07 Y=5.20031e-06 Z=0.00654926 U=0
+Host Platform Shutdown.
+Processing /home/torbjorn/repos/hp-sim5/research/output/session-2026-11-12-interactive-research-04b803d9/scratchbook/can/hp3_base.csv...
+Success! Saved to /home/torbjorn/repos/hp-sim5/research/output/session-2026-11-12-interactive-research-04b803d9/scratchbook/can/hp3_base.can
