@@ -48,6 +48,17 @@ cmake --build RRF/build --target rrf_simulator -j
 ./RRF/build/rrf_simulator --vsd RRF/run/vsd --gcode gcodes/draw_squares.gcode --can-log logs/draw_squares.csv -c sys/config_slideprinter.g
 ```
 
+Hangprinter `M666 F0/F1/F2` changes the flex model without queuing a tensioning
+move. The reported Cartesian position stays unchanged while the anchor motor
+steps stay unchanged; the next real move applies the new compensation. A
+zero-length `G1` does not tension the lines. Motor counters are preserved, so
+the first real move still includes the initial stretch correction. Geometry
+changes invalidate this saved position and retain their existing rehome rule.
+
+After building, run `.venv/bin/python RRF/tests/test_flex_mode_position.py`
+from the repo root to check mode changes, subsequent motion, and visible and
+invisible anchor drives through the real G-code and CAN pipeline.
+
 ### HTTP Endpoint Mode
 
 The rrf_simulator supports an HTTP server mode for interactive G-code execution:
