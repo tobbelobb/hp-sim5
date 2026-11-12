@@ -154,6 +154,7 @@ export function createHpSimApp({
     getMachines: () => controllers.machines.getMachines(),
     getMachineDisplayName: (machineOrId) => controllers.machines.getMachineDisplayName(machineOrId),
     getReferenceOverlayState: () => inspectionTools?.getState?.() || state.referenceOverlay,
+    onDetailsExpandedChange: (expanded) => view?.setSecondaryControlsSuppressed(expanded),
   });
   inspectionTools = createInspectionToolsController({
     world,

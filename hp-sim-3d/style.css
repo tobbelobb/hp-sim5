@@ -874,6 +874,32 @@ body {
   .sim-secondary-group button {
     height: 36px;
   }
+
+  /* The expanded quality card fills the canvas width and wraps its rows. */
+  .quality-hud {
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+    overflow-y: auto;
+    pointer-events: auto;
+  }
+
+  .canvas-frame:has(.quality-hud__toggle[data-section='quality-details'][aria-expanded='true']) .sim-secondary-toggle {
+    visibility: hidden;
+  }
+
+  .quality-hud__card {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .quality-hud__metric span:first-child,
+  .quality-hud__metric span:last-child {
+    white-space: normal;
+  }
+
+  .quality-hud__metric span:last-child {
+    text-align: right;
+  }
 }
 
 @media (max-width: 360px) {

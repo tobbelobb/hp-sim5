@@ -44,6 +44,7 @@ export function createViewController({
   let secondaryControlsEverShown = false;
   let secondaryControlsUserPreference = null;
   let secondaryControlsAutoActive = false;
+  let secondaryControlsPreferenceBeforeSuppression;
   let viewListenerSystem = null;
   const touchTapStarts = new Map();
   const activeCanvasTouchPointers = new Set();
@@ -192,6 +193,24 @@ export function createViewController({
       setSecondaryControlsInteractive(true);
     }
     updateSecondaryToggleButton();
+  }
+
+  function setSecondaryControlsSuppressed(suppressed) {
+    if (!isMobileLayout()) {
+      return;
+    }
+    if (suppressed) {
+      if (secondaryControlsPreferenceBeforeSuppression === undefined) {
+        secondaryControlsPreferenceBeforeSuppression = secondaryControlsUserPreference;
+      }
+      secondaryControlsUserPreference = false;
+    } else if (secondaryControlsPreferenceBeforeSuppression !== undefined) {
+      secondaryControlsUserPreference = secondaryControlsPreferenceBeforeSuppression;
+      secondaryControlsPreferenceBeforeSuppression = undefined;
+    } else {
+      return;
+    }
+    applySecondaryControlsVisibility();
   }
 
   function setSecondaryControlsVisible(active) {
@@ -884,6 +903,7 @@ export function createViewController({
   return {
     bindUi,
     isMobileLayout,
+    setSecondaryControlsSuppressed,
     setButtonDisabled,
     updatePrintingState,
     setSecondaryControlsVisible,

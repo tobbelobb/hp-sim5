@@ -170,6 +170,7 @@ export class QualityMonitor {
     this.motorDiagnosticsProvider = null;
     this.qualityDetailsExpanded = false;
     this.missedStepsExpanded = false;
+    this.detailsExpandedCallback = null;
     this.boundHudPointerDown = (event) => this._handleHudPointerDown(event);
     this.boundHudClick = (event) => this._handleHudClick(event);
     if (this.hudElement && typeof this.hudElement.addEventListener === 'function') {
@@ -198,6 +199,10 @@ export class QualityMonitor {
   setVisibilityCallback(callback) {
     this.visibilityCallback = typeof callback === 'function' ? callback : null;
     this._notifyHudVisibility();
+  }
+
+  setDetailsExpandedCallback(callback) {
+    this.detailsExpandedCallback = typeof callback === 'function' ? callback : null;
   }
 
   _notifyHudVisibility() {
@@ -978,6 +983,7 @@ export class QualityMonitor {
   _toggleHudSection(section) {
     if (section === 'quality-details') {
       this.qualityDetailsExpanded = !this.qualityDetailsExpanded;
+      this.detailsExpandedCallback?.(this.qualityDetailsExpanded);
     } else if (section === 'missed-steps') {
       this.missedStepsExpanded = !this.missedStepsExpanded;
     } else {
