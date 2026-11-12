@@ -7,7 +7,7 @@ import {
 } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { getEntityWorldOrientation, getEntityWorldPosition } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
-import { writeSlackCablePositions } from '../../src/js/cable_joints_3d/render_system_3d.js';
+import { writeSlackCablePositions } from '../../src/js/cable_joints_3d/cable_shape.js';
 import { ExtruderComponent, estimateEffectorRotation } from './hangprinter_extruder.js';
 import { StepperMotorComponent } from './hangprinter_stepper_motor.js';
 

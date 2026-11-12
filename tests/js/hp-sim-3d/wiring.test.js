@@ -46,7 +46,7 @@ describe('hp-sim-3d wiring', () => {
     const showForcesToggleIndex = html.indexOf('id="showForcesToggleWrapper"');
     const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
 
-    expect(html).toContain('class="sim-toggle-group"');
+    expect(html).toContain('<div id="settingsMenu" class="sim-settings-menu sim-hidden"');
     expect(showForcesToggleIndex).toBeGreaterThan(qualityToggleIndex);
     expect(lineLayeringToggleIndex).toBeGreaterThan(showForcesToggleIndex);
     expect(html).toContain('<input id="showForcesToggle" type="checkbox">');

@@ -864,8 +864,8 @@ export function createViewController({
         Spacebar: dom.pauseBtn,
         '>': dom.speedFasterBtn,
         '<': dom.speedSlowerBtn,
-        s: dom.referenceToggleBtn,
-        S: dom.referenceToggleBtn,
+        s: dom.referenceToggle,
+        S: dom.referenceToggle,
         q: dom.qualityToggle,
         Q: dom.qualityToggle,
       };

@@ -25,6 +25,11 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     }
   }
 
+  function setHighlightSlackLines(enabled) {
+    world.setResource('highlightSlackLines', Boolean(enabled));
+    world.getResource('renderSystem')?.requestRender?.(world);
+  }
+
   function setLineLayeringEnabledState(enabled, { fromToggle = false } = {}) {
     const next = Boolean(enabled);
     const changed = (state?.lineLayeringEnabled ?? true) !== next;
@@ -103,6 +108,12 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
       setShowConstraintForcesState(toggles.showForcesToggle.checked, { fromToggle: true });
     } else {
       setShowConstraintForcesState(false);
+    }
+    if (toggles.highlightSlackToggle) {
+      toggles.highlightSlackToggle.addEventListener('change', () => {
+        setHighlightSlackLines(toggles.highlightSlackToggle.checked);
+      });
+      setHighlightSlackLines(toggles.highlightSlackToggle.checked);
     }
     if (toggles.lineLayeringToggle) {
       toggles.lineLayeringToggle.addEventListener('change', () => {

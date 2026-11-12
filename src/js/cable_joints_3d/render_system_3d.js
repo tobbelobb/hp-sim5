@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import Vector3 from './vector3.js';
+import { writeSlackCablePositions } from './cable_shape.js';
+import { Stage3D } from './stage_3d.js';
+import { CableLineBatch } from './cable_lines_3d.js';
+import { MachineDetails3D } from './machine_details_3d.js';
 import {
   PositionComponent,
   RadiusComponent,
@@ -26,10 +30,21 @@ import {
 const EPSILON = 1e-9;
 const ARC_SEGMENTS = 48;
 const JOINT_LINE_SEGMENTS = 24;
-const SLACK_COLOR = '#ff9f43';
+const CABLE_LINE_WIDTH_PX = 1.6;
+const AXIS_HALF_LENGTH = 2.5;
+const AXIS_OPACITY = 0.55;
+const AXIS_X_COLOR = '#cd776c';
+const AXIS_Y_COLOR = '#69b27a';
+const AXIS_Z_COLOR = '#779bc9';
+const SLACK_COLOR = '#dfb274';
 const DEFAULT_CABLE_COLOR = '#ffd34d';
+// Line colours: OKLCH L ~0.77, low chroma (0.07-0.095) so they stay calm on the
+// graphite backdrop (contrast ~6:1). Slack is only highlighted on request.
+const DYNEEMA_COLOR = '#daa0a0';
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
-const ORIENTATION_BACK_COLOR = '#2a3542';
+// Bearings and spools: light steel with a dark half that shows rotation.
+const ROTOR_COLOR = '#c3c7cc';
+const ORIENTATION_BACK_COLOR = '#3a3f47';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.002;
 const FORCE_SIGN_FALLBACK_FLOAT_OFFSET = 0.024;
@@ -44,13 +59,10 @@ const FORCE_SIGN_SPREAD_MARGIN_PX = 8;
 const FORCE_SIGN_SPREAD_ITERATIONS = 10;
 const FORCE_SIGN_TEXTURE_WIDTH = 256*0.55;
 const FORCE_SIGN_TEXTURE_HEIGHT = 80*0.65;
-const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
 const PRINT_SURFACE_Z = 0.0;
-const PRINT_SURFACE_OUTLINE_Z = 0.0;
-const PRINT_SURFACE_MIN_HALF_EXTENT = 0.18;
-const PRINT_SURFACE_MARGIN = 0.08;
-const PRINT_SURFACE_COLOR = 0x243248;
-const PRINT_SURFACE_OUTLINE_COLOR = 0x5f7492;
+const MACHINE_MIN_HALF_EXTENT = 0.18;
+const MACHINE_EXTENT_MARGIN = 0.08;
+const STAGE_FLOOR_CLEARANCE = 0.02;
 const BORDER_FLOOR_OFFSET_Z = -0.035;
 const BORDER_FLOOR_COLOR = 0x1d2434;
 const BORDER_FLOOR_COLOR_HEX = '#1d2434';
@@ -58,16 +70,16 @@ const BORDER_WALL_HEIGHT = 0.08;
 const BORDER_WALL_THICKNESS = 0.012;
 const BORDER_WALL_COLOR = 0x0c111f;
 const BORDER_WALL_COLOR_HEX = '#0c111f';
-const DEFAULT_RIGID_GROUP_COLOR = '#55ff88';
-const DEFAULT_EXTRUDER_COLOR = '#ff8a3d';
+const DEFAULT_EXTRUDER_COLOR = '#dda46b';
 const BUMPER_FX_MAX_BURSTS = 96;
 const BUMPER_FX_MIN_RADIUS = 0.03;
-const DEFAULT_REFERENCE_COLOR = '#1e90ff';
+const DEFAULT_REFERENCE_COLOR = '#79b1e0';
 const DEFAULT_TRACE_COLOR = '#ffffff';
-const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
+const DEFAULT_TRACE_MARKER_COLOR = '#76c5bb';
 const DEFAULT_NAV_CURSOR_COLOR = '#ffd34d';
 const DEFAULT_TRACE_POINT_SIZE = 3;
-const DEFAULT_EXTRUSION_POINT_SIZE = 2;
+const EXTRUSION_BEAD_WIDTH = 0.0008;
+const EXTRUSION_MIN_PIXEL_SIZE = 2;
 const DEFAULT_TRACE_Z = 0.0;
 const DEFAULT_MARKER_Z = 0.005;
 const TRACE_LABEL_TEXTURE_WIDTH = 256*1.3;
@@ -81,11 +93,9 @@ const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.0012;
 const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
 const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
 const DEFAULT_ORBIT_POLAR = 1.05;
+const CAMERA_MIN_NEAR = 0.0001;
+const CAMERA_NEAR_PER_DISTANCE = 0.004;
 const CYLINDER_LOCAL_UP = new THREE.Vector3(0, 1, 0);
-const CATENARY_HORIZONTAL_EPSILON = 1e-5;
-const CATENARY_SOLVER_ITERATIONS = 48;
-const CATENARY_MAX_SINH_ARGUMENT = 20;
-const PARABOLIC_SAG_SCALE = 0.5;
 
 function finiteOr(value, fallback) {
   return Number.isFinite(value) ? value : fallback;
@@ -105,149 +115,6 @@ function getUpDirection(world) {
   return new Vector3(0, 0, 1);
 }
 
-function safeSinh(value) {
-  if (value >= CATENARY_MAX_SINH_ARGUMENT) {
-    return Number.POSITIVE_INFINITY;
-  }
-  return Math.sinh(value);
-}
-
-function solveCatenaryScale(horizontalSpan, verticalOffset, cableLength) {
-  if (
-    !Number.isFinite(horizontalSpan) ||
-    !Number.isFinite(verticalOffset) ||
-    !Number.isFinite(cableLength) ||
-    !(horizontalSpan > CATENARY_HORIZONTAL_EPSILON) ||
-    !(cableLength > Math.abs(verticalOffset) + EPSILON)
-  ) {
-    return null;
-  }
-
-  const targetSquared = (cableLength * cableLength) - (verticalOffset * verticalOffset);
-  if (!(targetSquared > (horizontalSpan * horizontalSpan) + EPSILON)) {
-    return null;
-  }
-
-  const target = Math.sqrt(targetSquared);
-  const evaluate = (a) => {
-    if (!Number.isFinite(a) || !(a > EPSILON)) {
-      return Number.POSITIVE_INFINITY;
-    }
-    const arg = horizontalSpan / (2.0 * a);
-    return (2.0 * a * safeSinh(arg)) - target;
-  };
-
-  let low = Math.max(horizontalSpan * 1e-6, EPSILON);
-  let high = Math.max(horizontalSpan, target, 1e-3);
-  while (!(evaluate(high) < 0.0) && high < 1e9) {
-    high *= 2.0;
-  }
-  if (!(evaluate(high) < 0.0)) {
-    return null;
-  }
-
-  for (let i = 0; i < CATENARY_SOLVER_ITERATIONS; i += 1) {
-    const mid = 0.5 * (low + high);
-    if (evaluate(mid) > 0.0) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-
-  return high;
-}
-
-function writeStraightCablePositions(positions, start, end, segments) {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const dz = end.z - start.z;
-  for (let i = 0; i <= segments; i += 1) {
-    const t = i / segments;
-    const idx = i * 3;
-    positions[idx] = start.x + (dx * t);
-    positions[idx + 1] = start.y + (dy * t);
-    positions[idx + 2] = start.z + (dz * t);
-  }
-}
-
-function writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments) {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const dz = end.z - start.z;
-  const straightLength = Math.hypot(dx, dy, dz);
-  const sagDepth = Math.max(0.0, cableLength - straightLength) * PARABOLIC_SAG_SCALE;
-
-  for (let i = 0; i <= segments; i += 1) {
-    const t = i / segments;
-    const sagOffset = sagDepth * 4.0 * t * (1.0 - t);
-    const idx = i * 3;
-    positions[idx] = start.x + (dx * t) - (upDirection.x * sagOffset);
-    positions[idx + 1] = start.y + (dy * t) - (upDirection.y * sagOffset);
-    positions[idx + 2] = start.z + (dz * t) - (upDirection.z * sagOffset);
-  }
-}
-
-export function writeSlackCablePositions(positions, start, end, cableLength, upDirection, segments) {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const dz = end.z - start.z;
-  const straightLength = Math.hypot(dx, dy, dz);
-  if (!(cableLength > straightLength + EPSILON)) {
-    writeStraightCablePositions(positions, start, end, segments);
-    return;
-  }
-
-  const verticalOffset = (dx * upDirection.x) + (dy * upDirection.y) + (dz * upDirection.z);
-  const horizontalDx = dx - (upDirection.x * verticalOffset);
-  const horizontalDy = dy - (upDirection.y * verticalOffset);
-  const horizontalDz = dz - (upDirection.z * verticalOffset);
-  const horizontalSpan = Math.hypot(horizontalDx, horizontalDy, horizontalDz);
-  if (!(horizontalSpan > CATENARY_HORIZONTAL_EPSILON)) {
-    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
-    return;
-  }
-
-  const invHorizontalSpan = 1.0 / horizontalSpan;
-  const horizontalUnitX = horizontalDx * invHorizontalSpan;
-  const horizontalUnitY = horizontalDy * invHorizontalSpan;
-  const horizontalUnitZ = horizontalDz * invHorizontalSpan;
-
-  const catenaryScale = solveCatenaryScale(horizontalSpan, verticalOffset, cableLength);
-  if (!Number.isFinite(catenaryScale) || !(catenaryScale > EPSILON)) {
-    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
-    return;
-  }
-
-  const target = Math.sqrt(Math.max(0.0, (cableLength * cableLength) - (verticalOffset * verticalOffset)));
-  if (!(target > horizontalSpan + EPSILON)) {
-    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
-    return;
-  }
-
-  const halfSpan = horizontalSpan * 0.5;
-  const p = Math.asinh(verticalOffset / target);
-  const q = halfSpan / catenaryScale;
-  const endpointOffset = catenaryScale * Math.cosh(q - p);
-
-  for (let i = 0; i <= segments; i += 1) {
-    const t = i / segments;
-    const x = horizontalSpan * t;
-    const y = (catenaryScale * Math.cosh(((x - halfSpan) / catenaryScale) + p)) - endpointOffset;
-    const idx = i * 3;
-    positions[idx] = start.x + (horizontalUnitX * x) + (upDirection.x * y);
-    positions[idx + 1] = start.y + (horizontalUnitY * x) + (upDirection.y * y);
-    positions[idx + 2] = start.z + (horizontalUnitZ * x) + (upDirection.z * y);
-  }
-
-  positions[0] = start.x;
-  positions[1] = start.y;
-  positions[2] = start.z;
-  const lastIndex = segments * 3;
-  positions[lastIndex] = end.x;
-  positions[lastIndex + 1] = end.y;
-  positions[lastIndex + 2] = end.z;
-}
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -383,9 +250,9 @@ function appendStoredWrapArcSpecs(arcSpecs, path, linkIndex, center, bodyRadius,
   }
 }
 
-function writeArcPositions(line, center, radius, basis, startAngle, endAngle, cw) {
-  const positions = line.geometry.attributes.position.array;
-  const segments = line.userData.arcSegments ?? ARC_SEGMENTS;
+// Writes the arc with segments proportional to its sweep (ARC_SEGMENTS per
+// full turn, at most ARC_SEGMENTS) and returns the number of points written.
+function writeArcPositions(positions, center, radius, basis, startAngle, endAngle, cw) {
   const twoPi = Math.PI * 2;
 
   let end = endAngle;
@@ -396,6 +263,7 @@ function writeArcPositions(line, center, radius, basis, startAngle, endAngle, cw
   }
 
   const sweep = end - startAngle;
+  const segments = Math.min(ARC_SEGMENTS, Math.max(2, Math.ceil((Math.abs(sweep) / twoPi) * ARC_SEGMENTS)));
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
     const ang = startAngle + sweep * t;
@@ -407,8 +275,7 @@ function writeArcPositions(line, center, radius, basis, startAngle, endAngle, cw
     positions[idx + 1] = center.y + basis.u.y * radius * cos + basis.v.y * radius * sin;
     positions[idx + 2] = center.z + basis.u.z * radius * cos + basis.v.z * radius * sin;
   }
-
-  line.geometry.attributes.position.needsUpdate = true;
+  return segments + 1;
 }
 
 function setMaterialColor(material, color) {
@@ -850,17 +717,6 @@ export function collectRigidGroupEdges(memberCount, renderSegments) {
 }
 
 export class RenderSystem3D {
-  static createDefaultLightingGroup() {
-    const lights = new THREE.Group();
-    lights.add(new THREE.AmbientLight(0x7a92b0, 1.35));
-    const key = new THREE.DirectionalLight(0xf6fbff, 1.35);
-    key.position.set(1.8, 2.6, 2.8);
-    lights.add(key);
-    const skyLight = new THREE.HemisphereLight(0xa6caff, 0x27303c, 0.45);
-    lights.add(skyLight);
-    return lights;
-  }
-
   static buildBorderShape(points) {
     if (!points || points.length < 3) {
       return null;
@@ -875,9 +731,6 @@ export class RenderSystem3D {
     return shape;
   }
 
-  static get DEFAULT_BACKGROUND_COLOR() {
-    return DEFAULT_BACKGROUND_COLOR;
-  }
   static get DEFAULT_BORDER_FLOOR_COLOR() {
     return BORDER_FLOOR_COLOR;
   }
@@ -899,7 +752,6 @@ export class RenderSystem3D {
     this.defaultPlaneNormal = options.planeNormal ? options.planeNormal.clone().normalize() : DEFAULT_PLANE_NORMAL.clone();
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(options.backgroundColor ?? RenderSystem3D.DEFAULT_BACKGROUND_COLOR);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -969,13 +821,14 @@ export class RenderSystem3D {
     this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
       chunkSize: 65536,
       color: DEFAULT_CABLE_COLOR,
-      size: DEFAULT_EXTRUSION_POINT_SIZE,
+      beadWidth: EXTRUSION_BEAD_WIDTH,
+      minPixelSize: EXTRUSION_MIN_PIXEL_SIZE,
       zOffset: DEFAULT_TRACE_Z,
     });
+    this.extrusionPointCloud.setViewport(height, this.renderer.getPixelRatio());
     this._animationLoopActive = false;
     this._requestRenderHandle = null;
     this._lastWorld = null;
-    this.extruderLine = null;
 
     this.controls = null;
     this.controlsEnabled = options.controlsEnabled ?? true;
@@ -1022,54 +875,8 @@ export class RenderSystem3D {
     this._fixedCameraPosition = this.camera.position.clone();
     this._fixedCameraQuaternion = this.camera.quaternion.clone();
 
-    const lights = RenderSystem3D.createDefaultLightingGroup();
-    this.scene.add(lights);
-
-    this.boardMaterial = new THREE.MeshStandardMaterial({
-      color: PRINT_SURFACE_COLOR,
-      roughness: 0.94,
-      metalness: 0.02,
-      transparent: true,
-      opacity: 0.32,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      toneMapped: false
-    });
-    this.boardGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
-    this.board = new THREE.Mesh(this.boardGeometry, this.boardMaterial);
-    this.board.position.z = PRINT_SURFACE_Z;
-    this.board.renderOrder = 40;
-    this.board.userData.ownsGeometry = true;
-    this.board.userData.ownsMaterial = true;
-    this.scene.add(this.board);
-
-    this.boardOutlineMaterial = new THREE.LineBasicMaterial({
-      color: PRINT_SURFACE_OUTLINE_COLOR,
-      transparent: true,
-      opacity: 0.95,
-      depthWrite: false,
-      toneMapped: false
-    });
-    this.boardOutlineGeometry = new THREE.BufferGeometry();
-    this.boardOutlineGeometry.setAttribute(
-      'position',
-      new THREE.BufferAttribute(
-        new Float32Array([
-          -0.5, -0.5, 0.0,
-          0.5, -0.5, 0.0,
-          0.5, 0.5, 0.0,
-          -0.5, 0.5, 0.0
-        ]),
-        3
-      )
-    );
-    this.boardOutline = new THREE.LineLoop(this.boardOutlineGeometry, this.boardOutlineMaterial);
-    this.boardOutline.position.z = PRINT_SURFACE_OUTLINE_Z;
-    this.boardOutline.renderOrder = 50;
-    this.boardOutline.frustumCulled = false;
-    this.boardOutline.userData.ownsGeometry = true;
-    this.boardOutline.userData.ownsMaterial = true;
-    this.scene.add(this.boardOutline);
+    this.stage = new Stage3D(this.scene, this.renderer);
+    this._stageMovingMembers = new Set();
 
     this.borderFloorMaterial = new THREE.MeshStandardMaterial({
       color: BORDER_FLOOR_COLOR,
@@ -1102,16 +909,23 @@ export class RenderSystem3D {
     this.root = new THREE.Group();
     this.scene.add(this.root);
 
-    // Add thin blue axes
+    // Axes through the origin mark the z=0 print plane: x muted red, y muted
+    // green, z muted blue (OKLCH L 0.66-0.70, C 0.08-0.11).
     const axesGeometry = new THREE.BufferGeometry();
-    const axesPositions = new Float32Array([
-        -2.5, 0, 0, 2.5, 0, 0, // X
-        0, -2.5, 0, 0, 2.5, 0, // Y
-        0, 0, -2.5, 0, 0, 2.5  // Z
-    ]);
-    axesGeometry.setAttribute('position', new THREE.BufferAttribute(axesPositions, 3));
-    const axesMaterial = new THREE.LineBasicMaterial({ color: 0xDDDDFF, transparent: true, opacity: 0.05});
-    const axes = new THREE.LineSegments(axesGeometry, axesMaterial);
+    axesGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH, 0, 0,
+      0, -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH, 0,
+      0, 0, -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH,
+    ]), 3));
+    const axisColors = [AXIS_X_COLOR, AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR, AXIS_Z_COLOR]
+      .flatMap((hex) => new THREE.Color(hex).toArray());
+    axesGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(axisColors), 3));
+    const axes = new THREE.LineSegments(axesGeometry, new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: AXIS_OPACITY,
+      depthWrite: false,
+    }));
     axes.frustumCulled = false;
     axes.userData.ownsGeometry = true;
     axes.userData.ownsMaterial = true;
@@ -1241,12 +1055,13 @@ export class RenderSystem3D {
     this.circleMeshes = new Map();
     this.flipperMeshes = new Map();
 
-    this.jointLines = [];
-    this.wrapArcs = [];
+    this.cableLines = new CableLineBatch(this.root, { linewidth: CABLE_LINE_WIDTH_PX });
+    this.cableLines.setResolution(width, height);
+    this._lineScratch = new Float32Array((ARC_SEGMENTS + 1) * 3);
+    this.machineDetails = new MachineDetails3D(this.root, { collectEdges: collectRigidGroupEdges });
     this.knotMarkers = [];
     this.forceSigns = [];
     this.forceSignConnectors = [];
-    this.rigidGroupLines = [];
 
     this.borderLine = null;
     this.borderVertexCount = 0;
@@ -1409,6 +1224,8 @@ export class RenderSystem3D {
     if (!Number.isFinite(width) || !Number.isFinite(height)) return;
     if (width <= 0 || height <= 0) return;
     this.renderer.setSize(width, height, false);
+    this.cableLines.setResolution(width, height);
+    this.extrusionPointCloud?.setViewport(height, this.renderer.getPixelRatio());
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this._lastWidth = width;
@@ -1856,9 +1673,11 @@ export class RenderSystem3D {
       this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
         chunkSize: 65536,
         color: DEFAULT_CABLE_COLOR,
-        size: DEFAULT_EXTRUSION_POINT_SIZE,
+        beadWidth: EXTRUSION_BEAD_WIDTH,
+        minPixelSize: EXTRUSION_MIN_PIXEL_SIZE,
         zOffset: DEFAULT_TRACE_Z,
       });
+      this.extrusionPointCloud.setViewport(this._lastHeight ?? this.canvas.clientHeight, this.renderer.getPixelRatio());
     }
     return this.extrusionPointCloud;
   }
@@ -2089,9 +1908,6 @@ export class RenderSystem3D {
   _syncExtruder(world) {
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length === 0) {
-      if (this.extruderLine) {
-        this.extruderLine.visible = false;
-      }
       return;
     }
 
@@ -2099,30 +1915,17 @@ export class RenderSystem3D {
     const lineStart = extruderComp?.coldEndPos || extruderComp?.centerPos || null;
     const lineEnd = extruderComp?.tipPos || extruderComp?.centerPos || null;
     if (!lineStart || !lineEnd) {
-      if (this.extruderLine) {
-        this.extruderLine.visible = false;
-      }
       return;
     }
 
-    if (!this.extruderLine) {
-      this.extruderLine = this._createLine();
-      this.extruderLine.renderOrder = 875;
-      this.root.add(this.extruderLine);
-    }
-
-    this.extruderLine.visible = true;
-    setMaterialColor(this.extruderLine.material, DEFAULT_EXTRUDER_COLOR);
-
-    const positions = this.extruderLine.geometry.attributes.position.array;
-    const segments = this.extruderLine.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
-    writeStraightCablePositions(
-      positions,
-      new Vector3(lineStart.x, lineStart.y, lineStart.z || 0.0),
-      new Vector3(lineEnd.x, lineEnd.y, lineEnd.z || 0.0),
-      segments
-    );
-    this.extruderLine.geometry.attributes.position.needsUpdate = true;
+    const positions = this._lineScratch;
+    positions[0] = lineStart.x;
+    positions[1] = lineStart.y;
+    positions[2] = lineStart.z || 0.0;
+    positions[3] = lineEnd.x;
+    positions[4] = lineEnd.y;
+    positions[5] = lineEnd.z || 0.0;
+    this.cableLines.addPolyline(positions, 2, DEFAULT_EXTRUDER_COLOR);
   }
 
   measureRenderBlock(world, name, fn) {
@@ -2160,11 +1963,14 @@ export class RenderSystem3D {
     }
 
 
-    this.measureRenderBlock(world, '_syncBoard', () => {
-      this._syncBoard(world);
+    this.measureRenderBlock(world, '_syncStage', () => {
+      this._syncStage(world);
     });
     this.measureRenderBlock(world, '_syncBorder', () => {
       this._syncBorder(world);
+    });
+    this.measureRenderBlock(world, '_syncMachineDetails', () => {
+      this.machineDetails.update(world);
     });
     this.measureRenderBlock(world, '_syncCircles', () => {
       this._syncCircles(world);
@@ -2172,15 +1978,14 @@ export class RenderSystem3D {
     this.measureRenderBlock(world, '_syncFlippers', () => {
       this._syncFlippers(world);
     });
-    this.measureRenderBlock(world, '_syncRigidGroups', () => {
-      this._syncRigidGroups(world);
-    });
+    this.cableLines.begin();
     this.measureRenderBlock(world, '_syncExtruder', () => {
       this._syncExtruder(world);
     });
     this.measureRenderBlock(world, '_syncCable', () => {
       this._syncCable(world);
     });
+    this.cableLines.end();
     this.measureRenderBlock(world, '_syncReferencePaths', () => {
       this._syncReferencePaths();
     });
@@ -2223,6 +2028,7 @@ export class RenderSystem3D {
   }
 
   resetVisuals() {
+    this.machineDetails.reset();
     for (const mesh of this.circleMeshes.values()) {
       this.root.remove(mesh);
     }
@@ -2232,18 +2038,6 @@ export class RenderSystem3D {
       this.root.remove(group);
     }
     this.flipperMeshes.clear();
-
-    for (const line of this.jointLines) {
-      this.root.remove(line);
-      disposeObject(line);
-    }
-    this.jointLines.length = 0;
-
-    for (const arc of this.wrapArcs) {
-      this.root.remove(arc);
-      disposeObject(arc);
-    }
-    this.wrapArcs.length = 0;
 
     for (const marker of this.knotMarkers) {
       this.root.remove(marker);
@@ -2261,18 +2055,6 @@ export class RenderSystem3D {
       disposeObject(line);
     }
     this.forceSignConnectors.length = 0;
-
-    for (const line of this.rigidGroupLines) {
-      this.root.remove(line);
-      disposeObject(line);
-    }
-    this.rigidGroupLines.length = 0;
-
-    if (this.extruderLine) {
-      this.root.remove(this.extruderLine);
-      disposeObject(this.extruderLine);
-      this.extruderLine = null;
-    }
 
     this._clearBumperFx();
 
@@ -2327,14 +2109,10 @@ export class RenderSystem3D {
     this.sharedCylinderGeometry.dispose();
     this.sharedFlipperBarGeometry.dispose();
 
-    if (this.board && this.scene) {
-      this.scene.remove(this.board);
-      disposeObject(this.board);
-    }
-    if (this.boardOutline && this.scene) {
-      this.scene.remove(this.boardOutline);
-      disposeObject(this.boardOutline);
-    }
+    this.stage.dispose();
+    this.cableLines.dispose();
+    this.machineDetails.dispose();
+    this.extrusionPointCloud?.dispose();
 
     if (this.borderFloor) {
       this.scene.remove(this.borderFloor);
@@ -2554,13 +2332,31 @@ export class RenderSystem3D {
     this._bumperFxBursts = survivingBursts;
   }
 
-  _syncBoard(world) {
-    const halfExtent = this._computePrintSurfaceHalfExtent(world);
-    const surfaceSize = halfExtent * 2.0;
-    this.board.scale.set(surfaceSize, surfaceSize, 1);
-    this.board.position.set(0.0, 0.0, PRINT_SURFACE_Z);
-    this.boardOutline.scale.set(surfaceSize, surfaceSize, 1);
-    this.boardOutline.position.set(0.0, 0.0, PRINT_SURFACE_OUTLINE_Z);
+  // The floor sits just under the lowest fixed part of the machine.
+  _syncStage(world) {
+    const movingMembers = this._stageMovingMembers;
+    movingMembers.clear();
+    for (const ComponentClass of [RigidBodyComponent, RigidGroupComponent]) {
+      for (const groupId of world.query([ComponentClass])) {
+        for (const memberId of world.getComponent(groupId, ComponentClass)?.members ?? []) {
+          movingMembers.add(memberId);
+        }
+      }
+    }
+
+    let lowestZ = PRINT_SURFACE_Z;
+    for (const entityId of world.query([PositionComponent, RadiusComponent])) {
+      const pos = world.getComponent(entityId, PositionComponent)?.pos;
+      if (pos && !movingMembers.has(entityId)) {
+        const radius = world.getComponent(entityId, RadiusComponent)?.radius;
+        lowestZ = Math.min(lowestZ, (pos.z || 0.0) - (Number.isFinite(radius) ? radius : 0.0));
+      }
+    }
+
+    this.stage.setLayout({
+      reach: this._computeMachineHalfExtent(world),
+      floorZ: lowestZ - STAGE_FLOOR_CLEARANCE,
+    });
   }
 
   _syncBorder(world) {
@@ -2708,60 +2504,6 @@ export class RenderSystem3D {
     }
   }
 
-  _syncRigidGroups(world) {
-    const rigidBodies = world.query([RigidBodyComponent]);
-    const rigidGroups = world.query([RigidGroupComponent]);
-    const rigidAssemblies = [...rigidBodies, ...rigidGroups];
-    if (!rigidAssemblies || rigidAssemblies.length === 0) {
-      this._hideLines(this.rigidGroupLines);
-      return;
-    }
-
-    const lineSpecs = [];
-    for (const groupId of rigidAssemblies) {
-      const group = world.getComponent(groupId, RigidBodyComponent)
-        || world.getComponent(groupId, RigidGroupComponent);
-      const members = Array.isArray(group?.members) ? group.members : [];
-      if (members.length < 2) {
-        continue;
-      }
-
-      const memberPositions = members.map((entityId) => world.getComponent(entityId, PositionComponent)?.pos || null);
-      const edges = collectRigidGroupEdges(members.length, group?.renderSegments);
-      const renderComp = world.getComponent(groupId, RenderableComponent);
-      const color = renderComp?.color || DEFAULT_RIGID_GROUP_COLOR;
-
-      for (const [aIdx, bIdx] of edges) {
-        const pA = memberPositions[aIdx];
-        const pB = memberPositions[bIdx];
-        if (!pA || !pB) {
-          continue;
-        }
-        lineSpecs.push({ pA, pB, color });
-      }
-    }
-
-    this._ensureLineCapacity(this.rigidGroupLines, lineSpecs.length, false);
-    for (let i = 0; i < this.rigidGroupLines.length; i += 1) {
-      const line = this.rigidGroupLines[i];
-      const spec = lineSpecs[i];
-      if (!spec) {
-        line.visible = false;
-        continue;
-      }
-
-      line.visible = true;
-      setMaterialColor(line.material, spec.color);
-
-      const positions = line.geometry.attributes.position.array;
-      const segments = line.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
-      const lineStart = new Vector3(spec.pA.x, spec.pA.y, spec.pA.z || 0.0);
-      const lineEnd = new Vector3(spec.pB.x, spec.pB.y, spec.pB.z || 0.0);
-      writeStraightCablePositions(positions, lineStart, lineEnd, segments);
-      line.geometry.attributes.position.needsUpdate = true;
-    }
-  }
-
   _syncCircles(world) {
     this._activeCircleIds.clear();
 
@@ -2769,6 +2511,9 @@ export class RenderSystem3D {
     for (const entityId of entities) {
       const renderComp = world.getComponent(entityId, RenderableComponent);
       if (!renderComp || (renderComp.shape !== 'circle' && renderComp.shape !== 'cylinder')) {
+        continue;
+      }
+      if (this.machineDetails.handles(entityId)) {
         continue;
       }
 
@@ -2786,7 +2531,7 @@ export class RenderSystem3D {
       let mesh = this.circleMeshes.get(entityId);
       if (!mesh) {
         mesh = new THREE.Mesh(
-          isCylinder ? this._getOrientedCylinderGeometry(renderComp?.color) : this.sharedSphereGeometry,
+          isCylinder ? this._getOrientedCylinderGeometry(ROTOR_COLOR) : this.sharedSphereGeometry,
           isCylinder ? this.orientedSphereMaterial : this._getSphereMaterial(renderComp.color),
         );
         this.circleMeshes.set(entityId, mesh);
@@ -2794,7 +2539,7 @@ export class RenderSystem3D {
       }
 
       const geometry = isCylinder
-        ? this._getOrientedCylinderGeometry(renderComp?.color)
+        ? this._getOrientedCylinderGeometry(ROTOR_COLOR)
         : orientationComp?.quaternion
         ? this._getOrientedSphereGeometry(renderComp?.color)
         : this.sharedSphereGeometry;
@@ -2919,11 +2664,10 @@ export class RenderSystem3D {
       layeringEnabled(world) &&
       world.getResource('layeringRenderWraps') !== false;
     const showForceSigns = world.getResource('showConstraintForces') !== false;
+    const slackColor = world.getResource('highlightSlackLines') === true ? SLACK_COLOR : DYNEEMA_COLOR;
     const upDirection = getUpDirection(world);
 
     if (pathEntities.length === 0) {
-      this._hideLines(this.jointLines);
-      this._hideLines(this.wrapArcs);
       this._hideMeshes(this.knotMarkers);
       this._hideMeshes(this.forceSigns);
       this._hideLines(this.forceSignConnectors);
@@ -2945,14 +2689,13 @@ export class RenderSystem3D {
         const joint = world.getComponent(jointId, CableJointComponent);
         if (!joint) continue;
 
-        const renderComp = world.getComponent(jointId, RenderableComponent);
-        const baseColor = renderComp?.color || DEFAULT_CABLE_COLOR;
         const dist = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
         const taut = dist > joint.restLength + 1e-6;
 
         jointSpecs.push({
           joint,
-          color: taut ? baseColor : SLACK_COLOR
+          color: taut ? DYNEEMA_COLOR : slackColor,
+          taut,
         });
 
         if (showForceSigns) {
@@ -2995,9 +2738,6 @@ export class RenderSystem3D {
         const distNext = nextJoint.attachmentPointA_world.distanceTo(nextJoint.attachmentPointB_world);
         const tensionNext = distNext > nextJoint.restLength + 1e-6;
 
-        const renderComp = world.getComponent(path.jointEntities[i], RenderableComponent);
-        const baseColor = renderComp?.color || DEFAULT_CABLE_COLOR;
-
         arcSpecs.push({
           center,
           radius,
@@ -3005,7 +2745,7 @@ export class RenderSystem3D {
           startAngle: a1,
           endAngle: a2,
           cw: Boolean(path.cw[i]),
-          color: tensionPrev && tensionNext ? baseColor : SLACK_COLOR
+          color: tensionPrev && tensionNext ? DYNEEMA_COLOR : slackColor
         });
       }
 
@@ -3014,8 +2754,7 @@ export class RenderSystem3D {
       if (path.linkTypes[0] === 'hybrid' && path.jointEntities.length > 0) {
         const joint0 = world.getComponent(path.jointEntities[0], CableJointComponent);
         if (joint0) {
-          const renderComp = world.getComponent(path.jointEntities[0], RenderableComponent);
-          const color = renderComp?.color || DEFAULT_CABLE_COLOR;
+          const color = DYNEEMA_COLOR;
           const rollerA = joint0.entityA;
           const center = world.getComponent(rollerA, PositionComponent)?.pos;
           const bodyRadius = world.getComponent(rollerA, RadiusComponent)?.radius;
@@ -3046,8 +2785,7 @@ export class RenderSystem3D {
       if (path.linkTypes[nLinks - 1] === 'hybrid' && path.jointEntities.length > 0) {
         const jointN = world.getComponent(path.jointEntities[nLinks - 2], CableJointComponent);
         if (jointN) {
-          const renderComp = world.getComponent(path.jointEntities[nLinks - 2], RenderableComponent);
-          const color = renderComp?.color || DEFAULT_CABLE_COLOR;
+          const color = DYNEEMA_COLOR;
           const rollerB = jointN.entityB;
           const center = world.getComponent(rollerB, PositionComponent)?.pos;
           const bodyRadius = world.getComponent(rollerB, RadiusComponent)?.radius;
@@ -3078,8 +2816,6 @@ export class RenderSystem3D {
       }
     }
 
-    this._ensureLineCapacity(this.jointLines, jointSpecs.length, false);
-    this._ensureLineCapacity(this.wrapArcs, arcSpecs.length, true);
     this._ensureKnotMarkerCapacity(knotSpecs.length);
     this._ensureForceSignCapacity(forceSignSpecs.length);
     this._ensureForceSignConnectorCapacity(forceSignSpecs.length);
@@ -3093,42 +2829,24 @@ export class RenderSystem3D {
     );
     spreadForceSignSpecs(forceSignSpecs, this.camera, forceSignViewportHeight);
 
-    for (let i = 0; i < this.jointLines.length; i++) {
-      const line = this.jointLines[i];
-      const spec = jointSpecs[i];
-      if (!spec) {
-        line.visible = false;
-        continue;
-      }
-
-      line.visible = true;
-      setMaterialColor(line.material, spec.color);
-
-      const p = line.geometry.attributes.position.array;
-      const segments = line.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
+    const positions = this._lineScratch;
+    for (const spec of jointSpecs) {
+      // A taut span is straight; only slack spans need segments for their sag.
+      const segments = spec.taut ? 1 : JOINT_LINE_SEGMENTS;
       writeSlackCablePositions(
-        p,
+        positions,
         spec.joint.attachmentPointA_world,
         spec.joint.attachmentPointB_world,
         spec.joint.restLength,
         upDirection,
         segments
       );
-      line.geometry.attributes.position.needsUpdate = true;
+      this.cableLines.addPolyline(positions, segments + 1, spec.color);
     }
 
-    for (let i = 0; i < this.wrapArcs.length; i++) {
-      const arc = this.wrapArcs[i];
-      const spec = arcSpecs[i];
-      if (!spec) {
-        arc.visible = false;
-        continue;
-      }
-
-      arc.visible = true;
-      setMaterialColor(arc.material, spec.color);
-      writeArcPositions(
-        arc,
+    for (const spec of arcSpecs) {
+      const pointCount = writeArcPositions(
+        positions,
         spec.center,
         spec.radius,
         spec.basis,
@@ -3136,6 +2854,7 @@ export class RenderSystem3D {
         spec.endAngle,
         spec.cw
       );
+      this.cableLines.addPolyline(positions, pointCount, spec.color);
     }
 
     for (let i = 0; i < this.knotMarkers.length; i++) {
@@ -3249,14 +2968,6 @@ export class RenderSystem3D {
     };
   }
 
-  _ensureLineCapacity(target, count, isArc) {
-    while (target.length < count) {
-      const line = isArc ? this._createArcLine() : this._createLine();
-      target.push(line);
-      this.root.add(line);
-    }
-  }
-
   _ensureKnotMarkerCapacity(count) {
     while (this.knotMarkers.length < count) {
       const marker = new THREE.Mesh(this.sharedSphereGeometry, this.knotMarkerMaterial);
@@ -3337,36 +3048,6 @@ export class RenderSystem3D {
 
     paintForceSignCanvas(context, text);
     map.needsUpdate = true;
-  }
-
-  _createLine() {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((JOINT_LINE_SEGMENTS + 1) * 3), 3));
-
-    const material = new THREE.LineBasicMaterial({ color: DEFAULT_CABLE_COLOR });
-    material.userData.__color = DEFAULT_CABLE_COLOR;
-
-    const line = new THREE.Line(geometry, material);
-    line.frustumCulled = false;
-    line.userData.ownsGeometry = true;
-    line.userData.ownsMaterial = true;
-    line.userData.lineSegments = JOINT_LINE_SEGMENTS;
-    return line;
-  }
-
-  _createArcLine() {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((ARC_SEGMENTS + 1) * 3), 3));
-
-    const material = new THREE.LineBasicMaterial({ color: DEFAULT_CABLE_COLOR });
-    material.userData.__color = DEFAULT_CABLE_COLOR;
-
-    const line = new THREE.Line(geometry, material);
-    line.frustumCulled = false;
-    line.userData.ownsGeometry = true;
-    line.userData.ownsMaterial = true;
-    line.userData.arcSegments = ARC_SEGMENTS;
-    return line;
   }
 
   _hideLines(lines) {
@@ -3450,8 +3131,8 @@ export class RenderSystem3D {
     return group;
   }
 
-  _computePrintSurfaceHalfExtent(world) {
-    let maxAbs = PRINT_SURFACE_MIN_HALF_EXTENT;
+  _computeMachineHalfExtent(world) {
+    let maxAbs = MACHINE_MIN_HALF_EXTENT;
 
     const entities = world.query([PositionComponent, RadiusComponent]);
     for (const entityId of entities) {
@@ -3479,7 +3160,7 @@ export class RenderSystem3D {
       }
     }
 
-    return maxAbs + PRINT_SURFACE_MARGIN;
+    return maxAbs + MACHINE_EXTENT_MARGIN;
   }
 
   _cameraDistanceForScale(scaleMultiplier = this.viewScaleMultiplier) {
@@ -3523,7 +3204,12 @@ export class RenderSystem3D {
   _applyCameraFromViewTransform() {
     const target = this._getViewTarget();
 
-    const cameraOffset = this._buildOrbitOffset(this._cameraDistanceForScale());
+    const distance = this._cameraDistanceForScale();
+    const cameraOffset = this._buildOrbitOffset(distance);
+    // Near plane follows zoom so the depth buffer resolves millimetre parts
+    // at any distance.
+    this.camera.near = Math.max(CAMERA_MIN_NEAR, distance * CAMERA_NEAR_PER_DISTANCE);
+    this.camera.updateProjectionMatrix();
     this.camera.up.set(0, 0, 1);
     this.camera.position.copy(target).add(cameraOffset);
     this.camera.lookAt(target);
@@ -3618,29 +3304,80 @@ function getExtrusionPoint(extrusion, extruderComp = null) {
     : null;
 }
 
+// Extruded material drawn as round, shaded beads: beadWidth wide in the
+// world, never smaller than minPixelSize on screen.
+const BEAD_VERTEX_SHADER = `
+uniform float uBeadWidth;
+uniform float uMinPixelSize;
+uniform float uViewportHeight;
+varying vec3 vColor;
+void main() {
+  vColor = color;
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mvPosition;
+  float pixelsPerUnit = projectionMatrix[1][1] * 0.5 * uViewportHeight / max(-mvPosition.z, 1e-6);
+  gl_PointSize = max(uMinPixelSize, uBeadWidth * pixelsPerUnit);
+}`;
+const BEAD_FRAGMENT_SHADER = `
+varying vec3 vColor;
+void main() {
+  vec2 p = gl_PointCoord * 2.0 - 1.0;
+  float r = length(p);
+  // Soft rim, resolved by alpha-to-coverage, so edges do not stipple in motion.
+  // The rim is at most half the radius so minimum-size beads stay solid.
+  float coverage = 1.0 - smoothstep(1.0 - min(fwidth(r), 0.5), 1.0, r);
+  if (coverage <= 0.0) discard;
+  vec3 normal = vec3(p.x, -p.y, sqrt(max(0.0, 1.0 - r * r)));
+  float diffuse = max(dot(normal, normalize(vec3(-0.35, 0.55, 0.75))), 0.0);
+  gl_FragColor = vec4(vColor * (0.42 + 0.68 * diffuse), coverage);
+  #include <colorspace_fragment>
+}`;
+
 class AppendOnlyPointCloud {
   constructor(scene, {
-    chunkSize = 65536,
-    color = '#ffffff',
-    size = 2,
-    zOffset = 0.0,
-  } = {}) {
+    chunkSize,
+    color,
+    beadWidth,
+    minPixelSize,
+    zOffset,
+  }) {
     this.scene = scene;
     this.chunkSize = chunkSize;
     this.color = color;
-    this.size = size;
     this.zOffset = zOffset;
+    this.material = new THREE.ShaderMaterial({
+      uniforms: {
+        uBeadWidth: { value: beadWidth },
+        uMinPixelSize: { value: minPixelSize },
+        uViewportHeight: { value: 1 },
+      },
+      vertexShader: BEAD_VERTEX_SHADER,
+      fragmentShader: BEAD_FRAGMENT_SHADER,
+      vertexColors: true,
+      alphaToCoverage: true,
+    });
+    this._minPixelSize = minPixelSize;
 
     this.chunks = [];
     this.totalPoints = 0;
     this._color = new THREE.Color(color);
   }
 
+  // cssHeight in CSS pixels; gl_PointSize is in device pixels.
+  setViewport(cssHeight, pixelRatio) {
+    this.material.uniforms.uViewportHeight.value = cssHeight * pixelRatio;
+    this.material.uniforms.uMinPixelSize.value = this._minPixelSize * pixelRatio;
+  }
+
+  dispose() {
+    this.clear();
+    this.material.dispose();
+  }
+
   clear() {
     for (const chunk of this.chunks) {
       this.scene.remove(chunk.points);
       chunk.geometry.dispose();
-      chunk.material.dispose();
     }
     this.chunks.length = 0;
     this.totalPoints = 0;
@@ -3698,28 +3435,15 @@ class AppendOnlyPointCloud {
     geometry.setAttribute('color', colorAttr);
     geometry.setDrawRange(0, 0);
 
-    const material = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: this.size,
-      sizeAttenuation: false,
-      vertexColors: true,
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.95,
-      toneMapped: false,
-    });
-
-    const points = new THREE.Points(geometry, material);
+    const points = new THREE.Points(geometry, this.material);
     points.frustumCulled = false;
     points.renderOrder = 850;
     points.userData.ownsGeometry = true;
-    points.userData.ownsMaterial = true;
 
     this.scene.add(points);
 
     return {
       geometry,
-      material,
       points,
       positions,
       colors,

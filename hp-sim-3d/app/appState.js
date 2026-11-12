@@ -37,7 +37,7 @@ export function createAppState({
     referenceOverlay: {
       segments: null,
       metadata: null,
-      color: '#1e90ff',
+      color: '#79b1e0',
       visible: false,
       dirty: false,
       key: null,

@@ -23,6 +23,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
   const simApp = canvas?.closest('.sim-app') || null;
   const simButtons = controlsRoot?.querySelector('.sim-buttons') || null;
   const machinesContainer = simButtons?.querySelector('.sim-machines') || null;
+  const settingsContainer = simButtons?.querySelector('.sim-settings') || null;
   const qualityToggleWrapper = ownerDocument.getElementById('qualityToggleWrapper');
   return {
     canvas,
@@ -48,11 +49,14 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
     speedFasterBtn: ownerDocument.getElementById('speedFasterBtn'),
     secondaryControls: ownerDocument.getElementById('simSecondaryControls'),
     fullscreenBtn: ownerDocument.getElementById('fullscreenBtn'),
-    referenceToggleBtn: ownerDocument.getElementById('referenceToggleBtn'),
+    referenceToggle: ownerDocument.getElementById('referenceToggle'),
     speedStatusEl: ownerDocument.getElementById('speedStatus'),
     machinesContainer,
     machinesToggle: ownerDocument.getElementById('machinesToggle'),
     machinesMenu: ownerDocument.getElementById('machinesMenu'),
+    settingsContainer,
+    settingsToggle: ownerDocument.getElementById('settingsToggle'),
+    settingsMenu: ownerDocument.getElementById('settingsMenu'),
     presetMachinesList: ownerDocument.getElementById('presetMachinesList'),
     customMachinesSection: ownerDocument.getElementById('customMachinesSection'),
     customMachinesList: ownerDocument.getElementById('customMachinesList'),
@@ -66,6 +70,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
     secondaryToggleBtn: ownerDocument.getElementById('secondaryToggleBtn'),
     qualityToggle: ownerDocument.getElementById('qualityToggle'),
     showForcesToggle: ownerDocument.getElementById('showForcesToggle'),
+    highlightSlackToggle: ownerDocument.getElementById('highlightSlackToggle'),
     lineLayeringToggle: ownerDocument.getElementById('lineLayeringToggle'),
     closedLoopMotorsToggle: ownerDocument.getElementById('closedLoopMotorsToggle'),
     physicsSubsteps: ownerDocument.getElementById('physicsSubsteps'),
@@ -128,6 +133,7 @@ export function createHpSimApp({
   const runtime = createSimulationRuntime({ world, state });
   const controllers = {
     machineMenu: null,
+    settingsMenu: null,
     machines: null,
     commands: null,
     external: null,
@@ -153,7 +159,6 @@ export function createHpSimApp({
     state,
     dom,
     quality,
-    isMobileLayout: () => view.isMobileLayout(),
   });
   const featureFlags = createFeatureFlagsController({
     world,
@@ -172,7 +177,10 @@ export function createHpSimApp({
       getMachines: () => controllers.machines.getMachines(),
     },
     machineMenu: {
-      syncPlacement: () => controllers.machineMenu?.syncPlacement?.(),
+      syncPlacement: () => {
+        controllers.machineMenu?.syncPlacement?.();
+        controllers.settingsMenu?.syncPlacement?.();
+      },
     },
     inspectionTools,
     getCommands: () => controllers.commands,
@@ -188,6 +196,17 @@ export function createHpSimApp({
     document: ownerDocument,
     window: ownerWindow,
     dom,
+    isMobileLayout: () => view.isMobileLayout(),
+  });
+  // The settings popover behaves exactly like the machines popover.
+  controllers.settingsMenu = createMachineMenuController({
+    document: ownerDocument,
+    window: ownerWindow,
+    dom: {
+      machinesContainer: dom.settingsContainer,
+      machinesToggle: dom.settingsToggle,
+      machinesMenu: dom.settingsMenu,
+    },
     isMobileLayout: () => view.isMobileLayout(),
   });
   controllers.machines = createMachineSceneController({
@@ -265,6 +284,7 @@ export function createHpSimApp({
       inspectionTools.bindUi();
       view.bindUi();
       controllers.machineMenu.bindUi();
+      controllers.settingsMenu.bindUi();
       controllers.machines.bindUi();
       controllers.commands.bindUi();
     },

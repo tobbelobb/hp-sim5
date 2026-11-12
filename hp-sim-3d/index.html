@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>HP Simulation</title>
+    <title>Hangprinter Simulator</title>
     <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
     <script type="importmap">
@@ -23,9 +23,9 @@
           <div id="controls" class="sim-controls">
             <div class="sim-buttons">
               <div class="sim-start-buttons">
-                <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
-                <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
-                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
+                <button id="printLogoBtn" type="button" class="sim-play sim-start"><span class="sim-label-long">Print </span>Logo</button>
+                <button id="printSquareBtn" type="button" class="sim-start"><span class="sim-label-long">Print </span>Squares</button>
+                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload<span class="sim-label-long"> File</span></button>
               </div>
               <div class="sim-machines" data-open="false">
                 <button
@@ -50,53 +50,74 @@
                   <button id="machinesRemoveAllBtn" type="button" class="sim-tertiary sim-machines-remove-all">Remove All</button>
                 </div>
               </div>
-              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
-              <button id="referenceToggleBtn" type="button" class="sim-secondary sim-reference-toggle" aria-pressed="false">Show Reference Path</button>
-              <div class="sim-toggle-group" aria-label="Simulation overlays and motor options">
-                <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
-                  <input id="qualityToggle" type="checkbox">
-                  <span>Live Quality Checks</span>
-                </label>
-                <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
-                  <input id="showForcesToggle" type="checkbox">
-                  <span>Show Forces</span>
-                </label>
-                <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
-                  <input id="lineLayeringToggle" type="checkbox" checked>
-                  <span>Line Layering</span>
-                </label>
-                <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
-                  <input id="closedLoopMotorsToggle" type="checkbox">
-                  <span>Closed Loop Motors</span>
-                </label>
-                <label class="sim-toggle" for="solverIterations">
-                  <span>Solver Iterations</span>
-                  <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
-                    <option value="" selected>Machine default</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="4">4</option>
-                    <option value="6">6</option>
-                    <option value="8">8</option>
-                    <option value="10">10</option>
-                    <option value="12">12</option>
-                    <option value="16">16</option>
-                    <option value="20">20</option>
-                    <option value="32">32</option>
-                    <option value="64">64</option>
-                  </select>
-                </label>
-                <label class="sim-toggle" for="physicsSubsteps">
-                  <span>Physics Substeps</span>
-                  <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="4">4</option>
-                    <option value="8">8</option>
-                    <option value="16">16</option>
-                  </select>
-                </label>
+              <div class="sim-settings" data-open="false">
+                <button
+                  id="settingsToggle"
+                  type="button"
+                  class="sim-secondary sim-settings-toggle"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  aria-controls="settingsMenu"
+                >
+                  Settings
+                </button>
+                <div id="settingsMenu" class="sim-settings-menu sim-hidden" aria-labelledby="settingsToggle">
+                  <span class="sim-menu-section-title">View</span>
+                  <label id="referenceToggleWrapper" class="sim-toggle" for="referenceToggle">
+                    <input id="referenceToggle" type="checkbox" disabled>
+                    <span>Show Reference Path</span>
+                  </label>
+                  <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
+                    <input id="qualityToggle" type="checkbox">
+                    <span>Live Quality Checks</span>
+                  </label>
+                  <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
+                    <input id="showForcesToggle" type="checkbox">
+                    <span>Show Forces</span>
+                  </label>
+                  <label id="highlightSlackToggleWrapper" class="sim-toggle" for="highlightSlackToggle">
+                    <input id="highlightSlackToggle" type="checkbox">
+                    <span>Highlight Slack Lines</span>
+                  </label>
+                  <span class="sim-menu-section-title">Simulation</span>
+                  <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
+                    <input id="lineLayeringToggle" type="checkbox" checked>
+                    <span>Line Layering</span>
+                  </label>
+                  <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
+                    <input id="closedLoopMotorsToggle" type="checkbox">
+                    <span>Closed Loop Motors</span>
+                  </label>
+                  <label class="sim-toggle sim-select" for="solverIterations">
+                    <span>Solver Iterations</span>
+                    <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
+                      <option value="" selected>Machine default</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="4">4</option>
+                      <option value="6">6</option>
+                      <option value="8">8</option>
+                      <option value="10">10</option>
+                      <option value="12">12</option>
+                      <option value="16">16</option>
+                      <option value="20">20</option>
+                      <option value="32">32</option>
+                      <option value="64">64</option>
+                    </select>
+                  </label>
+                  <label class="sim-toggle sim-select" for="physicsSubsteps">
+                    <span>Physics Substeps</span>
+                    <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
+                      <option value="1" selected>1</option>
+                      <option value="2">2</option>
+                      <option value="4">4</option>
+                      <option value="8">8</option>
+                      <option value="16">16</option>
+                    </select>
+                  </label>
+                </div>
               </div>
+              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
             </div>
             <input
               type="file"

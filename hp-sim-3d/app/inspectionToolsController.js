@@ -224,7 +224,6 @@ export function createInspectionToolsController({
   state,
   dom,
   quality,
-  isMobileLayout = () => false,
 } = {}) {
   const referencePathCache = new Map();
   let measurePointerCandidate = null;
@@ -233,33 +232,21 @@ export function createInspectionToolsController({
     return state.referenceOverlay;
   }
 
-  function getReferenceToggleText({ hasData, visible }) {
-    const mobile = isMobileLayout();
-    if (!hasData) {
-      return mobile ? 'Show Reference' : 'Show Reference Path';
-    }
-    return visible
-      ? (mobile ? 'Hide Reference' : 'Hide Reference Path')
-      : (mobile ? 'Show Reference' : 'Show Reference Path');
-  }
-
   function updateReferenceToggleUI() {
-    const button = dom.referenceToggleBtn;
-    if (!button) {
+    const toggle = dom.referenceToggle;
+    if (!toggle) {
       return;
     }
     const overlay = getOverlayState();
     const hasData = Array.isArray(overlay.segments) && overlay.segments.length > 0;
-    button.disabled = !hasData;
-    button.setAttribute('aria-pressed', overlay.visible ? 'true' : 'false');
+    toggle.disabled = !hasData;
+    toggle.checked = hasData && Boolean(overlay.visible);
+    const label = toggle.closest('label');
     if (hasData && overlay.metadata?.label) {
-      button.setAttribute('title', `Reference: ${overlay.metadata.label}`);
-      button.setAttribute('aria-label', `Toggle reference path: ${overlay.metadata.label}`);
+      label?.setAttribute('title', `Reference: ${overlay.metadata.label}`);
     } else {
-      button.removeAttribute('title');
-      button.setAttribute('aria-label', 'Toggle reference path visibility');
+      label?.removeAttribute('title');
     }
-    button.textContent = getReferenceToggleText({ hasData, visible: overlay.visible });
   }
 
   function syncToRenderSystem({ force = false } = {}) {
@@ -287,7 +274,7 @@ export function createInspectionToolsController({
     if (typeof color === 'string' && color.length > 0) {
       overlay.color = color;
     } else if (!overlay.color) {
-      overlay.color = '#1e90ff';
+      overlay.color = '#79b1e0';
     }
     overlay.dirty = true;
     if (!overlay.segments) {
@@ -366,7 +353,7 @@ export function createInspectionToolsController({
     const record = {
       segments: converted.segments,
       metadata,
-      color: color || metadata.color || '#1e90ff',
+      color: color || metadata.color || '#79b1e0',
     };
     if (cacheKey) {
       referencePathCache.set(cacheKey, record);
@@ -415,7 +402,7 @@ export function createInspectionToolsController({
           source: { type: 'upload', name: file.name, size: file.size },
           uploadedAt: Date.now(),
         },
-        color: '#2dd4bf',
+        color: '#76c5bb',
         setActive,
         makeVisible,
       });
@@ -553,13 +540,13 @@ export function createInspectionToolsController({
   }
 
   function bindUi() {
-    if (dom.referenceToggleBtn) {
-      dom.referenceToggleBtn.addEventListener('click', () => {
+    if (dom.referenceToggle) {
+      dom.referenceToggle.addEventListener('change', () => {
         const overlay = getOverlayState();
         if (!Array.isArray(overlay.segments) || overlay.segments.length === 0) {
           return;
         }
-        setVisibility(!overlay.visible);
+        setVisibility(dom.referenceToggle.checked);
       });
     }
     if (dom.positionTraceBtn) {

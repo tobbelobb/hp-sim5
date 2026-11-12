@@ -18,17 +18,17 @@ export const PRESET_GCODE_MAP = Object.freeze({
   hangprinterLogo: {
     url: new URL('../../public/gcode/Hangprinter_logo6.gcode', import.meta.url).href,
     label: 'Hangprinter Logo (G-code)',
-    color: '#ff7a18',
+    color: '#e3a572',
   },
   straightMoves: {
     url: new URL('../../public/gcode/draw_squares.gcode', import.meta.url).href,
     label: 'Draw Squares (G-code)',
-    color: '#00b2ff',
+    color: '#79b1e0',
   },
   straightMovesBigger: {
     url: new URL('../../public/gcode/draw_squares_bigger.gcode', import.meta.url).href,
     label: 'Draw Bigger Squares (G-code)',
-    color: '#00b2ff',
+    color: '#79b1e0',
   },
 });
 
