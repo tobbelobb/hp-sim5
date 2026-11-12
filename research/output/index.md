@@ -144,9 +144,9 @@ One result sentence per session; follow the report for evidence.
 
 - [HP3 force and friction robustness program](session-2026-11-05-force-disagreement-program-startup/report.md) — The program refreshed the parameter-variation agenda against earlier research, then tested encoder-only HP3 force handling under guide-friction and sensor-noise variation.
 
-- [interactive research](session-2026-11-11-interactive-research-a292c627/abstract.md) — No research result is available yet.
-
 - [HP4 Print Squares corner bumps from saturated closed-loop servos under firmware flex pretension](session-2026-11-11-interactive-research-ecc2ae53/report.md) — The bumps are handovers between torque-saturated A/B/C servos: `M666 F1` flex compensation assumes one line per spool, but the HP4 scene has two (three for D), so it demands roughly double pretension (beyond 0.5 Nm).
+
+- [Stable stronger stepper motors at the 2 ms step](session-2026-11-12-interactive-research-37d92817/report.md) — Simulated motors at 1 Nm (or anywhere from 0.25 to 4 Nm) no longer oscillate or spin away at the default 2 ms step: the servo's current-limit check and the open-loop detent torque had numerical artifacts, and fixing them made a gain retune unnecessary.
 
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 

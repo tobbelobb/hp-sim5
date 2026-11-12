@@ -820,12 +820,11 @@ fn lambda(row: &Row, error: f64, disp: f64, denom: f64, previous: f64) -> Option
         Some((previous + delta).min(0.0) - previous)
     }
 }
+/// Cable torque on a spool. Position motors keep it for the next step's
+/// servo current limit; only torque mode also records its observation flags
+/// and stiffness/damping coefficients.
 fn load(es: &mut [Entity], s: Spin, row: &Row, lambda: f64, record_coefficients: bool) {
-    if !s.active
-        || es[s.id][57] == 0.0
-        || row.inv_dt2 <= 0.0
-        || s.load_grad.abs() <= EPS
-    {
+    if !s.active || row.inv_dt2 <= 0.0 || s.load_grad.abs() <= EPS {
         return;
     }
     let torque = lambda * row.inv_dt2 * s.load_grad;
@@ -834,6 +833,9 @@ fn load(es: &mut [Entity], s: Spin, row: &Row, lambda: f64, record_coefficients:
     }
     let e = &mut es[s.id];
     e[59] += torque;
+    if e[57] == 0.0 {
+        return;
+    }
     e[68] = (e[68] as u32 | 1) as f64;
     if s.flags & 4 != 0 && record_coefficients {
         let g = s.load_grad * s.load_grad;

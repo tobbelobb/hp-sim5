@@ -12,3 +12,6 @@ viewer-config/
 viewer-data/
 # Launcher lock file.
 connection.lease
+# 1 Nm trial telemetry (4.9-30 MB), regenerable with
+# SCENE=<this dir>/scratchbook/hp4_torque1.usda node scratchbook/squares_replay.mjs t1_<case> ...
+scratchbook/t1_*.json

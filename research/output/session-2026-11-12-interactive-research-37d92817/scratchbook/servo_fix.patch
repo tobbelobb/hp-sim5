@@ -1,0 +1,144 @@
+diff --git a/src/wasm/cable_solver/src/engine.rs b/src/wasm/cable_solver/src/engine.rs
+index 8b3a89b2..5bf156c6 100644
+--- a/src/wasm/cable_solver/src/engine.rs
++++ b/src/wasm/cable_solver/src/engine.rs
+@@ -1504,21 +1504,39 @@ impl PhysicsWorld {
+             }
+             let valid_dt = dt.is_finite() && dt > 0.0;
+             let target = e[107] - e[108];
++            let housing = if e[50] >= 0.0 {
++                let moi = self.aggregate_inertia(e[50] as usize);
++                dot(axis, world_inverse(&moi, axis)).max(0.0)
++            } else {
++                0.0
++            };
++            // Angle per torque over one step for the rotor against its housing.
++            let compliance = dt * dt * (1.0 / inertia + housing);
+             // Position modes give a torque and its stiffness ∂τ/∂θ, which the
+             // spool's step and the cable solve both treat implicitly.
+             let (drive, stiffness) = if torque_mode {
+                 self.entities[id][136] = 0.0;
+                 (0.0, 0.0)
+             } else if closed {
+-                self.servo(id, target, angle, inertia, dt)
++                self.servo(id, target, angle, inertia, compliance, dt)
+             } else {
+                 self.entities[id][136] = 0.0;
+                 // Open loop: the rotor sits in a detent of the stator field and
+                 // skips to the next one when pulled past its holding torque.
+-                let error = wrap(angle - target);
++                // The detent torque is averaged over the electrical phase the
++                // rotor sweeps this step: sampled once per step, a slipping
++                // rotor would alias the field into a net drive and spin away.
++                let from = e[110] * wrap(angle - target);
++                let sweep = if valid_dt { e[110] * omega * dt } else { 0.0 };
++                let (mean, slope) = if sweep.abs() > 1e-6 {
++                    let to = from + sweep;
++                    ((cos(from) - cos(to)) / sweep, (sin(to) - sin(from)) / sweep)
++                } else {
++                    (sin(from), cos(from))
++                };
+                 (
+-                    -e[109] * sin(e[110] * error) - e[111] * omega,
+-                    (e[109] * e[110] * cos(e[110] * error)).max(0.0),
++                    -e[109] * mean - e[111] * omega,
++                    (e[109] * e[110] * slope).max(0.0),
+                 )
+             };
+             let drive = if !torque_mode {
+@@ -1569,13 +1587,7 @@ impl PhysicsWorld {
+                 // `constraints`), so steady torque balance is exact, and a stiff
+                 // motor stays stable even when its housing is a light body.
+                 self.entities[id][47] = if valid_dt { stiffness } else { 0.0 };
+-                let housing = if e[50] >= 0.0 {
+-                    let moi = self.aggregate_inertia(e[50] as usize);
+-                    dot(axis, world_inverse(&moi, axis)).max(0.0)
+-                } else {
+-                    0.0
+-                };
+-                drive / (1.0 + stiffness * dt * dt * (1.0 / inertia + housing)) / inertia * dt
++                drive / (1.0 + stiffness * compliance) / inertia * dt
+             };
+             let next = add(v(&self.entities[id], 72), scale(axis, delta));
+             put_v(&mut self.entities[id], 72, next);
+@@ -1596,7 +1608,23 @@ impl PhysicsWorld {
+     /// alone is critically damped, and the integrator pulls a loaded motor back
+     /// to target. Overpowered, it yields and later returns: it never loses
+     /// steps. Returns the torque and its stiffness ∂τ/∂θ.
+-    fn servo(&mut self, id: usize, target: f64, angle: f64, inertia: f64, dt: f64) -> (f64, f64) {
++    ///
++    /// The current limit applies to the torque the servo ends the implicit
++    /// step with, assuming the cables keep last step's torque on the spool,
++    /// not to the explicit command. Then the rotor's velocity change is
++    /// continuous where the limit engages. Testing the explicit command
++    /// instead lets a strong servo (stiffness · compliance ≳ 4, e.g. 1 Nm at
++    /// 2 ms) jump across its linear band in one step and limit-cycle between
++    /// the two current limits.
++    fn servo(
++        &mut self,
++        id: usize,
++        target: f64,
++        angle: f64,
++        inertia: f64,
++        compliance: f64,
++        dt: f64,
++    ) -> (f64, f64) {
+         let encoded = self.entities[id][67] != 0.0 && self.entities[id][66].is_finite();
+         if self.entities[id][136] == 0.0 {
+             // Engaging calibrates the encoder to the step position the rotor
+@@ -1618,15 +1646,21 @@ impl PhysicsWorld {
+         let valid_dt = dt.is_finite() && dt > 0.0;
+         let rate = if valid_dt { (error - e[132]) / dt } else { 0.0 };
+         let command = kp * error + e[130] + kd * rate;
+-        let saturated = command.abs() >= limit;
++        let stiffness = if valid_dt { kp + kd / dt } else { 0.0 };
++        let spring = if valid_dt { stiffness * compliance } else { 0.0 };
++        let end = (command - spring * e[59]) / (1.0 + spring);
++        let saturated = end.abs() > limit;
+         let e = &mut self.entities[id];
+         // Integrate only while the current is not limited (anti-windup).
+         if !saturated && valid_dt {
+             e[130] = (e[130] + ki * error * dt).clamp(-limit, limit);
+         }
+         e[132] = error;
+-        let stiffness = if saturated || !valid_dt { 0.0 } else { kp + kd / dt };
+-        (command.clamp(-limit, limit), stiffness)
++        if saturated {
++            (limit.copysign(end), 0.0)
++        } else {
++            (command, stiffness)
++        }
+     }
+     fn encoders(&mut self) {
+         for id in 0..self.entities.len() {
+diff --git a/src/wasm/cable_solver/src/lib.rs b/src/wasm/cable_solver/src/lib.rs
+index 93fdf197..43e9fb58 100644
+--- a/src/wasm/cable_solver/src/lib.rs
++++ b/src/wasm/cable_solver/src/lib.rs
+@@ -820,12 +820,11 @@ fn lambda(row: &Row, error: f64, disp: f64, denom: f64, previous: f64) -> Option
+         Some((previous + delta).min(0.0) - previous)
+     }
+ }
++/// Cable torque on a spool. Position motors keep it for the next step's
++/// servo current limit; only torque mode also records its observation flags
++/// and stiffness/damping coefficients.
+ fn load(es: &mut [Entity], s: Spin, row: &Row, lambda: f64, record_coefficients: bool) {
+-    if !s.active
+-        || es[s.id][57] == 0.0
+-        || row.inv_dt2 <= 0.0
+-        || s.load_grad.abs() <= EPS
+-    {
++    if !s.active || row.inv_dt2 <= 0.0 || s.load_grad.abs() <= EPS {
+         return;
+     }
+     let torque = lambda * row.inv_dt2 * s.load_grad;
+@@ -834,6 +833,9 @@ fn load(es: &mut [Entity], s: Spin, row: &Row, lambda: f64, record_coefficients:
+     }
+     let e = &mut es[s.id];
+     e[59] += torque;
++    if e[57] == 0.0 {
++        return;
++    }
+     e[68] = (e[68] as u32 | 1) as f64;
+     if s.flags & 4 != 0 && record_coefficients {
+         let g = s.load_grad * s.load_grad;

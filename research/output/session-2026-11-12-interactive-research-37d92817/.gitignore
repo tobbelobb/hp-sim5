@@ -1,0 +1,9 @@
+# Rerun viewer cache and analytics, not research evidence.
+viewer-cache/
+viewer-config/
+viewer-data/
+# Launcher connection bookkeeping.
+connection.lease
+connection.json
+# Squares telemetry (22-30 MB each) is regenerable with scratchbook/squares_replay.mjs (see report.md).
+scratchbook/*.json
