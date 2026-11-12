@@ -1,0 +1,9 @@
+Research session: /home/torbjorn/repos/hp-sim5/research/output/session-2026-11-12-you-are-a-reviewer-do-not-modify-any-repository-files-and-do-not-2451dbb8
+I’ll read the full diff and previous review, inspect all three screenshots, and write a ranked review only to `research/output/ui-review-2/review.md`. I won’t run simulations or regenerate indexes.
+I’m using the Three.js review skill to check rendering and resource lifetimes. I’ve read the previous findings and will check for remaining issues without repeating the fixes already applied.
+The close-up shows harsh edges on the bright rings and frame, and the print still reads as a thin yellow trace. I’m checking those against the geometry and shaders, along with uploaded-scene handling and buffer growth.
+I found a concrete issue in cable-batch growth: it replaces uploaded buffers without disposing them, and Three.js can retain the old instance limit. I’ll check this with isolated renderer and layout probes; the simulator bootstrap and physics will stay disabled.
+The renderer probe confirmed truncation after growth: a 5,000-segment batch drew 4,096, and disposal left two GPU buffers undeleted. I also confirmed that the new corner spheres fully enclose the eyelet rings in the Slideprinter layouts. Toolbar overflow passed at the checked widths from 320 to 800 px.
+The working tree changed during review, so I repeated the layout checks against an in-memory reconstruction of the supplied diff. The review will cover that snapshot. The remaining floor-occlusion and machine-colour issues are confirmed; context restore rebuilds the environment but emits warnings while deleting old-context resources.
+Wrote the ranked review to [review.md](/home/torbjorn/repos/hp-sim5/research/output/ui-review-2/review.md). No simulations or index regeneration.
+exit 0

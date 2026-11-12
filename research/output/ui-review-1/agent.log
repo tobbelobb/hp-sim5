@@ -1,0 +1,10 @@
+Research session: /home/torbjorn/repos/hp-sim5/research/output/session-2026-11-12-you-are-a-reviewer-do-not-modify-any-files-in-the-repository-exc-f163f8ce
+I’ll inspect the diff, screenshots, and relevant UI tests, then write a ranked review to `research/output/ui-review-1/review.md`. I’ll use the Three.js review guidance and won’t run simulations or change other files.
+The v05 layout gives the simulation much more room, especially on phones. The main visual weakness is still the machine itself: the print looks like a glowing path, and bearings and wraps are too small to read. I’m checking the floor placement and popover CSS for concrete regressions before ranking the findings.
+All 17 `tests/js/hp-sim-3d` suites pass (102 tests). Two issues need follow-up: the phone gear disappears on hover, and the new floor uses fixed-part centers for clearance, which can leave larger parts or cable wraps intersecting it. I’ll make a brief browser check of the responsive controls; no print or simulation run is needed.
+The browser check confirms toolbar overflow at 320 px and just above the 600 px breakpoint. A three-cycle Stage3D check also confirms unreleased PMREM framebuffer resources. The working tree changed during the review—the gear hover fix is already there—so I’ve frozen the supplied diff under `/tmp` to keep the review scoped to the requested version.
+The review is ready to write. The highest-value visual changes are printed-material shading, cable rendering, and camera framing that makes bearings and wraps readable. I’ll include the confirmed overflow and PMREM leak, and distinguish the floor’s demonstrated occlusion risk from what’s visible in the supplied screenshots.
+Wrote the [review](research/output/ui-review-1/review.md), covering ranked bugs, visual improvements, and performance risks. Main findings: toolbar overflow, floor occlusion risk, and a PMREM resource leak. All 102 tests passed; no long simulations ran.
+
+No simulator code changed. Runner-required session report, abstract, and catalog metadata were also updated.
+exit 0

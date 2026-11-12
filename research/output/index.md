@@ -146,11 +146,17 @@ One result sentence per session; follow the report for evidence.
 
 - [HP4 Print Squares corner bumps from saturated closed-loop servos under firmware flex pretension](session-2026-11-11-interactive-research-ecc2ae53/report.md) — The bumps are handovers between torque-saturated A/B/C servos: `M666 F1` flex compensation assumes one line per spool, but the HP4 scene has two (three for D), so it demands roughly double pretension (beyond 0.5 Nm).
 
+- [asap-speed-review](session-2026-11-12-asap-speed-review-fa2c6046/abstract.md) — No research result is available yet.
+
 - [HP4 logo path error: two firmware flex errors and an unconverged HP4 solver](session-2026-11-12-interactive-research-04b803d9/report.md) — HP4's 0.39/0.62/0.69 mm logo path error comes from three causes: flex compensation that ignores MA² (over-reeling 2×/4×), a +0.16 mm Z belief created when `M666 F1` follows `G28`, and a 2-iteration HP4 solver whose biased static equilibrium adds the XY offset.
 
 - [Quality Monitor: 1220 phantom missed steps, end-of-print stall and 0.25 mm metric](session-2026-11-12-interactive-research-3048a420/report.md) — The 1220 missed steps after the HP4 logo were real stalls from a bogus "fly home" move that the RRF host simulator wrote at every standstill; fixing that (motor-position tracking plus two thread races, host build only) and regenerating the .can files gives 0.
 
 - [Stable stronger stepper motors at the 2 ms step](session-2026-11-12-interactive-research-37d92817/report.md) — Simulated motors at 1 Nm (or anywhere from 0.25 to 4 Nm) no longer oscillate or spin away at the default 2 ms step: the servo's current-limit check and the open-loop detent torque had numerical artifacts, and fixing them made a gain retune unnecessary.
+
+- [Hangprinter simulator UI and rendering review](session-2026-11-12-you-are-a-reviewer-do-not-modify-any-files-in-the-repository-exc-f163f8ce/report.md) — The review found toolbar overflow, floor occlusion risk and a rendering-resource leak, while all 102 UI-related JavaScript tests passed; see the report.
+
+- [You are a reviewer. DO NOT modify any repository files and do not regenerate research indexes; write your review ONLY to](session-2026-11-12-you-are-a-reviewer-do-not-modify-any-repository-files-and-do-not-2451dbb8/abstract.md) — No research result is available yet.
 
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 

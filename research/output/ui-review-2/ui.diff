@@ -1,0 +1,3340 @@
+diff --git a/hp-sim-3d/app/appBootstrap.js b/hp-sim-3d/app/appBootstrap.js
+index 10b49f6d..70a55cb3 100644
+--- a/hp-sim-3d/app/appBootstrap.js
++++ b/hp-sim-3d/app/appBootstrap.js
+@@ -23,6 +23,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
+   const simApp = canvas?.closest('.sim-app') || null;
+   const simButtons = controlsRoot?.querySelector('.sim-buttons') || null;
+   const machinesContainer = simButtons?.querySelector('.sim-machines') || null;
++  const settingsContainer = simButtons?.querySelector('.sim-settings') || null;
+   const qualityToggleWrapper = ownerDocument.getElementById('qualityToggleWrapper');
+   return {
+     canvas,
+@@ -53,6 +54,9 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
+     machinesContainer,
+     machinesToggle: ownerDocument.getElementById('machinesToggle'),
+     machinesMenu: ownerDocument.getElementById('machinesMenu'),
++    settingsContainer,
++    settingsToggle: ownerDocument.getElementById('settingsToggle'),
++    settingsMenu: ownerDocument.getElementById('settingsMenu'),
+     presetMachinesList: ownerDocument.getElementById('presetMachinesList'),
+     customMachinesSection: ownerDocument.getElementById('customMachinesSection'),
+     customMachinesList: ownerDocument.getElementById('customMachinesList'),
+@@ -66,6 +70,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
+     secondaryToggleBtn: ownerDocument.getElementById('secondaryToggleBtn'),
+     qualityToggle: ownerDocument.getElementById('qualityToggle'),
+     showForcesToggle: ownerDocument.getElementById('showForcesToggle'),
++    highlightSlackToggle: ownerDocument.getElementById('highlightSlackToggle'),
+     lineLayeringToggle: ownerDocument.getElementById('lineLayeringToggle'),
+     closedLoopMotorsToggle: ownerDocument.getElementById('closedLoopMotorsToggle'),
+     physicsSubsteps: ownerDocument.getElementById('physicsSubsteps'),
+@@ -128,6 +133,7 @@ export function createHpSimApp({
+   const runtime = createSimulationRuntime({ world, state });
+   const controllers = {
+     machineMenu: null,
++    settingsMenu: null,
+     machines: null,
+     commands: null,
+     external: null,
+@@ -172,7 +178,10 @@ export function createHpSimApp({
+       getMachines: () => controllers.machines.getMachines(),
+     },
+     machineMenu: {
+-      syncPlacement: () => controllers.machineMenu?.syncPlacement?.(),
++      syncPlacement: () => {
++        controllers.machineMenu?.syncPlacement?.();
++        controllers.settingsMenu?.syncPlacement?.();
++      },
+     },
+     inspectionTools,
+     getCommands: () => controllers.commands,
+@@ -190,6 +199,17 @@ export function createHpSimApp({
+     dom,
+     isMobileLayout: () => view.isMobileLayout(),
+   });
++  // The settings popover behaves exactly like the machines popover.
++  controllers.settingsMenu = createMachineMenuController({
++    document: ownerDocument,
++    window: ownerWindow,
++    dom: {
++      machinesContainer: dom.settingsContainer,
++      machinesToggle: dom.settingsToggle,
++      machinesMenu: dom.settingsMenu,
++    },
++    isMobileLayout: () => view.isMobileLayout(),
++  });
+   controllers.machines = createMachineSceneController({
+     document: ownerDocument,
+     world,
+@@ -265,6 +285,7 @@ export function createHpSimApp({
+       inspectionTools.bindUi();
+       view.bindUi();
+       controllers.machineMenu.bindUi();
++      controllers.settingsMenu.bindUi();
+       controllers.machines.bindUi();
+       controllers.commands.bindUi();
+     },
+diff --git a/hp-sim-3d/app/featureFlagsController.js b/hp-sim-3d/app/featureFlagsController.js
+index a4f78f4d..1c4b4a2a 100644
+--- a/hp-sim-3d/app/featureFlagsController.js
++++ b/hp-sim-3d/app/featureFlagsController.js
+@@ -25,6 +25,11 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
+     }
+   }
+ 
++  function setHighlightSlackLines(enabled) {
++    world.setResource('highlightSlackLines', Boolean(enabled));
++    world.getResource('renderSystem')?.requestRender?.(world);
++  }
++
+   function setLineLayeringEnabledState(enabled, { fromToggle = false } = {}) {
+     const next = Boolean(enabled);
+     const changed = (state?.lineLayeringEnabled ?? true) !== next;
+@@ -104,6 +109,12 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
+     } else {
+       setShowConstraintForcesState(false);
+     }
++    if (toggles.highlightSlackToggle) {
++      toggles.highlightSlackToggle.addEventListener('change', () => {
++        setHighlightSlackLines(toggles.highlightSlackToggle.checked);
++      });
++      setHighlightSlackLines(toggles.highlightSlackToggle.checked);
++    }
+     if (toggles.lineLayeringToggle) {
+       toggles.lineLayeringToggle.addEventListener('change', () => {
+         setLineLayeringEnabledState(toggles.lineLayeringToggle.checked, { fromToggle: true });
+diff --git a/hp-sim-3d/app/flightRecorderSnapshot.js b/hp-sim-3d/app/flightRecorderSnapshot.js
+index b651367c..9b0a6118 100644
+--- a/hp-sim-3d/app/flightRecorderSnapshot.js
++++ b/hp-sim-3d/app/flightRecorderSnapshot.js
+@@ -7,7 +7,7 @@ import {
+ } from '../../src/js/cable_joints_3d/cable_joints_core.js';
+ import { getEntityWorldOrientation, getEntityWorldPosition } from '../../src/js/cable_joints_3d/rigid_bodies.js';
+ import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
+-import { writeSlackCablePositions } from '../../src/js/cable_joints_3d/render_system_3d.js';
++import { writeSlackCablePositions } from '../../src/js/cable_joints_3d/cable_shape.js';
+ import { ExtruderComponent, estimateEffectorRotation } from './hangprinter_extruder.js';
+ import { StepperMotorComponent } from './hangprinter_stepper_motor.js';
+ 
+diff --git a/hp-sim-3d/index.html b/hp-sim-3d/index.html
+index 29ac440b..640dba7a 100644
+--- a/hp-sim-3d/index.html
++++ b/hp-sim-3d/index.html
+@@ -3,7 +3,7 @@
+   <head>
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+-    <title>HP Simulation</title>
++    <title>Hangprinter Simulator</title>
+     <link rel="icon" type="image/svg+xml"
+       href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+     <script type="importmap">
+@@ -23,9 +23,9 @@
+           <div id="controls" class="sim-controls">
+             <div class="sim-buttons">
+               <div class="sim-start-buttons">
+-                <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
+-                <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
+-                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
++                <button id="printLogoBtn" type="button" class="sim-play sim-start"><span class="sim-label-long">Print </span>Logo</button>
++                <button id="printSquareBtn" type="button" class="sim-start"><span class="sim-label-long">Print </span>Squares</button>
++                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload<span class="sim-label-long"> File</span></button>
+               </div>
+               <div class="sim-machines" data-open="false">
+                 <button
+@@ -50,53 +50,71 @@
+                   <button id="machinesRemoveAllBtn" type="button" class="sim-tertiary sim-machines-remove-all">Remove All</button>
+                 </div>
+               </div>
+-              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
+-              <button id="referenceToggleBtn" type="button" class="sim-secondary sim-reference-toggle" aria-pressed="false">Show Reference Path</button>
+-              <div class="sim-toggle-group" aria-label="Simulation overlays and motor options">
+-                <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
+-                  <input id="qualityToggle" type="checkbox">
+-                  <span>Live Quality Checks</span>
+-                </label>
+-                <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
+-                  <input id="showForcesToggle" type="checkbox">
+-                  <span>Show Forces</span>
+-                </label>
+-                <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
+-                  <input id="lineLayeringToggle" type="checkbox" checked>
+-                  <span>Line Layering</span>
+-                </label>
+-                <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
+-                  <input id="closedLoopMotorsToggle" type="checkbox">
+-                  <span>Closed Loop Motors</span>
+-                </label>
+-                <label class="sim-toggle" for="solverIterations">
+-                  <span>Solver Iterations</span>
+-                  <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
+-                    <option value="" selected>Machine default</option>
+-                    <option value="1">1</option>
+-                    <option value="2">2</option>
+-                    <option value="4">4</option>
+-                    <option value="6">6</option>
+-                    <option value="8">8</option>
+-                    <option value="10">10</option>
+-                    <option value="12">12</option>
+-                    <option value="16">16</option>
+-                    <option value="20">20</option>
+-                    <option value="32">32</option>
+-                    <option value="64">64</option>
+-                  </select>
+-                </label>
+-                <label class="sim-toggle" for="physicsSubsteps">
+-                  <span>Physics Substeps</span>
+-                  <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
+-                    <option value="1" selected>1</option>
+-                    <option value="2">2</option>
+-                    <option value="4">4</option>
+-                    <option value="8">8</option>
+-                    <option value="16">16</option>
+-                  </select>
+-                </label>
++              <div class="sim-settings" data-open="false">
++                <button
++                  id="settingsToggle"
++                  type="button"
++                  class="sim-secondary sim-settings-toggle"
++                  aria-haspopup="true"
++                  aria-expanded="false"
++                  aria-controls="settingsMenu"
++                >
++                  Settings
++                </button>
++                <div id="settingsMenu" class="sim-settings-menu sim-hidden" aria-labelledby="settingsToggle">
++                  <span class="sim-menu-section-title">View</span>
++                  <button id="referenceToggleBtn" type="button" class="sim-tertiary sim-reference-toggle" aria-pressed="false">Show Reference Path</button>
++                  <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
++                    <input id="qualityToggle" type="checkbox">
++                    <span>Live Quality Checks</span>
++                  </label>
++                  <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
++                    <input id="showForcesToggle" type="checkbox">
++                    <span>Show Forces</span>
++                  </label>
++                  <label id="highlightSlackToggleWrapper" class="sim-toggle" for="highlightSlackToggle">
++                    <input id="highlightSlackToggle" type="checkbox">
++                    <span>Highlight Slack Lines</span>
++                  </label>
++                  <span class="sim-menu-section-title">Simulation</span>
++                  <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
++                    <input id="lineLayeringToggle" type="checkbox" checked>
++                    <span>Line Layering</span>
++                  </label>
++                  <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
++                    <input id="closedLoopMotorsToggle" type="checkbox">
++                    <span>Closed Loop Motors</span>
++                  </label>
++                  <label class="sim-toggle sim-select" for="solverIterations">
++                    <span>Solver Iterations</span>
++                    <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
++                      <option value="" selected>Machine default</option>
++                      <option value="1">1</option>
++                      <option value="2">2</option>
++                      <option value="4">4</option>
++                      <option value="6">6</option>
++                      <option value="8">8</option>
++                      <option value="10">10</option>
++                      <option value="12">12</option>
++                      <option value="16">16</option>
++                      <option value="20">20</option>
++                      <option value="32">32</option>
++                      <option value="64">64</option>
++                    </select>
++                  </label>
++                  <label class="sim-toggle sim-select" for="physicsSubsteps">
++                    <span>Physics Substeps</span>
++                    <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
++                      <option value="1" selected>1</option>
++                      <option value="2">2</option>
++                      <option value="4">4</option>
++                      <option value="8">8</option>
++                      <option value="16">16</option>
++                    </select>
++                  </label>
++                </div>
+               </div>
++              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
+             </div>
+             <input
+               type="file"
+diff --git a/hp-sim-3d/style.css b/hp-sim-3d/style.css
+index c01f3c85..006a1052 100644
+--- a/hp-sim-3d/style.css
++++ b/hp-sim-3d/style.css
+@@ -1,5 +1,26 @@
+ :root {
++  /* OKLCH-derived graphite family (hue 255, chroma <= 0.012) with one accent
++     taken from the Dyneema line colour. Lightness steps: chrome 0.24,
++     panel 0.27, control 0.31, hover 0.36, viewport 0.31, text 0.94. */
+   color-scheme: dark;
++  --chrome: #1c2024;
++  --chrome-text: #e9ebee;
++  --chrome-muted: #9a9fa6;
++  --control: #2d3135;
++  --control-hover: #3a3d42;
++  --control-border: #44484d;
++  --accent: #da566a;
++  --accent-hover: #eb6679;
++  --accent-text: #16191c;
++  --focus: #4baeed;
++  --panel: #24272b;
++  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
++  --glass: rgba(28, 32, 36, 0.88);
++  --glass-hover: rgba(49, 54, 60, 0.9);
++  --glass-text: #e9ebee;
++  --glass-border: rgba(255, 255, 255, 0.09);
++  --viewport: #2d3135;
++  --radius: 8px;
+ }
+ 
+ * {
+@@ -11,11 +32,12 @@ body {
+   height: 100%;
+   margin: 0;
+   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+-  background: radial-gradient(circle at top, #121420, #05060a 65%);
+-  color: #f5f7ff;
++  background: var(--chrome);
++  color: var(--chrome-text);
+ }
+ 
+-button {
++button,
++select {
+   font: inherit;
+ }
+ 
+@@ -27,10 +49,7 @@ body {
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+-  gap: clamp(16px, 3vw, 32px);
+-  padding: 0;
+   width: 100%;
+-  max-width: none;
+   margin: 0;
+   min-height: 0;
+ }
+@@ -38,8 +57,6 @@ body {
+ .sim-shell {
+   flex: 1;
+   display: flex;
+-  justify-content: center;
+-  align-items: stretch;
+   width: 100%;
+   min-height: 0;
+ }
+@@ -47,45 +64,46 @@ body {
+ .sim-app {
+   flex: 1;
+   width: 100%;
+-  max-width: none;
+-  background: rgba(24, 28, 46, 0.82);
+-  border: 1px solid rgba(255, 255, 255, 0.08);
+-  padding: clamp(20px, 3vw, 36px);
+-  box-shadow: 0 32px 80px rgba(5, 6, 10, 0.45);
++  background: var(--chrome);
++  padding: 10px 12px 12px;
+   display: flex;
+   flex-direction: column;
+-  gap: 24px;
+-  backdrop-filter: blur(12px);
++  gap: 10px;
+   min-height: 0;
+ }
+ 
+-.sim-controls {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 20px;
+-}
++/* Top bar */
+ 
+ .sim-buttons {
+   display: flex;
+   align-items: center;
+-  gap: 16px;
++  gap: 8px;
+ }
+ 
+ .sim-start-buttons {
+   display: flex;
+-  flex-wrap: wrap;
+-  gap: 12px;
++  gap: 8px;
++  margin-right: auto;
+ }
+ 
+ .sim-controls button,
+ .sim-secondary-group button {
+-  border: none;
+-  border-radius: 999px;
+-  padding: 9px 18px;
+-  font-size: 14px;
++  height: 34px;
++  padding: 0 14px;
++  border-radius: var(--radius);
++  font-size: 13.5px;
+   font-weight: 600;
++  white-space: nowrap;
+   cursor: pointer;
+-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
++  transition: background 0.12s ease, border-color 0.12s ease;
++}
++
++.sim-controls button:focus-visible,
++.sim-secondary-group button:focus-visible,
++.sim-secondary-toggle:focus-visible,
++.sim-toggle:focus-within {
++  outline: 2px solid var(--focus);
++  outline-offset: 2px;
+ }
+ 
+ .sim-controls button:disabled,
+@@ -94,71 +112,249 @@ body {
+ .sim-secondary-group button[aria-disabled='true'] {
+   opacity: 0.45;
+   cursor: not-allowed;
+-  box-shadow: none;
+-  transform: none;
+ }
+ 
+-.sim-controls button:active,
+-.sim-secondary-group button:active {
+-  transform: translateY(1px);
++.sim-start,
++.sim-secondary,
++.sim-tertiary {
++  background: var(--control);
++  color: var(--chrome-text);
++  border: 1px solid var(--control-border);
+ }
+ 
+-.sim-play,
+-.sim-start {
+-  background: linear-gradient(135deg, #ff4d8d, #ff784c);
+-  color: #141421;
+-  box-shadow: 0 16px 32px rgba(255, 96, 122, 0.28);
++.sim-start:hover,
++.sim-controls .sim-secondary:hover,
++.sim-tertiary:hover {
++  background-color: var(--control-hover);
+ }
+ 
+-.sim-upload {
+-  background: linear-gradient(135deg, #ffd147, #ffbb3c);
+-  color: #141421;
+-  box-shadow: 0 16px 32px rgba(255, 209, 71, 0.28);
++.sim-play {
++  background: var(--accent);
++  color: var(--accent-text);
++  border-color: transparent;
+ }
+ 
+-.sim-secondary {
+-  background: rgba(255, 255, 255, 0.14);
+-  color: rgba(244, 246, 255, 0.92);
+-  border: 1px solid rgba(255, 255, 255, 0.24);
+-  box-shadow: 0 12px 24px rgba(3, 5, 12, 0.35);
++.sim-play:hover {
++  background-color: var(--accent-hover);
+ }
+ 
+-.sim-tertiary {
+-  background: rgba(255, 255, 255, 0.08);
+-  color: rgba(244, 246, 255, 0.75);
+-  border: 1px solid rgba(255, 255, 255, 0.14);
++.sim-buttons.is-printing .sim-start {
++  opacity: 0.5;
++  pointer-events: none;
+ }
+ 
+-.sim-tertiary:disabled,
+-.sim-tertiary[aria-disabled='true'] {
+-  opacity: 0.5;
++/* Popovers (machines and settings) */
++
++.sim-machines,
++.sim-settings {
++  position: relative;
++  display: flex;
++  align-items: center;
+ }
+ 
+-.sim-buttons.is-printing .sim-start {
+-  opacity: 0.6;
+-  pointer-events: none;
++.sim-machines[data-open='true'] .sim-machines-toggle,
++.sim-settings[data-open='true'] .sim-settings-toggle {
++  background-color: var(--control-hover);
++  border-color: #5a5f66;
++}
++
++.sim-machines-menu,
++.sim-settings-menu {
++  position: absolute;
++  top: calc(100% + 8px);
++  right: 0;
++  max-height: min(70vh, 520px);
++  overflow-y: auto;
++  padding: 12px;
++  border-radius: 12px;
++  border: 1px solid var(--control-border);
++  background: var(--panel);
++  box-shadow: var(--panel-shadow);
++  display: flex;
++  flex-direction: column;
++  z-index: 20;
++}
++
++.sim-machines-menu {
++  min-width: clamp(220px, 28vw, 320px);
++  gap: 14px;
++}
++
++.sim-settings-menu {
++  width: 290px;
++  gap: 2px;
++}
++
++.sim-menu-section-title,
++.sim-machines-section-title {
++  font-size: 11px;
++  font-weight: 600;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--chrome-muted);
++}
++
++.sim-menu-section-title {
++  padding: 8px 8px 4px;
+ }
+ 
+-.sim-fullscreen {
+-  margin-left: auto;
++.sim-menu-section-title:first-child {
++  padding-top: 0;
+ }
+ 
+-.sim-toggle-group {
++.sim-settings-menu .sim-reference-toggle {
++  margin: 2px 0 4px;
++  width: 100%;
++}
++
++.sim-toggle {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  min-height: 34px;
++  padding: 0 8px;
++  border-radius: 6px;
++  font-size: 13.5px;
++  cursor: pointer;
++  user-select: none;
++}
++
++.sim-toggle:hover {
++  background: var(--control-hover);
++}
++
++.sim-toggle input[type='checkbox'] {
++  width: 16px;
++  height: 16px;
++  margin: 0;
++  accent-color: var(--accent);
++  cursor: pointer;
++}
++
++.sim-select {
++  justify-content: space-between;
++}
++
++.sim-toggle span {
++  white-space: nowrap;
++}
++
++.sim-select select {
++  height: 28px;
++  padding: 0 6px;
++  border-radius: 6px;
++  border: 1px solid var(--control-border);
++  background: var(--control);
++  color: var(--chrome-text);
++  font-size: 13px;
++  cursor: pointer;
++}
++
++.sim-machines-section {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++}
++
++.sim-machines-options,
++.sim-machines-custom {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++}
++
++.sim-machines-option {
++  margin: 0;
++}
++
++.sim-machines-option-label {
+   display: flex;
+-  flex-wrap: wrap;
+-  gap: 12px;
+   align-items: center;
++  gap: 10px;
++  padding: 8px 10px;
++  border-radius: 6px;
++  font-size: 13.5px;
++  cursor: pointer;
++}
++
++.sim-machines-option-label:hover {
++  background: var(--control-hover);
+ }
+ 
++.sim-machines-checkbox {
++  width: 16px;
++  height: 16px;
++  margin: 0;
++  accent-color: var(--accent);
++}
++
++.sim-machines-option-color {
++  width: 12px;
++  height: 12px;
++  border-radius: 999px;
++  border: 1px solid rgba(255, 255, 255, 0.3);
++  flex-shrink: 0;
++}
++
++.sim-machines-option-color--empty {
++  background: transparent;
++  border-style: dashed;
++}
++
++.sim-machines-option-text {
++  flex: 1;
++}
++
++.sim-machines-custom-item {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 10px;
++  padding: 6px 10px;
++  border-radius: 6px;
++  background: var(--control-hover);
++  font-size: 13.5px;
++}
++
++.sim-machines-custom-info {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  flex: 1;
++  min-width: 0;
++}
++
++.sim-machines-custom-name {
++  flex: 1;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.sim-controls .sim-machines-remove,
++.sim-controls .sim-machines-remove-all {
++  height: 28px;
++  padding: 0 10px;
++  font-size: 12.5px;
++}
++
++.sim-machines-remove-all {
++  align-self: flex-start;
++}
++
++/* Viewport */
++
+ .canvas-frame {
+   flex: 1;
+   width: 100%;
+   min-height: 0;
+-  border-radius: 28px;
++  border-radius: 12px;
+   overflow: hidden;
+-  background: rgba(5, 6, 12, 0.62);
++  background: var(--viewport);
+   position: relative;
+-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+   overscroll-behavior: contain;
+   touch-action: none;
+   display: flex;
+@@ -174,15 +370,44 @@ body {
+   user-select: none;
+ }
+ 
++/* Floating controls over the viewport */
++
++.sim-secondary-toggle {
++  position: absolute;
++  top: 12px;
++  right: 12px;
++  width: 32px;
++  height: 32px;
++  border-radius: var(--radius);
++  background: var(--glass);
++  color: var(--glass-text);
++  border: 1px solid var(--glass-border);
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  font-size: 12px;
++  line-height: 1;
++  cursor: pointer;
++  transition: transform 140ms ease, background 140ms ease;
++  z-index: 4;
++}
++
++.sim-secondary-toggle:hover {
++  background: var(--glass-hover);
++}
++
++.sim-secondary-toggle[aria-expanded='true'] {
++  transform: rotate(180deg);
++}
++
+ .sim-secondary-group {
+   position: absolute;
+-  top: 72px;
+-  right: 24px;
+-  width: 136px;
++  top: 52px;
++  right: 12px;
++  width: 112px;
+   display: flex;
+   flex-direction: column;
+-  gap: 12px;
+-  align-items: stretch;
++  gap: 6px;
+   pointer-events: none;
+ }
+ 
+@@ -192,13 +417,21 @@ body {
+ 
+ .sim-secondary-group button {
+   pointer-events: auto;
+-  background: rgba(35, 38, 58, 0.82);
++  height: 30px;
++  padding: 0 10px;
++  font-size: 12.5px;
++  background: var(--glass);
++  color: var(--glass-text);
++  border: 1px solid var(--glass-border);
++}
++
++.sim-secondary-group button:hover {
++  background: var(--glass-hover);
+ }
+ 
+ .sim-tool-button {
+   display: grid;
+-  grid-template-columns: minmax(0, 1fr) 58px;
+-  align-items: stretch;
++  grid-template-columns: minmax(0, 1fr) 44px;
+   pointer-events: auto;
+ }
+ 
+@@ -207,99 +440,54 @@ body {
+ }
+ 
+ .sim-tool-button .sim-tool-main {
+-  border-radius: 999px;
+   grid-column: 1 / -1;
+ }
+ 
+ .sim-tool-button.is-open .sim-tool-main {
+   grid-column: auto;
+-  border-radius: 999px 0 0 999px;
+-  padding-left: 6px;
+-  padding-right: 6px;
++  border-radius: var(--radius) 0 0 var(--radius);
++  padding: 0 6px;
+ }
+ 
+-
+-.sim-tool-button.is-open .sim-tool-clear {
+-  border-radius: 0 999px 999px 0;
+-  padding-left: 6px;
+-}
+-
+-.sim-tool-clear {
+-  border-radius: 0 999px 999px 0;
+-  min-width: 0;
++.sim-secondary-group .sim-tool-clear {
++  border-radius: 0 var(--radius) var(--radius) 0;
+   border-left-width: 0;
+-  padding: 12px 6px;
+-  font-size: 12px;
+-  color: rgba(240, 244, 255, 0.92);
+-  display: flex;
+-  align-items: center;
+-  justify-content: center;
+-  text-align: center;
+-  box-sizing: border-box;
++  padding: 0 4px;
++  font-size: 11.5px;
+ }
+ 
+ .sim-tool-clear.sim-hidden {
+   display: none;
+ }
+ 
+-.sim-zoom {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 8px;
+-}
+-
+-.sim-zoom-btn {
+-  padding: 12px 16px;
+-  min-width: 48px;
+-}
+-
+-.sim-zoom-btn[aria-pressed="true"],
+-.sim-zoom-btn.is-active,
+-#positionTraceBtn.is-active,
+-#measureBtn.is-active {
+-  background: rgba(255, 255, 255, 0.32);
+-  color: #151526;
+-}
+-
+-.sim-secondary-toggle {
+-  position: absolute;
+-  top: 24px;
+-  right: 24px;
+-  width: 34px;
+-  height: 34px;
+-  border-radius: 50%;
+-  background: rgba(35, 38, 58, 0.88);
+-  color: rgba(240, 244, 255, 0.95);
+-  border: 1px solid rgba(255, 255, 255, 0.22);
+-  box-shadow: 0 14px 32px rgba(5, 6, 12, 0.3);
+-  display: flex;
+-  align-items: center;
+-  justify-content: center;
+-  font-size: 16px;
+-  line-height: 1;
+-  cursor: pointer;
+-  transition: transform 140ms ease, background 140ms ease;
+-  z-index: 4;
++.sim-zoom,
++.sim-speed {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 6px;
++  pointer-events: auto;
+ }
+ 
+-.sim-secondary-toggle:hover {
+-  background: rgba(55, 60, 90, 0.92);
++.sim-zoom #panModeBtn {
++  grid-column: 1 / -1;
+ }
+ 
+-.sim-secondary-toggle:focus-visible {
+-  outline: 2px solid rgba(122, 226, 255, 0.9);
+-  outline-offset: 2px;
++.sim-secondary-group .sim-zoom-btn,
++.sim-secondary-group .sim-speed-btn {
++  padding: 0 4px;
+ }
+ 
+-.sim-secondary-toggle[aria-expanded='true'] {
+-  transform: rotate(180deg);
++.sim-zoom-btn[aria-pressed='true'],
++.sim-zoom-btn.is-active,
++#positionTraceBtn.is-active,
++#measureBtn.is-active,
++#rerunBtn[aria-pressed='true'] {
++  background: #e9ebee;
++  color: #16191c;
+ }
+ 
+-.sim-speed {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 8px;
+-  pointer-events: auto;
++.sim-speed-icon {
++  display: none;
+ }
+ 
+ .sim-speed-btn:disabled {
+@@ -307,30 +495,24 @@ body {
+   cursor: not-allowed;
+ }
+ 
+-.sim-speed-icon {
+-  font-size: 16px;
+-  line-height: 1;
+-}
+-
+-.sim-speed-text {
++.sim-speed-status,
++.sim-print-status {
++  position: absolute;
++  padding: 8px 14px;
++  background: var(--glass);
++  color: var(--glass-text);
++  border-radius: var(--radius);
+   font-size: 13px;
+   font-weight: 600;
++  line-height: 1.4;
++  pointer-events: none;
+ }
+ 
+ .sim-speed-status {
+-  position: absolute;
+-  bottom: 24px;
++  bottom: 12px;
+   left: 50%;
+   transform: translateX(-50%);
+-  padding: 12px 20px;
+-  background: rgba(14, 16, 28, 0.72);
+-  color: rgba(240, 244, 255, 0.88);
+-  border-radius: 999px;
+-  font-size: 14px;
+-  font-weight: 600;
+-  letter-spacing: 0.02em;
+-  pointer-events: none;
+-  box-shadow: 0 20px 40px rgba(5, 6, 12, 0.35);
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .sim-speed-status.sim-hidden {
+@@ -338,83 +520,44 @@ body {
+ }
+ 
+ .sim-print-status {
+-  position: absolute;
+-  left: 24px;
+-  right: auto;
++  left: 12px;
+   max-width: 320px;
+-  padding: 10px 16px;
+-  background: rgba(14, 16, 28, 0.78);
+-  color: rgba(240, 244, 255, 0.92);
+-  border-radius: 12px;
+-  font-size: 14px;
+-  font-weight: 600;
+-  line-height: 1.4;
+-  letter-spacing: 0.01em;
+-  box-shadow: 0 16px 36px rgba(5, 6, 12, 0.28);
+-  pointer-events: none;
+ }
+ 
+ #printStatus {
+-  bottom: 78px;
++  bottom: 56px;
+ }
+ 
+ #asapStatus {
+-  bottom: 24px;
++  bottom: 12px;
+ }
+ 
+-.sim-toggle {
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 8px;
+-  padding: 9px 16px;
+-  border-radius: 999px;
+-  background: rgba(255, 255, 255, 0.14);
+-  color: rgba(244, 246, 255, 0.92);
+-  border: 1px solid rgba(255, 255, 255, 0.24);
+-  box-shadow: 0 12px 24px rgba(3, 5, 12, 0.35);
+-  font-size: 13px;
+-  font-weight: 600;
+-  letter-spacing: 0.01em;
+-  cursor: pointer;
+-  user-select: none;
+-}
+-
+-.sim-toggle input[type='checkbox'] {
+-  width: 16px;
+-  height: 16px;
+-  accent-color: #7ae2ff;
+-  cursor: pointer;
+-}
+-
+-.sim-toggle span {
+-  white-space: nowrap;
+-}
++/* Quality HUD */
+ 
+ .quality-hud {
+   position: absolute;
+-  top: 24px;
+-  left: 24px;
++  top: 12px;
++  left: 12px;
+   display: flex;
+   flex-direction: column;
+-  gap: 10px;
++  gap: 8px;
+   pointer-events: none;
+ }
+ 
+ .quality-hud__card {
+   min-width: 220px;
+-  padding: 14px 18px;
+-  border-radius: 14px;
+-  background: rgba(10, 12, 24, 0.85);
+-  color: rgba(240, 244, 255, 0.92);
++  padding: 12px 14px;
++  border-radius: 10px;
++  background: var(--glass);
++  color: var(--glass-text);
+   font-size: 13px;
+   line-height: 1.35;
+-  box-shadow: 0 18px 34px rgba(5, 6, 12, 0.32);
+   pointer-events: none;
+   transition: opacity 120ms ease;
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+-  --quality-accent: #7ae2ff;
++  --quality-accent: #8fd3ff;
+ }
+ 
+ .quality-hud__header {
+@@ -422,13 +565,12 @@ body {
+   align-items: center;
+   gap: 8px;
+   font-weight: 600;
+-  letter-spacing: 0.01em;
+ }
+ 
+ .quality-hud__swatch {
+-  width: 14px;
+-  height: 14px;
+-  border-radius: 4px;
++  width: 12px;
++  height: 12px;
++  border-radius: 3px;
+   background: rgba(240, 244, 255, 0.25);
+   box-shadow: inset 0 0 0 1px rgba(240, 244, 255, 0.5);
+ }
+@@ -440,21 +582,6 @@ body {
+ 
+ .quality-hud__title {
+   font-size: 13px;
+-  letter-spacing: 0.01em;
+-}
+-
+-.quality-hud__score {
+-  display: flex;
+-  align-items: baseline;
+-  gap: 6px;
+-  font-weight: 600;
+-  letter-spacing: 0.01em;
+-}
+-
+-.quality-hud__score strong {
+-  font-size: 20px;
+-  color: var(--quality-accent, #7ae2ff);
+-  letter-spacing: 0.02em;
+ }
+ 
+ .quality-hud__summary {
+@@ -463,7 +590,6 @@ body {
+   justify-content: space-between;
+   gap: 10px;
+   font-weight: 600;
+-  letter-spacing: 0.01em;
+ }
+ 
+ .quality-hud__summary-copy {
+@@ -473,21 +599,21 @@ body {
+ }
+ 
+ .quality-hud__summary--primary strong {
+-  font-size: 20px;
+-  color: var(--quality-accent, #7ae2ff);
+-  letter-spacing: 0.02em;
++  font-size: 19px;
++  color: var(--quality-accent);
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .quality-hud__summary--secondary strong {
+-  font-size: 16px;
+-  color: rgba(240, 244, 255, 0.96);
++  font-size: 15px;
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .quality-hud__toggle {
+   width: 22px;
+   height: 22px;
+-  border: 1px solid rgba(255, 255, 255, 0.2);
+-  border-radius: 999px;
++  border: 1px solid var(--glass-border);
++  border-radius: 6px;
+   background: rgba(255, 255, 255, 0.08);
+   color: inherit;
+   cursor: pointer;
+@@ -499,8 +625,9 @@ body {
+   pointer-events: auto;
+ }
+ 
+-.quality-hud__toggle:focus-visible {
+-  outline: 2px solid rgba(122, 226, 255, 0.9);
++.quality-hud__toggle:focus-visible,
++.quality-history__toggle:focus-visible {
++  outline: 2px solid var(--focus);
+   outline-offset: 2px;
+ }
+ 
+@@ -529,15 +656,16 @@ body {
+ .quality-hud__metric span:last-child {
+   font-weight: 600;
+   white-space: nowrap;
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .quality-history {
+   position: absolute;
+-  top: 24px;
+-  left: 272px;
++  top: 12px;
++  left: 256px;
+   display: flex;
+   flex-direction: column;
+-  gap: 10px;
++  gap: 8px;
+   pointer-events: auto;
+   min-width: 200px;
+   max-width: 320px;
+@@ -545,36 +673,26 @@ body {
+ 
+ .quality-history__toggle {
+   align-self: flex-start;
+-  padding: 6px 12px;
+-  border-radius: 999px;
+-  background: rgba(20, 22, 36, 0.85);
+-  color: rgba(240, 244, 255, 0.92);
+-  font-size: 13px;
++  height: 30px;
++  padding: 0 12px;
++  border-radius: var(--radius);
++  background: var(--glass);
++  color: var(--glass-text);
++  font-size: 12.5px;
+   font-weight: 600;
+-  letter-spacing: 0.01em;
+-  border: 1px solid rgba(255, 255, 255, 0.18);
+-  box-shadow: 0 12px 24px rgba(5, 6, 12, 0.28);
++  border: 1px solid var(--glass-border);
+   cursor: pointer;
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 6px;
+-}
+-
+-.quality-history__toggle:focus-visible {
+-  outline: 2px solid rgba(122, 226, 255, 0.9);
+-  outline-offset: 2px;
+ }
+ 
+ .quality-history__list {
+-  padding: 14px 16px;
+-  border-radius: 14px;
+-  background: rgba(10, 12, 24, 0.88);
+-  box-shadow: 0 14px 32px rgba(5, 6, 12, 0.3);
++  padding: 12px 14px;
++  border-radius: 10px;
++  background: var(--glass);
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   font-size: 13px;
+-  color: rgba(240, 244, 255, 0.92);
++  color: var(--glass-text);
+   max-height: 260px;
+   overflow-y: auto;
+ }
+@@ -588,303 +706,106 @@ body {
+ 
+ .quality-history__label {
+   flex: 1;
+-  letter-spacing: 0.01em;
+ }
+ 
+ .quality-history__score {
+   font-weight: 600;
+   font-variant-numeric: tabular-nums;
+-  letter-spacing: 0.02em;
+-  color: rgba(122, 226, 255, 0.95);
++  color: #8fd3ff;
+ }
+ 
+ .sim-hidden {
+   display: none !important;
+ }
+ 
+-.sim-machines {
+-  position: relative;
+-  display: flex;
+-  align-items: center;
+-}
+-
+-.sim-machines-toggle {
+-  white-space: nowrap;
+-}
+-
+-.sim-machines[data-open='true'] .sim-machines-toggle {
+-  background: rgba(255, 255, 255, 0.3);
+-  color: #151526;
+-}
+-
+-.sim-machines-menu {
+-  position: absolute;
+-  top: calc(100% + 12px);
+-  right: 0;
+-  min-width: clamp(220px, 28vw, 340px);
+-  max-height: min(70vh, 480px);
+-  overflow-y: auto;
+-  padding: 16px;
+-  border-radius: 20px;
+-  border: 1px solid rgba(255, 255, 255, 0.12);
+-  background: rgba(18, 20, 36, 0.96);
+-  box-shadow: 0 28px 64px rgba(4, 6, 16, 0.55);
+-  display: flex;
+-  flex-direction: column;
+-  gap: 16px;
+-  z-index: 20;
+-  backdrop-filter: blur(18px);
+-}
+-
+-.sim-machines-section {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 10px;
+-}
+-
+-.sim-machines-section-title {
+-  font-size: 13px;
+-  letter-spacing: 0.08em;
+-  text-transform: uppercase;
+-  color: rgba(244, 246, 255, 0.6);
+-}
+-
+-.sim-machines-options,
+-.sim-machines-custom {
+-  list-style: none;
+-  margin: 0;
+-  padding: 0;
+-  display: flex;
+-  flex-direction: column;
+-  gap: 8px;
+-}
+-
+-.sim-machines-option {
+-  margin: 0;
+-}
+-
+-.sim-machines-option-label {
+-  display: flex;
+-  align-items: center;
+-  gap: 12px;
+-  padding: 10px 14px;
+-  border-radius: 14px;
+-  border: 1px solid rgba(255, 255, 255, 0.08);
+-  background: rgba(34, 37, 56, 0.82);
+-  font-size: 14px;
+-  cursor: pointer;
+-  transition: background 0.16s ease, border-color 0.16s ease;
+-}
+-
+-.sim-machines-option-label:hover {
+-  border-color: rgba(255, 255, 255, 0.18);
+-  background: rgba(44, 48, 68, 0.9);
+-}
+-
+-.sim-machines-checkbox {
+-  width: 18px;
+-  height: 18px;
+-  margin: 0;
+-  accent-color: #ff5c83;
+-}
+-
+-.sim-machines-option-color {
+-  width: 14px;
+-  height: 14px;
+-  border-radius: 999px;
+-  border: 1px solid rgba(255, 255, 255, 0.4);
+-  background: rgba(255, 255, 255, 0.18);
+-  flex-shrink: 0;
+-  box-shadow: 0 0 0 1px rgba(12, 14, 24, 0.35);
+-  transition:
+-    transform 0.18s ease,
+-    box-shadow 0.18s ease,
+-    background-color 0.18s ease,
+-    border-color 0.18s ease;
+-}
+-
+-.sim-machines-option-color--empty {
+-  background: rgba(255, 255, 255, 0.12);
+-  border-style: dashed;
+-  border-color: rgba(255, 255, 255, 0.25);
+-  box-shadow: none;
+-}
+-
+-.sim-machines-option-label:hover .sim-machines-option-color {
+-  transform: scale(1.05);
+-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+-}
+-
+-.sim-machines-option-text {
+-  flex: 1;
+-  color: rgba(244, 246, 255, 0.9);
+-}
+-
+-.sim-machines-custom-item {
+-  display: flex;
+-  align-items: center;
+-  justify-content: space-between;
+-  gap: 12px;
+-  padding: 10px 14px;
+-  border-radius: 14px;
+-  border: 1px solid rgba(255, 255, 255, 0.08);
+-  background: rgba(34, 37, 56, 0.65);
+-  font-size: 14px;
+-}
+-
+-.sim-machines-custom-info {
+-  display: flex;
+-  align-items: center;
+-  gap: 12px;
+-  flex: 1;
+-  min-width: 0;
+-}
+-
+-.sim-machines-custom-name {
+-  flex: 1;
+-  overflow: hidden;
+-  text-overflow: ellipsis;
+-  white-space: nowrap;
+-  color: rgba(244, 246, 255, 0.9);
+-}
+-
+-.sim-machines-remove {
+-  padding: 6px 12px;
+-  font-size: 13px;
+-}
+-
+-.sim-machines-remove-all {
+-  align-self: flex-start;
+-  padding: 8px 16px;
+-  font-size: 13px;
+-}
+-
+ @media (max-width: 900px) {
+-  .sim-buttons {
+-    flex-direction: column;
+-    align-items: stretch;
+-    gap: 12px;
+-  }
+-
+-  .sim-machines {
+-    width: 100%;
+-  }
+-
+-  .sim-machines-toggle {
+-    width: 100%;
+-  }
+-
+-  .sim-machines-menu {
+-    position: relative;
+-    top: 12px;
+-    right: auto;
+-    left: 0;
+-    width: 100%;
+-    max-height: min(60vh, 360px);
+-    box-shadow: 0 18px 42px rgba(4, 6, 16, 0.45);
+-  }
+-
+-  .sim-fullscreen {
+-    width: 100%;
+-    margin-left: 0;
+-    align-self: flex-end;
+-  }
+-
+-  .sim-toggle-group {
+-    width: 100%;
+-  }
+-
+   .quality-history {
+     top: auto;
+-    bottom: 24px;
++    bottom: 12px;
+     left: auto;
+-    right: 24px;
++    right: 12px;
+   }
+ }
+ 
+-@media (max-width: 600px) {
+-  .canvas-frame {
+-    border-radius: 20px;
++/* Narrow windows: short labels keep the bar on one row. */
++@media (max-width: 760px) {
++  .sim-label-long {
++    display: none;
+   }
++}
+ 
++/* Phones: one row of flexible buttons with ~44 px touch targets; the
++   settings button shows a gear. */
++@media (max-width: 600px) {
+   .sim-app {
+-    border-radius: 0;
+-    gap: 12px;
+-    width: 100vw;
+-    padding: clamp(10px, 1vw, 12px);
++    padding: 8px;
++    gap: 8px;
+   }
+ 
+   .sim-buttons {
+-    display: grid;
+-    grid-template-columns: repeat(3, minmax(0, 1fr));
+-    grid-auto-rows: minmax(52px, auto);
+-    gap: 10px;
+-    align-items: stretch;
+-  }
+-
+-  .sim-start-buttons {
+-    display: contents;
++    gap: 6px;
+   }
+ 
+-  .sim-toggle-group {
+-    display: contents;
++  .sim-start-buttons,
++  .sim-machines {
++    min-width: 0;
+   }
+ 
+-  .sim-controls button {
+-    display: inline-flex;
+-    align-items: center;
+-    justify-content: center;
+-    width: 100%;
+-    min-height: 52px;
+-    white-space: nowrap;
++  .sim-start-buttons {
++    flex: 1;
++    gap: 6px;
+   }
+ 
+-  .sim-toggle {
+-    display: flex;
+-    justify-content: center;
+-    width: 100%;
+-    min-height: 52px;
+-    gap: 6px;
++  .sim-start-buttons button {
++    flex: 1;
+   }
+ 
+-  .sim-toggle input[type='checkbox'] {
+-    flex-shrink: 0;
++  #fullscreenBtn {
++    display: none;
+   }
+ 
+-  .sim-machines {
+-    width: 100%;
++  .sim-controls .sim-buttons button {
++    height: 42px;
++    min-width: 0;
++    padding: 0 6px;
++    font-size: 13px;
++    overflow: hidden;
++    text-overflow: ellipsis;
+   }
+ 
+-  .sim-machines-toggle {
+-    width: 100%;
+-    justify-content: center;
++  .sim-controls .sim-buttons .sim-settings-toggle {
++    width: 42px;
++    flex-shrink: 0;
++    font-size: 0 !important;
++    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9ebee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E");
++    background-repeat: no-repeat;
++    background-position: center;
++    background-size: 18px 18px;
+   }
+ 
+-  .sim-machines-menu {
+-    position: absolute;
+-    top: calc(100% + 8px);
+-    left: 50%;
+-    right: auto;
+-    transform: translateX(-50%);
+-    width: min(90vw, 340px);
++  .sim-machines-menu,
++  .sim-settings-menu {
++    width: min(92vw, 320px);
+     min-width: 0;
+-    max-height: none;
+-    overflow-y: visible;
+-    box-shadow: 0 24px 52px rgba(4, 6, 16, 0.5);
+   }
+ 
+-  .sim-machines-menu::-webkit-scrollbar {
+-    display: none;
++  .canvas-frame {
++    border-radius: 10px;
+   }
+ 
+-  #fullscreenBtn {
+-    display: none;
++  .sim-secondary-group {
++    width: 104px;
+   }
+ 
+-  .sim-controls button,
+   .sim-secondary-group button {
+-    font-size: 13px;
+-    padding: 8px 16px;
++    height: 36px;
++  }
++}
++
++@media (max-width: 360px) {
++  .sim-controls .sim-buttons button {
++    font-size: 12px;
++    padding: 0 4px;
+   }
+ }
+ 
+@@ -893,16 +814,12 @@ body {
+ .sim-app.is-fullscreen {
+   width: 100vw;
+   height: 100vh;
+-  max-width: none;
+-  padding: clamp(20px, 4vw, 40px);
+-  border-radius: 0;
+-  box-shadow: none;
++  padding: 10px 12px 12px;
+ }
+ 
+ .sim-app:fullscreen .canvas-frame,
+ .sim-app:-webkit-full-screen .canvas-frame,
+ .sim-app.is-fullscreen .canvas-frame {
+-  aspect-ratio: auto;
+   height: 100%;
+   min-height: 0;
+ }
+@@ -916,11 +833,10 @@ body {
+ 
+ .sim-error {
+   margin: 0;
+-  padding: 18px;
+-  border-radius: 16px;
+-  background: rgba(150, 32, 54, 0.85);
+-  color: #fef2f2;
+-  font-size: 16px;
++  padding: 16px;
++  border-radius: 10px;
++  background: #b3263e;
++  color: #fff;
++  font-size: 15px;
+   text-align: center;
+-  box-shadow: 0 20px 40px rgba(5, 6, 12, 0.35);
+ }
+diff --git a/research/output/index.md b/research/output/index.md
+index a1242149..6cfc7704 100644
+--- a/research/output/index.md
++++ b/research/output/index.md
+@@ -152,6 +152,8 @@ One result sentence per session; follow the report for evidence.
+ 
+ - [Stable stronger stepper motors at the 2 ms step](session-2026-11-12-interactive-research-37d92817/report.md) — Simulated motors at 1 Nm (or anywhere from 0.25 to 4 Nm) no longer oscillate or spin away at the default 2 ms step: the servo's current-limit check and the open-loop detent torque had numerical artifacts, and fixing them made a gain retune unnecessary.
+ 
++- [Hangprinter simulator UI and rendering review](session-2026-11-12-you-are-a-reviewer-do-not-modify-any-files-in-the-repository-exc-f163f8ce/report.md) — The review found toolbar overflow, floor occlusion risk and a rendering-resource leak, while all 102 UI-related JavaScript tests passed; see the report.
++
+ - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
+ 
+ - [Saved HP4 recording Viewer inspection](session-338606b11fde452bb3886bb861a7e96c/report.md) — Retrospective summary of saved evidence, written 2026-10-08.
+diff --git a/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json b/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json
+index 1603db19..6c00b1cb 100644
+--- a/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json
++++ b/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json
+@@ -1 +1 @@
+-{"authored_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "baked_scene_sha256": "2cf2578e1317d9a94be24ec1da6e8877711233fbf8f5a9df0a9f7d43f2e589c7", "bridge_source_sha256": "c60f566109f58151fd462c4b0966b1e03018dfba9b586a27db53dfcec336822a", "design_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "effective_settings": {"backend": "headless-js", "base_radii_mm": [30.0, 30.0, 30.0, 30.0], "buildup_factor": 0.6366197723675814, "firmware_config": "sys/config_hp4_w_line_layers.g", "layering": true, "machine": "hp4", "scene": "public/usd_scenes/hp4_rigid_body.usda"}, "firmware_config_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "firmware_configuration": {"buildup_factor": 0.6366197723675814, "radii_mm": [46.6045, 46.6045, 46.6045, 46.6045], "source": "sys/config_hp4_w_line_layers.g"}, "firmware_initial": {"M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-11-11 22:12:27", "M666": "M666 A1 Q0.6366\nR46.60:46.60:46.60:46.60\nU2:2:2:4\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0", "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0"}, "firmware_source_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "generation": 1, "geometry": {"cable_half_widths_m": [0.001], "layering_flags": {"enableLayering": true, "layeringFrictionEffectiveRadius": true, "layeringRenderWraps": true}}, "js_physics_source_sha256": "712fbfb574dd3f540ef4e3a10ee7067e6a76e251054d952bb2115edf2da4226c", "physics_artifact": {"build": {"arch": "x64", "artifactSha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740", "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016", "compiler": "cc", "nodeApi": 8, "nodeApiHeaders": {"directory": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/native/node-api", "sha256": {"js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61"}}, "platform": "linux", "profile": "release", "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8", "rustflags": null, "sources": {"Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9", "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef", "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61", "native/node_bridge.c": "af7bfc8cbe31e38bf99a75ba20f0393d71f16a7e69241eec2f88637e16e2404c", "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8", "src/engine.rs": "7cd4461434a0c38239b43b7de56b9bc18607c937d41328c7f258bedc02a4aa8b", "src/lib.rs": "debff40c885abb529c00ed2b564a03aff830e2e134fe21c956341e9fcdf6b0e1"}, "target": "x86_64-unknown-linux-gnu"}, "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node", "sha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740"}, "physics_engine": "rust-native", "previous_world_id": null, "python_source_sha256": "19cc61428220067a401eb2f10017845d165c78078b70488b68c1f123aebc3f56", "requested_settings": {"machine": "hp4"}, "reset_required": false, "rrf_sha256": "8ac55b5098ac046ddbbf0b8196adf3d5aa53557279c70f29bfc8598e32ac31f9", "rust_physics_sha256": "4c36a8cf007e21a85e27314a1582ed368a4568819e0b0896931931269f1ddf31", "schema_version": 2, "session_id": "b06e77c7c9844669af755e61c62302e8", "status": "ready", "world_id": "b06e77c7c9844669af755e61c62302e8"}
++{"authored_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "baked_scene_sha256": "2cf2578e1317d9a94be24ec1da6e8877711233fbf8f5a9df0a9f7d43f2e589c7", "bridge_source_sha256": "c60f566109f58151fd462c4b0966b1e03018dfba9b586a27db53dfcec336822a", "design_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "effective_settings": {"backend": "headless-js", "base_radii_mm": [30.0, 30.0, 30.0, 30.0], "buildup_factor": 0.6366197723675814, "firmware_config": "sys/config_hp4_w_line_layers.g", "layering": true, "machine": "hp4", "scene": "public/usd_scenes/hp4_rigid_body.usda"}, "end_step": 0, "firmware_config_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "firmware_configuration": {"buildup_factor": 0.6366197723675814, "radii_mm": [46.6045, 46.6045, 46.6045, 46.6045], "source": "sys/config_hp4_w_line_layers.g"}, "firmware_initial": {"M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-11-11 22:12:27", "M666": "M666 A1 Q0.6366\nR46.60:46.60:46.60:46.60\nU2:2:2:4\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0", "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0"}, "firmware_source_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "generation": 1, "geometry": {"cable_half_widths_m": [0.001], "layering_flags": {"enableLayering": true, "layeringFrictionEffectiveRadius": true, "layeringRenderWraps": true}}, "js_physics_source_sha256": "712fbfb574dd3f540ef4e3a10ee7067e6a76e251054d952bb2115edf2da4226c", "physics_artifact": {"build": {"arch": "x64", "artifactSha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740", "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016", "compiler": "cc", "nodeApi": 8, "nodeApiHeaders": {"directory": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/native/node-api", "sha256": {"js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61"}}, "platform": "linux", "profile": "release", "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8", "rustflags": null, "sources": {"Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9", "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef", "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61", "native/node_bridge.c": "af7bfc8cbe31e38bf99a75ba20f0393d71f16a7e69241eec2f88637e16e2404c", "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8", "src/engine.rs": "7cd4461434a0c38239b43b7de56b9bc18607c937d41328c7f258bedc02a4aa8b", "src/lib.rs": "debff40c885abb529c00ed2b564a03aff830e2e134fe21c956341e9fcdf6b0e1"}, "target": "x86_64-unknown-linux-gnu"}, "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node", "sha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740"}, "physics_engine": "rust-native", "previous_world_id": null, "python_source_sha256": "19cc61428220067a401eb2f10017845d165c78078b70488b68c1f123aebc3f56", "requested_settings": {"machine": "hp4"}, "reset_required": false, "rrf_sha256": "8ac55b5098ac046ddbbf0b8196adf3d5aa53557279c70f29bfc8598e32ac31f9", "rust_physics_sha256": "4c36a8cf007e21a85e27314a1582ed368a4568819e0b0896931931269f1ddf31", "schema_version": 2, "session_id": "b06e77c7c9844669af755e61c62302e8", "status": "archived", "world_id": "b06e77c7c9844669af755e61c62302e8"}
+diff --git a/src/js/cable_joints_3d/render_system_3d.js b/src/js/cable_joints_3d/render_system_3d.js
+index 9e9ff501..f9e14a63 100644
+--- a/src/js/cable_joints_3d/render_system_3d.js
++++ b/src/js/cable_joints_3d/render_system_3d.js
+@@ -2,6 +2,10 @@ import * as THREE from 'three';
+ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+ 
+ import Vector3 from './vector3.js';
++import { writeSlackCablePositions } from './cable_shape.js';
++import { Stage3D } from './stage_3d.js';
++import { CableLineBatch } from './cable_lines_3d.js';
++import { MachineDetails3D } from './machine_details_3d.js';
+ import {
+   PositionComponent,
+   RadiusComponent,
+@@ -26,10 +30,19 @@ import {
+ const EPSILON = 1e-9;
+ const ARC_SEGMENTS = 48;
+ const JOINT_LINE_SEGMENTS = 24;
+-const SLACK_COLOR = '#ff9f43';
++const CABLE_LINE_WIDTH_PX = 1.6;
++const AXIS_HALF_LENGTH = 2.5;
++const AXIS_OPACITY = 0.55;
++const AXIS_X_COLOR = '#cd776c';
++const AXIS_Y_COLOR = '#69b27a';
++const AXIS_Z_COLOR = '#779bc9';
++const SLACK_COLOR = '#dea559';
+ const DEFAULT_CABLE_COLOR = '#ffd34d';
++const DYNEEMA_COLOR = '#f3798b';
+ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
+-const ORIENTATION_BACK_COLOR = '#2a3542';
++// Bearings and spools: light steel with a dark half that shows rotation.
++const ROTOR_COLOR = '#c3c7cc';
++const ORIENTATION_BACK_COLOR = '#3a3f47';
+ const KNOT_MARKER_COLOR = '#ff3b30';
+ const KNOT_MARKER_RADIUS = 0.002;
+ const FORCE_SIGN_FALLBACK_FLOAT_OFFSET = 0.024;
+@@ -44,13 +57,10 @@ const FORCE_SIGN_SPREAD_MARGIN_PX = 8;
+ const FORCE_SIGN_SPREAD_ITERATIONS = 10;
+ const FORCE_SIGN_TEXTURE_WIDTH = 256*0.55;
+ const FORCE_SIGN_TEXTURE_HEIGHT = 80*0.65;
+-const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
+ const PRINT_SURFACE_Z = 0.0;
+-const PRINT_SURFACE_OUTLINE_Z = 0.0;
+-const PRINT_SURFACE_MIN_HALF_EXTENT = 0.18;
+-const PRINT_SURFACE_MARGIN = 0.08;
+-const PRINT_SURFACE_COLOR = 0x243248;
+-const PRINT_SURFACE_OUTLINE_COLOR = 0x5f7492;
++const MACHINE_MIN_HALF_EXTENT = 0.18;
++const MACHINE_EXTENT_MARGIN = 0.08;
++const STAGE_FLOOR_CLEARANCE = 0.02;
+ const BORDER_FLOOR_OFFSET_Z = -0.035;
+ const BORDER_FLOOR_COLOR = 0x1d2434;
+ const BORDER_FLOOR_COLOR_HEX = '#1d2434';
+@@ -58,7 +68,6 @@ const BORDER_WALL_HEIGHT = 0.08;
+ const BORDER_WALL_THICKNESS = 0.012;
+ const BORDER_WALL_COLOR = 0x0c111f;
+ const BORDER_WALL_COLOR_HEX = '#0c111f';
+-const DEFAULT_RIGID_GROUP_COLOR = '#55ff88';
+ const DEFAULT_EXTRUDER_COLOR = '#ff8a3d';
+ const BUMPER_FX_MAX_BURSTS = 96;
+ const BUMPER_FX_MIN_RADIUS = 0.03;
+@@ -67,7 +76,8 @@ const DEFAULT_TRACE_COLOR = '#ffffff';
+ const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
+ const DEFAULT_NAV_CURSOR_COLOR = '#ffd34d';
+ const DEFAULT_TRACE_POINT_SIZE = 3;
+-const DEFAULT_EXTRUSION_POINT_SIZE = 2;
++const EXTRUSION_BEAD_WIDTH = 0.0008;
++const EXTRUSION_MIN_PIXEL_SIZE = 2;
+ const DEFAULT_TRACE_Z = 0.0;
+ const DEFAULT_MARKER_Z = 0.005;
+ const TRACE_LABEL_TEXTURE_WIDTH = 256*1.3;
+@@ -81,11 +91,9 @@ const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.0012;
+ const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
+ const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
+ const DEFAULT_ORBIT_POLAR = 1.05;
++const CAMERA_MIN_NEAR = 0.0001;
++const CAMERA_NEAR_PER_DISTANCE = 0.004;
+ const CYLINDER_LOCAL_UP = new THREE.Vector3(0, 1, 0);
+-const CATENARY_HORIZONTAL_EPSILON = 1e-5;
+-const CATENARY_SOLVER_ITERATIONS = 48;
+-const CATENARY_MAX_SINH_ARGUMENT = 20;
+-const PARABOLIC_SAG_SCALE = 0.5;
+ 
+ function finiteOr(value, fallback) {
+   return Number.isFinite(value) ? value : fallback;
+@@ -105,149 +113,6 @@ function getUpDirection(world) {
+   return new Vector3(0, 0, 1);
+ }
+ 
+-function safeSinh(value) {
+-  if (value >= CATENARY_MAX_SINH_ARGUMENT) {
+-    return Number.POSITIVE_INFINITY;
+-  }
+-  return Math.sinh(value);
+-}
+-
+-function solveCatenaryScale(horizontalSpan, verticalOffset, cableLength) {
+-  if (
+-    !Number.isFinite(horizontalSpan) ||
+-    !Number.isFinite(verticalOffset) ||
+-    !Number.isFinite(cableLength) ||
+-    !(horizontalSpan > CATENARY_HORIZONTAL_EPSILON) ||
+-    !(cableLength > Math.abs(verticalOffset) + EPSILON)
+-  ) {
+-    return null;
+-  }
+-
+-  const targetSquared = (cableLength * cableLength) - (verticalOffset * verticalOffset);
+-  if (!(targetSquared > (horizontalSpan * horizontalSpan) + EPSILON)) {
+-    return null;
+-  }
+-
+-  const target = Math.sqrt(targetSquared);
+-  const evaluate = (a) => {
+-    if (!Number.isFinite(a) || !(a > EPSILON)) {
+-      return Number.POSITIVE_INFINITY;
+-    }
+-    const arg = horizontalSpan / (2.0 * a);
+-    return (2.0 * a * safeSinh(arg)) - target;
+-  };
+-
+-  let low = Math.max(horizontalSpan * 1e-6, EPSILON);
+-  let high = Math.max(horizontalSpan, target, 1e-3);
+-  while (!(evaluate(high) < 0.0) && high < 1e9) {
+-    high *= 2.0;
+-  }
+-  if (!(evaluate(high) < 0.0)) {
+-    return null;
+-  }
+-
+-  for (let i = 0; i < CATENARY_SOLVER_ITERATIONS; i += 1) {
+-    const mid = 0.5 * (low + high);
+-    if (evaluate(mid) > 0.0) {
+-      low = mid;
+-    } else {
+-      high = mid;
+-    }
+-  }
+-
+-  return high;
+-}
+-
+-function writeStraightCablePositions(positions, start, end, segments) {
+-  const dx = end.x - start.x;
+-  const dy = end.y - start.y;
+-  const dz = end.z - start.z;
+-  for (let i = 0; i <= segments; i += 1) {
+-    const t = i / segments;
+-    const idx = i * 3;
+-    positions[idx] = start.x + (dx * t);
+-    positions[idx + 1] = start.y + (dy * t);
+-    positions[idx + 2] = start.z + (dz * t);
+-  }
+-}
+-
+-function writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments) {
+-  const dx = end.x - start.x;
+-  const dy = end.y - start.y;
+-  const dz = end.z - start.z;
+-  const straightLength = Math.hypot(dx, dy, dz);
+-  const sagDepth = Math.max(0.0, cableLength - straightLength) * PARABOLIC_SAG_SCALE;
+-
+-  for (let i = 0; i <= segments; i += 1) {
+-    const t = i / segments;
+-    const sagOffset = sagDepth * 4.0 * t * (1.0 - t);
+-    const idx = i * 3;
+-    positions[idx] = start.x + (dx * t) - (upDirection.x * sagOffset);
+-    positions[idx + 1] = start.y + (dy * t) - (upDirection.y * sagOffset);
+-    positions[idx + 2] = start.z + (dz * t) - (upDirection.z * sagOffset);
+-  }
+-}
+-
+-export function writeSlackCablePositions(positions, start, end, cableLength, upDirection, segments) {
+-  const dx = end.x - start.x;
+-  const dy = end.y - start.y;
+-  const dz = end.z - start.z;
+-  const straightLength = Math.hypot(dx, dy, dz);
+-  if (!(cableLength > straightLength + EPSILON)) {
+-    writeStraightCablePositions(positions, start, end, segments);
+-    return;
+-  }
+-
+-  const verticalOffset = (dx * upDirection.x) + (dy * upDirection.y) + (dz * upDirection.z);
+-  const horizontalDx = dx - (upDirection.x * verticalOffset);
+-  const horizontalDy = dy - (upDirection.y * verticalOffset);
+-  const horizontalDz = dz - (upDirection.z * verticalOffset);
+-  const horizontalSpan = Math.hypot(horizontalDx, horizontalDy, horizontalDz);
+-  if (!(horizontalSpan > CATENARY_HORIZONTAL_EPSILON)) {
+-    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
+-    return;
+-  }
+-
+-  const invHorizontalSpan = 1.0 / horizontalSpan;
+-  const horizontalUnitX = horizontalDx * invHorizontalSpan;
+-  const horizontalUnitY = horizontalDy * invHorizontalSpan;
+-  const horizontalUnitZ = horizontalDz * invHorizontalSpan;
+-
+-  const catenaryScale = solveCatenaryScale(horizontalSpan, verticalOffset, cableLength);
+-  if (!Number.isFinite(catenaryScale) || !(catenaryScale > EPSILON)) {
+-    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
+-    return;
+-  }
+-
+-  const target = Math.sqrt(Math.max(0.0, (cableLength * cableLength) - (verticalOffset * verticalOffset)));
+-  if (!(target > horizontalSpan + EPSILON)) {
+-    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
+-    return;
+-  }
+-
+-  const halfSpan = horizontalSpan * 0.5;
+-  const p = Math.asinh(verticalOffset / target);
+-  const q = halfSpan / catenaryScale;
+-  const endpointOffset = catenaryScale * Math.cosh(q - p);
+-
+-  for (let i = 0; i <= segments; i += 1) {
+-    const t = i / segments;
+-    const x = horizontalSpan * t;
+-    const y = (catenaryScale * Math.cosh(((x - halfSpan) / catenaryScale) + p)) - endpointOffset;
+-    const idx = i * 3;
+-    positions[idx] = start.x + (horizontalUnitX * x) + (upDirection.x * y);
+-    positions[idx + 1] = start.y + (horizontalUnitY * x) + (upDirection.y * y);
+-    positions[idx + 2] = start.z + (horizontalUnitZ * x) + (upDirection.z * y);
+-  }
+-
+-  positions[0] = start.x;
+-  positions[1] = start.y;
+-  positions[2] = start.z;
+-  const lastIndex = segments * 3;
+-  positions[lastIndex] = end.x;
+-  positions[lastIndex + 1] = end.y;
+-  positions[lastIndex + 2] = end.z;
+-}
+ 
+ function buildPlaneBasis(planeNormal) {
+   const n = planeNormal.clone();
+@@ -383,9 +248,9 @@ function appendStoredWrapArcSpecs(arcSpecs, path, linkIndex, center, bodyRadius,
+   }
+ }
+ 
+-function writeArcPositions(line, center, radius, basis, startAngle, endAngle, cw) {
+-  const positions = line.geometry.attributes.position.array;
+-  const segments = line.userData.arcSegments ?? ARC_SEGMENTS;
++// Writes the arc with segments proportional to its sweep (ARC_SEGMENTS per
++// full turn, at most ARC_SEGMENTS) and returns the number of points written.
++function writeArcPositions(positions, center, radius, basis, startAngle, endAngle, cw) {
+   const twoPi = Math.PI * 2;
+ 
+   let end = endAngle;
+@@ -396,6 +261,7 @@ function writeArcPositions(line, center, radius, basis, startAngle, endAngle, cw
+   }
+ 
+   const sweep = end - startAngle;
++  const segments = Math.min(ARC_SEGMENTS, Math.max(2, Math.ceil((Math.abs(sweep) / twoPi) * ARC_SEGMENTS)));
+   for (let i = 0; i <= segments; i++) {
+     const t = i / segments;
+     const ang = startAngle + sweep * t;
+@@ -407,8 +273,7 @@ function writeArcPositions(line, center, radius, basis, startAngle, endAngle, cw
+     positions[idx + 1] = center.y + basis.u.y * radius * cos + basis.v.y * radius * sin;
+     positions[idx + 2] = center.z + basis.u.z * radius * cos + basis.v.z * radius * sin;
+   }
+-
+-  line.geometry.attributes.position.needsUpdate = true;
++  return segments + 1;
+ }
+ 
+ function setMaterialColor(material, color) {
+@@ -850,17 +715,6 @@ export function collectRigidGroupEdges(memberCount, renderSegments) {
+ }
+ 
+ export class RenderSystem3D {
+-  static createDefaultLightingGroup() {
+-    const lights = new THREE.Group();
+-    lights.add(new THREE.AmbientLight(0x7a92b0, 1.35));
+-    const key = new THREE.DirectionalLight(0xf6fbff, 1.35);
+-    key.position.set(1.8, 2.6, 2.8);
+-    lights.add(key);
+-    const skyLight = new THREE.HemisphereLight(0xa6caff, 0x27303c, 0.45);
+-    lights.add(skyLight);
+-    return lights;
+-  }
+-
+   static buildBorderShape(points) {
+     if (!points || points.length < 3) {
+       return null;
+@@ -875,9 +729,6 @@ export class RenderSystem3D {
+     return shape;
+   }
+ 
+-  static get DEFAULT_BACKGROUND_COLOR() {
+-    return DEFAULT_BACKGROUND_COLOR;
+-  }
+   static get DEFAULT_BORDER_FLOOR_COLOR() {
+     return BORDER_FLOOR_COLOR;
+   }
+@@ -899,7 +750,6 @@ export class RenderSystem3D {
+     this.defaultPlaneNormal = options.planeNormal ? options.planeNormal.clone().normalize() : DEFAULT_PLANE_NORMAL.clone();
+ 
+     this.scene = new THREE.Scene();
+-    this.scene.background = new THREE.Color(options.backgroundColor ?? RenderSystem3D.DEFAULT_BACKGROUND_COLOR);
+ 
+     this.renderer = new THREE.WebGLRenderer({
+       canvas,
+@@ -969,13 +819,14 @@ export class RenderSystem3D {
+     this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
+       chunkSize: 65536,
+       color: DEFAULT_CABLE_COLOR,
+-      size: DEFAULT_EXTRUSION_POINT_SIZE,
++      beadWidth: EXTRUSION_BEAD_WIDTH,
++      minPixelSize: EXTRUSION_MIN_PIXEL_SIZE,
+       zOffset: DEFAULT_TRACE_Z,
+     });
++    this.extrusionPointCloud.setViewport(height, this.renderer.getPixelRatio());
+     this._animationLoopActive = false;
+     this._requestRenderHandle = null;
+     this._lastWorld = null;
+-    this.extruderLine = null;
+ 
+     this.controls = null;
+     this.controlsEnabled = options.controlsEnabled ?? true;
+@@ -1022,54 +873,8 @@ export class RenderSystem3D {
+     this._fixedCameraPosition = this.camera.position.clone();
+     this._fixedCameraQuaternion = this.camera.quaternion.clone();
+ 
+-    const lights = RenderSystem3D.createDefaultLightingGroup();
+-    this.scene.add(lights);
+-
+-    this.boardMaterial = new THREE.MeshStandardMaterial({
+-      color: PRINT_SURFACE_COLOR,
+-      roughness: 0.94,
+-      metalness: 0.02,
+-      transparent: true,
+-      opacity: 0.32,
+-      depthWrite: false,
+-      side: THREE.DoubleSide,
+-      toneMapped: false
+-    });
+-    this.boardGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+-    this.board = new THREE.Mesh(this.boardGeometry, this.boardMaterial);
+-    this.board.position.z = PRINT_SURFACE_Z;
+-    this.board.renderOrder = 40;
+-    this.board.userData.ownsGeometry = true;
+-    this.board.userData.ownsMaterial = true;
+-    this.scene.add(this.board);
+-
+-    this.boardOutlineMaterial = new THREE.LineBasicMaterial({
+-      color: PRINT_SURFACE_OUTLINE_COLOR,
+-      transparent: true,
+-      opacity: 0.95,
+-      depthWrite: false,
+-      toneMapped: false
+-    });
+-    this.boardOutlineGeometry = new THREE.BufferGeometry();
+-    this.boardOutlineGeometry.setAttribute(
+-      'position',
+-      new THREE.BufferAttribute(
+-        new Float32Array([
+-          -0.5, -0.5, 0.0,
+-          0.5, -0.5, 0.0,
+-          0.5, 0.5, 0.0,
+-          -0.5, 0.5, 0.0
+-        ]),
+-        3
+-      )
+-    );
+-    this.boardOutline = new THREE.LineLoop(this.boardOutlineGeometry, this.boardOutlineMaterial);
+-    this.boardOutline.position.z = PRINT_SURFACE_OUTLINE_Z;
+-    this.boardOutline.renderOrder = 50;
+-    this.boardOutline.frustumCulled = false;
+-    this.boardOutline.userData.ownsGeometry = true;
+-    this.boardOutline.userData.ownsMaterial = true;
+-    this.scene.add(this.boardOutline);
++    this.stage = new Stage3D(this.scene, this.renderer);
++    this._stageMovingMembers = new Set();
+ 
+     this.borderFloorMaterial = new THREE.MeshStandardMaterial({
+       color: BORDER_FLOOR_COLOR,
+@@ -1102,16 +907,23 @@ export class RenderSystem3D {
+     this.root = new THREE.Group();
+     this.scene.add(this.root);
+ 
+-    // Add thin blue axes
++    // Axes through the origin mark the z=0 print plane: x muted red, y muted
++    // green, z muted blue (OKLCH L 0.66-0.70, C 0.08-0.11).
+     const axesGeometry = new THREE.BufferGeometry();
+-    const axesPositions = new Float32Array([
+-        -2.5, 0, 0, 2.5, 0, 0, // X
+-        0, -2.5, 0, 0, 2.5, 0, // Y
+-        0, 0, -2.5, 0, 0, 2.5  // Z
+-    ]);
+-    axesGeometry.setAttribute('position', new THREE.BufferAttribute(axesPositions, 3));
+-    const axesMaterial = new THREE.LineBasicMaterial({ color: 0xDDDDFF, transparent: true, opacity: 0.05});
+-    const axes = new THREE.LineSegments(axesGeometry, axesMaterial);
++    axesGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
++      -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH, 0, 0,
++      0, -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH, 0,
++      0, 0, -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH,
++    ]), 3));
++    const axisColors = [AXIS_X_COLOR, AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR, AXIS_Z_COLOR]
++      .flatMap((hex) => new THREE.Color(hex).toArray());
++    axesGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(axisColors), 3));
++    const axes = new THREE.LineSegments(axesGeometry, new THREE.LineBasicMaterial({
++      vertexColors: true,
++      transparent: true,
++      opacity: AXIS_OPACITY,
++      depthWrite: false,
++    }));
+     axes.frustumCulled = false;
+     axes.userData.ownsGeometry = true;
+     axes.userData.ownsMaterial = true;
+@@ -1241,12 +1053,13 @@ export class RenderSystem3D {
+     this.circleMeshes = new Map();
+     this.flipperMeshes = new Map();
+ 
+-    this.jointLines = [];
+-    this.wrapArcs = [];
++    this.cableLines = new CableLineBatch(this.root, { linewidth: CABLE_LINE_WIDTH_PX });
++    this.cableLines.setResolution(width, height);
++    this._lineScratch = new Float32Array((ARC_SEGMENTS + 1) * 3);
++    this.machineDetails = new MachineDetails3D(this.root, { collectEdges: collectRigidGroupEdges });
+     this.knotMarkers = [];
+     this.forceSigns = [];
+     this.forceSignConnectors = [];
+-    this.rigidGroupLines = [];
+ 
+     this.borderLine = null;
+     this.borderVertexCount = 0;
+@@ -1409,6 +1222,8 @@ export class RenderSystem3D {
+     if (!Number.isFinite(width) || !Number.isFinite(height)) return;
+     if (width <= 0 || height <= 0) return;
+     this.renderer.setSize(width, height, false);
++    this.cableLines.setResolution(width, height);
++    this.extrusionPointCloud?.setViewport(height, this.renderer.getPixelRatio());
+     this.camera.aspect = width / height;
+     this.camera.updateProjectionMatrix();
+     this._lastWidth = width;
+@@ -1856,9 +1671,11 @@ export class RenderSystem3D {
+       this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
+         chunkSize: 65536,
+         color: DEFAULT_CABLE_COLOR,
+-        size: DEFAULT_EXTRUSION_POINT_SIZE,
++        beadWidth: EXTRUSION_BEAD_WIDTH,
++        minPixelSize: EXTRUSION_MIN_PIXEL_SIZE,
+         zOffset: DEFAULT_TRACE_Z,
+       });
++      this.extrusionPointCloud.setViewport(this._lastHeight ?? this.canvas.clientHeight, this.renderer.getPixelRatio());
+     }
+     return this.extrusionPointCloud;
+   }
+@@ -2089,9 +1906,6 @@ export class RenderSystem3D {
+   _syncExtruder(world) {
+     const extruderEntities = world.query([ExtruderComponent]);
+     if (extruderEntities.length === 0) {
+-      if (this.extruderLine) {
+-        this.extruderLine.visible = false;
+-      }
+       return;
+     }
+ 
+@@ -2099,30 +1913,17 @@ export class RenderSystem3D {
+     const lineStart = extruderComp?.coldEndPos || extruderComp?.centerPos || null;
+     const lineEnd = extruderComp?.tipPos || extruderComp?.centerPos || null;
+     if (!lineStart || !lineEnd) {
+-      if (this.extruderLine) {
+-        this.extruderLine.visible = false;
+-      }
+       return;
+     }
+ 
+-    if (!this.extruderLine) {
+-      this.extruderLine = this._createLine();
+-      this.extruderLine.renderOrder = 875;
+-      this.root.add(this.extruderLine);
+-    }
+-
+-    this.extruderLine.visible = true;
+-    setMaterialColor(this.extruderLine.material, DEFAULT_EXTRUDER_COLOR);
+-
+-    const positions = this.extruderLine.geometry.attributes.position.array;
+-    const segments = this.extruderLine.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
+-    writeStraightCablePositions(
+-      positions,
+-      new Vector3(lineStart.x, lineStart.y, lineStart.z || 0.0),
+-      new Vector3(lineEnd.x, lineEnd.y, lineEnd.z || 0.0),
+-      segments
+-    );
+-    this.extruderLine.geometry.attributes.position.needsUpdate = true;
++    const positions = this._lineScratch;
++    positions[0] = lineStart.x;
++    positions[1] = lineStart.y;
++    positions[2] = lineStart.z || 0.0;
++    positions[3] = lineEnd.x;
++    positions[4] = lineEnd.y;
++    positions[5] = lineEnd.z || 0.0;
++    this.cableLines.addPolyline(positions, 2, DEFAULT_EXTRUDER_COLOR);
+   }
+ 
+   measureRenderBlock(world, name, fn) {
+@@ -2160,27 +1961,29 @@ export class RenderSystem3D {
+     }
+ 
+ 
+-    this.measureRenderBlock(world, '_syncBoard', () => {
+-      this._syncBoard(world);
++    this.measureRenderBlock(world, '_syncStage', () => {
++      this._syncStage(world);
+     });
+     this.measureRenderBlock(world, '_syncBorder', () => {
+       this._syncBorder(world);
+     });
++    this.measureRenderBlock(world, '_syncMachineDetails', () => {
++      this.machineDetails.update(world);
++    });
+     this.measureRenderBlock(world, '_syncCircles', () => {
+       this._syncCircles(world);
+     });
+     this.measureRenderBlock(world, '_syncFlippers', () => {
+       this._syncFlippers(world);
+     });
+-    this.measureRenderBlock(world, '_syncRigidGroups', () => {
+-      this._syncRigidGroups(world);
+-    });
++    this.cableLines.begin();
+     this.measureRenderBlock(world, '_syncExtruder', () => {
+       this._syncExtruder(world);
+     });
+     this.measureRenderBlock(world, '_syncCable', () => {
+       this._syncCable(world);
+     });
++    this.cableLines.end();
+     this.measureRenderBlock(world, '_syncReferencePaths', () => {
+       this._syncReferencePaths();
+     });
+@@ -2233,18 +2036,6 @@ export class RenderSystem3D {
+     }
+     this.flipperMeshes.clear();
+ 
+-    for (const line of this.jointLines) {
+-      this.root.remove(line);
+-      disposeObject(line);
+-    }
+-    this.jointLines.length = 0;
+-
+-    for (const arc of this.wrapArcs) {
+-      this.root.remove(arc);
+-      disposeObject(arc);
+-    }
+-    this.wrapArcs.length = 0;
+-
+     for (const marker of this.knotMarkers) {
+       this.root.remove(marker);
+     }
+@@ -2262,18 +2053,6 @@ export class RenderSystem3D {
+     }
+     this.forceSignConnectors.length = 0;
+ 
+-    for (const line of this.rigidGroupLines) {
+-      this.root.remove(line);
+-      disposeObject(line);
+-    }
+-    this.rigidGroupLines.length = 0;
+-
+-    if (this.extruderLine) {
+-      this.root.remove(this.extruderLine);
+-      disposeObject(this.extruderLine);
+-      this.extruderLine = null;
+-    }
+-
+     this._clearBumperFx();
+ 
+     if (this.borderLine) {
+@@ -2327,14 +2106,10 @@ export class RenderSystem3D {
+     this.sharedCylinderGeometry.dispose();
+     this.sharedFlipperBarGeometry.dispose();
+ 
+-    if (this.board && this.scene) {
+-      this.scene.remove(this.board);
+-      disposeObject(this.board);
+-    }
+-    if (this.boardOutline && this.scene) {
+-      this.scene.remove(this.boardOutline);
+-      disposeObject(this.boardOutline);
+-    }
++    this.stage.dispose();
++    this.cableLines.dispose();
++    this.machineDetails.dispose();
++    this.extrusionPointCloud?.dispose();
+ 
+     if (this.borderFloor) {
+       this.scene.remove(this.borderFloor);
+@@ -2554,13 +2329,31 @@ export class RenderSystem3D {
+     this._bumperFxBursts = survivingBursts;
+   }
+ 
+-  _syncBoard(world) {
+-    const halfExtent = this._computePrintSurfaceHalfExtent(world);
+-    const surfaceSize = halfExtent * 2.0;
+-    this.board.scale.set(surfaceSize, surfaceSize, 1);
+-    this.board.position.set(0.0, 0.0, PRINT_SURFACE_Z);
+-    this.boardOutline.scale.set(surfaceSize, surfaceSize, 1);
+-    this.boardOutline.position.set(0.0, 0.0, PRINT_SURFACE_OUTLINE_Z);
++  // The floor sits just under the lowest fixed part of the machine.
++  _syncStage(world) {
++    const movingMembers = this._stageMovingMembers;
++    movingMembers.clear();
++    for (const ComponentClass of [RigidBodyComponent, RigidGroupComponent]) {
++      for (const groupId of world.query([ComponentClass])) {
++        for (const memberId of world.getComponent(groupId, ComponentClass)?.members ?? []) {
++          movingMembers.add(memberId);
++        }
++      }
++    }
++
++    let lowestZ = PRINT_SURFACE_Z;
++    for (const entityId of world.query([PositionComponent, RadiusComponent])) {
++      const pos = world.getComponent(entityId, PositionComponent)?.pos;
++      if (pos && !movingMembers.has(entityId)) {
++        const radius = world.getComponent(entityId, RadiusComponent)?.radius;
++        lowestZ = Math.min(lowestZ, (pos.z || 0.0) - (Number.isFinite(radius) ? radius : 0.0));
++      }
++    }
++
++    this.stage.setLayout({
++      reach: this._computeMachineHalfExtent(world),
++      floorZ: lowestZ - STAGE_FLOOR_CLEARANCE,
++    });
+   }
+ 
+   _syncBorder(world) {
+@@ -2708,60 +2501,6 @@ export class RenderSystem3D {
+     }
+   }
+ 
+-  _syncRigidGroups(world) {
+-    const rigidBodies = world.query([RigidBodyComponent]);
+-    const rigidGroups = world.query([RigidGroupComponent]);
+-    const rigidAssemblies = [...rigidBodies, ...rigidGroups];
+-    if (!rigidAssemblies || rigidAssemblies.length === 0) {
+-      this._hideLines(this.rigidGroupLines);
+-      return;
+-    }
+-
+-    const lineSpecs = [];
+-    for (const groupId of rigidAssemblies) {
+-      const group = world.getComponent(groupId, RigidBodyComponent)
+-        || world.getComponent(groupId, RigidGroupComponent);
+-      const members = Array.isArray(group?.members) ? group.members : [];
+-      if (members.length < 2) {
+-        continue;
+-      }
+-
+-      const memberPositions = members.map((entityId) => world.getComponent(entityId, PositionComponent)?.pos || null);
+-      const edges = collectRigidGroupEdges(members.length, group?.renderSegments);
+-      const renderComp = world.getComponent(groupId, RenderableComponent);
+-      const color = renderComp?.color || DEFAULT_RIGID_GROUP_COLOR;
+-
+-      for (const [aIdx, bIdx] of edges) {
+-        const pA = memberPositions[aIdx];
+-        const pB = memberPositions[bIdx];
+-        if (!pA || !pB) {
+-          continue;
+-        }
+-        lineSpecs.push({ pA, pB, color });
+-      }
+-    }
+-
+-    this._ensureLineCapacity(this.rigidGroupLines, lineSpecs.length, false);
+-    for (let i = 0; i < this.rigidGroupLines.length; i += 1) {
+-      const line = this.rigidGroupLines[i];
+-      const spec = lineSpecs[i];
+-      if (!spec) {
+-        line.visible = false;
+-        continue;
+-      }
+-
+-      line.visible = true;
+-      setMaterialColor(line.material, spec.color);
+-
+-      const positions = line.geometry.attributes.position.array;
+-      const segments = line.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
+-      const lineStart = new Vector3(spec.pA.x, spec.pA.y, spec.pA.z || 0.0);
+-      const lineEnd = new Vector3(spec.pB.x, spec.pB.y, spec.pB.z || 0.0);
+-      writeStraightCablePositions(positions, lineStart, lineEnd, segments);
+-      line.geometry.attributes.position.needsUpdate = true;
+-    }
+-  }
+-
+   _syncCircles(world) {
+     this._activeCircleIds.clear();
+ 
+@@ -2771,6 +2510,9 @@ export class RenderSystem3D {
+       if (!renderComp || (renderComp.shape !== 'circle' && renderComp.shape !== 'cylinder')) {
+         continue;
+       }
++      if (this.machineDetails.handles(entityId)) {
++        continue;
++      }
+ 
+       this._activeCircleIds.add(entityId);
+ 
+@@ -2786,7 +2528,7 @@ export class RenderSystem3D {
+       let mesh = this.circleMeshes.get(entityId);
+       if (!mesh) {
+         mesh = new THREE.Mesh(
+-          isCylinder ? this._getOrientedCylinderGeometry(renderComp?.color) : this.sharedSphereGeometry,
++          isCylinder ? this._getOrientedCylinderGeometry(ROTOR_COLOR) : this.sharedSphereGeometry,
+           isCylinder ? this.orientedSphereMaterial : this._getSphereMaterial(renderComp.color),
+         );
+         this.circleMeshes.set(entityId, mesh);
+@@ -2794,7 +2536,7 @@ export class RenderSystem3D {
+       }
+ 
+       const geometry = isCylinder
+-        ? this._getOrientedCylinderGeometry(renderComp?.color)
++        ? this._getOrientedCylinderGeometry(ROTOR_COLOR)
+         : orientationComp?.quaternion
+         ? this._getOrientedSphereGeometry(renderComp?.color)
+         : this.sharedSphereGeometry;
+@@ -2919,11 +2661,10 @@ export class RenderSystem3D {
+       layeringEnabled(world) &&
+       world.getResource('layeringRenderWraps') !== false;
+     const showForceSigns = world.getResource('showConstraintForces') !== false;
++    const slackColor = world.getResource('highlightSlackLines') === true ? SLACK_COLOR : DYNEEMA_COLOR;
+     const upDirection = getUpDirection(world);
+ 
+     if (pathEntities.length === 0) {
+-      this._hideLines(this.jointLines);
+-      this._hideLines(this.wrapArcs);
+       this._hideMeshes(this.knotMarkers);
+       this._hideMeshes(this.forceSigns);
+       this._hideLines(this.forceSignConnectors);
+@@ -2945,14 +2686,13 @@ export class RenderSystem3D {
+         const joint = world.getComponent(jointId, CableJointComponent);
+         if (!joint) continue;
+ 
+-        const renderComp = world.getComponent(jointId, RenderableComponent);
+-        const baseColor = renderComp?.color || DEFAULT_CABLE_COLOR;
+         const dist = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
+         const taut = dist > joint.restLength + 1e-6;
+ 
+         jointSpecs.push({
+           joint,
+-          color: taut ? baseColor : SLACK_COLOR
++          color: taut ? DYNEEMA_COLOR : slackColor,
++          taut,
+         });
+ 
+         if (showForceSigns) {
+@@ -2995,9 +2735,6 @@ export class RenderSystem3D {
+         const distNext = nextJoint.attachmentPointA_world.distanceTo(nextJoint.attachmentPointB_world);
+         const tensionNext = distNext > nextJoint.restLength + 1e-6;
+ 
+-        const renderComp = world.getComponent(path.jointEntities[i], RenderableComponent);
+-        const baseColor = renderComp?.color || DEFAULT_CABLE_COLOR;
+-
+         arcSpecs.push({
+           center,
+           radius,
+@@ -3005,7 +2742,7 @@ export class RenderSystem3D {
+           startAngle: a1,
+           endAngle: a2,
+           cw: Boolean(path.cw[i]),
+-          color: tensionPrev && tensionNext ? baseColor : SLACK_COLOR
++          color: tensionPrev && tensionNext ? DYNEEMA_COLOR : slackColor
+         });
+       }
+ 
+@@ -3014,8 +2751,7 @@ export class RenderSystem3D {
+       if (path.linkTypes[0] === 'hybrid' && path.jointEntities.length > 0) {
+         const joint0 = world.getComponent(path.jointEntities[0], CableJointComponent);
+         if (joint0) {
+-          const renderComp = world.getComponent(path.jointEntities[0], RenderableComponent);
+-          const color = renderComp?.color || DEFAULT_CABLE_COLOR;
++          const color = DYNEEMA_COLOR;
+           const rollerA = joint0.entityA;
+           const center = world.getComponent(rollerA, PositionComponent)?.pos;
+           const bodyRadius = world.getComponent(rollerA, RadiusComponent)?.radius;
+@@ -3046,8 +2782,7 @@ export class RenderSystem3D {
+       if (path.linkTypes[nLinks - 1] === 'hybrid' && path.jointEntities.length > 0) {
+         const jointN = world.getComponent(path.jointEntities[nLinks - 2], CableJointComponent);
+         if (jointN) {
+-          const renderComp = world.getComponent(path.jointEntities[nLinks - 2], RenderableComponent);
+-          const color = renderComp?.color || DEFAULT_CABLE_COLOR;
++          const color = DYNEEMA_COLOR;
+           const rollerB = jointN.entityB;
+           const center = world.getComponent(rollerB, PositionComponent)?.pos;
+           const bodyRadius = world.getComponent(rollerB, RadiusComponent)?.radius;
+@@ -3078,8 +2813,6 @@ export class RenderSystem3D {
+       }
+     }
+ 
+-    this._ensureLineCapacity(this.jointLines, jointSpecs.length, false);
+-    this._ensureLineCapacity(this.wrapArcs, arcSpecs.length, true);
+     this._ensureKnotMarkerCapacity(knotSpecs.length);
+     this._ensureForceSignCapacity(forceSignSpecs.length);
+     this._ensureForceSignConnectorCapacity(forceSignSpecs.length);
+@@ -3093,42 +2826,24 @@ export class RenderSystem3D {
+     );
+     spreadForceSignSpecs(forceSignSpecs, this.camera, forceSignViewportHeight);
+ 
+-    for (let i = 0; i < this.jointLines.length; i++) {
+-      const line = this.jointLines[i];
+-      const spec = jointSpecs[i];
+-      if (!spec) {
+-        line.visible = false;
+-        continue;
+-      }
+-
+-      line.visible = true;
+-      setMaterialColor(line.material, spec.color);
+-
+-      const p = line.geometry.attributes.position.array;
+-      const segments = line.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
++    const positions = this._lineScratch;
++    for (const spec of jointSpecs) {
++      // A taut span is straight; only slack spans need segments for their sag.
++      const segments = spec.taut ? 1 : JOINT_LINE_SEGMENTS;
+       writeSlackCablePositions(
+-        p,
++        positions,
+         spec.joint.attachmentPointA_world,
+         spec.joint.attachmentPointB_world,
+         spec.joint.restLength,
+         upDirection,
+         segments
+       );
+-      line.geometry.attributes.position.needsUpdate = true;
++      this.cableLines.addPolyline(positions, segments + 1, spec.color);
+     }
+ 
+-    for (let i = 0; i < this.wrapArcs.length; i++) {
+-      const arc = this.wrapArcs[i];
+-      const spec = arcSpecs[i];
+-      if (!spec) {
+-        arc.visible = false;
+-        continue;
+-      }
+-
+-      arc.visible = true;
+-      setMaterialColor(arc.material, spec.color);
+-      writeArcPositions(
+-        arc,
++    for (const spec of arcSpecs) {
++      const pointCount = writeArcPositions(
++        positions,
+         spec.center,
+         spec.radius,
+         spec.basis,
+@@ -3136,6 +2851,7 @@ export class RenderSystem3D {
+         spec.endAngle,
+         spec.cw
+       );
++      this.cableLines.addPolyline(positions, pointCount, spec.color);
+     }
+ 
+     for (let i = 0; i < this.knotMarkers.length; i++) {
+@@ -3249,14 +2965,6 @@ export class RenderSystem3D {
+     };
+   }
+ 
+-  _ensureLineCapacity(target, count, isArc) {
+-    while (target.length < count) {
+-      const line = isArc ? this._createArcLine() : this._createLine();
+-      target.push(line);
+-      this.root.add(line);
+-    }
+-  }
+-
+   _ensureKnotMarkerCapacity(count) {
+     while (this.knotMarkers.length < count) {
+       const marker = new THREE.Mesh(this.sharedSphereGeometry, this.knotMarkerMaterial);
+@@ -3339,36 +3047,6 @@ export class RenderSystem3D {
+     map.needsUpdate = true;
+   }
+ 
+-  _createLine() {
+-    const geometry = new THREE.BufferGeometry();
+-    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((JOINT_LINE_SEGMENTS + 1) * 3), 3));
+-
+-    const material = new THREE.LineBasicMaterial({ color: DEFAULT_CABLE_COLOR });
+-    material.userData.__color = DEFAULT_CABLE_COLOR;
+-
+-    const line = new THREE.Line(geometry, material);
+-    line.frustumCulled = false;
+-    line.userData.ownsGeometry = true;
+-    line.userData.ownsMaterial = true;
+-    line.userData.lineSegments = JOINT_LINE_SEGMENTS;
+-    return line;
+-  }
+-
+-  _createArcLine() {
+-    const geometry = new THREE.BufferGeometry();
+-    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((ARC_SEGMENTS + 1) * 3), 3));
+-
+-    const material = new THREE.LineBasicMaterial({ color: DEFAULT_CABLE_COLOR });
+-    material.userData.__color = DEFAULT_CABLE_COLOR;
+-
+-    const line = new THREE.Line(geometry, material);
+-    line.frustumCulled = false;
+-    line.userData.ownsGeometry = true;
+-    line.userData.ownsMaterial = true;
+-    line.userData.arcSegments = ARC_SEGMENTS;
+-    return line;
+-  }
+-
+   _hideLines(lines) {
+     for (const line of lines) {
+       line.visible = false;
+@@ -3450,8 +3128,8 @@ export class RenderSystem3D {
+     return group;
+   }
+ 
+-  _computePrintSurfaceHalfExtent(world) {
+-    let maxAbs = PRINT_SURFACE_MIN_HALF_EXTENT;
++  _computeMachineHalfExtent(world) {
++    let maxAbs = MACHINE_MIN_HALF_EXTENT;
+ 
+     const entities = world.query([PositionComponent, RadiusComponent]);
+     for (const entityId of entities) {
+@@ -3479,7 +3157,7 @@ export class RenderSystem3D {
+       }
+     }
+ 
+-    return maxAbs + PRINT_SURFACE_MARGIN;
++    return maxAbs + MACHINE_EXTENT_MARGIN;
+   }
+ 
+   _cameraDistanceForScale(scaleMultiplier = this.viewScaleMultiplier) {
+@@ -3523,7 +3201,12 @@ export class RenderSystem3D {
+   _applyCameraFromViewTransform() {
+     const target = this._getViewTarget();
+ 
+-    const cameraOffset = this._buildOrbitOffset(this._cameraDistanceForScale());
++    const distance = this._cameraDistanceForScale();
++    const cameraOffset = this._buildOrbitOffset(distance);
++    // Near plane follows zoom so the depth buffer resolves millimetre parts
++    // at any distance.
++    this.camera.near = Math.max(CAMERA_MIN_NEAR, distance * CAMERA_NEAR_PER_DISTANCE);
++    this.camera.updateProjectionMatrix();
+     this.camera.up.set(0, 0, 1);
+     this.camera.position.copy(target).add(cameraOffset);
+     this.camera.lookAt(target);
+@@ -3618,29 +3301,76 @@ function getExtrusionPoint(extrusion, extruderComp = null) {
+     : null;
+ }
+ 
++// Extruded material drawn as round, shaded beads: beadWidth wide in the
++// world, never smaller than minPixelSize on screen.
++const BEAD_VERTEX_SHADER = `
++uniform float uBeadWidth;
++uniform float uMinPixelSize;
++uniform float uViewportHeight;
++varying vec3 vColor;
++void main() {
++  vColor = color;
++  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
++  gl_Position = projectionMatrix * mvPosition;
++  float pixelsPerUnit = projectionMatrix[1][1] * 0.5 * uViewportHeight / max(-mvPosition.z, 1e-6);
++  gl_PointSize = max(uMinPixelSize, uBeadWidth * pixelsPerUnit);
++}`;
++const BEAD_FRAGMENT_SHADER = `
++varying vec3 vColor;
++void main() {
++  vec2 p = gl_PointCoord * 2.0 - 1.0;
++  float r2 = dot(p, p);
++  if (r2 > 1.0) discard;
++  vec3 normal = vec3(p.x, -p.y, sqrt(1.0 - r2));
++  float diffuse = max(dot(normal, normalize(vec3(-0.35, 0.55, 0.75))), 0.0);
++  gl_FragColor = vec4(vColor * (0.42 + 0.68 * diffuse), 1.0);
++  #include <colorspace_fragment>
++}`;
++
+ class AppendOnlyPointCloud {
+   constructor(scene, {
+-    chunkSize = 65536,
+-    color = '#ffffff',
+-    size = 2,
+-    zOffset = 0.0,
+-  } = {}) {
++    chunkSize,
++    color,
++    beadWidth,
++    minPixelSize,
++    zOffset,
++  }) {
+     this.scene = scene;
+     this.chunkSize = chunkSize;
+     this.color = color;
+-    this.size = size;
+     this.zOffset = zOffset;
++    this.material = new THREE.ShaderMaterial({
++      uniforms: {
++        uBeadWidth: { value: beadWidth },
++        uMinPixelSize: { value: minPixelSize },
++        uViewportHeight: { value: 1 },
++      },
++      vertexShader: BEAD_VERTEX_SHADER,
++      fragmentShader: BEAD_FRAGMENT_SHADER,
++      vertexColors: true,
++    });
++    this._minPixelSize = minPixelSize;
+ 
+     this.chunks = [];
+     this.totalPoints = 0;
+     this._color = new THREE.Color(color);
+   }
+ 
++  // cssHeight in CSS pixels; gl_PointSize is in device pixels.
++  setViewport(cssHeight, pixelRatio) {
++    this.material.uniforms.uViewportHeight.value = cssHeight * pixelRatio;
++    this.material.uniforms.uMinPixelSize.value = this._minPixelSize * pixelRatio;
++  }
++
++  dispose() {
++    this.clear();
++    this.material.dispose();
++  }
++
+   clear() {
+     for (const chunk of this.chunks) {
+       this.scene.remove(chunk.points);
+       chunk.geometry.dispose();
+-      chunk.material.dispose();
+     }
+     this.chunks.length = 0;
+     this.totalPoints = 0;
+@@ -3698,28 +3428,15 @@ class AppendOnlyPointCloud {
+     geometry.setAttribute('color', colorAttr);
+     geometry.setDrawRange(0, 0);
+ 
+-    const material = new THREE.PointsMaterial({
+-      color: 0xffffff,
+-      size: this.size,
+-      sizeAttenuation: false,
+-      vertexColors: true,
+-      depthWrite: false,
+-      transparent: true,
+-      opacity: 0.95,
+-      toneMapped: false,
+-    });
+-
+-    const points = new THREE.Points(geometry, material);
++    const points = new THREE.Points(geometry, this.material);
+     points.frustumCulled = false;
+     points.renderOrder = 850;
+     points.userData.ownsGeometry = true;
+-    points.userData.ownsMaterial = true;
+ 
+     this.scene.add(points);
+ 
+     return {
+       geometry,
+-      material,
+       points,
+       positions,
+       colors,
+diff --git a/tests/js/hp-sim-3d/wiring.test.js b/tests/js/hp-sim-3d/wiring.test.js
+index fb5f3b9b..6dbcaca5 100644
+--- a/tests/js/hp-sim-3d/wiring.test.js
++++ b/tests/js/hp-sim-3d/wiring.test.js
+@@ -46,7 +46,7 @@ describe('hp-sim-3d wiring', () => {
+     const showForcesToggleIndex = html.indexOf('id="showForcesToggleWrapper"');
+     const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
+ 
+-    expect(html).toContain('class="sim-toggle-group"');
++    expect(html).toContain('<div id="settingsMenu" class="sim-settings-menu sim-hidden"');
+     expect(showForcesToggleIndex).toBeGreaterThan(qualityToggleIndex);
+     expect(lineLayeringToggleIndex).toBeGreaterThan(showForcesToggleIndex);
+     expect(html).toContain('<input id="showForcesToggle" type="checkbox">');
+=== NEW FILE src/js/cable_joints_3d/stage_3d.js
+import * as THREE from 'three';
+
+// Photographic studio around the machine: a seamless grey backdrop, a floor
+// under the machine that fades into it, and soft studio light. Nothing here
+// stands between the camera and the simulated parts.
+
+// Graphite studio (OKLCH hue 255): backdrop L 0.31, floor L 0.34 fading into
+// it. A flat floor under directional light is uniformly lit, so it is drawn
+// unlit: the cheapest full-screen material, which matters on software GL.
+const BACKDROP_COLOR = 0x2d3135;
+const FLOOR_COLOR = 0x35383d;
+
+// Reflection environment: a grey studio dome, darker towards the floor, with
+// one large overhead softbox and a smaller side fill. Built Y-up.
+function createStudioEnvironment() {
+  const scene = new THREE.Scene();
+  const dome = new THREE.SphereGeometry(10, 32, 16);
+  const colors = [];
+  const position = dome.attributes.position;
+  const color = new THREE.Color();
+  for (let i = 0; i < position.count; i += 1) {
+    const height = position.getY(i) / 10;
+    color.setScalar(THREE.MathUtils.lerp(0.18, 0.75, THREE.MathUtils.smoothstep(height, -0.6, 0.8)));
+    colors.push(color.r, color.g, color.b);
+  }
+  dome.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  scene.add(new THREE.Mesh(dome, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+
+  const softbox = new THREE.Mesh(
+    new THREE.PlaneGeometry(6, 6),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 5, 5), side: THREE.DoubleSide })
+  );
+  softbox.position.set(0, 7, 2);
+  softbox.lookAt(0, 0, 0);
+  scene.add(softbox);
+  const fill = new THREE.Mesh(
+    new THREE.PlaneGeometry(3, 4),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.6, 1.7), side: THREE.DoubleSide })
+  );
+  fill.position.set(-8, 2, -3);
+  fill.lookAt(0, 0, 0);
+  scene.add(fill);
+  return scene;
+}
+
+// Mixes the lit floor colour into the backdrop with distance from the machine,
+// so the floor has no visible edge.
+function fadeFloorIntoBackdrop(material, uniforms) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uFadeRadius = uniforms.uFadeRadius;
+    shader.uniforms.uBackdrop = uniforms.uBackdrop;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vFloorXY;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvFloorXY = (modelMatrix * vec4(transformed, 1.0)).xy;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vFloorXY;\nuniform vec2 uFadeRadius;\nuniform vec3 uBackdrop;')
+      .replace(
+        '#include <dithering_fragment>',
+        'float floorFade = smoothstep(uFadeRadius.x, uFadeRadius.y, length(vFloorXY));\n' +
+        'gl_FragColor.rgb = mix(gl_FragColor.rgb, uBackdrop, floorFade);\n#include <dithering_fragment>'
+      );
+  };
+}
+
+// CPU rasterizers pay for every full-screen layer; they get the plain backdrop.
+function isSoftwareRenderer(renderer) {
+  const gl = renderer.getContext();
+  const info = gl.getExtension('WEBGL_debug_renderer_info');
+  const name = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  return /swiftshader|llvmpipe|softpipe|software/i.test(String(name));
+}
+
+export class Stage3D {
+  constructor(scene, renderer) {
+    this.scene = scene;
+    this.group = new THREE.Group();
+    this.group.name = 'stage';
+    scene.add(this.group);
+
+    renderer.toneMapping = THREE.NeutralToneMapping;
+    scene.background = new THREE.Color(BACKDROP_COLOR);
+
+    this.renderer = renderer;
+    this._buildEnvironment();
+    // Render-target textures do not survive a lost WebGL context.
+    this._onContextRestored = () => this._buildEnvironment();
+    renderer.domElement.addEventListener('webglcontextrestored', this._onContextRestored);
+    scene.environmentIntensity = 0.8;
+    scene.environmentRotation.set(Math.PI / 2, 0, 0);
+
+    const hemisphere = new THREE.HemisphereLight(0xf4f6fa, 0x8c8a86, 0.7);
+    hemisphere.position.set(0, 0, 1);
+    this.group.add(hemisphere);
+    const key = new THREE.DirectionalLight(0xfffaf4, 2.0);
+    key.position.set(1.2, -2.0, 6.0);
+    this.group.add(key);
+
+    this.fadeUniforms = {
+      uFadeRadius: { value: new THREE.Vector2(3, 6) },
+      // Mixed after tone mapping and output encoding, so it is stored in sRGB
+      // to match the untone-mapped background exactly.
+      uBackdrop: { value: new THREE.Color(BACKDROP_COLOR).convertLinearToSRGB() },
+    };
+    // Not tone mapped, like the background it fades into: the tone curve's toe
+    // would crush this dark colour towards black.
+    this.floorMaterial = new THREE.MeshBasicMaterial({ color: FLOOR_COLOR, toneMapped: false });
+    fadeFloorIntoBackdrop(this.floorMaterial, this.fadeUniforms);
+    this.floor = new THREE.Mesh(new THREE.CircleGeometry(1, 96), this.floorMaterial);
+    this.floor.visible = !isSoftwareRenderer(renderer);
+    this.group.add(this.floor);
+
+    this._layoutKey = '';
+  }
+
+  _buildEnvironment() {
+    this.environmentTarget?.dispose();
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    const studio = createStudioEnvironment();
+    this.environmentTarget = pmrem.fromScene(studio, 0.02);
+    studio.traverse((object) => {
+      object.geometry?.dispose();
+      object.material?.dispose();
+    });
+    pmrem.dispose();
+    this.scene.environment = this.environmentTarget.texture;
+  }
+
+  setLayout({ reach, floorZ }) {
+    const key = `${reach.toFixed(4)}|${floorZ.toFixed(4)}`;
+    if (key === this._layoutKey) {
+      return;
+    }
+    this._layoutKey = key;
+
+    const floorRadius = reach * 6;
+    this.floor.scale.setScalar(floorRadius);
+    this.floor.position.set(0, 0, floorZ);
+    this.fadeUniforms.uFadeRadius.value.set(reach * 1.35, reach * 3.2);
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
+    this.group.traverse((object) => {
+      object.geometry?.dispose?.();
+      if (object.material) {
+        object.material.dispose();
+      }
+    });
+    this.renderer.domElement.removeEventListener('webglcontextrestored', this._onContextRestored);
+    this.environmentTarget.dispose();
+    this.scene.environment = null;
+  }
+}
+=== NEW FILE src/js/cable_joints_3d/cable_lines_3d.js
+import * as THREE from 'three';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+
+// All cable spans and wraps of a frame in one antialiased screen-space-width
+// line draw. Buffers grow on demand and are rewritten in place each frame.
+
+export class CableLineBatch {
+  constructor(parent, { linewidth }) {
+    this.parent = parent;
+    this.material = new LineMaterial({
+      linewidth,
+      vertexColors: true,
+      worldUnits: false,
+    });
+    this.geometry = new LineSegmentsGeometry();
+    this.object = new LineSegments2(this.geometry, this.material);
+    this.object.frustumCulled = false;
+    this.object.renderOrder = 870;
+    parent.add(this.object);
+    this.count = 0;
+    this.capacity = 0;
+    this._color = new THREE.Color();
+    this._allocate(4096);
+  }
+
+  _allocate(capacity) {
+    const positions = new Float32Array(capacity * 6);
+    const colors = new Float32Array(capacity * 6);
+    if (this.positions) {
+      positions.set(this.positions);
+      colors.set(this.colors);
+    }
+    this.positions = positions;
+    this.colors = colors;
+    this.capacity = capacity;
+
+    const positionBuffer = new THREE.InstancedInterleavedBuffer(positions, 6, 1);
+    positionBuffer.setUsage(THREE.DynamicDrawUsage);
+    this.geometry.setAttribute('instanceStart', new THREE.InterleavedBufferAttribute(positionBuffer, 3, 0));
+    this.geometry.setAttribute('instanceEnd', new THREE.InterleavedBufferAttribute(positionBuffer, 3, 3));
+    const colorBuffer = new THREE.InstancedInterleavedBuffer(colors, 6, 1);
+    colorBuffer.setUsage(THREE.DynamicDrawUsage);
+    this.geometry.setAttribute('instanceColorStart', new THREE.InterleavedBufferAttribute(colorBuffer, 3, 0));
+    this.geometry.setAttribute('instanceColorEnd', new THREE.InterleavedBufferAttribute(colorBuffer, 3, 3));
+    this.positionBuffer = positionBuffer;
+    this.colorBuffer = colorBuffer;
+  }
+
+  setResolution(width, height) {
+    this.material.resolution.set(width, height);
+  }
+
+  begin() {
+    this.count = 0;
+  }
+
+  // Appends the polyline stored as xyz triples in points[0 .. pointCount*3).
+  addPolyline(points, pointCount, color) {
+    const segments = pointCount - 1;
+    if (segments < 1) {
+      return;
+    }
+    if (this.count + segments > this.capacity) {
+      let capacity = this.capacity;
+      while (this.count + segments > capacity) {
+        capacity *= 2;
+      }
+      this._allocate(capacity);
+    }
+    this._color.set(color);
+    const { r, g, b } = this._color;
+    const positions = this.positions;
+    const colors = this.colors;
+    for (let i = 0; i < segments; i += 1) {
+      const out = (this.count + i) * 6;
+      const p = i * 3;
+      positions[out] = points[p];
+      positions[out + 1] = points[p + 1];
+      positions[out + 2] = points[p + 2];
+      positions[out + 3] = points[p + 3];
+      positions[out + 4] = points[p + 4];
+      positions[out + 5] = points[p + 5];
+      colors[out] = r;
+      colors[out + 1] = g;
+      colors[out + 2] = b;
+      colors[out + 3] = r;
+      colors[out + 4] = g;
+      colors[out + 5] = b;
+    }
+    this.count += segments;
+  }
+
+  end() {
+    this.geometry.instanceCount = this.count;
+    this.positionBuffer.addUpdateRange(0, this.count * 6);
+    this.positionBuffer.needsUpdate = true;
+    this.colorBuffer.addUpdateRange(0, this.count * 6);
+    this.colorBuffer.needsUpdate = true;
+  }
+
+  dispose() {
+    this.parent.remove(this.object);
+    this.geometry.dispose();
+    this.material.dispose();
+  }
+}
+=== NEW FILE src/js/cable_joints_3d/cable_shape.js
+// Rendered shape of a cable span: straight when taut, a catenary (or a
+// parabolic approximation when nearly vertical) when its rest length exceeds
+// the span. Pure math, shared by the renderer and the flight recorder.
+
+const EPSILON = 1e-9;
+const CATENARY_HORIZONTAL_EPSILON = 1e-5;
+const CATENARY_SOLVER_ITERATIONS = 48;
+const CATENARY_MAX_SINH_ARGUMENT = 20;
+const PARABOLIC_SAG_SCALE = 0.5;
+
+function safeSinh(value) {
+  if (value >= CATENARY_MAX_SINH_ARGUMENT) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return Math.sinh(value);
+}
+
+function solveCatenaryScale(horizontalSpan, verticalOffset, cableLength) {
+  if (
+    !Number.isFinite(horizontalSpan) ||
+    !Number.isFinite(verticalOffset) ||
+    !Number.isFinite(cableLength) ||
+    !(horizontalSpan > CATENARY_HORIZONTAL_EPSILON) ||
+    !(cableLength > Math.abs(verticalOffset) + EPSILON)
+  ) {
+    return null;
+  }
+
+  const targetSquared = (cableLength * cableLength) - (verticalOffset * verticalOffset);
+  if (!(targetSquared > (horizontalSpan * horizontalSpan) + EPSILON)) {
+    return null;
+  }
+
+  const target = Math.sqrt(targetSquared);
+  const evaluate = (a) => {
+    if (!Number.isFinite(a) || !(a > EPSILON)) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const arg = horizontalSpan / (2.0 * a);
+    return (2.0 * a * safeSinh(arg)) - target;
+  };
+
+  let low = Math.max(horizontalSpan * 1e-6, EPSILON);
+  let high = Math.max(horizontalSpan, target, 1e-3);
+  while (!(evaluate(high) < 0.0) && high < 1e9) {
+    high *= 2.0;
+  }
+  if (!(evaluate(high) < 0.0)) {
+    return null;
+  }
+
+  for (let i = 0; i < CATENARY_SOLVER_ITERATIONS; i += 1) {
+    const mid = 0.5 * (low + high);
+    if (evaluate(mid) > 0.0) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  return high;
+}
+
+function writeStraightCablePositions(positions, start, end, segments) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const dz = end.z - start.z;
+  for (let i = 0; i <= segments; i += 1) {
+    const t = i / segments;
+    const idx = i * 3;
+    positions[idx] = start.x + (dx * t);
+    positions[idx + 1] = start.y + (dy * t);
+    positions[idx + 2] = start.z + (dz * t);
+  }
+}
+
+function writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const dz = end.z - start.z;
+  const straightLength = Math.hypot(dx, dy, dz);
+  const sagDepth = Math.max(0.0, cableLength - straightLength) * PARABOLIC_SAG_SCALE;
+
+  for (let i = 0; i <= segments; i += 1) {
+    const t = i / segments;
+    const sagOffset = sagDepth * 4.0 * t * (1.0 - t);
+    const idx = i * 3;
+    positions[idx] = start.x + (dx * t) - (upDirection.x * sagOffset);
+    positions[idx + 1] = start.y + (dy * t) - (upDirection.y * sagOffset);
+    positions[idx + 2] = start.z + (dz * t) - (upDirection.z * sagOffset);
+  }
+}
+
+export function writeSlackCablePositions(positions, start, end, cableLength, upDirection, segments) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const dz = end.z - start.z;
+  const straightLength = Math.hypot(dx, dy, dz);
+  if (!(cableLength > straightLength + EPSILON)) {
+    writeStraightCablePositions(positions, start, end, segments);
+    return;
+  }
+
+  const verticalOffset = (dx * upDirection.x) + (dy * upDirection.y) + (dz * upDirection.z);
+  const horizontalDx = dx - (upDirection.x * verticalOffset);
+  const horizontalDy = dy - (upDirection.y * verticalOffset);
+  const horizontalDz = dz - (upDirection.z * verticalOffset);
+  const horizontalSpan = Math.hypot(horizontalDx, horizontalDy, horizontalDz);
+  if (!(horizontalSpan > CATENARY_HORIZONTAL_EPSILON)) {
+    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
+    return;
+  }
+
+  const invHorizontalSpan = 1.0 / horizontalSpan;
+  const horizontalUnitX = horizontalDx * invHorizontalSpan;
+  const horizontalUnitY = horizontalDy * invHorizontalSpan;
+  const horizontalUnitZ = horizontalDz * invHorizontalSpan;
+
+  const catenaryScale = solveCatenaryScale(horizontalSpan, verticalOffset, cableLength);
+  if (!Number.isFinite(catenaryScale) || !(catenaryScale > EPSILON)) {
+    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
+    return;
+  }
+
+  const target = Math.sqrt(Math.max(0.0, (cableLength * cableLength) - (verticalOffset * verticalOffset)));
+  if (!(target > horizontalSpan + EPSILON)) {
+    writeParabolicSagCablePositions(positions, start, end, cableLength, upDirection, segments);
+    return;
+  }
+
+  const halfSpan = horizontalSpan * 0.5;
+  const p = Math.asinh(verticalOffset / target);
+  const q = halfSpan / catenaryScale;
+  const endpointOffset = catenaryScale * Math.cosh(q - p);
+
+  for (let i = 0; i <= segments; i += 1) {
+    const t = i / segments;
+    const x = horizontalSpan * t;
+    const y = (catenaryScale * Math.cosh(((x - halfSpan) / catenaryScale) + p)) - endpointOffset;
+    const idx = i * 3;
+    positions[idx] = start.x + (horizontalUnitX * x) + (upDirection.x * y);
+    positions[idx + 1] = start.y + (horizontalUnitY * x) + (upDirection.y * y);
+    positions[idx + 2] = start.z + (horizontalUnitZ * x) + (upDirection.z * y);
+  }
+
+  positions[0] = start.x;
+  positions[1] = start.y;
+  positions[2] = start.z;
+  const lastIndex = segments * 3;
+  positions[lastIndex] = end.x;
+  positions[lastIndex + 1] = end.y;
+  positions[lastIndex + 2] = end.z;
+}
+=== NEW FILE src/js/cable_joints_3d/machine_details_3d.js
+import * as THREE from 'three';
+
+import {
+  PositionComponent,
+  RenderableComponent,
+  RigidBodyComponent,
+  RigidGroupComponent,
+  SceneEntityInfoComponent,
+} from './ecs.js';
+import { CableJointComponent } from './cable_joints_core.js';
+
+// Slim structural details at the simulated points: the rigid frame as tubes
+// and eyelet rings where lines pass through pinholes and anchors. Everything
+// is thin so bearings, wraps and the print stay in view.
+
+const FRAME_TUBE_RADIUS = 0.004;
+const EYELET_RING_RADIUS = 0.0028;
+const EYELET_TUBE_RADIUS = 0.0008;
+const ANCHOR_RING_RADIUS = 0.0045;
+const ANCHOR_TUBE_RADIUS = 0.0012;
+const FRAME_BASE_COLOR = '#c4c8ce';
+const FRAME_TINT_AMOUNT = 0.25;
+
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
+
+class PartPool {
+  constructor(parent, geometry, material, { colored = false } = {}) {
+    this.parent = parent;
+    this.geometry = geometry;
+    this.material = material;
+    this.colored = colored;
+    this.count = 0;
+    this.capacity = 0;
+    this.mesh = null;
+    this._allocate(32);
+  }
+
+  _allocate(capacity) {
+    const previous = this.mesh;
+    const mesh = new THREE.InstancedMesh(this.geometry, this.material, capacity);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    if (this.colored) {
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+      mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    }
+    mesh.frustumCulled = false;
+    mesh.count = 0;
+    if (previous) {
+      mesh.instanceMatrix.array.set(previous.instanceMatrix.array);
+      if (this.colored) {
+        mesh.instanceColor.array.set(previous.instanceColor.array);
+      }
+      this.parent.remove(previous);
+      previous.dispose();
+    }
+    this.parent.add(mesh);
+    this.mesh = mesh;
+    this.capacity = capacity;
+  }
+
+  begin() {
+    this.count = 0;
+  }
+
+  add(matrix, color = null) {
+    if (this.count >= this.capacity) {
+      this._allocate(this.capacity * 2);
+    }
+    this.mesh.setMatrixAt(this.count, matrix);
+    if (color) {
+      this.mesh.setColorAt(this.count, color);
+    }
+    this.count += 1;
+  }
+
+  end() {
+    this.mesh.count = this.count;
+    this.mesh.instanceMatrix.needsUpdate = true;
+    if (this.colored) {
+      this.mesh.instanceColor.needsUpdate = true;
+    }
+  }
+
+  dispose() {
+    this.parent.remove(this.mesh);
+    this.mesh.dispose();
+  }
+}
+
+export class MachineDetails3D {
+  constructor(parent, { collectEdges }) {
+    this.collectEdges = collectEdges;
+    this.group = new THREE.Group();
+    this.group.name = 'machine-details';
+    parent.add(this.group);
+
+    this.materials = {
+      frame: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, metalness: 0.9 }),
+      eyelet: new THREE.MeshStandardMaterial({ color: 0xdfe2e6, roughness: 0.25, metalness: 1.0 }),
+    };
+    this.geometries = {
+      cylinder: new THREE.CylinderGeometry(1, 1, 1, 12, 1, true),
+      node: new THREE.SphereGeometry(1, 16, 12),
+      eyelet: new THREE.TorusGeometry(EYELET_RING_RADIUS, EYELET_TUBE_RADIUS, 8, 24),
+      anchorEyelet: new THREE.TorusGeometry(ANCHOR_RING_RADIUS, ANCHOR_TUBE_RADIUS, 8, 24),
+    };
+    this.pools = {
+      frame: new PartPool(this.group, this.geometries.cylinder, this.materials.frame, { colored: true }),
+      frameNode: new PartPool(this.group, this.geometries.node, this.materials.frame, { colored: true }),
+      eyelet: new PartPool(this.group, this.geometries.eyelet, this.materials.eyelet),
+      anchorEyelet: new PartPool(this.group, this.geometries.anchorEyelet, this.materials.eyelet),
+    };
+
+    this._matrix = new THREE.Matrix4();
+    this._quaternion = new THREE.Quaternion();
+    this._position = new THREE.Vector3();
+    this._scale = new THREE.Vector3();
+    this._a = new THREE.Vector3();
+    this._b = new THREE.Vector3();
+    this._d = new THREE.Vector3();
+    this._color = new THREE.Color();
+    this._baseColor = new THREE.Color(FRAME_BASE_COLOR);
+    this._lineDirections = new Map();
+    this._handled = new Set();
+  }
+
+  // Pinholes and anchors drawn here as eyelets; the generic renderer skips them.
+  handles(entityId) {
+    return this._handled.has(entityId);
+  }
+
+  update(world) {
+    for (const pool of Object.values(this.pools)) {
+      pool.begin();
+    }
+    this._handled.clear();
+
+    this._collectLineDirections(world);
+    this._addFrames(world);
+    this._addEyelets(world);
+
+    for (const pool of Object.values(this.pools)) {
+      pool.end();
+    }
+  }
+
+  // Sum of unit directions of the line spans meeting each entity, sign-aligned
+  // so a line passing straight through adds up instead of cancelling.
+  _collectLineDirections(world) {
+    const directions = this._lineDirections;
+    for (const direction of directions.values()) {
+      direction.set(0, 0, 0);
+    }
+    for (const jointId of world.query([CableJointComponent])) {
+      const joint = world.getComponent(jointId, CableJointComponent);
+      const a = joint.attachmentPointA_world;
+      const b = joint.attachmentPointB_world;
+      this._d.set(b.x - a.x, b.y - a.y, b.z - a.z);
+      if (this._d.lengthSq() < 1e-12) {
+        continue;
+      }
+      this._d.normalize();
+      for (const entityId of [joint.entityA, joint.entityB]) {
+        let direction = directions.get(entityId);
+        if (!direction) {
+          direction = new THREE.Vector3();
+          directions.set(entityId, direction);
+        }
+        direction.add(direction.dot(this._d) < 0 ? this._d.clone().negate() : this._d);
+      }
+    }
+  }
+
+  _span(pool, a, b, radius, color = null) {
+    this._d.subVectors(b, a);
+    const length = this._d.length();
+    if (length < 1e-6) {
+      return;
+    }
+    this._quaternion.setFromUnitVectors(Y_AXIS, this._d.divideScalar(length));
+    this._position.addVectors(a, b).multiplyScalar(0.5);
+    this._scale.set(radius, length, radius);
+    this._matrix.compose(this._position, this._quaternion, this._scale);
+    pool.add(this._matrix, color);
+  }
+
+  _point(pool, position, radius, color = null) {
+    this._position.copy(position);
+    this._scale.setScalar(radius);
+    this._matrix.compose(this._position, this._quaternion.identity(), this._scale);
+    pool.add(this._matrix, color);
+  }
+
+  _frameColor(world, groupId) {
+    const tint = world.getComponent(groupId, RenderableComponent)?.color;
+    this._color.copy(this._baseColor);
+    if (typeof tint === 'string' && tint.length > 0) {
+      this._color.lerp(new THREE.Color(tint), FRAME_TINT_AMOUNT);
+    }
+    return this._color;
+  }
+
+  // Tubes along the authored render edges, with a node at each corner.
+  _addFrames(world) {
+    for (const ComponentClass of [RigidBodyComponent, RigidGroupComponent]) {
+      for (const groupId of world.query([ComponentClass])) {
+        const group = world.getComponent(groupId, ComponentClass);
+        const members = Array.isArray(group?.members) ? group.members : [];
+        const positions = members.map((id) => world.getComponent(id, PositionComponent)?.pos ?? null);
+        const color = this._frameColor(world, groupId);
+        const corners = new Set();
+        for (const [i, j] of this.collectEdges(members.length, group?.renderSegments)) {
+          if (!positions[i] || !positions[j]) {
+            continue;
+          }
+          corners.add(i);
+          corners.add(j);
+          this._span(this.pools.frame, this._a.copy(positions[i]), this._b.copy(positions[j]), FRAME_TUBE_RADIUS, color);
+        }
+        for (const i of corners) {
+          this._point(this.pools.frameNode, this._a.copy(positions[i]), FRAME_TUBE_RADIUS * 1.6, color);
+        }
+      }
+    }
+  }
+
+  _addEyelets(world) {
+    for (const entityId of world.query([SceneEntityInfoComponent, PositionComponent])) {
+      const tags = world.getComponent(entityId, SceneEntityInfoComponent)?.tags ?? [];
+      const anchor = tags.includes('Anchor');
+      if (!anchor && !tags.includes('Pinhole') && !tags.includes('Eyelet')) {
+        continue;
+      }
+      this._handled.add(entityId);
+      const pos = world.getComponent(entityId, PositionComponent).pos;
+      // The torus lies in its XY plane: its hole faces +Z, along the line.
+      const direction = this._lineDirections.get(entityId);
+      if (direction && direction.lengthSq() > 1e-12) {
+        this._quaternion.setFromUnitVectors(Z_AXIS, this._d.copy(direction).normalize());
+      } else {
+        this._quaternion.identity();
+      }
+      this._position.set(pos.x, pos.y, pos.z);
+      this._matrix.compose(this._position, this._quaternion, this._scale.setScalar(1));
+      (anchor ? this.pools.anchorEyelet : this.pools.eyelet).add(this._matrix);
+    }
+  }
+
+  dispose() {
+    for (const pool of Object.values(this.pools)) {
+      pool.dispose();
+    }
+    for (const geometry of Object.values(this.geometries)) {
+      geometry.dispose();
+    }
+    for (const material of Object.values(this.materials)) {
+      material.dispose();
+    }
+    this.group.parent?.remove(this.group);
+  }
+}

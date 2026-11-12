@@ -1,0 +1,1833 @@
+diff --git a/hp-sim-3d/app/appBootstrap.js b/hp-sim-3d/app/appBootstrap.js
+index 10b49f6d..77b3ef07 100644
+--- a/hp-sim-3d/app/appBootstrap.js
++++ b/hp-sim-3d/app/appBootstrap.js
+@@ -23,6 +23,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
+   const simApp = canvas?.closest('.sim-app') || null;
+   const simButtons = controlsRoot?.querySelector('.sim-buttons') || null;
+   const machinesContainer = simButtons?.querySelector('.sim-machines') || null;
++  const settingsContainer = simButtons?.querySelector('.sim-settings') || null;
+   const qualityToggleWrapper = ownerDocument.getElementById('qualityToggleWrapper');
+   return {
+     canvas,
+@@ -53,6 +54,9 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
+     machinesContainer,
+     machinesToggle: ownerDocument.getElementById('machinesToggle'),
+     machinesMenu: ownerDocument.getElementById('machinesMenu'),
++    settingsContainer,
++    settingsToggle: ownerDocument.getElementById('settingsToggle'),
++    settingsMenu: ownerDocument.getElementById('settingsMenu'),
+     presetMachinesList: ownerDocument.getElementById('presetMachinesList'),
+     customMachinesSection: ownerDocument.getElementById('customMachinesSection'),
+     customMachinesList: ownerDocument.getElementById('customMachinesList'),
+@@ -128,6 +132,7 @@ export function createHpSimApp({
+   const runtime = createSimulationRuntime({ world, state });
+   const controllers = {
+     machineMenu: null,
++    settingsMenu: null,
+     machines: null,
+     commands: null,
+     external: null,
+@@ -172,7 +177,10 @@ export function createHpSimApp({
+       getMachines: () => controllers.machines.getMachines(),
+     },
+     machineMenu: {
+-      syncPlacement: () => controllers.machineMenu?.syncPlacement?.(),
++      syncPlacement: () => {
++        controllers.machineMenu?.syncPlacement?.();
++        controllers.settingsMenu?.syncPlacement?.();
++      },
+     },
+     inspectionTools,
+     getCommands: () => controllers.commands,
+@@ -190,6 +198,17 @@ export function createHpSimApp({
+     dom,
+     isMobileLayout: () => view.isMobileLayout(),
+   });
++  // The settings popover behaves exactly like the machines popover.
++  controllers.settingsMenu = createMachineMenuController({
++    document: ownerDocument,
++    window: ownerWindow,
++    dom: {
++      machinesContainer: dom.settingsContainer,
++      machinesToggle: dom.settingsToggle,
++      machinesMenu: dom.settingsMenu,
++    },
++    isMobileLayout: () => view.isMobileLayout(),
++  });
+   controllers.machines = createMachineSceneController({
+     document: ownerDocument,
+     world,
+@@ -265,6 +284,7 @@ export function createHpSimApp({
+       inspectionTools.bindUi();
+       view.bindUi();
+       controllers.machineMenu.bindUi();
++      controllers.settingsMenu.bindUi();
+       controllers.machines.bindUi();
+       controllers.commands.bindUi();
+     },
+diff --git a/hp-sim-3d/index.html b/hp-sim-3d/index.html
+index 29ac440b..37d097d6 100644
+--- a/hp-sim-3d/index.html
++++ b/hp-sim-3d/index.html
+@@ -3,7 +3,7 @@
+   <head>
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+-    <title>HP Simulation</title>
++    <title>Hangprinter Simulator</title>
+     <link rel="icon" type="image/svg+xml"
+       href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+     <script type="importmap">
+@@ -23,9 +23,9 @@
+           <div id="controls" class="sim-controls">
+             <div class="sim-buttons">
+               <div class="sim-start-buttons">
+-                <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
+-                <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
+-                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
++                <button id="printLogoBtn" type="button" class="sim-play sim-start"><span class="sim-label-long">Print </span>Logo</button>
++                <button id="printSquareBtn" type="button" class="sim-start"><span class="sim-label-long">Print </span>Squares</button>
++                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload<span class="sim-label-long"> File</span></button>
+               </div>
+               <div class="sim-machines" data-open="false">
+                 <button
+@@ -50,53 +50,67 @@
+                   <button id="machinesRemoveAllBtn" type="button" class="sim-tertiary sim-machines-remove-all">Remove All</button>
+                 </div>
+               </div>
+-              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
+-              <button id="referenceToggleBtn" type="button" class="sim-secondary sim-reference-toggle" aria-pressed="false">Show Reference Path</button>
+-              <div class="sim-toggle-group" aria-label="Simulation overlays and motor options">
+-                <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
+-                  <input id="qualityToggle" type="checkbox">
+-                  <span>Live Quality Checks</span>
+-                </label>
+-                <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
+-                  <input id="showForcesToggle" type="checkbox">
+-                  <span>Show Forces</span>
+-                </label>
+-                <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
+-                  <input id="lineLayeringToggle" type="checkbox" checked>
+-                  <span>Line Layering</span>
+-                </label>
+-                <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
+-                  <input id="closedLoopMotorsToggle" type="checkbox">
+-                  <span>Closed Loop Motors</span>
+-                </label>
+-                <label class="sim-toggle" for="solverIterations">
+-                  <span>Solver Iterations</span>
+-                  <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
+-                    <option value="" selected>Machine default</option>
+-                    <option value="1">1</option>
+-                    <option value="2">2</option>
+-                    <option value="4">4</option>
+-                    <option value="6">6</option>
+-                    <option value="8">8</option>
+-                    <option value="10">10</option>
+-                    <option value="12">12</option>
+-                    <option value="16">16</option>
+-                    <option value="20">20</option>
+-                    <option value="32">32</option>
+-                    <option value="64">64</option>
+-                  </select>
+-                </label>
+-                <label class="sim-toggle" for="physicsSubsteps">
+-                  <span>Physics Substeps</span>
+-                  <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
+-                    <option value="1" selected>1</option>
+-                    <option value="2">2</option>
+-                    <option value="4">4</option>
+-                    <option value="8">8</option>
+-                    <option value="16">16</option>
+-                  </select>
+-                </label>
++              <div class="sim-settings" data-open="false">
++                <button
++                  id="settingsToggle"
++                  type="button"
++                  class="sim-secondary sim-settings-toggle"
++                  aria-haspopup="true"
++                  aria-expanded="false"
++                  aria-controls="settingsMenu"
++                >
++                  Settings
++                </button>
++                <div id="settingsMenu" class="sim-settings-menu sim-hidden" aria-labelledby="settingsToggle">
++                  <span class="sim-menu-section-title">View</span>
++                  <button id="referenceToggleBtn" type="button" class="sim-tertiary sim-reference-toggle" aria-pressed="false">Show Reference Path</button>
++                  <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
++                    <input id="qualityToggle" type="checkbox">
++                    <span>Live Quality Checks</span>
++                  </label>
++                  <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
++                    <input id="showForcesToggle" type="checkbox">
++                    <span>Show Forces</span>
++                  </label>
++                  <span class="sim-menu-section-title">Simulation</span>
++                  <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
++                    <input id="lineLayeringToggle" type="checkbox" checked>
++                    <span>Line Layering</span>
++                  </label>
++                  <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
++                    <input id="closedLoopMotorsToggle" type="checkbox">
++                    <span>Closed Loop Motors</span>
++                  </label>
++                  <label class="sim-toggle sim-select" for="solverIterations">
++                    <span>Solver Iterations</span>
++                    <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
++                      <option value="" selected>Machine default</option>
++                      <option value="1">1</option>
++                      <option value="2">2</option>
++                      <option value="4">4</option>
++                      <option value="6">6</option>
++                      <option value="8">8</option>
++                      <option value="10">10</option>
++                      <option value="12">12</option>
++                      <option value="16">16</option>
++                      <option value="20">20</option>
++                      <option value="32">32</option>
++                      <option value="64">64</option>
++                    </select>
++                  </label>
++                  <label class="sim-toggle sim-select" for="physicsSubsteps">
++                    <span>Physics Substeps</span>
++                    <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
++                      <option value="1" selected>1</option>
++                      <option value="2">2</option>
++                      <option value="4">4</option>
++                      <option value="8">8</option>
++                      <option value="16">16</option>
++                    </select>
++                  </label>
++                </div>
+               </div>
++              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
+             </div>
+             <input
+               type="file"
+diff --git a/hp-sim-3d/style.css b/hp-sim-3d/style.css
+index c01f3c85..9e517dcd 100644
+--- a/hp-sim-3d/style.css
++++ b/hp-sim-3d/style.css
+@@ -1,5 +1,23 @@
+ :root {
+-  color-scheme: dark;
++  color-scheme: light;
++  --chrome: #e6e7e9;
++  --chrome-text: #1c1e22;
++  --chrome-muted: #61656d;
++  --control: #ffffff;
++  --control-hover: #f4f5f6;
++  --control-border: rgba(20, 24, 32, 0.12);
++  --accent: #d2465a;
++  --accent-hover: #bd3a4d;
++  --accent-text: #ffffff;
++  --focus: #2f6fe0;
++  --panel: #ffffff;
++  --panel-shadow: 0 12px 32px rgba(20, 24, 32, 0.18);
++  --glass: rgba(26, 28, 33, 0.74);
++  --glass-hover: rgba(46, 49, 56, 0.86);
++  --glass-text: rgba(246, 247, 249, 0.94);
++  --glass-border: rgba(255, 255, 255, 0.12);
++  --viewport: #c4c6c8;
++  --radius: 8px;
+ }
+ 
+ * {
+@@ -11,11 +29,12 @@ body {
+   height: 100%;
+   margin: 0;
+   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+-  background: radial-gradient(circle at top, #121420, #05060a 65%);
+-  color: #f5f7ff;
++  background: var(--chrome);
++  color: var(--chrome-text);
+ }
+ 
+-button {
++button,
++select {
+   font: inherit;
+ }
+ 
+@@ -27,10 +46,7 @@ body {
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+-  gap: clamp(16px, 3vw, 32px);
+-  padding: 0;
+   width: 100%;
+-  max-width: none;
+   margin: 0;
+   min-height: 0;
+ }
+@@ -38,8 +54,6 @@ body {
+ .sim-shell {
+   flex: 1;
+   display: flex;
+-  justify-content: center;
+-  align-items: stretch;
+   width: 100%;
+   min-height: 0;
+ }
+@@ -47,45 +61,46 @@ body {
+ .sim-app {
+   flex: 1;
+   width: 100%;
+-  max-width: none;
+-  background: rgba(24, 28, 46, 0.82);
+-  border: 1px solid rgba(255, 255, 255, 0.08);
+-  padding: clamp(20px, 3vw, 36px);
+-  box-shadow: 0 32px 80px rgba(5, 6, 10, 0.45);
++  background: var(--chrome);
++  padding: 10px 12px 12px;
+   display: flex;
+   flex-direction: column;
+-  gap: 24px;
+-  backdrop-filter: blur(12px);
++  gap: 10px;
+   min-height: 0;
+ }
+ 
+-.sim-controls {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 20px;
+-}
++/* Top bar */
+ 
+ .sim-buttons {
+   display: flex;
+   align-items: center;
+-  gap: 16px;
++  gap: 8px;
+ }
+ 
+ .sim-start-buttons {
+   display: flex;
+-  flex-wrap: wrap;
+-  gap: 12px;
++  gap: 8px;
++  margin-right: auto;
+ }
+ 
+ .sim-controls button,
+ .sim-secondary-group button {
+-  border: none;
+-  border-radius: 999px;
+-  padding: 9px 18px;
+-  font-size: 14px;
++  height: 34px;
++  padding: 0 14px;
++  border-radius: var(--radius);
++  font-size: 13.5px;
+   font-weight: 600;
++  white-space: nowrap;
+   cursor: pointer;
+-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
++  transition: background 0.12s ease, border-color 0.12s ease;
++}
++
++.sim-controls button:focus-visible,
++.sim-secondary-group button:focus-visible,
++.sim-secondary-toggle:focus-visible,
++.sim-toggle:focus-within {
++  outline: 2px solid var(--focus);
++  outline-offset: 2px;
+ }
+ 
+ .sim-controls button:disabled,
+@@ -94,71 +109,245 @@ body {
+ .sim-secondary-group button[aria-disabled='true'] {
+   opacity: 0.45;
+   cursor: not-allowed;
+-  box-shadow: none;
+-  transform: none;
+ }
+ 
+-.sim-controls button:active,
+-.sim-secondary-group button:active {
+-  transform: translateY(1px);
++.sim-start,
++.sim-secondary,
++.sim-tertiary {
++  background: var(--control);
++  color: var(--chrome-text);
++  border: 1px solid var(--control-border);
+ }
+ 
+-.sim-play,
+-.sim-start {
+-  background: linear-gradient(135deg, #ff4d8d, #ff784c);
+-  color: #141421;
+-  box-shadow: 0 16px 32px rgba(255, 96, 122, 0.28);
++.sim-start:hover,
++.sim-controls .sim-secondary:hover,
++.sim-tertiary:hover {
++  background: var(--control-hover);
+ }
+ 
+-.sim-upload {
+-  background: linear-gradient(135deg, #ffd147, #ffbb3c);
+-  color: #141421;
+-  box-shadow: 0 16px 32px rgba(255, 209, 71, 0.28);
++.sim-play {
++  background: var(--accent);
++  color: var(--accent-text);
++  border-color: transparent;
+ }
+ 
+-.sim-secondary {
+-  background: rgba(255, 255, 255, 0.14);
+-  color: rgba(244, 246, 255, 0.92);
+-  border: 1px solid rgba(255, 255, 255, 0.24);
+-  box-shadow: 0 12px 24px rgba(3, 5, 12, 0.35);
++.sim-play:hover {
++  background: var(--accent-hover);
+ }
+ 
+-.sim-tertiary {
+-  background: rgba(255, 255, 255, 0.08);
+-  color: rgba(244, 246, 255, 0.75);
+-  border: 1px solid rgba(255, 255, 255, 0.14);
++.sim-buttons.is-printing .sim-start {
++  opacity: 0.5;
++  pointer-events: none;
+ }
+ 
+-.sim-tertiary:disabled,
+-.sim-tertiary[aria-disabled='true'] {
+-  opacity: 0.5;
++/* Popovers (machines and settings) */
++
++.sim-machines,
++.sim-settings {
++  position: relative;
++  display: flex;
++  align-items: center;
+ }
+ 
+-.sim-buttons.is-printing .sim-start {
+-  opacity: 0.6;
+-  pointer-events: none;
++.sim-machines[data-open='true'] .sim-machines-toggle,
++.sim-settings[data-open='true'] .sim-settings-toggle {
++  background-color: var(--control-hover);
++  border-color: rgba(20, 24, 32, 0.3);
++}
++
++.sim-machines-menu,
++.sim-settings-menu {
++  position: absolute;
++  top: calc(100% + 8px);
++  right: 0;
++  max-height: min(70vh, 520px);
++  overflow-y: auto;
++  padding: 12px;
++  border-radius: 12px;
++  border: 1px solid var(--control-border);
++  background: var(--panel);
++  box-shadow: var(--panel-shadow);
++  display: flex;
++  flex-direction: column;
++  z-index: 20;
++}
++
++.sim-machines-menu {
++  min-width: clamp(220px, 28vw, 320px);
++  gap: 14px;
+ }
+ 
+-.sim-fullscreen {
+-  margin-left: auto;
++.sim-settings-menu {
++  width: 260px;
++  gap: 2px;
+ }
+ 
+-.sim-toggle-group {
++.sim-menu-section-title,
++.sim-machines-section-title {
++  font-size: 11px;
++  font-weight: 600;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--chrome-muted);
++}
++
++.sim-menu-section-title {
++  padding: 8px 8px 4px;
++}
++
++.sim-menu-section-title:first-child {
++  padding-top: 0;
++}
++
++.sim-settings-menu .sim-reference-toggle {
++  margin: 2px 0 4px;
++  width: 100%;
++}
++
++.sim-toggle {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  min-height: 34px;
++  padding: 0 8px;
++  border-radius: 6px;
++  font-size: 13.5px;
++  cursor: pointer;
++  user-select: none;
++}
++
++.sim-toggle:hover {
++  background: var(--control-hover);
++}
++
++.sim-toggle input[type='checkbox'] {
++  width: 16px;
++  height: 16px;
++  margin: 0;
++  accent-color: var(--accent);
++  cursor: pointer;
++}
++
++.sim-select {
++  justify-content: space-between;
++}
++
++.sim-select select {
++  height: 28px;
++  padding: 0 6px;
++  border-radius: 6px;
++  border: 1px solid var(--control-border);
++  background: var(--control);
++  color: var(--chrome-text);
++  font-size: 13px;
++  cursor: pointer;
++}
++
++.sim-machines-section {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++}
++
++.sim-machines-options,
++.sim-machines-custom {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++}
++
++.sim-machines-option {
++  margin: 0;
++}
++
++.sim-machines-option-label {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 8px 10px;
++  border-radius: 6px;
++  font-size: 13.5px;
++  cursor: pointer;
++}
++
++.sim-machines-option-label:hover {
++  background: var(--control-hover);
++}
++
++.sim-machines-checkbox {
++  width: 16px;
++  height: 16px;
++  margin: 0;
++  accent-color: var(--accent);
++}
++
++.sim-machines-option-color {
++  width: 12px;
++  height: 12px;
++  border-radius: 999px;
++  border: 1px solid rgba(20, 24, 32, 0.25);
++  flex-shrink: 0;
++}
++
++.sim-machines-option-color--empty {
++  background: transparent;
++  border-style: dashed;
++}
++
++.sim-machines-option-text {
++  flex: 1;
++}
++
++.sim-machines-custom-item {
+   display: flex;
+-  flex-wrap: wrap;
+-  gap: 12px;
+   align-items: center;
++  justify-content: space-between;
++  gap: 10px;
++  padding: 6px 10px;
++  border-radius: 6px;
++  background: var(--control-hover);
++  font-size: 13.5px;
+ }
+ 
++.sim-machines-custom-info {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  flex: 1;
++  min-width: 0;
++}
++
++.sim-machines-custom-name {
++  flex: 1;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.sim-controls .sim-machines-remove,
++.sim-controls .sim-machines-remove-all {
++  height: 28px;
++  padding: 0 10px;
++  font-size: 12.5px;
++}
++
++.sim-machines-remove-all {
++  align-self: flex-start;
++}
++
++/* Viewport */
++
+ .canvas-frame {
+   flex: 1;
+   width: 100%;
+   min-height: 0;
+-  border-radius: 28px;
++  border-radius: 12px;
+   overflow: hidden;
+-  background: rgba(5, 6, 12, 0.62);
++  background: var(--viewport);
+   position: relative;
+-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+   overscroll-behavior: contain;
+   touch-action: none;
+   display: flex;
+@@ -174,15 +363,45 @@ body {
+   user-select: none;
+ }
+ 
++/* Floating controls over the viewport */
++
++.sim-secondary-toggle {
++  position: absolute;
++  top: 12px;
++  right: 12px;
++  width: 32px;
++  height: 32px;
++  border-radius: var(--radius);
++  background: var(--glass);
++  color: var(--glass-text);
++  border: 1px solid var(--glass-border);
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  font-size: 12px;
++  line-height: 1;
++  cursor: pointer;
++  transition: transform 140ms ease, background 140ms ease;
++  backdrop-filter: blur(8px);
++  z-index: 4;
++}
++
++.sim-secondary-toggle:hover {
++  background: var(--glass-hover);
++}
++
++.sim-secondary-toggle[aria-expanded='true'] {
++  transform: rotate(180deg);
++}
++
+ .sim-secondary-group {
+   position: absolute;
+-  top: 72px;
+-  right: 24px;
+-  width: 136px;
++  top: 52px;
++  right: 12px;
++  width: 112px;
+   display: flex;
+   flex-direction: column;
+-  gap: 12px;
+-  align-items: stretch;
++  gap: 6px;
+   pointer-events: none;
+ }
+ 
+@@ -192,13 +411,22 @@ body {
+ 
+ .sim-secondary-group button {
+   pointer-events: auto;
+-  background: rgba(35, 38, 58, 0.82);
++  height: 30px;
++  padding: 0 10px;
++  font-size: 12.5px;
++  background: var(--glass);
++  color: var(--glass-text);
++  border: 1px solid var(--glass-border);
++  backdrop-filter: blur(8px);
++}
++
++.sim-secondary-group button:hover {
++  background: var(--glass-hover);
+ }
+ 
+ .sim-tool-button {
+   display: grid;
+-  grid-template-columns: minmax(0, 1fr) 58px;
+-  align-items: stretch;
++  grid-template-columns: minmax(0, 1fr) 44px;
+   pointer-events: auto;
+ }
+ 
+@@ -207,99 +435,54 @@ body {
+ }
+ 
+ .sim-tool-button .sim-tool-main {
+-  border-radius: 999px;
+   grid-column: 1 / -1;
+ }
+ 
+ .sim-tool-button.is-open .sim-tool-main {
+   grid-column: auto;
+-  border-radius: 999px 0 0 999px;
+-  padding-left: 6px;
+-  padding-right: 6px;
+-}
+-
+-
+-.sim-tool-button.is-open .sim-tool-clear {
+-  border-radius: 0 999px 999px 0;
+-  padding-left: 6px;
++  border-radius: var(--radius) 0 0 var(--radius);
++  padding: 0 6px;
+ }
+ 
+-.sim-tool-clear {
+-  border-radius: 0 999px 999px 0;
+-  min-width: 0;
++.sim-secondary-group .sim-tool-clear {
++  border-radius: 0 var(--radius) var(--radius) 0;
+   border-left-width: 0;
+-  padding: 12px 6px;
+-  font-size: 12px;
+-  color: rgba(240, 244, 255, 0.92);
+-  display: flex;
+-  align-items: center;
+-  justify-content: center;
+-  text-align: center;
+-  box-sizing: border-box;
++  padding: 0 4px;
++  font-size: 11.5px;
+ }
+ 
+ .sim-tool-clear.sim-hidden {
+   display: none;
+ }
+ 
+-.sim-zoom {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 8px;
+-}
+-
+-.sim-zoom-btn {
+-  padding: 12px 16px;
+-  min-width: 48px;
+-}
+-
+-.sim-zoom-btn[aria-pressed="true"],
+-.sim-zoom-btn.is-active,
+-#positionTraceBtn.is-active,
+-#measureBtn.is-active {
+-  background: rgba(255, 255, 255, 0.32);
+-  color: #151526;
+-}
+-
+-.sim-secondary-toggle {
+-  position: absolute;
+-  top: 24px;
+-  right: 24px;
+-  width: 34px;
+-  height: 34px;
+-  border-radius: 50%;
+-  background: rgba(35, 38, 58, 0.88);
+-  color: rgba(240, 244, 255, 0.95);
+-  border: 1px solid rgba(255, 255, 255, 0.22);
+-  box-shadow: 0 14px 32px rgba(5, 6, 12, 0.3);
+-  display: flex;
+-  align-items: center;
+-  justify-content: center;
+-  font-size: 16px;
+-  line-height: 1;
+-  cursor: pointer;
+-  transition: transform 140ms ease, background 140ms ease;
+-  z-index: 4;
++.sim-zoom,
++.sim-speed {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 6px;
++  pointer-events: auto;
+ }
+ 
+-.sim-secondary-toggle:hover {
+-  background: rgba(55, 60, 90, 0.92);
++.sim-zoom #panModeBtn {
++  grid-column: 1 / -1;
+ }
+ 
+-.sim-secondary-toggle:focus-visible {
+-  outline: 2px solid rgba(122, 226, 255, 0.9);
+-  outline-offset: 2px;
++.sim-secondary-group .sim-zoom-btn,
++.sim-secondary-group .sim-speed-btn {
++  padding: 0 4px;
+ }
+ 
+-.sim-secondary-toggle[aria-expanded='true'] {
+-  transform: rotate(180deg);
++.sim-zoom-btn[aria-pressed='true'],
++.sim-zoom-btn.is-active,
++#positionTraceBtn.is-active,
++#measureBtn.is-active,
++#rerunBtn[aria-pressed='true'] {
++  background: rgba(246, 247, 249, 0.92);
++  color: #1c1e22;
+ }
+ 
+-.sim-speed {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 8px;
+-  pointer-events: auto;
++.sim-speed-icon {
++  display: none;
+ }
+ 
+ .sim-speed-btn:disabled {
+@@ -307,30 +490,25 @@ body {
+   cursor: not-allowed;
+ }
+ 
+-.sim-speed-icon {
+-  font-size: 16px;
+-  line-height: 1;
+-}
+-
+-.sim-speed-text {
++.sim-speed-status,
++.sim-print-status {
++  position: absolute;
++  padding: 8px 14px;
++  background: var(--glass);
++  color: var(--glass-text);
++  border-radius: var(--radius);
+   font-size: 13px;
+   font-weight: 600;
++  line-height: 1.4;
++  pointer-events: none;
++  backdrop-filter: blur(8px);
+ }
+ 
+ .sim-speed-status {
+-  position: absolute;
+-  bottom: 24px;
++  bottom: 12px;
+   left: 50%;
+   transform: translateX(-50%);
+-  padding: 12px 20px;
+-  background: rgba(14, 16, 28, 0.72);
+-  color: rgba(240, 244, 255, 0.88);
+-  border-radius: 999px;
+-  font-size: 14px;
+-  font-weight: 600;
+-  letter-spacing: 0.02em;
+-  pointer-events: none;
+-  box-shadow: 0 20px 40px rgba(5, 6, 12, 0.35);
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .sim-speed-status.sim-hidden {
+@@ -338,83 +516,45 @@ body {
+ }
+ 
+ .sim-print-status {
+-  position: absolute;
+-  left: 24px;
+-  right: auto;
++  left: 12px;
+   max-width: 320px;
+-  padding: 10px 16px;
+-  background: rgba(14, 16, 28, 0.78);
+-  color: rgba(240, 244, 255, 0.92);
+-  border-radius: 12px;
+-  font-size: 14px;
+-  font-weight: 600;
+-  line-height: 1.4;
+-  letter-spacing: 0.01em;
+-  box-shadow: 0 16px 36px rgba(5, 6, 12, 0.28);
+-  pointer-events: none;
+ }
+ 
+ #printStatus {
+-  bottom: 78px;
++  bottom: 56px;
+ }
+ 
+ #asapStatus {
+-  bottom: 24px;
++  bottom: 12px;
+ }
+ 
+-.sim-toggle {
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 8px;
+-  padding: 9px 16px;
+-  border-radius: 999px;
+-  background: rgba(255, 255, 255, 0.14);
+-  color: rgba(244, 246, 255, 0.92);
+-  border: 1px solid rgba(255, 255, 255, 0.24);
+-  box-shadow: 0 12px 24px rgba(3, 5, 12, 0.35);
+-  font-size: 13px;
+-  font-weight: 600;
+-  letter-spacing: 0.01em;
+-  cursor: pointer;
+-  user-select: none;
+-}
+-
+-.sim-toggle input[type='checkbox'] {
+-  width: 16px;
+-  height: 16px;
+-  accent-color: #7ae2ff;
+-  cursor: pointer;
+-}
+-
+-.sim-toggle span {
+-  white-space: nowrap;
+-}
++/* Quality HUD */
+ 
+ .quality-hud {
+   position: absolute;
+-  top: 24px;
+-  left: 24px;
++  top: 12px;
++  left: 12px;
+   display: flex;
+   flex-direction: column;
+-  gap: 10px;
++  gap: 8px;
+   pointer-events: none;
+ }
+ 
+ .quality-hud__card {
+   min-width: 220px;
+-  padding: 14px 18px;
+-  border-radius: 14px;
+-  background: rgba(10, 12, 24, 0.85);
+-  color: rgba(240, 244, 255, 0.92);
++  padding: 12px 14px;
++  border-radius: 10px;
++  background: var(--glass);
++  color: var(--glass-text);
+   font-size: 13px;
+   line-height: 1.35;
+-  box-shadow: 0 18px 34px rgba(5, 6, 12, 0.32);
++  backdrop-filter: blur(8px);
+   pointer-events: none;
+   transition: opacity 120ms ease;
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+-  --quality-accent: #7ae2ff;
++  --quality-accent: #8fd3ff;
+ }
+ 
+ .quality-hud__header {
+@@ -422,13 +562,12 @@ body {
+   align-items: center;
+   gap: 8px;
+   font-weight: 600;
+-  letter-spacing: 0.01em;
+ }
+ 
+ .quality-hud__swatch {
+-  width: 14px;
+-  height: 14px;
+-  border-radius: 4px;
++  width: 12px;
++  height: 12px;
++  border-radius: 3px;
+   background: rgba(240, 244, 255, 0.25);
+   box-shadow: inset 0 0 0 1px rgba(240, 244, 255, 0.5);
+ }
+@@ -440,21 +579,6 @@ body {
+ 
+ .quality-hud__title {
+   font-size: 13px;
+-  letter-spacing: 0.01em;
+-}
+-
+-.quality-hud__score {
+-  display: flex;
+-  align-items: baseline;
+-  gap: 6px;
+-  font-weight: 600;
+-  letter-spacing: 0.01em;
+-}
+-
+-.quality-hud__score strong {
+-  font-size: 20px;
+-  color: var(--quality-accent, #7ae2ff);
+-  letter-spacing: 0.02em;
+ }
+ 
+ .quality-hud__summary {
+@@ -463,7 +587,6 @@ body {
+   justify-content: space-between;
+   gap: 10px;
+   font-weight: 600;
+-  letter-spacing: 0.01em;
+ }
+ 
+ .quality-hud__summary-copy {
+@@ -473,21 +596,21 @@ body {
+ }
+ 
+ .quality-hud__summary--primary strong {
+-  font-size: 20px;
+-  color: var(--quality-accent, #7ae2ff);
+-  letter-spacing: 0.02em;
++  font-size: 19px;
++  color: var(--quality-accent);
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .quality-hud__summary--secondary strong {
+-  font-size: 16px;
+-  color: rgba(240, 244, 255, 0.96);
++  font-size: 15px;
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .quality-hud__toggle {
+   width: 22px;
+   height: 22px;
+-  border: 1px solid rgba(255, 255, 255, 0.2);
+-  border-radius: 999px;
++  border: 1px solid var(--glass-border);
++  border-radius: 6px;
+   background: rgba(255, 255, 255, 0.08);
+   color: inherit;
+   cursor: pointer;
+@@ -499,8 +622,9 @@ body {
+   pointer-events: auto;
+ }
+ 
+-.quality-hud__toggle:focus-visible {
+-  outline: 2px solid rgba(122, 226, 255, 0.9);
++.quality-hud__toggle:focus-visible,
++.quality-history__toggle:focus-visible {
++  outline: 2px solid var(--focus);
+   outline-offset: 2px;
+ }
+ 
+@@ -529,15 +653,16 @@ body {
+ .quality-hud__metric span:last-child {
+   font-weight: 600;
+   white-space: nowrap;
++  font-variant-numeric: tabular-nums;
+ }
+ 
+ .quality-history {
+   position: absolute;
+-  top: 24px;
+-  left: 272px;
++  top: 12px;
++  left: 256px;
+   display: flex;
+   flex-direction: column;
+-  gap: 10px;
++  gap: 8px;
+   pointer-events: auto;
+   min-width: 200px;
+   max-width: 320px;
+@@ -545,36 +670,28 @@ body {
+ 
+ .quality-history__toggle {
+   align-self: flex-start;
+-  padding: 6px 12px;
+-  border-radius: 999px;
+-  background: rgba(20, 22, 36, 0.85);
+-  color: rgba(240, 244, 255, 0.92);
+-  font-size: 13px;
++  height: 30px;
++  padding: 0 12px;
++  border-radius: var(--radius);
++  background: var(--glass);
++  color: var(--glass-text);
++  font-size: 12.5px;
+   font-weight: 600;
+-  letter-spacing: 0.01em;
+-  border: 1px solid rgba(255, 255, 255, 0.18);
+-  box-shadow: 0 12px 24px rgba(5, 6, 12, 0.28);
++  border: 1px solid var(--glass-border);
++  backdrop-filter: blur(8px);
+   cursor: pointer;
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 6px;
+-}
+-
+-.quality-history__toggle:focus-visible {
+-  outline: 2px solid rgba(122, 226, 255, 0.9);
+-  outline-offset: 2px;
+ }
+ 
+ .quality-history__list {
+-  padding: 14px 16px;
+-  border-radius: 14px;
+-  background: rgba(10, 12, 24, 0.88);
+-  box-shadow: 0 14px 32px rgba(5, 6, 12, 0.3);
++  padding: 12px 14px;
++  border-radius: 10px;
++  background: var(--glass);
++  backdrop-filter: blur(8px);
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   font-size: 13px;
+-  color: rgba(240, 244, 255, 0.92);
++  color: var(--glass-text);
+   max-height: 260px;
+   overflow-y: auto;
+ }
+@@ -588,303 +705,79 @@ body {
+ 
+ .quality-history__label {
+   flex: 1;
+-  letter-spacing: 0.01em;
+ }
+ 
+ .quality-history__score {
+   font-weight: 600;
+   font-variant-numeric: tabular-nums;
+-  letter-spacing: 0.02em;
+-  color: rgba(122, 226, 255, 0.95);
++  color: #8fd3ff;
+ }
+ 
+ .sim-hidden {
+   display: none !important;
+ }
+ 
+-.sim-machines {
+-  position: relative;
+-  display: flex;
+-  align-items: center;
+-}
+-
+-.sim-machines-toggle {
+-  white-space: nowrap;
+-}
+-
+-.sim-machines[data-open='true'] .sim-machines-toggle {
+-  background: rgba(255, 255, 255, 0.3);
+-  color: #151526;
+-}
+-
+-.sim-machines-menu {
+-  position: absolute;
+-  top: calc(100% + 12px);
+-  right: 0;
+-  min-width: clamp(220px, 28vw, 340px);
+-  max-height: min(70vh, 480px);
+-  overflow-y: auto;
+-  padding: 16px;
+-  border-radius: 20px;
+-  border: 1px solid rgba(255, 255, 255, 0.12);
+-  background: rgba(18, 20, 36, 0.96);
+-  box-shadow: 0 28px 64px rgba(4, 6, 16, 0.55);
+-  display: flex;
+-  flex-direction: column;
+-  gap: 16px;
+-  z-index: 20;
+-  backdrop-filter: blur(18px);
+-}
+-
+-.sim-machines-section {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 10px;
+-}
+-
+-.sim-machines-section-title {
+-  font-size: 13px;
+-  letter-spacing: 0.08em;
+-  text-transform: uppercase;
+-  color: rgba(244, 246, 255, 0.6);
+-}
+-
+-.sim-machines-options,
+-.sim-machines-custom {
+-  list-style: none;
+-  margin: 0;
+-  padding: 0;
+-  display: flex;
+-  flex-direction: column;
+-  gap: 8px;
+-}
+-
+-.sim-machines-option {
+-  margin: 0;
+-}
+-
+-.sim-machines-option-label {
+-  display: flex;
+-  align-items: center;
+-  gap: 12px;
+-  padding: 10px 14px;
+-  border-radius: 14px;
+-  border: 1px solid rgba(255, 255, 255, 0.08);
+-  background: rgba(34, 37, 56, 0.82);
+-  font-size: 14px;
+-  cursor: pointer;
+-  transition: background 0.16s ease, border-color 0.16s ease;
+-}
+-
+-.sim-machines-option-label:hover {
+-  border-color: rgba(255, 255, 255, 0.18);
+-  background: rgba(44, 48, 68, 0.9);
+-}
+-
+-.sim-machines-checkbox {
+-  width: 18px;
+-  height: 18px;
+-  margin: 0;
+-  accent-color: #ff5c83;
+-}
+-
+-.sim-machines-option-color {
+-  width: 14px;
+-  height: 14px;
+-  border-radius: 999px;
+-  border: 1px solid rgba(255, 255, 255, 0.4);
+-  background: rgba(255, 255, 255, 0.18);
+-  flex-shrink: 0;
+-  box-shadow: 0 0 0 1px rgba(12, 14, 24, 0.35);
+-  transition:
+-    transform 0.18s ease,
+-    box-shadow 0.18s ease,
+-    background-color 0.18s ease,
+-    border-color 0.18s ease;
+-}
+-
+-.sim-machines-option-color--empty {
+-  background: rgba(255, 255, 255, 0.12);
+-  border-style: dashed;
+-  border-color: rgba(255, 255, 255, 0.25);
+-  box-shadow: none;
+-}
+-
+-.sim-machines-option-label:hover .sim-machines-option-color {
+-  transform: scale(1.05);
+-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+-}
+-
+-.sim-machines-option-text {
+-  flex: 1;
+-  color: rgba(244, 246, 255, 0.9);
+-}
+-
+-.sim-machines-custom-item {
+-  display: flex;
+-  align-items: center;
+-  justify-content: space-between;
+-  gap: 12px;
+-  padding: 10px 14px;
+-  border-radius: 14px;
+-  border: 1px solid rgba(255, 255, 255, 0.08);
+-  background: rgba(34, 37, 56, 0.65);
+-  font-size: 14px;
+-}
+-
+-.sim-machines-custom-info {
+-  display: flex;
+-  align-items: center;
+-  gap: 12px;
+-  flex: 1;
+-  min-width: 0;
+-}
+-
+-.sim-machines-custom-name {
+-  flex: 1;
+-  overflow: hidden;
+-  text-overflow: ellipsis;
+-  white-space: nowrap;
+-  color: rgba(244, 246, 255, 0.9);
+-}
+-
+-.sim-machines-remove {
+-  padding: 6px 12px;
+-  font-size: 13px;
+-}
+-
+-.sim-machines-remove-all {
+-  align-self: flex-start;
+-  padding: 8px 16px;
+-  font-size: 13px;
+-}
+-
+ @media (max-width: 900px) {
+-  .sim-buttons {
+-    flex-direction: column;
+-    align-items: stretch;
+-    gap: 12px;
+-  }
+-
+-  .sim-machines {
+-    width: 100%;
+-  }
+-
+-  .sim-machines-toggle {
+-    width: 100%;
+-  }
+-
+-  .sim-machines-menu {
+-    position: relative;
+-    top: 12px;
+-    right: auto;
+-    left: 0;
+-    width: 100%;
+-    max-height: min(60vh, 360px);
+-    box-shadow: 0 18px 42px rgba(4, 6, 16, 0.45);
+-  }
+-
+-  .sim-fullscreen {
+-    width: 100%;
+-    margin-left: 0;
+-    align-self: flex-end;
+-  }
+-
+-  .sim-toggle-group {
+-    width: 100%;
+-  }
+-
+   .quality-history {
+     top: auto;
+-    bottom: 24px;
++    bottom: 12px;
+     left: auto;
+-    right: 24px;
++    right: 12px;
+   }
+ }
+ 
++/* Phones: one row of short buttons; the settings button shows a gear. */
+ @media (max-width: 600px) {
+-  .canvas-frame {
+-    border-radius: 20px;
+-  }
+-
+   .sim-app {
+-    border-radius: 0;
+-    gap: 12px;
+-    width: 100vw;
+-    padding: clamp(10px, 1vw, 12px);
++    padding: 8px;
++    gap: 8px;
+   }
+ 
+   .sim-buttons {
+-    display: grid;
+-    grid-template-columns: repeat(3, minmax(0, 1fr));
+-    grid-auto-rows: minmax(52px, auto);
+-    gap: 10px;
+-    align-items: stretch;
++    gap: 6px;
+   }
+ 
+   .sim-start-buttons {
+-    display: contents;
+-  }
+-
+-  .sim-toggle-group {
+-    display: contents;
+-  }
+-
+-  .sim-controls button {
+-    display: inline-flex;
+-    align-items: center;
+-    justify-content: center;
+-    width: 100%;
+-    min-height: 52px;
+-    white-space: nowrap;
+-  }
+-
+-  .sim-toggle {
+-    display: flex;
+-    justify-content: center;
+-    width: 100%;
+-    min-height: 52px;
++    flex: 1;
+     gap: 6px;
+   }
+ 
+-  .sim-toggle input[type='checkbox'] {
+-    flex-shrink: 0;
++  .sim-start-buttons button {
++    flex: 1;
+   }
+ 
+-  .sim-machines {
+-    width: 100%;
++  .sim-label-long,
++  #fullscreenBtn {
++    display: none;
+   }
+ 
+-  .sim-machines-toggle {
+-    width: 100%;
+-    justify-content: center;
++  .sim-controls button {
++    height: 36px;
++    padding: 0 8px;
++    font-size: 13px;
+   }
+ 
+-  .sim-machines-menu {
+-    position: absolute;
+-    top: calc(100% + 8px);
+-    left: 50%;
+-    right: auto;
+-    transform: translateX(-50%);
+-    width: min(90vw, 340px);
+-    min-width: 0;
+-    max-height: none;
+-    overflow-y: visible;
+-    box-shadow: 0 24px 52px rgba(4, 6, 16, 0.5);
++  .sim-settings-toggle {
++    width: 36px;
++    font-size: 0 !important;
++    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c1e22' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E");
++    background-repeat: no-repeat;
++    background-position: center;
++    background-size: 18px 18px;
+   }
+ 
+-  .sim-machines-menu::-webkit-scrollbar {
+-    display: none;
++  .sim-machines-menu,
++  .sim-settings-menu {
++    width: min(92vw, 320px);
++    min-width: 0;
+   }
+ 
+-  #fullscreenBtn {
+-    display: none;
++  .canvas-frame {
++    border-radius: 10px;
+   }
+ 
+-  .sim-controls button,
+-  .sim-secondary-group button {
+-    font-size: 13px;
+-    padding: 8px 16px;
++  .sim-secondary-group {
++    width: 96px;
+   }
+ }
+ 
+@@ -893,16 +786,12 @@ body {
+ .sim-app.is-fullscreen {
+   width: 100vw;
+   height: 100vh;
+-  max-width: none;
+-  padding: clamp(20px, 4vw, 40px);
+-  border-radius: 0;
+-  box-shadow: none;
++  padding: 10px 12px 12px;
+ }
+ 
+ .sim-app:fullscreen .canvas-frame,
+ .sim-app:-webkit-full-screen .canvas-frame,
+ .sim-app.is-fullscreen .canvas-frame {
+-  aspect-ratio: auto;
+   height: 100%;
+   min-height: 0;
+ }
+@@ -916,11 +805,10 @@ body {
+ 
+ .sim-error {
+   margin: 0;
+-  padding: 18px;
+-  border-radius: 16px;
+-  background: rgba(150, 32, 54, 0.85);
+-  color: #fef2f2;
+-  font-size: 16px;
++  padding: 16px;
++  border-radius: 10px;
++  background: #b3263e;
++  color: #fff;
++  font-size: 15px;
+   text-align: center;
+-  box-shadow: 0 20px 40px rgba(5, 6, 12, 0.35);
+ }
+diff --git a/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json b/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json
+index 1603db19..6c00b1cb 100644
+--- a/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json
++++ b/research/output/session-2026-11-12-interactive-research-04b803d9/native/b06e77c7c9844669af755e61c62302e8/manifest.json
+@@ -1 +1 @@
+-{"authored_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "baked_scene_sha256": "2cf2578e1317d9a94be24ec1da6e8877711233fbf8f5a9df0a9f7d43f2e589c7", "bridge_source_sha256": "c60f566109f58151fd462c4b0966b1e03018dfba9b586a27db53dfcec336822a", "design_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "effective_settings": {"backend": "headless-js", "base_radii_mm": [30.0, 30.0, 30.0, 30.0], "buildup_factor": 0.6366197723675814, "firmware_config": "sys/config_hp4_w_line_layers.g", "layering": true, "machine": "hp4", "scene": "public/usd_scenes/hp4_rigid_body.usda"}, "firmware_config_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "firmware_configuration": {"buildup_factor": 0.6366197723675814, "radii_mm": [46.6045, 46.6045, 46.6045, 46.6045], "source": "sys/config_hp4_w_line_layers.g"}, "firmware_initial": {"M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-11-11 22:12:27", "M666": "M666 A1 Q0.6366\nR46.60:46.60:46.60:46.60\nU2:2:2:4\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0", "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0"}, "firmware_source_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "generation": 1, "geometry": {"cable_half_widths_m": [0.001], "layering_flags": {"enableLayering": true, "layeringFrictionEffectiveRadius": true, "layeringRenderWraps": true}}, "js_physics_source_sha256": "712fbfb574dd3f540ef4e3a10ee7067e6a76e251054d952bb2115edf2da4226c", "physics_artifact": {"build": {"arch": "x64", "artifactSha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740", "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016", "compiler": "cc", "nodeApi": 8, "nodeApiHeaders": {"directory": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/native/node-api", "sha256": {"js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61"}}, "platform": "linux", "profile": "release", "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8", "rustflags": null, "sources": {"Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9", "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef", "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61", "native/node_bridge.c": "af7bfc8cbe31e38bf99a75ba20f0393d71f16a7e69241eec2f88637e16e2404c", "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8", "src/engine.rs": "7cd4461434a0c38239b43b7de56b9bc18607c937d41328c7f258bedc02a4aa8b", "src/lib.rs": "debff40c885abb529c00ed2b564a03aff830e2e134fe21c956341e9fcdf6b0e1"}, "target": "x86_64-unknown-linux-gnu"}, "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node", "sha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740"}, "physics_engine": "rust-native", "previous_world_id": null, "python_source_sha256": "19cc61428220067a401eb2f10017845d165c78078b70488b68c1f123aebc3f56", "requested_settings": {"machine": "hp4"}, "reset_required": false, "rrf_sha256": "8ac55b5098ac046ddbbf0b8196adf3d5aa53557279c70f29bfc8598e32ac31f9", "rust_physics_sha256": "4c36a8cf007e21a85e27314a1582ed368a4568819e0b0896931931269f1ddf31", "schema_version": 2, "session_id": "b06e77c7c9844669af755e61c62302e8", "status": "ready", "world_id": "b06e77c7c9844669af755e61c62302e8"}
++{"authored_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "baked_scene_sha256": "2cf2578e1317d9a94be24ec1da6e8877711233fbf8f5a9df0a9f7d43f2e589c7", "bridge_source_sha256": "c60f566109f58151fd462c4b0966b1e03018dfba9b586a27db53dfcec336822a", "design_scene_sha256": "2015d502d4738bb5405bb6d8e2f40c71125cd28f6fe3ec0f87d4b76ca2ed24da", "effective_settings": {"backend": "headless-js", "base_radii_mm": [30.0, 30.0, 30.0, 30.0], "buildup_factor": 0.6366197723675814, "firmware_config": "sys/config_hp4_w_line_layers.g", "layering": true, "machine": "hp4", "scene": "public/usd_scenes/hp4_rigid_body.usda"}, "end_step": 0, "firmware_config_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "firmware_configuration": {"buildup_factor": 0.6366197723675814, "radii_mm": [46.6045, 46.6045, 46.6045, 46.6045], "source": "sys/config_hp4_w_line_layers.g"}, "firmware_initial": {"M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-11-11 22:12:27", "M666": "M666 A1 Q0.6366\nR46.60:46.60:46.60:46.60\nU2:2:2:4\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0", "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0"}, "firmware_source_sha256": "e5292a0ce0b8acdc718538b3cf4ec52a4613dad38c99e3aaf76a707f386ab52b", "generation": 1, "geometry": {"cable_half_widths_m": [0.001], "layering_flags": {"enableLayering": true, "layeringFrictionEffectiveRadius": true, "layeringRenderWraps": true}}, "js_physics_source_sha256": "712fbfb574dd3f540ef4e3a10ee7067e6a76e251054d952bb2115edf2da4226c", "physics_artifact": {"build": {"arch": "x64", "artifactSha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740", "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016", "compiler": "cc", "nodeApi": 8, "nodeApiHeaders": {"directory": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/native/node-api", "sha256": {"js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61"}}, "platform": "linux", "profile": "release", "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8", "rustflags": null, "sources": {"Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9", "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef", "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541", "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034", "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579", "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61", "native/node_bridge.c": "af7bfc8cbe31e38bf99a75ba20f0393d71f16a7e69241eec2f88637e16e2404c", "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8", "src/engine.rs": "7cd4461434a0c38239b43b7de56b9bc18607c937d41328c7f258bedc02a4aa8b", "src/lib.rs": "debff40c885abb529c00ed2b564a03aff830e2e134fe21c956341e9fcdf6b0e1"}, "target": "x86_64-unknown-linux-gnu"}, "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node", "sha256": "118fbcb6be8c92a8904a6218596d2f694056f0e117c3d9d72de9caa719ef4740"}, "physics_engine": "rust-native", "previous_world_id": null, "python_source_sha256": "19cc61428220067a401eb2f10017845d165c78078b70488b68c1f123aebc3f56", "requested_settings": {"machine": "hp4"}, "reset_required": false, "rrf_sha256": "8ac55b5098ac046ddbbf0b8196adf3d5aa53557279c70f29bfc8598e32ac31f9", "rust_physics_sha256": "4c36a8cf007e21a85e27314a1582ed368a4568819e0b0896931931269f1ddf31", "schema_version": 2, "session_id": "b06e77c7c9844669af755e61c62302e8", "status": "archived", "world_id": "b06e77c7c9844669af755e61c62302e8"}
+diff --git a/src/js/cable_joints_3d/render_system_3d.js b/src/js/cable_joints_3d/render_system_3d.js
+index 9e9ff501..0be75f2a 100644
+--- a/src/js/cable_joints_3d/render_system_3d.js
++++ b/src/js/cable_joints_3d/render_system_3d.js
+@@ -2,6 +2,7 @@ import * as THREE from 'three';
+ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+ 
+ import Vector3 from './vector3.js';
++import { Stage3D } from './stage_3d.js';
+ import {
+   PositionComponent,
+   RadiusComponent,
+@@ -26,8 +27,9 @@ import {
+ const EPSILON = 1e-9;
+ const ARC_SEGMENTS = 48;
+ const JOINT_LINE_SEGMENTS = 24;
+-const SLACK_COLOR = '#ff9f43';
++const SLACK_COLOR = '#f2a33a';
+ const DEFAULT_CABLE_COLOR = '#ffd34d';
++const DYNEEMA_COLOR = '#e8606f';
+ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
+ const ORIENTATION_BACK_COLOR = '#2a3542';
+ const KNOT_MARKER_COLOR = '#ff3b30';
+@@ -44,13 +46,10 @@ const FORCE_SIGN_SPREAD_MARGIN_PX = 8;
+ const FORCE_SIGN_SPREAD_ITERATIONS = 10;
+ const FORCE_SIGN_TEXTURE_WIDTH = 256*0.55;
+ const FORCE_SIGN_TEXTURE_HEIGHT = 80*0.65;
+-const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
+ const PRINT_SURFACE_Z = 0.0;
+-const PRINT_SURFACE_OUTLINE_Z = 0.0;
+-const PRINT_SURFACE_MIN_HALF_EXTENT = 0.18;
+-const PRINT_SURFACE_MARGIN = 0.08;
+-const PRINT_SURFACE_COLOR = 0x243248;
+-const PRINT_SURFACE_OUTLINE_COLOR = 0x5f7492;
++const MACHINE_MIN_HALF_EXTENT = 0.18;
++const MACHINE_EXTENT_MARGIN = 0.08;
++const STAGE_FLOOR_CLEARANCE = 0.02;
+ const BORDER_FLOOR_OFFSET_Z = -0.035;
+ const BORDER_FLOOR_COLOR = 0x1d2434;
+ const BORDER_FLOOR_COLOR_HEX = '#1d2434';
+@@ -81,6 +80,8 @@ const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.0012;
+ const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
+ const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
+ const DEFAULT_ORBIT_POLAR = 1.05;
++const CAMERA_MIN_NEAR = 0.0001;
++const CAMERA_NEAR_PER_DISTANCE = 0.004;
+ const CYLINDER_LOCAL_UP = new THREE.Vector3(0, 1, 0);
+ const CATENARY_HORIZONTAL_EPSILON = 1e-5;
+ const CATENARY_SOLVER_ITERATIONS = 48;
+@@ -850,17 +851,6 @@ export function collectRigidGroupEdges(memberCount, renderSegments) {
+ }
+ 
+ export class RenderSystem3D {
+-  static createDefaultLightingGroup() {
+-    const lights = new THREE.Group();
+-    lights.add(new THREE.AmbientLight(0x7a92b0, 1.35));
+-    const key = new THREE.DirectionalLight(0xf6fbff, 1.35);
+-    key.position.set(1.8, 2.6, 2.8);
+-    lights.add(key);
+-    const skyLight = new THREE.HemisphereLight(0xa6caff, 0x27303c, 0.45);
+-    lights.add(skyLight);
+-    return lights;
+-  }
+-
+   static buildBorderShape(points) {
+     if (!points || points.length < 3) {
+       return null;
+@@ -875,9 +865,6 @@ export class RenderSystem3D {
+     return shape;
+   }
+ 
+-  static get DEFAULT_BACKGROUND_COLOR() {
+-    return DEFAULT_BACKGROUND_COLOR;
+-  }
+   static get DEFAULT_BORDER_FLOOR_COLOR() {
+     return BORDER_FLOOR_COLOR;
+   }
+@@ -899,7 +886,6 @@ export class RenderSystem3D {
+     this.defaultPlaneNormal = options.planeNormal ? options.planeNormal.clone().normalize() : DEFAULT_PLANE_NORMAL.clone();
+ 
+     this.scene = new THREE.Scene();
+-    this.scene.background = new THREE.Color(options.backgroundColor ?? RenderSystem3D.DEFAULT_BACKGROUND_COLOR);
+ 
+     this.renderer = new THREE.WebGLRenderer({
+       canvas,
+@@ -1022,54 +1008,8 @@ export class RenderSystem3D {
+     this._fixedCameraPosition = this.camera.position.clone();
+     this._fixedCameraQuaternion = this.camera.quaternion.clone();
+ 
+-    const lights = RenderSystem3D.createDefaultLightingGroup();
+-    this.scene.add(lights);
+-
+-    this.boardMaterial = new THREE.MeshStandardMaterial({
+-      color: PRINT_SURFACE_COLOR,
+-      roughness: 0.94,
+-      metalness: 0.02,
+-      transparent: true,
+-      opacity: 0.32,
+-      depthWrite: false,
+-      side: THREE.DoubleSide,
+-      toneMapped: false
+-    });
+-    this.boardGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+-    this.board = new THREE.Mesh(this.boardGeometry, this.boardMaterial);
+-    this.board.position.z = PRINT_SURFACE_Z;
+-    this.board.renderOrder = 40;
+-    this.board.userData.ownsGeometry = true;
+-    this.board.userData.ownsMaterial = true;
+-    this.scene.add(this.board);
+-
+-    this.boardOutlineMaterial = new THREE.LineBasicMaterial({
+-      color: PRINT_SURFACE_OUTLINE_COLOR,
+-      transparent: true,
+-      opacity: 0.95,
+-      depthWrite: false,
+-      toneMapped: false
+-    });
+-    this.boardOutlineGeometry = new THREE.BufferGeometry();
+-    this.boardOutlineGeometry.setAttribute(
+-      'position',
+-      new THREE.BufferAttribute(
+-        new Float32Array([
+-          -0.5, -0.5, 0.0,
+-          0.5, -0.5, 0.0,
+-          0.5, 0.5, 0.0,
+-          -0.5, 0.5, 0.0
+-        ]),
+-        3
+-      )
+-    );
+-    this.boardOutline = new THREE.LineLoop(this.boardOutlineGeometry, this.boardOutlineMaterial);
+-    this.boardOutline.position.z = PRINT_SURFACE_OUTLINE_Z;
+-    this.boardOutline.renderOrder = 50;
+-    this.boardOutline.frustumCulled = false;
+-    this.boardOutline.userData.ownsGeometry = true;
+-    this.boardOutline.userData.ownsMaterial = true;
+-    this.scene.add(this.boardOutline);
++    this.stage = new Stage3D(this.scene, this.renderer);
++    this._stageMovingMembers = new Set();
+ 
+     this.borderFloorMaterial = new THREE.MeshStandardMaterial({
+       color: BORDER_FLOOR_COLOR,
+@@ -1102,21 +1042,6 @@ export class RenderSystem3D {
+     this.root = new THREE.Group();
+     this.scene.add(this.root);
+ 
+-    // Add thin blue axes
+-    const axesGeometry = new THREE.BufferGeometry();
+-    const axesPositions = new Float32Array([
+-        -2.5, 0, 0, 2.5, 0, 0, // X
+-        0, -2.5, 0, 0, 2.5, 0, // Y
+-        0, 0, -2.5, 0, 0, 2.5  // Z
+-    ]);
+-    axesGeometry.setAttribute('position', new THREE.BufferAttribute(axesPositions, 3));
+-    const axesMaterial = new THREE.LineBasicMaterial({ color: 0xDDDDFF, transparent: true, opacity: 0.05});
+-    const axes = new THREE.LineSegments(axesGeometry, axesMaterial);
+-    axes.frustumCulled = false;
+-    axes.userData.ownsGeometry = true;
+-    axes.userData.ownsMaterial = true;
+-    this.scene.add(axes);
+-
+     this.referenceMaterial = new THREE.LineBasicMaterial({
+       color: DEFAULT_REFERENCE_COLOR,
+       transparent: true,
+@@ -2160,8 +2085,8 @@ export class RenderSystem3D {
+     }
+ 
+ 
+-    this.measureRenderBlock(world, '_syncBoard', () => {
+-      this._syncBoard(world);
++    this.measureRenderBlock(world, '_syncStage', () => {
++      this._syncStage(world);
+     });
+     this.measureRenderBlock(world, '_syncBorder', () => {
+       this._syncBorder(world);
+@@ -2327,14 +2252,7 @@ export class RenderSystem3D {
+     this.sharedCylinderGeometry.dispose();
+     this.sharedFlipperBarGeometry.dispose();
+ 
+-    if (this.board && this.scene) {
+-      this.scene.remove(this.board);
+-      disposeObject(this.board);
+-    }
+-    if (this.boardOutline && this.scene) {
+-      this.scene.remove(this.boardOutline);
+-      disposeObject(this.boardOutline);
+-    }
++    this.stage.dispose();
+ 
+     if (this.borderFloor) {
+       this.scene.remove(this.borderFloor);
+@@ -2554,13 +2472,30 @@ export class RenderSystem3D {
+     this._bumperFxBursts = survivingBursts;
+   }
+ 
+-  _syncBoard(world) {
+-    const halfExtent = this._computePrintSurfaceHalfExtent(world);
+-    const surfaceSize = halfExtent * 2.0;
+-    this.board.scale.set(surfaceSize, surfaceSize, 1);
+-    this.board.position.set(0.0, 0.0, PRINT_SURFACE_Z);
+-    this.boardOutline.scale.set(surfaceSize, surfaceSize, 1);
+-    this.boardOutline.position.set(0.0, 0.0, PRINT_SURFACE_OUTLINE_Z);
++  // The floor sits just under the lowest fixed part of the machine.
++  _syncStage(world) {
++    const movingMembers = this._stageMovingMembers;
++    movingMembers.clear();
++    for (const ComponentClass of [RigidBodyComponent, RigidGroupComponent]) {
++      for (const groupId of world.query([ComponentClass])) {
++        for (const memberId of world.getComponent(groupId, ComponentClass)?.members ?? []) {
++          movingMembers.add(memberId);
++        }
++      }
++    }
++
++    let lowestZ = PRINT_SURFACE_Z;
++    for (const entityId of world.query([PositionComponent, RadiusComponent])) {
++      const pos = world.getComponent(entityId, PositionComponent)?.pos;
++      if (pos && !movingMembers.has(entityId)) {
++        lowestZ = Math.min(lowestZ, pos.z || 0.0);
++      }
++    }
++
++    this.stage.setLayout({
++      reach: this._computeMachineHalfExtent(world),
++      floorZ: lowestZ - STAGE_FLOOR_CLEARANCE,
++    });
+   }
+ 
+   _syncBorder(world) {
+@@ -2945,14 +2880,12 @@ export class RenderSystem3D {
+         const joint = world.getComponent(jointId, CableJointComponent);
+         if (!joint) continue;
+ 
+-        const renderComp = world.getComponent(jointId, RenderableComponent);
+-        const baseColor = renderComp?.color || DEFAULT_CABLE_COLOR;
+         const dist = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
+         const taut = dist > joint.restLength + 1e-6;
+ 
+         jointSpecs.push({
+           joint,
+-          color: taut ? baseColor : SLACK_COLOR
++          color: taut ? DYNEEMA_COLOR : SLACK_COLOR
+         });
+ 
+         if (showForceSigns) {
+@@ -2995,9 +2928,6 @@ export class RenderSystem3D {
+         const distNext = nextJoint.attachmentPointA_world.distanceTo(nextJoint.attachmentPointB_world);
+         const tensionNext = distNext > nextJoint.restLength + 1e-6;
+ 
+-        const renderComp = world.getComponent(path.jointEntities[i], RenderableComponent);
+-        const baseColor = renderComp?.color || DEFAULT_CABLE_COLOR;
+-
+         arcSpecs.push({
+           center,
+           radius,
+@@ -3005,7 +2935,7 @@ export class RenderSystem3D {
+           startAngle: a1,
+           endAngle: a2,
+           cw: Boolean(path.cw[i]),
+-          color: tensionPrev && tensionNext ? baseColor : SLACK_COLOR
++          color: tensionPrev && tensionNext ? DYNEEMA_COLOR : SLACK_COLOR
+         });
+       }
+ 
+@@ -3014,8 +2944,7 @@ export class RenderSystem3D {
+       if (path.linkTypes[0] === 'hybrid' && path.jointEntities.length > 0) {
+         const joint0 = world.getComponent(path.jointEntities[0], CableJointComponent);
+         if (joint0) {
+-          const renderComp = world.getComponent(path.jointEntities[0], RenderableComponent);
+-          const color = renderComp?.color || DEFAULT_CABLE_COLOR;
++          const color = DYNEEMA_COLOR;
+           const rollerA = joint0.entityA;
+           const center = world.getComponent(rollerA, PositionComponent)?.pos;
+           const bodyRadius = world.getComponent(rollerA, RadiusComponent)?.radius;
+@@ -3046,8 +2975,7 @@ export class RenderSystem3D {
+       if (path.linkTypes[nLinks - 1] === 'hybrid' && path.jointEntities.length > 0) {
+         const jointN = world.getComponent(path.jointEntities[nLinks - 2], CableJointComponent);
+         if (jointN) {
+-          const renderComp = world.getComponent(path.jointEntities[nLinks - 2], RenderableComponent);
+-          const color = renderComp?.color || DEFAULT_CABLE_COLOR;
++          const color = DYNEEMA_COLOR;
+           const rollerB = jointN.entityB;
+           const center = world.getComponent(rollerB, PositionComponent)?.pos;
+           const bodyRadius = world.getComponent(rollerB, RadiusComponent)?.radius;
+@@ -3450,8 +3378,8 @@ export class RenderSystem3D {
+     return group;
+   }
+ 
+-  _computePrintSurfaceHalfExtent(world) {
+-    let maxAbs = PRINT_SURFACE_MIN_HALF_EXTENT;
++  _computeMachineHalfExtent(world) {
++    let maxAbs = MACHINE_MIN_HALF_EXTENT;
+ 
+     const entities = world.query([PositionComponent, RadiusComponent]);
+     for (const entityId of entities) {
+@@ -3479,7 +3407,7 @@ export class RenderSystem3D {
+       }
+     }
+ 
+-    return maxAbs + PRINT_SURFACE_MARGIN;
++    return maxAbs + MACHINE_EXTENT_MARGIN;
+   }
+ 
+   _cameraDistanceForScale(scaleMultiplier = this.viewScaleMultiplier) {
+@@ -3523,7 +3451,12 @@ export class RenderSystem3D {
+   _applyCameraFromViewTransform() {
+     const target = this._getViewTarget();
+ 
+-    const cameraOffset = this._buildOrbitOffset(this._cameraDistanceForScale());
++    const distance = this._cameraDistanceForScale();
++    const cameraOffset = this._buildOrbitOffset(distance);
++    // Near plane follows zoom so the depth buffer resolves millimetre parts
++    // at any distance.
++    this.camera.near = Math.max(CAMERA_MIN_NEAR, distance * CAMERA_NEAR_PER_DISTANCE);
++    this.camera.updateProjectionMatrix();
+     this.camera.up.set(0, 0, 1);
+     this.camera.position.copy(target).add(cameraOffset);
+     this.camera.lookAt(target);
+diff --git a/tests/js/hp-sim-3d/wiring.test.js b/tests/js/hp-sim-3d/wiring.test.js
+index fb5f3b9b..6dbcaca5 100644
+--- a/tests/js/hp-sim-3d/wiring.test.js
++++ b/tests/js/hp-sim-3d/wiring.test.js
+@@ -46,7 +46,7 @@ describe('hp-sim-3d wiring', () => {
+     const showForcesToggleIndex = html.indexOf('id="showForcesToggleWrapper"');
+     const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
+ 
+-    expect(html).toContain('class="sim-toggle-group"');
++    expect(html).toContain('<div id="settingsMenu" class="sim-settings-menu sim-hidden"');
+     expect(showForcesToggleIndex).toBeGreaterThan(qualityToggleIndex);
+     expect(lineLayeringToggleIndex).toBeGreaterThan(showForcesToggleIndex);
+     expect(html).toContain('<input id="showForcesToggle" type="checkbox">');
