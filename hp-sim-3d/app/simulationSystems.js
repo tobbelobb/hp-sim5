@@ -6,7 +6,7 @@ import { RigidBodyComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { CablePathComponent } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 
 export function registerSimulationSystems(world, { cableSolverBackend = undefined } = {}) {
-    // Extra physics steps are opt-in; retain the production 2 ms integration.
+    // Scene loading sets machine defaults; firmware ticks remain 2 ms.
     if (world.getResource('physicsSubsteps') === undefined) world.setResource('physicsSubsteps', 1);
     if (cableSolverBackend === undefined) cableSolverBackend = world.getResource('cableSolverBackend');
     if (cableSolverBackend === undefined) cableSolverBackend = createDefaultPhysicsBackend();

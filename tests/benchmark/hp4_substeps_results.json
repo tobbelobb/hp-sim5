@@ -1,0 +1,415 @@
+{
+  "date": "2026-11-12",
+  "sourceRevision": "9f4351b9",
+  "note": "Current bundled firmware streams, native engine, dt 0.002 s. Individual wall times are indicative, not controlled repeated benchmarks.",
+  "static": [
+    {
+      "iterations": 2,
+      "substeps": 1,
+      "wall_s": 0.252,
+      "disp_mm": [
+        0.0786,
+        -0.214,
+        -0.0735
+      ],
+      "xy_bias_mm": 0.22797798139294065,
+      "strand_tension_range_N": {
+        "A": [
+          3.28,
+          3.375
+        ],
+        "B": [
+          3.314,
+          3.341
+        ],
+        "C": [
+          3.291,
+          3.363
+        ],
+        "D": [
+          0.547,
+          0.557
+        ]
+      }
+    },
+    {
+      "iterations": 2,
+      "substeps": 2,
+      "wall_s": 0.381,
+      "disp_mm": [
+        0.0157,
+        -0.0427,
+        -0.0061
+      ],
+      "xy_bias_mm": 0.04549483487166428,
+      "strand_tension_range_N": {
+        "A": [
+          4.661,
+          4.698
+        ],
+        "B": [
+          4.675,
+          4.684
+        ],
+        "C": [
+          4.663,
+          4.695
+        ],
+        "D": [
+          0.747,
+          0.751
+        ]
+      }
+    },
+    {
+      "iterations": 2,
+      "substeps": 4,
+      "wall_s": 0.632,
+      "disp_mm": [
+        0.002,
+        -0.0053,
+        0.008
+      ],
+      "xy_bias_mm": 0.005664803615307418,
+      "strand_tension_range_N": {
+        "A": [
+          4.958,
+          4.963
+        ],
+        "B": [
+          4.959,
+          4.962
+        ],
+        "C": [
+          4.957,
+          4.964
+        ],
+        "D": [
+          0.789,
+          0.79
+        ]
+      }
+    },
+    {
+      "iterations": 2,
+      "substeps": 8,
+      "wall_s": 1.139,
+      "disp_mm": [
+        0.0002,
+        -0.0006,
+        0.0095
+      ],
+      "xy_bias_mm": 0.0006324555320336758,
+      "strand_tension_range_N": {
+        "A": [
+          4.992,
+          4.993
+        ],
+        "B": [
+          4.991,
+          4.994
+        ],
+        "C": [
+          4.991,
+          4.994
+        ],
+        "D": [
+          0.794,
+          0.794
+        ]
+      }
+    },
+    {
+      "iterations": 6,
+      "substeps": 1,
+      "wall_s": 0.309,
+      "disp_mm": [
+        0.0105,
+        -0.0267,
+        -0.0009
+      ],
+      "xy_bias_mm": 0.028690416518412556,
+      "strand_tension_range_N": {
+        "A": [
+          4.758,
+          4.812
+        ],
+        "B": [
+          4.778,
+          4.792
+        ],
+        "C": [
+          4.763,
+          4.807
+        ],
+        "D": [
+          0.761,
+          0.767
+        ]
+      }
+    },
+    {
+      "iterations": 10,
+      "substeps": 1,
+      "wall_s": 0.356,
+      "disp_mm": [
+        0.0014,
+        -0.0035,
+        0.0083
+      ],
+      "xy_bias_mm": 0.003769615364994153,
+      "strand_tension_range_N": {
+        "A": [
+          4.96,
+          4.977
+        ],
+        "B": [
+          4.967,
+          4.971
+        ],
+        "C": [
+          4.96,
+          4.977
+        ],
+        "D": [
+          0.79,
+          0.792
+        ]
+      }
+    },
+    {
+      "iterations": 20,
+      "substeps": 1,
+      "wall_s": 0.481,
+      "disp_mm": [
+        0,
+        0,
+        0.0097
+      ],
+      "xy_bias_mm": 0.0,
+      "strand_tension_range_N": {
+        "A": [
+          4.996,
+          4.997
+        ],
+        "B": [
+          4.996,
+          4.997
+        ],
+        "C": [
+          4.995,
+          4.997
+        ],
+        "D": [
+          0.795,
+          0.795
+        ]
+      }
+    },
+    {
+      "iterations": 1,
+      "substeps": 4,
+      "wall_s": 0.589,
+      "disp_mm": [
+        -0.0239,
+        0.0413,
+        0.0153
+      ],
+      "xy_bias_mm": 0.04771687332590014,
+      "strand_tension_range_N": {
+        "A": [
+          4.699,
+          4.702
+        ],
+        "B": [
+          4.697,
+          4.705
+        ],
+        "C": [
+          4.701,
+          4.701
+        ],
+        "D": [
+          0.751,
+          0.752
+        ]
+      }
+    },
+    {
+      "iterations": 1,
+      "substeps": 8,
+      "wall_s": 1.029,
+      "disp_mm": [
+        -0.0083,
+        0.0144,
+        0.0116
+      ],
+      "xy_bias_mm": 0.01662077013859466,
+      "strand_tension_range_N": {
+        "A": [
+          4.911,
+          4.911
+        ],
+        "B": [
+          4.909,
+          4.913
+        ],
+        "C": [
+          4.91,
+          4.912
+        ],
+        "D": [
+          0.782,
+          0.782
+        ]
+      }
+    }
+  ],
+  "logos": [
+    {
+      "machine": "hp4",
+      "substeps": 1,
+      "iterations": 2,
+      "steps": 1038258,
+      "wallSeconds": 79.161604065,
+      "metrics": {
+        "contourRms": 0.00021212026813371745,
+        "contourP95": 0.000356345220088679,
+        "contourMax": 0.00042728887062758555,
+        "meanOffset": [
+          8.792372988787375e-05,
+          -0.0002089205052699734,
+          -9.513190821420032e-05
+        ],
+        "withinFineTolerance": 0.7468315914936834
+      },
+      "missedSteps": 0
+    },
+    {
+      "machine": "hp4",
+      "substeps": 4,
+      "iterations": 2,
+      "steps": 1038258,
+      "wallSeconds": 281.54495770700004,
+      "metrics": {
+        "contourRms": 8.254488905786784e-05,
+        "contourP95": 0.00014909510326747516,
+        "contourMax": 0.0003490841039173777,
+        "meanOffset": [
+          2.5086242304337764e-05,
+          -4.6398366008233565e-06,
+          2.427365803495717e-06
+        ],
+        "withinFineTolerance": 0.9979376000596454
+      },
+      "missedSteps": 0
+    },
+    {
+      "machine": "hp4",
+      "substeps": 8,
+      "iterations": 2,
+      "steps": 1038258,
+      "wallSeconds": 558.618122002,
+      "metrics": {
+        "contourRms": 9.043030668119594e-05,
+        "contourP95": 0.00015511854543948114,
+        "contourMax": 0.00046975273563046045,
+        "meanOffset": [
+          2.3063038640123042e-05,
+          -2.959402390726214e-07,
+          6.841873936319532e-06
+        ],
+        "withinFineTolerance": 0.9923055455083105
+      },
+      "missedSteps": 0
+    },
+    {
+      "machine": "hp3",
+      "substeps": 1,
+      "iterations": 1,
+      "steps": 1038258,
+      "wallSeconds": 23.050388449000003,
+      "metrics": {
+        "contourRms": 9.728686820715544e-05,
+        "contourP95": 0.00014330555869615066,
+        "contourMax": 0.00022499740820040704,
+        "meanOffset": [
+          -4.8039263219496416e-05,
+          9.881060123102015e-05,
+          2.7039747815871045e-05
+        ],
+        "withinFineTolerance": 1
+      },
+      "missedSteps": 0
+    },
+    {
+      "machine": "hp4",
+      "substeps": 1,
+      "iterations": "10",
+      "steps": 1038258,
+      "wallSeconds": 138.20458101800003,
+      "metrics": {
+        "contourRms": 7.06941112190392e-05,
+        "contourP95": 0.00013504002862412516,
+        "contourMax": 0.0002030943837584115,
+        "meanOffset": [
+          2.552803774081127e-05,
+          -7.831869460187739e-06,
+          -4.380974938794971e-08
+        ],
+        "withinFineTolerance": 1
+      },
+      "missedSteps": 0
+    },
+    {
+      "machine": "hp4_w_line_layers",
+      "substeps": 4,
+      "iterations": "authored",
+      "closedLoop": false,
+      "steps": 1038258,
+      "wallSeconds": 281.783268729,
+      "peaks": {
+        "speed": 0.37303008812655036,
+        "omega": 0.20053156127853217,
+        "heightFromStart": 0.0006718460021629541
+      },
+      "metrics": {
+        "contourRms": 0.0005437681526838579,
+        "contourP95": 0.0011237789680870875,
+        "contourMax": 0.0030767933529481078,
+        "meanOffset": [
+          -3.720518020683801e-05,
+          7.347177841822497e-05,
+          -0.00017391162583530104
+        ],
+        "withinFineTolerance": 0.3598610827045549
+      },
+      "missedSteps": 0
+    },
+    {
+      "machine": "hp4_w_line_layers",
+      "substeps": 1,
+      "iterations": "authored",
+      "closedLoop": false,
+      "steps": 1038258,
+      "wallSeconds": 78.91856992000001,
+      "peaks": {
+        "speed": 0.4006752752138381,
+        "omega": 0.12653141576129687,
+        "heightFromStart": 0.0007798196629614507
+      },
+      "metrics": {
+        "contourRms": 0.0006444660423107965,
+        "contourP95": 0.0013166861701322822,
+        "contourMax": 0.003367652038038226,
+        "meanOffset": [
+          5.311546405858984e-06,
+          0.00019673721812107624,
+          -0.00022153736290534114
+        ],
+        "withinFineTolerance": 0.2791665365282565
+      },
+      "missedSteps": 0
+    }
+  ]
+}

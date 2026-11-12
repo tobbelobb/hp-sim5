@@ -427,7 +427,7 @@ Options:
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
-  --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting, initially 1)
+  --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting from machine catalogue)
   --open-loop-motors         Use open-loop simulator motors (default: closed-loop)
   --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
   --no-trace                 Disable hp-sim trace plotting

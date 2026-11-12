@@ -14,3 +14,11 @@ export function findMachine(name) {
 export function machineForScene(scene, lineLayering) {
   return MACHINES.find((entry) => entry.scene === scene && entry.line_layering === lineLayering) || null;
 }
+
+// Authored scene roots identify their catalogue machine, independent of file location.
+export function physicsSubstepsForMachine(name) {
+  if (!name) return 1;
+  const machine = findMachine(name);
+  if (!machine) throw new Error(`Unknown catalogue machine: ${name}`);
+  return SCENES[machine.scene].physics_substeps ?? 1;
+}

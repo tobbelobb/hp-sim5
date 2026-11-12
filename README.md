@@ -126,8 +126,8 @@ hp-sim5 has added quite a bit to each of its sub-projects:
 
 The browser's default machine is Hangprinter v4, authored in
 `public/usd_scenes/hp4.usda`. [`machines/catalog.json`](machines/catalog.json)
-records which scene, firmware configs and compiled commands belong to each
-machine. Choose a workflow for your experiment:
+records which scene, physics substeps, firmware configs and compiled commands
+belong to each machine. Choose a workflow for your experiment:
 
 | Goal | Workflow |
 | --- | --- |

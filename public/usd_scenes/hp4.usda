@@ -12,6 +12,8 @@ def Xform "World"
 {
     def Xform "HangprinterScene"
     {
+        custom string machine:catalog = "hp4"
+
         def Circle "SpoolA" (
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )

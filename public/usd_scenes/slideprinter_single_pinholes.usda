@@ -11,6 +11,8 @@
 def Xform "World"
 {
     def Xform "SlideprinterScene" {
+        custom string machine:catalog = "slideprinter_single_pinholes"
+
         def Circle "SpoolA" (
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )

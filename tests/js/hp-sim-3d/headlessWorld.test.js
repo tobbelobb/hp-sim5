@@ -16,7 +16,7 @@ test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering
     expect(layered.world.getResource(key)).toBe(true);
   }
   expect(unlayered.world.getResource('physicsSubsteps')).toBe(4);
-  expect(layered.world.getResource('physicsSubsteps')).toBe(1);
+  expect(layered.world.getResource('physicsSubsteps')).toBe(machine === 'hp4' ? 4 : 1);
   expect(unlayered.world.getResource('closedLoopMotorsEnabled')).toBe(true);
   expect(layered.world.getResource('closedLoopMotorsEnabled')).toBe(false);
   expect(layeringEnabled(unlayered.world)).toBe(false);
@@ -39,7 +39,11 @@ test.each(['hp3', 'hp4'])('%s profiling covers every production system without c
   const stats = profiled.world.getResource('performanceMonitor').snapshot();
   expect(stats.steps).toBe(20);
   expect(stats.systems.map(row => row.system).sort()).toEqual(profiled.world.systems.map(system => system.constructor.name).sort());
-  expect(stats.systems.every(row => row.calls === 20 && row.totalMs >= 0)).toBe(true);
+  for (const row of stats.systems) {
+    const substeps = row.system === 'RustPhysicsSystem' ? profiled.world.getResource('physicsSubsteps') : 1;
+    expect(row.calls).toBe(20 * substeps);
+    expect(row.totalMs).toBeGreaterThanOrEqual(0);
+  }
   for (const Type of [PositionComponent, EncoderComponent, CablePathComponent]) {
     const read = ({ world }) => world.query([Type]).map(id => world.getComponent(id, Type));
     expect(read(profiled)).toEqual(read(plain));

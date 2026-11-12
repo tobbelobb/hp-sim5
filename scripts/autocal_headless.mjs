@@ -15,7 +15,7 @@ import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
 const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
 const sceneText = fs.readFileSync(scene, 'utf8');
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
-let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false, physicsSubsteps = 1;
+let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false, physicsSubsteps;
 let world, remote, dt, bakedScene, bakedSceneFile, bakedSceneHash;
 function buildWorld() {
   ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled, physicsSubsteps }));
@@ -67,7 +67,7 @@ function status() {
     recording_error: recordingError,
     baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
     settings: { enableLayering: world.getResource('enableLayering') === true,
-      closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps, timeScale: speed } };
+      closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps: world.getResource('physicsSubsteps'), timeScale: speed } };
 }
 async function advance(seconds = 0, drain = false) {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');

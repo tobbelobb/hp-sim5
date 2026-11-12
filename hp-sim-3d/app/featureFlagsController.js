@@ -51,8 +51,8 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     }
   }
 
-  function setPhysicsSubstepsState(count) {
-    const next = setPhysicsSubsteps(world, count);
+  function setPhysicsSubstepsState(count, options) {
+    const next = setPhysicsSubsteps(world, count, options);
     if (state) state.physicsSubsteps = next;
     if (toggles.physicsSubsteps) {
       // Remote settings also accept counts between the standard menu choices.
@@ -96,7 +96,8 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     }
   }
 
-  setPhysicsSubstepsState(state?.physicsSubsteps ?? world.getResource('physicsSubsteps') ?? 1);
+  setPhysicsSubstepsState(state?.physicsSubsteps ?? world.getResource('physicsSubsteps') ?? 1,
+    { override: state?.physicsSubsteps !== undefined });
   setShowConstraintForcesState(state?.showConstraintForces ?? false);
   setLineLayeringEnabledState(state?.lineLayeringEnabled ?? true);
   setClosedLoopMotorsEnabledState(state?.closedLoopMotorsEnabled ?? false);

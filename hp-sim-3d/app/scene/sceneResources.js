@@ -1,3 +1,5 @@
+import { physicsSubstepsForMachine } from '../../../machines/catalog.js';
+import { setPhysicsSubsteps } from '../physics-substeps.js';
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import { getAttribute } from '../../../src/js/usd/stage.js';
 import { SimulationErrorStateComponent } from '../../../src/js/cable_joints_3d/ecs.js';
@@ -11,7 +13,7 @@ export class PauseStateComponent {
 }
 
 export function buildSceneResources(context) {
-    const { stage, options } = context;
+    const { stage, sceneRoot, options } = context;
     const isRemote = Boolean(options.remote);
     const append = Boolean(options.append);
     const canvas = options.canvas;
@@ -50,6 +52,7 @@ export function buildSceneResources(context) {
         simWidth,
         simHeight,
         physics,
+        physicsSubsteps: physicsSubstepsForMachine(getAttribute(sceneRoot, "machine:catalog")),
         machineColors: {
             clear: !append,
             machineId,
@@ -91,6 +94,13 @@ export function applySceneResources(world, resources) {
         tintColor: resources.machineColors.tintColor,
         extrusionColor: resources.machineColors.extrusionColor,
     });
+
+    if (!resources.remote) {
+        const count = Math.max(resources.physicsSubsteps,
+            resources.append ? world.getResource('machinePhysicsSubsteps') ?? 1 : 1);
+        world.setResource('machinePhysicsSubsteps', count);
+        setPhysicsSubsteps(world, world.getResource('physicsSubstepsOverride') ?? count, { override: false });
+    }
 
     if (resources.physics) {
         world.setResource('gravity', resources.physics.gravity);

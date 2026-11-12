@@ -78,15 +78,16 @@ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('layering', [False, True])
-def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering):
+@pytest.mark.parametrize('machine, substeps', [('hangprinter_3', 1), ('hangprinter_4', 4)])
+def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering, machine, substeps):
     from argparse import Namespace
-    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+    args = Namespace(machine_type=machine, find_radii='off', find_buildup_factor='off',
                      rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
                      buildup_factor=0, keep_sim_alive=False)
     collector_args = ['--line-layering'] if layering else []
     with HeadlessSimulation(args, collector_args) as service:
         initial = service.request('status')
-        assert initial['settings']['physicsSubsteps'] == 1
+        assert initial['settings']['physicsSubsteps'] == substeps
         assert initial['settings']['enableLayering'] is layering
         applied = service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True, 'physicsSubsteps': 4})
         assert applied['result']['simulationSettings']['physicsSubsteps'] == 4

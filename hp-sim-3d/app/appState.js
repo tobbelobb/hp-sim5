@@ -6,7 +6,7 @@ export function createAppState({
   showConstraintForces = false,
   lineLayeringEnabled = true,
   closedLoopMotorsEnabled = false,
-  physicsSubsteps = 1,
+  physicsSubsteps = undefined,
 } = {}) {
   return {
     machines: [],

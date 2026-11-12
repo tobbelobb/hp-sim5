@@ -10,7 +10,7 @@ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { PerformanceMonitor } from './performance-monitor.js';
 
 // The same scene construction and system order used by the production app.
-export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, physicsSubsteps = 1, profiling = {}, cableSolverBackend = undefined,
+export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, physicsSubsteps = undefined, profiling = {}, cableSolverBackend = undefined,
   scenePrimPath, requireRrfTimestep = true } = {}) {
   const sceneName = sceneText.match(/defaultPrim\s*=\s*"([^"]+)"/)?.[1];
   if (!sceneName && !scenePrimPath) throw new Error('Scene has no defaultPrim');
@@ -25,7 +25,7 @@ export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, clo
   applyEntityPlan(world, buildEntityPlan(checked));
   setLineLayeringFeatureFlags(world, lineLayeringEnabled);
   setClosedLoopMotorFeatureFlags(world, closedLoopMotorsEnabled);
-  setPhysicsSubsteps(world, physicsSubsteps);
+  if (physicsSubsteps !== undefined) setPhysicsSubsteps(world, physicsSubsteps);
   registerSimulationSystems(world, { cableSolverBackend });
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
   remote._ensureAxisMapping(world);

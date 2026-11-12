@@ -26,12 +26,16 @@ Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view too
 **Closed Loop Motors** changes position-drive behavior. Keep these settings the
 same when comparing runs; quality checks and reference paths aid inspection.
 
-Physics uses one integration step per firmware tick by default. **Physics
-Substeps**, beside the motor toggles, selects 1, 2, 4, 8 or 16 integrations per
-tick. More steps cost more CPU; command and recorder cadence stay unchanged.
+Physics defaults come from each scene in `machines/catalog.json`: HP4 uses
+four substeps per 2 ms firmware tick; HP3 and other machines use one. Authored
+scene roots identify their catalogue entry with `machine:catalog`. A world with
+multiple machines uses the largest default. **Physics Substeps**, beside the
+motor toggles, selects 1, 2, 4, 8 or 16 integrations per tick. More steps cost
+more CPU; command and recorder cadence stay unchanged.
 The setting survives scene resets. Autocal can set it explicitly with
 `--physics-substeps 4`, for both browser `--sim` and `--headless-sim` collection.
-Without that flag, collection preserves the simulator's setting (initially 1).
+Without that flag, collection preserves the simulator's setting. Scene changes
+select the machine default until a menu or remote override has been applied.
 Remote `simulation_settings` messages use the integer `physicsSubsteps` field
 (1–16); encoder replies acknowledge the applied count. Programmatic world
 creation accepts `{ physicsSubsteps: 4 }`; headless worlds use the

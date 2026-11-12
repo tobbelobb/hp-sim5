@@ -26,6 +26,16 @@ def test_names_and_nicknames_are_unique():
     assert len(names) == len(set(names))
 
 
+def test_scene_identity_resolves_to_its_catalogue_defaults():
+    import re
+    for path, settings in machines.CATALOG['scenes'].items():
+        identity = re.search(r'custom string machine:catalog = "([^"]+)"', (ROOT / path).read_text())
+        assert identity, path
+        assert machines.machine(identity[1])['scene'] == path
+        count = settings.get('physics_substeps', 1)
+        assert isinstance(count, int) and 1 <= count <= 16
+
+
 def test_catalogued_collector_types_are_accepted_by_the_dataset_schema():
     schema = json.loads((ROOT / 'autocal/schemas/sweep_dataset.schema.json').read_text())
     supported = set(schema['properties']['machine_type']['enum'])

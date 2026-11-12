@@ -20,11 +20,10 @@ function settle(substeps, holdingTorque) {
   assert.equal(createHash('sha256').update(scene).digest('hex'), saved.sceneSha256,
     'Regenerate the loaded checkpoint when the HP4 scene changes');
   const { world, remote, dt } = createHeadlessWorld(scene, {
-    lineLayeringEnabled: false, closedLoopMotorsEnabled: true,
+    lineLayeringEnabled: false, closedLoopMotorsEnabled: true, physicsSubsteps: substeps,
   });
   assert.equal(dt, .002);
-  assert.equal(world.getResource('physicsSubsteps'), 1);
-  world.setResource('physicsSubsteps', substeps);
+  assert.equal(world.getResource('physicsSubsteps'), substeps);
   world.update(dt); // Prepare the native world's editable numeric regions.
   const backend = world.getResource('cableSolverBackend');
   assert.deepEqual(backend.regions.map(region => region.data.length), saved.regions.map(row => row.length));
