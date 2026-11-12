@@ -147,10 +147,28 @@ describe('QualityMonitor 3D extrusion scoring', () => {
     expect(metrics.withinTolerance).toBe(1);
   });
 
+  test('reports the share within 0.25 mm alongside the share within 0.5 mm', () => {
+    const reference = [segment([0, 0, 0], [0.1, 0, 0])];
+    const metrics = print(createMonitor(reference), reference, () => [0, 0, 0.0004]);
+    expect(metrics.withinTolerance).toBe(1);
+    expect(metrics.withinFineTolerance).toBe(0);
+  });
+
   test('the first sample after a travel belongs to the line it starts', () => {
     const reference = [segment([0, 0, 0], [0.01, 0, 0]), segment([0.2, 0.2, 0], [0.21, 0.2, 0])];
     const metrics = print(createMonitor(reference), reference);
     expect(metrics.trackingMax).toBeLessThan(1e-9);
+  });
+
+  test('a line that received slightly less filament than planned does not pull the next line back', () => {
+    // Firmware rounds E to whole steps; the full logo ends one line 0.015 mm
+    // of filament short, which once put a 891 mm position error on the prime
+    // after the following travel.
+    const planned = [segment([0, 0, 0], [0.01, 0, 0]), { start: [0.5, 0.5, 0], end: [0.5, 0.5, 0], extrusion: 0.002 }];
+    const printed = [{ ...planned[0], extrusion: planned[0].extrusion - 0.0015 }, planned[1]];
+    const metrics = print(createMonitor(planned), printed);
+    // Only the short line's own lag remains, not the 0.7 m back to it.
+    expect(metrics.trackingMax).toBeLessThan(0.002);
   });
 
   test('extrusion without motion (a prime) keeps the stream in sync with the path', () => {

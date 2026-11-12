@@ -159,12 +159,6 @@ export class QualityMonitor {
     this.corners = [];
     this.totalExtrusion = 0;
 
-    this.pendingExtrusionCount = 0;
-    this.pendingExtrusionCapacity = 0;
-    this.pendingExtrusionsX = new Float64Array(0);
-    this.pendingExtrusionsY = new Float64Array(0);
-    this.pendingExtrusionsZ = new Float64Array(0);
-    this.pendingExtrusionsLength = new Float64Array(0);
     this.enabled = true;
 
     this.contourHistogram = new DistanceHistogram();
@@ -189,8 +183,10 @@ export class QualityMonitor {
 
     // Tunable heuristics
     this.tolerance = 0.0005; // meters: within-tolerance share, settling, extrusion tint starts
+    this.fineTolerance = 0.00025; // meters: second, stricter within-tolerance share
     this.penaltyHardThreshold = 0.0015; // meters (1.5 mm) saturates the extrusion tint
     this.contourSearchWindow = 0.005; // meters of path either side of the intended point
+    this.travelSyncExtrusion = 0.1; // filament length a line before a travel may be short by
     this.cornerAngleThreshold = 45 * DEG_TO_RAD;
     this.cornerWindow = 0.006; // meters of path before/after a corner for corner deviation
     this.cornerSettleWindow = 0.016; // meters of path after a corner; its end is the settled reference
@@ -292,6 +288,7 @@ export class QualityMonitor {
     this.activeCorners = [];
     this.sampleCount = 0;
     this.withinToleranceCount = 0;
+    this.withinFineToleranceCount = 0;
     this.contourHistogram.reset();
     this.trackingHistogram.reset();
     this.shapeHistogram.reset();
@@ -301,6 +298,7 @@ export class QualityMonitor {
     // not an offset): normal matrix Σ(I - t tᵀ) as xx, xy, xz, yy, yz, zz and Σ(I - t tᵀ)e.
     this.offsetNormal = [0, 0, 0, 0, 0, 0];
     this.offsetRight = [0, 0, 0];
+    this.offsetEstimate = new Float64Array(3);
     this.alongPathSum = 0;
     this.cornerStats = {
       count: 0,
@@ -314,7 +312,6 @@ export class QualityMonitor {
   }
 
   reset({ keepReference = false } = {}) {
-    this.pendingExtrusionCount = 0;
     this.metricsDirty = true;
     this.metrics = null;
     this._resetAccumulators();
@@ -364,19 +361,25 @@ export class QualityMonitor {
         return;
       }
     }
-    const normalized = this._normalizeExtrusionEvent(extrusionEvent);
-    if (!normalized) {
-      return;
-    }
-    if (!this.enabled) {
-      this._queueNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length);
-      return;
-    }
     if (this.entries.length === 0) {
       return;
     }
-    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length, extrusionEvent);
-    if (now() - this.lastHudRefreshMs >= this.hudRefreshIntervalMs) {
+    const pos = extrusionEvent.pos;
+    const length = Number(extrusionEvent.length);
+    if (!Array.isArray(pos) || pos.length < 3 || !(length > 0)) {
+      return;
+    }
+    const x = Number(pos[0]);
+    const y = Number(pos[1]);
+    const z = Number(pos[2]);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+      return;
+    }
+    // Samples are always scored as they arrive (well under a microsecond
+    // each), so finishing a print never has a backlog to work through. The
+    // toggle only controls the HUD and the extrusion tint.
+    this._recordNormalizedExtrusion(x, y, z, length, this.enabled ? extrusionEvent : null);
+    if (this.enabled && now() - this.lastHudRefreshMs >= this.hudRefreshIntervalMs) {
       this.refreshHud();
     }
   }
@@ -388,7 +391,6 @@ export class QualityMonitor {
     }
     this.enabled = next;
     if (this.enabled) {
-      this._drainPendingExtrusions();
       this.refreshHud(true);
     } else if (this.hudElement) {
       this.hudElement.classList.add('sim-hidden');
@@ -400,7 +402,6 @@ export class QualityMonitor {
     if (this.entries.length === 0) {
       return;
     }
-    this._drainPendingExtrusions();
     for (const corner of this.activeCorners) {
       this._finalizeCorner(corner);
     }
@@ -414,72 +415,6 @@ export class QualityMonitor {
       return null;
     }
     return { ...this.metrics };
-  }
-
-  _normalizeExtrusionEvent(extrusionEvent) {
-    const pos = extrusionEvent.pos;
-    if (!Array.isArray(pos) || pos.length < 3) {
-      return null;
-    }
-    const x = Number(pos[0]);
-    const y = Number(pos[1]);
-    const z = Number(pos[2]);
-    const length = Number(extrusionEvent.length);
-    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) || !(length > 0)) {
-      return null;
-    }
-    return { x, y, z, length };
-  }
-
-  _ensurePendingExtrusionCapacity(minCount) {
-    if (this.pendingExtrusionCapacity >= minCount) {
-      return;
-    }
-    let nextCapacity = this.pendingExtrusionCapacity > 0 ? this.pendingExtrusionCapacity : 256;
-    while (nextCapacity < minCount) {
-      nextCapacity *= 2;
-    }
-    const nextX = new Float64Array(nextCapacity);
-    const nextY = new Float64Array(nextCapacity);
-    const nextZ = new Float64Array(nextCapacity);
-    const nextLength = new Float64Array(nextCapacity);
-    if (this.pendingExtrusionCount > 0) {
-      nextX.set(this.pendingExtrusionsX.subarray(0, this.pendingExtrusionCount));
-      nextY.set(this.pendingExtrusionsY.subarray(0, this.pendingExtrusionCount));
-      nextZ.set(this.pendingExtrusionsZ.subarray(0, this.pendingExtrusionCount));
-      nextLength.set(this.pendingExtrusionsLength.subarray(0, this.pendingExtrusionCount));
-    }
-    this.pendingExtrusionsX = nextX;
-    this.pendingExtrusionsY = nextY;
-    this.pendingExtrusionsZ = nextZ;
-    this.pendingExtrusionsLength = nextLength;
-    this.pendingExtrusionCapacity = nextCapacity;
-  }
-
-  _queueNormalizedExtrusion(x, y, z, length) {
-    const index = this.pendingExtrusionCount;
-    this._ensurePendingExtrusionCapacity(index + 1);
-    this.pendingExtrusionsX[index] = x;
-    this.pendingExtrusionsY[index] = y;
-    this.pendingExtrusionsZ[index] = z;
-    this.pendingExtrusionsLength[index] = length;
-    this.pendingExtrusionCount = index + 1;
-  }
-
-  _drainPendingExtrusions() {
-    if (this.pendingExtrusionCount === 0 || this.entries.length === 0) {
-      this.pendingExtrusionCount = 0;
-      return;
-    }
-    for (let i = 0; i < this.pendingExtrusionCount; i += 1) {
-      this._recordNormalizedExtrusion(
-        this.pendingExtrusionsX[i],
-        this.pendingExtrusionsY[i],
-        this.pendingExtrusionsZ[i],
-        this.pendingExtrusionsLength[i],
-      );
-    }
-    this.pendingExtrusionCount = 0;
   }
 
   _prepareEntries(segments) {
@@ -519,6 +454,32 @@ export class QualityMonitor {
       extrusion += segmentExtrusion;
     }
     this.totalExtrusion = extrusion;
+    // Flat copies for the per-sample nearest-point scan.
+    const count = this.entries.length;
+    const ref = {
+      count,
+      startX: new Float64Array(count),
+      startY: new Float64Array(count),
+      startZ: new Float64Array(count),
+      deltaX: new Float64Array(count),
+      deltaY: new Float64Array(count),
+      deltaZ: new Float64Array(count),
+      inverseLengthSq: new Float64Array(count),
+      arcStart: new Float64Array(count),
+      arcEnd: new Float64Array(count),
+    };
+    this.entries.forEach((entry, i) => {
+      ref.startX[i] = entry.start[0];
+      ref.startY[i] = entry.start[1];
+      ref.startZ[i] = entry.start[2];
+      ref.deltaX[i] = entry.delta[0];
+      ref.deltaY[i] = entry.delta[1];
+      ref.deltaZ[i] = entry.delta[2];
+      ref.inverseLengthSq[i] = entry.length > 0 ? 1 / (entry.length * entry.length) : 0;
+      ref.arcStart[i] = entry.arcStart;
+      ref.arcEnd[i] = entry.arcStart + entry.length;
+    });
+    this.referenceArrays = ref;
   }
 
   _prepareCorners() {
@@ -562,87 +523,124 @@ export class QualityMonitor {
     }
   }
 
-  // Intended point for the extrusion consumed so far. The sample's own
-  // extrusion picks the entry, so a sample right after a travel belongs to
-  // the line it starts, not the end of the previous one.
-  _locateIntended(length) {
+  // Intended point for the extrusion consumed so far, stored in this._intended*.
+  // The sample's own extrusion picks the entry, so a sample right after a
+  // travel belongs to the line it starts, not the end of the previous one.
+  _locateIntended(x, y, z, length) {
     const entries = this.entries;
-    const cursor = this.extrusionCursor;
-    const upcoming = cursor + 0.5 * length;
+    const upcoming = this.extrusionCursor + 0.5 * length;
     let index = this.entryIndex;
     while (index + 1 < entries.length && entries[index + 1].extrusionStart <= upcoming) {
       index += 1;
     }
+    // Firmware rounds E to whole steps, so the reference can still hold a few
+    // µm of filament of the line before a travel when the sample has already
+    // travelled. Such a sample starts the next line: resynchronise E there.
+    const next = entries[index + 1];
+    if (next && !next.contiguous && next.extrusionStart - upcoming <= this.travelSyncExtrusion) {
+      const end = entries[index].end;
+      const toNext = (x - next.start[0]) ** 2 + (y - next.start[1]) ** 2 + (z - next.start[2]) ** 2;
+      if (toNext < (x - end[0]) ** 2 + (y - end[1]) ** 2 + (z - end[2]) ** 2) {
+        index += 1;
+        this.extrusionCursor = next.extrusionStart;
+      }
+    }
     this.entryIndex = index;
     const entry = entries[index];
-    const fraction = clamp((cursor - entry.extrusionStart) / entry.extrusion, 0, 1);
-    return {
-      index,
-      entry,
-      arcLength: entry.arcStart + fraction * entry.length,
-      x: entry.start[0] + fraction * entry.delta[0],
-      y: entry.start[1] + fraction * entry.delta[1],
-      z: entry.start[2] + fraction * entry.delta[2],
-    };
+    const fraction = clamp((this.extrusionCursor - entry.extrusionStart) / entry.extrusion, 0, 1);
+    this._intendedArc = entry.arcStart + fraction * entry.length;
+    this._intendedX = entry.start[0] + fraction * entry.delta[0];
+    this._intendedY = entry.start[1] + fraction * entry.delta[1];
+    this._intendedZ = entry.start[2] + fraction * entry.delta[2];
   }
 
-  // Nearest point of the reference within the search window around the
-  // intended arc length. Returns the deviation vector.
-  _contourDeviation(x, y, z, intended) {
-    const entries = this.entries;
-    const low = intended.arcLength - this.contourSearchWindow;
-    const high = intended.arcLength + this.contourSearchWindow;
+  // Nearest points of the reference within the search window around the
+  // intended arc length, for the raw sample (path deviation, this._contour*)
+  // and the offset-corrected sample (shape, this._shape*), in one pass.
+  _scanReference(x, y, z, sx, sy, sz) {
+    const ref = this.referenceArrays;
+    const index = this.entryIndex;
+    const low = this._intendedArc - this.contourSearchWindow;
+    const high = this._intendedArc + this.contourSearchWindow;
+    let first = index;
+    while (first > 0 && ref.arcEnd[first - 1] >= low) {
+      first -= 1;
+    }
+    let last = index;
+    while (last + 1 < ref.count && ref.arcStart[last + 1] <= high) {
+      last += 1;
+    }
     let best = Infinity;
     let bestDx = 0;
     let bestDy = 0;
     let bestDz = 0;
-    const consider = (entry) => {
-      let t = 0;
-      if (entry.length > 0) {
-        t = clamp(
-          ((x - entry.start[0]) * entry.delta[0] + (y - entry.start[1]) * entry.delta[1] + (z - entry.start[2]) * entry.delta[2])
-            / (entry.length * entry.length),
-          0,
-          1,
-        );
-      }
-      const dx = x - (entry.start[0] + t * entry.delta[0]);
-      const dy = y - (entry.start[1] + t * entry.delta[1]);
-      const dz = z - (entry.start[2] + t * entry.delta[2]);
-      const distSq = dx * dx + dy * dy + dz * dz;
+    let shapeBest = Infinity;
+    let shapeDx = 0;
+    let shapeDy = 0;
+    let shapeDz = 0;
+    for (let i = first; i <= last; i += 1) {
+      const ax = ref.startX[i];
+      const ay = ref.startY[i];
+      const az = ref.startZ[i];
+      const bx = ref.deltaX[i];
+      const by = ref.deltaY[i];
+      const bz = ref.deltaZ[i];
+      const inverse = ref.inverseLengthSq[i];
+      let t = ((x - ax) * bx + (y - ay) * by + (z - az) * bz) * inverse;
+      t = t < 0 ? 0 : (t > 1 ? 1 : t);
+      let dx = x - (ax + t * bx);
+      let dy = y - (ay + t * by);
+      let dz = z - (az + t * bz);
+      let distSq = dx * dx + dy * dy + dz * dz;
       if (distSq < best) {
         best = distSq;
         bestDx = dx;
         bestDy = dy;
         bestDz = dz;
       }
-    };
-    for (let i = intended.index; i >= 0 && entries[i].arcStart + entries[i].length >= low; i -= 1) {
-      consider(entries[i]);
+      t = ((sx - ax) * bx + (sy - ay) * by + (sz - az) * bz) * inverse;
+      t = t < 0 ? 0 : (t > 1 ? 1 : t);
+      dx = sx - (ax + t * bx);
+      dy = sy - (ay + t * by);
+      dz = sz - (az + t * bz);
+      distSq = dx * dx + dy * dy + dz * dz;
+      if (distSq < shapeBest) {
+        shapeBest = distSq;
+        shapeDx = dx;
+        shapeDy = dy;
+        shapeDz = dz;
+      }
     }
-    for (let i = intended.index + 1; i < entries.length && entries[i].arcStart <= high; i += 1) {
-      consider(entries[i]);
-    }
-    return { distance: Math.sqrt(best), dx: bestDx, dy: bestDy, dz: bestDz };
+    this._contourDistance = Math.sqrt(best);
+    this._contourDx = bestDx;
+    this._contourDy = bestDy;
+    this._contourDz = bestDz;
+    this._shapeDistance = Math.sqrt(shapeBest);
+    this._shapeDx = shapeDx;
+    this._shapeDy = shapeDy;
+    this._shapeDz = shapeDz;
   }
 
   _recordNormalizedExtrusion(x, y, z, length, sourceEvent = null) {
-    const intended = this._locateIntended(length);
+    this._locateIntended(x, y, z, length);
     this.extrusionCursor += length;
 
-    const tx = x - intended.x;
-    const ty = y - intended.y;
-    const tz = z - intended.z;
-    const tangent = intended.entry.tangent;
+    const tx = x - this._intendedX;
+    const ty = y - this._intendedY;
+    const tz = z - this._intendedZ;
+    const tangent = this.entries[this.entryIndex].tangent;
     // Shape: path deviation with the print's mean offset (so far) removed.
-    const offset = this._offsetEstimate();
+    const offset = this._updateOffsetEstimate();
     const sx = x - offset[0];
     const sy = y - offset[1];
     const sz = z - offset[2];
-    const shape = this._contourDeviation(sx, sy, sz, intended);
-    this.shapeHistogram.observe(shape.distance);
-    this.trackingHistogram.observe(Math.hypot(tx, ty, tz));
-    const [t0, t1, t2] = tangent;
+    this._scanReference(x, y, z, sx, sy, sz);
+    const contourDistance = this._contourDistance;
+    this.shapeHistogram.observe(this._shapeDistance);
+    this.trackingHistogram.observe(Math.sqrt(tx * tx + ty * ty + tz * tz));
+    const t0 = tangent[0];
+    const t1 = tangent[1];
+    const t2 = tangent[2];
     const along = tx * t0 + ty * t1 + tz * t2;
     const normal = this.offsetNormal;
     normal[0] += 1 - t0 * t0;
@@ -654,23 +652,25 @@ export class QualityMonitor {
     this.offsetRight[0] += tx - t0 * along;
     this.offsetRight[1] += ty - t1 * along;
     this.offsetRight[2] += tz - t2 * along;
-    this.alongPathSum += tx * tangent[0] + ty * tangent[1] + tz * tangent[2];
+    this.alongPathSum += along;
 
-    const contour = this._contourDeviation(x, y, z, intended);
-    this.contourHistogram.observe(contour.distance);
-    this.contourHorizontalSumSquares += contour.dx * contour.dx + contour.dy * contour.dy;
-    this.contourVerticalSumSquares += contour.dz * contour.dz;
+    this.contourHistogram.observe(contourDistance);
+    this.contourHorizontalSumSquares += this._contourDx * this._contourDx + this._contourDy * this._contourDy;
+    this.contourVerticalSumSquares += this._contourDz * this._contourDz;
     this.sampleCount += 1;
-    if (contour.distance <= this.tolerance) {
+    if (contourDistance <= this.tolerance) {
       this.withinToleranceCount += 1;
+    }
+    if (contourDistance <= this.fineTolerance) {
+      this.withinFineToleranceCount += 1;
     }
 
     // Corners are judged on shape too: rounding and overshoot, not the offset.
-    this._accumulateCorners(sx, sy, sz, intended.arcLength, shape);
+    this._accumulateCorners(sx, sy, sz, this._intendedArc);
 
     if (sourceEvent && typeof sourceEvent === 'object') {
-      const penalty = contour.distance > this.tolerance
-        ? clamp((contour.distance - this.tolerance) / (this.penaltyHardThreshold - this.tolerance), 0, 1)
+      const penalty = contourDistance > this.tolerance
+        ? clamp((contourDistance - this.tolerance) / (this.penaltyHardThreshold - this.tolerance), 0, 1)
         : 0;
       sourceEvent.penalty = penalty;
       sourceEvent.qualityColor = this._colorFromPenalty(penalty);
@@ -678,18 +678,24 @@ export class QualityMonitor {
     this.metricsDirty = true;
   }
 
-  // Solves the offset normal equations; a small ridge keeps directions the
-  // path has not yet constrained (e.g. along a single first line) at zero.
-  _offsetEstimate() {
+  // Solves the offset normal equations into this.offsetEstimate; a small ridge
+  // keeps directions the path has not yet constrained (e.g. along a single
+  // first line) at zero.
+  _updateOffsetEstimate() {
+    const out = this.offsetEstimate;
     const n = this.sampleCount;
     if (n === 0) {
-      return [0, 0, 0];
+      out.fill(0);
+      return out;
     }
     const ridge = 1e-6 * n;
-    const [a, b, c, d, e, f] = this.offsetNormal;
-    const xx = a + ridge;
-    const yy = d + ridge;
-    const zz = f + ridge;
+    const normal = this.offsetNormal;
+    const b = normal[1];
+    const c = normal[2];
+    const e = normal[4];
+    const xx = normal[0] + ridge;
+    const yy = normal[3] + ridge;
+    const zz = normal[5] + ridge;
     const c00 = yy * zz - e * e;
     const c01 = c * e - b * zz;
     const c02 = b * e - c * yy;
@@ -697,15 +703,17 @@ export class QualityMonitor {
     const c12 = b * c - xx * e;
     const c22 = xx * yy - b * b;
     const det = xx * c00 + b * c01 + c * c02;
-    const [r0, r1, r2] = this.offsetRight;
-    return [
-      (c00 * r0 + c01 * r1 + c02 * r2) / det,
-      (c01 * r0 + c11 * r1 + c12 * r2) / det,
-      (c02 * r0 + c12 * r1 + c22 * r2) / det,
-    ];
+    const r0 = this.offsetRight[0];
+    const r1 = this.offsetRight[1];
+    const r2 = this.offsetRight[2];
+    out[0] = (c00 * r0 + c01 * r1 + c02 * r2) / det;
+    out[1] = (c01 * r0 + c11 * r1 + c12 * r2) / det;
+    out[2] = (c02 * r0 + c12 * r1 + c22 * r2) / det;
+    return out;
   }
 
-  _accumulateCorners(x, y, z, arcLength, contour) {
+  // Uses the shape deviation of the sample from this._shape*.
+  _accumulateCorners(x, y, z, arcLength) {
     while (this.nextCornerIndex < this.corners.length && this.corners[this.nextCornerIndex].windowStart <= arcLength) {
       const corner = this.corners[this.nextCornerIndex];
       this.nextCornerIndex += 1;
@@ -716,41 +724,49 @@ export class QualityMonitor {
         settleSamples: [],
         before: false,
         after: false,
-        lastSample: null,
+        hasLastSample: false,
+        lastX: 0,
+        lastY: 0,
+        lastZ: 0,
       });
     }
-    if (this.activeCorners.length === 0) {
-      return;
-    }
-    const remaining = [];
-    for (const active of this.activeCorners) {
-      const corner = active.corner;
+    const active = this.activeCorners;
+    let kept = 0;
+    for (let i = 0; i < active.length; i += 1) {
+      const state = active[i];
+      const corner = state.corner;
       if (arcLength > corner.windowEnd) {
-        this._finalizeCorner(active);
+        this._finalizeCorner(state);
         continue;
       }
-      const [vx, vy, vz] = corner.vertex;
-      const deviation = active.lastSample
-        ? distancePointToSegment(vx, vy, vz, active.lastSample[0], active.lastSample[1], active.lastSample[2], x, y, z)
-        : Math.hypot(x - vx, y - vy, z - vz);
       if (arcLength - corner.arcLength <= this.cornerWindow) {
-        active.deviation = Math.min(active.deviation, deviation);
+        const vertex = corner.vertex;
+        const deviation = state.hasLastSample
+          ? distancePointToSegment(vertex[0], vertex[1], vertex[2], state.lastX, state.lastY, state.lastZ, x, y, z)
+          : Math.hypot(x - vertex[0], y - vertex[1], z - vertex[2]);
+        if (deviation < state.deviation) {
+          state.deviation = deviation;
+        }
       }
-      active.lastSample = [x, y, z];
+      state.hasLastSample = true;
+      state.lastX = x;
+      state.lastY = y;
+      state.lastZ = z;
       if (arcLength < corner.arcLength) {
-        active.before = true;
+        state.before = true;
       } else if (arcLength > corner.arcLength) {
-        active.after = true;
-        if (arcLength - corner.arcLength <= this.cornerWindow) {
-          active.overshoot = Math.max(active.overshoot, contour.distance);
+        state.after = true;
+        if (arcLength - corner.arcLength <= this.cornerWindow && this._shapeDistance > state.overshoot) {
+          state.overshoot = this._shapeDistance;
         }
         if (arcLength <= corner.settleEnd) {
-          active.settleSamples.push(arcLength - corner.arcLength, contour.dx, contour.dy, contour.dz);
+          state.settleSamples.push(arcLength - corner.arcLength, this._shapeDx, this._shapeDy, this._shapeDz);
         }
       }
-      remaining.push(active);
+      active[kept] = state;
+      kept += 1;
     }
-    this.activeCorners = remaining;
+    active.length = kept;
   }
 
   _finalizeCorner(active) {
@@ -796,6 +812,8 @@ export class QualityMonitor {
       progress: this.totalExtrusion > 0 ? this.extrusionCursor / this.totalExtrusion : NaN,
       tolerance: this.tolerance,
       withinTolerance,
+      fineTolerance: this.fineTolerance,
+      withinFineTolerance: n > 0 ? this.withinFineToleranceCount / n : NaN,
       shapeRms: this.shapeHistogram.rms(),
       shapeP95: this.shapeHistogram.quantile(0.95),
       contourRms: this.contourHistogram.rms(),
@@ -806,7 +824,7 @@ export class QualityMonitor {
       trackingRms: this.trackingHistogram.rms(),
       trackingP95: this.trackingHistogram.quantile(0.95),
       trackingMax: n > 0 ? this.trackingHistogram.max : NaN,
-      meanOffset: n > 0 ? this._offsetEstimate() : [NaN, NaN, NaN],
+      meanOffset: n > 0 ? Array.from(this._updateOffsetEstimate()) : [NaN, NaN, NaN],
       meanLag: n > 0 ? -this.alongPathSum / n : NaN,
       cornerCount: corners.count,
       cornerDeviationAvg: corners.count > 0 ? corners.deviationSum / corners.count : NaN,
@@ -899,6 +917,7 @@ export class QualityMonitor {
           .map((d) => `${d.label} −${d.points.toFixed(0)}`).join(', ') || 'none')) +
         metric('Shape error RMS / 95%', pair(m.shapeRms, m.shapeP95)) +
         metric('Path deviation RMS / 95% / max', triple(m.contourRms, m.contourP95, m.contourMax)) +
+        metric(`Path within ${formatLengthMm(m.fineTolerance)} mm`, formatPercent(m.withinFineTolerance)) +
         metric(`Path within ${formatLengthMm(m.tolerance)} mm`, formatPercent(m.withinTolerance)) +
         metric('Path deviation RMS horiz. / vert.', pair(m.contourHorizontalRms, m.contourVerticalRms)) +
         metric('Position error RMS / 95% / max', triple(m.trackingRms, m.trackingP95, m.trackingMax)) +
