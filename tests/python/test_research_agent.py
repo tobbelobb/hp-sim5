@@ -94,7 +94,10 @@ def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experi
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     root = experiment_root
     baseline = run_experiment(root, steps=200, record=False)
-    trial = run_experiment(root, steps=200, commands=[{'type': 'Move', 'A': .01}], record=False)
+    # Reel in the load-bearing D lines gradually. A small offset on a low
+    # anchor can leave HP3's final effector position unchanged.
+    commands = [{'type': 'Move', 'D': step * .0003} for step in range(200)]
+    trial = run_experiment(root, steps=200, commands=commands, record=False)
     difference = compare_runs(root, baseline['run_id'], trial['run_id'])
     assert difference['changed_inputs'] == ['commands_sha256']
     assert max(difference['final_effector_distance_m'].values()) > 1e-6
