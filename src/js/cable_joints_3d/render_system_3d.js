@@ -5,6 +5,7 @@ import Vector3 from './vector3.js';
 import { writeSlackCablePositions } from './cable_shape.js';
 import { Stage3D } from './stage_3d.js';
 import { CableLineBatch } from './cable_lines_3d.js';
+import { DEFAULT_COLOR_THEME, resolveColorTheme } from './color_themes.js';
 import { MachineDetails3D } from './machine_details_3d.js';
 import {
   PositionComponent,
@@ -32,19 +33,9 @@ const ARC_SEGMENTS = 48;
 const JOINT_LINE_SEGMENTS = 24;
 const CABLE_LINE_WIDTH_PX = 1.6;
 const AXIS_HALF_LENGTH = 2.5;
-const AXIS_OPACITY = 0.55;
-const AXIS_X_COLOR = '#cd776c';
-const AXIS_Y_COLOR = '#69b27a';
-const AXIS_Z_COLOR = '#779bc9';
-const SLACK_COLOR = '#dfb274';
 const DEFAULT_CABLE_COLOR = '#ffd34d';
-// Line colours: OKLCH L ~0.77, low chroma (0.07-0.095) so they stay calm on the
-// graphite backdrop (contrast ~6:1). Slack is only highlighted on request.
-const DYNEEMA_COLOR = '#daa0a0';
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
-// Bearings and spools: light steel with a dark half that shows rotation.
-const ROTOR_COLOR = '#c3c7cc';
-const ORIENTATION_BACK_COLOR = '#3a3f47';
+const ORIENTATION_BACK_COLOR = '#2a3542';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.002;
 const FORCE_SIGN_FALLBACK_FLOAT_OFFSET = 0.024;
@@ -79,7 +70,7 @@ const DEFAULT_TRACE_MARKER_COLOR = '#76c5bb';
 const DEFAULT_NAV_CURSOR_COLOR = '#ffd34d';
 const DEFAULT_TRACE_POINT_SIZE = 3;
 const EXTRUSION_BEAD_WIDTH = 0.0008;
-const EXTRUSION_MIN_PIXEL_SIZE = 2;
+const EXTRUSION_MIN_PIXEL_SIZE = 3;
 const DEFAULT_TRACE_Z = 0.0;
 const DEFAULT_MARKER_Z = 0.005;
 const TRACE_LABEL_TEXTURE_WIDTH = 256*1.3;
@@ -909,23 +900,21 @@ export class RenderSystem3D {
     this.root = new THREE.Group();
     this.scene.add(this.root);
 
-    // Axes through the origin mark the z=0 print plane: x muted red, y muted
-    // green, z muted blue (OKLCH L 0.66-0.70, C 0.08-0.11).
+    // Axes through the origin mark the z=0 print plane; colours come from
+    // the colour theme.
     const axesGeometry = new THREE.BufferGeometry();
     axesGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
       -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH, 0, 0,
       0, -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH, 0,
       0, 0, -AXIS_HALF_LENGTH, 0, 0, AXIS_HALF_LENGTH,
     ]), 3));
-    const axisColors = [AXIS_X_COLOR, AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR, AXIS_Z_COLOR]
-      .flatMap((hex) => new THREE.Color(hex).toArray());
-    axesGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(axisColors), 3));
+    axesGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(18), 3));
     const axes = new THREE.LineSegments(axesGeometry, new THREE.LineBasicMaterial({
       vertexColors: true,
       transparent: true,
-      opacity: AXIS_OPACITY,
       depthWrite: false,
     }));
+    this.axes = axes;
     axes.frustumCulled = false;
     axes.userData.ownsGeometry = true;
     axes.userData.ownsMaterial = true;
@@ -1059,6 +1048,8 @@ export class RenderSystem3D {
     this.cableLines.setResolution(width, height);
     this._lineScratch = new Float32Array((ARC_SEGMENTS + 1) * 3);
     this.machineDetails = new MachineDetails3D(this.root, { collectEdges: collectRigidGroupEdges });
+    this.colorThemeId = null;
+    this._applyColorTheme(DEFAULT_COLOR_THEME);
     this.knotMarkers = [];
     this.forceSigns = [];
     this.forceSignConnectors = [];
@@ -1678,6 +1669,7 @@ export class RenderSystem3D {
         zOffset: DEFAULT_TRACE_Z,
       });
       this.extrusionPointCloud.setViewport(this._lastHeight ?? this.canvas.clientHeight, this.renderer.getPixelRatio());
+      this.extrusionPointCloud.setShading(this.colorTheme.printShading);
     }
     return this.extrusionPointCloud;
   }
@@ -1713,7 +1705,7 @@ export class RenderSystem3D {
         point.x,
         point.y,
         point.z,
-        extrusion?.qualityColor || extrusion?.color || DEFAULT_CABLE_COLOR
+        extrusion?.qualityColor || this.colorTheme.print || extrusion?.color || DEFAULT_CABLE_COLOR
       );
     }
     pointCloud.flushUpdates();
@@ -1928,6 +1920,27 @@ export class RenderSystem3D {
     this.cableLines.addPolyline(positions, 2, DEFAULT_EXTRUDER_COLOR);
   }
 
+  _applyColorTheme(themeId) {
+    this.colorThemeId = themeId;
+    const theme = resolveColorTheme(themeId);
+    this.colorTheme = theme;
+    this.stage.setColors(theme.backdrop, theme.floor);
+    const axisColors = this.axes.geometry.attributes.color;
+    const color = new THREE.Color();
+    theme.axes.forEach((hex, axis) => {
+      color.set(hex);
+      axisColors.setXYZ(axis * 2, color.r, color.g, color.b);
+      axisColors.setXYZ(axis * 2 + 1, color.r, color.g, color.b);
+    });
+    axisColors.needsUpdate = true;
+    this.axes.material.opacity = theme.axesOpacity;
+    this.machineDetails.setTheme(theme);
+    // Printed material is coloured as it is appended; redraw it in the new theme.
+    this.extrusionPointCloud?.setShading(theme.printShading);
+    this.clearExtrusions();
+    this.requestRender();
+  }
+
   measureRenderBlock(world, name, fn) {
     const perf = world?.getResource?.('performanceMonitor');
     if (perf?.enabled && typeof perf.measureBlock === 'function') {
@@ -1954,6 +1967,10 @@ export class RenderSystem3D {
   _updateImpl(world, dt) {
     if (world) {
       this._lastWorld = world;
+      const themeId = world.getResource?.('colorTheme') ?? DEFAULT_COLOR_THEME;
+      if (themeId !== this.colorThemeId) {
+        this._applyColorTheme(themeId);
+      }
     }
     if (this.drawingSuspended) {
       return;
@@ -2531,7 +2548,7 @@ export class RenderSystem3D {
       let mesh = this.circleMeshes.get(entityId);
       if (!mesh) {
         mesh = new THREE.Mesh(
-          isCylinder ? this._getOrientedCylinderGeometry(ROTOR_COLOR) : this.sharedSphereGeometry,
+          isCylinder ? this._getOrientedCylinderGeometry(this.colorTheme.rotor ?? renderComp.color) : this.sharedSphereGeometry,
           isCylinder ? this.orientedSphereMaterial : this._getSphereMaterial(renderComp.color),
         );
         this.circleMeshes.set(entityId, mesh);
@@ -2539,7 +2556,7 @@ export class RenderSystem3D {
       }
 
       const geometry = isCylinder
-        ? this._getOrientedCylinderGeometry(ROTOR_COLOR)
+        ? this._getOrientedCylinderGeometry(this.colorTheme.rotor ?? renderComp.color)
         : orientationComp?.quaternion
         ? this._getOrientedSphereGeometry(renderComp?.color)
         : this.sharedSphereGeometry;
@@ -2664,7 +2681,11 @@ export class RenderSystem3D {
       layeringEnabled(world) &&
       world.getResource('layeringRenderWraps') !== false;
     const showForceSigns = world.getResource('showConstraintForces') !== false;
-    const slackColor = world.getResource('highlightSlackLines') === true ? SLACK_COLOR : DYNEEMA_COLOR;
+    const theme = this.colorTheme;
+    const highlightSlack = world.getResource('highlightSlackLines') === true;
+    const lineColor = (entityId) => theme.line
+      ?? world.getComponent(entityId, RenderableComponent)?.color
+      ?? DEFAULT_CABLE_COLOR;
     const upDirection = getUpDirection(world);
 
     if (pathEntities.length === 0) {
@@ -2694,7 +2715,7 @@ export class RenderSystem3D {
 
         jointSpecs.push({
           joint,
-          color: taut ? DYNEEMA_COLOR : slackColor,
+          color: taut || !highlightSlack ? lineColor(jointId) : theme.slack,
           taut,
         });
 
@@ -2745,7 +2766,7 @@ export class RenderSystem3D {
           startAngle: a1,
           endAngle: a2,
           cw: Boolean(path.cw[i]),
-          color: tensionPrev && tensionNext ? DYNEEMA_COLOR : slackColor
+          color: (tensionPrev && tensionNext) || !highlightSlack ? lineColor(path.jointEntities[i]) : theme.slack
         });
       }
 
@@ -2754,7 +2775,7 @@ export class RenderSystem3D {
       if (path.linkTypes[0] === 'hybrid' && path.jointEntities.length > 0) {
         const joint0 = world.getComponent(path.jointEntities[0], CableJointComponent);
         if (joint0) {
-          const color = DYNEEMA_COLOR;
+          const color = lineColor(path.jointEntities[0]);
           const rollerA = joint0.entityA;
           const center = world.getComponent(rollerA, PositionComponent)?.pos;
           const bodyRadius = world.getComponent(rollerA, RadiusComponent)?.radius;
@@ -2785,7 +2806,7 @@ export class RenderSystem3D {
       if (path.linkTypes[nLinks - 1] === 'hybrid' && path.jointEntities.length > 0) {
         const jointN = world.getComponent(path.jointEntities[nLinks - 2], CableJointComponent);
         if (jointN) {
-          const color = DYNEEMA_COLOR;
+          const color = lineColor(path.jointEntities[nLinks - 2]);
           const rollerB = jointN.entityB;
           const center = world.getComponent(rollerB, PositionComponent)?.pos;
           const bodyRadius = world.getComponent(rollerB, RadiusComponent)?.radius;
@@ -3073,10 +3094,12 @@ export class RenderSystem3D {
   }
 
   _getOrientedCylinderGeometry(color) {
-    const key = typeof color === 'string' && color.length > 0 ? color : '#a0a0a0';
+    const primary = typeof color === 'string' && color.length > 0 ? color : '#a0a0a0';
+    const back = this.colorTheme.rotorBack;
+    const key = `${primary}|${back}`;
     let geometry = this.orientedCylinderGeometryCache.get(key);
     if (!geometry) {
-      geometry = createDualColorCylinderGeometry(this.sharedCylinderGeometry, key);
+      geometry = createDualColorCylinderGeometry(this.sharedCylinderGeometry, primary, back);
       this.orientedCylinderGeometryCache.set(key, geometry);
     }
     return geometry;
@@ -3319,6 +3342,7 @@ void main() {
   gl_PointSize = max(uMinPixelSize, uBeadWidth * pixelsPerUnit);
 }`;
 const BEAD_FRAGMENT_SHADER = `
+uniform float uShading;
 varying vec3 vColor;
 void main() {
   vec2 p = gl_PointCoord * 2.0 - 1.0;
@@ -3329,7 +3353,7 @@ void main() {
   if (coverage <= 0.0) discard;
   vec3 normal = vec3(p.x, -p.y, sqrt(max(0.0, 1.0 - r * r)));
   float diffuse = max(dot(normal, normalize(vec3(-0.35, 0.55, 0.75))), 0.0);
-  gl_FragColor = vec4(vColor * (0.42 + 0.68 * diffuse), coverage);
+  gl_FragColor = vec4(vColor * mix(1.0, 0.42 + 0.68 * diffuse, uShading), coverage);
   #include <colorspace_fragment>
 }`;
 
@@ -3350,6 +3374,7 @@ class AppendOnlyPointCloud {
         uBeadWidth: { value: beadWidth },
         uMinPixelSize: { value: minPixelSize },
         uViewportHeight: { value: 1 },
+        uShading: { value: 1 },
       },
       vertexShader: BEAD_VERTEX_SHADER,
       fragmentShader: BEAD_FRAGMENT_SHADER,
@@ -3361,6 +3386,10 @@ class AppendOnlyPointCloud {
     this.chunks = [];
     this.totalPoints = 0;
     this._color = new THREE.Color(color);
+  }
+
+  setShading(amount) {
+    this.material.uniforms.uShading.value = amount;
   }
 
   // cssHeight in CSS pixels; gl_PointSize is in device pixels.

@@ -4,11 +4,9 @@ import * as THREE from 'three';
 // under the machine that fades into it, and soft studio light. Nothing here
 // stands between the camera and the simulated parts.
 
-// Graphite studio (OKLCH hue 255): backdrop L 0.31, floor L 0.34 fading into
-// it. A flat floor under directional light is uniformly lit, so it is drawn
-// unlit: the cheapest full-screen material, which matters on software GL.
-const BACKDROP_COLOR = 0x2d3135;
-const FLOOR_COLOR = 0x35383d;
+// Backdrop and floor colours come from the colour theme (setColors). A flat
+// floor under directional light is uniformly lit, so it is drawn unlit: the
+// cheapest full-screen material, which matters on software GL.
 
 // Reflection environment: a grey studio dome, darker towards the floor, with
 // one large overhead softbox and a smaller side fill. Built Y-up.
@@ -78,7 +76,7 @@ export class Stage3D {
     scene.add(this.group);
 
     renderer.toneMapping = THREE.NeutralToneMapping;
-    scene.background = new THREE.Color(BACKDROP_COLOR);
+    scene.background = new THREE.Color();
 
     this.renderer = renderer;
     this._buildEnvironment();
@@ -104,13 +102,12 @@ export class Stage3D {
       uFadeRadius: { value: new THREE.Vector2(3, 6) },
       // Mixed after tone mapping and output encoding, so it is stored in sRGB
       // to match the untone-mapped background exactly.
-      uBackdrop: { value: new THREE.Color(BACKDROP_COLOR).convertLinearToSRGB() },
+      uBackdrop: { value: new THREE.Color() },
     };
     // Not tone mapped, like the background it fades into: the tone curve's toe
     // would crush this dark colour towards black. Drawn first without depth,
     // so it is part of the background and can never hide simulated geometry.
     this.floorMaterial = new THREE.MeshBasicMaterial({
-      color: FLOOR_COLOR,
       toneMapped: false,
       depthTest: false,
       depthWrite: false,
@@ -135,6 +132,12 @@ export class Stage3D {
     });
     pmrem.dispose();
     this.scene.environment = this.environmentTarget.texture;
+  }
+
+  setColors(backdrop, floor) {
+    this.scene.background.set(backdrop);
+    this.fadeUniforms.uBackdrop.value.set(backdrop).convertLinearToSRGB();
+    this.floorMaterial.color.set(floor);
   }
 
   setLayout({ reach, floorZ }) {

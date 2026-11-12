@@ -71,6 +71,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
     qualityToggle: ownerDocument.getElementById('qualityToggle'),
     showForcesToggle: ownerDocument.getElementById('showForcesToggle'),
     highlightSlackToggle: ownerDocument.getElementById('highlightSlackToggle'),
+    colorThemeSelect: ownerDocument.getElementById('colorTheme'),
     lineLayeringToggle: ownerDocument.getElementById('lineLayeringToggle'),
     closedLoopMotorsToggle: ownerDocument.getElementById('closedLoopMotorsToggle'),
     physicsSubsteps: ownerDocument.getElementById('physicsSubsteps'),

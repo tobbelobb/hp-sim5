@@ -1,8 +1,30 @@
 :root {
-  /* OKLCH-derived graphite family (hue 255, chroma <= 0.012) with one accent
-     from the line colour's dusty-rose family (L 0.74, C 0.085, h 15). Lightness steps: chrome 0.24,
-     panel 0.27, control 0.31, hover 0.36, viewport 0.31, text 0.94. */
+  /* UI colour tokens per colour theme (scene colours: color_themes.js).
+     Classic is the default: the original navy look. */
   color-scheme: dark;
+  --chrome: #151826;
+  --chrome-text: #f4f6ff;
+  --chrome-muted: #a3a9c4;
+  --control: #262a42;
+  --control-hover: #31365a;
+  --control-border: #3d4262;
+  --accent: #ff5c83;
+  --accent-hover: #ff7898;
+  --accent-text: #141421;
+  --focus: #7ae2ff;
+  --panel: #1b1f33;
+  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --glass: rgba(24, 28, 46, 0.88);
+  --glass-hover: rgba(49, 54, 90, 0.92);
+  --glass-text: #f4f6ff;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --viewport: #1b2b3c;
+  --radius: 8px;
+}
+
+/* OKLCH graphite family (hue 255, chroma <= 0.012), accent from the line
+   colour's dusty-rose family (L 0.74, C 0.085, h 15). */
+:root[data-theme='graphite'] {
   --chrome: #1c2024;
   --chrome-text: #e9ebee;
   --chrome-muted: #9a9fa6;
@@ -20,7 +42,47 @@
   --glass-text: #e9ebee;
   --glass-border: rgba(255, 255, 255, 0.09);
   --viewport: #2d3135;
-  --radius: 8px;
+}
+
+:root[data-theme='daylight'] {
+  color-scheme: light;
+  --chrome: #e6e7e9;
+  --chrome-text: #1c1e22;
+  --chrome-muted: #5d6169;
+  --control: #ffffff;
+  --control-hover: #f1f2f4;
+  --control-border: rgba(20, 24, 32, 0.16);
+  --accent: #b5475a;
+  --accent-hover: #a23d4f;
+  --accent-text: #ffffff;
+  --focus: #2f6fe0;
+  --panel: #ffffff;
+  --panel-shadow: 0 12px 32px rgba(20, 24, 32, 0.18);
+  --glass: rgba(250, 250, 251, 0.92);
+  --glass-hover: rgba(236, 237, 240, 0.95);
+  --glass-text: #1c1e22;
+  --glass-border: rgba(20, 24, 32, 0.12);
+  --viewport: #c4c6c8;
+}
+
+:root[data-theme='contrast'] {
+  --chrome: #000000;
+  --chrome-text: #ffffff;
+  --chrome-muted: #d0d0d0;
+  --control: #121212;
+  --control-hover: #262626;
+  --control-border: #8a8a8a;
+  --accent: #ffe600;
+  --accent-hover: #fff27a;
+  --accent-text: #000000;
+  --focus: #5ca8ff;
+  --panel: #0a0a0a;
+  --panel-shadow: 0 0 0 1px #8a8a8a;
+  --glass: rgba(0, 0, 0, 0.92);
+  --glass-hover: rgba(38, 38, 38, 0.95);
+  --glass-text: #ffffff;
+  --glass-border: #8a8a8a;
+  --viewport: #000000;
 }
 
 * {
@@ -780,10 +842,19 @@ body {
     width: 42px;
     flex-shrink: 0;
     font-size: 0 !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9ebee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 18px 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Gear drawn in the text colour, so it follows the theme. */
+  .sim-settings-toggle::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    background-color: var(--chrome-text);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E") center / contain no-repeat;
   }
 
   .sim-machines-menu,

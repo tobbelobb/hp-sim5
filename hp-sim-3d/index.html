@@ -14,6 +14,13 @@
         }
       }
     </script>
+    <script>
+      // Apply the remembered colour theme before first paint.
+      try {
+        const theme = localStorage.getItem('hp-sim-3d.colorTheme');
+        if (theme) document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
@@ -63,6 +70,10 @@
                 </button>
                 <div id="settingsMenu" class="sim-settings-menu sim-hidden" aria-labelledby="settingsToggle">
                   <span class="sim-menu-section-title">View</span>
+                  <label class="sim-toggle sim-select" for="colorTheme">
+                    <span>Color Theme</span>
+                    <select id="colorTheme"></select>
+                  </label>
                   <label id="referenceToggleWrapper" class="sim-toggle" for="referenceToggle">
                     <input id="referenceToggle" type="checkbox" disabled>
                     <span>Show Reference Path</span>

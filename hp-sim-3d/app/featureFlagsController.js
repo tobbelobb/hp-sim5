@@ -2,6 +2,25 @@ import { setSolverIterations } from './solver-iterations.js';
 import { setPhysicsSubsteps } from './physics-substeps.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
+import { COLOR_THEMES, DEFAULT_COLOR_THEME } from '../../src/js/cable_joints_3d/color_themes.js';
+
+const COLOR_THEME_STORAGE_KEY = 'hp-sim-3d.colorTheme';
+
+function readStoredColorTheme() {
+  try {
+    return globalThis.localStorage?.getItem(COLOR_THEME_STORAGE_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function storeColorTheme(id) {
+  try {
+    globalThis.localStorage?.setItem(COLOR_THEME_STORAGE_KEY, id);
+  } catch {
+    // Private windows may refuse storage; the theme still applies.
+  }
+}
 
 export function createFeatureFlagsController({ world, state, toggles = {}, onLineLayeringChanged = null }) {
   if (state) {
@@ -23,6 +42,19 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     if (renderSystem && typeof renderSystem.requestRender === 'function') {
       renderSystem.requestRender(world);
     }
+  }
+
+  function setColorTheme(id) {
+    const themeId = Object.hasOwn(COLOR_THEMES, id) ? id : DEFAULT_COLOR_THEME;
+    world.setResource('colorTheme', themeId);
+    if (globalThis.document?.documentElement) {
+      globalThis.document.documentElement.dataset.theme = themeId;
+    }
+    if (toggles.colorThemeSelect) {
+      toggles.colorThemeSelect.value = themeId;
+    }
+    storeColorTheme(themeId);
+    world.getResource('renderSystem')?.requestRender?.(world);
   }
 
   function setHighlightSlackLines(enabled) {
@@ -108,6 +140,18 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
       setShowConstraintForcesState(toggles.showForcesToggle.checked, { fromToggle: true });
     } else {
       setShowConstraintForcesState(false);
+    }
+    if (toggles.colorThemeSelect) {
+      for (const [id, theme] of Object.entries(COLOR_THEMES)) {
+        const option = toggles.colorThemeSelect.ownerDocument.createElement('option');
+        option.value = id;
+        option.textContent = theme.label;
+        toggles.colorThemeSelect.append(option);
+      }
+      toggles.colorThemeSelect.addEventListener('change', () => {
+        setColorTheme(toggles.colorThemeSelect.value);
+      });
+      setColorTheme(readStoredColorTheme() ?? DEFAULT_COLOR_THEME);
     }
     if (toggles.highlightSlackToggle) {
       toggles.highlightSlackToggle.addEventListener('change', () => {

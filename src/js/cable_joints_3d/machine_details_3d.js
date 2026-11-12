@@ -18,8 +18,6 @@ const EYELET_RING_RADIUS = 0.0028;
 const EYELET_TUBE_RADIUS = 0.0008;
 const ANCHOR_RING_RADIUS = 0.0045;
 const ANCHOR_TUBE_RADIUS = 0.0012;
-const FRAME_BASE_COLOR = '#c4c8ce';
-const FRAME_TINT_AMOUNT = 0.25;
 
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
@@ -118,7 +116,8 @@ export class MachineDetails3D {
     this._b = new THREE.Vector3();
     this._d = new THREE.Vector3();
     this._color = new THREE.Color();
-    this._baseColor = new THREE.Color(FRAME_BASE_COLOR);
+    this._tint = new THREE.Color();
+    this.theme = null;
     this._lineDirections = new Map();
     this._eyeletOrientations = new Map();
     this._handled = new Set();
@@ -183,11 +182,22 @@ export class MachineDetails3D {
     pool.add(this._matrix, color);
   }
 
+  setTheme(theme) {
+    this.theme = theme;
+    this.materials.eyelet.color.set(theme.eyelet);
+  }
+
+  // The theme's frame colour with the machine tint mixed in; a null theme
+  // colour uses the machine tint itself.
   _frameColor(world, groupId) {
     const tint = world.getComponent(groupId, RenderableComponent)?.color;
-    this._color.copy(this._baseColor);
-    if (typeof tint === 'string' && tint.length > 0) {
-      this._color.lerp(new THREE.Color(tint), FRAME_TINT_AMOUNT);
+    const hasTint = typeof tint === 'string' && tint.length > 0;
+    if (this.theme.frame === null) {
+      return this._color.set(hasTint ? tint : '#c4c8ce');
+    }
+    this._color.set(this.theme.frame);
+    if (hasTint) {
+      this._color.lerp(this._tint.set(tint), this.theme.frameTint);
     }
     return this._color;
   }
