@@ -16,7 +16,7 @@ from .js_physics import JSPhysics
 from .mirror import World, apply_state, capture_snapshot, sample  # noqa: F401 - re-exported API
 from .recording import RerunSystem, blueprint
 
-DEFAULT_SCENE = 'public/usd_scenes/hp4.usda'
+DEFAULT_SCENE = 'public/usd_scenes/hp3.usda'
 MAX_STEPS = 10_000
 
 

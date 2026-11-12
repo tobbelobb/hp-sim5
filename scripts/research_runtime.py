@@ -264,7 +264,7 @@ class Runtime:
                                      'settlingTimeoutMs': settling * 1000,
                                      'sweepConfigFile': str(directory / 'configs.txt'), 'outputFile': artifacts['dataset'],
                                      'partialFile': str(directory / 'partial-points.jsonl'), 'backend': self.session.backend,
-                                     'machine': self.configuration.machine, 'layering': self.configuration.layering},
+                                     'machine_type': self.configuration.machine_type, 'layering': self.configuration.layering},
                                     token=self.token, timeout=wall_timeout + 5)
             manifest['collector_options'] = collected['collectionOptions']
             from autocal.json_schema import load_json_file

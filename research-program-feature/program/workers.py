@@ -174,7 +174,7 @@ class WorkerDispatcher:
         return result
 
     def assignment_settings(self, program_id, assignment_id, settings=None):
-        """Bind the commissioned machine to the actual launcher, not just prose."""
+        """Resolve optional machine guidance and reject conflicting worker settings."""
         options = dict(_object({} if settings is None else settings, 'worker settings'))
         assignment = self.store.get_record(program_id, assignment_id, 'assignment')
         commissioned = assignment['details'].get('settings', {})

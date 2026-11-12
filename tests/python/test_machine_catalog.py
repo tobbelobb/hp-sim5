@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import sys
 
@@ -23,6 +24,13 @@ def test_catalogued_files_exist():
 def test_names_and_nicknames_are_unique():
     names = [name.lower() for entry in machines.CATALOG['machines'] for name in [entry['name'], *entry['nicknames']]]
     assert len(names) == len(set(names))
+
+
+def test_catalogued_collector_types_are_accepted_by_the_dataset_schema():
+    schema = json.loads((ROOT / 'autocal/schemas/sweep_dataset.schema.json').read_text())
+    supported = set(schema['properties']['machine_type']['enum'])
+    assert {scene['machine_type'] for scene in machines.CATALOG['scenes'].values()
+            if 'machine_type' in scene} <= supported
 
 
 def test_each_scene_has_one_machine_per_line_layering_choice():

@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize('args', [
-    {}, {'machine': 'hp5'}, {'machine': 'hp3', 'layering': False},
+    {}, {'machine': 'hp5'}, {'machine': 'slideprinter'}, {'machine': 'cubecorners'},
+    {'machine': 'hp3', 'layering': False},
     {'machine': 'hp3', 'scene': 'public/usd_scenes/hp4.usda'},
     {'machine': 'hp3', 'firmware_config': 'sys/config_hp4.g'},
     {'machine': 'hp3', 'base_radii_mm': [True]},
@@ -30,10 +31,24 @@ def test_invalid_world_settings(args):
         world_configuration(ROOT, args, backend='headless-js')
 
 
-def test_catalogued_machine_selects_scene_firmware_and_layering():
-    config = world_configuration(ROOT, {'machine': 'HP4_w_line_layers'}, backend='headless-js')
-    assert (config.machine, config.layering) == ('Hangprinter version 4 with line layering', True)
-    assert (config.scene, config.firmware_config) == ('public/usd_scenes/hp4.usda', 'sys/config_hp4_w_line_layers.g')
+@pytest.mark.parametrize('nickname,machine_type,scene,firmware,layering', [
+    ('hp3', 'hangprinter_3', 'hp3', 'hp3', False),
+    ('HP4_w_line_layers', 'hangprinter_4', 'hp4', 'hp4_w_line_layers', True),
+    ('skycam', 'skycam', 'four_high_anchors', 'skycam', False),
+])
+def test_catalogued_machine_selects_scene_firmware_and_layering(nickname, machine_type, scene, firmware, layering):
+    config = world_configuration(ROOT, {'machine': nickname}, backend='headless-js')
+    assert (config.machine_type, config.layering) == (machine_type, layering)
+    assert (config.scene, config.firmware_config) == (f'public/usd_scenes/{scene}.usda', f'sys/config_{firmware}.g')
+
+
+def test_mcp_defers_autocal_defaults_to_the_selected_machine(monkeypatch):
+    from scripts import hp_sim5_mcp as mcp
+
+    monkeypatch.setattr(mcp, 'supervised_request', lambda operation, **args: args)
+    assert 'machine' not in mcp.start_autocal()
+    assert 'buildup_factor' not in mcp.start_autocal(machine='hp3_w_line_layers')
+    assert mcp.start_autocal(machine='hp3_w_line_layers', buildup_factor=0)['buildup_factor'] == 0
 
 
 @pytest.mark.slow
@@ -152,6 +167,8 @@ def test_real_reconfiguration_reset_active_job_and_evidence(tmp_path):
         collected = service.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
         assert collected['status'] == 'complete' and collected['point_count'] == 6
         assert collected['machine_design'] == 'Hangprinter version 3 without line layering'
+        dataset = json.loads(Path(collected['artifacts']['dataset']).read_text())
+        assert dataset['machine_type'] == 'hangprinter_3'
         inherited = service.call('configure', base_radii_mm=[31])
         assert inherited['machine_design'] == 'Hangprinter version 3 without line layering'
         assert collected['world_configuration']['geometry']['cable_half_widths_m'] == [0.]

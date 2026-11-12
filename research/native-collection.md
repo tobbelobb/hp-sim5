@@ -18,8 +18,9 @@ use the Wasm build of the same core. See [native engine details](rust-native-eng
 
 No world exists until `configure_session` names a machine from
 [`machines/catalog.json`](../machines/catalog.json); the catalogue selects its
-scene, RRF configuration and line layering together. All research worlds use
-the collector's existing `hangprinter_4` four-anchor role schema.
+scene, RRF configuration and line layering together. The collector and residual
+validation use that scene's catalogued machine type, including `hangprinter_3`
+for HP3.
 For numerical batches, `--viewer none --no-record` skips Rerun while retaining
 the frozen scene, command/sensor trace, point journal, dataset and manifest.
 See [performance measurements and limitations](collection-performance.md).

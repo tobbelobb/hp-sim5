@@ -54,7 +54,7 @@ def capabilities() -> dict[str, Any]:
                                       'active_jobs': 'Explicit cancellation required before reset or reconfiguration'}},
             'full_autocal': {'operations': ['start_autocal', 'autocal_status', 'cancel_autocal'],
                              'recording_modes': ['none', 'events', 'sampled', 'full'], 'default_recording_mode': 'events',
-                             'machines': 'Catalogued machines with an autocal machine type; defaults to the configured world machine', 'backend': 'headless-js', 'isolated_world': True,
+                             'machines': 'Catalogued machines with an autocal machine type; uses the configured world machine if omitted, otherwise requires an explicit machine', 'backend': 'headless-js', 'isolated_world': True,
                              'workflow': 'Production one-click CLI: physical collection, fitting, planning, selection, automatic stopping',
                              'statuses': ['running', 'cancelling', 'accepted', 'budget_exhausted', 'cancelled', 'failed'],
                              'limits': {'max_steps': 100, 'sweep_points': 100, 'wall_timeout_s': 14400,
@@ -158,7 +158,7 @@ def cancel_collection(job_id: str) -> dict[str, Any]:
 
 @mcp.tool(annotations=MUTATION)
 def start_autocal(machine: str | None = None,
-                  base_radii_mm: list[float] | None = None, buildup_factor: float = 0,
+                  base_radii_mm: list[float] | None = None, buildup_factor: float | None = None,
                   find_radii: str = 'off', find_buildup_factor: str = 'off',
                   optimizer: dict | None = None, budgets: dict | None = None,
                   collection: dict | None = None,
@@ -167,7 +167,9 @@ def start_autocal(machine: str | None = None,
     """Return a full-autocal job ID immediately; the supervisor runs an isolated production CLI world.
 
     machine: catalogue name or nickname (machines/catalog.json); omitted uses the configured world's machine.
+    With no configured world, machine is required. Omission never chooses a machine.
     base_radii_mm: one or four known/initial radii (default [30]); fitting modes: off/global/per-anchor.
+    buildup_factor defaults to 2/pi on line-layering machines, otherwise zero.
     Nonzero or fitted buildup requires a line-layering machine. optimizer: mode (fast/fast-fd/legacy), solver
     (lbfgsb/trf), solve_iterations, solve_restarts, spool_outer_iters,
     r0_bounds_mm and b_bounds (two-element lists). budgets: max_steps (default 20),
@@ -182,10 +184,12 @@ def start_autocal(machine: str | None = None,
     physical activity and finalizes partial evidence. Budget exhaustion is not automatic acceptance.
     """
     args = dict(base_radii_mm=base_radii_mm if base_radii_mm is not None else [30],
-                buildup_factor=buildup_factor, find_radii=find_radii, find_buildup_factor=find_buildup_factor,
+                find_radii=find_radii, find_buildup_factor=find_buildup_factor,
                 optimizer=optimizer or {}, budgets=budgets or {}, collection=collection or {}, recording_mode=recording_mode)
     if machine is not None:
         args['machine'] = machine
+    if buildup_factor is not None:
+        args['buildup_factor'] = buildup_factor
     if artifact_dir is not None:
         args['artifact_dir'] = artifact_dir
     return supervised_request('start_autocal', **args)

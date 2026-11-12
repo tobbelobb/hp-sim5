@@ -823,6 +823,12 @@ def test_resolve_sim_config_prefers_line_layer_config_for_spool_search(monkeypat
     assert cfg == ac.RRF_SIM_LINE_LAYER_CONFIG
 
 
+def test_resolve_sim_config_preserves_catalogued_line_layering(monkeypatch):
+    monkeypatch.delenv('AUTOCAL_RRF_SIM_CONFIG', raising=False)
+    assert ac._resolve_sim_config(machine_type='hp3_w_line_layers', find_radii_mode='off',
+                                  find_buildup_mode='off') == 'sys/config_hp3_w_line_layers.g'
+
+
 @pytest.mark.parametrize("machine_type,name", [
     ("hangprinter_3", "hp3"), ("hangprinter_4", "hp4"),
     ("four_high_anchors", "skycam"), ("cube_corners", "cubecorners"),

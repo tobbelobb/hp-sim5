@@ -367,9 +367,8 @@ loose trials use `research/output/scratch/experiments/`,
 and continuing collection evidence is under each session's `native/` directory.
 Reports and evidence can be committed with ordinary Git; live connection files
 are ignored. The explicit doctor checks dependencies/login/Viewer
-MCP and performs real RRF/native HP4 collection with autocal validation; it takes
-about fourteen minutes on the historical Python backend; the default backend
-has since changed. It does not establish calibration accuracy or model
+MCP and performs real RRF/native HP3 collection with autocal validation.
+It does not establish calibration accuracy or model
 access. See [collection evidence](native-collection-verification.md).
 
 ## Experiment tools
@@ -403,7 +402,8 @@ access. See [collection evidence](native-collection-verification.md).
 
 A launcher or desktop attachment starts with no world. `configure_session`
 builds the first one, and later calls replace it without restarting Codex or
-writing a simulator adapter. For example:
+writing a simulator adapter. Native physics checks and any required rebuild are
+deferred until a world is requested. For example:
 
 ```json
 {"configuration": {"machine": "hp3", "base_radii_mm": [30], "buildup_factor": 0}}
@@ -425,7 +425,11 @@ layering flags. The selected firmware is frozen in each generation and booted
 from a short private VSD (RRF limits host filename length). `runtime_status`
 and world/collection manifests report requested/effective settings, authored,
 design and baked scene hashes, firmware configuration/replies and generation
-identity. Research worlds share the collector's four-anchor Hangprinter profile.
+identity. The collector and residual validation use the selected scene's catalogued
+machine type, including `hangprinter_3` for HP3.
+
+The MCP experiment tool requires an explicit scene. The standalone Python
+experiment API defaults to HP3; this does not choose a machine for the attached world.
 
 An ordinary `reset_session()` retains accepted settings and reloads scene, JS
 and firmware sources. Python edits require a launcher restart, as status reports.

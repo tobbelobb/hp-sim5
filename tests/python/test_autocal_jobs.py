@@ -8,8 +8,27 @@ import sys
 import pytest
 
 from hp_sim5_research.autocal_jobs import AutocalJobs, command, settings
+from hp_sim5_research.configuration import world_configuration
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_autocal_does_not_choose_an_omitted_machine():
+    with pytest.raises(ValueError, match='machine'):
+        settings({})
+
+
+@pytest.mark.parametrize('machine', ['hp3', 'hp3_w_line_layers', 'hp4', 'hp4_w_line_layers'])
+def test_autocal_and_world_share_catalogued_spool_defaults(tmp_path, machine):
+    world = world_configuration(ROOT, {'machine': machine}, backend='headless-js')
+    config = settings({'machine': machine})
+    assert config['machine'] == world.machine
+    assert config['layering'] == world.layering
+    assert config['buildup_factor'] == world.buildup_factor
+    assert config['base_radii_mm'] * 4 == list(world.base_radii_mm)
+    argv = command(ROOT, tmp_path, config)
+    assert argv[argv.index('--machine-type') + 1] == world.machine_type
+    assert float(argv[argv.index('--buildup-factor') + 1]) == world.buildup_factor
 
 
 @pytest.mark.parametrize('args', [

@@ -32,23 +32,6 @@ WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output', 'resea
                   'src/wasm/cable_solver/target/native/physics.node')
 
 
-def ensure_native_physics():
-    # Reuse the worker's freshness check, including custom artifact overrides.
-    probe = subprocess.run(
-        ['node', '--input-type=module', '-e',
-         "import { loadNativePhysicsAddon } from './src/js/cable_joints_3d/native_physics_engine.js'; "
-         'loadNativePhysicsAddon();'],
-        cwd=ROOT, capture_output=True, text=True)
-    if probe.returncode == 0:
-        return
-    if ('Native Rust physics build is stale.' not in probe.stderr and
-            'Native Rust physics is missing:' not in probe.stderr):
-        raise RuntimeError(f'Native physics check failed: {probe.stderr.strip()}')
-    print('Native Rust physics build is stale, recompiling', file=sys.stderr, flush=True)
-    if subprocess.run(['npm', 'run', 'build:native'], cwd=ROOT).returncode != 0:
-        raise RuntimeError('Native Rust physics recompilation failed (npm run build:native)')
-
-
 def provider_env_key(provider):
     return coding_client.provider_env_key(provider, root=ROOT)
 
@@ -257,6 +240,7 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
     if checks.get('physics', {}).get('ok'):
         try:
             runtime = RuntimeService(ROOT, ROOT / 'research/output/scratch/preflight' / uuid.uuid4().hex).start()
+            runtime.call('configure', machine='hp3')
             collection = runtime.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
             from hp_sim5_research.validation import validate_collection
             validation = validate_collection(collection['artifacts']['dataset'])
@@ -519,8 +503,6 @@ def main():
         (session / 'prompt.txt').write_text(full_prompt)
         (session / 'abstract.md').write_text(initial_abstract(topic))
         write_index(catalog_root)
-        if args.physics_backend == 'headless-js':
-            ensure_native_physics()
         endpoint = None
         if args.viewer != 'none' and not args.preflight:
             viewer, endpoint = start_viewer(args.viewer, session)

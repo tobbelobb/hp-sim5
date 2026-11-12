@@ -7,7 +7,6 @@ import numpy as np
 def validate_collection(path, anchors=None):
     from autocal.json_schema import load_json_file
     from autocal.calibrate import _validate_sweep_roles
-    from autocal.dataset_roles import normalize_dataset_point_roles
     from autocal.spool_model import validate_dataset_has_raw_angles
     from autocal.ellipse_cost import EllipseCostFunction
     from autocal.theoretical_ellipse import anchors_matrix_to_opt_vec
@@ -15,8 +14,8 @@ def validate_collection(path, anchors=None):
     dataset = load_json_file(Path(path), schema='sweep_dataset')
     validate_dataset_has_raw_angles(dataset)
     _validate_sweep_roles(dataset)
-    if normalize_dataset_point_roles(dataset):
-        raise ValueError('Collector points were not already in canonical drive/sensor orientation')
+    # Check orientation against measured encoders below. A commanded setpoint
+    # can differ from the physical drive position and cannot establish roles.
     scale = np.asarray(dataset['config']['mm_per_degree'])
     spans = []
     sensor_spans = []
@@ -44,10 +43,10 @@ def validate_collection(path, anchors=None):
     config = dataset['config']['m669']
     anchors = np.asarray([config[axis] for axis in 'ABCD'] if anchors is None else anchors, dtype=float)
     if anchors.shape != (4, 3) or not np.isfinite(anchors).all():
-        raise ValueError('Collection must preserve all three firmware coordinates for each HP4 anchor')
+        raise ValueError('Collection must preserve all three firmware coordinates for each of four anchors')
     objective = EllipseCostFunction(dataset, min_points=5,
                                    pointwise_filtering=False, sweep_wise_filtering=False)
-    vector = anchors_matrix_to_opt_vec(anchors, 'hangprinter_4')
+    vector = anchors_matrix_to_opt_vec(anchors, dataset['machine_type'])
     rows = objective.pointwise_residual_rows(vector)
     residuals = np.asarray([row['residual_mm'] for row in rows])
     if len(rows) != count or not np.isfinite(residuals).all():

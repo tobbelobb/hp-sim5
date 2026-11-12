@@ -571,7 +571,7 @@ def _resolve_sim_config(
         machine = catalogued_machine(machine_type)
     except ValueError as error:
         raise ValueError(f"No catalogued {firmware} simulator config for {machine_type}; specify --config") from error
-    layered = layering or _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+    layered = machine['line_layering'] or layering or _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
     machine = machines.line_layering_variant(machine, layered)
     if firmware == "klipper":
         return machine["klipper_config"]

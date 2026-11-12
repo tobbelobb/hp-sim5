@@ -39,6 +39,7 @@ def firmware_path(machine):
 @dataclass(frozen=True)
 class WorldConfiguration:
     machine: str
+    machine_type: str
     layering: bool
     scene: str
     firmware_config: str
@@ -61,6 +62,9 @@ def world_configuration(root, args, *, backend):
     if backend not in BACKENDS:
         raise ValueError('Unknown physics backend')
     machine = machines.machine(args['machine'])
+    machine_type = machines.scene(machine).get('machine_type')
+    if machine_type not in ('hangprinter_3', 'hangprinter_4', 'skycam'):
+        raise ValueError('Research worlds require a four-anchor Hangprinter scene and firmware configuration')
     layering = machine['line_layering']
     radii = args.get('base_radii_mm', [30.0])
     buildup = args.get('buildup_factor', LAYERED_BUILDUP if layering else 0.)
@@ -71,7 +75,7 @@ def world_configuration(root, args, *, backend):
         raise ValueError('Layered worlds support stock 30 mm base radii and buildup_factor=2/pi only')
     if not (root / machine['scene']).is_file() or not (root / machine['rrf_config']).is_file():
         raise ValueError('Scene and matching RRF configuration must exist')
-    return WorldConfiguration(machine['name'], layering,
+    return WorldConfiguration(machine['name'], machine_type, layering,
                               machine['scene'], firmware_path(machine),
                               backend, radii, float(buildup), encode(args))
 

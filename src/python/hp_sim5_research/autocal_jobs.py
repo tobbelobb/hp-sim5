@@ -13,7 +13,7 @@ import uuid
 from .experiments import write_json
 import machines
 
-from .configuration import number, validate_spools, firmware_path
+from .configuration import LAYERED_BUILDUP, number, validate_spools, firmware_path
 from .services import register_test_process
 
 
@@ -27,7 +27,7 @@ def settings(args):
     machine = machines.machine(args['machine'])
     if 'machine_type' not in machines.scene(machine):
         raise ValueError(f'{machine["name"]} has no autocal machine type')
-    result = {'base_radii_mm': [30.0], 'buildup_factor': 0.0,
+    result = {'base_radii_mm': [30.0], 'buildup_factor': LAYERED_BUILDUP if machine['line_layering'] else 0.0,
               'find_radii': 'off', 'find_buildup_factor': 'off', 'recording_mode': 'events', **{k: v for k, v in args.items()
               if k not in ('optimizer', 'budgets', 'collection', 'artifact_dir')},
               'machine': machine['name'], 'layering': machine['line_layering']}
