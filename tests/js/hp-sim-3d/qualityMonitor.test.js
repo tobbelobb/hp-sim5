@@ -86,7 +86,7 @@ describe('QualityMonitor 3D extrusion scoring', () => {
   test('a print on the path scores 100 with zero error and full progress', () => {
     const reference = [segment([0, 0, 0], [0.05, 0, 0]), segment([0.05, 0, 0], [0.05, 0.05, 0])];
     const metrics = print(createMonitor(reference), reference);
-    expect(metrics.score).toBe(100);
+    expect(metrics.score).toBeCloseTo(100, 9);
     expect(metrics.contourMax).toBeLessThan(1e-9);
     expect(metrics.trackingMax).toBeLessThan(1e-9);
     expect(metrics.progress).toBeCloseTo(1, 9);
@@ -99,8 +99,41 @@ describe('QualityMonitor 3D extrusion scoring', () => {
     expect(metrics.contourRms).toBeCloseTo(0.002, 9);
     expect(metrics.contourVerticalRms).toBeCloseTo(0.002, 9);
     expect(metrics.contourHorizontalRms).toBeCloseTo(0, 9);
-    expect(metrics.meanOffset[2]).toBeCloseTo(0.002, 9);
-    expect(metrics.score).toBe(0);
+    expect(metrics.meanOffset[2]).toBeCloseTo(0.002, 7);
+    expect(metrics.withinTolerance).toBe(0);
+  });
+
+  test('a rigidly shifted but otherwise perfect print still scores high', () => {
+    const reference = [
+      segment([0, 0, 0], [0.05, 0, 0]),
+      segment([0.05, 0, 0], [0.05, 0.05, 0]),
+      segment([0.05, 0.05, 0], [0, 0.05, 0]),
+    ];
+    const metrics = print(createMonitor(reference), reference, () => [0.001, -0.0005, 0.0003]);
+    expect(metrics.shapeP95).toBeLessThan(1e-4);
+    expect(metrics.cornerDeviationMax).toBeLessThan(1e-4);
+    expect(metrics.score).toBeGreaterThan(90);
+  });
+
+  test('a layer shift halfway scores well below a rigid shift, a blow-up near zero', () => {
+    const reference = [
+      segment([0, 0, 0], [0.05, 0, 0]),
+      segment([0.05, 0, 0], [0.05, 0.05, 0]),
+      segment([0.05, 0.05, 0], [0, 0.05, 0]),
+    ];
+    const shifted = print(createMonitor(reference), reference, () => [0.0015, 0, 0]);
+    const layerShift = print(createMonitor(reference), reference, (point) => (point[1] > 0.02 ? [0.0015, 0, 0] : [0, 0, 0]));
+    const blowUp = print(createMonitor(reference), reference, (point) => (point[1] > 0.01 ? [0.02 * Math.sin(point[1] * 500), 0.02, 0.01] : [0, 0, 0]));
+    expect(layerShift.score).toBeLessThan(shifted.score - 15);
+    expect(blowUp.score).toBeLessThan(20);
+  });
+
+  test('missed steps lower the score', () => {
+    const reference = [segment([0, 0, 0], [0.05, 0, 0])];
+    const monitor = createMonitor(reference);
+    const clean = print(monitor, reference).score;
+    monitor.setMotorDiagnosticsProvider(() => ({ totalMissedSteps: 40, motors: [] }));
+    expect(monitor.getMetrics().score).toBeLessThan(clean - 5);
   });
 
   test('lag along the path is position error, not path deviation', () => {
@@ -111,7 +144,7 @@ describe('QualityMonitor 3D extrusion scoring', () => {
     expect(metrics.meanLag).toBeGreaterThan(0.00098);
     expect(metrics.trackingP95).toBeGreaterThan(0.00098);
     expect(metrics.contourMax).toBeLessThan(1e-9);
-    expect(metrics.score).toBe(100);
+    expect(metrics.withinTolerance).toBe(1);
   });
 
   test('the first sample after a travel belongs to the line it starts', () => {

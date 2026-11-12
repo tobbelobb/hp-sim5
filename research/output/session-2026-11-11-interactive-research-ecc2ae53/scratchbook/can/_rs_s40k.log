@@ -1,0 +1,18 @@
+Output buffers: size=1024 count=400 reserved=16
+Using configuration file: /home/torbjorn/repos/hp-sim5/RRF/run/vsd/sys/config_hp4.g
+CAN capture enabled: "/home/torbjorn/repos/hp-sim5/research/output/session-2026-11-11-interactive-research-ecc2ae53/scratchbook/can/_rs_s40k.csv"
+Host Platform Initialized.
+RepRapFirmware for x86_64 (host) version 3.7.0-alpha.5
+Executing config.g... 
+G10 P0 S0 R0
+Done!
+RepRapFirmware for x86_64 (host) is up and running.
+Starting G-code '_rs_s40k.gcode'
+Started printing file /home/torbjorn/repos/hp-sim5/RRF/run/vsd/gcodes/_rs_s40k.gcode
+[wait] captures=0 captureIdle=0 seen=0 fileIdle=1 moveIdle=1 scheduled=0 completed=0 scheduled-completed=0 Move.GetSimulationTime()=0 GetVirtualStepClocks()=0
+Finished printing file /home/torbjorn/repos/hp-sim5/RRF/run/vsd/gcodes/_rs_s40k.gcode, print time was 0h 1m
+Completed G-code '_rs_s40k.gcode' in 92 ms
+Final machine position: X=-3.03636e-05 Y=0.000806135 Z=0.00821786 U=0
+Host Platform Shutdown.
+Processing research/output/session-2026-11-11-interactive-research-ecc2ae53/scratchbook/can/_rs_s40k.csv...
+Success! Saved to research/output/session-2026-11-11-interactive-research-ecc2ae53/scratchbook/can/_rs_s40k.can

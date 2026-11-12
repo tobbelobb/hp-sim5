@@ -121,13 +121,28 @@ function distancePointToSegment(px, py, pz, ax, ay, az, bx, by, bz) {
 // from. The cumulative extrusion (E) of the command stream locates every sample
 // on the reference path, which gives:
 // - position error: distance to the intended point at that instant (tracking
-//   error), with its along-path part (lag) and its mean (systematic offset);
+//   error) and its along-path part (lag);
+// - the systematic offset: least-squares shift of the error across the path;
 // - path deviation: distance to the intended path near that point (contour
 //   error, as ISO 9283 path accuracy), split into horizontal and vertical;
-// - per sharp corner: deviation of the attained path from the corner point,
+// - per sharp corner (after removing the mean offset): deviation of the
+//   attained path from the corner point,
 //   the largest deviation after it, and the distance travelled until the path
 //   stays within tolerance (ISO 9283 cornering deviations / stabilization).
-// The score is the share of extruded samples within the tolerance.
+// The 0-100 quality score weighs what matters to someone looking at the part:
+// its shape (path deviation once the print's mean offset is removed) counts
+// most, so a rigidly shifted but otherwise perfect print still scores high,
+// while distortion, layer shifts and blow-ups score low. See SCORE_TERMS.
+
+// Each term deducts weight * (1 - exp(-value / scale)) points; weights sum to 100.
+const SCORE_TERMS = Object.freeze([
+  { key: 'shapeP95', label: 'Shape 95%', weight: 45, scale: 0.001 },
+  { key: 'shapeRms', label: 'Shape RMS', weight: 20, scale: 0.0006 },
+  { key: 'cornerError', label: 'Corners', weight: 10, scale: 0.001 },
+  { key: 'settleDistance', label: 'Ringing', weight: 5, scale: 0.005 },
+  { key: 'offset', label: 'Offset', weight: 10, scale: 0.005 },
+  { key: 'missedSteps', label: 'Missed steps', weight: 10, scale: 20 },
+]);
 export class QualityMonitor {
   constructor({ hudElement = null } = {}) {
     this.hudElement = hudElement || null;
@@ -154,6 +169,7 @@ export class QualityMonitor {
 
     this.contourHistogram = new DistanceHistogram();
     this.trackingHistogram = new DistanceHistogram();
+    this.shapeHistogram = new DistanceHistogram();
 
     this.remoteSystem = null;
     this.boundExtrusionListener = (event) => this.recordExtrusion(event);
@@ -172,7 +188,7 @@ export class QualityMonitor {
     this.lastHudRefreshMs = -Infinity;
 
     // Tunable heuristics
-    this.tolerance = 0.00025; // meters: within-tolerance score, settling, extrusion tint starts
+    this.tolerance = 0.0005; // meters: within-tolerance share, settling, extrusion tint starts
     this.penaltyHardThreshold = 0.0015; // meters (1.5 mm) saturates the extrusion tint
     this.contourSearchWindow = 0.005; // meters of path either side of the intended point
     this.cornerAngleThreshold = 45 * DEG_TO_RAD;
@@ -278,9 +294,13 @@ export class QualityMonitor {
     this.withinToleranceCount = 0;
     this.contourHistogram.reset();
     this.trackingHistogram.reset();
+    this.shapeHistogram.reset();
     this.contourHorizontalSumSquares = 0;
     this.contourVerticalSumSquares = 0;
-    this.trackingSum = [0, 0, 0];
+    // Least-squares offset from the error across the path (along-path lag is
+    // not an offset): normal matrix Σ(I - t tᵀ) as xx, xy, xz, yy, yz, zz and Σ(I - t tᵀ)e.
+    this.offsetNormal = [0, 0, 0, 0, 0, 0];
+    this.offsetRight = [0, 0, 0];
     this.alongPathSum = 0;
     this.cornerStats = {
       count: 0,
@@ -614,10 +634,26 @@ export class QualityMonitor {
     const ty = y - intended.y;
     const tz = z - intended.z;
     const tangent = intended.entry.tangent;
+    // Shape: path deviation with the print's mean offset (so far) removed.
+    const offset = this._offsetEstimate();
+    const sx = x - offset[0];
+    const sy = y - offset[1];
+    const sz = z - offset[2];
+    const shape = this._contourDeviation(sx, sy, sz, intended);
+    this.shapeHistogram.observe(shape.distance);
     this.trackingHistogram.observe(Math.hypot(tx, ty, tz));
-    this.trackingSum[0] += tx;
-    this.trackingSum[1] += ty;
-    this.trackingSum[2] += tz;
+    const [t0, t1, t2] = tangent;
+    const along = tx * t0 + ty * t1 + tz * t2;
+    const normal = this.offsetNormal;
+    normal[0] += 1 - t0 * t0;
+    normal[1] -= t0 * t1;
+    normal[2] -= t0 * t2;
+    normal[3] += 1 - t1 * t1;
+    normal[4] -= t1 * t2;
+    normal[5] += 1 - t2 * t2;
+    this.offsetRight[0] += tx - t0 * along;
+    this.offsetRight[1] += ty - t1 * along;
+    this.offsetRight[2] += tz - t2 * along;
     this.alongPathSum += tx * tangent[0] + ty * tangent[1] + tz * tangent[2];
 
     const contour = this._contourDeviation(x, y, z, intended);
@@ -629,7 +665,8 @@ export class QualityMonitor {
       this.withinToleranceCount += 1;
     }
 
-    this._accumulateCorners(x, y, z, intended.arcLength, contour);
+    // Corners are judged on shape too: rounding and overshoot, not the offset.
+    this._accumulateCorners(sx, sy, sz, intended.arcLength, shape);
 
     if (sourceEvent && typeof sourceEvent === 'object') {
       const penalty = contour.distance > this.tolerance
@@ -639,6 +676,33 @@ export class QualityMonitor {
       sourceEvent.qualityColor = this._colorFromPenalty(penalty);
     }
     this.metricsDirty = true;
+  }
+
+  // Solves the offset normal equations; a small ridge keeps directions the
+  // path has not yet constrained (e.g. along a single first line) at zero.
+  _offsetEstimate() {
+    const n = this.sampleCount;
+    if (n === 0) {
+      return [0, 0, 0];
+    }
+    const ridge = 1e-6 * n;
+    const [a, b, c, d, e, f] = this.offsetNormal;
+    const xx = a + ridge;
+    const yy = d + ridge;
+    const zz = f + ridge;
+    const c00 = yy * zz - e * e;
+    const c01 = c * e - b * zz;
+    const c02 = b * e - c * yy;
+    const c11 = xx * zz - c * c;
+    const c12 = b * c - xx * e;
+    const c22 = xx * yy - b * b;
+    const det = xx * c00 + b * c01 + c * c02;
+    const [r0, r1, r2] = this.offsetRight;
+    return [
+      (c00 * r0 + c01 * r1 + c02 * r2) / det,
+      (c01 * r0 + c11 * r1 + c12 * r2) / det,
+      (c02 * r0 + c12 * r1 + c22 * r2) / det,
+    ];
   }
 
   _accumulateCorners(x, y, z, arcLength, contour) {
@@ -732,7 +796,8 @@ export class QualityMonitor {
       progress: this.totalExtrusion > 0 ? this.extrusionCursor / this.totalExtrusion : NaN,
       tolerance: this.tolerance,
       withinTolerance,
-      score: n > 0 ? 100 * withinTolerance : NaN,
+      shapeRms: this.shapeHistogram.rms(),
+      shapeP95: this.shapeHistogram.quantile(0.95),
       contourRms: this.contourHistogram.rms(),
       contourP95: this.contourHistogram.quantile(0.95),
       contourMax: n > 0 ? this.contourHistogram.max : NaN,
@@ -741,7 +806,7 @@ export class QualityMonitor {
       trackingRms: this.trackingHistogram.rms(),
       trackingP95: this.trackingHistogram.quantile(0.95),
       trackingMax: n > 0 ? this.trackingHistogram.max : NaN,
-      meanOffset: n > 0 ? this.trackingSum.map((value) => value / n) : [NaN, NaN, NaN],
+      meanOffset: n > 0 ? this._offsetEstimate() : [NaN, NaN, NaN],
       meanLag: n > 0 ? -this.alongPathSum / n : NaN,
       cornerCount: corners.count,
       cornerDeviationAvg: corners.count > 0 ? corners.deviationSum / corners.count : NaN,
@@ -751,6 +816,26 @@ export class QualityMonitor {
       settleDistanceAvg: corners.count > 0 ? corners.settleSum / corners.count : NaN,
       settleDistanceMax: corners.count > 0 ? corners.settleMax : NaN,
     };
+  }
+
+  _composeScore(m, totalMissedSteps) {
+    if (!(m.samples > 0)) {
+      return { score: NaN, scoreDeductions: [] };
+    }
+    const values = {
+      shapeP95: m.shapeP95,
+      shapeRms: m.shapeRms,
+      cornerError: m.cornerCount > 0 ? Math.max(m.cornerDeviationAvg, m.cornerOvershootAvg) : 0,
+      settleDistance: m.cornerCount > 0 ? m.settleDistanceAvg : 0,
+      offset: Math.hypot(m.meanOffset[0], m.meanOffset[1], m.meanOffset[2]),
+      missedSteps: totalMissedSteps,
+    };
+    const scoreDeductions = SCORE_TERMS.map((term) => ({
+      label: term.label,
+      points: term.weight * (1 - Math.exp(-values[term.key] / term.scale)),
+    }));
+    const score = 100 - scoreDeductions.reduce((sum, deduction) => sum + deduction.points, 0);
+    return { score, scoreDeductions };
   }
 
   refreshHud(force = false) {
@@ -769,6 +854,9 @@ export class QualityMonitor {
       this.metrics = this._computeMetrics();
       this.metricsDirty = false;
     }
+    // Missed steps change without extrusion, so the score is always recomposed.
+    const motorDiagnostics = this._getMotorDiagnostics();
+    Object.assign(this.metrics, this._composeScore(this.metrics, motorDiagnostics.totalMissedSteps));
     if (!this.hudElement) {
       return;
     }
@@ -778,7 +866,6 @@ export class QualityMonitor {
       return;
     }
     const m = this.metrics;
-    const motorDiagnostics = this._getMotorDiagnostics();
     const qualityArrow = this.qualityDetailsExpanded ? '▲' : '▼';
     const missedStepsArrow = this.missedStepsExpanded ? '▲' : '▼';
 
@@ -802,14 +889,17 @@ export class QualityMonitor {
     );
     lines.push(
       `<div class="quality-hud__summary quality-hud__summary--primary">` +
-        `<span class="quality-hud__summary-copy">Quality <strong>${score}</strong>` +
-        ` <span title="Share of extruded path within ${formatLengthMm(m.tolerance)} mm of the G-code path">% within ${formatLengthMm(m.tolerance)} mm</span></span>` +
+        `<span class="quality-hud__summary-copy">Quality <strong>${score}</strong></span>` +
         `<button type="button" class="quality-hud__toggle" data-section="quality-details" aria-expanded="${this.qualityDetailsExpanded ? 'true' : 'false'}" aria-label="${this.qualityDetailsExpanded ? 'Hide quality details' : 'Show quality details'}">${qualityArrow}</button>` +
       `</div>`
     );
     lines.push(
       `<div class="quality-hud__details${this.qualityDetailsExpanded ? '' : ' quality-hud__details--hidden'}">` +
+        metric('Score deductions', escapeHtml(m.scoreDeductions.filter((d) => d.points >= 0.5)
+          .map((d) => `${d.label} −${d.points.toFixed(0)}`).join(', ') || 'none')) +
+        metric('Shape error RMS / 95%', pair(m.shapeRms, m.shapeP95)) +
         metric('Path deviation RMS / 95% / max', triple(m.contourRms, m.contourP95, m.contourMax)) +
+        metric(`Path within ${formatLengthMm(m.tolerance)} mm`, formatPercent(m.withinTolerance)) +
         metric('Path deviation RMS horiz. / vert.', pair(m.contourHorizontalRms, m.contourVerticalRms)) +
         metric('Position error RMS / 95% / max', triple(m.trackingRms, m.trackingP95, m.trackingMax)) +
         metric('Mean offset X / Y / Z', triple(m.meanOffset[0], m.meanOffset[1], m.meanOffset[2])) +

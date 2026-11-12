@@ -1,0 +1,17 @@
+# Telemetry above 5 MB is regenerable with scratchbook/squares_replay.mjs (see report.md).
+*.json.gz
+!scratchbook/logo_old_ol.json.gz
+!scratchbook/logo_new_ol.json.gz
+!scratchbook/logo_i3_ol.json.gz
+!scratchbook/logo_new_cl.json.gz
+# Recoverable with: git show ba4a8101:public/RRF_CAN_commands/Hangprinter_logo6_hp4_w_line_layers.can
+scratchbook/can/old_logo_hp4_layered.can
+# Rerun viewer cache and analytics, not research evidence.
+viewer-cache/
+viewer-config/
+viewer-data/
+# Launcher lock file.
+connection.lease
+# 1 Nm trial telemetry (4.9-30 MB), regenerable with
+# SCENE=<this dir>/scratchbook/hp4_torque1.usda node scratchbook/squares_replay.mjs t1_<case> ...
+scratchbook/t1_*.json

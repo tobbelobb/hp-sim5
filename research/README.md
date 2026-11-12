@@ -34,8 +34,10 @@ codex login                       # choose ChatGPT
 
 Choose exactly one of `--codex` and `--claude`; omitting both exits with a usage
 error, including for diagnostics and service mode. Claude Code must be installed
-and authenticated (`claude auth login`, or `ANTHROPIC_API_KEY` in the environment
-or repository `.env`). For example:
+and authenticated (`claude auth login`, or an explicitly exported
+`ANTHROPIC_API_KEY`). The launcher does not read Claude API keys from `.env`, so
+a repository key cannot silently switch an account login to API billing. For
+API-key billing, export the key in the shell before launching. For example:
 
 ```bash
 ./hp-sim5-research-agent --machine hp3 --claude --prompt "Investigate HP3 calibration evidence."
@@ -43,7 +45,10 @@ or repository `.env`). For example:
 ```
 
 Arguments after `--` go unchanged to the selected CLI, including its resume
-options. `--model` works with either backend; `--model-provider` is Codex-only.
+options. To resume a Claude conversation while starting a fresh supervised
+research world, use `./hp-sim5-research-agent --machine hp4 --claude -- --resume SESSION_ID`.
+The previous session's artifacts remain in its session directory; the physics
+world itself is not resumed. `--model` works with either backend; `--model-provider` is Codex-only.
 Claude receives root AGENTS.md and the explicit RESEARCHER.md role and loads
 only the session MCP servers from `attachment.json`. `instructions.md` records
 the supplied instructions. Both MCP servers use the supervised connection
