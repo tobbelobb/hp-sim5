@@ -40,20 +40,59 @@ prefix plus a short tail, run with
   cumulative step count is exactly 0 after each one.
 - The simulator always reports `Final machine position: X≈0 Y≈0 Z≈0`.
 
-Likely mechanism (from reading the source, not patched or tested):
-`GCodes::LockMovementAndWaitForStandstill` (GCodes.cpp:1851) calls
-`MovementState::UpdateOwnedDriveEndpointsFromMotors()`. That copies
-`dms[drive].currentMotorPosition` into the last endpoints. In the host build
-those positions seem to stay 0 for the CAN-remote drivers, so the ring's
-endpoints reset to home and the next CAN message carries the difference. In the
-logo the only standstill is the very end, which is why everything happens
-there. Any G-code with dwells, `M400` or heater waits mid-print would get the
-same bogus moves.
+### Firmware fix (follow-up, RRF fork commit `7eb7a97bf` on `3.7-x64-rebase-3`)
 
-**Not changed here.** The fix belongs in the RRF host shim: keep
-remote-driver motor positions updated, or skip the reset. After that, the
-`.can` files need regenerating. A gate could also scan every bundled `.can` for
-a final message of more than ~100 steps.
+**Host-only, and it only shows in CAN output.** At every wait for standstill,
+`GCodes::LockMovementSystemAndWaitForStandstill` calls
+`UpdateOwnedDriveEndpointsFromMotors()`, which copies
+`dms[drive].currentMotorPosition` into the last endpoints. On hardware, the step
+ISR (`TakeStepsAndCalcStepTimeRarely` for remote-only drives) keeps those
+positions current, so real Duets are not affected. The host build never runs
+that ISR. Its `FreeOldSegments` hack discarded finished segments without
+counting them, so the positions stayed at 0. The host's only output is the CAN
+capture (`.csv`/`.can` and the HTTP motion stream), so that is where the bogus
+moves showed up.
+
+Fixing that alone was not enough. Repeated runs of the same file gave
+different results, exposing two thread races in the host's FreeRTOS shim (the
+Move task is a real `std::thread`). On hardware, task priorities prevent both:
+1. The retire loop calls `cdda->Free()` before advancing `getPointer`, so the
+   Main task can read `getPointer->GetState() == empty`, treat the ring as idle
+   with ~200 DDAs still queued, and reset the endpoints mid-print. This was
+   found with temporary logging of scheduled/completed counts at the reset.
+2. `ReadMove` clears `segmentsLeft` before `AddStandardMove` puts the move in
+   the ring.
+
+The fix (+30 lines, all `#if RRF_HOST_BUILD` except the position accounting in
+the host-only `FreeOldSegments`):
+- `FreeOldSegments` advances the DM position for each freed segment, as the
+  ISR's end-of-segment branch does (`netStepsThisSegment` for a started
+  segment, otherwise `length + distanceCarriedForwards` truncated).
+- `TaskCriticalSectionLocker` (the shim's global mutex) around the retire loop,
+  around `ReadMove`+`AddStandardMove` for both rings, and in
+  `WaitingForAllMovesFinished`.
+
+Ablations (3 runs each of `_qc_multi`, `_qc_nodwell`, `_qc_tail_full`):
+without the `WaitingForAllMovesFinished` lock, the retire-loop lock does
+nothing (multi-thousand-step jumps, nondeterministic). Without the `ReadMove`
+locks, the repros still pass. I kept them because that race window is real
+but these tests don't reach it. An extra "free all remaining segments on the
+last retire" turned out to be unnecessary and was dropped.
+
+Result: every repro is deterministic over 3–4 runs with no message above 63
+steps. With and without dwells, the final step totals agree within ±1 step
+(A −3172/−3173, B 1179/1180, C 2286/2285, D 266/265) and the final position is
+X=30, Y=−150 (it was 0). Interactive server mode: after `M400` and `G4 P100`,
+`G1 X101` moves 1 mm and `M114` reports X=101. RRF HTTP endpoint tests: 6/6
+pass. `npm run test:physics`: 7/7 pass.
+
+**Regenerated all 20 `public/RRF_CAN_commands/*.can`** with
+[`scratchbook/regen_can.sh`](scratchbook/regen_can.sh) (9 s in parallel).
+Every logo file now ends with only the 2 mm retract (E −192 steps, no
+spool-motor steps). `draw_squares_bigger_hp4_no_buildup.can` came out
+byte-identical. Full HP4 layered logo in the native sim
+([`scratchbook/full_run_fixed.json`](scratchbook/full_run_fixed.json)):
+**0 missed steps** (was 1220), 82.7 s wall. A QC replay gives score 58 (no missed-step deduction, was 49), 80.3 % within 0.5 mm, 45.1 % within 0.25 mm, position-error max 2.6 mm.
 
 ## 2. Cost of the end-of-print quality check
 
@@ -116,6 +155,6 @@ within 0.25 mm, 80.4 % within 0.5 mm. Covered by a new unit test.
 - HUD layout not checked in a browser (headless only).
 
 ## Next steps (proposed, not done)
-1. Patch the RRF host simulator's standstill endpoint reset and regenerate the
-   20 `.can` files. Then rerun `logo_missed_steps.mjs`: expect 0 missed steps.
-2. Add a bundled-`.can` sanity gate on maximum per-message step jumps.
+1. Add a bundled-`.can` sanity gate on maximum per-message step jumps.
+2. Klipper-generated `public/mcu_commands` were not checked for the same class
+   of bug.
