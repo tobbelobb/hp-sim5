@@ -41,6 +41,16 @@ export function createQualityController({
     }
   }
 
+  function notifyDetailsExpandedChange() {
+    const anyExpanded = Array.from(machineQualityMonitors.values()).some((entry) => {
+      const card = entry?.monitor?.hudElement;
+      return entry?.monitor?.qualityDetailsExpanded
+        && card instanceof HTMLElement
+        && !card.classList.contains('sim-hidden');
+    });
+    onDetailsExpandedChange?.(anyExpanded);
+  }
+
   function updateQualityHudVisibility() {
     if (!hudElement) {
       return;
@@ -50,12 +60,7 @@ export function createQualityController({
       return card instanceof HTMLElement && !card.classList.contains('sim-hidden');
     });
     hudElement.classList.toggle('sim-hidden', !hasVisibleMonitor);
-  }
-
-  function notifyDetailsExpandedChange() {
-    const anyExpanded = Array.from(machineQualityMonitors.values())
-      .some((entry) => entry?.monitor?.qualityDetailsExpanded);
-    onDetailsExpandedChange?.(anyExpanded);
+    notifyDetailsExpandedChange();
   }
 
   function ensureQualityMonitorForMachine(machine) {
@@ -112,7 +117,6 @@ export function createQualityController({
     monitor?.dispose();
     machineQualityMonitors.delete(machineId);
     updateQualityHudVisibility();
-    notifyDetailsExpandedChange();
   }
 
   function clearQualityMonitors() {

@@ -878,12 +878,18 @@ body {
   /* The expanded quality card fills the canvas width and wraps its rows. */
   .quality-hud {
     max-width: calc(100% - 24px);
+  }
+
+  /* Only while a visible card is expanded: scroll inside the canvas, sit
+     above the history and secondary toggle, and hide that toggle. */
+  .quality-hud:not(.sim-hidden):has(.quality-hud__card:not(.sim-hidden) .quality-hud__toggle[data-section='quality-details'][aria-expanded='true']) {
     max-height: calc(100% - 24px);
     overflow-y: auto;
     pointer-events: auto;
+    z-index: 5;
   }
 
-  .canvas-frame:has(.quality-hud__toggle[data-section='quality-details'][aria-expanded='true']) .sim-secondary-toggle {
+  .canvas-frame:has(.quality-hud:not(.sim-hidden) .quality-hud__card:not(.sim-hidden) .quality-hud__toggle[data-section='quality-details'][aria-expanded='true']) .sim-secondary-toggle {
     visibility: hidden;
   }
 
