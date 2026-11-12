@@ -154,7 +154,17 @@ within 0.25 mm, 80.4 % within 0.5 mm. Covered by a new unit test.
   `tests/js/hp-sim-3d`: 100 pass.
 - HUD layout not checked in a browser (headless only).
 
+**Cost of the fix.** Converting the full HP4 layered logo takes 1.72 s before
+and 1.79 s after (mean of 3 alternating runs each, about +4 %), with the same
+~5.4 MB peak memory. Browser/native physics and `.can` playback are unchanged:
+they only read the generated files.
+
+**Regression gate.** `tests/js/rrf/bundledCanStepJumps.test.js` (jest, ~3 s)
+parses every bundled `.can` and fails if any single message moves a spool
+motor more than 1000 steps. The regenerated files peak at 232 steps
+(≤ 11k steps/s); the bogus ones were 3801–14877 steps (≥ 60k steps/s). With
+the old HP4 layered logo swapped in, the gate fails with 10277.
+
 ## Next steps (proposed, not done)
-1. Add a bundled-`.can` sanity gate on maximum per-message step jumps.
-2. Klipper-generated `public/mcu_commands` were not checked for the same class
+1. Klipper-generated `public/mcu_commands` were not checked for the same class
    of bug.

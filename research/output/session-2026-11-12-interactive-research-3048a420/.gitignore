@@ -1,0 +1,9 @@
+# Rerun viewer cache and analytics, not research evidence.
+viewer-cache/
+viewer-config/
+viewer-data/
+# Launcher connection bookkeeping.
+connection.lease
+connection.json
+# Extrusion sample dumps (93 MB each) are regenerable with scratchbook/logo_missed_steps.mjs.
+scratchbook/*_extrusions.json
