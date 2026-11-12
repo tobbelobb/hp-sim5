@@ -157,6 +157,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     recomputeRenderStride();
     stopLoops();
     updatePlaybackResource();
+    getRemoteSystem()?.syncPlaybackMode(world);
     return true;
   };
 
@@ -243,24 +244,9 @@ export function runGame(world, internalSetupScene, options = {}) {
     }
   };
 
-  const remoteQueueReady = () => {
-    if (world.getResource('flightRecorder')?.readyForStep() === false) {
-      return false;
-    }
-    const remoteSystem = getRemoteSystem();
-    if (!remoteSystem) {
-      return true;
-    }
-    const queueLength = typeof remoteSystem.getQueueLength === 'function'
-      ? remoteSystem.getQueueLength()
-      : (Array.isArray(remoteSystem.commands)
-          ? Math.max(0, remoteSystem.commands.length - (remoteSystem.commandHead || 0))
-          : 0);
-    if (queueLength > 0) {
-      return true;
-    }
-    return playbackMode !== 'asap' || !remoteSystem.worker;
-  };
+  // Steps proceed with an empty command queue in every mode, as in linear
+  // playback: external command sources may wait for simulated time to pass.
+  const recorderReady = () => world.getResource('flightRecorder')?.readyForStep() !== false;
 
   const runLinearFrame = (currentTime) => {
     updatePauseButtonLabel();
@@ -286,7 +272,7 @@ export function runGame(world, internalSetupScene, options = {}) {
       const maxAccum = dt * maxSteps;
       accumulator = Math.min(accumulator + frameSec, maxAccum);
       while (accumulator >= dt) {
-        if (!remoteQueueReady()) {
+        if (!recorderReady()) {
           break;
         }
         if (!pauseState.paused || doStep) {
@@ -339,8 +325,9 @@ export function runGame(world, internalSetupScene, options = {}) {
       : null;
 
     while (true) {
-      if (!remoteQueueReady()) {
-        return ASAP_PAUSED_DELAY_MS;
+      if (!recorderReady()) {
+        // Poll again right after pending recorder acknowledgements arrive.
+        return 0;
       }
       if (pauseState.paused && !doStep) {
         break;
@@ -407,12 +394,24 @@ export function runGame(world, internalSetupScene, options = {}) {
     rafHandle = requestAnimationFrame(step);
   };
 
+  // A posted message yields to input and worker messages without the timer
+  // clamp, and keeps running in a background tab, unlike frames and timers.
+  const asapChannel = new MessageChannel();
   const startAsapLoop = (token) => {
     const iterate = () => {
+      asapTimer = null;
       if (token !== loopToken) {
         return;
       }
-      const delay = runAsapBatch();
+      let delay;
+      try {
+        delay = runAsapBatch();
+      } catch (error) {
+        asapError = error;
+        stopLoops();
+        enterIdleMode();
+        return;
+      }
       if (token !== loopToken) {
         return;
       }
@@ -421,7 +420,16 @@ export function runGame(world, internalSetupScene, options = {}) {
         enterIdleMode();
         return;
       }
-      asapTimer = setTimeout(iterate, delay);
+      if (delay > 0) {
+        asapTimer = setTimeout(iterate, delay);
+      } else {
+        asapChannel.port2.postMessage(token);
+      }
+    };
+    asapChannel.port1.onmessage = (event) => {
+      if (event.data === token) {
+        iterate();
+      }
     };
     iterate();
   };
@@ -492,9 +500,7 @@ export function runGame(world, internalSetupScene, options = {}) {
 
   const setTimeScale = (scale) => {
     const clamped = sanitizeTimeScale(scale, targetTimeScale);
-    const desiredMode = 'linear';
-    const modeChanged = setPlaybackMode(desiredMode);
-    if (Math.abs(clamped - targetTimeScale) < 1e-6 && !modeChanged) {
+    if (Math.abs(clamped - targetTimeScale) < 1e-6) {
       return;
     }
     targetTimeScale = clamped;
@@ -512,9 +518,20 @@ export function runGame(world, internalSetupScene, options = {}) {
     if (typeof onTimeScaleChange === 'function') {
       onTimeScaleChange(targetTimeScale);
     }
-    if (modeChanged) {
+  };
+
+  // ASAP playback steps in time-budgeted batches, independent of frames.
+  // A batch that throws stops the loop; takeAsapError() reports it once.
+  const setAsapPlayback = (enabled) => {
+    asapError = null;
+    if (setPlaybackMode(enabled ? 'asap' : 'linear')) {
       startActiveLoop();
     }
+  };
+  const takeAsapError = () => {
+    const error = asapError;
+    asapError = null;
+    return error;
   };
 
   const getTimeScale = () => targetTimeScale;
@@ -607,9 +624,9 @@ export function runGame(world, internalSetupScene, options = {}) {
   let asapTimer = null;
   let idleTimer = null;
   let loopToken = 0;
+  let asapError = null;
 
   recomputeRenderStride();
-  setPlaybackMode('linear');
   resetGame({ autoPause: false });
   if (typeof onTimeScaleChange === 'function') {
     onTimeScaleChange(targetTimeScale);
@@ -620,6 +637,8 @@ export function runGame(world, internalSetupScene, options = {}) {
     setTimeScale,
     getTimeScale,
     setRenderEveryNth,
+    setAsapPlayback,
+    takeAsapError,
     resume: resumeSimulation,
     pause: pauseSimulation,
     advanceFixedSteps,

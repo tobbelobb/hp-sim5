@@ -247,12 +247,20 @@ fn world_quat(es: &[Entity], id: usize) -> Option<Q> {
         None
     }
 }
-fn attachment(es: &[Entity], id: usize, local: V) -> V {
-    let Some(pos) = world_pos(es, id) else {
+/// An entity's id with its world position and, when it has one, orientation.
+type Frame = (usize, Option<V>, Option<Q>);
+fn frame(es: &[Entity], id: usize) -> Frame {
+    let pos = world_pos(es, id);
+    (id, pos, if pos.is_some() { world_quat(es, id) } else { None })
+}
+fn place(f: &Frame, local: V) -> V {
+    let Some(pos) = f.1 else {
         return local;
     };
-    let rotated = world_quat(es, id).map_or(local, |q| rotate(q, local));
-    add(pos, rotated)
+    add(pos, f.2.map_or(local, |q| rotate(q, local)))
+}
+fn attachment(es: &[Entity], id: usize, local: V) -> V {
+    place(&frame(es, id), local)
 }
 fn update_local(es: &mut [Entity], id: usize) {
     let (parent, oriented) = (es[id][50], es[id][52]);
@@ -512,7 +520,7 @@ struct Spin {
     flags: u32,
     limit: f64,
 }
-fn spin(es: &[Entity], joint: &Joint, side: usize, point: V, grad: V) -> Spin {
+fn spin(es: &[Entity], joint: &Joint, side: usize, point: V, grad: V, known: &Frame) -> Spin {
     let offset = if side == 0 { 13 } else { 18 };
     if joint[offset] < 0.0 {
         return Spin::default();
@@ -522,10 +530,11 @@ fn spin(es: &[Entity], joint: &Joint, side: usize, point: V, grad: V) -> Spin {
     if e[56] == 0.0 || e[52] == 0.0 {
         return Spin::default();
     }
-    let Some(center) = world_pos(es, id) else {
+    let (_, pos, quat) = if known.0 == id { *known } else { frame(es, id) };
+    let Some(center) = pos else {
         return Spin::default();
     };
-    let orient = world_quat(es, id).unwrap_or(q(e, 3));
+    let orient = quat.unwrap_or(q(e, 3));
     let axis = rotate(orient, v(e, 44));
     if dot(axis, axis) <= EPS {
         return Spin::default();
@@ -630,15 +639,29 @@ struct AngularResponse {
     bodies: Vec<(usize, V)>,
     rotors: Vec<(usize, V, f64, Q)>,
 }
+/// Buffers reused by every row solve, so the iteration loop does not allocate.
+#[derive(Default)]
+pub(crate) struct Scratch {
+    bodies: Vec<Body>,
+    spins: Vec<Spin>,
+    // (carrier, geometric gradient, force gradient)
+    groups: Vec<(usize, V, V)>,
+    rotors: Vec<(usize, V, V, f64, f64, f64)>,
+    response: AngularResponse,
+}
 fn angular_response(
     es: &[Entity],
     members: &[Vec<usize>],
     bodies: &mut [Body],
     spins: &[Spin],
-) -> AngularResponse {
-    let mut result = AngularResponse::default();
-    // (carrier, geometric gradient, force gradient)
-    let mut groups: Vec<(usize, V, V)> = Vec::new();
+    groups: &mut Vec<(usize, V, V)>,
+    rotors: &mut Vec<(usize, V, V, f64, f64, f64)>,
+    result: &mut AngularResponse,
+) {
+    result.denominator = 0.0;
+    result.bodies.clear();
+    result.rotors.clear();
+    groups.clear();
     for b in bodies.iter_mut() {
         let parent = es[b.id][50];
         let carrier = if parent >= 0.0 { parent as usize } else { b.id };
@@ -655,7 +678,7 @@ fn angular_response(
             groups[index].2 = add(groups[index].2, b.af);
         }
     }
-    for (carrier, gc, gf) in groups {
+    for &(carrier, gc, gf) in groups.iter() {
         let orient = qnorm(q(&es[carrier], 3));
         let axes = [
             rotate(orient, [1.0, 0.0, 0.0]),
@@ -673,7 +696,7 @@ fn angular_response(
             }
         }
         let mut rhs = gf;
-        let mut rotors = Vec::new();
+        rotors.clear();
         for &id in &members[carrier] {
             let Some((axis, coupling, mut inverse)) = rotor(es, id) else {
                 continue;
@@ -698,13 +721,12 @@ fn angular_response(
         let angular = matrix_vec(&engine::inverse_tensor(tensor), 0, rhs);
         result.denominator += dot(gc, angular);
         result.bodies.push((carrier, angular));
-        for (id, axis, coupling, inverse, grad, grad_f) in rotors {
+        for &(id, axis, coupling, inverse, grad, grad_f) in rotors.iter() {
             let angle = inverse * (grad_f - dot(coupling, angular));
             result.denominator += grad * angle;
             result.rotors.push((id, axis, angle, orient));
         }
     }
-    result
 }
 impl AngularResponse {
     fn owns(&self, id: usize) -> bool {
@@ -871,30 +893,37 @@ fn correct_spin(es: &mut [Entity], s: &Spin, l: f64) {
         update_local(es, s.id);
     }
 }
-/// A row's current geometry: its bodies and spins, total error, and each
-/// segment's direction and spin flags.
+/// A row's current geometry: its total error, and each segment's direction
+/// and spin flags. Its bodies and spins are written to `bodies`/`spins`.
 struct Gathered {
-    bodies: Vec<Body>,
-    spins: Vec<Spin>,
     error: f64,
     directions: [V; 16],
     joint_flags: [u32; 16],
 }
-fn gather(es: &[Entity], js: &[Joint], row: &Row) -> Gathered {
+fn gather(
+    es: &[Entity],
+    js: &[Joint],
+    row: &Row,
+    bodies: &mut Vec<Body>,
+    spins: &mut Vec<Spin>,
+) -> Gathered {
+    bodies.clear();
+    spins.clear();
     let mut g = Gathered {
-        bodies: Vec::with_capacity(4),
-        spins: Vec::with_capacity(2),
         error: 0.0,
         directions: [[0.0; 3]; 16],
         joint_flags: [1; 16],
     };
-    for (n, &j) in js[row.start..row.end].iter().enumerate() {
+    // Consecutive segments meet at one entity: reuse its frame.
+    let mut shared: Frame = (usize::MAX, None, None);
+    for (n, j) in js[row.start..row.end].iter().enumerate() {
         let k = n.min(15);
         let weight = j[38];
-        let points = [
-            attachment(es, j[0] as usize, v(&j, 4)),
-            attachment(es, j[1] as usize, v(&j, 7)),
-        ];
+        let (a, b) = (j[0] as usize, j[1] as usize);
+        let first = if shared.0 == a { shared } else { frame(es, a) };
+        shared = if b == a { first } else if shared.0 == b { shared } else { frame(es, b) };
+        let frames = [first, shared];
+        let points = [place(&frames[0], v(j, 4)), place(&frames[1], v(j, 7))];
         let distance = length(sub(points[1], points[0]));
         g.error += distance - j[10];
         if distance <= EPS {
@@ -913,28 +942,28 @@ fn gather(es: &[Entity], js: &[Joint], row: &Row) -> Gathered {
                 continue;
             }
             let grad = if side == 0 { direction } else { scale(direction, -1.0) };
-            let s = spin(es, &j, side, points[side], grad);
+            let s = spin(es, j, side, points[side], grad, &frames[side]);
             if s.active {
                 g.joint_flags[k] |= 2 << side;
-                match g.spins.iter_mut().find(|x| x.id == s.id) {
+                match spins.iter_mut().find(|x| x.id == s.id) {
                     Some(x) => {
                         x.grad += s.grad;
                         x.grad_f += s.grad_f;
                         x.load_grad += s.load_grad;
                         x.disp += s.disp;
                     }
-                    None => g.spins.push(s),
+                    None => spins.push(s),
                 }
             }
             let arm = cross(sub(points[side], v(&es[id], 0)), grad);
-            let slot = match g.bodies.iter().position(|b| b.id == id) {
+            let slot = match bodies.iter().position(|b| b.id == id) {
                 Some(slot) => slot,
                 None => {
-                    g.bodies.push(Body { id, ..Body::default() });
-                    g.bodies.len() - 1
+                    bodies.push(Body { id, ..Body::default() });
+                    bodies.len() - 1
                 }
             };
-            let b = &mut g.bodies[slot];
+            let b = &mut bodies[slot];
             b.gc = add(b.gc, grad);
             b.gf = add(b.gf, scale(grad, weight));
             b.arm = add(b.arm, arm);
@@ -954,15 +983,17 @@ pub(crate) fn solve_row(
     row: &Row,
     iter: usize,
     accumulated: &mut f64,
+    scratch: &mut Scratch,
 ) {
-    let Gathered { mut bodies, mut spins, error, directions, joint_flags } = gather(es, js, row);
+    let Scratch { bodies, spins, groups, rotors, response } = scratch;
+    let Gathered { error, directions, joint_flags } = gather(es, js, row, bodies, spins);
     if error <= EPS && *accumulated == 0.0 {
         return;
     }
     // XPBD damping acts on the row's lengthening this step at the current
     // iterate: ∇C·(x − xⁿ) over every body and spool it touches.
     let mut disp = spins.iter().map(|s| s.disp).sum::<f64>();
-    for b in &bodies {
+    for b in bodies.iter() {
         let e = &es[b.id];
         if e[53] != 0.0 {
             disp += dot(b.gc, sub(v(e, 0), v(e, 7)));
@@ -970,12 +1001,13 @@ pub(crate) fn solve_row(
         disp += dot(b.arm, rotation_vector(e));
     }
 
-    let mut response = angular_response(es, members, &mut bodies, &spins);
-    let Some(mut l) = lambda(row, error, disp, mechanical(es, &bodies, &spins, &response), *accumulated) else {
+    angular_response(es, members, bodies, spins, groups, rotors, response);
+    let mut denominator = mechanical(es, bodies, spins, response);
+    let Some(mut l) = lambda(row, error, disp, denominator, *accumulated) else {
         return;
     };
     let mut released = false;
-    for s in &mut spins {
+    for s in spins.iter_mut() {
         if s.active
             && s.limit.is_finite()
             && s.limit >= 0.0
@@ -988,17 +1020,16 @@ pub(crate) fn solve_row(
         }
     }
     if released {
-        response = angular_response(es, members, &mut bodies, &spins);
-        let Some(new_l) =
-            lambda(row, error, disp, mechanical(es, &bodies, &spins, &response), *accumulated)
-        else {
+        angular_response(es, members, bodies, spins, groups, rotors, response);
+        denominator = mechanical(es, bodies, spins, response);
+        let Some(new_l) = lambda(row, error, disp, denominator, *accumulated) else {
             return;
         };
         l = new_l;
     }
     *accumulated += l;
     // Sum signed corrections into torque, counting K/D only once.
-    for s in &spins {
+    for s in spins.iter() {
         load(es, *s, row, l, iter == 0);
     }
     // Force uses the total multiplier, including immobile compliant spans.
@@ -1010,14 +1041,14 @@ pub(crate) fn solve_row(
         put_v(j, 32, scale(directions[k], share * row.inv_dt2));
         j[35] = share.abs() * row.inv_dt2;
     }
-    if mechanical(es, &bodies, &spins, &response) <= EPS {
+    if denominator <= EPS {
         return;
     }
     response.apply(es, l);
-    for b in &bodies {
+    for b in bodies.iter() {
         correct(es, b, l);
     }
-    for s in &spins {
+    for s in spins.iter() {
         if !response.owns(s.id) {
             correct_spin(es, s, l);
         }

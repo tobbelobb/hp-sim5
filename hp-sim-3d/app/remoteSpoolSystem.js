@@ -332,36 +332,27 @@ export class RemoteSpoolSystem {
     }
   }
 
-  update(world, dt) {
+  // Called on every update, and by the runner when the mode changes, so a
+  // paused simulation still switches its worker's pacing.
+  syncPlaybackMode(world) {
     const playbackState = world.getResource(SIMULATION_PLAYBACK_RESOURCE) || null;
     const desiredPlaybackMode = playbackState?.mode === 'asap' ? 'asap' : 'linear';
-    if (desiredPlaybackMode !== this.playbackMode) {
-      this.playbackMode = desiredPlaybackMode;
-      this.asapModeActive = desiredPlaybackMode === 'asap';
-      if (this.worker) {
-        try {
-          this.worker.postMessage({ type: 'set_asap_mode', enable: this.asapModeActive });
-        } catch (err) {
-          console.warn('RemoteSpoolSystem: unable to toggle ASAP mode on worker.', err);
-        }
-        if (this.asapModeActive) {
-          try {
-            this.worker.postMessage({ type: 'set_fast_mode', enable: false });
-          } catch (_err) {
-            /* noop */
-          }
-          try {
-            this.worker.postMessage({ type: 'resume' });
-          } catch (_err) {
-            /* noop */
-          }
-        }
-      }
-      if (!this.asapModeActive) {
-        this.fastModeActive = false;
-        this.wasPaused = false;
+    if (desiredPlaybackMode === this.playbackMode) {
+      return;
+    }
+    this.playbackMode = desiredPlaybackMode;
+    this.asapModeActive = desiredPlaybackMode === 'asap';
+    if (this.worker) {
+      try {
+        this.worker.postMessage({ type: 'set_asap_mode', enable: this.asapModeActive });
+      } catch (err) {
+        console.warn('RemoteSpoolSystem: unable to toggle ASAP mode on worker.', err);
       }
     }
+  }
+
+  update(world, dt) {
+    this.syncPlaybackMode(world);
 
     const timeScale = Number(world.getResource('timeScale')) || 1;
     const scaleFactor = Math.max(1, timeScale);
@@ -373,28 +364,25 @@ export class RemoteSpoolSystem {
     }
 
     const queueSize = this.getQueueLength();
-    if (this.worker && !this.asapModeActive) {
-      if (!this.fastModeActive && queueSize < this.lowWaterMark) {
+    if (this.worker) {
+      // An ASAP worker is unpaced, so fast mode does not apply to it.
+      if (this.asapModeActive) {
+        if (this.fastModeActive) {
+          this.worker.postMessage({ type: 'set_fast_mode', enable: false });
+          this.fastModeActive = false;
+        }
+      } else if (!this.fastModeActive && queueSize < this.lowWaterMark) {
         this.worker.postMessage({ type: 'set_fast_mode', enable: true });
         this.fastModeActive = true;
       } else if (this.fastModeActive && queueSize >= Math.max(this.lowWaterMark, Math.floor(this.highWaterMark * 0.7))) {
         this.worker.postMessage({ type: 'set_fast_mode', enable: false });
         this.fastModeActive = false;
       }
+      // Both modes bound the queue, so an unpaced worker cannot fill memory.
       if (queueSize > this.highWaterMark && !this.wasPaused) {
         this.worker.postMessage({ type: 'pause' });
         this.wasPaused = true;
       } else if (queueSize < this.lowWaterMark && this.wasPaused) {
-        this.worker.postMessage({ type: 'resume' });
-        this.wasPaused = false;
-      }
-    }
-    if (this.worker && this.asapModeActive) {
-      if (this.fastModeActive) {
-        this.worker.postMessage({ type: 'set_fast_mode', enable: false });
-        this.fastModeActive = false;
-      }
-      if (this.wasPaused) {
         this.worker.postMessage({ type: 'resume' });
         this.wasPaused = false;
       }

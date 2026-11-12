@@ -495,6 +495,7 @@ pub struct PhysicsWorld {
     rows: Vec<Row>,
     shared: Vec<Vec<(usize, usize)>>,
     pub topology_version: u32,
+    scratch: Scratch,
 }
 impl PhysicsWorld {
     /// Entity records and path records are prepared once by the scene adapter.
@@ -538,6 +539,7 @@ impl PhysicsWorld {
             rows: Vec::new(),
             shared,
             topology_version: 0,
+            scratch: Scratch::default(),
         }
     }
     pub fn path_data(&mut self, index: usize) -> &mut [f64] {
@@ -1956,6 +1958,7 @@ impl PhysicsWorld {
                     &row,
                     iter,
                     &mut multipliers[r],
+                    &mut self.scratch,
                 );
             }
         }

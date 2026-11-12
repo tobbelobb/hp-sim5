@@ -161,25 +161,33 @@ export class ExtruderSystem {
     }
 
     const spoolEntities = world.query([SpoolTagComponent, PositionComponent]);
-    const sumByMachine = {};
-    const countByMachine = {};
-
-    for (const entityId of spoolEntities) {
-      const pos = getEntityWorldPosition(world, entityId);
-      if (!pos) {
-        continue;
+    const spoolMachineId = (entityId) => world.getComponent(entityId, MachineTagComponent)?.id || 'default';
+    // Spool positions are only a fallback for machines without center sources.
+    let spoolSums = null;
+    const getSpoolSums = () => {
+      if (spoolSums) {
+        return spoolSums;
       }
-      const machineTag = world.getComponent(entityId, MachineTagComponent);
-      const machineId = machineTag?.id || 'default';
-      let sum = sumByMachine[machineId];
-      if (!sum) {
-        sum = new Vector3();
-        sumByMachine[machineId] = sum;
-        countByMachine[machineId] = 0;
+      const sumByMachine = {};
+      const countByMachine = {};
+      for (const entityId of spoolEntities) {
+        const pos = getEntityWorldPosition(world, entityId);
+        if (!pos) {
+          continue;
+        }
+        const machineId = spoolMachineId(entityId);
+        let sum = sumByMachine[machineId];
+        if (!sum) {
+          sum = new Vector3();
+          sumByMachine[machineId] = sum;
+          countByMachine[machineId] = 0;
+        }
+        sum.add(pos);
+        countByMachine[machineId] += 1;
       }
-      sum.add(pos);
-      countByMachine[machineId] += 1;
-    }
+      spoolSums = { sumByMachine, countByMachine };
+      return spoolSums;
+    };
 
     const centerSources = extruderComp.centerSources && typeof extruderComp.centerSources === 'object'
       ? extruderComp.centerSources
@@ -226,8 +234,11 @@ export class ExtruderSystem {
     for (const machineId of sourceMachineIds) {
       const entityIds = centerSources[machineId];
       let effectorCenter = resolveAverage(entityIds);
-      if (!effectorCenter && sumByMachine[machineId] && (countByMachine[machineId] ?? 0) > 0) {
-        effectorCenter = sumByMachine[machineId].clone().scale(1.0 / countByMachine[machineId]);
+      if (!effectorCenter) {
+        const { sumByMachine, countByMachine } = getSpoolSums();
+        if (sumByMachine[machineId] && (countByMachine[machineId] ?? 0) > 0) {
+          effectorCenter = sumByMachine[machineId].clone().scale(1.0 / countByMachine[machineId]);
+        }
       }
       if (effectorCenter) {
         machineEffectorCenters[machineId] = effectorCenter.clone();
@@ -254,6 +265,7 @@ export class ExtruderSystem {
     }
 
     if (sourceMachineIds.length === 0) {
+      const { sumByMachine, countByMachine } = getSpoolSums();
       for (const machineId of Object.keys(sumByMachine)) {
         const count = countByMachine[machineId] ?? 0;
         if (count > 0) {
@@ -279,7 +291,8 @@ export class ExtruderSystem {
           }
         }
       }
-    } else {
+    } else if (spoolEntities.some((entityId) => !machineCenters[spoolMachineId(entityId)])) {
+      const { sumByMachine, countByMachine } = getSpoolSums();
       for (const machineId of Object.keys(sumByMachine)) {
         if (machineCenters[machineId]) {
           continue;

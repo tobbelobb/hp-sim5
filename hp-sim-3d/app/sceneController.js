@@ -89,5 +89,11 @@ export function createSimulationRuntime({ world, state, runGameImpl = runGame } 
     setRenderEveryNth(value) {
       state.gameControls?.setRenderEveryNth?.(value);
     },
+    setAsapPlayback(enabled) {
+      state.gameControls?.setAsapPlayback?.(enabled);
+    },
+    takeAsapError() {
+      return state.gameControls?.takeAsapError?.() ?? null;
+    },
   };
 }

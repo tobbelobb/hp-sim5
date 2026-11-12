@@ -403,22 +403,12 @@ export function createCommandJobController({
     }
   }
 
-  function waitForAnimationFrames(count = 1) {
-    const target = Math.max(0, Math.floor(count));
-    if (target <= 0) {
-      return Promise.resolve();
-    }
+  // Hidden tabs throttle timers and stop frames; posted messages keep running.
+  const asapPollChannel = new MessageChannel();
+  function waitForNextTask() {
     return new Promise((resolve) => {
-      let remaining = target;
-      const step = () => {
-        remaining -= 1;
-        if (remaining <= 0) {
-          resolve();
-          return;
-        }
-        requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
+      asapPollChannel.port1.onmessage = () => resolve();
+      asapPollChannel.port2.postMessage(null);
     });
   }
 
@@ -434,7 +424,17 @@ export function createCommandJobController({
     const queueLengthAccessor = typeof remoteSystem.getQueueLength === 'function'
       ? () => remoteSystem.getQueueLength()
       : () => (Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length : 0);
+    let nextCheck = performance.now();
     while (asapState.active) {
+      await waitForNextTask();
+      const asapError = runtime.takeAsapError();
+      if (asapError) {
+        throw asapError;
+      }
+      if (performance.now() < nextCheck) {
+        continue;
+      }
+      nextCheck = performance.now() + checkIntervalMs;
       const queueLen = queueLengthAccessor();
       const workerActive = Boolean(remoteSystem.worker);
       if (!state.printActive && queueLen === 0) {
@@ -452,16 +452,13 @@ export function createCommandJobController({
         console.warn('hp-sim-3d: Finish ASAP exceeded expected duration; continuing to finalize.');
         break;
       }
-      await new Promise((resolve) => setTimeout(resolve, checkIntervalMs));
     }
-    await waitForAnimationFrames(8);
   }
 
   async function finalizeAsapMode() {
-    const remoteSystem = getRemoteSystem();
     const renderSystem = world.getResource('renderSystem');
     runtime.setRenderEveryNth(null);
-    remoteSystem?.worker?.postMessage?.({ type: 'set_asap_mode', enable: false });
+    runtime.setAsapPlayback(false);
     if (asapState.renderSuspended) {
       renderSystem?.setDrawingSuspended?.(false);
       renderSystem?.update?.(world, 0);
@@ -563,10 +560,10 @@ export function createCommandJobController({
     state.speedStatusArmed = false;
     applyTimeScaleChange(asapScale);
     runtime.setRenderEveryNth(Number.POSITIVE_INFINITY);
-    remoteSystem.worker?.postMessage?.({ type: 'set_asap_mode', enable: true });
     updateFinishAsapButtonState();
     asapState.finishingPromise = (async () => {
       try {
+        runtime.setAsapPlayback(true);
         await runAsapFastForward(remoteSystem);
       } catch (error) {
         console.error('hp-sim-3d: Finish ASAP failed.', error);
