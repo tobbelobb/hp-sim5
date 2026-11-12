@@ -438,7 +438,7 @@ def test_missing_worker_machine_does_not_charge_or_spawn(manager):
     assert 'settings.machine' in error['message']
     assert tool(a, 'worker_sessions') == []
     assert tool(a, 'overview') == before
-    assert 'Required hp3/hp4' in tool(a, 'capabilities')['worker_machine']
+    assert 'machines/catalog.json' in tool(a, 'capabilities')['worker_machine']
 
 
 def test_manager_answers_worker_question_through_bound_cli(manager):

@@ -11,7 +11,7 @@ arguments. The ordinary path is:
 6. `integration_finish` with a human-readable commit message.
 
 `commission` returns the ready assignment ID. It requires no plan, hypothesis,
-experiment design or accounting. The worker machine is explicit in settings.
+experiment design or accounting. An optional `settings.machine` names the worker's machine from `machines/catalog.json`.
 `submit` supplies an internal finding identity automatically; detailed evidence
 graph operations remain available when useful.
 

@@ -1,6 +1,6 @@
 # Hangprinter research with Codex or Claude Code
 
-`hp-sim5-research-agent --machine hp4 --codex` or `hp-sim5-research-agent --machine hp4 --claude` opens an interactive conversation with
+`hp-sim5-research-agent --codex` or `hp-sim5-research-agent --claude` opens an interactive conversation with
 native experiment tools and an assigned Rerun Viewer. Conversation, steering,
 interrupts and resume belong to Codex. Goal mode works with both backends. The launcher owns the continuing
 physics world, real RRF planner, production collector bridge, optional browser
@@ -23,13 +23,13 @@ From the repository root:
 .venv/bin/python -m pip install -r requirements.txt
 npm run build:native               # Rust and C compiler; Node-API headers are bundled
 codex login                       # choose ChatGPT
-./hp-sim5-research-agent --machine hp4 --codex
-./hp-sim5-research-agent --machine hp4 --codex --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
-./hp-sim5-research-agent --machine hp4 --codex --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --machine hp3 --codex --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --machine hp4 --codex --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
-./hp-sim5-research-agent --codex --machine hp3 --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
-./hp-sim5-research-agent --machine hp4 --codex --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
+./hp-sim5-research-agent --codex
+./hp-sim5-research-agent --codex --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
+./hp-sim5-research-agent --codex --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
+./hp-sim5-research-agent --codex --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
+./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
 ```
 
 Choose exactly one of `--codex` and `--claude`; omitting both exits with a usage
@@ -40,13 +40,13 @@ a repository key cannot silently switch an account login to API billing. For
 API-key billing, export the key in the shell before launching. For example:
 
 ```bash
-./hp-sim5-research-agent --machine hp3 --claude --prompt "Investigate HP3 calibration evidence."
-./hp-sim5-research-agent --machine hp4 --claude --batch --model haiku --viewer none --prompt "Describe the attached tools." -- --max-budget-usd 0.02
+./hp-sim5-research-agent --claude --prompt "Investigate HP3 calibration evidence."
+./hp-sim5-research-agent --claude --batch --model haiku --viewer none --prompt "Describe the attached tools." -- --max-budget-usd 0.02
 ```
 
 Arguments after `--` go unchanged to the selected CLI, including its resume
 options. To resume a Claude conversation while starting a fresh supervised
-research world, use `./hp-sim5-research-agent --machine hp4 --claude -- --resume SESSION_ID`.
+research world, use `./hp-sim5-research-agent --claude -- --resume SESSION_ID`.
 The previous session's artifacts remain in its session directory; the physics
 world itself is not resumed. `--model` works with either backend; `--model-provider` is Codex-only.
 Claude receives root AGENTS.md and the explicit RESEARCHER.md role and loads
@@ -75,8 +75,9 @@ Continuing collection defaults to the production native Rust physics engine in
 headless Node, with the same fixed steps, forces, motors, encoders and cables
 as the browser. JavaScript handles scene preparation, commands and observations.
 See the [native host implementation](rust-native-engine.md) and the earlier
-[Wasm engine measurements](rust-wasm-engine.md). `--machine hp3` selects the HP3 scene and matching RRF
-configuration; `--machine` is required. Use `--viewer none --no-record` for
+[Wasm engine measurements](rust-wasm-engine.md). The launcher starts without a
+world; `configure_session` builds one for a machine from
+[`machines/catalog.json`](../machines/catalog.json). Use `--viewer none --no-record` for
 numerical batches without Rerun logging. Fresh `run_experiment` trials and
 continuing sessions use the same native Rust engine hosted in Node. See
 [measured collection performance](collection-performance.md).
@@ -95,9 +96,9 @@ and [Goal mode documentation](https://learn.chatgpt.com/docs/long-running-work).
 Put normal Codex arguments after `--`; the launcher forwards them unchanged:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex -- --model MODEL --no-alt-screen
-./hp-sim5-research-agent --machine hp4 --codex -- --image output/example.png
-./hp-sim5-research-agent --machine hp4 --codex -- resume --last
+./hp-sim5-research-agent --codex -- --model MODEL --no-alt-screen
+./hp-sim5-research-agent --codex -- --image output/example.png
+./hp-sim5-research-agent --codex -- resume --last
 ```
 
 Structured clarification questions are enabled by default during interactive
@@ -107,14 +108,14 @@ Use `--dont-ask` before the argument separator to disable these Default-mode
 question prompts:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex --dont-ask --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --dont-ask --prompt-file research/prompts/autocal.txt
 ```
 
 The underlying Codex feature is `default_mode_request_user_input`. You can also
 enable it explicitly with a forwarded Codex option:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex -- --enable default_mode_request_user_input
+./hp-sim5-research-agent --codex -- --enable default_mode_request_user_input
 ```
 
 Forwarded Codex options can override launcher defaults. Codex 0.160.1 labels
@@ -133,8 +134,8 @@ research-specific policy for when to ask. No extra questioning instructions in
 prohibit questions in ordinary conversation or change action-approval settings.
 
 Resume preserves the Codex conversation and experiment history, but this CLI
-invocation starts a **fresh native world**. It states this in the session
-instructions. Final snapshots are observations, not resumable checkpoints.
+invocation starts a **new runtime without a world**; `configure_session` builds
+one. It states this in the session instructions. Final snapshots are observations, not resumable checkpoints.
 To retain a world across clients, use the service-only route below while its
 supervisor remains alive. Use a separate worktree and supervisor for each
 independent research chat; do not forward `--cd` or `--worktree` to move the
@@ -147,8 +148,8 @@ conversation away from its attached tools.
 the worktree instead of the original checkout:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex --worktree --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --machine hp4 --codex --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
+./hp-sim5-research-agent --codex --worktree --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
 ```
 
 It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
@@ -185,7 +186,7 @@ Use the exact conversation ID rather than `--last`, which can select an unrelate
 chat. After releasing the other client, resume with fresh supervised tools:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex -- resume CONVERSATION_ID
+./hp-sim5-research-agent --codex -- resume CONVERSATION_ID
 ```
 
 Read the previous session's `report.md`, experiment manifests and current Git
@@ -241,8 +242,8 @@ and `--model` select another configured provider and model, and forwarded Codex
 `-c model_provider=... -m ...` arguments are detected too:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex --model-provider opencode_go --model deepseek-v4.1-flash
-./hp-sim5-research-agent --machine hp4 --codex -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
+./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash
+./hp-sim5-research-agent --codex -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
 ```
 
 When the selected provider declares an `env_key` in the Codex configuration, the
@@ -271,7 +272,7 @@ provider in its client configuration.
 Start a supervisor in a dedicated worktree and keep its terminal open:
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex --serve --session-dir research/output/session-my-chat
+./hp-sim5-research-agent --codex --serve --session-dir research/output/session-my-chat
 ```
 
 The directory must be new. The launcher prints the path to `attachment.toml`.
@@ -350,10 +351,10 @@ while a supervisor is running. New reports and original evidence under
 ## Batch mode and diagnostics
 
 ```bash
-./hp-sim5-research-agent --machine hp4 --codex --batch --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --machine hp4 --codex --dry-run --prompt "Optimize the HP4 anchor layout"
-./hp-sim5-research-agent --machine hp4 --codex --doctor
-./hp-sim5-research-agent --machine hp4 --codex --preflight
+./hp-sim5-research-agent --codex --batch --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --dry-run --prompt "Optimize the HP4 anchor layout"
+./hp-sim5-research-agent --codex --doctor
+./hp-sim5-research-agent --codex --preflight
 ```
 
 Batch mode retains `codex exec`, prompt input, JSONL events and the separate
@@ -390,7 +391,7 @@ access. See [collection evidence](native-collection-verification.md).
 | `start_collection(configs, options, settling_timeout_s)` | Start a collection job and return its job ID immediately |
 | `collection_status(job_id)` | Running/cancelling/complete/cancelled/failed status and evidence |
 | `cancel_collection(job_id)` | Known physics stop boundary, retired firmware/bridge queues, partial evidence and reset requirement |
-| `start_autocal(machine, layering, base_radii_mm, buildup_factor, find_radii, find_buildup_factor, optimizer, budgets, collection, artifact_dir, recording_mode)` | Immediate job ID for an isolated world running the production full-auto CLI |
+| `start_autocal(machine, base_radii_mm, buildup_factor, find_radii, find_buildup_factor, optimizer, budgets, collection, artifact_dir, recording_mode)` | Immediate job ID for an isolated world running the production full-auto CLI |
 | `autocal_status(job_id)` | Physical progress, iteration/decision, stop reason, CLI exit status and complete/partial artifacts |
 | `cancel_autocal(job_id)` | Stop the job-owned world, drain recording and retire all CLI children; attached world remains usable |
 | `configure_session(configuration)` | Validate settings, archive the old world and create a fresh HP3/HP4 world with matched firmware and encoder origin |
@@ -400,31 +401,31 @@ access. See [collection evidence](native-collection-verification.md).
 | `browser_action(page_id, action, args)` | Controls and numerical observations from that exact existing page |
 | `capture_native_context(message, step, selected_entity, run_id)` | Selected native run/session and time with actual numerical observation |
 
-A desktop or launcher attachment can change its continuing world without restarting
-Codex or writing a simulator adapter. For example, from an HP4 attachment call:
+A launcher or desktop attachment starts with no world. `configure_session`
+builds the first one, and later calls replace it without restarting Codex or
+writing a simulator adapter. For example:
 
 ```json
-{"configuration": {"machine": "hp3", "layering": false,
-                   "base_radii_mm": [30], "buildup_factor": 0}}
+{"configuration": {"machine": "hp3", "base_radii_mm": [30], "buildup_factor": 0}}
 ```
 
-Pass this object to `configure_session`. Configuration is a complete fresh-world
-request: defaults are HP4, layering enabled, stock 30 mm base radii and stock
-buildup (2/pi). It is not a patch to the current world. One radius applies to all
-four spools; four values select A/B/C/D individually (1–200 mm). Custom radii
-require layering disabled and zero buildup. Layered worlds currently support
-only stock radii/buildup. Optional `scene` must select the matching repository
-`public/usd_scenes/hp3_rigid_body.usda` or HP4 file; optional `firmware_config`
-is relative to `RRF/run/vsd` and must match machine/layering. Custom anchor
-layouts and other scene/backend combinations are rejected explicitly. The
-backend remains the launcher's selected backend.
+`machine` is a canonical name or nickname from
+[`machines/catalog.json`](../machines/catalog.json). The catalogue entry selects
+the scene, RRF configuration and line layering together (for example `hp3` and
+`hp3_w_line_layers`). It is required for the first world; later calls without it
+keep the current machine. Other settings are a complete fresh-world request:
+stock 30 mm base radii, and stock buildup (2/pi) on line-layering machines. One
+radius applies to all four spools; four values select A/B/C/D individually
+(1–200 mm). Custom radii require a machine without line layering and zero
+buildup. Machines whose scene or firmware is not a four-anchor Hangprinter are
+rejected explicitly. The backend remains the launcher's selected backend.
 
 Layering affects the bake, physical cable half-width and all three runtime
 layering flags. The selected firmware is frozen in each generation and booted
 from a short private VSD (RRF limits host filename length). `runtime_status`
 and world/collection manifests report requested/effective settings, authored,
 design and baked scene hashes, firmware configuration/replies and generation
-identity. HP3 and HP4 share the collector's four-anchor Hangprinter profile.
+identity. The collector uses the scene's catalogued machine type.
 
 An ordinary `reset_session()` retains accepted settings and reloads scene, JS
 and firmware sources. Python edits require a launcher restart, as status reports.
@@ -441,7 +442,7 @@ works when command sandbox networking is disabled; launcher networking defaults
 remain enabled. Isolated `start_autocal` settings still select its own CLI world;
 its radii/buildup arguments are fitting seeds, while `configure_session` radii
 specify physical spool geometry. Shared validation checks their common bounds
-and machine/layering constraints.
+and line-layering constraints.
 
 Runs accept 1–10,000 steps. Commands are a JSON array with at most one record per
 step. Omitted records keep the previous targets for the remaining steps. `Move`
@@ -504,19 +505,21 @@ production version-2 dataset and validation path.
 
 Full-autocal jobs use the production one-click CLI once per job. They own a fresh
 headless JS scene, RRF, collector and optional recorder independently of the
-attached session. An HP4 chat can request HP3 without changing its current world.
+attached session. A chat can request another machine without changing its current world.
 Only one full-autocal job runs per supervisor; collection jobs use the attached
 world independently. For known HP3 radii and no layering, call:
 
 ```json
-{"machine":"hp3", "layering":false, "base_radii_mm":[30], "buildup_factor":0}
+{"machine":"hp3", "base_radii_mm":[30], "buildup_factor":0}
 ```
 
-Those are also the defaults. `machine` accepts `hp3`/`hp4`; radii contain one or
-four finite values in [1, 200] mm. `find_radii` and `find_buildup_factor` accept
-`off`, `global`, `per-anchor`. Nonzero buildup or buildup fitting requires
-`layering=true`. Buildup is bounded to [0, 2]. Layering selects the matching
-firmware preset and enables the existing collector's simulator setting.
+`machine` is a catalogue name or nickname; omitted, it is the configured world's
+machine, and with no world it is required. Radii contain one or four finite
+values in [1, 200] mm and default to [30]. `find_radii` and `find_buildup_factor`
+accept `off`, `global`, `per-anchor`. Nonzero buildup or buildup fitting requires
+a line-layering machine. Buildup is bounded to [0, 2]. The machine's catalogued
+firmware config is used, and line layering enables the existing collector's
+simulator setting.
 Headless construction also uses the browser's matching cable-length bake:
 zero cable width when layering is off. Layering changes rebake/reset the world;
 resets retain closed-loop motor and layering settings. Each generation keeps
@@ -646,13 +649,13 @@ the `workspace-write` filesystem sandbox, and includes that setting in desktop
 sandbox. Use `start_autocal` for the complete physical collection, fitting,
 planning, selection and automatic-acceptance workflow when command sockets are
 denied. `start_collection` runs only sweeps in the attached world, whose machine
-is chosen at launch; `reset_session` retains that machine.
+`configure_session` chose; `reset_session` retains that machine.
 
 Command networking remains useful for ad hoc HTTP experiments and integration
 tests after supervised job tools are available. To disable it explicitly:
 
 ```bash
-./hp-sim5-research-agent --codex --machine hp3 --prompt-file research/prompts/autocal.txt -- \
+./hp-sim5-research-agent --codex --prompt-file research/prompts/autocal.txt -- \
   -c sandbox_workspace_write.network_access=false
 ```
 

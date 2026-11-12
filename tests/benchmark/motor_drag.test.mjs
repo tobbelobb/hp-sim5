@@ -49,7 +49,7 @@ function drag(scene, closed, pull) {
   }
 }
 
-for (const scene of ['hp4_rigid_body', 'slideprinter_rigid_body']) {
+for (const scene of ['hp4', 'slideprinter']) {
   test(`${scene}: dragging makes open-loop motors skip steps`, () => {
     const { dragged, back, shifts, cycle, diagnostics } = drag(scene, false, [0.5, 0, 0]);
     assert(dragged > 0.2, `effector followed the hand only ${dragged} m`);

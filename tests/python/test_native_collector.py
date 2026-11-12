@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from hp_sim5_research.mirror import EncoderComponent, StepperMotorComponent, capture_snapshot as capture_machine_snapshot
+from hp_sim5_research.configuration import world_configuration
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.services import RuntimeService
 from hp_sim5_research.validation import validate_collection
@@ -105,6 +106,7 @@ async def test_live_viewer_receives_collector_advances_and_can_seek(tmp_path):
     try:
         viewer, endpoint = launcher.start_viewer('headless', tmp_path)
         service = RuntimeService(ROOT, tmp_path / 'runtime', endpoint).start()
+        service.call('configure', machine='hp4_w_line_layers')
         # Advance like the collector, without the step tool's explicit flush.
         service.call('advance', seconds=.1)
         await asyncio.sleep(5)
@@ -135,6 +137,7 @@ async def test_supervised_services_stdio_gcode_and_browser(tmp_path):
     service = RuntimeService(ROOT, tmp_path)
     try:
         service.start()
+        service.call('configure', machine='hp4_w_line_layers')
         parameters = StdioServerParameters(command=sys.executable, args=[str(ROOT / 'scripts/hp_sim5_mcp.py')],
             env={'HP_SIM5_RUNTIME_URL': service.endpoint, 'HP_SIM5_RUNTIME_TOKEN': service.token})
         async with Client(parameters, read_timeout_seconds=120) as client:
@@ -179,7 +182,7 @@ def test_real_rrf_native_collection_autocal_and_process_cleanup(tmp_path):
     service = RuntimeService(ROOT, tmp_path)
     try:
         service.start()
-        before = service.call('status')
+        before = service.call('configure', machine='hp4_w_line_layers')
         import time
         job = service.call('start_collection', options={'sweepPoints': 3, 'noiseSamples': 4})
         deadline = time.monotonic() + 920
@@ -235,7 +238,7 @@ async def test_cancel_freezes_at_fixed_step_boundary_and_rejects_later_payloads(
 @pytest.mark.asyncio
 @pytest.mark.parametrize('machine', ['hp3', 'hp4'])
 async def test_headless_js_encoder_motion_and_recording(tmp_path, machine):
-    session = NativeSession(ROOT, tmp_path / 'session', scene=f'public/usd_scenes/{machine}_rigid_body.usda')
+    session = NativeSession(ROOT, tmp_path / 'session', scene=f'public/usd_scenes/{machine}.usda')
     try:
         commands = [{'type': 'Move', 'A': index * .0002, 'E': .00001} for index in range(60)]
         commands += [{'type': 'SetTorqueMode', 'axis': 'B', 'torqueNm': -.003}] + [{}] * 39
@@ -308,7 +311,7 @@ async def test_failed_collection_finalizes_evidence_with_optional_recording(tmp_
     runtime = module.Runtime('unused', tmp_path)
     runtime.session_dir = tmp_path
     runtime.session_id = 'test-session'
-    runtime.machine = 'hp4'
+    runtime.configuration = world_configuration(ROOT, {'machine': 'hp4_w_line_layers'}, backend='headless-js')
     runtime.collector_url = 'unused'
     runtime.physics_source_hash = runtime.bridge_source_hash = runtime.rrf_hash = runtime.config_hash = 'test-hash'
     runtime.rust_physics_hash = runtime.hash_rust_physics()
@@ -344,6 +347,7 @@ def test_live_collection_job_cancel_preserves_boundary_and_requires_reset(tmp_pa
     from rerun.chunk import RrdReader
     service = RuntimeService(ROOT, tmp_path).start()
     try:
+        service.call('configure', machine='hp4_w_line_layers')
         job = service.call('start_collection', options={'sweepPoints': 3, 'noiseSamples': 4})
         deadline = time.monotonic() + 30
         while service.call('status')['step'] < 20:
@@ -385,6 +389,7 @@ async def test_attachment_reconnect_isolation_reset_and_dead_supervisor(tmp_path
     alias = tmp_path / ('a' * 32)
     alias.symlink_to(session.name, target_is_directory=True)
     service = RuntimeService(ROOT, session / 'native').start()
+    service.call('configure', machine='hp4_w_line_layers')
     descriptor = alias / 'connection.json'
     descriptor.touch(mode=0o600)
     descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': service.call('status')['session_id'],

@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 import subprocess
 
+import machines
+
 from .experiments import encode, repo_path
 
 BACKENDS = ('headless-js',)
@@ -20,11 +22,7 @@ def number(name, value, low, high, *, integer=False):
     return value
 
 
-def validate_spools(machine, layering, radii, buildup):
-    if machine not in ('hp3', 'hp4'):
-        raise ValueError('machine must be hp3 or hp4')
-    if type(layering) is not bool:
-        raise ValueError('layering must be boolean')
+def validate_spools(layering, radii, buildup):
     if not isinstance(radii, list) or len(radii) not in (1, 4):
         raise ValueError('base_radii_mm must contain one or four radii')
     for radius in radii:
@@ -34,13 +32,14 @@ def validate_spools(machine, layering, radii, buildup):
         raise ValueError('Nonzero or fitted buildup requires layering')
 
 
-def firmware_path(machine, layering):
-    return f'sys/config_{machine}{"_w_line_layers" if layering else ""}.g'
+def firmware_path(machine):
+    return str(Path(machine['rrf_config']).relative_to('RRF/run/vsd'))
 
 
 @dataclass(frozen=True)
 class WorldConfiguration:
     machine: str
+    machine_type: str
     layering: bool
     scene: str
     firmware_config: str
@@ -55,34 +54,26 @@ class WorldConfiguration:
 
 def world_configuration(root, args, *, backend):
     root = Path(root).resolve()
-    allowed = {'machine', 'layering', 'scene', 'firmware_config', 'base_radii_mm', 'buildup_factor'}
+    allowed = {'machine', 'base_radii_mm', 'buildup_factor'}
     if not isinstance(args, dict) or set(args) - allowed:
         raise ValueError(f'World settings must be among {sorted(allowed)}')
+    if 'machine' not in args:
+        raise ValueError('A world needs a machine from machines/catalog.json')
     if backend not in BACKENDS:
         raise ValueError('Unknown physics backend')
-    machine, layering = args.get('machine', 'hp4'), args.get('layering', True)
+    machine = machines.machine(args['machine'])
+    layering = machine['line_layering']
     radii = args.get('base_radii_mm', [30.0])
-    buildup = args.get('buildup_factor', LAYERED_BUILDUP if layering is True else 0.)
-    validate_spools(machine, layering, radii, buildup)
+    buildup = args.get('buildup_factor', LAYERED_BUILDUP if layering else 0.)
+    validate_spools(layering, radii, buildup)
     radii = tuple(float(r) for r in (radii * 4 if len(radii) == 1 else radii))
     # The layer/ramp solver is a discrete winding model, not an arbitrary Q model.
     if layering and (radii != (30.,) * 4 or not math.isclose(buildup, LAYERED_BUILDUP, abs_tol=1e-12)):
         raise ValueError('Layered worlds support stock 30 mm base radii and buildup_factor=2/pi only')
-    scene = args.get('scene', f'public/usd_scenes/{machine}_rigid_body.usda')
-    firmware = args.get('firmware_config', firmware_path(machine, layering))
-    for name, value in [('scene', scene), ('firmware_config', firmware)]:
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError(f'{name} must be a repository path')
-    scene_path = repo_path(Path(root), scene)
-    config_path = repo_path(Path(root) / 'RRF/run/vsd', firmware)
-    if scene_path != repo_path(Path(root), f'public/usd_scenes/{machine}_rigid_body.usda'):
-        raise ValueError('Only the matching stock HP3/HP4 scene is supported; custom anchor designs are unsupported')
-    if config_path != repo_path(Path(root) / 'RRF/run/vsd', firmware_path(machine, layering)):
-        raise ValueError('firmware_config must match machine and layering')
-    if not scene_path.is_file() or not config_path.is_file():
+    if not (root / machine['scene']).is_file() or not (root / machine['rrf_config']).is_file():
         raise ValueError('Scene and matching RRF configuration must exist')
-    return WorldConfiguration(machine, layering, str(scene_path.relative_to(root)),
-                              str(config_path.relative_to(Path(root) / 'RRF/run/vsd')),
+    return WorldConfiguration(machine['name'], machines.scene(machine).get('machine_type'), layering,
+                              machine['scene'], firmware_path(machine),
                               backend, radii, float(buildup), encode(args))
 
 
@@ -126,11 +117,11 @@ def prepare_world(root, directory, config):
     if not re.search(r'^M669 K6\b', firmware, re.MULTILINE) or not re.search(r'^M669 N4\b', firmware, re.MULTILINE):
         raise ValueError('Matching RRF configuration must use four-anchor Hangprinter kinematics')
     q = re.search(r'^M666 Q([^\s]+) R([^\s;]+)', firmware, re.MULTILINE)
-    expected_radii = ([39.1845 if config.machine == 'hp3' else 46.6045] * 4
-                      if config.layering else [30.] * 4)
     firmware_source_hash = hashlib.sha256(firmware.encode()).hexdigest()
-    if not q or not math.isclose(float(q[1]), config.buildup_factor, abs_tol=1e-12) or list(map(float, q[2].split(':'))) != expected_radii:
+    if not q or not math.isclose(float(q[1]), config.buildup_factor, abs_tol=1e-12) or (
+            not config.layering and list(map(float, q[2].split(':'))) != [30.] * 4):
         raise ValueError('Matching RRF configuration has incompatible Q/R settings')
+    firmware_radii = list(map(float, q[2].split(':')))
     if not config.layering:
         firmware = firmware[:q.start()] + f'M666 Q0 R{":".join(map(str, config.base_radii_mm))}' + firmware[q.end():]
     (directory / 'firmware-config.g').write_text(firmware)
@@ -140,6 +131,6 @@ def prepare_world(root, directory, config):
             'design_scene_sha256': hashlib.sha256(design.encode()).hexdigest(),
             'baked_scene_sha256': hashlib.sha256((directory / 'scene.usda').read_bytes()).hexdigest(),
             'firmware_configuration': {'source': config.firmware_config, 'buildup_factor': config.buildup_factor,
-                'radii_mm': expected_radii if config.layering else list(config.base_radii_mm)},
+                'radii_mm': firmware_radii if config.layering else list(config.base_radii_mm)},
             'firmware_source_sha256': firmware_source_hash,
             'firmware_config_sha256': hashlib.sha256(firmware.encode()).hexdigest()}

@@ -11,7 +11,7 @@ import { StepperMotorComponent } from '../../hp-sim-3d/app/hangprinter_stepper_m
 // The damping displacement must be frozen once per step: re-deriving it on every
 // Gauss-Seidel visit makes the damping term feed on its own corrections and the
 // effector limit-cycles instead of settling (worst at the default 1 substep).
-const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
+const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4.usda', import.meta.url), 'utf8');
 const saved = JSON.parse(fs.readFileSync(new URL('../fixtures/hp4_loaded_stability.json', import.meta.url)),
   (key, value) => ['NaN', 'Infinity', '-Infinity'].includes(value) ? Number(value) : value);
 

@@ -16,9 +16,10 @@ the core. Manifests and stale-source checks include Rust, the native host adapte
 `npm run build:native`; missing/stale builds fail explicitly. Browser worlds still
 use the Wasm build of the same core. See [native engine details](rust-native-engine.md).
 
-Use `--machine hp3` to select the HP3 scene and `config_hp3.g` together. HP4
-remains the default. Both designs use the collector's existing `hangprinter_4`
-four-anchor role schema; their physical geometry and mechanical advantages differ.
+No world exists until `configure_session` names a machine from
+[`machines/catalog.json`](../machines/catalog.json); the catalogue selects its
+scene, RRF configuration and line layering together. The collector uses the
+scene's catalogued machine type.
 For numerical batches, `--viewer none --no-record` skips Rerun while retaining
 the frozen scene, command/sensor trace, point journal, dataset and manifest.
 See [performance measurements and limitations](collection-performance.md).
@@ -81,7 +82,7 @@ for up to five wall seconds and streams to the launcher's Viewer when enabled.
 Each recorded collection finalizes its own RRD without replacing the physics world.
 Later collections cannot change already returned evidence.
 
-`configure_session(configuration)` validates stock HP3/HP4 machine, layering and
+`configure_session(configuration)` validates the catalogued machine and
 spool design settings, then archives the old world and restarts world, firmware
 and encoder references together. `reset_session` performs the same coordinated
 restart with the accepted configuration. Both require explicit cancellation of

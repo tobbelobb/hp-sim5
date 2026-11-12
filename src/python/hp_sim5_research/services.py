@@ -79,8 +79,7 @@ def wait_ready(process, endpoint, operation, log, *, token='', timeout=30):
 
 
 class RuntimeService:
-    def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True, machine='hp4', configuration=None):
-        from .configuration import world_configuration
+    def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True):
         self.root = Path(root)
         self.directory = Path(directory).resolve()
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -90,8 +89,6 @@ class RuntimeService:
         self.viewer_endpoint = viewer_endpoint
         self.backend = backend
         self.record = record
-        self.configuration = world_configuration(self.root, configuration if configuration is not None else {'machine': machine}, backend=backend)
-        self.machine = self.configuration.machine
 
     def start(self):
         log_path = self.directory / 'runtime.log'
@@ -101,7 +98,6 @@ class RuntimeService:
                 cwd=self.root, env={**os.environ, 'HP_SIM5_RUNTIME_TOKEN': self.token,
                                     'HP_SIM5_PHYSICS_BACKEND': self.backend,
                                     'HP_SIM5_RECORD': '1' if self.record else '0',
-                                    'HP_SIM5_WORLD_CONFIGURATION': self.configuration.requested_json,
                                     'HP_SIM5_VIEWER_URL': self.viewer_endpoint or '',
                                     'MPLCONFIGDIR': str(self.directory / 'matplotlib')},
                 stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)

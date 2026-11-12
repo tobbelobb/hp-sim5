@@ -45,7 +45,7 @@ def test_launcher_deadline_survives_absent_host_and_second_cancel_during_cleanup
     monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     monkeypatch.setattr(launcher, 'write_index', lambda *_: None)
     session = tmp_path / 'deadline-session'
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--codex', '--batch', '--viewer', 'none', '--sidebar-section', 'none',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--batch', '--viewer', 'none', '--sidebar-section', 'none',
                                     '--prompt', 'Bound startup independently of tool host', '--session-dir', str(session),
                                     '--wall-deadline', str(time.time() + .3)])
     assert launcher.main() == 130

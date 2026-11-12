@@ -53,19 +53,13 @@ replays saved state; it does not run or record another simulation.
 
 ### Authored machine presets
 
-All files are under `public/usd_scenes/`. The browser and headless tools select one by path.
-The scene's default root is used automatically; `--scene-prim` overrides it.
-
-| Browser label | USDA file |
-| --- | --- |
-| Hangprinter v4 (default) | `hp4_rigid_body.usda` |
-| Hangprinter v3 | `hp3_rigid_body.usda` |
-| Four High Anchors | `four_high_anchors_rigid_body.usda` |
-| CubeCorners | `cubecorners_rigid_body.usda` |
-| Slideprinter Multi Unit | `slideprinter_multi_unit_rigid_body.usda` |
-| Slideprinter Original | `slideprinter_rigid_body.usda` |
-| Slideprinter (hexagon) | `slideprinter_hexagon_rigid_body.usda` |
-| Slideprinter (single pinholes) | `slideprinter_single_pinholes_rigid_body.usda` |
+[`machines/catalog.json`](../machines/catalog.json) lists the scenes and, for each
+scene with and without line layering, the machine that pairs it with its RRF and
+Klipper configs and the commands compiled for it. The browser lists the
+catalogue's scenes by name; **Print Logo** and **Print Squares** play the active
+machine's compiled commands, and the RRF motor map comes from its RRF config.
+Hangprinter version 4 (`public/usd_scenes/hp4.usda`) loads by default. The
+scene's default root is used automatically; `--scene-prim` overrides it.
 
 Initial-construction differentials cover these catalog scenes. The complete
 machine timestep suite specifically covers HP3, HP4, single-pinhole Slideprinter

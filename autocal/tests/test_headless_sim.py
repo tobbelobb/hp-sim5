@@ -449,4 +449,4 @@ def test_headless_config_matches_scene(tmp_path, monkeypatch, machine, stem, sce
                      dataset=tmp_path / "sweeps.json")
     service = HeadlessSimulation(args, [])
     assert service.config == f"sys/config_{stem}{'_w_line_layers' if layered else ''}.g"
-    assert service.scene.name == f"{scene}_rigid_body.usda"
+    assert service.scene.name == f"{scene}.usda"

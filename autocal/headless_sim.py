@@ -18,21 +18,10 @@ from autocal._autocal_common import (
     RRF_SIM_BINARY,
     RRF_SIM_VSD_PATH,
     _stop_process,
-    _normalize_machine_type,
     _resolve_sim_config,
+    catalogued_machine,
     _arg_has_flag,
 )
-
-
-MACHINES = {
-    "hp3": ("hp3_rigid_body.usda", "hp3"),
-    "hangprinter_3": ("hp3_rigid_body.usda", "hp3"),
-    "hp4": ("hp4_rigid_body.usda", "hp4"),
-    "hangprinter_4": ("hp4_rigid_body.usda", "hp4"),
-    "slideprinter": ("slideprinter_rigid_body.usda", "slideprinter"),
-    "cubecorners": ("cubecorners_rigid_body.usda", "cubecorners"),
-    "skycam": ("four_high_anchors_rigid_body.usda", "skycam"),
-}
 
 
 def free_port():
@@ -52,13 +41,12 @@ def source_hash(directories=("src/js", "hp-sim-3d/app", "src/wasm/cable_solver/s
 
 class HeadlessSimulation:
     def __init__(self, args, collector_args):
-        scene, machine = MACHINES[_normalize_machine_type(args.machine_type)]
         self.config = _resolve_sim_config(
             machine_type=args.machine_type, find_radii_mode=args.find_radii,
             find_buildup_mode=args.find_buildup_factor, rrf_config=args.rrf_config,
             config=args.config, layering=_arg_has_flag(collector_args, "--line-layering") or bool(getattr(args, "buildup_factor", None)),
         )
-        self.scene = REPO_ROOT / "public/usd_scenes" / scene
+        self.scene = REPO_ROOT / catalogued_machine(args.machine_type)["scene"]
         self.args, self.collector_args = args, collector_args
         self.processes = []
         self.physics = None

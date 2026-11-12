@@ -159,7 +159,7 @@ describe('hp4 no-line-layering bake tightness', () => {
   });
 
   test('baked hp4 cable paths are exactly tight before and after one simulation step', () => {
-    const sourcePath = path.resolve(__dirname, '../../../public/usd_scenes/hp4_rigid_body.usda');
+    const sourcePath = path.resolve(__dirname, '../../../public/usd_scenes/hp4.usda');
     const source = fs.readFileSync(sourcePath, 'utf8');
     const baked = bakeCableSceneUsdaSource(source, { cablePathHalfWidthOverride: 0.0, deriveAll: true });
     const stage = OpenText(baked.source);

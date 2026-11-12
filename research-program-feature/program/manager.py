@@ -88,7 +88,7 @@ class ProgramManager:
                 'description': (inspect.getdoc(method) or '').split('\n')[0],
             }
         return {'operations': operations, 'client_transport': research_client(),
-                'worker_machine': 'Required hp3/hp4: settings.machine in commission or worker_start; conflicting choices are rejected',
+                'worker_machine': 'Optional settings.machine (machines/catalog.json name or nickname) in commission or worker_start; given to the worker as its machine; conflicting choices are rejected',
                 'physics_world': False, 'default_worker_concurrency': 1,
                 'boundary': 'Cooperative same-UID local tools; private files are not adversarial isolation',
                 'restart': 'Leases and birth identities reconcile to interrupted handoffs; historical PIDs never authorize signals'}

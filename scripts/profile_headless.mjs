@@ -17,6 +17,7 @@ import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_moto
 import { compileCableSolverWasm } from '../src/js/cable_joints_3d/wasm_cable_solver.js';
 import { WasmPhysicsEngine } from '../src/js/cable_joints_3d/wasm_physics_engine.js';
 import { NativePhysicsEngine, loadNativePhysicsAddon } from '../src/js/cable_joints_3d/native_physics_engine.js';
+import { findMachine } from '../machines/catalog.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(value).digest('hex');
@@ -180,7 +181,7 @@ async function main() {
   if (steps > workload.steps) throw new Error('Requested steps exceed workload; do not pad a trajectory silently');
   const repeats = numeric('repeats', 3), warmup = numeric('warmup', 5000, 0);
   const checkpointEvery = numeric('checkpoint-every', 1000);
-  const sceneFile = args.scene ?? path.join(root, `public/usd_scenes/${args.machine}_rigid_body.usda`);
+  const sceneFile = args.scene ?? path.join(root, findMachine(args.machine).scene);
   const scene = fs.readFileSync(sceneFile, 'utf8');
   if (!['wasm', 'native'].includes(args.solver)) throw new Error('Expected --solver wasm or native');
   if (args['native-addon'] && args.solver !== 'native') throw new Error('--native-addon requires --solver native');

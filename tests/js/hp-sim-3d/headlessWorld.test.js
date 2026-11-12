@@ -6,7 +6,7 @@ import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints
 import { layeringEnabled, PositionComponent, EncoderComponent } from '../../../src/js/cable_joints_3d/ecs.js';
 
 test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering geometry', machine => {
-  const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}_rigid_body.usda`), 'utf8');
+  const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}.usda`), 'utf8');
   const unlayered = createHeadlessWorld(source, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true, physicsSubsteps: 4 });
   const layered = createHeadlessWorld(source, { lineLayeringEnabled: true });
   expect(unlayered.bakedScene).toBe(bakeCableSceneUsdaSource(source, { cablePathHalfWidthOverride: 0, deriveAll: true }).source);
@@ -28,7 +28,7 @@ test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering
 });
 
 test.each(['hp3', 'hp4'])('%s profiling covers every production system without changing physics', machine => {
-  const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}_rigid_body.usda`), 'utf8');
+  const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}.usda`), 'utf8');
   const plain = createHeadlessWorld(source);
   const profiled = createHeadlessWorld(source, { profiling: { enabled: true, logEverySteps: 0, slowStepMs: Infinity } });
   expect(plain.world.getResource('performanceMonitor').enabled).toBe(false);

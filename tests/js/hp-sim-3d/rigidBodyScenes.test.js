@@ -77,9 +77,9 @@ describe('rigid-body USDA scene loading', () => {
   });
 
   test.each([
-    ['slideprinter_multi_unit_rigid_body.usda', 3],
-    ['slideprinter_single_pinholes_rigid_body.usda', 6],
-    ['slideprinter_hexagon_rigid_body.usda', 9],
+    ['slideprinter_multi_unit.usda', 3],
+    ['slideprinter_single_pinholes.usda', 6],
+    ['slideprinter_hexagon.usda', 9],
   ])('loads %s into a single rigid-body assembly', async (fileName, expectedMembers) => {
     const source = readFileSync(path.resolve(process.cwd(), 'public/usd_scenes', fileName), 'utf8');
     const baked = bakeCableSceneUsdaSource(source).source;

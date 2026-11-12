@@ -30,15 +30,18 @@ from hp_sim5_research.preflight import preflight
 from hp_sim5_research.test_jobs import TestJobs
 
 
+UNAVAILABLE = 'No world exists yet; configure_session builds one for a named machine'
+
+
 class Runtime:
     def __init__(self, endpoint, directory):
         self.endpoint, self.directory = endpoint, Path(directory)
         self.token = os.environ['HP_SIM5_RUNTIME_TOKEN']
         self.processes = {}
         self.session = self.socket_task = None
-        self.configuration = world_configuration(ROOT, json.loads(os.environ.get('HP_SIM5_WORLD_CONFIGURATION',
-            json.dumps({'machine': os.environ.get('HP_SIM5_MACHINE', 'hp4')}))),
-            backend=os.environ.get('HP_SIM5_PHYSICS_BACKEND', 'headless-js'))
+        self.backend = os.environ.get('HP_SIM5_PHYSICS_BACKEND', 'headless-js')
+        # No world exists until configure_session names a machine.
+        self.configuration = None
         self.world_metadata = {}
         self.runtime_error = None
         self.last_world_attempt = None
@@ -46,7 +49,6 @@ class Runtime:
         self.session_id = None
         self.session_dir = None
         self.vsd_temp = None
-        self.machine = self.configuration.machine
         self.stop = asyncio.Event()
         self.busy = False
         self.changing_world = False
@@ -90,8 +92,7 @@ class Runtime:
         register_test_process(process)
         return process, log_path
 
-    async def start(self, configuration=None):
-        configuration = configuration or self.configuration
+    async def start(self, configuration):
         world_id = uuid.uuid4().hex
         directory = self.directory / world_id
         directory.mkdir(parents=True)
@@ -115,7 +116,6 @@ class Runtime:
                 retired = True
                 self.session, candidate = candidate, None
                 self.session_id, self.session_dir = world_id, directory
-                self.machine = configuration.machine
                 self.world_metadata = metadata
                 self.generation += 1
                 self.physics_source_hash = self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')
@@ -176,22 +176,22 @@ class Runtime:
             processes['physics-js'] = self.session.js_physics.process
         return {**(self.session.status() if self.session else {'connected': False, 'step': 0, 'error': self.runtime_error}),
                 'world_configuration': self.world_metadata, 'world_id': self.session_id, 'generation': self.generation,
-                'accepted_settings': self.configuration.effective(), 'last_world_attempt': self.last_world_attempt, 'session_directory': str(self.directory),
-                'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
+                'accepted_settings': self.configuration and self.configuration.effective(), 'last_world_attempt': self.last_world_attempt, 'session_directory': str(self.directory),
+                'machine_design': self.configuration and self.configuration.machine, 'session_id': self.session_id, 'busy': self.busy,
                 'active_job': self.active_job, 'active_autocal_job': self.autocal.active,
                 'active_test_job': self.tests.active,
                 'reset_required': self.session is None or bool(self.session.error) or
                                   any(process.poll() is not None for name, process in processes.items() if name in ('rrf', 'collector', 'physics-js')), 'browser_url': self.browser_url,
                 'source_changed': {
-                    'scene_requires_session_reset': self.input_changed(ROOT / self.configuration.scene, self.world_metadata.get('authored_scene_sha256')),
-                    'firmware_requires_session_reset': self.input_changed(ROOT / 'RRF/run/vsd' / self.configuration.firmware_config, self.world_metadata.get('firmware_source_sha256')),
+                    'scene_requires_session_reset': self.configuration is not None and self.input_changed(ROOT / self.configuration.scene, self.world_metadata.get('authored_scene_sha256')),
+                    'firmware_requires_session_reset': self.configuration is not None and self.input_changed(ROOT / 'RRF/run/vsd' / self.configuration.firmware_config, self.world_metadata.get('firmware_source_sha256')),
                     'rrf_requires_session_reset': self.input_changed(ROOT / 'RRF/build/rrf_simulator', self.world_metadata.get('rrf_sha256')),
                     'python_requires_launcher_restart': self.python_source_hash != self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py'),
-                    'bridge_requires_session_reset': self.bridge_source_hash != self.hash_sources(
+                    'bridge_requires_session_reset': self.generation > 0 and self.bridge_source_hash != self.hash_sources(
                         [ROOT / 'integrations/rrf', ROOT / 'integrations/shared', ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js'),
-                    'js_physics_requires_session_reset': self.configuration.backend == 'headless-js' and self.physics_source_hash !=
+                    'js_physics_requires_session_reset': self.generation > 0 and self.backend == 'headless-js' and self.physics_source_hash !=
                         self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js'),
-                    'rust_physics_requires_session_reset': self.configuration.backend == 'headless-js' and self.rust_physics_hash != self.hash_rust_physics()},
+                    'rust_physics_requires_session_reset': self.generation > 0 and self.backend == 'headless-js' and self.rust_physics_hash != self.hash_rust_physics()},
                 'services': {name: {'pid': process.pid, 'exit_code': process.poll(),
                                     'log': str(self.session_dir / 'physics-js.log') if name == 'physics-js'
                                     else str(self.directory / f'{name}.log')}
@@ -233,7 +233,7 @@ class Runtime:
         manifest = {'schema_version': 2, 'kind': 'native_collection',
                     'run_id': run_id, 'backend': self.session.backend, 'session_id': self.session_id, 'status': 'running',
                     'world_configuration': json.loads(encode(self.world_metadata)), 'world_id': self.session_id, 'generation': self.generation,
-                    'reset_required': False, 'machine_design': self.machine, 'configs': configs, 'options': {**options, 'sweepPoints': points},
+                    'reset_required': False, 'machine_design': self.configuration.machine, 'configs': configs, 'options': {**options, 'sweepPoints': points},
                     'start_step': self.session.step, 'dt_s': self.session.dt,
                     'events_start_byte': self.session.events.tell(),
                     'clock': self.session.status()['clock'], 'artifacts': artifacts,
@@ -264,7 +264,8 @@ class Runtime:
                                      'settlingTimeoutMs': settling * 1000,
                                      'sweepConfigFile': str(directory / 'configs.txt'), 'outputFile': artifacts['dataset'],
                                      'partialFile': str(directory / 'partial-points.jsonl'), 'backend': self.session.backend,
-                                     'machine': self.machine, 'layering': self.configuration.layering},
+                                     'machine': self.configuration.machine, 'machine_type': self.configuration.machine_type,
+                                     'layering': self.configuration.layering},
                                     token=self.token, timeout=wall_timeout + 5)
             manifest['collector_options'] = collected['collectionOptions']
             from autocal.json_schema import load_json_file
@@ -422,6 +423,8 @@ class Runtime:
                 raise ValueError('World restart is in progress')
             if self.stop.is_set():
                 raise RuntimeError('Supervisor is shutting down')
+            if 'machine' not in args and self.configuration is not None:
+                args = {**args, 'machine': self.configuration.machine}
             return self.autocal.start(args)
         if operation == 'autocal_status':
             return self.autocal.status(args.get('job_id'))
@@ -443,7 +446,7 @@ class Runtime:
                                       'queue_length': self.session.queue_length()}
             return result
         if operation in ('capture_context', 'clock', 'advance') and self.session is None:
-            raise RuntimeError('World unavailable; inspect status and reset_session')
+            raise RuntimeError(UNAVAILABLE if self.configuration is None else 'World unavailable; inspect status and reset_session')
         if operation == 'capture_context':
             message = args.get('message')
             if not isinstance(message, str) or not message.strip():
@@ -505,6 +508,8 @@ class Runtime:
         if self.busy:
             raise ValueError('Session has an active operation')
         worker_failed = self.session is not None and self.session.js_physics is not None and self.session.js_physics.process.poll() is not None
+        if operation != 'configure' and self.configuration is None:
+            raise RuntimeError(UNAVAILABLE)
         if operation not in ('reset', 'configure') and (self.session is None or self.session.error or worker_failed or
                                     any(self.processes[name].poll() is not None for name in ('rrf', 'collector'))):
             raise RuntimeError(f'Session failed; inspect status and reset_session: {self.runtime_error or (self.session.error if self.session else 'world unavailable')}')
@@ -535,7 +540,9 @@ class Runtime:
                     self.session.recording.flush(timeout_sec=5)
                 return result
             if operation in ('reset', 'configure'):
-                config = world_configuration(ROOT, args, backend=self.configuration.backend) if operation == 'configure' else self.configuration
+                if operation == 'configure' and 'machine' not in args and self.configuration is not None:
+                    args = {**args, 'machine': self.configuration.machine}
+                config = world_configuration(ROOT, args, backend=self.backend) if operation == 'configure' else self.configuration
                 self.changing_world = True
                 try:
                     await self.start(config)
@@ -616,14 +623,7 @@ async def main():
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, runtime.stop.set)
     server = None
-    starting = stopping = None
     try:
-        starting = asyncio.create_task(runtime.start())
-        stopping = asyncio.create_task(runtime.stop.wait())
-        done, _ = await asyncio.wait([starting, stopping], return_when=asyncio.FIRST_COMPLETED)
-        if stopping in done:
-            return
-        await starting
         server = await asyncio.start_server(runtime.connection, '127.0.0.1', urlparse(runtime.endpoint).port)
         async with server:
             await runtime.stop.wait()
@@ -634,7 +634,7 @@ async def main():
         await runtime.tests.close()
         if runtime.active_job is not None:
             await runtime.dispatch('cancel_job', {'job_id': runtime.active_job})
-        pending = [task for job in runtime.jobs.values() for key, task in job.items() if key in ('task', 'cancel_task')] + list(runtime.handlers) + [task for task in (starting, stopping) if task is not None]
+        pending = [task for job in runtime.jobs.values() for key, task in job.items() if key in ('task', 'cancel_task')] + list(runtime.handlers)
         for task in pending:
             task.cancel()
         await asyncio.gather(*pending, return_exceptions=True)

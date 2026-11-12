@@ -208,7 +208,7 @@ def test_local_launcher_selects_local_despite_inherited_cloud_settings(tmp_path,
 @pytest.mark.parametrize('mode', [['--serve'], ['--batch', '--prompt', 'A bounded worker']])
 def test_cloud_worker_and_service_plans_need_no_standalone_cli(tmp_path, mode):
     session = tmp_path / 'never-created'
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', *mode,
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', *mode,
                              '--session-dir', str(session), '--dry-run'], capture_output=True, text=True,
                             env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT='cloud'), timeout=5, check=True)
     argv = json.loads(result.stdout)['argv']

@@ -11,19 +11,27 @@ import time
 import uuid
 
 from .experiments import write_json
+import machines
+
 from .configuration import number, validate_spools, firmware_path
 from .services import register_test_process
 
 
 def settings(args):
-    allowed = {'machine', 'layering', 'base_radii_mm', 'buildup_factor', 'find_radii',
+    allowed = {'machine', 'base_radii_mm', 'buildup_factor', 'find_radii',
                'find_buildup_factor', 'optimizer', 'budgets', 'collection', 'artifact_dir', 'recording_mode'}
     if not isinstance(args, dict) or set(args) - allowed:
         raise ValueError(f'Autocal settings must be among {sorted(allowed)}')
-    result = {'machine': 'hp3', 'layering': False, 'base_radii_mm': [30.0], 'buildup_factor': 0.0,
+    if 'machine' not in args:
+        raise ValueError('Autocal needs a machine from machines/catalog.json')
+    machine = machines.machine(args['machine'])
+    if 'machine_type' not in machines.scene(machine):
+        raise ValueError(f'{machine["name"]} has no autocal machine type')
+    result = {'base_radii_mm': [30.0], 'buildup_factor': 0.0,
               'find_radii': 'off', 'find_buildup_factor': 'off', 'recording_mode': 'events', **{k: v for k, v in args.items()
-              if k not in ('optimizer', 'budgets', 'collection', 'artifact_dir')}}
-    validate_spools(result['machine'], result['layering'], result['base_radii_mm'], result['buildup_factor'])
+              if k not in ('optimizer', 'budgets', 'collection', 'artifact_dir')},
+              'machine': machine['name'], 'layering': machine['line_layering']}
+    validate_spools(result['layering'], result['base_radii_mm'], result['buildup_factor'])
     if result['recording_mode'] not in ('none', 'events', 'sampled', 'full'):
         raise ValueError('recording_mode must be none, events, sampled or full')
     for key in ('find_radii', 'find_buildup_factor'):
@@ -79,10 +87,11 @@ def settings(args):
 
 def command(root, directory, config):
     opt, budget = config['optimizer'], config['budgets']
+    machine = machines.machine(config['machine'])
     argv = [str(root / '.venv/bin/python'), 'autocal/autocal.py', '--headless-sim',
             '--recording-mode', config['recording_mode'],
-            '--machine-type', f'hangprinter_{config["machine"][-1]}', '--dataset', str(directory / 'sweeps.json'),
-            '--rrf-config', firmware_path(config['machine'], config['layering']),
+            '--machine-type', machines.scene(machine)['machine_type'], '--dataset', str(directory / 'sweeps.json'),
+            '--rrf-config', firmware_path(machine),
             '--base-radii', ','.join(map(str, config['base_radii_mm'])),
             '--buildup-factor', str(config['buildup_factor']), '--find-radii', config['find_radii'],
             '--find-buildup-factor', config['find_buildup_factor'], '--optimizer-mode', opt['mode'],

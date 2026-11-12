@@ -115,6 +115,7 @@ from autocal.spool_model import (
 )
 from autocal.sweep_config_generator import generate_sweep_configs, select_representative_configs
 from autocal.sweep_types import MachineConfig, MachineType
+import machines
 
 GeometryWeights = Tuple[float, float, float]
 _MACHINE_TYPE_ALIASES = {
@@ -566,19 +567,20 @@ def _resolve_sim_config(
     override = override or os.environ.get(env_name)
     if override and override.strip():
         return override.strip()
-    machine_type = _normalize_machine_type(machine_type)
-    machine = {
-        "hangprinter_3": "hp3", "hangprinter_4": "hp4",
-        "skycam": "skycam", "cubecorners": "cubecorners", "slideprinter": "slideprinter",
-    }.get(machine_type)
-    if machine is None:
-        raise ValueError(f"No default {firmware} simulator config for {machine_type}; specify --config")
+    try:
+        machine = catalogued_machine(machine_type)
+    except ValueError as error:
+        raise ValueError(f"No catalogued {firmware} simulator config for {machine_type}; specify --config") from error
     layered = layering or _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+    machine = machines.line_layering_variant(machine, layered)
     if firmware == "klipper":
-        suffix = "-with-buildup" if layered else ""
-        return f"public/klipper/{machine}/printer-{machine}-linux-mcu{suffix}.cfg"
-    suffix = "_w_line_layers" if layered else ""
-    return f"sys/config_{machine}{suffix}.g"
+        return machine["klipper_config"]
+    return str(Path(machine["rrf_config"]).relative_to(RRF_SIM_VSD_PATH))
+
+
+def catalogued_machine(machine_type: str) -> dict:
+    """Return the machine catalogue entry named by an autocal machine type or alias."""
+    return machines.machine(_normalize_machine_type(machine_type))
 
 
 def _effective_hp_sim_reset(

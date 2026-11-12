@@ -9,7 +9,7 @@ import { PositionComponent, OrientationComponent, VelocityComponent, AngularVelo
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 import { commands } from './hp4_logo_commands.mjs';
 
-const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
+const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4.usda', import.meta.url), 'utf8');
 const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 
 // The normal Print Logo settings: HP4, layering on, open loop, ONE substep.

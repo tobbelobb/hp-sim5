@@ -16,25 +16,32 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize('args', [
-    {'machine': 'hp5'}, {'layering': 0}, {'scene': '../outside.usda'},
-    {'machine': 'hp3', 'scene': 'public/usd_scenes/hp4_rigid_body.usda'},
+    {}, {'machine': 'hp5'}, {'machine': 'hp3', 'layering': False},
+    {'machine': 'hp3', 'scene': 'public/usd_scenes/hp4.usda'},
     {'machine': 'hp3', 'firmware_config': 'sys/config_hp4.g'},
-    {'firmware_config': '../outside.g'}, {'base_radii_mm': [True]},
-    {'base_radii_mm': [float('nan')]}, {'base_radii_mm': [0]},
-    {'base_radii_mm': [30, 30]}, {'layering': False, 'buildup_factor': .6},
-    {'layering': True, 'buildup_factor': .6}, {'layering': True, 'base_radii_mm': [31]},
-    {'backend': 'other'}, {'anchors': []},
+    {'machine': 'hp3', 'base_radii_mm': [True]},
+    {'machine': 'hp3', 'base_radii_mm': [float('nan')]}, {'machine': 'hp3', 'base_radii_mm': [0]},
+    {'machine': 'hp3', 'base_radii_mm': [30, 30]}, {'machine': 'hp3', 'buildup_factor': .6},
+    {'machine': 'hp3_w_line_layers', 'buildup_factor': .6}, {'machine': 'hp3_w_line_layers', 'base_radii_mm': [31]},
+    {'machine': 'hp3', 'backend': 'other'}, {'machine': 'hp3', 'anchors': []},
 ])
 def test_invalid_world_settings(args):
     with pytest.raises(ValueError):
         world_configuration(ROOT, args, backend='headless-js')
 
 
+def test_catalogued_machine_selects_scene_firmware_and_layering():
+    config = world_configuration(ROOT, {'machine': 'HP4_w_line_layers'}, backend='headless-js')
+    assert (config.machine, config.machine_type, config.layering) == (
+        'Hangprinter version 4 with line layering', 'hangprinter_4', True)
+    assert (config.scene, config.firmware_config) == ('public/usd_scenes/hp4.usda', 'sys/config_hp4_w_line_layers.g')
+
+
 @pytest.mark.slow
 @pytest.mark.asyncio
 @pytest.mark.parametrize('machine', ['hp3', 'hp4'])
 async def test_disabled_layering_bakes_zero_width_and_matches_production(tmp_path, machine):
-    config = world_configuration(ROOT, {'machine': machine, 'layering': False}, backend='headless-js')
+    config = world_configuration(ROOT, {'machine': machine}, backend='headless-js')
     metadata = prepare_world(ROOT, tmp_path, config)
     # Compare byte-for-byte with the production construction path used by headless autocal.
     script = """
@@ -64,7 +71,7 @@ process.stdout.write(bakedScene);
 
 @pytest.mark.slow
 def test_custom_unlayered_radii_reach_geometry_and_frozen_firmware(tmp_path):
-    config = world_configuration(ROOT, {'machine': 'hp3', 'layering': False,
+    config = world_configuration(ROOT, {'machine': 'hp3',
                                 'base_radii_mm': [31, 32, 33, 34]}, backend='headless-js')
     metadata = prepare_world(ROOT, tmp_path, config)
     session = NativeSession(ROOT, tmp_path, record=False,
@@ -81,12 +88,12 @@ def test_custom_unlayered_radii_reach_geometry_and_frozen_firmware(tmp_path):
 @pytest.mark.slow
 def test_preparation_reloads_authored_sources_and_rejects_changed_firmware(tmp_path):
     root = tmp_path / 'repo'
-    for source in ('public/usd_scenes/hp3_rigid_body.usda', 'RRF/run/vsd/sys/config_hp3.g'):
+    for source in ('public/usd_scenes/hp3.usda', 'RRF/run/vsd/sys/config_hp3.g'):
         target = root / source
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / source, target)
     (root / 'scripts').symlink_to(ROOT / 'scripts', target_is_directory=True)
-    config = world_configuration(root, {'machine': 'hp3', 'layering': False}, backend='headless-js')
+    config = world_configuration(root, {'machine': 'hp3'}, backend='headless-js')
     first, second, failed = [tmp_path / name for name in ('first', 'second', 'failed')]
     for directory in (first, second, failed):
         directory.mkdir()
@@ -107,15 +114,22 @@ def test_preparation_reloads_authored_sources_and_rejects_changed_firmware(tmp_p
 def test_real_reconfiguration_reset_active_job_and_evidence(tmp_path):
     service = RuntimeService(ROOT, tmp_path, record=False).start()
     try:
-        hp4 = service.call('status')
+        empty = service.call('status')
+        assert empty['machine_design'] is None and empty['accepted_settings'] is None and empty['reset_required']
+        for operation in ('reset', 'gcode'):
+            with pytest.raises(RuntimeError, match='configure_session'):
+                service.call(operation, line='M114')
+        with pytest.raises(RuntimeError, match='machine'):
+            service.call('configure')
+        hp4 = service.call('configure', machine='hp4_w_line_layers')
         before_events = Path(hp4['artifacts']['events']).read_bytes()
         with pytest.raises(RuntimeError, match='machine'):
             service.call('configure', machine='invalid')
         assert service.call('status')['world_id'] == hp4['world_id']
         assert Path(hp4['artifacts']['events']).read_bytes() == before_events
-        hp3 = service.call('configure', machine='hp3', layering=False, base_radii_mm=[30], buildup_factor=0)
+        hp3 = service.call('configure', machine='hp3', base_radii_mm=[30], buildup_factor=0)
         assert hp3['world_id'] != hp4['world_id'] and hp3['generation'] == hp4['generation'] + 1
-        assert hp3['machine_design'] == 'hp3' and hp3['step'] == 0
+        assert hp3['machine_design'] == 'Hangprinter version 3 without line layering' and hp3['step'] == 0
         assert hp3['session_directory'] == hp4['session_directory'] == str(tmp_path)
         assert hp3['world_configuration']['effective_settings']['layering'] is False
         assert json.loads(Path(hp4['artifacts']['world_manifest']).read_text())['status'] == 'archived'
@@ -137,7 +151,9 @@ def test_real_reconfiguration_reset_active_job_and_evidence(tmp_path):
         assert service.call('reset')['accepted_settings'] == hp3['accepted_settings']
         collected = service.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
         assert collected['status'] == 'complete' and collected['point_count'] == 6
-        assert collected['machine_design'] == 'hp3'
+        assert collected['machine_design'] == 'Hangprinter version 3 without line layering'
+        inherited = service.call('configure', base_radii_mm=[31])
+        assert inherited['machine_design'] == 'Hangprinter version 3 without line layering'
         assert collected['world_configuration']['geometry']['cable_half_widths_m'] == [0.]
         assert collected['validation']['drive_span_mm'][0] > 1
         assert all(span > 1 for span in collected['validation']['physical_sensor_span_mm'])
@@ -154,7 +170,7 @@ async def test_active_autocal_and_failed_restart_remain_recoverable(tmp_path, mo
     monkeypatch.setenv('HP_SIM5_RUNTIME_TOKEN', 'test-token')
     monkeypatch.setenv('HP_SIM5_RECORD', '0')
     runtime = module.Runtime('unused', tmp_path)
-    await runtime.start()
+    await runtime.start(world_configuration(ROOT, {'machine': 'hp4_w_line_layers'}, backend='headless-js'))
     original = runtime.configuration
     old_manifest = runtime.session_dir / 'manifest.json'
     real_spawn = runtime.spawn
@@ -165,29 +181,29 @@ async def test_active_autocal_and_failed_restart_remain_recoverable(tmp_path, mo
             raise ValueError('Backend unavailable')
         monkeypatch.setattr(module, 'NativeSession', unavailable_backend)
         with pytest.raises(RuntimeError, match='Backend unavailable'):
-            await runtime.dispatch('configure', {'machine': 'hp3', 'layering': False})
+            await runtime.dispatch('configure', {'machine': 'hp3'})
         assert runtime.session is not None and runtime.session.connected.is_set()
         assert runtime.configuration == original and old_manifest.read_bytes() == before
         assert runtime.status()['last_world_attempt']['status'] == 'failed'
         monkeypatch.setattr(module, 'NativeSession', real_session)
         runtime.autocal.active = 'running'
         with pytest.raises(ValueError, match='explicitly cancel'):
-            await runtime.dispatch('configure', {'machine': 'hp3', 'layering': False})
+            await runtime.dispatch('configure', {'machine': 'hp3'})
         runtime.autocal.active = None
         def fail_spawn(*args):
             raise OSError('Deliberate firmware startup failure')
         monkeypatch.setattr(runtime, 'spawn', fail_spawn)
         with pytest.raises(RuntimeError, match='Deliberate firmware'):
-            await runtime.dispatch('configure', {'machine': 'hp3', 'layering': False})
+            await runtime.dispatch('configure', {'machine': 'hp3'})
         state = runtime.status()
         assert state['reset_required'] and not state['connected']
         assert runtime.configuration == original
         assert json.loads(old_manifest.read_text())['status'] == 'archived'
         failed = json.loads(Path(state['artifacts']['world_manifest']).read_text())
-        assert failed['status'] == 'failed' and failed['effective_settings']['machine'] == 'hp3'
+        assert failed['status'] == 'failed' and failed['effective_settings']['machine'] == 'Hangprinter version 3 without line layering'
         monkeypatch.setattr(runtime, 'spawn', real_spawn)
         await runtime.dispatch('reset', {})
-        assert runtime.status()['machine_design'] == 'hp4'
+        assert runtime.status()['machine_design'] == 'Hangprinter version 4 with line layering'
         assert not runtime.status()['reset_required']
     finally:
         await runtime.close_session()
@@ -202,7 +218,7 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
     monkeypatch.setenv('HP_SIM5_RUNTIME_TOKEN', 'test-token')
     monkeypatch.setenv('HP_SIM5_RECORD', '0')
     runtime = module.Runtime('unused', tmp_path / 'artifacts')
-    runtime.configuration = world_configuration(ROOT, {'machine': 'hp3', 'layering': False}, backend='headless-js')
+    runtime.configuration = world_configuration(ROOT, {'machine': 'hp3'}, backend='headless-js')
     root = tmp_path / 'repo'
     root.mkdir()
     for name in ('src', 'hp-sim-3d', 'integrations', 'autocal'):
@@ -225,7 +241,7 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
     monkeypatch.setenv('HP_SIM5_NATIVE_ENGINE', str(native))
     monkeypatch.setattr(module, 'ROOT', root)
     try:
-        await runtime.start()
+        await runtime.start(runtime.configuration)
         before = runtime.status()
         frozen = Path(before['artifacts']['scene']).read_bytes()
         scene.write_text(scene.read_text().replace('cablePath:stored = [1.0', 'cablePath:stored = [1.1', 1))
