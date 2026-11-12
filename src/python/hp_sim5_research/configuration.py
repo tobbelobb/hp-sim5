@@ -39,7 +39,6 @@ def firmware_path(machine):
 @dataclass(frozen=True)
 class WorldConfiguration:
     machine: str
-    machine_type: str
     layering: bool
     scene: str
     firmware_config: str
@@ -72,7 +71,7 @@ def world_configuration(root, args, *, backend):
         raise ValueError('Layered worlds support stock 30 mm base radii and buildup_factor=2/pi only')
     if not (root / machine['scene']).is_file() or not (root / machine['rrf_config']).is_file():
         raise ValueError('Scene and matching RRF configuration must exist')
-    return WorldConfiguration(machine['name'], machines.scene(machine).get('machine_type'), layering,
+    return WorldConfiguration(machine['name'], layering,
                               machine['scene'], firmware_path(machine),
                               backend, radii, float(buildup), encode(args))
 

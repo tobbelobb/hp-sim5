@@ -32,8 +32,7 @@ def test_invalid_world_settings(args):
 
 def test_catalogued_machine_selects_scene_firmware_and_layering():
     config = world_configuration(ROOT, {'machine': 'HP4_w_line_layers'}, backend='headless-js')
-    assert (config.machine, config.machine_type, config.layering) == (
-        'Hangprinter version 4 with line layering', 'hangprinter_4', True)
+    assert (config.machine, config.layering) == ('Hangprinter version 4 with line layering', True)
     assert (config.scene, config.firmware_config) == ('public/usd_scenes/hp4.usda', 'sys/config_hp4_w_line_layers.g')
 
 

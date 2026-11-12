@@ -425,7 +425,7 @@ layering flags. The selected firmware is frozen in each generation and booted
 from a short private VSD (RRF limits host filename length). `runtime_status`
 and world/collection manifests report requested/effective settings, authored,
 design and baked scene hashes, firmware configuration/replies and generation
-identity. The collector uses the scene's catalogued machine type.
+identity. Research worlds share the collector's four-anchor Hangprinter profile.
 
 An ordinary `reset_session()` retains accepted settings and reloads scene, JS
 and firmware sources. Python edits require a launcher restart, as status reports.
