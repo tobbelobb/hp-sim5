@@ -199,7 +199,7 @@ until its flow would reverse. Segments joined by such links share one XPBD row
 whose constraint is their total length minus their total material, so the
 tension is equal (or at the capstan ratio) along the row within the implicit
 solve. After the solve the row's material is shared out to match. Sticking
-guides, attachments, motorized spools and pinhole gates separate rows. Slack
+guides, attachments and motorized spools separate rows. Slack
 spans share their slack in proportion to length, so slack slides over guides.
 Free wheels inside a row turn with the material that passes them. Attachment
 updating also handles rolling geometry, hybrid link state and optional line

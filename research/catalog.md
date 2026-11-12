@@ -185,17 +185,20 @@ of accuracy. [Review, measurements and integration decision](hp4-squares-substep
 
 ## Experimental HP4 pinhole-gate topology
 
-Status: implemented; structural and short-run checks passed. Topics: HP4,
-machine model, pinhole gates, CableJoints, Native Rust, Wasm, JavaScript.
+Status: removed, 2026-11-12; was implemented with structural and short-run
+checks passing. Topics: HP4, machine model, pinhole gates, CableJoints, Native
+Rust, Wasm, JavaScript.
 
-The experimental HP4 scene replaces the ABC effector's long
+The experimental HP4 scene replaced the ABC effector's long
 pinhole-wheel-wheel-pinhole chain with six stateful two-port gates, reducing the
-topology from 51 to 33 cable joints. Native Rust, Wasm and JavaScript implement
-the same gate-flow law; the independent Python backend rejects the scene. Gate
-parameters and visual bottom-wheel scaling remain provisional synthetic values,
-not hardware calibration.
+topology from 51 to 33 cable joints. Native Rust, Wasm and JavaScript implemented
+the same gate-flow law; the independent Python backend rejected the scene. Gate
+parameters and visual bottom-wheel scaling remained provisional synthetic values,
+not hardware calibration. The machine broke during the CableJoints overhaul in
+`a92b6c45`, and the overhauled solver was fast enough that condensed cable gates
+were no longer needed, so the feature was removed rather than repaired.
 
-[Mechanical model, checks and limitations](pinhole-gate.md).
+[Mechanical model, checks, evidence and removal note](pinhole-gate.md).
 
 ## Autocal flag audit and experiment handoff
 

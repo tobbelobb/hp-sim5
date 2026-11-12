@@ -186,17 +186,23 @@ def serve(store_path, root):
                     if result is not None:
                         write_json(path.with_suffix('.response'), result)
                     path.unlink(missing_ok=True)
-            for manager in managers.values():
+            # Sample each controller once per loop. Re-checking drained() after
+            # deletion could observe the last child exit in the same iteration
+            # and leave the host running with no managers left to retire it.
+            drained = {}
+            for program_id, manager in managers.items():
                 try:
                     if stopping and not manager.stopping:
                         manager.shutdown(manager.program_id)
                     manager.poll()
+                    drained[program_id] = manager.stopping and manager.drained()
                 except Exception:
                     traceback.print_exc()
-            if (stopping or managers) and all(m.stopping and m.drained() for m in managers.values()):
+                    drained[program_id] = False
+            if (stopping or managers) and all(drained.values()):
                 return 0
-            for program_id, manager in tuple(managers.items()):
-                if manager.stopping and manager.drained():
+            for program_id, is_drained in drained.items():
+                if is_drained:
                     del managers[program_id]
                     del attachments[program_id]
             # Expired client responses are not program evidence.

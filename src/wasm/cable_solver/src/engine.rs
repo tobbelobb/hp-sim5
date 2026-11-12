@@ -2,7 +2,7 @@
 //! interface; the core has no browser, ECS, transport or JavaScript dependency.
 use super::*;
 
-pub const HEADER: usize = 16;
+pub const HEADER: usize = 9;
 pub const LINK: usize = 5;
 pub const SEGMENT: usize = 16;
 pub const OPTIONS: usize = 20;
@@ -215,7 +215,7 @@ fn rolling(kind: u32) -> bool {
     kind == 1 || kind == 3
 }
 fn attachment_kind(kind: u32) -> bool {
-    kind == 0 || kind == 2 || kind == 4 || kind == 5
+    kind == 0 || kind == 2 || kind == 4
 }
 
 // Identical layer/ramp mechanics to the JS reference, with bounded layers.
@@ -1823,13 +1823,10 @@ impl PhysicsWorld {
             e[61] = limit;
         }
         let mut firsts = Vec::with_capacity(self.cables.len());
-        let mut gates = Vec::new();
-        let mut flows = Vec::new();
-        for (p, c) in self.cables.iter_mut().enumerate() {
+        for c in self.cables.iter_mut() {
             let first = self.joints.len();
             firsts.push(first);
             let count = c.count();
-            let gate = (1..count).find(|&i| c.kind(i) == 5);
             // Row boundaries and each segment's share of its row tension.
             let mut weights = vec![1.0; count];
             for i in 1..count {
@@ -1861,25 +1858,8 @@ impl PhysicsWorld {
                 let compliance = if zero { 0.0 } else { cpl * weighted };
                 let b = if c.data[4].is_finite() { c.data[4].max(0.0) } else { 0.0 };
                 let damping = if spans > EPS { b / spans } else { 0.0 };
-                // Positive flow moves available span toward the entry side.
-                let (flow, flow_sign) = match gate {
-                    Some(g) if end == g => (flows.len(), -1.0),
-                    Some(g) if start == g => (flows.len(), 1.0),
-                    _ => (usize::MAX, 0.0),
-                };
                 for i in start..end {
                     c.merged[i] = end - start > 1;
-                }
-                if gate == Some(start) {
-                    gates.push(p);
-                    let (q, velocity, inertia) = (c.data[10], c.data[11], c.data[12]);
-                    flows.push(Flow {
-                        q: if valid_dt { q + velocity * dt } else { q },
-                        start: q,
-                        w: if valid_dt && inertia > EPS { 1.0 / inertia } else { 0.0 },
-                        limit: c.data[14].max(0.0) * dt * dt,
-                        friction: 0.0,
-                    });
                 }
                 self.rows.push(Row {
                     start: first + start,
@@ -1892,8 +1872,6 @@ impl PhysicsWorld {
                     inv_dt2: if valid_dt { 1.0 / (dt * dt) } else { 0.0 },
                     spring: if compliance > EPS && compliance.is_finite() { 1.0 / compliance } else { 0.0 },
                     damping,
-                    flow,
-                    flow_sign,
                 });
                 start = end;
             }
@@ -1975,30 +1953,13 @@ impl PhysicsWorld {
                     &mut self.entities,
                     &mut self.joints,
                     &members,
-                    &mut flows,
                     &row,
                     iter,
                     &mut multipliers[r],
                 );
             }
-            for flow in &mut flows {
-                flow.solve_friction();
-            }
         }
         finalize_force_transfers(&mut self.joints);
-        // Gate bearings: inertia and dry friction were solved with the rows;
-        // viscous drag acts on the resulting flow velocity.
-        if valid_dt {
-            for (k, &p) in gates.iter().enumerate() {
-                let c = &mut self.cables[p];
-                let inertia = c.data[12];
-                if inertia > EPS {
-                    let flow = flows[k];
-                    c.data[11] = (flow.q - flow.start) / dt / (1.0 + dt * c.data[13].max(0.0) / inertia);
-                    c.data[10] = flow.q;
-                }
-            }
-        }
         for (p, c) in self.cables.iter_mut().enumerate() {
             let first = firsts[p];
             for i in 0..c.count() {
@@ -2113,10 +2074,10 @@ impl PhysicsWorld {
     }
 }
 /// Capstan tension ratio exp(μθ) across interior link `li`, or None when
-/// material cannot cross it (attachments and gates bound rows).
+/// material cannot cross it (attachments bound rows).
 fn capstan(c: &Cable, li: usize, es: &[Entity], layering: bool) -> Option<f64> {
     let kind = c.kind(li);
-    if kind == 0 || kind == 5 {
+    if kind == 0 {
         return None;
     }
     let e = &es[c.entity(li - 1, 1)];
@@ -2210,7 +2171,6 @@ impl PhysicsWorld {
         let mut candidates = Vec::new();
         let mut unique = std::collections::BTreeMap::new();
         for (p, c) in self.cables.iter().enumerate() {
-            if (1..c.count()).any(|i| c.kind(i) == 5) { continue; }
             for i in 0..c.count() {
                 // A shared row already balances its segments' material.
                 if c.merged.get(i) == Some(&true) {

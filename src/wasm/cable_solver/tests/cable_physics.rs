@@ -347,53 +347,6 @@ fn pendulum_energy() {
     assert!(fine < 0.02 * G && (coarse / fine - 4.0).abs() < 0.5);
 }
 
-/// Atwood machine through a pinhole gate on a fixed body. The hidden flow has
-/// the reflected bearing inertia M and dry friction Fc:
-/// a = (g(m1 - m2) - Fc) / (m1 + m2 + M), and static friction holds while
-/// g|m1 - m2| <= Fc.
-fn gate_atwood(inertia: f64, coulomb: f64) -> (f64, f64) {
-    let (m1, m2) = (2.0, 1.0);
-    let es = vec![
-        fixed(0, [-0.05, 0.0, 0.0], 0.0),
-        fixed(1, [0.05, 0.0, 0.0], 0.0),
-        mass(2, [-0.05, -1.0, 0.0], m1),
-        mass(3, [0.05, -1.0, 0.0], m2),
-    ];
-    let segs = [
-        Seg { a: 2, b: 0, rest: 1.0, pa: [-0.05, -1.0, 0.0], pb: [-0.05, 0.0, 0.0] },
-        Seg { a: 1, b: 3, rest: 1.0, pa: [0.05, 0.0, 0.0], pb: [0.05, -1.0, 0.0] },
-    ];
-    let links = [(ATTACHMENT, true, 0.0), (5.0, true, 0.1), (ATTACHMENT, true, 0.0)];
-    let mut p = path(&links, &segs, 1e6, 1e3, 4.0);
-    p[9] = 1.0;
-    p[12] = inertia;
-    p[14] = coulomb;
-    let mut w = world(es, vec![p]);
-    let dt = 0.0005;
-    for _ in 0..200 {
-        w.step(dt);
-    }
-    let v0 = vy(&w, 2);
-    for _ in 0..400 {
-        w.step(dt);
-    }
-    let a = -(vy(&w, 2) - v0) / (400.0 * dt);
-    (a, tension(&mut w, 0, 0) - tension(&mut w, 0, 1))
-}
-
-#[test]
-fn gate_flow_inertia_and_bearing_friction() {
-    let mut ok = true;
-    for (inertia, coulomb) in [(0.5, 0.0), (0.0237, 0.0), (0.5, 5.0), (0.5, 25.0)] {
-        let expected = ((G - coulomb) / (3.0 + inertia)).max(0.0);
-        let (a, difference) = gate_atwood(inertia, coulomb);
-        eprintln!("gate M {inertia} Fc {coulomb}: a {a:.4} expected {expected:.4}, entry-exit tension {difference:.4}");
-        ok &= (a - expected).abs() < 0.02 * G;
-    }
-    assert!(ok);
-}
-
-
 fn kinetic_plus_potential(w: &PhysicsWorld, ids: &[(usize, f64)]) -> f64 {
     ids.iter()
         .map(|&(id, m)| {

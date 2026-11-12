@@ -825,10 +825,7 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
     const jointDef = jointDefs[indexWithinPath];
     if (indexWithinPath === 0) {
       entityPaths.push(jointDef.body0Path);
-    } else if (entityPaths[indexWithinPath] !== jointDef.body0Path && !(
-      linkTypes[indexWithinPath] === 'pinhole_gate' &&
-      getRelationship(index[entityPaths[indexWithinPath]], 'pinholeGate:exit')[0] === jointDef.body0Path
-    )) {
+    } else if (entityPaths[indexWithinPath] !== jointDef.body0Path) {
       throw new Error(
         `${pathPath}: cablePath:joints do not form a continuous body chain at ${jointDef.jointPath}.`,
       );
