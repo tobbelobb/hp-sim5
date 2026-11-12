@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import { Readable } from 'node:stream';
+import { parseRrfMotorAxisMapFromConfigText } from '../../../../integrations/rrf/rrfFirmwareModel.js';
+import { FileFormat } from '../../../../integrations/shared/fileFormatUtils.js';
+globalThis.self = { addEventListener() {} }; globalThis.postMessage = () => {};
+const root = new URL('../../../../', import.meta.url);
+const { RrfCanPlayer } = await import('../../../../integrations/rrf/rrfCanPlayer.js');
+const p = new RrfCanPlayer(); p.setDt(.002); p.setAsapMode(true);
+p.setDriverToAxis(parseRrfMotorAxisMapFromConfigText(fs.readFileSync(new URL(`RRF/run/vsd/sys/${process.argv[3]||'config_hp4_w_line_layers.g'}`, root), 'utf8')));
+const rows = []; const orig = p._handleMovement.bind(p);
+p._handleMovement = r => { rows.push({ axis: p._assignAxisName(r.motorId), ...r }); orig(r); };
+p.sendCommand = async () => {};
+await p.run(Readable.toWeb(fs.createReadStream(new URL(`public/RRF_CAN_commands/${process.argv[2]}`, root))), FileFormat.RRF_CAN_BINARY);
+for (const r of rows.slice(-Number(process.argv[4]||16))) console.log(JSON.stringify(r));

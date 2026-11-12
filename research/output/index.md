@@ -146,6 +146,8 @@ One result sentence per session; follow the report for evidence.
 
 - [HP4 Print Squares corner bumps from saturated closed-loop servos under firmware flex pretension](session-2026-11-11-interactive-research-ecc2ae53/report.md) — The bumps are handovers between torque-saturated A/B/C servos: `M666 F1` flex compensation assumes one line per spool, but the HP4 scene has two (three for D), so it demands roughly double pretension (beyond 0.5 Nm).
 
+- [Quality Monitor: 1220 phantom missed steps, end-of-print stall and 0.25 mm metric](session-2026-11-12-interactive-research-3048a420/report.md) — The 1220 missed steps after the HP4 logo are real stalls caused by a bogus "fly home in 63 ms" move that the RRF host simulator writes at every standstill into 8 of 10 logo .can files; the monitor's end-of-print work dropped from up to 287 ms to 0.1 ms, an 891 mm position-error spike was fixed, and "Path within 0.25 mm" was added.
+
 - [Stable stronger stepper motors at the 2 ms step](session-2026-11-12-interactive-research-37d92817/report.md) — Simulated motors at 1 Nm (or anywhere from 0.25 to 4 Nm) no longer oscillate or spin away at the default 2 ms step: the servo's current-limit check and the open-loop detent torque had numerical artifacts, and fixing them made a gain retune unnecessary.
 
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
