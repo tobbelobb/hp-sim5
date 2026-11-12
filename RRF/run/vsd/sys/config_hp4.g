@@ -22,6 +22,7 @@ M208 S1 Z-10.0 ; set minimum Z
 
 M666 U2:2:2:4     ; Mechanical advantages
 M666 O1:1:1:1     ; Number of lines per spool
+M666 N2:2:2:3     ; Number of parallel lines per axis (shares flex compensation force)
 M666 L20:20:20:20  ; Motor gear teeth
 M666 H20:20:20:20  ; Spool gear teeth
 
