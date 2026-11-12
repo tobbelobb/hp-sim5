@@ -359,7 +359,7 @@ class ReviewController:
         environment = (coding_client.codex_environment(details['reviewer']['model_provider'], root=self.root,
                                                        env_file=self.root / '.env')
                        if details['reviewer']['backend'] == 'codex' else
-                       coding_client.claude_environment(env_file=self.root / '.env'))
+                       coding_client.claude_environment())
         try:
             with (directory / 'prompt.txt').open('rb') as stdin, (directory / 'events.jsonl').open('wb') as stdout, (directory / 'stderr.log').open('wb') as stderr:
                 guard = [sys.executable, str(self.root / 'research-program-feature/scripts/research_program_review_guard.py'),

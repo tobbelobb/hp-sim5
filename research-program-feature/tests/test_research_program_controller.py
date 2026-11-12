@@ -42,7 +42,6 @@ def test_launcher_deadline_survives_absent_host_and_second_cancel_during_cleanup
             time.sleep(.01)
             self.closed = True
     monkeypatch.setattr(launcher, 'RuntimeService', Service)
-    monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     monkeypatch.setattr(launcher, 'write_index', lambda *_: None)
     session = tmp_path / 'deadline-session'
     monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--batch', '--viewer', 'none', '--sidebar-section', 'none',

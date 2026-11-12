@@ -142,7 +142,7 @@ def main(argv, root):
             return 0
         print(_json(result), file=sys.stderr, flush=True)
         environment = (coding_client.codex_environment(plan['model_provider'], root=root, env_file=root / '.env')
-                       if args.backend == 'codex' else coding_client.claude_environment(env_file=root / '.env'))
+                       if args.backend == 'codex' else coding_client.claude_environment())
         environment['HP_SIM5_RESEARCH_CLIENT'] = transport
         return subprocess.run(plan['argv'] + ['Open the bound program overview and manage this question.'],
                               cwd=root, env=environment).returncode
