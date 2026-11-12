@@ -32,23 +32,6 @@ WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output', 'resea
                   'src/wasm/cable_solver/target/native/physics.node')
 
 
-def ensure_native_physics():
-    # Reuse the worker's freshness check, including custom artifact overrides.
-    probe = subprocess.run(
-        ['node', '--input-type=module', '-e',
-         "import { loadNativePhysicsAddon } from './src/js/cable_joints_3d/native_physics_engine.js'; "
-         'loadNativePhysicsAddon();'],
-        cwd=ROOT, capture_output=True, text=True)
-    if probe.returncode == 0:
-        return
-    if ('Native Rust physics build is stale.' not in probe.stderr and
-            'Native Rust physics is missing:' not in probe.stderr):
-        raise RuntimeError(f'Native physics check failed: {probe.stderr.strip()}')
-    print('Native Rust physics build is stale, recompiling', file=sys.stderr, flush=True)
-    if subprocess.run(['npm', 'run', 'build:native'], cwd=ROOT).returncode != 0:
-        raise RuntimeError('Native Rust physics recompilation failed (npm run build:native)')
-
-
 def provider_env_key(provider):
     return coding_client.provider_env_key(provider, root=ROOT)
 
@@ -257,6 +240,7 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
     if checks.get('physics', {}).get('ok'):
         try:
             runtime = RuntimeService(ROOT, ROOT / 'research/output/scratch/preflight' / uuid.uuid4().hex).start()
+            runtime.call('configure', machine='hp3')
             collection = runtime.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
             from hp_sim5_research.validation import validate_collection
             validation = validate_collection(collection['artifacts']['dataset'])
@@ -376,7 +360,7 @@ def interrupted(_signum, _frame):
     raise KeyboardInterrupt
 
 
-def session_manifest(session, backend, machine):
+def session_manifest(session, backend):
     """Non-secret paths survive worktree re-exec; written before runtime startup."""
     revision = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],
                               capture_output=True, text=True, check=True).stdout.strip()
@@ -384,7 +368,7 @@ def session_manifest(session, backend, machine):
                             capture_output=True, text=True, check=True).stdout.strip()
     return {'launcher_session_id': uuid.uuid4().hex, 'session_dir': str(session),
             'repo': str(ROOT), 'source_revision': revision, 'branch': branch,
-            'pid': os.getpid(), 'backend': backend, 'machine': machine}
+            'pid': os.getpid(), 'backend': backend}
 
 
 def main():
@@ -403,8 +387,6 @@ def main():
                         help='Continuing physics: native Rust hosted in Node')
     parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
     parser.add_argument('--wall-deadline', type=float, help='Finite Unix wall deadline; expiration enters normal launcher cleanup')
-    parser.add_argument('--machine', choices=['hp3', 'hp4'], required=True,
-                        help='Required explicit robot choice: matched scene and RRF configuration (no default)')
     parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN,
                         help='Codex model provider; opencode_go reads OPENCODE_GO_API_KEY, falling back to the .env file')
     parser.add_argument('--model', help='Model name for the selected backend')
@@ -505,7 +487,7 @@ def main():
         instructions += (f'\nSession artifacts: {session}\n'
                          f'Write the report to {session / "report.md"}; keep working notes in {session / "scratchbook"}.\n'
                          f'Keep the searchable abstract at {session / "abstract.md"} current too.\n'
-                         'This launcher started a fresh native world.\n')
+                         'The native runtime holds no world until configure_session builds one.\n')
         full_prompt = prompt or ''
         if args.dry_run:
             endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'
@@ -517,17 +499,15 @@ def main():
             return 0
         session.mkdir(parents=True)
         session_created = True
-        (session / 'session.json').write_text(json.dumps(session_manifest(session, args.backend, args.machine), indent=2) + '\n')
+        (session / 'session.json').write_text(json.dumps(session_manifest(session, args.backend), indent=2) + '\n')
         (session / 'prompt.txt').write_text(full_prompt)
         (session / 'abstract.md').write_text(initial_abstract(topic))
         write_index(catalog_root)
-        if args.physics_backend == 'headless-js':
-            ensure_native_physics()
         endpoint = None
         if args.viewer != 'none' and not args.preflight:
             viewer, endpoint = start_viewer(args.viewer, session)
         runtime = RuntimeService(ROOT, session / 'native', endpoint,
-                                 backend=args.physics_backend, record=not args.no_record, machine=args.machine)
+                                 backend=args.physics_backend, record=not args.no_record)
         runtime.start()
         runtime_status = runtime.call('status')
         if args.preflight:

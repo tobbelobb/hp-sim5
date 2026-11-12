@@ -2,7 +2,26 @@
 import json
 import hashlib
 import subprocess
+import sys
 from pathlib import Path
+
+
+def ensure_native_physics(root):
+    """Check/build native physics only when a world is actually requested."""
+    probe = subprocess.run(
+        ['node', '--input-type=module', '-e',
+         "import { loadNativePhysicsAddon } from './src/js/cable_joints_3d/native_physics_engine.js'; "
+         'loadNativePhysicsAddon();'],
+        cwd=root, capture_output=True, text=True)
+    if probe.returncode == 0:
+        return
+    if ('Native Rust physics build is stale.' not in probe.stderr and
+            'Native Rust physics is missing:' not in probe.stderr):
+        raise RuntimeError(f'Native physics check failed: {probe.stderr.strip()}')
+    print('Native Rust physics build is stale, recompiling', file=sys.stderr, flush=True)
+    # This can run inside an MCP server; reserve stdout for its protocol.
+    if subprocess.run(['npm', 'run', 'build:native'], cwd=root, stdout=sys.stderr).returncode != 0:
+        raise RuntimeError('Native Rust physics recompilation failed (npm run build:native)')
 
 
 class JSPhysics:
@@ -12,6 +31,7 @@ class JSPhysics:
         self.queue_length = 0
         worker = (root / 'scripts/research_physics.mjs').resolve()
         source_root = worker.parents[1]
+        ensure_native_physics(source_root)
         sources = sorted([worker, *(path for directory in ('src/js', 'hp-sim-3d/app')
                                     for path in (source_root / directory).rglob('*.js'))])
         digest = hashlib.sha256()

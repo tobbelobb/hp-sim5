@@ -5,11 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
 import { NativePhysicsEngine } from '../src/js/cable_joints_3d/native_physics_engine.js';
 import { PositionComponent } from '../src/js/cable_joints_3d/ecs.js';
+import { findMachine } from '../machines/catalog.js';
 
 const root = new URL('../', import.meta.url);
 const worlds = [];
 for (const machine of ['hp3', 'hp4']) for (const layering of [true, false]) {
-  const source = fs.readFileSync(new URL(`public/usd_scenes/${machine}_rigid_body.usda`, root), 'utf8');
+  const source = fs.readFileSync(new URL(findMachine(machine).scene, root), 'utf8');
   const { world, remote, dt, bakedScene } = createHeadlessWorld(source, {
     lineLayeringEnabled: layering, cableSolverBackend: new NativePhysicsEngine({ addonPath: process.argv[2] }),
   });

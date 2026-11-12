@@ -41,7 +41,7 @@ async def test_non_json_runtime_result_returns_http_error_and_keeps_service_usab
 
 @pytest.fixture
 def runtime(tmp_path, monkeypatch):
-    config = world_configuration(ROOT, {'machine': 'hp3', 'layering': False}, backend='headless-js')
+    config = world_configuration(ROOT, {'machine': 'hp3'}, backend='headless-js')
     firmware = {'M115': 'RepRapFirmware', 'M669': 'Kinematics is Hangprinter\n'
                 'A:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\n'
                 'C:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00', 'M666': 'M666 A1'}
@@ -69,7 +69,7 @@ def runtime(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_healthy_preflight_leaves_active_world_and_command_network_unknown(runtime):
     before = json.dumps(runtime.status())
-    result = await pf.preflight(runtime, ROOT, {'machine': 'hp3', 'layering': False})
+    result = await pf.preflight(runtime, ROOT, {'machine': 'hp3'})
     assert result['outcome'] == 'passed'
     assert result['command_network']['outcome'] == 'unknown'
     assert result['world']['step'] == 42 and result['world']['active_job'] == 'retained-collection'
@@ -200,6 +200,7 @@ async def test_live_mcp_preflight_test_cancel_timeout_and_disconnection(tmp_path
     from mcp import Client, StdioServerParameters
     from hp_sim5_research.services import RuntimeService
     service = await asyncio.to_thread(RuntimeService(ROOT, tmp_path, record=False).start)
+    await asyncio.to_thread(service.call, 'configure', machine='hp4_w_line_layers')
     params = StdioServerParameters(command=str(ROOT / '.venv/bin/python'),
         args=[str(ROOT / 'scripts/hp_sim5_mcp.py')],
         env={'HP_SIM5_RUNTIME_URL': service.endpoint, 'HP_SIM5_RUNTIME_TOKEN': service.token})

@@ -14,6 +14,8 @@ import subprocess
 import sys
 import time
 
+import machines
+
 from .store import ProgramError, _allocation, _identity, _json, _now, _object, _text, _wall_minutes
 from . import pool
 from hp_sim5_research.client_transport import client_adapter
@@ -143,11 +145,14 @@ class WorkerDispatcher:
                       viewer='headless', record=True, worktree=False, client_args=[],
                       dont_ask=False, goal_mode=True, shared_runtime_write=False)
         result.update(options)
-        if 'machine' not in result:
-            raise ProgramError('Workers require an explicit machine (hp3/hp4): set settings.machine in commission or worker_start')
+        if 'machine' in result:
+            try:
+                result['machine'] = machines.machine(result['machine'])['name']
+            except ValueError as error:
+                raise ProgramError(str(error)) from None
         for name, choices in (('backend', ('codex', 'claude')),
                               ('physics_backend', ('headless-js',)),
-                              ('machine', ('hp3', 'hp4')), ('viewer', ('none', 'headless', 'window'))):
+                              ('viewer', ('none', 'headless', 'window'))):
             if result[name] not in choices:
                 raise ProgramError(f'Unsupported {name}: {result[name]}')
         for name in ('record', 'worktree', 'dont_ask', 'goal_mode', 'shared_runtime_write'):
@@ -169,11 +174,13 @@ class WorkerDispatcher:
         return result
 
     def assignment_settings(self, program_id, assignment_id, settings=None):
-        """Bind the commissioned machine to the actual launcher, not just prose."""
+        """Resolve optional machine guidance and reject conflicting worker settings."""
         options = dict(_object({} if settings is None else settings, 'worker settings'))
         assignment = self.store.get_record(program_id, assignment_id, 'assignment')
         commissioned = assignment['details'].get('settings', {})
-        if 'machine' in commissioned and 'machine' in options and commissioned['machine'] != options['machine']:
+        if 'machine' in commissioned and 'machine' in options and (
+                self._settings({'machine': commissioned['machine']})['machine'] !=
+                self._settings({'machine': options['machine']})['machine']):
             raise ProgramError('Worker machine conflicts with commissioned settings.machine')
         options = dict(commissioned, **options)
         return self._settings(options)
@@ -214,7 +221,10 @@ class WorkerDispatcher:
             directory.mkdir(mode=0o700, parents=True)
             contract = {'program_id': program_id, 'question': assignment['title'],
                         'session_dir': str(session)}
+            if 'machine' in options:
+                contract['machine'] = options['machine']
             prompt = ('# Research question\n\n' + assignment['title'] +
+                      ('\n\nMachine: ' + options['machine'] + ' (machines/catalog.json)' if 'machine' in options else '') +
                       '\n\nSession artifacts: ' + str(session) +
                       worker_policy(session) +
                       (client_adapter().worker_instructions() if client_adapter() else '') +
@@ -224,7 +234,7 @@ class WorkerDispatcher:
             (directory / 'assignment.json').write_text(json.dumps(contract, indent=2, ensure_ascii=False) + '\n')
             argv = [self.executable, '--' + options['backend'], '--batch', '--prompt-file', str(prompt_path),
                     '--session-dir', str(session), '--physics-backend', options['physics_backend'],
-                    '--machine', options['machine'], '--viewer', options['viewer']]
+                    '--viewer', options['viewer']]
             wall_deadline = time.time() + minutes * 60 if minutes is not None else None
             if runtime and runtime.get('wall_deadline') is not None:
                 wall_deadline = min(wall_deadline, runtime['wall_deadline']) if wall_deadline else runtime['wall_deadline']

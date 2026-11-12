@@ -28,7 +28,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 1.0
             custom int stepper:numPolePairs = 50
-            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:dampingCoeff = 0.011
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -89,7 +89,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 1.0
             custom int stepper:numPolePairs = 50
-            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:dampingCoeff = 0.011
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -151,7 +151,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 1.0
             custom int stepper:numPolePairs = 50
-            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:dampingCoeff = 0.011
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -197,10 +197,10 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
-        # Group the three spools into a rigid cluster for simulation
-        def RigidGroup "SpoolTriangle"
+        # Group the three spools into a rigid body for simulation
+        def RigidBody "Effector"
         {
-            rel rigidGroup:members = [
+            rel rigidBody:members = [
                 </World/SlideprinterScene/SpoolA>,
                 </World/SlideprinterScene/SpoolB>,
                 </World/SlideprinterScene/SpoolC>,
@@ -211,10 +211,7 @@ def Xform "World"
                 </World/SlideprinterScene/PinholeCL>,
                 </World/SlideprinterScene/PinholeCR>
             ]
-            custom string rigidGroup:renderIndices = "[3,4,5,6,7,8,3]"
-
-            # RigidGroups have stiffness between 0 and 1. Default: 1.0
-            custom double stiffness = 0.1
+            custom string rigidBody:renderIndices = "[3,4,5,6,7,8,3]"
         }
 
         def CableJoint "JointAL_0"
@@ -233,7 +230,6 @@ def Xform "World"
         {
             custom rel physics:body0 = </World/SlideprinterScene/AnchorAR>
             custom rel physics:body1 = </World/SlideprinterScene/PinholeAR>
-            custom double restLength = 1.9
         }
 
         def CableJoint "JointAR_1"
@@ -299,7 +295,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:stiffnessPerUnitLength = 20000.0
-            custom double cablePath:dampingPerUnitLength = 0.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -314,7 +310,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:stiffnessPerUnitLength = 20000.0
-            custom double cablePath:dampingPerUnitLength = 0.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -329,7 +325,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:stiffnessPerUnitLength = 20000.0
-            custom double cablePath:dampingPerUnitLength = 0.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -344,7 +340,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:stiffnessPerUnitLength = 20000.0
-            custom double cablePath:dampingPerUnitLength = 0.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -359,7 +355,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:stiffnessPerUnitLength = 20000.0
-            custom double cablePath:dampingPerUnitLength = 0.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -374,7 +370,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:stiffnessPerUnitLength = 20000.0
-            custom double cablePath:dampingPerUnitLength = 0.0
+            custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.001
             custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
@@ -393,7 +389,7 @@ def Xform "World"
                 </World/SlideprinterScene/SpoolB>,
                 </World/SlideprinterScene/SpoolC>
             ]
-            rel machine:rigidGroup = </World/SlideprinterScene/SpoolTriangle>
+            rel machine:rigidBody = </World/SlideprinterScene/Effector>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
 
             def Xform "Tip" ()

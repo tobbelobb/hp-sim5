@@ -65,8 +65,8 @@ tests actual browser stepping; it is not a timed browser collection.
 ## Reproduce and use
 
 ```bash
-./hp-sim5-research-agent --machine hp3
-./hp-sim5-research-agent --machine hp3 --viewer none --no-record
+./hp-sim5-research-agent
+./hp-sim5-research-agent --viewer none --no-record
 ./hp-sim5-research-agent
 
 .venv/bin/python scripts/replay_collection.py SCENE_USDA EVENTS_JSONL \

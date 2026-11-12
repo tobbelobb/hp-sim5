@@ -1335,12 +1335,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         parser.error("--extended-reference requires --headless-sim; use --extended-reference-ws for browser collection")
     if args.extended_reference and args.no_collect and not extended_reference.enabled():
         parser.error("--extended-reference requires collection; use --extended-reference-ws to record offline fitting events")
-    from autocal.headless_sim import HeadlessSimulation, MACHINES
+    from autocal.headless_sim import HeadlessSimulation
     if args.headless_sim:
         if args.firmware != "rrf":
             parser.error("--headless-sim requires --firmware rrf")
-        if _normalize_machine_type(args.machine_type) not in MACHINES:
-            parser.error(f"No headless scene/configuration for {args.machine_type}")
+        try:
+            catalogued_machine(args.machine_type)
+        except ValueError as error:
+            parser.error(f"No headless scene/configuration for {args.machine_type}: {error}")
         args.sim = True
         if args.dataset is None:
             args.dataset = Path("autocal/data/default_dataset.json")

@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_local_core_opens_and_plans_without_cloud_files(tmp_path):
     for package in ('research-program-feature/program', 'research-program-feature/scripts',
-                    'research-program-feature/role-instructions', 'src/python/hp_sim5_research'):
+                    'research-program-feature/role-instructions', 'src/python/hp_sim5_research', 'machines'):
         shutil.copytree(ROOT / package, tmp_path / package,
                         ignore=shutil.ignore_patterns('__pycache__'))
     assert not (tmp_path / '.agents/skills/cloud-research-client').exists()

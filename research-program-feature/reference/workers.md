@@ -1,7 +1,9 @@
 # Research workers
 
 `program.workers.WorkerDispatcher` starts `hp-sim5-research-agent` with a question,
-explicit hp3/hp4 machine, session directory and execution settings. The existing
+session directory and execution settings. An optional `settings.machine` (a
+`machines/catalog.json` name or nickname) is validated and written into the
+worker's prompt and contract; the worker builds that world with `configure_session`. The existing
 launcher owns physics and runtime jobs. The program records commands, revisions,
 process identities, execution results and cleanup status.
 

@@ -2,14 +2,7 @@ import { setPhysicsSubsteps } from './physics-substeps.js';
 import { EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
-
-const MACHINE_SCENES = Object.freeze({
-  hangprinter_3: 'hp3_rigid_body.usda',
-  hangprinter_4: 'hp4_rigid_body.usda',
-  slideprinter: 'slideprinter_rigid_body.usda',
-  skycam: 'four_high_anchors_rigid_body.usda',
-  cubecorners: 'cubecorners_rigid_body.usda',
-});
+import { SCENES, findMachine } from '../../machines/catalog.js';
 
 export function normalizeWsUrl(raw) {
   if (!raw || typeof raw !== 'string') {
@@ -220,7 +213,7 @@ export function createExternalCommandController({
         recordingError,
         settingsError,
         machineType: machines?.getMachines?.().length === 1
-          ? Object.entries(MACHINE_SCENES).find(([, key]) => key === machines.getMachines()[0].sourceKey)?.[0]
+          ? SCENES[`public/usd_scenes/${machines.getMachines()[0].sourceKey}`]?.machine_type
           : undefined,
       },
       simulationClock: {
@@ -284,7 +277,7 @@ export function createExternalCommandController({
       };
       if (payload.machineType) {
         recordingReady = Promise.resolve(recordingReady).then(async () => {
-          const sourceKey = MACHINE_SCENES[payload.machineType];
+          const sourceKey = findMachine(payload.machineType)?.scene.split('/').pop();
           if (!sourceKey || !machines) throw new Error(`Unsupported simulator machine: ${payload.machineType}`);
           const current = machines.getMachines();
           if (current.length !== 1 || current[0].sourceKey !== sourceKey) {

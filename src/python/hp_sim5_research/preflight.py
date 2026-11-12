@@ -87,7 +87,7 @@ async def preflight(runtime, root, expected_configuration=None):
             return blocked(f'World settings/source mismatch: {changes}',
                            'Inspect runtime_status; restart launcher for Python changes, otherwise explicitly reset/configure')
         if expected_configuration is not None:
-            expected = world_configuration(root, expected_configuration, backend=config.backend)
+            expected = world_configuration(root, {'machine': config.machine, **expected_configuration}, backend=config.backend)
             if expected.effective() != validated.effective():
                 return blocked('Attached world does not match expected_configuration',
                                'Use configure_session after explicitly cancelling active collection/autocal jobs')
@@ -149,9 +149,14 @@ async def preflight(runtime, root, expected_configuration=None):
         return {**tools, **(blocked(f'Missing prerequisites: {missing}', 'Restore the repository build/interpreter/suite files')
                            if missing else {'outcome': 'passed'})}
 
-    actions = [('services', services), ('settings', settings), ('collector', collector),
-               ('firmware', firmware), ('capabilities', capabilities),
-               ('recorder', lambda: recorder_probe(root, directory))]
+    actions = [('capabilities', capabilities), ('recorder', lambda: recorder_probe(root, directory))]
+    if runtime.configuration is not None:
+        actions = [('services', services), ('settings', settings), ('collector', collector), ('firmware', firmware), *actions]
+    elif expected_configuration is not None:
+        checks['settings'] = blocked('No world exists to match expected_configuration', 'Use configure_session to build the world')
+    else:
+        for name in ('services', 'settings', 'collector', 'firmware'):
+            checks[name] = {'outcome': 'not_applicable', 'reason': 'No world exists yet; configure_session builds one'}
     try:
         async with asyncio.timeout(PREFLIGHT_TIMEOUT_S):
             for name, action in actions:
@@ -160,7 +165,7 @@ async def preflight(runtime, root, expected_configuration=None):
         result['timeout'] = True
     for name, _ in actions:
         checks.setdefault(name, blocked('Preflight time budget exhausted', 'Inspect preflight logs and retry after fixing connectivity'))
-    result.update(outcome='passed' if all(item['outcome'] == 'passed' for item in checks.values()) else 'blocked',
+    result.update(outcome='passed' if all(item['outcome'] in ('passed', 'not_applicable') for item in checks.values()) else 'blocked',
                   wall_s=time.monotonic() - started,
                   artifacts={str(path.relative_to(directory)): str(path) for path in directory.rglob('*') if path.is_file()},
                   manifest=str(directory / 'preflight.json'))

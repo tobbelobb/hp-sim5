@@ -45,7 +45,7 @@ test('profiling selects the requested engine and records the loaded native artif
 });
 
 test('replay preserves same-step FIFO, idle settling, settings and encoder reads', () => {
-  const source = fs.readFileSync(fileURLToPath(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url)), 'utf8');
+  const source = fs.readFileSync(fileURLToPath(new URL('../../public/usd_scenes/hp3.usda', import.meta.url)), 'utf8');
   const workload = loadWorkload(events([
     { step: 0, type: 'bridge_payload', payload: { type: 'simulation_settings', closedLoopMotorsEnabled: true } },
     ...[.01, .02].map(A => ({ step: 1, type: 'bridge_payload', payload: { type: 'command', command: { type: 'Move', A } } })),

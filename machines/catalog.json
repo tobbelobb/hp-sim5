@@ -1,0 +1,333 @@
+{
+  "scenes": {
+    "public/usd_scenes/hp4.usda": {
+      "name": "Hangprinter version 4",
+      "machine_type": "hangprinter_4"
+    },
+    "public/usd_scenes/hp3.usda": {
+      "name": "Hangprinter version 3",
+      "machine_type": "hangprinter_3"
+    },
+    "public/usd_scenes/four_high_anchors.usda": {
+      "name": "Four High Anchors",
+      "machine_type": "skycam"
+    },
+    "public/usd_scenes/cubecorners.usda": {
+      "name": "CubeCorners",
+      "machine_type": "cubecorners"
+    },
+    "public/usd_scenes/slideprinter_multi_unit.usda": {
+      "name": "Slideprinter Multi Unit"
+    },
+    "public/usd_scenes/slideprinter.usda": {
+      "name": "Slideprinter",
+      "machine_type": "slideprinter"
+    },
+    "public/usd_scenes/slideprinter_hexagon.usda": {
+      "name": "Slideprinter Hexagon"
+    },
+    "public/usd_scenes/slideprinter_single_pinholes.usda": {
+      "name": "Slideprinter Single Pinholes"
+    }
+  },
+  "machines": [
+    {
+      "name": "Hangprinter version 4 without line layering",
+      "nicknames": [
+        "hp4",
+        "hangprinter_4"
+      ],
+      "scene": "public/usd_scenes/hp4.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_hp4.g",
+      "klipper_config": "public/klipper/hp4/printer-hp4-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp4_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp4_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Hangprinter version 4 with line layering",
+      "nicknames": [
+        "hp4_w_line_layers",
+        "hangprinter_4_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/hp4.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_hp4_w_line_layers.g",
+      "klipper_config": "public/klipper/hp4/printer-hp4-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp4_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp4_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "Hangprinter version 3 without line layering",
+      "nicknames": [
+        "hp3",
+        "hangprinter_3"
+      ],
+      "scene": "public/usd_scenes/hp3.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_hp3.g",
+      "klipper_config": "public/klipper/hp3/printer-hp3-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp3_no_buildup.can",
+          "klipper": "public/mcu_commands/hp3/Hangprinter_logo6_no_buildup.serial"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp3_no_buildup.can",
+          "klipper": "public/mcu_commands/hp3/draw_squares_bigger_no_buildup.serial"
+        }
+      }
+    },
+    {
+      "name": "Hangprinter version 3 with line layering",
+      "nicknames": [
+        "hp3_w_line_layers",
+        "hangprinter_3_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/hp3.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_hp3_w_line_layers.g",
+      "klipper_config": "public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp3_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp3_w_line_layers.can",
+          "klipper": "public/mcu_commands/hp3/draw_squares_bigger_buildup.serial"
+        }
+      }
+    },
+    {
+      "name": "Four High Anchors without line layering",
+      "nicknames": [
+        "four_high_anchors",
+        "skycam"
+      ],
+      "scene": "public/usd_scenes/four_high_anchors.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_skycam.g",
+      "klipper_config": "public/klipper/skycam/printer-skycam-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_skycam_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_skycam_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Four High Anchors with line layering",
+      "nicknames": [
+        "four_high_anchors_w_line_layers",
+        "skycam_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/four_high_anchors.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_skycam_w_line_layers.g",
+      "klipper_config": "public/klipper/skycam/printer-skycam-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_skycam_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_skycam_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "CubeCorners without line layering",
+      "nicknames": [
+        "cubecorners"
+      ],
+      "scene": "public/usd_scenes/cubecorners.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_cubecorners.g",
+      "klipper_config": "public/klipper/cubecorners/printer-cubecorners-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_cubecorners_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_cubecorners_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "CubeCorners with line layering",
+      "nicknames": [
+        "cubecorners_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/cubecorners.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_cubecorners_w_line_layers.g",
+      "klipper_config": "public/klipper/cubecorners/printer-cubecorners-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_cubecorners_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_cubecorners_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter Multi Unit without line layering",
+      "nicknames": [
+        "slideprinter_multi_unit"
+      ],
+      "scene": "public/usd_scenes/slideprinter_multi_unit.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter Multi Unit with line layering",
+      "nicknames": [
+        "slideprinter_multi_unit_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/slideprinter_multi_unit.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter_w_line_layers.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter without line layering",
+      "nicknames": [
+        "slideprinter"
+      ],
+      "scene": "public/usd_scenes/slideprinter.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter with line layering",
+      "nicknames": [
+        "slideprinter_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/slideprinter.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter_w_line_layers.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_w_line_layers.can",
+          "klipper": "public/mcu_commands/slideprinter/Hangprinter_logo6_buildup.serial"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter Hexagon without line layering",
+      "nicknames": [
+        "slideprinter_hexagon"
+      ],
+      "scene": "public/usd_scenes/slideprinter_hexagon.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter Hexagon with line layering",
+      "nicknames": [
+        "slideprinter_hexagon_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/slideprinter_hexagon.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter_w_line_layers.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter Single Pinholes without line layering",
+      "nicknames": [
+        "slideprinter_single_pinholes"
+      ],
+      "scene": "public/usd_scenes/slideprinter_single_pinholes.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Slideprinter Single Pinholes with line layering",
+      "nicknames": [
+        "slideprinter_single_pinholes_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/slideprinter_single_pinholes.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_slideprinter_w_line_layers.g",
+      "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_w_line_layers.can"
+        }
+      }
+    }
+  ]
+}

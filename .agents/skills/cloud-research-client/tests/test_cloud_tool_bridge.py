@@ -34,7 +34,7 @@ def relay(tmp_path):
     session.mkdir()
     owner = tmp_path / 'request.json'
     bridge.write(owner, {'request_id': 'fixture-live-tools', 'state': 'running'})
-    runtime = RuntimeService(ROOT, session / 'native', record=False, machine='hp3').start()
+    runtime = RuntimeService(ROOT, session / 'native', record=False).start()
     bridge.write(session / 'connection.json', {'repo': str(ROOT), 'session_id': runtime.call('status')['session_id'],
                                               'runtime_endpoint': runtime.endpoint, 'runtime_token': runtime.token,
                                               'viewer_endpoint': None})
@@ -57,7 +57,7 @@ def test_real_mcp_tools_work_without_sockets_in_requester(relay, monkeypatch):
         status = bridge.call(connection, 'hp_sim5', 'call_tool', tool='runtime_status')['structuredContent']
         assert status['step'] == 0
         first = bridge.call(connection, 'hp_sim5', 'call_tool', tool='run_experiment',
-                            arguments={'steps': 3, 'record': False})['structuredContent']
+                            arguments={'scene': 'public/usd_scenes/hp4.usda', 'steps': 3, 'record': False})['structuredContent']
         assert first['status'] == 'complete'
         readback = bridge.call(connection, 'hp_sim5', 'call_tool', tool='read_experiment',
                                arguments={'run_id': first['run_id'], 'start_step': 0, 'limit': 4})['structuredContent']

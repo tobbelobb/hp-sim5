@@ -34,7 +34,7 @@ import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.j
 
 import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
 
-const usdPath = path.resolve(process.cwd(), 'public/usd_scenes/hp3_rigid_body.usda');
+const usdPath = path.resolve(process.cwd(), 'public/usd_scenes/hp3.usda');
 
 function createCanvas() {
   return {

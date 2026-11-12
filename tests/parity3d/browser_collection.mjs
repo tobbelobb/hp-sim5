@@ -55,7 +55,7 @@ try {
         return { backend: 'chromium-browser-js', collector_time_s: time, step: steps, simulated_s: steps * dt };
       },
     };
-  }, { scene: fs.readFileSync('public/usd_scenes/hp3_rigid_body.usda', 'utf8'), wsPort });
+  }, { scene: fs.readFileSync('public/usd_scenes/hp3.usda', 'utf8'), wsPort });
   await bridge.waitForHpSimConnection(10000);
   if (!bridge.hasReadyWsClients()) throw new Error('Browser did not connect');
   server = http.createServer(async (request, response) => {
@@ -101,7 +101,7 @@ try {
   headlessRrf = spawn('RRF/build/rrf_simulator', ['--vsd', 'RRF/run/vsd', '-c', 'sys/config_hp3_w_line_layers.g',
     '--server', '-p', String(firmwarePort)], { stdio: ['ignore', headlessLog, headlessLog] });
   await waitForRrfSimulator(firmwareUrl, 30000);
-  headlessService = spawn('node', ['scripts/autocal_headless.mjs', 'public/usd_scenes/hp3_rigid_body.usda',
+  headlessService = spawn('node', ['scripts/autocal_headless.mjs', 'public/usd_scenes/hp3.usda',
     firmwareUrl, String(socketPort), String(servicePort), headlessDir, 'true'], { stdio: ['ignore', headlessLog, headlessLog] });
   const deadline = Date.now() + 30000;
   while (true) {

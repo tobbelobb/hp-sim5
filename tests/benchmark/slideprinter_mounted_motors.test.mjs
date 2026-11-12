@@ -9,7 +9,7 @@ import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import { EncoderComponent, OrientationComponent, RigidBodyComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 
-const scene = fs.readFileSync(new URL('../../public/usd_scenes/slideprinter_single_pinholes_rigid_body.usda', import.meta.url), 'utf8');
+const scene = fs.readFileSync(new URL('../../public/usd_scenes/slideprinter_single_pinholes.usda', import.meta.url), 'utf8');
 const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 
 // Protect the mounted rotor DOFs themselves. Backend parity alone cannot show

@@ -83,11 +83,11 @@ test('failed recorder connection releases physics backpressure', async () => {
 });
 
 test.each([
-  ['hangprinter_3', 'hp3_rigid_body.usda'],
-  ['hangprinter_4', 'hp4_rigid_body.usda'],
-  ['skycam', 'four_high_anchors_rigid_body.usda'],
-  ['cubecorners', 'cubecorners_rigid_body.usda'],
-  ['slideprinter', 'slideprinter_rigid_body.usda'],
+  ['hangprinter_3', 'hp3.usda'],
+  ['hangprinter_4', 'hp4.usda'],
+  ['skycam', 'four_high_anchors.usda'],
+  ['cubecorners', 'cubecorners.usda'],
+  ['slideprinter', 'slideprinter.usda'],
 ])('machine %s replaces other scenes before acknowledging settings', async (machineType, sourceKey) => {
   const world = new World();
   let finishLoading;

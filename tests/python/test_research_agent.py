@@ -9,7 +9,7 @@ import pytest
 from hp_sim5_research.archive import session_name
 
 ROOT = Path(__file__).resolve().parents[2]
-SCENE = 'public/usd_scenes/hp4_rigid_body.usda'
+SCENE = 'public/usd_scenes/hp3.usda'
 
 
 @pytest.mark.parametrize('error,build_code', [('', 0),
@@ -17,11 +17,8 @@ SCENE = 'public/usd_scenes/hp4_rigid_body.usda'
     ('Native Rust physics is missing: physics.node', 0),
     ('Native Rust physics build is stale.', 1),
     ('Unexpected addon error', 0)])
-def test_launcher_native_build_recovery(monkeypatch, capsys, error, build_code):
-    import importlib.util
-    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
-    launcher = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(launcher)
+def test_world_native_build_recovery(monkeypatch, capsys, error, build_code):
+    from hp_sim5_research import js_physics
     calls = []
 
     def run(command, **kwargs):
@@ -32,13 +29,13 @@ def test_launcher_native_build_recovery(monkeypatch, capsys, error, build_code):
         assert command == ['npm', 'run', 'build:native']
         return subprocess.CompletedProcess(command, build_code)
 
-    monkeypatch.setattr(launcher.subprocess, 'run', run)
+    monkeypatch.setattr(js_physics.subprocess, 'run', run)
     rebuild = error.startswith('Native Rust physics')
     if error and (not rebuild or build_code):
         with pytest.raises(RuntimeError, match='recompilation failed' if rebuild else 'check failed'):
-            launcher.ensure_native_physics()
+            js_physics.ensure_native_physics(ROOT)
     else:
-        launcher.ensure_native_physics()
+        js_physics.ensure_native_physics(ROOT)
     assert len(calls) == (2 if rebuild else 1)
     assert capsys.readouterr().err == ('Native Rust physics build is stale, recompiling\n' if rebuild else '')
 
@@ -97,7 +94,10 @@ def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experi
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     root = experiment_root
     baseline = run_experiment(root, steps=200, record=False)
-    trial = run_experiment(root, steps=200, commands=[{'type': 'Move', 'A': .01}], record=False)
+    # Reel in the load-bearing D lines gradually. A small offset on a low
+    # anchor can leave HP3's final effector position unchanged.
+    commands = [{'type': 'Move', 'D': step * .0003} for step in range(200)]
+    trial = run_experiment(root, steps=200, commands=commands, record=False)
     difference = compare_runs(root, baseline['run_id'], trial['run_id'])
     assert difference['changed_inputs'] == ['commands_sha256']
     assert max(difference['final_effector_distance_m'].values()) > 1e-6
@@ -192,16 +192,16 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         assert config_tool.input_schema['properties']['configuration']['$ref'] == '#/$defs/WorldSettings'
         settings_schema = config_tool.input_schema['$defs']['WorldSettings']
         assert settings_schema['additionalProperties'] is False
-        assert settings_schema['properties']['machine']['enum'] == ['hp3', 'hp4']
+        assert 'enum' not in str(settings_schema['properties']['machine'])
         autocal_tool = next(tool for tool in tools if tool.name == 'start_autocal')
         recording = autocal_tool.input_schema['properties']['recording_mode']
         assert recording['enum'] == ['none', 'events', 'sampled', 'full']
         assert recording['default'] == 'events'
         result = await client.call_tool('capabilities', {})
         assert not result.is_error
-        assert SCENE in result.structured_content['scenes']
+        assert result.structured_content['machine_catalog'].startswith('machines/catalog.json')
         assert result.structured_content['full_autocal']['default_recording_mode'] == 'events'
-        result = await client.call_tool('run_experiment', {'steps': 3, 'record': False})
+        result = await client.call_tool('run_experiment', {'scene': SCENE, 'steps': 3, 'record': False})
         assert not result.is_error, result.content
         run = result.structured_content
         assert run['status'] == 'complete'
@@ -216,14 +216,14 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         assert captured.structured_content['run_id'] == run['run_id']
         assert captured.structured_content['backend'] == 'headless-js'
         assert captured.structured_content['physics_engine'] == 'rust-native'
-        result = await client.call_tool('run_experiment', {'commands': [{'type': 'Move', 'A': 'bad'}]})
+        result = await client.call_tool('run_experiment', {'scene': SCENE, 'commands': [{'type': 'Move', 'A': 'bad'}]})
         assert result.is_error
 
 
 @pytest.mark.parametrize('network_override', [None, False])
 def test_launcher_dry_run_works_outside_repo_and_preserves_prompt(network_override):
     prompt = 'Compare $targets and `angles`, with "quoted" names.\nRetain failed trials.'
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--viewer', 'none', '--prompt', prompt]
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none', '--prompt', prompt]
     if network_override is not None:
         command += ['--', '-c', 'sandbox_workspace_write.network_access=false']
     result = subprocess.run(command,
@@ -242,7 +242,7 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt(network_overri
 
 
 def test_launcher_selects_model_provider_and_model_by_option_or_forwarding():
-    base = [str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--viewer', 'none', '--sidebar-section', 'none']
+    base = [str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none', '--sidebar-section', 'none']
     result = subprocess.run(base + ['--model-provider', 'opencode_go', '--model', 'deepseek-v4.1-flash',
                                     '--prompt', 'Research check'], capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
@@ -274,7 +274,7 @@ def test_launcher_selects_model_provider_and_model_by_option_or_forwarding():
 
 def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     target = tmp_path / 'worktrees'
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--worktree', '--worktree-dir',
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--worktree', '--worktree-dir',
                              str(target), '--viewer', 'none', '--prompt', 'Optimize anchor layout'],
                             capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
@@ -286,7 +286,7 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
                                                'src/wasm/cable_solver/target/native/physics.node'}
     assert isinstance(plan['worktree']['includes'], list)
     assert not target.exists()
-    missing = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--worktree-dir', str(target),
+    missing = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--worktree-dir', str(target),
                               '--viewer', 'none', '--prompt', 'x'], capture_output=True, text=True, timeout=15)
     assert missing.returncode != 0 and '--worktree-dir requires --worktree' in missing.stderr
 
@@ -389,10 +389,9 @@ def test_launcher_loads_provider_key_from_env_file_without_leaking_it(tmp_path, 
     spec.loader.exec_module(launcher)
     monkeypatch.setattr(launcher, 'ENV_FILE', env_file)
     monkeypatch.setattr(launcher, 'RuntimeService', _stub_runtime_service())
-    monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     session = tmp_path / 'provider session'
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--codex', '--viewer', 'none', '--prompt', 'provider key check',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--viewer', 'none', '--prompt', 'provider key check',
                                       '--model-provider', 'opencode_go', '--model', 'deepseek-v4.1-flash',
                                       '--session-dir', str(session), '--sidebar-section', 'none'])
     assert launcher.main() == 0
@@ -409,7 +408,7 @@ def _stub_runtime_service():
         endpoint = 'http://127.0.0.1:12345'
         token = 'test-runtime-secret'
 
-        def __init__(self, root, directory, viewer_endpoint, *, backend, record, machine):
+        def __init__(self, root, directory, viewer_endpoint, *, backend, record):
             self.directory = directory
 
         def start(self):
@@ -426,7 +425,7 @@ def _stub_runtime_service():
 
 def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp_path):
     session = tmp_path / 'HP3 radius validation'
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--viewer', 'none',
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none',
                              '--sidebar-section', 'none', '--name', 'HP3 radius validation',
                              '--session-dir', str(session), '--prompt', 'Test candidate ranking'],
                             capture_output=True, text=True, timeout=15)
@@ -448,7 +447,7 @@ def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp
     (['--serve', '--dont-ask'], False),
 ])
 def test_launcher_clarification_setting(backend, options, enabled):
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', backend, '--dry-run', '--viewer', 'none', *options]
+    command = [str(ROOT / 'hp-sim5-research-agent'), backend, '--dry-run', '--viewer', 'none', *options]
     if '--serve' not in options:
         command += ['--prompt', 'Research check']
     result = subprocess.run(command, capture_output=True, text=True, timeout=15)
@@ -467,7 +466,7 @@ def test_launcher_clarification_setting(backend, options, enabled):
     ([], True), (['--goal-mode'], True), (['--no-goal-mode'], False),
 ])
 def test_launcher_goal_mode_setting(backend, options, enabled):
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', backend, '--dry-run', '--viewer', 'none', *options, '--prompt', 'Research check']
+    command = [str(ROOT / 'hp-sim5-research-agent'), backend, '--dry-run', '--viewer', 'none', *options, '--prompt', 'Research check']
     result = subprocess.run(command, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
     argv = json.loads(result.stdout)['argv']
@@ -490,7 +489,7 @@ def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(tmp_pat
     codex.chmod(0o755)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     section = '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--viewer', 'none',
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none',
                '--sidebar-section', section, *mode]
     if '--serve' not in mode:
         command += ['--prompt', 'Research check', '--', '-c', 'features.apps=true']
@@ -509,7 +508,7 @@ def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(tmp_pat
     instructions = next(value for value in argv if value.startswith('developer_instructions='))
     assert 'move_thread_to_sidebar_section' not in instructions
     assert section not in instructions
-    disabled = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--dry-run', '--sidebar-section', 'none'],
+    disabled = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--sidebar-section', 'none'],
                               capture_output=True, text=True, timeout=15)
     assert disabled.returncode == 0, disabled.stderr
     assert not disabled.stderr
@@ -558,10 +557,9 @@ else:
         endpoint = 'http://127.0.0.1:12345'
         token = 'test-runtime-secret'
 
-        def __init__(self, root, directory, viewer_endpoint, *, backend, record, machine):
+        def __init__(self, root, directory, viewer_endpoint, *, backend, record):
             assert backend == 'headless-js'
             assert record
-            assert machine == 'hp4'
             self.directory = directory
             self.closed = False
             services.append(self)
@@ -579,26 +577,29 @@ else:
     if real_runtime:
         runtime_service = launcher.RuntimeService
 
-        def start_real_service(root, directory, viewer_endpoint, *, backend, record, machine):
-            service = runtime_service(root, directory, viewer_endpoint, backend=backend, record=record, machine=machine)
+        def start_real_service(root, directory, viewer_endpoint, *, backend, record):
+            service = runtime_service(root, directory, viewer_endpoint, backend=backend, record=record)
             services.append(service)
             return service
 
         monkeypatch.setattr(launcher, 'RuntimeService', start_real_service)
     else:
         monkeypatch.setattr(launcher, 'RuntimeService', Service)
-        monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
 
     def forbidden_doctor():
         pytest.fail('Normal research startup must not run doctor or collect sweeps')
 
+    def forbidden_physics(root):
+        pytest.fail('Normal research startup must not check or build native physics')
+
     monkeypatch.setattr(launcher, 'doctor', forbidden_doctor)
+    monkeypatch.setattr('hp_sim5_research.js_physics.ensure_native_physics', forbidden_physics)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
     session_root = tmp_path / 'research/output' if managed else tmp_path
     session = session_root / session_name('HP3 held-out validation')
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--codex', '--viewer', 'none', '--prompt', 'preservation check',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--viewer', 'none', '--prompt', 'preservation check',
                                     '--session-dir', str(session),
                                     '--sidebar-section', '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'] + (['--batch'] if batch else []))
     assert launcher.main() == 0
@@ -635,13 +636,16 @@ else:
     assert 'research_attach.py' in launch
     metadata = json.loads(launch)
     assert 'preflight' not in metadata
-    assert metadata['runtime_status']['connected']
     assert metadata['runtime_status']['step'] == 0
-    assert metadata['runtime_status']['queue_length'] == 0
+    if real_runtime:
+        # The launcher builds no world; configure_session does.
+        assert not metadata['runtime_status']['connected'] and metadata['runtime_status']['machine_design'] is None
+    else:
+        assert metadata['runtime_status']['connected'] and metadata['runtime_status']['queue_length'] == 0
 
 def test_launcher_refuses_existing_session_without_overwriting_evidence(tmp_path):
     (tmp_path / 'exit.json').write_text('{"returncode": 42}')
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--viewer', 'none',
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--viewer', 'none',
                              '--session-dir', str(tmp_path)], capture_output=True, text=True, timeout=10)
     assert result.returncode == 1
     assert (tmp_path / 'exit.json').read_text() == '{"returncode": 42}'
@@ -670,9 +674,8 @@ def test_launcher_interrupted_runtime_startup_closes_partial_service(tmp_path, m
                 raise RuntimeError('fixture cleanup failure')
 
     monkeypatch.setattr(launcher, 'RuntimeService', Service)
-    monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     session = tmp_path / 'interrupted session'
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--codex', '--batch', '--viewer', 'none',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--batch', '--viewer', 'none',
                                     '--sidebar-section', 'none', '--prompt', 'Interrupted startup',
                                     '--session-dir', str(session)])
     assert launcher.main() == 130
@@ -745,7 +748,7 @@ def test_service_only_launcher_exits_cleanly_on_supervisor_shutdown(tmp_path):
     import time
     from hp_sim5_research.services import request
     directory = tmp_path / 'desktop-session'
-    process = subprocess.Popen([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--codex', '--serve', '--viewer', 'none',
+    process = subprocess.Popen([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--serve', '--viewer', 'none',
                                 '--session-dir', str(directory)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         deadline = time.monotonic() + 20
@@ -766,7 +769,7 @@ def test_service_only_launcher_exits_cleanly_on_supervisor_shutdown(tmp_path):
 
 @pytest.mark.parametrize('flags', [[], ['--codex', '--claude']])
 def test_launcher_requires_exactly_one_backend(flags):
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', *flags, '--dry-run'],
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), *flags, '--dry-run'],
                             capture_output=True, text=True, timeout=15)
     assert result.returncode == 2
     assert '--codex' in result.stderr and '--claude' in result.stderr
@@ -774,7 +777,7 @@ def test_launcher_requires_exactly_one_backend(flags):
 
 @pytest.mark.parametrize('batch', [False, True])
 def test_claude_dry_run_uses_session_attachment_and_preserves_forwarded_options(batch):
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--machine', 'hp4', '--claude', '--dry-run',
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--claude', '--dry-run',
                              '--model', 'haiku', '--dont-ask', '--prompt', 'Research check',
                              *(['--batch'] if batch else []), '--', '--resume', 'session-id'],
                             capture_output=True, text=True, timeout=15)
@@ -846,9 +849,8 @@ else:
     executable.chmod(0o755)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setattr(launcher, 'RuntimeService', Service)
-    monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     session = tmp_path / 'session'
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--machine', 'hp4', '--claude', '--viewer', 'none',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--claude', '--viewer', 'none',
                                     '--session-dir', str(session), '--prompt', 'Claude lifecycle check',
                                     *(['--batch'] if batch else [])])
     assert launcher.main() == int(error)
@@ -860,15 +862,16 @@ else:
         assert len((session / 'events.jsonl').read_text().splitlines()) == 2
 
 
-@pytest.mark.parametrize('backend', ['--codex', '--claude'])
-@pytest.mark.parametrize('transport', ['local', 'cloud'])
-def test_launcher_requires_machine_before_creating_session(tmp_path, backend, transport):
-    session = tmp_path / 'missing-machine'
+@pytest.mark.parametrize('backend,transport', [('--codex', 'local'), ('--claude', 'local'), ('--codex', 'cloud')])
+def test_launcher_runs_without_a_machine(tmp_path, backend, transport):
+    session = tmp_path / 'no-machine'
     result = subprocess.run(
         [str(ROOT / 'hp-sim5-research-agent'), backend, '--batch', '--prompt', 'Inspect evidence',
          '--session-dir', str(session), '--dry-run'],
         env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT=transport),
         capture_output=True, text=True, timeout=5)
-    assert result.returncode == 2
-    assert 'required: --machine' in result.stderr
-    assert not session.exists()
+    assert result.returncode == 0, result.stderr
+    assert 'machine' not in json.loads(result.stdout)['argv']
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), backend, '--machine', 'hp4', '--dry-run'],
+                            capture_output=True, text=True, timeout=5)
+    assert result.returncode == 2 and 'unrecognized arguments: --machine' in result.stderr

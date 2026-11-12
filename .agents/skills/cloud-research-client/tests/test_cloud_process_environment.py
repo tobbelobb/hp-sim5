@@ -58,6 +58,7 @@ def test_direct_python_from_stale_parent_loads_setup(tmp_path, script, arguments
     (tmp_path / 'research-program-feature/role-instructions').symlink_to(ROOT / 'research-program-feature/role-instructions', target_is_directory=True)
     (tmp_path / 'src').mkdir()
     (tmp_path / 'src/python').symlink_to(ROOT / 'src/python', target_is_directory=True)
+    (tmp_path / 'machines').symlink_to(ROOT / 'machines', target_is_directory=True)
     marker = tmp_path / 'loaded'
     (tmp_path / '.agents/skills/cloud-research-client/scripts/env.sh').write_text(
         f'printf loaded > "{marker}"\n' + (ROOT / '.agents/skills/cloud-research-client/scripts/env.sh').read_text())

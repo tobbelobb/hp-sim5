@@ -16,6 +16,7 @@
       "type": "string",
       "enum": [
         "slideprinter",
+        "hangprinter_3",
         "hangprinter_4",
         "hangprinter_5",
         "cubecorners",

@@ -5,9 +5,10 @@ import {
   PRESET_GCODE_MAP,
   describeSelectedPresetFile,
   getPresetActionLabel,
+  machineForSourceKey,
   resolvePresetCommand,
 } from './commandPresetResolver.js';
-import { RRF_CONFIG_VARIANTS_BY_USDA_KEY, buildPublicProjectUrl } from './machineCatalog.js';
+import { buildRepositoryFileUrl } from './machineCatalog.js';
 import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { KLIPPER_UPLOAD_PIPELINE, shouldUseRawKlipperUploadPipeline } from './workerController.js';
 
@@ -215,11 +216,10 @@ export function createCommandJobController({
 
   function resolveActiveRrfConfigPath() {
     for (const sourceKey of machines.getActiveSourceKeys()) {
-      const variants = RRF_CONFIG_VARIANTS_BY_USDA_KEY[sourceKey];
-      if (!variants) {
-        continue;
+      const machine = machineForSourceKey(sourceKey, state.lineLayeringEnabled === true);
+      if (machine) {
+        return machine.rrf_config;
       }
-      return state.lineLayeringEnabled && variants.lineLayered ? variants.lineLayered : variants.default;
     }
     return null;
   }
@@ -233,7 +233,7 @@ export function createCommandJobController({
       return;
     }
     try {
-      const response = await fetch(buildPublicProjectUrl(configPath));
+      const response = await fetch(buildRepositoryFileUrl(configPath));
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -256,16 +256,17 @@ export function createCommandJobController({
       return;
     }
     const preset = resolvePresetCommand(presetKey, state.lineLayeringEnabled, machines.getActiveSourceKeys());
-    if (!preset?.url) {
+    if (!preset) {
       console.warn('hp-sim-3d: unknown preset', presetKey);
       return;
     }
-    console.info(`hp-sim-3d: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(preset.url));
-    const referencePresetKey = preset.referencePresetKey || presetKey;
+    const presetUrl = buildRepositoryFileUrl(preset.path);
+    console.info(`hp-sim-3d: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(presetUrl));
+    const { referencePresetKey } = preset;
     inspectionTools?.loadForPreset?.(referencePresetKey, { setActive: true }).catch((error) => {
       console.warn('hp-sim-3d: failed to prepare reference path for preset', referencePresetKey, error);
     });
-    const format = preset.format || detectFileFormat(preset.url);
+    const format = preset.format;
     let worker = null;
     if (format === FileFormat.GCODE) {
       worker = workers.ensureMoveWorker();
@@ -292,7 +293,7 @@ export function createCommandJobController({
     if (isRrfFormat(format)) {
       await configureRrfWorkerForActiveMachine(worker);
     }
-    worker.postMessage({ type: 'filename_fetch', filename: preset.url });
+    worker.postMessage({ type: 'filename_fetch', filename: presetUrl });
   }
 
   async function queueCommandFile(file, detectedFormat = null) {

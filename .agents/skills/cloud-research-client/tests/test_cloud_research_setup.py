@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[4]
 @pytest.mark.parametrize('launcher,arguments,cloud', [
     ('hp-sim5-research-program', ['--cloud', '--question', 'fixture', '--dry-run'], True),
     ('hp-sim5-research-program', ['--codex', '--question', 'fixture', '--dry-run'], False),
-    ('hp-sim5-research-agent', ['--codex', '--batch', '--machine', 'hp3', '--prompt', 'fixture', '--dry-run'], True),
+    ('hp-sim5-research-agent', ['--codex', '--batch', '--prompt', 'fixture', '--dry-run'], True),
 ])
 def test_entry_loads_cloud_environment_without_parent_sourcing(tmp_path, launcher, arguments, cloud):
     scripts = tmp_path / '.agents/skills/cloud-research-client/scripts'
@@ -30,7 +30,7 @@ def test_entry_loads_cloud_environment_without_parent_sourcing(tmp_path, launche
         (tmp_path / directory).mkdir(parents=True, exist_ok=True)
     for script in ('scripts/research_agent.py', 'research-program-feature/scripts/research_program.py'):
         shutil.copy2(ROOT / script, tmp_path / script)
-    for directory in ('src/python', 'research-program-feature/program', 'research-program-feature/role-instructions',
+    for directory in ('src/python', 'machines', 'research-program-feature/program', 'research-program-feature/role-instructions',
                       'research', 'hp-sim-3d'):
         (tmp_path / directory).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / directory).symlink_to(ROOT / directory, target_is_directory=True)

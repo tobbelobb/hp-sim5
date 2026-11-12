@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 import re
 
+import machines
+
 from .store import ProgramError, _object, _text
 
 
@@ -16,7 +18,6 @@ ROLE_FILES = {
 PORTFOLIO_VERSION = 1
 PROMPT_KINDS = ('experiment', 'scouting', 'literature', 'tooling')
 PROMPT_INTENTS = ('implementation', 'diagnosis', 'exploration', 'tooling')
-MACHINES = ('hp3', 'hp4', 'any')
 
 
 def role_instructions(role):
@@ -77,9 +78,12 @@ class PromptPortfolio:
                 raise ProgramError(f'Unknown prompt kind for {identity}')
             if entry.get('intent') not in PROMPT_INTENTS:
                 raise ProgramError(f'Unknown prompt intent for {identity}')
-            machines = _text_list(entry.get('machines'), f'{identity} machines')
-            if any(machine not in MACHINES for machine in machines):
-                raise ProgramError(f'Unknown machine for {identity}')
+            for machine in _text_list(entry.get('machines'), f'{identity} machines'):
+                if machine != 'any':
+                    try:
+                        machines.machine(machine)
+                    except ValueError:
+                        raise ProgramError(f'Unknown machine for {identity}') from None
             _text_list(entry.get('expected_deliverables'), f'{identity} expected_deliverables')
             _text_list(entry.get('related_evidence'), f'{identity} related_evidence')
             for key in ('title', 'decision_value', 'novelty', 'readiness', 'last_reviewed'):

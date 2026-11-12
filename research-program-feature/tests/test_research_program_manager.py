@@ -429,16 +429,14 @@ def test_manager_forwarded_provider_and_model_share_existing_helpers(tmp_path):
     assert 'model_provider="openai"' not in plan['argv']
 
 
-def test_missing_worker_machine_does_not_charge_or_spawn(manager):
+def test_worker_machine_is_optional_and_never_a_launcher_flag(manager):
     a = attach(manager)
     work = assignment(a)
-    before = tool(a, 'overview')
-    error = tool(a, 'worker_start', {'assignment_id': work['id']}, ok=False)
-    assert error['code'] == 'invalid_request'
-    assert 'settings.machine' in error['message']
-    assert tool(a, 'worker_sessions') == []
-    assert tool(a, 'overview') == before
-    assert 'Required hp3/hp4' in tool(a, 'capabilities')['worker_machine']
+    started = tool(a, 'worker_start', {'assignment_id': work['id']})
+    assert '--machine' not in started['details']['argv']
+    assert 'machine' not in started['details']['settings']
+    assert 'Machine:' not in Path(started['details']['attempt_dir'], 'prompt.txt').read_text()
+    assert 'machines/catalog.json' in tool(a, 'capabilities')['worker_machine']
 
 
 def test_manager_answers_worker_question_through_bound_cli(manager):

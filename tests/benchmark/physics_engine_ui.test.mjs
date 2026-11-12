@@ -25,7 +25,7 @@ for (const [name, createBackend] of [
   try {
     // Reuse the backend as the browser does when resetting or changing machines.
     for (const machine of ['hp4', 'hp3', 'hp4']) {
-      const scene = fs.readFileSync(new URL(`../../public/usd_scenes/${machine}_rigid_body.usda`, import.meta.url), 'utf8');
+      const scene = fs.readFileSync(new URL(`../../public/usd_scenes/${machine}.usda`, import.meta.url), 'utf8');
       const actual = createHeadlessWorld(scene, { cableSolverBackend: backend });
       const expected = createHeadlessWorld(scene, { cableSolverBackend: reference });
       const ui = createFeatureFlagsController({ world: actual.world, state: {} });

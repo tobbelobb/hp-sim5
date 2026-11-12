@@ -8,10 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
+sys.path.insert(0, str(ROOT))
 
 from mcp.server import MCPServer
 from mcp_types import ToolAnnotations
-from hp_sim5_research.experiments import DEFAULT_SCENE, MAX_STEPS, compare_runs, read_run, run_experiment as run
+from hp_sim5_research.experiments import MAX_STEPS, compare_runs, read_run, run_experiment as run
 from hp_sim5_research.services import supervised_request, supervised_preflight
 from hp_sim5_research.test_jobs import MAX_TIMEOUT_S, SUITES
 
@@ -31,28 +32,29 @@ def capabilities() -> dict[str, Any]:
     """Discover native scenes, command units, artifact contracts and limits."""
     return {'backends': {'headless-js': 'Default native Rust physics hosted in Node; no browser/rendering',
                          'browser-js': 'The exact open 3D page via browser_status/browser_action'},
-            'session_artifacts': os.environ.get('HP_SIM5_SESSION_DIR'), 'scenes': [str(path.relative_to(ROOT)) for path in sorted((ROOT / 'public/usd_scenes').glob('*rigid_body.usda'))],
-            'default_scene': DEFAULT_SCENE, 'max_steps': MAX_STEPS,
+            'session_artifacts': os.environ.get('HP_SIM5_SESSION_DIR'),
+            'machine_catalog': 'machines/catalog.json: machine names, nicknames, scenes, firmware configs and compiled commands',
+            'max_steps': MAX_STEPS,
             'commands': {'Move': 'absolute motor angles in rad; axes object or top-level axis keys',
                          'Add to reference': 'reference angle increments in rad',
                          'SetTorqueMode': 'axis and torqueNm', 'SetPositionMode': 'axis',
                          '{}': 'hold current targets for one fixed timestep', 'E': 'deposited length in m'},
             'telemetry': 'Every step including zero: effectors, encoders, tracking errors, missed steps, lengths and forces',
-            'native_collection': {'machines': ['HP3', 'HP4'], 'firmware': 'RRF',
+            'native_collection': {'machines': 'Catalogued four-anchor Hangprinters; none is built until configure_session names one', 'firmware': 'RRF',
                                   'operations': ['start_collection', 'collection_status', 'cancel_collection', 'runtime_status', 'send_gcode', 'step_physics', 'reset_session', 'configure_session', 'start_browser_service'],
                                   'encoders': 'Raw unwrapped degrees; A/B/C/D mapped to CAN 40/41/42/43',
                                   'clock': 'Persistent fixed-step world; collector delays advance physics; reads drain motion',
                                   'settling': 'Bounded in simulation time; default 30 seconds',
                                   'services': 'Launcher-owned runtime, firmware and bridge outside the command sandbox',
                                   'configuration': {'tool': 'configure_session', 'immutable_per_generation': True,
-                                      'scenes': 'Matching stock HP3/HP4; custom anchor designs unsupported',
+                                      'machine': 'Catalogue name or nickname; selects scene, firmware config and line layering together',
                                       'radii': 'Physical base radii: one or four values, 1–200 mm; custom radii require layering off',
                                       'layered_buildup': 'Stock 2/pi only; unlayered buildup is zero',
                                       'reset': 'Retains accepted settings; reloads scene, JS and firmware sources',
                                       'active_jobs': 'Explicit cancellation required before reset or reconfiguration'}},
             'full_autocal': {'operations': ['start_autocal', 'autocal_status', 'cancel_autocal'],
                              'recording_modes': ['none', 'events', 'sampled', 'full'], 'default_recording_mode': 'events',
-                             'machines': ['hp3', 'hp4'], 'backend': 'headless-js', 'isolated_world': True,
+                             'machines': 'Catalogued machines with an autocal machine type; uses the configured world machine if omitted, otherwise requires an explicit machine', 'backend': 'headless-js', 'isolated_world': True,
                              'workflow': 'Production one-click CLI: physical collection, fitting, planning, selection, automatic stopping',
                              'statuses': ['running', 'cancelling', 'accepted', 'budget_exhausted', 'cancelled', 'failed'],
                              'limits': {'max_steps': 100, 'sweep_points': 100, 'wall_timeout_s': 14400,
@@ -155,8 +157,8 @@ def cancel_collection(job_id: str) -> dict[str, Any]:
 
 
 @mcp.tool(annotations=MUTATION)
-def start_autocal(machine: str = 'hp3', layering: bool = False,
-                  base_radii_mm: list[float] | None = None, buildup_factor: float = 0,
+def start_autocal(machine: str | None = None,
+                  base_radii_mm: list[float] | None = None, buildup_factor: float | None = None,
                   find_radii: str = 'off', find_buildup_factor: str = 'off',
                   optimizer: dict | None = None, budgets: dict | None = None,
                   collection: dict | None = None,
@@ -164,8 +166,11 @@ def start_autocal(machine: str = 'hp3', layering: bool = False,
                   recording_mode: Literal['none', 'events', 'sampled', 'full'] = 'events') -> dict[str, Any]:
     """Return a full-autocal job ID immediately; the supervisor runs an isolated production CLI world.
 
+    machine: catalogue name or nickname (machines/catalog.json); omitted uses the configured world's machine.
+    With no configured world, machine is required. Omission never chooses a machine.
     base_radii_mm: one or four known/initial radii (default [30]); fitting modes: off/global/per-anchor.
-    Nonzero or fitted buildup requires layering. optimizer: mode (fast/fast-fd/legacy), solver
+    buildup_factor defaults to 2/pi on line-layering machines, otherwise zero.
+    Nonzero or fitted buildup requires a line-layering machine. optimizer: mode (fast/fast-fd/legacy), solver
     (lbfgsb/trf), solve_iterations, solve_restarts, spool_outer_iters,
     r0_bounds_mm and b_bounds (two-element lists). budgets: max_steps (default 20),
     sweep_points (20), wall_timeout_s (3600), max_physics_steps (5000000), threads (1).
@@ -178,9 +183,13 @@ def start_autocal(machine: str = 'hp3', layering: bool = False,
     artifact_dir must be new and inside session artifacts. Poll autocal_status; cancel_autocal stops
     physical activity and finalizes partial evidence. Budget exhaustion is not automatic acceptance.
     """
-    args = dict(machine=machine, layering=layering, base_radii_mm=base_radii_mm if base_radii_mm is not None else [30],
-                buildup_factor=buildup_factor, find_radii=find_radii, find_buildup_factor=find_buildup_factor,
+    args = dict(base_radii_mm=base_radii_mm if base_radii_mm is not None else [30],
+                find_radii=find_radii, find_buildup_factor=find_buildup_factor,
                 optimizer=optimizer or {}, budgets=budgets or {}, collection=collection or {}, recording_mode=recording_mode)
+    if machine is not None:
+        args['machine'] = machine
+    if buildup_factor is not None:
+        args['buildup_factor'] = buildup_factor
     if artifact_dir is not None:
         args['artifact_dir'] = artifact_dir
     return supervised_request('start_autocal', **args)
@@ -200,10 +209,7 @@ def cancel_autocal(job_id: str) -> dict[str, Any]:
 
 class WorldSettings(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
-    machine: Literal['hp3', 'hp4'] = 'hp4'
-    layering: bool = True
-    scene: str | None = None
-    firmware_config: str | None = None
+    machine: str | None = None
     base_radii_mm: list[Annotated[float, Field(ge=1, le=200)]] | None = None
     buildup_factor: Annotated[float, Field(ge=0, le=2)] | None = None
 
@@ -212,8 +218,9 @@ class WorldSettings(BaseModel):
 def configure_session(configuration: WorldSettings) -> dict[str, Any]:
     """Archive the previous world and create a fresh configured world, RRF and encoder origin.
 
-    Supply machine hp3/hp4 and layering. Optional scene and firmware_config must select matching
-    stock repository files (firmware path relative to RRF/run/vsd). Unlayered worlds accept one
+    machine: catalogue name or nickname (machines/catalog.json); it selects scene, firmware config
+    and line layering together. Required for the first world; omitted keeps the current machine.
+    Unlayered worlds accept one
     or four physical base_radii_mm (1–200), with zero buildup. Layered worlds support stock
     30 mm base radii and buildup_factor=2/pi only. Custom anchor layouts are unsupported.
     Settings are immutable until the next configure_session; ordinary reset retains them.
@@ -302,11 +309,12 @@ def browser_action(page_id: str, action: str, args: dict | None = None) -> dict[
 
 
 @mcp.tool(annotations=MUTATION)
-def run_experiment(scene: str = DEFAULT_SCENE, steps: int = 200, dt: float | None = None,
+def run_experiment(scene: str, steps: int = 200, dt: float | None = None,
                    commands: list[dict] | None = None, commands_file: str | None = None,
                    label: str = '', record: bool = True) -> dict[str, Any]:
     """Run fresh native physics. One command per step; return measurements and saved artifact paths.
 
+    scene: repository .usda path, e.g. a machine's scene from machines/catalog.json.
     Use commands_file for large JSON arrays inside the repo. Do not supply both forms.
     {} holds targets. RRD opens in Rerun; read_run gives numeric data without a Viewer.
     """

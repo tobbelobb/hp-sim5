@@ -68,7 +68,7 @@ alone leaves the controller running. Launching a program starts no physics world
 The independent launcher uses the same researcher role:
 
 ```bash
-./hp-sim5-research-agent --codex --machine hp3 --prompt 'Your research question'
+./hp-sim5-research-agent --codex --prompt 'Your research question'
 ```
 
 Each role can invent small helpers as needed and leave proven, roughly 4–12 word

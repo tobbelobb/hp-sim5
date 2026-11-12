@@ -609,7 +609,7 @@ def test_hp4_fixed_radius_reference_parses_summary_and_iterations():
 def test_hp3_reference_truth_matches_effective_scene_anchors(axis, anchor, attachment):
     import re
 
-    scene = (REPO_ROOT / "public/usd_scenes/hp3_rigid_body.usda").read_text()
+    scene = (REPO_ROOT / "public/usd_scenes/hp3.usda").read_text()
 
     def translation(name):
         block = re.search(r'def (?:Xform|Circle) "' + name + r'"[^{}]*\{([^{}]*)\}', scene)

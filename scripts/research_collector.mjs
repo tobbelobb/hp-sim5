@@ -93,13 +93,13 @@ const server = http.createServer(async (request, response) => {
     } else if (request.url === '/collect') {
       cancellation = new AbortController();
       await fs.writeFile(args.sweepConfigFile, args.configs.map((cfg) => `[${cfg.fixed.join(',')}] ${cfg.drive} ${cfg.sensor}\n`).join(''));
-      // HP3 and HP4 both use the production four-anchor Hangprinter collector.
-      const machineType = 'hangprinter_4';
+      const machineType = args.machine_type;
       const collectorArgs = {
-        sim: true, firmware: 'rrf', machineType,
+        sim: true, firmware: 'rrf',
         noAutoTuneForce: true, fixedTargets: '0,0', forceLow: .01, forceMid: .05, forceMax: .5,
         sensorCollectionForce: 1,
         ...args.options,
+        machineType,
         lineLayering: args.layering,
         preserveBuildupFactor: args.layering,
         outputFile: args.outputFile, sweepConfigFile: args.sweepConfigFile,

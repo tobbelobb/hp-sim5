@@ -82,6 +82,7 @@ async def serve(connection_path):
     directory = Path(connection['directory'])
     root = Path(connection['root'])
     sys.path.insert(0, str(root / 'src/python'))
+    sys.path.insert(0, str(root))
     sys.path.insert(0, str(root / 'research-program-feature'))
     from program.workers import process_live
     descriptor = Path(connection['session']) / 'connection.json'
@@ -172,6 +173,7 @@ def start(root, session, owner_request):
     directory.mkdir(mode=0o700)
     connection_path = owner_request.parent / 'tool-connection.json'
     sys.path.insert(0, str(root / 'src/python'))
+    sys.path.insert(0, str(root))
     sys.path.insert(0, str(root / 'research-program-feature'))
     from program.workers import process_identity
     from hp_sim5_research.services import register_test_process
@@ -192,6 +194,7 @@ def stop(process):
     if process is not None:
         root = Path(__file__).resolve().parents[4]
         sys.path.insert(0, str(root / 'src/python'))
+        sys.path.insert(0, str(root))
         sys.path.insert(0, str(root / 'research-program-feature'))
         from hp_sim5_research.services import stop_process
         stop_process(process)

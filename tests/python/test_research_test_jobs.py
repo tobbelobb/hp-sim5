@@ -207,7 +207,7 @@ async def test_live_supervisor_shutdown_retires_test_owned_services(tmp_path, st
     from hp_sim5_research.services import RuntimeService
     service = await asyncio.to_thread(RuntimeService(ROOT, tmp_path, record=False).start)
     try:
-        before = await asyncio.to_thread(service.call, 'status')
+        before = await asyncio.to_thread(service.call, 'configure', machine='hp4_w_line_layers')
         job = await asyncio.to_thread(service.call, 'start_test', suite='headless-autocal')
         registry = Path(job['directory']) / 'process-groups.jsonl'
         owned = []

@@ -10,7 +10,7 @@ import { runTrajectory } from '../../scripts/profile_headless.mjs';
 
 const fixtures = new URL('../fixtures/engine_parity/', import.meta.url);
 test('local defaults are native, isolated, editable and safe to clear', () => {
-  const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url), 'utf8');
+  const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3.usda', import.meta.url), 'utf8');
   const first = createHeadlessWorld(scene), second = createHeadlessWorld(scene);
   assert.equal(first.world.getResource('physicsEngine'), 'rust-native');
   assert(['release', 'profiling', 'dev'].includes(first.world.getResource('physicsArtifact').build.profile));
@@ -96,7 +96,7 @@ test('native topology changes detach obsolete path views', () => {
 
 for (const machine of ['hp3', 'hp4']) {
   test(`native smoke: ${machine} consumes commands and advances encoders`, () => {
-    const scene = fs.readFileSync(new URL(`../../public/usd_scenes/${machine}_rigid_body.usda`, import.meta.url), 'utf8');
+    const scene = fs.readFileSync(new URL(`../../public/usd_scenes/${machine}.usda`, import.meta.url), 'utf8');
     const instance = createHeadlessWorld(scene);
     const commands = Array.from({ length: 20 }, (_, i) => ({ type: 'Move', A: (i + 1) * .0001 }));
     try {

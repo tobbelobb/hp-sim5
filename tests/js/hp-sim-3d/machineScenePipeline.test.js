@@ -35,7 +35,7 @@ test('the legacy rigid-group spelling resolves its member relationships', () => 
 });
 
 test.each([false, true])('paused scene load resets entity loads only when replacing (append=%s)', append => {
-  const source = name => readFileSync(`public/usd_scenes/${name}_rigid_body.usda`, 'utf8');
+  const source = name => readFileSync(`public/usd_scenes/${name}.usda`, 'utf8');
   const world = applyScene(new World(), source('hp4'), '/World/HangprinterScene', { namespace: 'old' });
   registerSimulationSystems(world);
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
