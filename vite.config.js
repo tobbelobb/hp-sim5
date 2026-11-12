@@ -4,6 +4,28 @@ import { resolve, join } from 'path';
 import { promises as fs } from 'fs';
 import fg from 'fast-glob';
 
+
+const rootRedirectPlugin = () => {
+  const redirect = (server) => {
+    server.middlewares.use((req, res, next) => {
+      if (new URL(req.url || '/', 'http://localhost').pathname !== '/') {
+        return next();
+      }
+
+      res.writeHead(302, {
+        Location: '/hp-sim5/hp-sim-3d/',
+      });
+      res.end();
+    });
+  };
+
+  return {
+    name: 'root-redirect',
+    configureServer: redirect,
+    configurePreviewServer: redirect,
+  };
+};
+
 export default defineConfig(async () => {
   const pages = await fg('**/*.html', {
     ignore: [
@@ -97,7 +119,7 @@ export default defineConfig(async () => {
       },
     },
     preview: {},
-    plugins: [coiHeadersPlugin(), copyHangprinterExtrasPlugin()],
+    plugins: [rootRedirectPlugin(), coiHeadersPlugin(), copyHangprinterExtrasPlugin()],
     assetsInclude: [
       '**/*.usda',
       '**/*.usda.txt',
