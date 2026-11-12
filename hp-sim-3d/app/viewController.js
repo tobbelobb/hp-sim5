@@ -44,6 +44,8 @@ export function createViewController({
   let secondaryControlsEverShown = false;
   let secondaryControlsUserPreference = null;
   let secondaryControlsAutoActive = false;
+  let secondaryControlsPreferenceBeforeSuppression;
+  let qualityDetailsExpanded = false;
   let viewListenerSystem = null;
   const touchTapStarts = new Map();
   const activeCanvasTouchPointers = new Set();
@@ -192,6 +194,27 @@ export function createViewController({
       setSecondaryControlsInteractive(true);
     }
     updateSecondaryToggleButton();
+  }
+
+  function syncSecondaryControlsSuppression() {
+    const suppress = qualityDetailsExpanded && isMobileLayout();
+    if (suppress) {
+      if (secondaryControlsPreferenceBeforeSuppression === undefined) {
+        secondaryControlsPreferenceBeforeSuppression = secondaryControlsUserPreference;
+      }
+      secondaryControlsUserPreference = false;
+    } else if (secondaryControlsPreferenceBeforeSuppression !== undefined) {
+      secondaryControlsUserPreference = secondaryControlsPreferenceBeforeSuppression;
+      secondaryControlsPreferenceBeforeSuppression = undefined;
+    } else {
+      return;
+    }
+    applySecondaryControlsVisibility();
+  }
+
+  function setQualityDetailsExpanded(expanded) {
+    qualityDetailsExpanded = Boolean(expanded);
+    syncSecondaryControlsSuppression();
   }
 
   function setSecondaryControlsVisible(active) {
@@ -394,6 +417,7 @@ export function createViewController({
 
   function handleLayoutChange() {
     const mobile = isMobileLayout();
+    syncSecondaryControlsSuppression();
     updateQualityToggleLabel();
     inspectionTools?.updateReferenceToggleUI?.();
     setPanMode(state.panModeActive);
@@ -884,6 +908,7 @@ export function createViewController({
   return {
     bindUi,
     isMobileLayout,
+    setQualityDetailsExpanded,
     setButtonDisabled,
     updatePrintingState,
     setSecondaryControlsVisible,

@@ -238,4 +238,20 @@ describe('QualityMonitor 3D extrusion scoring', () => {
     expect(hudElement.innerHTML).toContain('<span>A</span><span>16 (4 slips, net +4)</span>');
     expect(hudElement.innerHTML).toContain('<span>B</span><span>4 (1 slips, net -1)</span>');
   });
+
+  test('reports quality details expansion changes but not missed-step expansion', () => {
+    const hudElement = createHudElement();
+    const monitor = new QualityMonitor({ hudElement });
+    monitor.setReferenceSegments([segment([0, 0, 0], [0.1, 0, 0])]);
+    monitor.recordExtrusion({ pos: [0, 0, 0], length: 0.0005 });
+    monitor.runFinalCheck();
+    const onExpanded = jest.fn();
+    monitor.setDetailsExpandedCallback(onExpanded);
+
+    hudElement.clickSection('quality-details');
+    hudElement.clickSection('quality-details');
+    hudElement.clickSection('missed-steps');
+
+    expect(onExpanded.mock.calls).toEqual([[true], [false]]);
+  });
 });

@@ -19,6 +19,7 @@ export function createQualityController({
   getMachines,
   getMachineDisplayName,
   getReferenceOverlayState,
+  onDetailsExpandedChange,
 }) {
   const machineQualityMonitors = new Map();
   const qualityHistoryRecords = [];
@@ -40,6 +41,16 @@ export function createQualityController({
     }
   }
 
+  function notifyDetailsExpandedChange() {
+    const anyExpanded = Array.from(machineQualityMonitors.values()).some((entry) => {
+      const card = entry?.monitor?.hudElement;
+      return entry?.monitor?.qualityDetailsExpanded
+        && card instanceof HTMLElement
+        && !card.classList.contains('sim-hidden');
+    });
+    onDetailsExpandedChange?.(anyExpanded);
+  }
+
   function updateQualityHudVisibility() {
     if (!hudElement) {
       return;
@@ -49,6 +60,7 @@ export function createQualityController({
       return card instanceof HTMLElement && !card.classList.contains('sim-hidden');
     });
     hudElement.classList.toggle('sim-hidden', !hasVisibleMonitor);
+    notifyDetailsExpandedChange();
   }
 
   function ensureQualityMonitorForMachine(machine) {
@@ -72,6 +84,7 @@ export function createQualityController({
     hudElement.appendChild(card);
     const monitor = new QualityMonitor({ hudElement: card });
     monitor.setVisibilityCallback(updateQualityHudVisibility);
+    monitor.setDetailsExpandedCallback(notifyDetailsExpandedChange);
     monitor.setMachineContext({
       id: machine.id,
       label: getMachineDisplayName(machine),
@@ -96,6 +109,7 @@ export function createQualityController({
     const monitor = entry.monitor;
     const card = monitor?.hudElement || null;
     monitor?.setVisibilityCallback(null);
+    monitor?.setDetailsExpandedCallback(null);
     monitor?.detachRemoteSystem();
     if (card instanceof HTMLElement && card.parentElement) {
       card.parentElement.removeChild(card);
