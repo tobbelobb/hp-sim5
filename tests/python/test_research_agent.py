@@ -634,9 +634,12 @@ else:
     assert 'research_attach.py' in launch
     metadata = json.loads(launch)
     assert 'preflight' not in metadata
-    assert metadata['runtime_status']['connected']
     assert metadata['runtime_status']['step'] == 0
-    assert metadata['runtime_status']['queue_length'] == 0
+    if real_runtime:
+        # The launcher builds no world; configure_session does.
+        assert not metadata['runtime_status']['connected'] and metadata['runtime_status']['machine_design'] is None
+    else:
+        assert metadata['runtime_status']['connected'] and metadata['runtime_status']['queue_length'] == 0
 
 def test_launcher_refuses_existing_session_without_overwriting_evidence(tmp_path):
     (tmp_path / 'exit.json').write_text('{"returncode": 42}')
