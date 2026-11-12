@@ -379,6 +379,7 @@ export function createMachineSceneController({
       isFirst = false;
     }
     featureFlags.setPhysicsSubstepsState(world.getResource('physicsSubsteps'), { override: false });
+    featureFlags.syncSolverIterationsState();
     featureFlags.setLineLayeringEnabledState(featureFlags.lineLayeringEnabled, { fromToggle: true });
     const remoteSystem = getCommands()?.getRemoteSystem?.();
     quality?.attachToRemoteSystem?.(remoteSystem);

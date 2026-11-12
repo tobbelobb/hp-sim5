@@ -1,3 +1,4 @@
+import { setSolverIterations } from './solver-iterations.js';
 import { setPhysicsSubsteps } from './physics-substeps.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
@@ -66,7 +67,32 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     }
   }
 
+  function syncSolverIterationsState() {
+    const count = world.getResource('machineSolverIterations') ?? 1;
+    const override = world.getResource('solverIterationsOverride');
+    if (state) state.solverIterations = override;
+    const select = toggles.solverIterations;
+    if (!select) return;
+    select.options[0].textContent = `Machine default (${count})`;
+    const value = override == null ? '' : String(override);
+    if (![...select.options].some(option => option.value === value)) {
+      const option = select.ownerDocument.createElement('option');
+      option.value = option.textContent = value;
+      select.add(option);
+    }
+    select.value = value;
+  }
+
+  function setSolverIterationsState(count) {
+    const next = setSolverIterations(world, count);
+    syncSolverIterationsState();
+    return next;
+  }
+
   function bindUi() {
+    toggles.solverIterations?.addEventListener('change', () => {
+      setSolverIterationsState(toggles.solverIterations.value === '' ? null : Number(toggles.solverIterations.value));
+    });
     toggles.physicsSubsteps?.addEventListener('change', () => {
       setPhysicsSubstepsState(Number(toggles.physicsSubsteps.value));
     });
@@ -96,6 +122,8 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     }
   }
 
+  if (state?.solverIterations !== undefined) setSolverIterationsState(state.solverIterations);
+  else syncSolverIterationsState();
   setPhysicsSubstepsState(state?.physicsSubsteps ?? world.getResource('physicsSubsteps') ?? 1,
     { override: state?.physicsSubsteps !== undefined });
   setShowConstraintForcesState(state?.showConstraintForces ?? false);
@@ -112,6 +140,8 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     get showConstraintForces() {
       return state?.showConstraintForces ?? false;
     },
+    setSolverIterationsState,
+    syncSolverIterationsState,
     setPhysicsSubstepsState,
     setShowConstraintForcesState,
     setLineLayeringEnabledState,

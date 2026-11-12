@@ -1,3 +1,4 @@
+import { syncSolverIterations } from '../../hp-sim-3d/app/solver-iterations.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -28,6 +29,8 @@ function settle(substeps, holdingTorque) {
   const backend = world.getResource('cableSolverBackend');
   assert.deepEqual(backend.regions.map(region => region.data.length), saved.regions.map(row => row.length));
   backend.regions.forEach((region, index) => region.data.set(saved.regions[index]));
+  // The historical checkpoint contains two iterations; exercise today's default.
+  assert.equal(syncSolverIterations(world), 10);
   if (holdingTorque !== undefined) {
     for (const motor of world.query([StepperMotorComponent])) {
       world.getComponent(motor, StepperMotorComponent).holdingTorque = holdingTorque;

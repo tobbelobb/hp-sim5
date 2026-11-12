@@ -13,7 +13,7 @@ _EVERYDAY = {
     },
     "Collection and simulation": {
         "firmware", "config", "sim", "headless_sim", "collector_args", "speedup", "sweep_points",
-        "keep_sim_alive", "hp_sim_reset", "physics_substeps", "open_loop_motors",
+        "keep_sim_alive", "hp_sim_reset", "physics_substeps", "solver_iterations", "open_loop_motors",
         "extended_recording", "recording_mode",
     },
     "Output": {"verbose", "report"},

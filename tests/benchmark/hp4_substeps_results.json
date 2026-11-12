@@ -411,5 +411,97 @@
       },
       "missedSteps": 0
     }
-  ]
+  ],
+  "iterationDefaultValidation": {
+    "default": {
+      "physics_substeps": 1,
+      "solver_iterations": 10
+    },
+    "static8": {
+      "disp_mm": [
+        0.0038,
+        -0.0096,
+        0.0059
+      ],
+      "xy_bias_mm": 0.010324727599312244
+    },
+    "logos": [
+      {
+        "machine": "hp4",
+        "substeps": 1,
+        "iterations": 10,
+        "closedLoop": true,
+        "steps": 1038258,
+        "wallSeconds": 137.926076715,
+        "peaks": {
+          "speed": 0.3188309768206964,
+          "omega": 0.002193861443076843,
+          "heightFromStart": 2.1082220551651987e-05
+        },
+        "metrics": {
+          "contourRms": 7.06941112190392e-05,
+          "contourP95": 0.00013504002862412516,
+          "contourMax": 0.0002030943837584115,
+          "meanOffset": [
+            2.552803774081127e-05,
+            -7.831869460187739e-06,
+            -4.380974938794971e-08
+          ],
+          "withinFineTolerance": 1
+        },
+        "missedSteps": 0
+      },
+      {
+        "machine": "hp4",
+        "substeps": 1,
+        "iterations": 8,
+        "closedLoop": true,
+        "steps": 1038258,
+        "wallSeconds": 122.700170448,
+        "peaks": {
+          "speed": 0.3188354853164651,
+          "omega": 0.0021700870286044667,
+          "heightFromStart": 2.755259271858268e-05
+        },
+        "metrics": {
+          "contourRms": 7.212678681043827e-05,
+          "contourP95": 0.00014330555869615066,
+          "contourMax": 0.00020973810766575538,
+          "meanOffset": [
+            2.7739860249819807e-05,
+            -1.5097770676689459e-05,
+            -3.6106320767922444e-06
+          ],
+          "withinFineTolerance": 1
+        },
+        "missedSteps": 0
+      },
+      {
+        "machine": "hp4_w_line_layers",
+        "substeps": 1,
+        "iterations": 10,
+        "closedLoop": false,
+        "steps": 1038258,
+        "wallSeconds": 127.409992785,
+        "peaks": {
+          "speed": 0.39214652279403484,
+          "omega": 0.12963129870269063,
+          "heightFromStart": 0.000770409490848542
+        },
+        "metrics": {
+          "contourRms": 0.0006359827189029929,
+          "contourP95": 0.0013166861701322822,
+          "contourMax": 0.003369360973675595,
+          "meanOffset": [
+            4.704410426086921e-06,
+            0.00019556680017539127,
+            -0.00021679314946791603
+          ],
+          "withinFineTolerance": 0.2850786825223947
+        },
+        "missedSteps": 0
+      }
+    ],
+    "baseRevision": "6ee13986"
+  }
 }

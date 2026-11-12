@@ -34,7 +34,7 @@ describe('runMoveWithWait', () => {
 });
 
 test('simulator configuration is acknowledged before collection proceeds', async () => {
-  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true, physicsSubsteps: 4 };
+  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true, physicsSubsteps: 4, solverIterations: 8 };
   const bridge = {
     broadcast: jest.fn(),
     sendEncoderRequest: jest.fn(async () => ({ simulationSettings: settings })),

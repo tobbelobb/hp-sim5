@@ -207,6 +207,7 @@ export function parseBridgeArgs(argv) {
     machineType: null,
     openLoopMotors: false,
     physicsSubsteps: null,
+    solverIterations: null,
     sweepRange: null,
     sweepPoints: null,
     maxSweeps: null,
@@ -307,6 +308,11 @@ export function parseBridgeArgs(argv) {
       args.noSpawnRrfSimulator = true;
     } else if (arg === '--speedup') {
       args.speedup = argv[++i] || null;
+    } else if (arg === '--solver-iterations') {
+      args.solverIterations = Number(argv[++i]);
+      if (!Number.isInteger(args.solverIterations) || args.solverIterations < 1 || args.solverIterations > 64) {
+        throw new Error('--solver-iterations must be an integer from 1 to 64');
+      }
     } else if (arg === '--physics-substeps') {
       args.physicsSubsteps = Number(argv[++i]);
       if (!Number.isInteger(args.physicsSubsteps) || args.physicsSubsteps < 1 || args.physicsSubsteps > 16) {
@@ -427,6 +433,7 @@ Options:
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
+  --solver-iterations <count> Cable solver iterations per integration, 1–64 (default: simulator setting)
   --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting from machine catalogue)
   --open-loop-motors         Use open-loop simulator motors (default: closed-loop)
   --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
@@ -650,6 +657,7 @@ async function main() {
       if (args.sim) {
         await sendHpSimSettings(bridgeCtx, {
           closedLoopMotorsEnabled: !args.openLoopMotors,
+          ...(args.solverIterations !== null ? { solverIterations: args.solverIterations } : {}),
           ...(args.physicsSubsteps !== null ? { physicsSubsteps: args.physicsSubsteps } : {}),
           lineLayeringEnabled: Boolean(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)),
           ...(!args.headlessUrl ? { machineType } : {}),

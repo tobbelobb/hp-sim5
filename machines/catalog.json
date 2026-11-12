@@ -3,7 +3,8 @@
     "public/usd_scenes/hp4.usda": {
       "name": "Hangprinter version 4",
       "machine_type": "hangprinter_4",
-      "physics_substeps": 4
+      "physics_substeps": 1,
+      "solver_iterations": 10
     },
     "public/usd_scenes/hp3.usda": {
       "name": "Hangprinter version 3",

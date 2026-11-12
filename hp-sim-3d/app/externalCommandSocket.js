@@ -1,3 +1,4 @@
+import { setSolverIterations } from './solver-iterations.js';
 import { setPhysicsSubsteps } from './physics-substeps.js';
 import { EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
@@ -208,6 +209,7 @@ export function createExternalCommandController({
       simulationSettings: {
         closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true,
         physicsSubsteps: world.getResource('physicsSubsteps') ?? 1,
+        solverIterations: world.getResource('solverIterations') ?? 1,
         lineLayeringEnabled: world.getResource('enableLayering') === true,
         recording: world.getResource('flightRecorder')?.socket?.readyState === 1,
         recordingError,
@@ -258,6 +260,15 @@ export function createExternalCommandController({
             // Layering changes the baked initial cable lengths, as with the UI toggle.
             if (changed) commands?.handleUserReset?.();
           } else setLineLayeringFeatureFlags(world, payload.lineLayeringEnabled);
+        }
+        if (payload.solverIterations !== undefined) {
+          try {
+            if (featureFlags) featureFlags.setSolverIterationsState(payload.solverIterations);
+            else setSolverIterations(world, payload.solverIterations);
+          } catch (error) {
+            settingsError = error.message;
+            return;
+          }
         }
         if (payload.physicsSubsteps !== undefined) {
           try {

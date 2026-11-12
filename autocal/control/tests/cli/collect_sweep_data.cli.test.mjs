@@ -23,6 +23,14 @@ import {
 import { parseBridgeArgs } from '../../cli/collect_sweep_data.mjs';
 
 describe('collect_sweep_data CLI helpers', () => {
+  test('solver iterations accept a bounded integer override and otherwise preserve the machine setting', () => {
+    expect(parseBridgeArgs([]).solverIterations).toBeNull();
+    expect(parseBridgeArgs(['--solver-iterations', '8']).solverIterations).toBe(8);
+    for (const value of ['0', '-1', '1.5', '65', 'bad']) {
+      expect(() => parseBridgeArgs(['--solver-iterations', value])).toThrow('integer');
+    }
+  });
+
   test('open-loop motors are opt-in', () => {
     expect(parseBridgeArgs([]).openLoopMotors).toBe(false);
     expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);

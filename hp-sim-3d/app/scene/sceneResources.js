@@ -1,4 +1,4 @@
-import { physicsSubstepsForMachine } from '../../../machines/catalog.js';
+import { sceneSettingsForMachine } from '../../../machines/catalog.js';
 import { setPhysicsSubsteps } from '../physics-substeps.js';
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import { getAttribute } from '../../../src/js/usd/stage.js';
@@ -52,7 +52,7 @@ export function buildSceneResources(context) {
         simWidth,
         simHeight,
         physics,
-        physicsSubsteps: physicsSubstepsForMachine(getAttribute(sceneRoot, "machine:catalog")),
+        physicsSubsteps: sceneSettingsForMachine(getAttribute(sceneRoot, "machine:catalog")).physics_substeps ?? 1,
         machineColors: {
             clear: !append,
             machineId,

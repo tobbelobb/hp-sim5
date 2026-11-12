@@ -19,12 +19,7 @@ const machine = findMachine(args.machine);
 if (!machine) throw new Error(`Unknown machine: ${args.machine}`);
 const root = new URL('../../', import.meta.url);
 const read = path => fs.readFileSync(new URL(path, root), 'utf8');
-let scene = read(machine.scene);
-if (args.iterations !== undefined) {
-  const count = Number(args.iterations);
-  if (!Number.isInteger(count) || count < 1) throw new Error('iterations must be a positive integer');
-  scene = scene.replaceAll(/cablePath:solverIterations = \d+/g, `cablePath:solverIterations = ${count}`);
-}
+const scene = read(machine.scene);
 const gcode = 'public/gcode/Hangprinter_logo6.gcode';
 globalThis.self = { addEventListener() {} };
 globalThis.postMessage = message => { if (message.type === 'error') throw new Error(message.message); };
@@ -38,6 +33,7 @@ player.sendCommand = async command => { commands.push(command); };
 await player.run(Readable.toWeb(fs.createReadStream(new URL(machine.compiled_commands[gcode].rrf, root))), FileFormat.RRF_CAN_BINARY);
 const { world, remote, dt } = createHeadlessWorld(scene, {
   lineLayeringEnabled: machine.line_layering, closedLoopMotorsEnabled: !args['open-loop'],
+  solverIterations: args.iterations === undefined ? undefined : Number(args.iterations),
   physicsSubsteps: args.substeps === undefined ? undefined : Number(args.substeps),
 });
 try {
@@ -71,7 +67,7 @@ try {
   monitor.setEnabled(true);
   monitor.runFinalCheck();
   console.log(JSON.stringify({ machine: args.machine, substeps: world.getResource('physicsSubsteps'),
-    iterations: args.iterations ?? 'authored', closedLoop: !args['open-loop'], steps, wallSeconds, peaks, metrics: monitor.getMetrics(),
+    iterations: world.getResource('solverIterations'), closedLoop: !args['open-loop'], steps, wallSeconds, peaks, metrics: monitor.getMetrics(),
     motors: getMachineMotorDiagnostics(world) }));
 } finally {
   world.getResource('cableSolverBackend')?.dispose();

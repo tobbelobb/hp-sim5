@@ -18,12 +18,12 @@ const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm
 for (const [name, createBackend, steps] of [
   ['native', () => undefined, 10000],
   ['browser Wasm', () => new WasmPhysicsEngine(module), 10000],
-]) for (const physicsSubsteps of [undefined, 1]) test(`HP4 Print Logo remains stable: ${name}, ${physicsSubsteps ?? 'catalogue'} substeps`, () => {
+]) for (const physicsSubsteps of [undefined, 4]) test(`HP4 Print Logo remains stable: ${name}, ${physicsSubsteps ?? 'catalogue'} substeps`, () => {
   const { world, remote, dt } = createHeadlessWorld(scene, { cableSolverBackend: createBackend(), physicsSubsteps });
   try {
     assert.equal(dt, .002);
     assert.equal(world.getResource('enableLayering'), true);
-    assert.equal(world.getResource('physicsSubsteps'), physicsSubsteps ?? 4);
+    assert.equal(world.getResource('physicsSubsteps'), physicsSubsteps ?? 1);
     assert(world.query([StepperMotorComponent]).every(id => !world.getComponent(id, StepperMotorComponent).closedLoop));
     remote.commands = commands.slice(0, steps);
     const body = world.query([RigidBodyComponent])[0];
@@ -42,7 +42,7 @@ for (const [name, createBackend, steps] of [
       // transient reaches ~0.12 rad/s at four substeps (~0.20 at sixteen),
       // but stays below 0.002 rad of tilt and decays to rest. Keep the old
       // one-substep bound and check amplitude/settling as well as peak speed.
-      assert(omega < (physicsSubsteps === 1 ? .1 : .15), `${where}: rocking=${omega} rad/s`);
+      assert(omega < ((physicsSubsteps ?? 1) === 1 ? .1 : .15), `${where}: rocking=${omega} rad/s`);
       const tilt = 2 * Math.acos(Math.min(1, Math.abs(q.w)));
       assert(tilt < .002, `${where}: tilt=${tilt} rad`);
       assert(!world.getResource('pauseState')?.paused, `${where}: physics paused before completing`);

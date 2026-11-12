@@ -6,28 +6,40 @@ import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.
 import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../../../hp-sim-3d/app/scene/machineScenePipeline.js';
 import { registerSimulationSystems } from '../../../hp-sim-3d/app/simulationSystems.js';
 import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
+import { setSolverIterations } from '../../../hp-sim-3d/app/solver-iterations.js';
 import { setPhysicsSubsteps } from '../../../hp-sim-3d/app/physics-substeps.js';
 
 const minimalSource = () => readFileSync('tests/fixtures/engine_parity/usd_scene_minimal.usda', 'utf8');
 
-test('scene changes select catalogue substeps; mixed scenes use the maximum and overrides survive resets', () => {
+test('scene changes retain per-machine iterations and overrides survive resets', () => {
   const source = name => readFileSync(`public/usd_scenes/${name}.usda`, 'utf8');
   const world = new World();
   const load = (name, append = false) => applyScene(world, source(name), '/World/HangprinterScene', { append, namespace: name });
   load('hp3');
   expect(world.getResource('physicsSubsteps')).toBe(1);
   load('hp4', true);
-  expect(world.getResource('physicsSubsteps')).toBe(4);
+  expect(world.getResource('physicsSubsteps')).toBe(1);
+  expect(world.getResource('solverIterations')).toBe(10);
   load('hp3');
   expect(world.getResource('physicsSubsteps')).toBe(1);
   load('hp4');
   load('hp3', true);
-  expect(world.getResource('physicsSubsteps')).toBe(4);
+  expect(world.getResource('physicsSubsteps')).toBe(1);
+  expect(world.getResource('solverIterations')).toBe(10);
+  const counts = () => world.query([CablePathComponent]).map(id => world.getComponent(id, CablePathComponent).solverIterations);
+  expect(new Set(counts())).toEqual(new Set([1, 10]));
+  setSolverIterations(world, 8);
+  expect(counts().every(count => count === 8)).toBe(true);
   setPhysicsSubsteps(world, 2);
   load('hp4');
   expect(world.getResource('physicsSubsteps')).toBe(2);
   load('hp3');
   expect(world.getResource('physicsSubsteps')).toBe(2);
+  expect(counts().every(count => count === 8)).toBe(true);
+  setSolverIterations(world, null);
+  expect(counts().every(count => count === 1)).toBe(true);
+  load('hp4');
+  expect(counts().every(count => count === 10)).toBe(true);
 });
 
 function applyScene(world, source, root = '/World/Scene', options = {}) {

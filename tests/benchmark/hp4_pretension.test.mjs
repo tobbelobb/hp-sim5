@@ -17,14 +17,15 @@ for (const [name, createBackend] of [
     cableSolverBackend: createBackend(), lineLayeringEnabled: false, closedLoopMotorsEnabled: true,
   });
   try {
-    assert.equal(world.getResource('physicsSubsteps'), 4);
+    assert.equal(world.getResource('physicsSubsteps'), 1);
+    assert(world.query([CablePathComponent]).every(id => world.getComponent(id, CablePathComponent).solverIterations === 10));
     const body = world.query([RigidBodyComponent])[0];
     const pos = () => world.getComponent(body, PositionComponent).pos.clone();
     for (let step = 0; step < 500; step++) world.update(dt);
     const start = pos();
     // MA²-corrected firmware home flex, in effector-distance mm. Convert to
     // spool angles using MA [2,2,2,4] and 30 mm radius; ramp 1 s, hold 4 s.
-    // Research: the former 1-substep default creates 0.228 mm of XY bias and
+    // Research: the former 2-iteration default creates 0.228 mm of XY bias and
     // realizes only ~3.3 N per ABC strand, versus ~5 N when converged.
     const target = [-.56587, -.56587, -.56587, -.08332].map((lp, i) => lp * [2, 2, 2, 4][i] / 30);
     remote.commands = Array.from({ length: 2500 }, (_, step) => {

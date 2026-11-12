@@ -1,3 +1,4 @@
+import { setSolverIterations } from './solver-iterations.js';
 import { setPhysicsSubsteps } from './physics-substeps.js';
 import { World } from '../../src/js/cable_joints_3d/ecs.js';
 import { OpenText } from '../../src/js/usd/stage.js';
@@ -10,7 +11,7 @@ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { PerformanceMonitor } from './performance-monitor.js';
 
 // The same scene construction and system order used by the production app.
-export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, physicsSubsteps = undefined, profiling = {}, cableSolverBackend = undefined,
+export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, physicsSubsteps = undefined, solverIterations = undefined, profiling = {}, cableSolverBackend = undefined,
   scenePrimPath, requireRrfTimestep = true } = {}) {
   const sceneName = sceneText.match(/defaultPrim\s*=\s*"([^"]+)"/)?.[1];
   if (!sceneName && !scenePrimPath) throw new Error('Scene has no defaultPrim');
@@ -25,6 +26,7 @@ export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, clo
   applyEntityPlan(world, buildEntityPlan(checked));
   setLineLayeringFeatureFlags(world, lineLayeringEnabled);
   setClosedLoopMotorFeatureFlags(world, closedLoopMotorsEnabled);
+  if (solverIterations !== undefined) setSolverIterations(world, solverIterations);
   if (physicsSubsteps !== undefined) setPhysicsSubsteps(world, physicsSubsteps);
   registerSimulationSystems(world, { cableSolverBackend });
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);

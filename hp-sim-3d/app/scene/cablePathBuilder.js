@@ -1,3 +1,4 @@
+import { sceneSettingsForMachine } from '../../../machines/catalog.js';
 import { getAttribute, getRelationship } from '../../../src/js/usd/stage.js';
 import { MachineTagComponent, SceneEntityInfoComponent } from '../../../src/js/cable_joints_3d/ecs.js';
 import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
@@ -15,6 +16,7 @@ function applyCablePaths(world, context, registry) {
     const machineId = context.options.namespace || 'default';
     const namespace = context.options.namespace || null;
 
+    const iterations = sceneSettingsForMachine(getAttribute(context.sceneRoot, "machine:catalog")).solver_iterations;
     for (const prim of registry.pathPrims) {
         const jointPaths = getRelationship(prim, "cablePath:joints");
         if (!jointPaths) continue;
@@ -31,7 +33,7 @@ function applyCablePaths(world, context, registry) {
             getAttribute(prim, "cablePath:stored") ? [...getAttribute(prim, "cablePath:stored")] : null,
             getAttribute(prim, "cablePath:halfWidth") ?? 0.0,
             readNumericAttribute(prim, "cablePath:dampingPerUnitLength") ?? 0.0,
-            readNumericAttribute(prim, "cablePath:solverIterations") ?? 1,
+            iterations ?? readNumericAttribute(prim, "cablePath:solverIterations") ?? 1,
         );
         const cablePath = world.createEntity();
         world.addComponent(cablePath, pathComp);

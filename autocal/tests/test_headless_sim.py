@@ -78,8 +78,8 @@ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('layering', [False, True])
-@pytest.mark.parametrize('machine, substeps', [('hangprinter_3', 1), ('hangprinter_4', 4)])
-def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering, machine, substeps):
+@pytest.mark.parametrize('machine, iterations', [('hangprinter_3', 1), ('hangprinter_4', 10)])
+def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering, machine, iterations):
     from argparse import Namespace
     args = Namespace(machine_type=machine, find_radii='off', find_buildup_factor='off',
                      rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
@@ -87,9 +87,10 @@ def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering
     collector_args = ['--line-layering'] if layering else []
     with HeadlessSimulation(args, collector_args) as service:
         initial = service.request('status')
-        assert initial['settings']['physicsSubsteps'] == substeps
+        assert initial['settings']['physicsSubsteps'] == 1
+        assert initial['settings']['solverIterations'] == iterations
         assert initial['settings']['enableLayering'] is layering
-        applied = service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True, 'physicsSubsteps': 4})
+        applied = service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True, 'physicsSubsteps': 4, 'solverIterations': 8})
         assert applied['result']['simulationSettings']['physicsSubsteps'] == 4
         assert applied['result']['simulationSettings']['closedLoopMotorsEnabled'] is True
         service.request('payload', payload={'type': 'reset'})
@@ -98,12 +99,16 @@ def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering
         assert reset['settings']['enableLayering'] is layering
         assert reset['settings']['closedLoopMotorsEnabled'] is True
         assert reset['settings']['physicsSubsteps'] == 4
+        assert reset['settings']['solverIterations'] == 8
         assert reset['baked_scene_sha256'] == initial['baked_scene_sha256']
         service.request('payload', payload={'type': 'simulation_settings', 'lineLayeringEnabled': not layering})
         toggled = service.request('status')
         assert toggled['epoch'] == 2 and toggled['settings']['enableLayering'] is not layering
         assert toggled['settings']['closedLoopMotorsEnabled'] is True
         assert toggled['settings']['physicsSubsteps'] == 4
+        assert toggled['settings']['solverIterations'] == 8
+        restored = service.request('payload', payload={'type': 'simulation_settings', 'solverIterations': None})
+        assert restored['settings']['solverIterations'] == iterations
         assert toggled['baked_scene_sha256'] != initial['baked_scene_sha256']
     assert service.manifest['initial_baked_scene_sha256'] == initial['baked_scene_sha256']
     assert service.manifest['baked_scene_sha256'] == hashlib.sha256(

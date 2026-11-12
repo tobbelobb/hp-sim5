@@ -1,4 +1,5 @@
 // Persistent production Rust/WASM world and JS RRF bridge owned by autocal.py.
+import { setSolverIterations } from '../hp-sim-3d/app/solver-iterations.js';
 import { setPhysicsSubsteps } from '../hp-sim-3d/app/physics-substeps.js';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -15,10 +16,10 @@ import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
 const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
 const sceneText = fs.readFileSync(scene, 'utf8');
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
-let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false, physicsSubsteps;
+let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false, physicsSubsteps, solverIterations;
 let world, remote, dt, bakedScene, bakedSceneFile, bakedSceneHash;
 function buildWorld() {
-  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled, physicsSubsteps }));
+  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled, physicsSubsteps, solverIterations }));
   bakedSceneFile = `baked-scene${epoch ? `-${epoch}` : ''}.usda`;
   fs.writeFileSync(`${directory}/${bakedSceneFile}`, bakedScene);
   bakedSceneHash = createHash('sha256').update(bakedScene).digest('hex');
@@ -46,7 +47,7 @@ function attachRecorder() {
   recorder.contextProvider = () => ({ backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), scene, sourceText: sceneText,
     bakedSourceText: bakedScene, baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
     node_version: process.version, settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering',
-      'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled', 'physicsSubsteps'].map(key => [key, world.getResource(key)])) });
+      'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled', 'physicsSubsteps', 'solverIterations'].map(key => [key, world.getResource(key)])) });
   world.setResource('flightRecorder', recorder);
   world.registerSystem(recorder);
   if (recorder.socket?.readyState === 1) recorder.update(world, 0);
@@ -67,7 +68,7 @@ function status() {
     recording_error: recordingError,
     baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
     settings: { enableLayering: world.getResource('enableLayering') === true,
-      closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps: world.getResource('physicsSubsteps'), timeScale: speed } };
+      closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps: world.getResource('physicsSubsteps'), solverIterations: world.getResource('solverIterations'), timeScale: speed } };
 }
 async function advance(seconds = 0, drain = false) {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
@@ -106,6 +107,11 @@ let controller;
 function attachController() {
   controller = createExternalCommandController({ world, url: 'ws://observation', WebSocketCtor: ObservationSocket,
     featureFlags: {
+      setSolverIterationsState(count) {
+        const applied = setSolverIterations(world, count);
+        solverIterations = count;
+        return applied;
+      },
       setPhysicsSubstepsState(count) { physicsSubsteps = setPhysicsSubsteps(world, count); },
       get lineLayeringEnabled() { return lineLayeringEnabled; },
       setLineLayeringEnabledState(enabled) {

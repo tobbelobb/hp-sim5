@@ -16,9 +16,9 @@ export function machineForScene(scene, lineLayering) {
 }
 
 // Authored scene roots identify their catalogue machine, independent of file location.
-export function physicsSubstepsForMachine(name) {
-  if (!name) return 1;
+export function sceneSettingsForMachine(name) {
+  if (!name) return {};
   const machine = findMachine(name);
   if (!machine) throw new Error(`Unknown catalogue machine: ${name}`);
-  return SCENES[machine.scene].physics_substeps ?? 1;
+  return SCENES[machine.scene];
 }

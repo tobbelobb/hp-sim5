@@ -7,6 +7,7 @@ export function createAppState({
   lineLayeringEnabled = true,
   closedLoopMotorsEnabled = false,
   physicsSubsteps = undefined,
+  solverIterations = undefined,
 } = {}) {
   return {
     machines: [],
@@ -32,6 +33,7 @@ export function createAppState({
     lineLayeringEnabled,
     closedLoopMotorsEnabled,
     physicsSubsteps,
+    solverIterations,
     referenceOverlay: {
       segments: null,
       metadata: null,

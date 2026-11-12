@@ -2,9 +2,10 @@
 
 For the required bounded regression gate, run `npm run test:physics`. It rebuilds
 native/Wasm physics and checks the first 20 seconds of the production layered
-HP4 logo at the catalogue default of four substeps and an explicit one-substep
-override, plus loaded-state settling at one, two and four substeps and symmetric
-pretension convergence in native/Wasm. It runs automatically under `npm test` and CI. The longer benchmarks below are optional.
+HP4 logo at the catalogue default of one substep/ten iterations and an explicit
+four-substep override, plus loaded-state settling at one, two and four substeps
+and symmetric pretension convergence in native/Wasm. It runs automatically
+under `npm test` and CI. The longer benchmarks below are optional.
 
 Failures report the backend and motion step or settling substep count. Reproduce
 with `npm run test:physics`; startup/parity checks and passing at higher substep
@@ -37,17 +38,17 @@ node scripts/profile_headless.mjs --solver wasm --machine hp4 \
 Use `--compare /tmp/hp4-native.json` to check another engine against the
 recorded checkpoints. Keep repeats sequential and avoid other benchmarks or
 tests competing for CPU. The profiler uses the production headless world with a
-2 ms firmware tick, catalogue substeps (HP4: four; HP3: one), line layering,
-open-loop motors and the authored cable solver iterations.
+2 ms firmware tick, one substep, catalogue solver iterations (HP4: ten; HP3:
+one), line layering and open-loop motors.
 
 For complete-logo path accuracy (native, closed loop), run:
 
 ```bash
 node tests/benchmark/logo_accuracy.mjs --machine hp4
-node tests/benchmark/logo_accuracy.mjs --machine hp4 --substeps 1
-node tests/benchmark/logo_accuracy.mjs --machine hp4 --substeps 1 --iterations 10
+node tests/benchmark/logo_accuracy.mjs --machine hp4 --iterations 8
+node tests/benchmark/logo_accuracy.mjs --machine hp4 --substeps 4 --iterations 2
 node tests/benchmark/logo_accuracy.mjs --machine hp4_w_line_layers --open-loop
 ```
 
-[HP4 substep measurements](hp4_substeps.md) explain the catalogue default and
-the stability bounds.
+[HP4 solver convergence measurements](hp4_substeps.md) explain the catalogue
+default and the stability bounds.

@@ -34,6 +34,8 @@ def test_scene_identity_resolves_to_its_catalogue_defaults():
         assert machines.machine(identity[1])['scene'] == path
         count = settings.get('physics_substeps', 1)
         assert isinstance(count, int) and 1 <= count <= 16
+        count = settings.get('solver_iterations', 1)
+        assert isinstance(count, int) and 1 <= count <= 64
 
 
 def test_catalogued_collector_types_are_accepted_by_the_dataset_schema():

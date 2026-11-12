@@ -1,4 +1,7 @@
 import { World } from '../../../src/js/cable_joints_3d/ecs.js';
+import { readFileSync } from 'node:fs';
+import { createHeadlessWorld } from '../../../hp-sim-3d/app/headlessWorld.js';
+import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createExternalCommandController } from '../../../hp-sim-3d/app/externalCommandSocket.js';
 import { createFeatureFlagsController } from '../../../hp-sim-3d/app/featureFlagsController.js';
 import { FlightRecorder } from '../../../hp-sim-3d/app/flightRecorder.js';
@@ -22,6 +25,47 @@ class Socket extends EventTarget {
   close() { this.readyState = 3; this.dispatchEvent(new Event('close')); }
   open() { this.readyState = 1; this.dispatchEvent(new Event('open')); }
 }
+
+test('solver iteration menu and remote settings update a live backend and restore machine defaults', () => {
+  const { world, dt } = createHeadlessWorld(readFileSync('public/usd_scenes/hp4.usda', 'utf8'));
+  try {
+    world.update(dt); // Exercise edits after native numeric fields have been bound.
+    const listeners = {};
+    const select = {
+      options: [{ value: '' }, { value: '8' }, { value: '10' }], value: '',
+      ownerDocument: { createElement: () => ({}) },
+      add(option) { this.options.push(option); },
+      addEventListener(type, handler) { listeners[type] = handler; },
+    };
+    const flags = createFeatureFlagsController({ world, state: {}, toggles: { solverIterations: select } });
+    flags.bindUi();
+    expect(select.options[0].textContent).toBe('Machine default (10)');
+    select.value = '8';
+    listeners.change();
+    world.update(dt);
+    const counts = () => world.query([CablePathComponent]).map(id => world.getComponent(id, CablePathComponent).solverIterations);
+    expect(counts().every(count => count === 8)).toBe(true);
+    expect(select.options[0].textContent).toBe('Machine default (10)');
+    const controller = createExternalCommandController({ world, featureFlags: flags, url: 'ws://test', WebSocketCtor: Socket });
+    controller.connect();
+    Socket.last.open();
+    controller.handlePayload({ type: 'simulation_settings', solverIterations: 3 });
+    expect(select.value).toBe('3');
+    for (const count of [0, -1, 1.5, 65, '8']) {
+      controller.handlePayload({ type: 'simulation_settings', solverIterations: count });
+      controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
+      expect(Socket.last.samples.at(-1).simulationSettings.settingsError).toMatch('integer');
+      expect(counts().every(value => value === 3)).toBe(true);
+    }
+    controller.handlePayload({ type: 'simulation_settings', solverIterations: null });
+    controller.handlePayload({ type: 'encoder_request', requestId: 2, axes: [] });
+    expect(Socket.last.samples.at(-1).simulationSettings.solverIterations).toBe(10);
+    expect(select.value).toBe('');
+    expect(counts().every(count => count === 10)).toBe(true);
+  } finally {
+    world.getResource('cableSolverBackend')?.dispose();
+  }
+});
 
 test('autocal settings update physics resources and visible feature toggles', () => {
   const world = new World();

@@ -69,6 +69,23 @@
                   <input id="closedLoopMotorsToggle" type="checkbox">
                   <span>Closed Loop Motors</span>
                 </label>
+                <label class="sim-toggle" for="solverIterations">
+                  <span>Solver Iterations</span>
+                  <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
+                    <option value="" selected>Machine default</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="10">10</option>
+                    <option value="12">12</option>
+                    <option value="16">16</option>
+                    <option value="20">20</option>
+                    <option value="32">32</option>
+                    <option value="64">64</option>
+                  </select>
+                </label>
                 <label class="sim-toggle" for="physicsSubsteps">
                   <span>Physics Substeps</span>
                   <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">

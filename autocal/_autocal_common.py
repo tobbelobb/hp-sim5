@@ -3657,6 +3657,8 @@ def get_firmware_provider(firmware: str) -> FirmwareProvider:
 
 
 def _add_collector_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--solver-iterations", type=int, choices=range(1, 65), metavar="N",
+                        help="Cable solver iterations per integration, 1..64 (default: machine setting)")
     parser.add_argument("--physics-substeps", type=int, choices=range(1, 17), metavar="N",
                         help="Physics steps per firmware tick, 1..16 (default: simulator setting)")
     parser.add_argument("--open-loop-motors", action="store_true",

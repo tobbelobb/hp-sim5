@@ -189,7 +189,8 @@ def test_autocal_main_normalizes_hangprinter_alias(monkeypatch, tmp_path):
     assert captured["verbose"] is True
 
 
-def test_autocal_main_forwards_top_level_speedup_to_collector_args(monkeypatch, tmp_path):
+@pytest.mark.parametrize("flag, value", [("--speedup", "40"), ("--solver-iterations", "8")])
+def test_autocal_main_forwards_top_level_simulation_settings_to_collector_args(monkeypatch, tmp_path, flag, value):
     captured = {}
 
     def fake_full_auto_loop(**kwargs):
@@ -204,13 +205,13 @@ def test_autocal_main_forwards_top_level_speedup_to_collector_args(monkeypatch, 
             "slideprinter",
             "--dataset",
             str(tmp_path / "dummy.json"),
-            "--speedup",
-            "40",
+            flag,
+            value,
         ]
     )
 
     assert rc == 0
-    assert captured["collector_args"] == ["--speedup", "40"]
+    assert captured["collector_args"] == [flag, value]
 
 
 def test_autocal_main_keeps_explicit_collector_speedup_untouched(monkeypatch, tmp_path):

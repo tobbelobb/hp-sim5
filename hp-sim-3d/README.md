@@ -27,19 +27,26 @@ Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view too
 same when comparing runs; quality checks and reference paths aid inspection.
 
 Physics defaults come from each scene in `machines/catalog.json`: HP4 uses
-four substeps per 2 ms firmware tick; HP3 and other machines use one. Authored
-scene roots identify their catalogue entry with `machine:catalog`. A world with
-multiple machines uses the largest default. **Physics Substeps**, beside the
-motor toggles, selects 1, 2, 4, 8 or 16 integrations per tick. More steps cost
-more CPU; command and recorder cadence stay unchanged.
-The setting survives scene resets. Autocal can set it explicitly with
-`--physics-substeps 4`, for both browser `--sim` and `--headless-sim` collection.
-Without that flag, collection preserves the simulator's setting. Scene changes
-select the machine default until a menu or remote override has been applied.
-Remote `simulation_settings` messages use the integer `physicsSubsteps` field
-(1–16); encoder replies acknowledge the applied count. Programmatic world
-creation accepts `{ physicsSubsteps: 4 }`; headless worlds use the
-`physicsSubsteps` resource.
+one substep and ten solver iterations per 2 ms firmware tick; HP3 uses one
+substep and one iteration. Authored roots identify their catalogue entry with
+`machine:catalog`. **Solver Iterations** selects an override for all loaded
+machines; **Machine default** restores each machine's own count. Counts from
+1 to 64 are accepted. Overrides survive resets, layering changes and machine
+changes. Uploaded scenes without a catalogue identity retain authored
+`cablePath:solverIterations` values, or one when omitted.
+
+**Physics Substeps** selects 1, 2, 4, 8 or 16 integrations per tick. More steps
+and iterations cost more CPU; command and recorder cadence stay unchanged.
+Autocal accepts `--solver-iterations 8` and `--physics-substeps 4`, for both
+browser `--sim` and `--headless-sim` collection. Without these flags, collection
+preserves the simulator's settings.
+
+Remote `simulation_settings` messages accept `solverIterations` (1–64, or
+`null` to restore machine defaults) and `physicsSubsteps` (1–16). Encoder
+replies acknowledge the effective counts. Programmatic world creation accepts
+`createHeadlessWorld(source, { solverIterations: 8, physicsSubsteps: 1 })`.
+Use `setSolverIterations(world, 8)` from `app/solver-iterations.js` to change
+an existing headless world; pass `null` to restore its defaults.
 
 To record a browser print, run
 `.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer
@@ -171,11 +178,13 @@ The Rust core keeps the usual PBD/XPBD shape:
 save previous pose -> integrate pose -> solve constraints -> update velocities
 ```
 
-Torque mode is a specialized velocity update after the cable solve. There is no
-global substep loop around the complete system sequence. The runner repeatedly
-calls `world.update(dt)` with the fixed scene timestep, either from a real-time
-accumulator or in time-budgeted ASAP batches. Cable paths can request different
-solver iteration counts through `cablePath:solverIterations`.
+Torque mode updates velocity after the cable solve. Each `world.update(dt)`
+dispatches commands once, runs the configured number of Rust physics substeps,
+and updates extrusion and recording once. The runner uses the fixed scene
+timestep, either from a real-time accumulator or in time-budgeted ASAP batches.
+Cable paths can request different
+solver iteration counts through `cablePath:solverIterations` when the machine
+catalogue does not specify `solver_iterations`.
 
 ## Cable Paths
 
