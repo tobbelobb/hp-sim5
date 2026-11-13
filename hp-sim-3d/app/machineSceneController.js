@@ -380,6 +380,7 @@ export function createMachineSceneController({
     }
     featureFlags.setPhysicsSubstepsState(world.getResource('physicsSubsteps'), { override: false });
     featureFlags.syncSolverIterationsState();
+    featureFlags.syncMotorStrengthState();
     featureFlags.setLineLayeringEnabledState(featureFlags.lineLayeringEnabled, { fromToggle: true });
     const remoteSystem = getCommands()?.getRemoteSystem?.();
     quality?.attachToRemoteSystem?.(remoteSystem);

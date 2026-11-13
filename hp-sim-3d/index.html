@@ -99,6 +99,12 @@
                     <input id="closedLoopMotorsToggle" type="checkbox">
                     <span>Closed Loop Motors</span>
                   </label>
+                  <label class="sim-toggle sim-select sim-range" for="motorStrength">
+                    <span>Motor Strength</span>
+                    <input id="motorStrength" type="range" min="0.25" max="4" step="0.25" value="1"
+                      title="Scales the holding torque of every motor. 1 is the machine's own motors">
+                    <output id="motorStrengthValue" for="motorStrength">1×</output>
+                  </label>
                   <label class="sim-toggle sim-select" for="solverIterations">
                     <span>Solver Iterations</span>
                     <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">

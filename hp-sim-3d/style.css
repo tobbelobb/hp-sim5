@@ -315,6 +315,19 @@ body {
   cursor: pointer;
 }
 
+.sim-range input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.sim-range output {
+  min-width: 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .sim-machines-section {
   display: flex;
   flex-direction: column;

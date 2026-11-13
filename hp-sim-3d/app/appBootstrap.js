@@ -74,6 +74,8 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
     colorThemeSelect: ownerDocument.getElementById('colorTheme'),
     lineLayeringToggle: ownerDocument.getElementById('lineLayeringToggle'),
     closedLoopMotorsToggle: ownerDocument.getElementById('closedLoopMotorsToggle'),
+    motorStrength: ownerDocument.getElementById('motorStrength'),
+    motorStrengthValue: ownerDocument.getElementById('motorStrengthValue'),
     physicsSubsteps: ownerDocument.getElementById('physicsSubsteps'),
     solverIterations: ownerDocument.getElementById('solverIterations'),
     qualityToggleLabel: qualityToggleWrapper?.querySelector('span') || null,
@@ -256,7 +258,7 @@ export function createHpSimApp({
     machines: controllers.machines.getMachines().map(({ id, sourceKey, sourceUrl, sourceText }) =>
       ({ id, sourceKey, sourceUrl, sourceText })),
     settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering', 'layeringFrictionEffectiveRadius',
-      'closedLoopMotorsEnabled', 'physicsSubsteps', 'solverIterations', 'pauseState']
+      'closedLoopMotorsEnabled', 'motorStrength', 'physicsSubsteps', 'solverIterations', 'pauseState']
       .map(key => [key, world.getResource(key)])),
     inspection: inspectionTools.getState(),
   });
