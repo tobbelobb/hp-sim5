@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mindfulness Pinball (cable engine test)</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>
+  :root { --bg-1: #2d2d2d; --accent-1: #ff452a; --accent-2: #ffb347; --text-main: #fafafa; --text-dim: #c0c0c0; }
+  html, body { margin: 0; padding: 0; height: 100dvh; overflow: hidden; background: var(--bg-1); color: var(--text-main);
+    font-family: ui-sans-serif, system-ui, sans-serif; touch-action: none; display: flex; flex-direction: column; align-items: center; }
+  #controls { width: min(96vw, 560px); text-align: center; margin-block: 8px 4px; font-size: 0.85rem; color: var(--text-dim); }
+  #buttonRow { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  button { all: unset; cursor: pointer; padding: 4px 12px; border-radius: 4px; color: #fff; font-size: 0.85rem;
+    background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); }
+  summary { cursor: pointer; font-size: 0.72rem; margin-top: 4px; }
+  #flags { display: flex; flex-wrap: wrap; gap: 2px 10px; justify-content: center; margin-top: 6px; font-size: 0.72rem; }
+  #flags label { white-space: nowrap; }
+  #stats { margin-top: 4px; font-size: 0.72rem; white-space: pre; }
+  canvas { flex: 1; min-height: 0; aspect-ratio: 1 / 1.7; max-width: 96vw; outline: none; }
+</style>
+</head>
+<body>
+<div id="controls">
+  <div id="buttonRow">
+    <button id="pauseBtn" tabindex="-1">Start</button>
+    <button id="resetBtn" tabindex="-1">Reset</button>
+    <button id="stepBtn" tabindex="-1">Step</button>
+    <button id="dumpBtn" tabindex="-1">Dump State</button>
+    <span>Score: <span id="score">0</span></span>
+  </div>
+  <details id="flagBox"><summary>cable / collision flags</summary><div id="flags"></div></details>
+  <div id="stats"></div>
+</div>
+<canvas id="canvas"></canvas>
+
+<script type="module">
+// Temporary 2D flipper that exercises the 3D cable joints library.
+//
+// The Rust cable solver (WasmPhysicsEngine) owns gravity, free-body motion, cable
+// attachments, layered wraps, joint merging/splitting (a cable wraps whatever
+// it touches), cable friction and the cable constraints. Everything the old
+// 2D flipper added on top lives in this file: layered collision envelopes,
+// pinch-shared contacts, PBD contact manifold, static friction, bumper pushes,
+// spin/friction velocity contacts, flippers, grab spring (a real cable) and rendering.
+import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import {
+  World, PositionComponent, PrevFinalPosComponent, VelocityComponent, RadiusComponent, MassComponent,
+  GravityAffectedComponent, OrientationComponent, PrevFinalOrientationComponent, AngularVelocityComponent,
+  MomentOfInertiaComponent, RestitutionComponent, CoefficientOfFrictionComponent, layeringEnabled,
+} from '../../../src/js/cable_joints_3d/ecs.js';
+import { CableLinkComponent, CableJointComponent, CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import { compileCableSolverWasm } from '../../../src/js/cable_joints_3d/wasm_cable_solver.js';
+import { WasmPhysicsEngine } from '../../../src/js/cable_joints_3d/wasm_physics_engine.js';
+import { OpenText, getAttribute, getRelationship, getChild, getChildren, materialProperties } from '../../../src/js/usd/stage.js';
+import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
+
+const PLANE_NORMAL = new Vector3(0, 0, 1);
+const SIM_W = 1.0, SIM_H = 1.7;
+const BASE = import.meta.env.BASE_URL;
+const MAX_STEPS_PER_FRAME = 500;
+const KNOT_SPAN = Math.PI / 30.0;
+const LAYER_RADIUS_RAMP_ANGLE = (2.0 * Math.PI) / 5.0;
+const GRAB_REST_LENGTH = 0.1;
+const GRAB_SPRING_CONSTANT = 10.0;
+
+const FLAG_DEFS = [
+  { key: 'enableLayering', label: 'enableLayering', value: true },
+  { key: 'layeringCollisionOverlayRadius', label: 'collision/overlayRadius', value: true },
+  { key: 'layeringCollisionOverlayRamp', label: 'collision/overlayRamp', value: true },
+  { key: 'layeringCollisionCircleSectors', label: 'collision/circleSectors', value: true },
+  { key: 'layeringCollisionSectorSolvers', label: 'collision/sectorSolvers', value: true },
+  { key: 'layeringCollisionPinchShare', label: 'collision/pinchShare', value: true },
+  { key: 'layeringVelocityContactOffset', label: 'contact/velocityOffset', value: true },
+  { key: 'layeringObstacleRawHitFilter', label: 'obstacle/rawHitFilter', value: true },
+  { key: 'layeringAttachmentUpdatePoints', label: 'cable/updateAttachment', value: true },
+  { key: 'layeringMergeJoints', label: 'cable/mergeJoints', value: true },
+  { key: 'layeringSplitJoints', label: 'cable/splitJoints', value: true },
+  { key: 'layeringHybridLinkStates', label: 'cable/hybridLinkStates', value: true },
+  { key: 'layeringClampJointRestLength', label: 'cable/clampRestLength', value: true },
+  { key: 'layeringRenderWraps', label: 'render/layeredWraps', value: true },
+  { key: 'layeringRenderCollisionOverlays', label: 'render/collisionOverlays', value: false },
+  { key: 'renderBumperHitFx', label: 'render/bumperHitFx', value: true },
+  { key: 'scoreBounceSoundEnabled', label: 'audio/scoreBounce', value: true },
+];
+const flags = Object.fromEntries(FLAG_DEFS.map(d => [d.key, d.value]));
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const statsEl = document.getElementById('stats');
+const scoreEl = document.getElementById('score');
+const pauseBtn = document.getElementById('pauseBtn');
+
+let backend, sceneText, world, game, dt;
+let paused = true, doStep = false, stepWhileKeyHeld = false, accumulator = 0, lastTime = 0;
+let speedSamples = [], frameCounter = 0, speedText = 'N/A';
+
+// ---------------------------------------------------------------- planar helpers
+const angleOf = q => 2 * Math.atan2(q.z, q.w);
+function rotateQuatZ(q, delta) {
+  const h = delta / 2, c = Math.cos(h), s = Math.sin(h);
+  const z = q.z * c + q.w * s, w = q.w * c - q.z * s;
+  q.z = z; q.w = w;
+}
+const finiteOr = (v, f) => Number.isFinite(v) ? v : f;
+const nonNeg = (v, f) => { const x = finiteOr(v, f); return x > 0 ? x : 0; };
+const clamp01 = (v, f) => { const x = finiteOr(v, f); return x <= 0 ? 0 : x >= 1 ? 1 : x; };
+function normalizeAngle(a) {
+  if (!Number.isFinite(a)) return 0;
+  while (a <= -Math.PI) a += 2 * Math.PI;
+  while (a > Math.PI) a -= 2 * Math.PI;
+  return a;
+}
+function ccwDiff(from, to) {
+  let d = normalizeAngle(to - from);
+  if (d < 0) d += 2 * Math.PI;
+  return d;
+}
+function isAngleInSector(angle, start, end, cw) {
+  const a = normalizeAngle(angle), s = normalizeAngle(start), e = normalizeAngle(end);
+  if (cw) return isAngleInSector(-a, -s, -e, false);
+  return ccwDiff(s, a) <= ccwDiff(s, e) + 1e-9;
+}
+function closestOnSegment(p, a, b) {
+  const abx = b.x - a.x, aby = b.y - a.y;
+  const t = (p.x - a.x) * abx + (p.y - a.y) * aby;
+  if (t <= 0) return { x: a.x, y: a.y };
+  const denom = abx * abx + aby * aby;
+  if (t >= denom) return { x: b.x, y: b.y };
+  return { x: a.x + abx * (t / denom), y: a.y + aby * (t / denom) };
+}
+const rightOfLine = (x, p0, p1) => (p1.x - p0.x) * (x.y - p0.y) - (p1.y - p0.y) * (x.x - p0.x) < 0;
+const crossZ = (r, n) => r.x * n.y - r.y * n.x;
+
+// ---------------------------------------------------------------- scene
+function buildScene() {
+  const stage = OpenText(bakeCableSceneUsdaSource(sceneText, {}).source);
+  const w = new World();
+  const physics = stage.GetPrimAtPath('/World/PhysicsScene');
+  const gd = getAttribute(physics, 'physics:gravityDirection');
+  const gm = getAttribute(physics, 'physics:gravityMagnitude');
+  w.setResource('gravity', new Vector3(gd[0] * gm, gd[1] * gm, gd[2] * gm));
+  dt = 1.0 / stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
+  w.setResource('dt', dt);
+  for (const def of FLAG_DEFS) w.setResource(def.key, flags[def.key]);
+
+  const g = {
+    score: 0, border: null, bodies: [], bodyById: new Map(), balls: [], obstacles: [], flippers: [], tips: [],
+    grab: null, grabbedBall: null, activePairs: new Set(), scoredBalls: new Set(), frame: 0, inputLog: [],
+    contacts: { border: [], obstacle: [], flipper: [], ballBall: [] },
+    fx: { bursts: [], wobble: new Map(), pairs: new Set() },
+  };
+  const root = stage.GetPrimAtPath('/World/FlipperScene');
+  const entityByName = {};
+
+  const borderPrim = getChild(root, 'Border');
+  const { color: borderColor, friction: borderFriction, restitution: borderRestitution } = materialProperties(stage, borderPrim);
+  g.border = {
+    points: getAttribute(borderPrim, 'points').slice(0, 8).map(p => ({ x: p[0], y: p[1] })),
+    color: borderColor || '#000000', friction: borderFriction, restitution: borderRestitution,
+  };
+
+  function record(id, kind, color) {
+    const get = C => w.getComponent(id, C);
+    const inertia = get(MomentOfInertiaComponent);
+    const body = {
+      id, kind, color,
+      pos: get(PositionComponent).pos,
+      prevPos: get(PrevFinalPosComponent)?.pos ?? null,
+      vel: get(VelocityComponent)?.vel ?? null,
+      quat: get(OrientationComponent)?.quaternion ?? null,
+      prevQuat: get(PrevFinalOrientationComponent)?.quaternion ?? null,
+      omega: get(AngularVelocityComponent)?.omega ?? null,
+      radiusC: get(RadiusComponent) ?? null,
+      massC: get(MassComponent) ?? null,
+      invInertiaTensor: inertia?.invInertiaTensor ?? null,
+      restitutionC: get(RestitutionComponent) ?? null,
+      frictionC: get(CoefficientOfFrictionComponent) ?? null,
+      linkC: get(CableLinkComponent) ?? null,
+      overlay: null, sectors: [],
+    };
+    g.bodies.push(body);
+    g.bodyById.set(id, body);
+    return body;
+  }
+
+  for (const prim of getChildren(root)) {
+    const tags = getAttribute(prim, 'ecs:tags') || [];
+    const t = getAttribute(prim, 'xformOp:translate');
+    if (!tags.length || !t) continue;
+    const { color, friction, restitution } = materialProperties(stage, prim);
+    const linkable = getAttribute(prim, 'cable:linkable');
+
+    if (tags.includes('Ball')) {
+      const id = w.createEntity();
+      w.addComponent(id, new PositionComponent(t[0], t[1], t[2]));
+      w.addComponent(id, new VelocityComponent(0, 0, 0));
+      w.addComponent(id, new RadiusComponent(getAttribute(prim, 'radius')));
+      w.addComponent(id, new MassComponent(getAttribute(prim, 'physics:mass')));
+      w.addComponent(id, new GravityAffectedComponent());
+      w.addComponent(id, new OrientationComponent(0, 0, 0, 1));
+      w.addComponent(id, new AngularVelocityComponent(0, 0, 0));
+      w.addComponent(id, new MomentOfInertiaComponent(getAttribute(prim, 'physics:inertiaTensor')[2][2]));
+      w.addComponent(id, new PrevFinalOrientationComponent(0, 0, 0, 1));
+      w.addComponent(id, new PrevFinalPosComponent(t[0], t[1], t[2]));
+      if (restitution !== null) w.addComponent(id, new RestitutionComponent(restitution));
+      if (friction !== null) w.addComponent(id, new CoefficientOfFrictionComponent(friction));
+      if (linkable) w.addComponent(id, new CableLinkComponent(t[0], t[1], t[2], null, PLANE_NORMAL));
+      entityByName[prim.name] = id;
+      g.balls.push(record(id, 'ball', color || '#a0a0a0'));
+    } else if (tags.includes('Obstacle')) {
+      const id = w.createEntity();
+      const angVel = getAttribute(prim, 'physics:angularVelocity');
+      const spin = angVel ? angVel[2] * Math.PI / 180.0 : 0.0;
+      w.addComponent(id, new PositionComponent(t[0], t[1], t[2]));
+      w.addComponent(id, new MassComponent(-1.0));
+      w.addComponent(id, new RadiusComponent(getAttribute(prim, 'radius')));
+      if (friction !== null) w.addComponent(id, new CoefficientOfFrictionComponent(friction));
+      if (spin !== 0.0) {
+        w.addComponent(id, new OrientationComponent(0, 0, 0, 1));
+        w.addComponent(id, new AngularVelocityComponent(0, 0, spin));
+        w.addComponent(id, new MomentOfInertiaComponent(getAttribute(prim, 'physics:inertiaTensor')[2][2]));
+        w.addComponent(id, new PrevFinalOrientationComponent(0, 0, 0, 1));
+      }
+      if (linkable) w.addComponent(id, new CableLinkComponent(t[0], t[1], t[2], null, PLANE_NORMAL));
+      entityByName[prim.name] = id;
+      const body = record(id, 'obstacle', color || '#ffffff');
+      body.pushVel = getAttribute(prim, 'obstacle:pushVel') || 0.0;
+      g.obstacles.push(body);
+    } else if (tags.includes('Flipper')) {
+      const geom = getChild(prim, 'Geom');
+      const radius = geom ? getAttribute(geom, 'radius') : 0.0;
+      const maxRotation = getAttribute(prim, 'flipper:maxRotation');
+      const id = w.createEntity();
+      w.addComponent(id, new PositionComponent(t[0], t[1], t[2]));
+      w.addComponent(id, new RadiusComponent(radius));
+      if (restitution !== null) w.addComponent(id, new RestitutionComponent(restitution));
+      if (linkable) w.addComponent(id, new CableLinkComponent(t[0], t[1], t[2], null, PLANE_NORMAL));
+      entityByName[prim.name] = id;
+      const flipper = record(id, 'flipper', color || '#ff0000');
+      Object.assign(flipper, {
+        length: getAttribute(prim, 'flipper:length'), restAngle: getAttribute(prim, 'flipper:restAngle'),
+        maxRotation: Math.abs(maxRotation), sign: Math.sign(maxRotation), angularVelocity: getAttribute(prim, 'flipper:angularVelocity'),
+        rotation: 0.0, currentAngularVelocity: 0.0, pressed: false, tip: null,
+      });
+      g.flippers.push(flipper);
+      const tipPrim = getChild(prim, 'Tip');
+      if (tipPrim) {
+        const tipId = w.createEntity();
+        w.addComponent(tipId, new PositionComponent(t[0], t[1], t[2]));
+        w.addComponent(tipId, new RadiusComponent(radius));
+        if (friction !== null) w.addComponent(tipId, new CoefficientOfFrictionComponent(friction));
+        if (getAttribute(tipPrim, 'cable:linkable')) w.addComponent(tipId, new CableLinkComponent(t[0], t[1], t[2], null, PLANE_NORMAL));
+        const tip = record(tipId, 'tip', color || '#ff0000');
+        tip.flipper = flipper;
+        flipper.tip = tip;
+        g.tips.push(tip);
+      }
+    }
+  }
+
+  const pathPrim = getChild(root, 'CablePath');
+  const jointEntities = [];
+  for (const jointPath of getRelationship(pathPrim, 'cablePath:joints')) {
+    const jp = stage.GetPrimAtPath(jointPath);
+    const a = entityByName[getRelationship(jp, 'physics:body0')[0].split('/').pop()];
+    const b = entityByName[getRelationship(jp, 'physics:body1')[0].split('/').pop()];
+    const la = getAttribute(jp, 'localPos0'), lb = getAttribute(jp, 'localPos1');
+    const id = w.createEntity();
+    w.addComponent(id, CableJointComponent.fromLocal(w, a, b, getAttribute(jp, 'restLength'),
+      new Vector3(la[0], la[1], la[2]), new Vector3(lb[0], lb[1], lb[2])));
+    jointEntities.push(id);
+  }
+  g.pathId = w.createEntity();
+  w.addComponent(g.pathId, new CablePathComponent(w, jointEntities, [...getAttribute(pathPrim, 'cablePath:linkTypes')],
+    [...getAttribute(pathPrim, 'cablePath:clockwise')], getAttribute(pathPrim, 'cablePath:stiffnessPerUnitLength'),
+    [...getAttribute(pathPrim, 'cablePath:stored')], getAttribute(pathPrim, 'cablePath:halfWidth'),
+    getAttribute(pathPrim, 'cablePath:dampingPerUnitLength')));
+  return { world: w, game: g };
+}
+
+// ---------------------------------------------------------------- body accessors
+const rawRadius = b => nonNeg(b.radiusC?.radius, 0);
+const invMass = b => (b.massC && Number.isFinite(b.massC.mass) && b.massC.mass > 0) ? 1 / b.massC.mass : 0;
+const invInertia = b => b.invInertiaTensor ? nonNeg(b.invInertiaTensor[2][2], 0) : 0;
+const frictionMu = b => nonNeg(b.frictionC?.mu, 0);
+const bodyOf = id => game.bodyById.get(id) ?? null;
+const omegaZ = b => b.omega ? finiteOr(b.omega.z, 0) : 0;
+
+// Applies a position/orientation correction. The solver already derived velocities from
+// the step, so corrections made afterwards also add their implied velocity (delta / dt),
+// exactly as the old pipeline did by correcting positions before its velocity update.
+function applyCorrection(b, dx, dy, dTheta) {
+  if (dx !== 0 || dy !== 0) {
+    b.pos.x += dx; b.pos.y += dy;
+    if (b.vel) { b.vel.x += dx / dt; b.vel.y += dy / dt; }
+  }
+  if (dTheta !== 0 && b.quat) {
+    rotateQuatZ(b.quat, dTheta);
+    if (b.omega) b.omega.z += dTheta / dt;
+  }
+}
+
+// ---------------------------------------------------------------- layered collision envelopes
+function pathLinkEntity(path, i) {
+  if (!path.jointEntities.length) return null;
+  if (i === 0) return world.getComponent(path.jointEntities[0], CableJointComponent)?.entityA ?? null;
+  if (i === path.linkTypes.length - 1) return world.getComponent(path.jointEntities.at(-1), CableJointComponent)?.entityB ?? null;
+  return world.getComponent(path.jointEntities[i - 1], CableJointComponent)?.entityB ?? null;
+}
+function pathLinkStartAttachment(path, i) {
+  if (!path.jointEntities.length) return null;
+  if (i === 0) return world.getComponent(path.jointEntities[0], CableJointComponent)?.attachmentPointA_world ?? null;
+  if (i === path.linkTypes.length - 1) return world.getComponent(path.jointEntities.at(-1), CableJointComponent)?.attachmentPointB_world ?? null;
+  return world.getComponent(path.jointEntities[i - 1], CableJointComponent)?.attachmentPointB_world ?? null;
+}
+function decomposeStoredWrap(storedLength, firstLayerRadius, layerStep) {
+  const stored = Math.max(0, storedLength ?? 0);
+  if (!(firstLayerRadius > 1e-9) || !(layerStep > 1e-9)) return null;
+  if (!(stored > 1e-9)) return { fullLayers: 0, partialLength: 0, partialRadius: firstLayerRadius };
+  let remaining = stored, fullLayers = 0;
+  while (fullLayers < 2048) {
+    const layerRadius = firstLayerRadius + fullLayers * layerStep;
+    const circumference = 2 * Math.PI * layerRadius;
+    if (remaining + 1e-9 >= circumference) { remaining = Math.max(0, remaining - circumference); fullLayers++; continue; }
+    return { fullLayers, partialLength: remaining, partialRadius: layerRadius };
+  }
+  return { fullLayers, partialLength: 0, partialRadius: firstLayerRadius + fullLayers * layerStep };
+}
+function closingOverlayBlend(span) {
+  const remaining = Math.max(0, 2 * Math.PI - (Number.isFinite(span) ? Math.max(0, span) : 0));
+  return remaining >= LAYER_RADIUS_RAMP_ANGLE ? 0 : 1 - remaining / LAYER_RADIUS_RAMP_ANGLE;
+}
+function smoothedSectorRadius(raw, decomposition, halfWidth, span) {
+  if (!(halfWidth > 1e-9)) return 0;
+  const fullLayers = Math.max(0, decomposition?.fullLayers ?? 0), width = 2 * halfWidth;
+  const start = raw + width * fullLayers, target = raw + width * (fullLayers + 1);
+  const alpha = Math.max(0, Math.min(1, (Number.isFinite(span) ? Math.max(0, span) : 0) / LAYER_RADIUS_RAMP_ANGLE));
+  return start + (target - start) * alpha;
+}
+
+function updateOverlaysAndSectors() {
+  for (const b of game.bodies) { b.overlay = null; b.sectors = []; }
+  if (!layeringEnabled(world)) return;
+  const overlayEnabled = flags.layeringCollisionOverlayRadius !== false;
+  const rampEnabled = flags.layeringCollisionOverlayRamp !== false;
+  const sectorEnabled = flags.layeringCollisionCircleSectors !== false;
+  const overlayByBody = new Map(), sectorsByBody = new Map();
+
+  for (const pathId of world.query([CablePathComponent])) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    const halfWidth = Number.isFinite(path.cableHalfWidth) ? Math.max(0, path.cableHalfWidth) : 0;
+    if (!(halfWidth > 1e-9)) continue;
+    const layerStep = 2 * halfWidth;
+    for (let li = 0; li < path.linkTypes.length; li++) {
+      const type = path.linkTypes[li];
+      if (!(type === 'rolling' || type === 'hybrid' || type === 'hybrid-attachment')) continue;
+      const stored = Math.max(0, path.stored[li] ?? 0);
+      const body = bodyOf(pathLinkEntity(path, li));
+      if ((stored <= 1e-9 && type !== 'hybrid-attachment') || !body) continue;
+      const center = body.pos, raw = rawRadius(body);
+      if (!(raw > 1e-9)) continue;
+      const dec = decomposeStoredWrap(stored, raw + halfWidth, layerStep);
+      if (!dec || (dec.fullLayers === 0 && dec.partialLength < 1e-9 && type !== 'hybrid-attachment')) continue;
+
+      const baseOverlay = raw + layerStep * dec.fullLayers;
+      let envelope = baseOverlay;
+      if (rampEnabled && dec.partialLength > 1e-9 && dec.partialRadius > 1e-9) {
+        const blend = closingOverlayBlend(dec.partialLength / dec.partialRadius);
+        if (blend > 1e-9) envelope = baseOverlay + layerStep * blend;
+      }
+      if (overlayEnabled && envelope > raw + 1e-9) {
+        const prev = overlayByBody.get(body);
+        if (!prev || envelope > prev.radius + 1e-9) overlayByBody.set(body, { radius: envelope, mu: frictionMu(body) });
+      }
+      if (sectorEnabled) {
+        const start = pathLinkStartAttachment(path, li);
+        if (!start) continue;
+        const rx = start.x - center.x, ry = start.y - center.y;
+        if (rx * rx + ry * ry <= 1e-12) continue;
+        const cw = Boolean(path.cw[li]);
+        const startAngle = type === 'hybrid'
+          ? Math.atan2(ry, rx) + (cw ? 1 : -1) * KNOT_SPAN * (raw / dec.partialRadius) : Math.atan2(ry, rx);
+        const rawSpan = dec.partialLength / dec.partialRadius;
+        const firstLayerAttachment = dec.fullLayers === 0 && type === 'hybrid-attachment';
+        const span = firstLayerAttachment ? Math.max(rawSpan, KNOT_SPAN) : rawSpan;
+        const radius = firstLayerAttachment ? raw + 2 * halfWidth : smoothedSectorRadius(raw, dec, halfWidth, span);
+        if (!(radius > raw + 1e-9)) continue;
+        const list = sectorsByBody.get(body) ?? [];
+        list.push({ radius, startAngle, endAngle: cw ? startAngle - span : startAngle + span, cw, mu: frictionMu(body) });
+        sectorsByBody.set(body, list);
+      }
+    }
+  }
+  for (const [body, overlay] of overlayByBody) body.overlay = overlay;
+  for (const [body, list] of sectorsByBody) body.sectors = list.filter(s => Number.isFinite(s.radius) && s.radius > 1e-9);
+}
+
+function baseCollisionRadius(b) {
+  const r = rawRadius(b);
+  return b.overlay && Number.isFinite(b.overlay.radius) ? Math.max(r, b.overlay.radius) : r;
+}
+function baseCollisionSupport(b) {
+  const raw = rawRadius(b), baseMu = frictionMu(b);
+  if (b.overlay && Number.isFinite(b.overlay.radius) && b.overlay.radius > raw + 1e-9) {
+    return { radius: b.overlay.radius, mu: Number.isFinite(b.overlay.mu) ? Math.max(0, b.overlay.mu) : baseMu };
+  }
+  return { radius: raw, mu: baseMu };
+}
+function maxCollisionRadius(b) {
+  let r = baseCollisionRadius(b);
+  for (const s of b.sectors) if (Number.isFinite(s.radius)) r = Math.max(r, s.radius);
+  return r;
+}
+function normalizedDirection(v) {
+  const l = Math.hypot(v.x, v.y);
+  return l <= 1e-6 ? { x: 1, y: 0 } : { x: v.x / l, y: v.y / l };
+}
+function compositeSupportToward(b, toward) {
+  const dir = normalizedDirection(toward), base = baseCollisionSupport(b), baseRadius = base.radius;
+  let projection = baseRadius, offset = { x: dir.x * baseRadius, y: dir.y * baseRadius }, friction = base.mu;
+  const angle = Math.atan2(dir.y, dir.x);
+  for (const s of b.sectors) {
+    if (!(s.radius > baseRadius + 1e-9)) continue;
+    const sectorMu = Number.isFinite(s.mu) ? Math.max(0, s.mu) : base.mu;
+    if (isAngleInSector(angle, s.startAngle, s.endAngle, s.cw === true) && s.radius > projection + 1e-9) {
+      projection = s.radius; offset = { x: dir.x * projection, y: dir.y * projection }; friction = sectorMu;
+    }
+    for (const corner of [s.startAngle, s.endAngle]) {
+      const co = { x: Math.cos(corner) * s.radius, y: Math.sin(corner) * s.radius };
+      const cp = co.x * dir.x + co.y * dir.y;
+      if (cp > projection + 1e-9) { projection = cp; offset = co; friction = sectorMu; }
+    }
+  }
+  return { baseRadius, projection, offset, friction };
+}
+function collisionSupportToward(b, toward, useSectors) {
+  if (useSectors) return compositeSupportToward(b, toward);
+  const dir = normalizedDirection(toward), base = baseCollisionSupport(b);
+  return { baseRadius: base.radius, projection: base.radius, offset: { x: dir.x * base.radius, y: dir.y * base.radius }, friction: base.mu };
+}
+
+// ---------------------------------------------------------------- pinch share (cable between two bodies widens their gap)
+function segmentEndpointAtCurrentPose(entityId, point) {
+  const body = bodyOf(entityId);
+  if (!body) return { x: point.x, y: point.y };
+  const cur = body.pos;
+  const curAngle = body.quat ? angleOf(body.quat) : 0;
+  const link = body.linkC;
+  const cachedPos = link?.prevCableAttachmentTimePos ?? cur;
+  const cachedAngle = link?.prevCableAttachmentTimeOrientation ? angleOf(link.prevCableAttachmentTimeOrientation) : curAngle;
+  const dx = point.x - cachedPos.x, dy = point.y - cachedPos.y;
+  const c0 = Math.cos(-cachedAngle), s0 = Math.sin(-cachedAngle);
+  const lx = dx * c0 - dy * s0, ly = dx * s0 + dy * c0;
+  const c1 = Math.cos(curAngle), s1 = Math.sin(curAngle);
+  return { x: cur.x + lx * c1 - ly * s1, y: cur.y + lx * s1 + ly * c1 };
+}
+function collectCableJointSegments() {
+  const segments = new Map();
+  for (const pathId of world.query([CablePathComponent])) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    const halfWidth = Number.isFinite(path.cableHalfWidth) ? Math.max(0, path.cableHalfWidth) : 0;
+    if (!(halfWidth > 1e-9)) continue;
+    for (const jointId of path.jointEntities) {
+      const joint = world.getComponent(jointId, CableJointComponent);
+      if (!joint) continue;
+      const a = segmentEndpointAtCurrentPose(joint.entityA, joint.attachmentPointA_world);
+      const b = segmentEndpointAtCurrentPose(joint.entityB, joint.attachmentPointB_world);
+      const prev = segments.get(jointId);
+      if (!prev || halfWidth > prev.halfWidth) segments.set(jointId, { halfWidth, a, b, entityA: joint.entityA, entityB: joint.entityB });
+    }
+  }
+  return [...segments.values()];
+}
+function segmentsProperlyIntersect(a0, a1, b0, b1) {
+  const rX = a1.x - a0.x, rY = a1.y - a0.y, sX = b1.x - b0.x, sY = b1.y - b0.y;
+  const rCrossS = rX * sY - rY * sX;
+  if (Math.abs(rCrossS) <= 1e-9) return false;
+  const qpX = b0.x - a0.x, qpY = b0.y - a0.y;
+  const t = (qpX * sY - qpY * sX) / rCrossS, u = (qpX * rY - qpY * rX) / rCrossS;
+  if (!Number.isFinite(t) || !Number.isFinite(u)) return false;
+  const tMargin = Math.min(0.49, 1e-4 / Math.max(Math.hypot(rX, rY), 1e-9));
+  const uMargin = Math.min(0.49, 1e-4 / Math.max(Math.hypot(sX, sY), 1e-9));
+  return t > tMargin && t < 1 - tMargin && u > uMargin && u < 1 - uMargin;
+}
+function crossingCableHalfWidth(segments, centerA, centerB, idA, idB) {
+  if (!segments.length || idA === idB) return 0;
+  let max = 0;
+  for (const s of segments) {
+    if (!(s.halfWidth > 1e-9)) continue;
+    if (s.entityA === idA || s.entityB === idA || s.entityA === idB || s.entityB === idB) continue;
+    if (segmentsProperlyIntersect(centerA, centerB, s.a, s.b)) max = Math.max(max, s.halfWidth);
+  }
+  return max;
+}
+
+// ---------------------------------------------------------------- contacts (PBD manifold)
+function resolveSingle(b, offset, n, penetration) {
+  if (!(penetration > 0)) return 0;
+  const im = invMass(b), ii = invInertia(b), rn = crossZ(offset, n);
+  const denom = im + ii * rn * rn;
+  if (denom <= 1e-12) return 0;
+  const lambda = penetration / denom;
+  applyCorrection(b, im > 0 ? n.x * im * lambda : 0, im > 0 ? n.y * im * lambda : 0, ii > 0 && b.quat ? ii * rn * lambda : 0);
+  return lambda;
+}
+function resolvePair(a, offsetA, b, offsetB, n, penetration) {
+  if (!(penetration > 0)) return 0;
+  const ima = invMass(a), imb = invMass(b), iia = invInertia(a), iib = invInertia(b);
+  const rna = crossZ(offsetA, n), rnb = crossZ(offsetB, n);
+  const denom = ima + imb + iia * rna * rna + iib * rnb * rnb;
+  if (denom <= 1e-12) return 0;
+  const lambda = penetration / denom;
+  applyCorrection(a, ima > 0 ? -n.x * ima * lambda : 0, ima > 0 ? -n.y * ima * lambda : 0, iia > 0 && a.quat ? -iia * rna * lambda : 0);
+  applyCorrection(b, imb > 0 ? n.x * imb * lambda : 0, imb > 0 ? n.y * imb * lambda : 0, iib > 0 && b.quat ? iib * rnb * lambda : 0);
+  return lambda;
+}
+function borderCollisionNormal(point, closest, a, b) {
+  const toBall = { x: point.x - closest.x, y: point.y - closest.y };
+  const ex = b.x - a.x, ey = b.y - a.y, el = Math.hypot(ex, ey);
+  const normal = { x: -ey / el, y: ex / el };
+  const len = Math.hypot(toBall.x, toBall.y);
+  let collision = len * len < 1e-9 ? { ...normal } : { x: toBall.x / len, y: toBall.y / len };
+  if (toBall.x * normal.x + toBall.y * normal.y < 0) collision = { ...normal };
+  return collision;
+}
+const flipperAngle = f => f.restAngle + f.sign * f.rotation;
+const flipperTipPos = f => ({ x: f.pos.x + Math.cos(flipperAngle(f)) * f.length, y: f.pos.y + Math.sin(flipperAngle(f)) * f.length });
+
+function positionalContacts() {
+  const c = game.contacts;
+  c.border.length = 0; c.obstacle.length = 0; c.flipper.length = 0; c.ballBall.length = 0;
+  const nextPairs = new Set();
+  const grabbed = game.grabbedBall;
+  const layering = layeringEnabled(world);
+  const useSectors = layering && flags.layeringCollisionSectorSolvers !== false;
+  const pinch = layering && flags.layeringCollisionPinchShare !== false;
+  const segments = pinch ? collectCableJointSegments() : null;
+  const broad = b => useSectors ? maxCollisionRadius(b) : baseCollisionRadius(b);
+  const border = game.border;
+
+  for (let i = 0; i < game.balls.length; i++) {
+    const ball = game.balls[i];
+    const bpos = ball.pos;
+    for (let s = 0; s < border.points.length; s++) {
+      const a = border.points[s], b = border.points[(s + 1) % border.points.length];
+      const closest = closestOnSegment(bpos, a, b);
+      const distSq = (bpos.x - closest.x) ** 2 + (bpos.y - closest.y) ** 2;
+      const br = broad(ball);
+      if (distSq > (br + 1e-9) ** 2) continue;
+      const normal = borderCollisionNormal(bpos, closest, a, b);
+      const support = collisionSupportToward(ball, { x: -normal.x, y: -normal.y }, useSectors);
+      const dist = Math.sqrt(distSq), penetration = support.projection - dist;
+      if (penetration <= 0) continue;
+      const lambda = resolveSingle(ball, support.offset, normal, penetration);
+      c.border.push({ ball, normal, lambda, offset: support.offset, ballFriction: support.friction,
+        restitution: border.restitution, friction: border.friction });
+    }
+    for (const obs of game.obstacles) {
+      const n = { x: bpos.x - obs.pos.x, y: bpos.y - obs.pos.y };
+      const dSq = n.x * n.x + n.y * n.y;
+      if (dSq <= 1e-12) continue;
+      const d = Math.sqrt(dSq); n.x /= d; n.y /= d;
+      const between = (pinch && ball.linkC && obs.linkC) ? crossingCableHalfWidth(segments, bpos, obs.pos, ball.id, obs.id) : 0;
+      const gap = between > 1e-9 ? 2 * between : 0;
+      if (d > broad(ball) + broad(obs) + gap + 1e-9) continue;
+      let sBall = collisionSupportToward(ball, { x: -n.x, y: -n.y }, useSectors);
+      let sObs = collisionSupportToward(obs, n, useSectors);
+      let pinchShared = false;
+      if (between > 1e-9) {
+        pinchShared = true;
+        const pb = baseCollisionRadius(ball) + between, po = baseCollisionRadius(obs) + between;
+        sBall = { ...sBall, projection: pb, offset: { x: -n.x * pb, y: -n.y * pb } };
+        sObs = { ...sObs, projection: po, offset: { x: n.x * po, y: n.y * po } };
+      }
+      const rSum = sBall.projection + sObs.projection;
+      if (d > rSum + 1e-9) continue;
+      const penetration = rSum - d;
+      if (penetration <= 0) continue;
+      const lambda = resolveSingle(ball, sBall.offset, n, penetration);
+      const rawHit = d <= rawRadius(ball) + rawRadius(obs) + 1e-9;
+      c.obstacle.push({ ball, obs, direction: n, rawHit, lambda, ballOffset: sBall.offset, ballFriction: sBall.friction,
+        obstacleRadius: sObs.projection, obstacleFriction: sObs.friction, pinchShared, ballRadius: sBall.projection });
+      const key = `${ball.id}:${obs.id}`;
+      if (rawHit) nextPairs.add(key);
+      if (rawHit && !game.activePairs.has(key) && ball !== grabbed) game.scoredBalls.add(ball);
+    }
+    for (const flipper of game.flippers) {
+      const tip = flipperTipPos(flipper);
+      const closest = closestOnSegment(bpos, flipper.pos, tip);
+      const n = { x: bpos.x - closest.x, y: bpos.y - closest.y };
+      const dSq = n.x * n.x + n.y * n.y;
+      if (dSq <= 1e-12) continue;
+      const d = Math.sqrt(dSq); n.x /= d; n.y /= d;
+      const fr = broad(flipper);
+      if (d > broad(ball) + fr + 1e-9) continue;
+      const support = collisionSupportToward(ball, { x: -n.x, y: -n.y }, useSectors);
+      const rSum = support.projection + fr;
+      if (d > rSum + 1e-9) continue;
+      const penetration = rSum - d;
+      if (penetration <= 0) continue;
+      const lambda = resolveSingle(ball, support.offset, n, penetration);
+      c.flipper.push({ ball, flipper, normal: n, point: closest, offset: support.offset, ballFriction: support.friction, lambda });
+    }
+    for (let j = i + 1; j < game.balls.length; j++) {
+      const other = game.balls[j];
+      const n = { x: other.pos.x - bpos.x, y: other.pos.y - bpos.y };
+      const dSq = n.x * n.x + n.y * n.y;
+      if (dSq <= 1e-12) continue;
+      const d = Math.sqrt(dSq); n.x /= d; n.y /= d;
+      const between = (pinch && ball.linkC && other.linkC) ? crossingCableHalfWidth(segments, bpos, other.pos, ball.id, other.id) : 0;
+      const gap = between > 1e-9 ? 2 * between : 0;
+      if (d > broad(ball) + broad(other) + gap + 1e-9) continue;
+      let sA = collisionSupportToward(ball, n, useSectors);
+      let sB = collisionSupportToward(other, { x: -n.x, y: -n.y }, useSectors);
+      let pinchShared = false;
+      if (between > 1e-9) {
+        pinchShared = true;
+        const pa = baseCollisionRadius(ball) + between, pb = baseCollisionRadius(other) + between;
+        sA = { ...sA, projection: pa, offset: { x: n.x * pa, y: n.y * pa } };
+        sB = { ...sB, projection: pb, offset: { x: -n.x * pb, y: -n.y * pb } };
+      }
+      const rSum = sA.projection + sB.projection;
+      if (d > rSum + 1e-9) continue;
+      const penetration = rSum - d;
+      if (penetration <= 0) continue;
+      const lambda = resolvePair(ball, sA.offset, other, sB.offset, n, penetration);
+      c.ballBall.push({ a: ball, b: other, normal: n, lambda, penetration, radiusA: sA.projection, radiusB: sB.projection,
+        offsetA: sA.offset, offsetB: sB.offset, frictionA: sA.friction, frictionB: sB.friction, pinchShared });
+    }
+  }
+  game.activePairs = nextPairs;
+}
+
+// Cable-envelope (non-raw) contacts only: grip between a layered envelope and the ball.
+function layerContactStaticFriction() {
+  for (const contact of game.contacts.obstacle) {
+    if (contact.rawHit === true) continue;
+    const { ball, obs, direction } = contact;
+    const nl = Math.hypot(direction.x, direction.y);
+    if (nl * nl <= 1e-12) continue;
+    const n = { x: direction.x / nl, y: direction.y / nl };
+    const ballOffset = contact.ballOffset ?? { x: -n.x * rawRadius(ball), y: -n.y * rawRadius(ball) };
+    const obsOffset = { x: n.x * nonNeg(contact.obstacleRadius, rawRadius(obs)), y: n.y * nonNeg(contact.obstacleRadius, rawRadius(obs)) };
+    const offsetPrev = (b, off) => {
+      if (!b.quat || !b.prevQuat) return { x: off.x, y: off.y };
+      const d = angleOf(b.prevQuat) - angleOf(b.quat), c = Math.cos(d), s = Math.sin(d);
+      return { x: off.x * c - off.y * s, y: off.x * s + off.y * c };
+    };
+    const ballPrev = ball.prevPos ?? ball.pos, obsPrev = obs.prevPos ?? obs.pos;
+    const bo = offsetPrev(ball, ballOffset), oo = offsetPrev(obs, obsOffset);
+    const dpx = (ball.pos.x + ballOffset.x) - (ballPrev.x + bo.x) - ((obs.pos.x + obsOffset.x) - (obsPrev.x + oo.x));
+    const dpy = (ball.pos.y + ballOffset.y) - (ballPrev.y + bo.y) - ((obs.pos.y + obsOffset.y) - (obsPrev.y + oo.y));
+    const dn = dpx * n.x + dpy * n.y;
+    const tx = dpx - dn * n.x, ty = dpy - dn * n.y, tm = Math.hypot(tx, ty);
+    if (tm <= 1e-9) continue;
+    const dir = { x: -tx / tm, y: -ty / tm };
+    const ima = invMass(ball), imo = invMass(obs), iia = invInertia(ball), iio = invInertia(obs);
+    const rbt = crossZ(ballOffset, dir), rot = crossZ(obsOffset, dir);
+    const denom = ima + imo + iia * rbt * rbt + iio * rot * rot;
+    if (denom <= 1e-12) continue;
+    const mu = 0.5 * (nonNeg(contact.ballFriction, frictionMu(ball)) + nonNeg(contact.obstacleFriction, frictionMu(obs)));
+    if (mu <= 0) continue;
+    const limit = mu * Math.max(0, finiteOr(contact.lambda, 0));
+    if (limit <= 1e-12) continue;
+    const lambda = Math.min(tm / denom, limit);
+    if (lambda <= 1e-12) continue;
+    const ix = dir.x * lambda, iy = dir.y * lambda;
+    applyCorrection(ball, ima > 0 ? ix * ima : 0, ima > 0 ? iy * ima : 0, iia > 0 && ball.quat ? (ballOffset.x * iy - ballOffset.y * ix) * iia : 0);
+    applyCorrection(obs, imo > 0 ? -ix * imo : 0, imo > 0 ? -iy * imo : 0, iio > 0 && obs.quat ? (obsOffset.x * -iy - obsOffset.y * -ix) * iio : 0);
+  }
+}
+
+// ---------------------------------------------------------------- velocity contacts
+const surfaceVelocity = (vel, omega, off) => ({ x: vel.x - omega * off.y, y: vel.y + omega * off.x });
+
+// One restitution + Coulomb friction impulse between body A (a ball) and a surface moving at vSurface.
+function ballSurfaceContact(ball, n, vSurface, restitutionOther, frictionOther, frictionSelf, lambda, offset) {
+  if (!ball.vel || !ball.omega) return;
+  const im = invMass(ball), ii = invInertia(ball);
+  if (im === 0 && ii === 0) return;
+  const restitution = 0.5 * (clamp01(ball.restitutionC?.restitution, 0) + clamp01(restitutionOther, 0));
+  const mu = 0.5 * (nonNeg(frictionSelf, frictionMu(ball)) + nonNeg(frictionOther, 0));
+  const useOffset = layeringEnabled(world) && flags.layeringVelocityContactOffset !== false && offset && Number.isFinite(offset.x) && Number.isFinite(offset.y);
+  const r = useOffset ? offset : { x: -n.x * rawRadius(ball), y: -n.y * rawRadius(ball) };
+  const vc = surfaceVelocity(ball.vel, ball.omega.z, r);
+  const vn = (vc.x - vSurface.x) * n.x + (vc.y - vSurface.y) * n.y;
+  let jRestitution = 0;
+  if (vn < 0) {
+    const rn = crossZ(r, n), w = im + ii * rn * rn;
+    if (w > 1e-9) {
+      jRestitution = -(1 + restitution) * vn / w;
+      ball.vel.x += n.x * jRestitution * im; ball.vel.y += n.y * jRestitution * im;
+      ball.omega.z += rn * jRestitution * ii;
+    }
+  }
+  const jForce = dt > 1e-9 ? finiteOr(lambda, 0) / dt : 0;
+  const jN = jRestitution + jForce;
+  const v2 = surfaceVelocity(ball.vel, ball.omega.z, r);
+  const rvx = v2.x - vSurface.x, rvy = v2.y - vSurface.y, rvn = rvx * n.x + rvy * n.y;
+  const tvx = rvx - rvn * n.x, tvy = rvy - rvn * n.y, tm = Math.hypot(tvx, tvy);
+  if (mu > 0 && tm > 1e-9) {
+    const t = { x: tvx / tm, y: tvy / tm }, rt = crossZ(r, t), w = im + ii * rt * rt;
+    if (w > 1e-9) {
+      const jt = Math.max(-mu * jN, Math.min(-tm / w, mu * jN));
+      ball.vel.x += t.x * jt * im; ball.vel.y += t.y * jt * im;
+      ball.omega.z += rt * jt * ii;
+    }
+  }
+}
+
+// Bumper push: raw hits against a pushing obstacle kick the ball away (with friction-skewed direction and spin exchange).
+function ballObstacleBump() {
+  const requireRaw = flags.enableLayering !== false && flags.layeringObstacleRawHitFilter !== false;
+  for (const contact of game.contacts.obstacle) {
+    const { ball, obs, direction } = contact;
+    if (requireRaw && contact.rawHit === false) continue;
+    if (!ball.vel || !ball.massC || !obs.radiusC || !(obs.pushVel !== undefined)) continue;
+    const r1 = rawRadius(ball), r2 = rawRadius(obs), push = obs.pushVel;
+    const omegaBall = omegaZ(ball), omegaObs = omegaZ(obs);
+    const muObs = Number.isFinite(contact.obstacleFriction) ? Math.max(0, contact.obstacleFriction) : frictionMu(obs);
+    const muBall = Number.isFinite(contact.ballFriction) ? Math.max(0, contact.ballFriction) : 0;
+    const mu = Math.max(0, 0.5 * (muObs + muBall));
+    const tangent = { x: -direction.y, y: direction.x };
+    let vSurfObsT = 0;
+    if (omegaObs !== 0) vSurfObsT = (-omegaObs * direction.y * r2) * tangent.x + (omegaObs * direction.x * r2) * tangent.y;
+    const vBallContact = { x: ball.vel.x + omegaBall * direction.y * r1, y: ball.vel.y - omegaBall * direction.x * r1 };
+    const vRelT = (vBallContact.x * tangent.x + vBallContact.y * tangent.y) - vSurfObsT;
+    let sSign = 0;
+    if (Math.abs(vRelT) > 1e-9 && mu !== 0) sSign = -Math.sign(vRelT);
+    let dir = { x: direction.x + tangent.x * mu * sSign, y: direction.y + tangent.y * mu * sSign };
+    const dl = Math.hypot(dir.x, dir.y); dir = { x: dir.x / dl, y: dir.y / dl };
+    ball.vel.x += dir.x * push; ball.vel.y += dir.y * push;
+    if (mu > 0) {
+      const dvT = (dir.x * tangent.x + dir.y * tangent.y) * push;
+      if (Math.abs(dvT) > 1e-9) {
+        const jx = tangent.x * dvT * ball.massC.mass, jy = tangent.y * dvT * ball.massC.mass;
+        const ii = invInertia(ball);
+        if (ball.omega && ii > 0) ball.omega.z += ((-direction.x * r1) * jy - (-direction.y * r1) * jx) * ii;
+        const io = invInertia(obs);
+        if (obs.omega && io > 0) obs.omega.z += ((direction.x * r2) * -jy - (direction.y * r2) * -jx) * io;
+      }
+    }
+  }
+}
+
+// Non-raw (cable envelope) contacts: full two-body restitution + friction impulse with spin.
+function lineLayersBumperVelocityContact() {
+  for (const contact of game.contacts.obstacle) {
+    if (contact.rawHit === true) continue;
+    const { ball, obs, direction: n } = contact;
+    if (!Number.isFinite(n.x) || !Number.isFinite(n.y) || !ball.vel || !ball.omega) continue;
+    const imB = invMass(ball), imO = invMass(obs), iiB = invInertia(ball), iiO = invInertia(obs);
+    if (imB === 0 && imO === 0 && iiB === 0 && iiO === 0) continue;
+    const offB = contact.ballOffset ?? { x: -n.x * rawRadius(ball), y: -n.y * rawRadius(ball) };
+    const obsR = Number.isFinite(contact.obstacleRadius) ? Math.max(0, contact.obstacleRadius) : rawRadius(obs);
+    const offO = { x: n.x * obsR, y: n.y * obsR };
+    const restitution = 0.5 * (clamp01(ball.restitutionC?.restitution, 0) + clamp01(obs.restitutionC?.restitution, 0));
+    const mu = 0.5 * (nonNeg(contact.ballFriction, frictionMu(ball)) + nonNeg(contact.obstacleFriction, frictionMu(obs)));
+    const sB = surfaceVelocity(ball.vel, ball.omega.z, offB);
+    const obsVel = obs.vel ?? { x: 0, y: 0 };
+    const sO = surfaceVelocity(obsVel, omegaZ(obs), offO);
+    const rvn = (sB.x - sO.x) * n.x + (sB.y - sO.y) * n.y;
+    const rbn = crossZ(offB, n), ron = crossZ(offO, n);
+    const denN = imB + imO + iiB * rbn * rbn + iiO * ron * ron;
+    let jN = 0;
+    if (rvn < 0 && denN > 1e-9) {
+      jN = -(1 + restitution) * rvn / denN;
+      if (imB > 0) { ball.vel.x += n.x * jN * imB; ball.vel.y += n.y * jN * imB; }
+      if (imO > 0 && obs.vel) { obs.vel.x -= n.x * jN * imO; obs.vel.y -= n.y * jN * imO; }
+      if (iiB > 0) ball.omega.z += rbn * jN * iiB;
+      if (iiO > 0 && obs.omega) obs.omega.z += ron * -jN * iiO;
+    }
+    const frictionJn = Math.max(0, jN + (dt > 1e-9 ? finiteOr(contact.lambda, 0) / dt : 0));
+    const sB2 = surfaceVelocity(ball.vel, ball.omega.z, offB), sO2 = surfaceVelocity(obsVel, omegaZ(obs), offO);
+    const rx = sB2.x - sO2.x, ry = sB2.y - sO2.y, rn2 = rx * n.x + ry * n.y;
+    const tx = rx - rn2 * n.x, ty = ry - rn2 * n.y, ts = Math.hypot(tx, ty);
+    if (mu <= 0 || ts <= 1e-9) continue;
+    const t = { x: tx / ts, y: ty / ts }, rbt = crossZ(offB, t), rot = crossZ(offO, t);
+    const denT = imB + imO + iiB * rbt * rbt + iiO * rot * rot;
+    if (denT <= 1e-9) continue;
+    const limit = mu * frictionJn;
+    const jt = Math.max(-limit, Math.min(-ts / denT, limit));
+    if (imB > 0) { ball.vel.x += t.x * jt * imB; ball.vel.y += t.y * jt * imB; }
+    if (imO > 0 && obs.vel) { obs.vel.x -= t.x * jt * imO; obs.vel.y -= t.y * jt * imO; }
+    if (iiB > 0) ball.omega.z += rbt * jt * iiB;
+    if (iiO > 0 && obs.omega) obs.omega.z += rot * -jt * iiO;
+  }
+}
+
+// Ported 1:1 from the original: the manifold normal points A -> B while the restitution test is
+// "relative normal velocity < 0", so ball-ball impacts come out perfectly inelastic (balls stick).
+function ballBallVelocityContact() {
+  for (const contact of game.contacts.ballBall) {
+    const { a, b, normal: n } = contact;
+    if (!a.vel || !b.vel || !a.omega || !b.omega) continue;
+    const imA = invMass(a), imB = invMass(b), iiA = invInertia(a), iiB = invInertia(b);
+    if (imA === 0 && imB === 0 && iiA === 0 && iiB === 0) continue;
+    const restitution = 0.5 * (clamp01(a.restitutionC?.restitution, 0) + clamp01(b.restitutionC?.restitution, 0));
+    const mu = 0.5 * (nonNeg(contact.frictionA, frictionMu(a)) + nonNeg(contact.frictionB, frictionMu(b)));
+    const offA = contact.offsetA, offB = contact.offsetB;
+    const sA = surfaceVelocity(a.vel, a.omega.z, offA), sB = surfaceVelocity(b.vel, b.omega.z, offB);
+    const rvn = (sA.x - sB.x) * n.x + (sA.y - sB.y) * n.y;
+    const rAn = crossZ(offA, n), rBn = crossZ(offB, n);
+    const denN = imA + imB + iiA * rAn * rAn + iiB * rBn * rBn;
+    let jN = 0;
+    if (rvn < 0 && denN > 1e-9) {
+      jN = -(1 + restitution) * rvn / denN;
+      if (imA > 0) { a.vel.x += n.x * jN * imA; a.vel.y += n.y * jN * imA; }
+      if (imB > 0) { b.vel.x -= n.x * jN * imB; b.vel.y -= n.y * jN * imB; }
+      if (iiA > 0) a.omega.z += rAn * jN * iiA;
+      if (iiB > 0) b.omega.z += rBn * -jN * iiB;
+    }
+    const frictionJn = Math.max(0, jN + (dt > 1e-9 ? finiteOr(contact.lambda, 0) / dt : 0));
+    const sA2 = surfaceVelocity(a.vel, a.omega.z, offA), sB2 = surfaceVelocity(b.vel, b.omega.z, offB);
+    const rx = sA2.x - sB2.x, ry = sA2.y - sB2.y, rn2 = rx * n.x + ry * n.y;
+    const tx = rx - rn2 * n.x, ty = ry - rn2 * n.y, ts = Math.hypot(tx, ty);
+    if (mu <= 0 || ts <= 1e-9) continue;
+    const t = { x: tx / ts, y: ty / ts }, rAt = crossZ(offA, t), rBt = crossZ(offB, t);
+    const denT = imA + imB + iiA * rAt * rAt + iiB * rBt * rBt;
+    if (denT <= 1e-9) continue;
+    const limit = mu * frictionJn;
+    const jt = Math.max(-limit, Math.min(-ts / denT, limit));
+    if (imA > 0) { a.vel.x += t.x * jt * imA; a.vel.y += t.y * jt * imA; }
+    if (imB > 0) { b.vel.x -= t.x * jt * imB; b.vel.y -= t.y * jt * imB; }
+    if (iiA > 0) a.omega.z += rAt * jt * iiA;
+    if (iiB > 0) b.omega.z += rBt * -jt * iiB;
+  }
+}
+
+function ballBorderOrFlipperVelocityContact() {
+  for (const c of game.contacts.border) {
+    ballSurfaceContact(c.ball, c.normal, { x: 0, y: 0 }, c.restitution, c.friction, c.ballFriction, c.lambda, c.offset);
+  }
+  for (const c of game.contacts.flipper) {
+    const f = c.flipper, w = f.currentAngularVelocity;
+    const rf = { x: c.point.x - f.pos.x, y: c.point.y - f.pos.y };
+    const vFlipper = { x: -w * rf.y, y: w * rf.x };
+    if (!f.restitutionC) continue;
+    ballSurfaceContact(c.ball, c.normal, vFlipper, f.restitutionC.restitution, f.tip?.frictionC ? f.tip.frictionC.mu : null,
+      c.ballFriction, c.lambda, c.offset);
+  }
+}
+
+// ---------------------------------------------------------------- flippers & input
+function flipperMotion() {
+  for (const f of game.flippers) {
+    const prev = f.rotation;
+    f.rotation = f.pressed ? Math.min(f.rotation + dt * f.angularVelocity, f.maxRotation) : Math.max(f.rotation - dt * f.angularVelocity, 0.0);
+    f.currentAngularVelocity = dt > 1e-6 ? f.sign * (f.rotation - prev) / dt : 0.0;
+  }
+}
+function flipperTipLink() {
+  for (const tip of game.tips) {
+    const p = flipperTipPos(tip.flipper);
+    tip.pos.x = p.x; tip.pos.y = p.y;
+  }
+}
+function pressExtremeFlipper(preferRight) {
+  let chosen = null, chosenX = preferRight ? -Infinity : Infinity;
+  for (const f of game.flippers) {
+    if (!Number.isFinite(f.pos.x)) continue;
+    if ((preferRight && f.pos.x > chosenX) || (!preferRight && f.pos.x < chosenX)) { chosenX = f.pos.x; chosen = f; }
+  }
+  if (!chosen) return false;
+  chosen.pressed = true;
+  return true;
+}
+function pressAt(click) {
+  const pts = game.border.points;
+  let handled = false;
+  if (game.flippers.length) {
+    if (rightOfLine(click, pts[0], pts[1]) && rightOfLine(click, pts[1], pts[2])) handled = pressExtremeFlipper(true);
+    else if (rightOfLine(click, pts[5], pts[6]) && rightOfLine(click, pts[6], pts[7])) handled = pressExtremeFlipper(false);
+  }
+  if (!handled) {
+    for (const f of game.flippers) {
+      if ((click.x - f.pos.x) ** 2 + (click.y - f.pos.y) ** 2 < f.length ** 2) f.pressed = true;
+    }
+  }
+}
+function releaseAt(pos) {
+  let closest = null, min = Infinity;
+  for (const f of game.flippers) {
+    if (!f.pressed) continue;
+    const d2 = (pos.x - f.pos.x) ** 2 + (pos.y - f.pos.y) ** 2;
+    if (d2 < min) { min = d2; closest = f; }
+  }
+  if (closest) closest.pressed = false;
+}
+function flipperForKey(key) {
+  if (game.flippers.length < 2) return null;
+  const [first, second] = game.flippers;
+  const leftFirst = first.pos.x < second.pos.x;
+  return key === 'ArrowLeft' ? (leftFirst ? first : second) : (leftFirst ? second : first);
+}
+
+// Grab spring: a real two-link cable between the ball and the pointer.
+function simPoint(ev) {
+  const r = canvas.getBoundingClientRect();
+  const scale = r.height / SIM_H;
+  return { x: (ev.clientX - r.left) / scale, y: (r.bottom - ev.clientY) / scale };
+}
+function startGrab(ball, p) {
+  const ptr = world.createEntity();
+  world.addComponent(ptr, new PositionComponent(p.x, p.y));
+  world.addComponent(ptr, new CableLinkComponent(p.x, p.y));
+  const joint = world.createEntity();
+  world.addComponent(joint, new CableJointComponent(ball.id, ptr, GRAB_REST_LENGTH, ball.pos, new Vector3(p.x, p.y, 0)));
+  const path = world.createEntity();
+  world.addComponent(path, new CablePathComponent(world, [joint], ['attachment', 'attachment'], [true, true], GRAB_SPRING_CONSTANT));
+  game.grab = { ptr, joint, path, ball, pos: world.getComponent(ptr, PositionComponent).pos };
+  game.grabbedBall = ball;
+  setPaused(false);
+}
+function endGrab() {
+  const { ptr, joint, path, ball } = game.grab;
+  if (ball.vel && ball.prevPos) {
+    ball.vel.x = (ball.pos.x - ball.prevPos.x) / dt;
+    ball.vel.y = (ball.pos.y - ball.prevPos.y) / dt;
+  }
+  world.destroyEntity(path); world.destroyEntity(joint); world.destroyEntity(ptr);
+  game.grab = null; game.grabbedBall = null;
+}
+function setPaused(value) {
+  paused = value;
+  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+  if (!paused) { lastTime = performance.now(); }
+}
+
+// ---------------------------------------------------------------- audio
+let audioCtx = null;
+function ensureAudio() {
+  if (audioCtx || flags.scoreBounceSoundEnabled !== true) return;
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { audioCtx = null; }
+}
+function playScoreSound() {
+  if (flags.scoreBounceSoundEnabled !== true || !audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), now = audioCtx.currentTime;
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+    gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.15);
+  } catch { /* audio is best effort */ }
+}
+
+// ---------------------------------------------------------------- simulation step
+function stepSim() {
+  flipperMotion();
+  flipperTipLink();
+  game.scoredBalls.clear();
+  game.frame++;
+  backend.stepPhysics(world, dt);
+  updateOverlaysAndSectors();
+  positionalContacts();
+  layerContactStaticFriction();
+  ballObstacleBump();
+  lineLayersBumperVelocityContact();
+  ballBallVelocityContact();
+  ballBorderOrFlipperVelocityContact();
+  if (game.scoredBalls.size) { game.score += game.scoredBalls.size; playScoreSound(); }
+}
+
+// ---------------------------------------------------------------- bumper hit FX (render-side)
+const nowSec = () => performance.now() * 0.001;
+function fxPalette(color) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(color ?? '');
+  const rgb = m ? [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4), 16)] : [255, 160, 40];
+  const [r, g, b] = rgb, max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let hue = 0;
+  if (max !== min) {
+    const d = max - min;
+    hue = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    hue = (hue * 60 + 360) % 360;
+  }
+  return hue >= 170 && hue <= 260
+    ? { core: [80, 190, 255], hot: [195, 240, 255], deep: [60, 115, 245] }
+    : { core: [255, 152, 44], hot: [255, 222, 128], deep: [255, 92, 22] };
+}
+const rgba = (c, a) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
+function spawnBumperHit(contact) {
+  const { obs, ball, direction, lambda } = contact;
+  const fx = game.fx, outward = direction;
+  const radius = rawRadius(obs), effectRadius = Math.max(0.008, radius * 0.5);
+  const intensity = Math.max(0.7, Math.min(2.8, 0.85 + 0.2 * obs.pushVel + 0.32 * Math.sqrt(Math.max(0, finiteOr(lambda, 0)) + 1e-9)));
+  const spread = Math.PI / 7 + Math.random() * 0.16, baseAngle = Math.atan2(outward.y, outward.x);
+  fx.wobble.set(obs.id, { start: nowSec(), life: 0.1, amp: Math.max(0.0038, Math.min(0.0088, radius * 0.34)) * Math.max(0.7, Math.min(1.45, 0.76 + 0.25 * intensity)),
+    dx: outward.x, dy: outward.y, freq: 16 + Math.random() * 8, phase: Math.random() * Math.PI * 2 });
+  const rays = Array.from({ length: Math.max(8, Math.min(16, Math.round(8 + intensity * 2 + Math.random() * 2))) }, () => {
+    const inward = Math.random() < 0.18;
+    return { offset: (Math.random() * 2 - 1) * spread, lengthScale: inward ? 0.24 + Math.random() * 0.28 : 0.78 + Math.random() * 0.62,
+      widthScale: 0.7 + Math.random() * 0.75, alphaScale: 0.52 + Math.random() * 0.36, surface: 0.01 + Math.random() * 0.15,
+      inward, inwardScale: 0.5 + Math.random() * 0.4, flicker: Math.random() * Math.PI * 2, hot: Math.random() < 0.52 };
+  });
+  const ox = obs.pos.x + outward.x * (radius + effectRadius * 0.03), oy = obs.pos.y + outward.y * (radius + effectRadius * 0.03);
+  const sparks = Array.from({ length: Math.max(6, Math.min(14, Math.round(6 + intensity * 3 + Math.random() * 2))) }, () => {
+    const a = baseAngle + (Math.random() * 2 - 1) * spread * 1.2, s = (0.2 + Math.random() * 0.5) * (0.45 + 0.5 * intensity);
+    return { x: ox, y: oy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, age: 0, life: 0.1 + Math.random() * 0.24, width: 0.7 + Math.random() * 1.3, hot: Math.random() < 0.5 };
+  });
+  const tangent = { x: -outward.y, y: outward.x };
+  const ballSparks = Array.from({ length: 3 + Math.floor(Math.random() * 2) }, () => {
+    const sign = Math.random() < 0.5 ? -1 : 1, tw = 0.85 + Math.random() * 0.55, nw = -0.18 + Math.random() * 0.26;
+    let dx = outward.x * nw + tangent.x * tw * sign, dy = outward.y * nw + tangent.y * tw * sign;
+    const l = Math.hypot(dx, dy); dx /= l; dy /= l;
+    const s = (0.42 + Math.random() * 0.52) * (0.8 + 0.22 * intensity);
+    return { x: ball.pos.x - outward.x * rawRadius(ball), y: ball.pos.y - outward.y * rawRadius(ball), vx: dx * s, vy: dy * s, age: 0, life: 0.16 + Math.random() * 0.1, width: 1.8 + Math.random() * 1.2 };
+  });
+  fx.bursts.push({ x: obs.pos.x, y: obs.pos.y, dirX: outward.x, dirY: outward.y, bumperRadius: radius, effectRadius, age: 0, life: 0.52 + Math.random() * 0.2,
+    spread, maxRayLength: 0.035 + 0.05 * intensity, palette: fxPalette(obs.color), rays, sparks, ballSparks });
+  if (fx.bursts.length > 80) fx.bursts.splice(0, fx.bursts.length - 80);
+}
+function wobbleOffset(id) {
+  const w = game.fx.wobble.get(id);
+  if (!w) return null;
+  const el = nowSec() - w.start;
+  if (el < 0) return null;
+  if (el >= w.life) { game.fx.wobble.delete(id); return null; }
+  const progress = Math.min(1, el / w.life), env = (1 - progress) ** 2, osc = Math.sin(2 * Math.PI * w.freq * el + w.phase);
+  const off = w.amp * env * osc + w.amp * 0.24 * Math.exp(-48 * el);
+  const stretch = Math.max(-0.22, Math.min(0.22, 0.14 * env * Math.sin(2 * Math.PI * w.freq * el + w.phase + 0.9)));
+  return { x: w.dx * off, y: w.dy * off, stretch };
+}
+
+// ---------------------------------------------------------------- rendering
+let S = 1, canvasH = 0;
+const cX = x => x * S, cY = y => canvasH - y * S;
+const physicalCableWidthPx = hw => (Number.isFinite(hw) && hw > 1e-9) ? Math.max(0.75, 2 * hw * S) : Math.max(1.0, 2.0 * S / 250);
+
+function drawCatenary(pA, pB, length, obstacles, sag) {
+  const dx = pB.x - pA.x, dy = pB.y - pA.y, D = Math.hypot(dx, dy);
+  if (D <= 1e-6) return;
+  const sagAmount = Math.max(length - D, 0) * sag;
+  ctx.beginPath();
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20, off = sagAmount * 4 * t * (1 - t);
+    let px = pA.x + dx * t, py = pA.y + dy * t - off;
+    for (const o of obstacles) {
+      const vx = px - o.x, vy = py - o.y, d2 = vx * vx + vy * vy;
+      if (d2 < o.r * o.r) {
+        const d = Math.sqrt(d2);
+        if (d > 1e-9) { px += vx / d * (o.r - d); py += vy / d * (o.r - d); } else { px = o.x; py = o.y - o.r; }
+      }
+    }
+    if (i === 0) ctx.moveTo(cX(px), cY(py)); else ctx.lineTo(cX(px), cY(py));
+  }
+  ctx.stroke();
+}
+
+function drawBumperFx() {
+  const fx = game.fx;
+  if (flags.renderBumperHitFx !== true) { fx.bursts.length = 0; fx.pairs.clear(); fx.wobble.clear(); return; }
+  const next = new Set();
+  for (const contact of game.contacts.obstacle) {
+    if (contact.rawHit === false || !(contact.obs.pushVel > 1e-9)) continue;
+    const key = `${contact.ball.id}:${contact.obs.id}`;
+    next.add(key);
+    if (!fx.pairs.has(key)) spawnBumperHit(contact);
+  }
+  fx.pairs = next;
+  if (!fx.bursts.length) return;
+  const now = nowSec();
+  fx.last ??= now;
+  const dtFx = Math.min(Math.max(now - fx.last, 0), 0.05) * 2.0;
+  fx.last = now;
+  const drag = Math.exp(-6.5 * dtFx);
+  for (const burst of fx.bursts) {
+    burst.age += dtFx;
+    for (const list of ['sparks', 'ballSparks']) {
+      burst[list] = burst[list].filter(sp => {
+        sp.age += dtFx;
+        if (sp.age >= sp.life) return false;
+        sp.x += sp.vx * dtFx; sp.y += sp.vy * dtFx; sp.vx *= drag; sp.vy *= drag;
+        if (list === 'sparks') sp.vy -= 0.45 * dtFx;
+        return true;
+      });
+    }
+  }
+  fx.bursts = fx.bursts.filter(b => b.age < b.life || b.sparks.length || b.ballSparks.length);
+  const unit = Math.max(0.8, S / 250);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const b of fx.bursts) {
+    const progress = Math.min(1, b.age / b.life), fade = Math.max(0, 1 - progress), base = Math.atan2(b.dirY, b.dirX);
+    const reach = b.maxRayLength * (0.28 + 0.95 * progress);
+    const od = b.bumperRadius + b.effectRadius * 0.02, ox = b.x + b.dirX * od, oy = b.y + b.dirY * od;
+    if (fade > 0) {
+      const cone = (angle, len) => [cX(ox + Math.cos(angle) * len), cY(oy + Math.sin(angle) * len)];
+      for (const [color, alpha, span, len] of [[b.palette.deep, 0.16, 1, reach], [b.palette.core, 0.24, 0.52, reach * 0.58]]) {
+        ctx.fillStyle = rgba(color, alpha * fade);
+        ctx.beginPath(); ctx.moveTo(cX(ox), cY(oy));
+        ctx.lineTo(...cone(base - b.spread * span, len)); ctx.lineTo(...cone(base + b.spread * span, len));
+        ctx.closePath(); ctx.fill();
+      }
+      for (const ray of b.rays) {
+        const angle = base + ray.offset * (1 + 0.24 * Math.sin(ray.flicker + progress * 13));
+        const sd = b.bumperRadius + b.effectRadius * ray.surface, sx = b.x + Math.cos(angle) * sd, sy = b.y + Math.sin(angle) * sd;
+        const len = reach * ray.lengthScale;
+        let ex = sx + Math.cos(angle) * len, ey = sy + Math.sin(angle) * len;
+        if (ray.inward) { const ed = Math.max(b.bumperRadius * 0.15, sd - len * ray.inwardScale); ex = b.x + Math.cos(angle) * ed; ey = b.y + Math.sin(angle) * ed; }
+        ctx.strokeStyle = rgba(ray.hot ? b.palette.hot : b.palette.core, ray.alphaScale * fade);
+        ctx.lineWidth = Math.max(0.65, 1.1 * ray.widthScale * unit * (0.6 + fade));
+        ctx.beginPath(); ctx.moveTo(cX(sx), cY(sy)); ctx.lineTo(cX(ex), cY(ey)); ctx.stroke();
+      }
+    }
+    for (const sp of b.sparks) {
+      const f = Math.max(0, 1 - sp.age / sp.life);
+      ctx.strokeStyle = rgba(sp.hot ? b.palette.hot : b.palette.core, (sp.hot ? 0.65 : 0.5) * f);
+      ctx.lineWidth = Math.max(0.55, sp.width * unit * (0.4 + f));
+      ctx.beginPath(); ctx.moveTo(cX(sp.x - sp.vx * (0.03 + 0.02 * f)), cY(sp.y - sp.vy * (0.03 + 0.02 * f))); ctx.lineTo(cX(sp.x), cY(sp.y)); ctx.stroke();
+    }
+    for (const sp of b.ballSparks) {
+      const f = Math.max(0, 1 - sp.age / sp.life);
+      const tx = cX(sp.x - sp.vx * (0.035 + 0.02 * f)), ty = cY(sp.y - sp.vy * (0.035 + 0.02 * f));
+      ctx.strokeStyle = `rgba(165, 173, 184, ${0.86 * f})`; ctx.lineWidth = Math.max(1, sp.width * unit * (0.95 + f));
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(cX(sp.x), cY(sp.y)); ctx.stroke();
+      ctx.strokeStyle = `rgba(242, 246, 255, ${0.98 * f})`; ctx.lineWidth = Math.max(0.8, sp.width * unit * (0.52 + f * 0.58));
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(cX(sp.x), cY(sp.y)); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const cw = Math.round(canvas.clientWidth * dpr), ch = Math.round(canvas.clientHeight * dpr);
+  if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
+  canvasH = canvas.height; S = canvas.height / SIM_H;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const unit = Math.max(1, S / 250);
+
+  const pts = game.border.points;
+  ctx.strokeStyle = game.border.color;
+  ctx.lineWidth = 5; ctx.beginPath();
+  ctx.moveTo(cX(pts[0].x), cY(pts[0].y));
+  for (let i = 1; i <= pts.length; i++) ctx.lineTo(cX(pts[i % pts.length].x), cY(pts[i % pts.length].y));
+  ctx.stroke();
+
+  for (const f of game.flippers) {
+    const angle = flipperAngle(f), r = rawRadius(f);
+    ctx.fillStyle = f.color;
+    ctx.save(); ctx.translate(cX(f.pos.x), cY(f.pos.y)); ctx.rotate(-angle);
+    ctx.fillRect(0, -r * S, f.length * S, 2 * r * S); ctx.restore();
+    for (const p of [f.pos, flipperTipPos(f)]) { ctx.beginPath(); ctx.arc(cX(p.x), cY(p.y), r * S, 0, 2 * Math.PI); ctx.fill(); }
+  }
+
+  const obstacleDisks = world.query([CableLinkComponent, PositionComponent, RadiusComponent]).map(id => ({
+    x: world.getComponent(id, PositionComponent).pos.x, y: world.getComponent(id, PositionComponent).pos.y, r: world.getComponent(id, RadiusComponent).radius }));
+  const layering = layeringEnabled(world) && flags.layeringRenderWraps !== false;
+  const pathIds = world.query([CablePathComponent]);
+  for (const pathId of pathIds) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (path.jointEntities.length < 1) continue;
+    const grabPath = game.grab && game.grab.path === pathId;
+    const color = grabPath ? '#888888' : '#ffff00';
+    ctx.lineWidth = physicalCableWidthPx(path.cableHalfWidth);
+    for (const jointId of path.jointEntities) {
+      const j = world.getComponent(jointId, CableJointComponent), pA = j.attachmentPointA_world, pB = j.attachmentPointB_world;
+      ctx.strokeStyle = color;
+      if (j.restLength > Math.hypot(pB.x - pA.x, pB.y - pA.y) + 1e-6) { ctx.strokeStyle = 'orange'; drawCatenary(pA, pB, j.restLength, obstacleDisks, 0.1); }
+      else { ctx.beginPath(); ctx.moveTo(cX(pA.x), cY(pA.y)); ctx.lineTo(cX(pB.x), cY(pB.y)); ctx.stroke(); }
+    }
+  }
+
+  const drawEndpointStoredWrap = (path, li, center, bodyRadius, attachment, color) => {
+    if (!(bodyRadius > 1e-9)) return;
+    const halfWidth = layering ? (path.cableHalfWidth ?? 0) : 0;
+    ctx.lineWidth = physicalCableWidthPx(path.cableHalfWidth);
+    ctx.strokeStyle = color;
+    const startAngle = Math.atan2(attachment.y - center.y, attachment.x - center.x), cw = Boolean(path.cw[li]);
+    let remaining = Math.max(0, path.stored[li] ?? 0);
+    if (!(remaining > 1e-9)) return;
+    const full = 2 * halfWidth, base = bodyRadius + halfWidth;
+    for (let layer = 0; layer < 128 && remaining > 1e-9; layer++) {
+      const lr = layering ? base + full * layer : bodyRadius;
+      const circ = 2 * Math.PI * lr, arc = Math.min(remaining, circ);
+      ctx.beginPath();
+      if (arc >= circ - 1e-6) ctx.arc(cX(center.x), cY(center.y), lr * S, 0, 2 * Math.PI);
+      else {
+        const delta = Math.min(arc / lr, 2 * Math.PI - 0.0001);
+        ctx.arc(cX(center.x), cY(center.y), lr * S, -startAngle, -(cw ? startAngle - delta : startAngle + delta), !cw);
+      }
+      ctx.stroke();
+      remaining -= arc;
+      if (!layering || !(full > 1e-12)) break;
+    }
+  };
+
+  for (const pathId of pathIds) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (path.jointEntities.length < 1) continue;
+    const joints = path.jointEntities, halfWidth = layering ? (path.cableHalfWidth ?? 0) : 0;
+    const grabPath = game.grab && game.grab.path === pathId, baseColor = grabPath ? '#888888' : '#ffff00';
+    for (let i = 1; i < path.linkTypes.length - 1; i++) {
+      if (path.linkTypes[i] !== 'rolling' && path.linkTypes[i] !== 'hybrid') continue;
+      const jPrev = world.getComponent(joints[i - 1], CableJointComponent), jNext = world.getComponent(joints[i], CableJointComponent);
+      const roller = world.getComponent(jPrev.entityB, PositionComponent)?.pos, radius = world.getComponent(jPrev.entityB, RadiusComponent)?.radius;
+      if (!roller || radius === undefined) continue;
+      const P1 = jPrev.attachmentPointB_world, P2 = jNext.attachmentPointA_world, R = radius + halfWidth;
+      const taut = (j) => j.attachmentPointA_world.distanceTo(j.attachmentPointB_world) > j.restLength + 1e-6;
+      ctx.lineWidth = physicalCableWidthPx(path.cableHalfWidth);
+      ctx.strokeStyle = taut(jPrev) && taut(jNext) ? baseColor : 'orange';
+      ctx.beginPath();
+      ctx.arc(cX(roller.x), cY(roller.y), R * S, -Math.atan2(P1.y - roller.y, P1.x - roller.x), -Math.atan2(P2.y - roller.y, P2.x - roller.x), !path.cw[i]);
+      ctx.stroke();
+    }
+    const nLinks = path.linkTypes.length;
+    if (path.linkTypes[0] === 'hybrid') {
+      const j0 = world.getComponent(joints[0], CableJointComponent), c = world.getComponent(j0.entityA, PositionComponent)?.pos, r = world.getComponent(j0.entityA, RadiusComponent)?.radius;
+      if (c && r) drawEndpointStoredWrap(path, 0, c, r, j0.attachmentPointA_world, baseColor);
+    }
+    if (path.linkTypes[nLinks - 1] === 'hybrid') {
+      const jn = world.getComponent(joints[nLinks - 2], CableJointComponent), c = world.getComponent(jn.entityB, PositionComponent)?.pos, r = world.getComponent(jn.entityB, RadiusComponent)?.radius;
+      if (c && r > 1e-6) drawEndpointStoredWrap(path, nLinks - 1, c, r, jn.attachmentPointB_world, baseColor);
+    }
+  }
+
+  const circles = [...game.obstacles, ...game.balls];
+  for (const b of circles) {
+    const wobble = b.kind === 'obstacle' ? wobbleOffset(b.id) : null;
+    const r = rawRadius(b);
+    ctx.save();
+    ctx.translate(cX(b.pos.x + (wobble?.x ?? 0)), cY(b.pos.y + (wobble?.y ?? 0)));
+    ctx.rotate(-(b.quat ? angleOf(b.quat) : 0));
+    if (wobble && Math.abs(wobble.stretch) > 1e-6) ctx.scale(Math.max(0.72, 1 + wobble.stretch), Math.max(0.72, 1 - wobble.stretch));
+    ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(0, 0, r * S, 0, 2 * Math.PI); ctx.fill();
+    if (b.quat) { ctx.strokeStyle = '#000'; ctx.lineWidth = unit; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -r * S); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  // hybrid-link markers
+  for (const pathId of pathIds) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    for (let i = 0; i < path.linkTypes.length; i++) {
+      if (path.linkTypes[i] !== 'hybrid' && path.linkTypes[i] !== 'hybrid-attachment') continue;
+      const point = pathLinkStartAttachment(path, i), entityId = pathLinkEntity(path, i), body = bodyOf(entityId);
+      if (!point || !body) continue;
+      ctx.beginPath();
+      if (path.linkTypes[i] === 'hybrid-attachment') { ctx.fillStyle = '#ff0000'; ctx.arc(cX(point.x), cY(point.y), 1.5 * unit, 0, 1.5 * Math.PI); ctx.fill(); continue; }
+      const halfWidth = layering ? (path.cableHalfWidth ?? 0) : 0, base = rawRadius(body) + halfWidth;
+      const stored = Math.max(0, path.stored[i] ?? 0), cw = path.cw[i];
+      const ta = Math.atan2(point.y - body.pos.y, point.x - body.pos.x);
+      let lr = base, partial = stored, layer = 0;
+      while (layering && 2 * halfWidth > 1e-12 && layer < 128 && partial > 2 * Math.PI * lr + 1e-9) { partial -= 2 * Math.PI * lr; layer++; lr = base + 2 * halfWidth * layer; }
+      const a = layering ? (partial > 1e-9 && lr > 1e-9 ? partial / lr : 0) : stored / base;
+      const end = cw ? ta - a : ta + a;
+      ctx.fillStyle = '#ff0000'; ctx.arc(cX(body.pos.x + base * Math.cos(end)), cY(body.pos.y + base * Math.sin(end)), 1.5 * unit, 0, 2 * Math.PI); ctx.fill();
+    }
+  }
+
+  if (flags.layeringRenderCollisionOverlays !== false) drawCollisionOverlays(unit);
+  drawBumperFx();
+}
+
+function drawCollisionOverlays(unit) {
+  ctx.save();
+  ctx.setLineDash([4, 3]); ctx.lineWidth = Math.max(1, 1.25 * unit); ctx.strokeStyle = 'rgba(0, 220, 255, 0.98)';
+  for (const b of game.bodies) {
+    if (!b.overlay || !(b.overlay.radius > 1e-9)) continue;
+    ctx.beginPath(); ctx.arc(cX(b.pos.x), cY(b.pos.y), b.overlay.radius * S, 0, 2 * Math.PI); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  for (const b of game.bodies) {
+    for (const s of b.sectors) {
+      ctx.fillStyle = 'rgba(255, 136, 0, 0.18)'; ctx.strokeStyle = 'rgba(255, 136, 0, 0.95)';
+      ctx.beginPath(); ctx.moveTo(cX(b.pos.x), cY(b.pos.y)); ctx.arc(cX(b.pos.x), cY(b.pos.y), s.radius * S, -s.startAngle, -s.endAngle, s.cw !== true); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(cX(b.pos.x), cY(b.pos.y), s.radius * S, -s.startAngle, -s.endAngle, s.cw !== true); ctx.stroke();
+    }
+  }
+  ctx.setLineDash([3, 2]); ctx.lineWidth = Math.max(1, 1.75 * unit); ctx.strokeStyle = 'rgba(255, 40, 180, 0.95)';
+  for (const c of game.contacts.ballBall) {
+    if (!c.pinchShared) continue;
+    for (const [b, r] of [[c.a, c.radiusA], [c.b, c.radiusB]]) { ctx.beginPath(); ctx.arc(cX(b.pos.x), cY(b.pos.y), r * S, 0, 2 * Math.PI); ctx.stroke(); }
+  }
+  for (const c of game.contacts.obstacle) {
+    if (!c.pinchShared) continue;
+    for (const [b, r] of [[c.ball, c.ballRadius], [c.obs, c.obstacleRadius]]) { ctx.beginPath(); ctx.arc(cX(b.pos.x), cY(b.pos.y), r * S, 0, 2 * Math.PI); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- UI & loop
+function updateStats() {
+  const path = world.getComponent(game.pathId, CablePathComponent);
+  const forces = path ? path.jointEntities.map(id => finiteOr(world.getComponent(id, CableJointComponent)?.constraintForceMagnitude, NaN).toFixed(3)) : [];
+  statsEl.textContent = `dt: ${(dt * 1000).toFixed(2)}ms | Speed: ${speedText} | links: ${path ? path.linkTypes.join(',') : '-'}\njoint forces [${forces.join(', ')}] N`;
+  scoreEl.textContent = game.score;
+}
+
+function gameLoop(now) {
+  if (lastTime === 0) lastTime = now;
+  const frameSec = (window._flipperSpeedScale ?? 1.0) * (now - lastTime) / 1000;
+  let simTime = 0;
+  if (frameSec >= dt) {
+    lastTime = now;
+    accumulator = Math.min(accumulator + frameSec, dt * (window._flipperMaxSubSteps ?? MAX_STEPS_PER_FRAME));
+    while (accumulator >= dt) {
+      const stepping = doStep || stepWhileKeyHeld;
+      if (!paused || stepping) {
+        stepSim();
+        simTime += dt;
+        doStep = false;
+      }
+      if (paused && !stepWhileKeyHeld) { accumulator = 0; break; }
+      accumulator -= dt;
+    }
+  }
+  if (frameSec > 1e-6 && simTime > 0) {
+    speedSamples.push(simTime / frameSec);
+    if (speedSamples.length > 60) speedSamples.shift();
+  }
+  if (++frameCounter % 10 === 0 && speedSamples.length) speedText = `${(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)}x`;
+  draw(); updateStats();
+  requestAnimationFrame(gameLoop);
+}
+
+function dumpState() {
+  const path = world.getComponent(game.pathId, CablePathComponent);
+  console.log(JSON.stringify({
+    score: game.score,
+    bodies: game.bodies.map(b => ({ id: b.id, kind: b.kind, x: b.pos.x, y: b.pos.y, vx: b.vel?.x, vy: b.vel?.y, omega: b.omega?.z })),
+    path: path && { linkTypes: path.linkTypes, cw: path.cw, stored: path.stored, joints: path.jointEntities.length, totalRestLength: path.totalRestLength },
+  }, null, 1));
+}
+
+function buildFlagUi() {
+  const container = document.getElementById('flags');
+  for (const def of FLAG_DEFS) {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox'; input.checked = flags[def.key]; input.id = `flag_${def.key}`;
+    input.addEventListener('change', () => {
+      flags[def.key] = input.checked; world.setResource(def.key, input.checked);
+      if (def.key === 'scoreBounceSoundEnabled' && input.checked) { ensureAudio(); playScoreSound(); }
+      input.blur();
+    });
+    label.append(input, ` ${def.label}`);
+    container.append(label);
+  }
+}
+
+function resetScene() {
+  if (game?.grab) endGrab();
+  ({ world, game } = buildScene());
+  accumulator = 0; lastTime = 0; speedSamples = []; setPaused(true); pauseBtn.textContent = 'Start';
+}
+
+function logInput(clicks, releases) {
+  game.inputLog.push({ frame: game.frame, clicks, releases });
+}
+
+// Same trace the original Space key printed: world resources plus the recorded click/release log.
+function dumpScenario() {
+  const entries = game.inputLog.map(e => `{ "frame": ${e.frame}, "clicks": ${JSON.stringify(e.clicks)}, "releases": ${JSON.stringify(e.releases)} }`);
+  console.log('DEBUG_SCENARIO_DUMP', `{ "resources": ${JSON.stringify(world.resources)}, "inputLog": [${entries.join(', ')}] }`);
+}
+
+function bindInput() {
+  // Like the original, presses and releases are listened to on the whole document so a flipper is
+  // released even when the pointer leaves the canvas; the control bar keeps its own clicks.
+  document.addEventListener('pointerdown', ev => {
+    if (ev.target.closest('#controls')) return;
+    ev.preventDefault(); ensureAudio();
+    const p = simPoint(ev);
+    const extra = (0.5 * 96 / 2.54) / (canvas.getBoundingClientRect().height / SIM_H);
+    let closest = null, best = Infinity;
+    for (const b of game.balls) {
+      const r = maxCollisionRadius(b) + extra, d2 = (p.x - b.pos.x) ** 2 + (p.y - b.pos.y) ** 2;
+      if (d2 <= r * r && d2 < best) { closest = b; best = d2; }
+    }
+    if (closest) { canvas.setPointerCapture(ev.pointerId); startGrab(closest, p); return; }
+    pressAt(p);
+    logInput([p], []);
+  });
+  canvas.addEventListener('pointermove', ev => {
+    if (!game.grab) return;
+    const p = simPoint(ev);
+    game.grab.pos.x = p.x; game.grab.pos.y = p.y;
+  });
+  const up = ev => {
+    if (ev.target.closest('#controls')) return;
+    if (game.grab) { endGrab(); return; }
+    const p = simPoint(ev);
+    releaseAt(p);
+    logInput([], [p]);
+  };
+  document.addEventListener('pointerup', up);
+  document.addEventListener('pointercancel', up);
+  window.addEventListener('keydown', ev => {
+    ensureAudio();
+    if (ev.target.tagName === 'INPUT' || ev.repeat) return;
+    if (ev.code === 'Space') dumpScenario();
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+      ev.preventDefault();
+      const f = flipperForKey(ev.key);
+      if (f) { f.pressed = true; logInput([{ x: f.pos.x, y: f.pos.y }], []); }
+    }
+    const key = ev.key.toLowerCase();
+    if (key === 's' || key === 't') { ev.preventDefault(); stepWhileKeyHeld = true; if (paused) doStep = true; }
+  });
+  window.addEventListener('keyup', ev => {
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+      const f = flipperForKey(ev.key);
+      if (f) { f.pressed = false; logInput([], [{ x: f.pos.x, y: f.pos.y }]); }
+    }
+    const key = ev.key.toLowerCase();
+    if (key === 's' || key === 't') stepWhileKeyHeld = false;
+  });
+  pauseBtn.addEventListener('click', () => setPaused(!paused));
+  document.getElementById('resetBtn').addEventListener('click', resetScene);
+  document.getElementById('stepBtn').addEventListener('click', () => { if (paused) doStep = true; });
+  document.getElementById('dumpBtn').addEventListener('click', dumpState);
+}
+
+(async () => {
+  try {
+    const wasm = await fetch(`${BASE}wasm/cable_solver.wasm`);
+    if (!wasm.ok) throw new Error(`cable_solver.wasm: ${wasm.status}`);
+    backend = new WasmPhysicsEngine(await compileCableSolverWasm(await wasm.arrayBuffer()));
+    const scene = await fetch(`${BASE}usd_scenes/flipper_scene.usda`);
+    if (!scene.ok) throw new Error(`flipper_scene.usda: ${scene.status}`);
+    sceneText = await scene.text();
+    ({ world, game } = buildScene());
+    buildFlagUi(); bindInput();
+    window.flipperDebug = { get world() { return world; }, get game() { return game; }, get dt() { return dt; }, get flags() { return flags; },
+      step(n) { for (let i = 0; i < n; i++) stepSim(); }, reset: resetScene };
+    requestAnimationFrame(gameLoop);
+  } catch (error) {
+    statsEl.textContent = `Failed to start: ${error.message}`;
+    throw error;
+  }
+})();
+</script>
+</body>
+</html>
