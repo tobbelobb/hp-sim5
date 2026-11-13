@@ -21,6 +21,8 @@ researchers isolated workspaces using the platform, with dependencies prepared;
 read research-program/platforms.md for T3, Codex Cloud, or Anthropic setup. Keep each
 researcher's artifact path stable within its workspace; return its location to the
 manager. Do not give workers the manager conversation or this manager procedure.
+In Codex Cloud, also read .agents/skills/cloud-research-client/SKILL.md for the
+environment setup before starting simulation tools.
 
 Researchers can work without physics. Each can start its own tools when needed:
 

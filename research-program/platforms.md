@@ -61,6 +61,10 @@ recordings to durable storage before the workspace goes away. Credentials and li
 connections cannot be resumed on another host. Reopen the committed program by its
 directory; use `--agent-id` to reconstruct member metadata.
 
+The cloud-specific skill at `.agents/skills/cloud-research-client/SKILL.md` gives
+the shell setup needed before starting a supervisor and how to recover after a
+toolchain failure.
+
 ## Anthropic infrastructure
 
 The same existing-chat handoffs work with Claude Managed Agents that have a checkout,
@@ -98,7 +102,8 @@ and [Agent SDK skills](https://platform.claude.com/docs/en/agent-sdk/skills).
 The supervisor initially has no world. configure_session creates one; tools list
 shows the exact supported arguments and units. Add `--viewer headless` to runtime
 startup when Rerun inspection is useful. Tools return actual MCP results including
-isError and structuredContent. Long jobs return IDs; inspect and explicitly cancel
+isError and structuredContent. A failed tool call exits nonzero while retaining its
+JSON response on stdout. Long jobs return IDs; inspect and explicitly cancel
 jobs as needed. File calls default to 120 seconds; use --timeout up to 14500 only
 for a tool that needs it. After a timeout, outcome can be unknown: inspect status
 before retrying a mutation. Separate investigations have separate descriptors,
