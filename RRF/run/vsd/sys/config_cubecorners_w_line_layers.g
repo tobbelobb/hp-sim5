@@ -30,7 +30,7 @@ M666 W0.216                                             ; Mover weighs X kg.
 M666 S20000.0                                           ; Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
                                                         ; The real value is somewhere between 20k and 100k.
                                                         ; Lower value gives more flex compensation.
-M666 I10.0:10.0:10.0:10.0:10.0:10.0:10.0:10.0           ; Min planned force in all directions (unit N).
+M666 I3.0:3.0:3.0:3.0:3.0:3.0:3.0:3.0                   ; Min planned force in all directions (unit N).
 M666 X170.0:170.0:170.0:170.0:170.0:170.0:170.0:170.0   ; Max planned force in all directions (unit N)
                                                         ; This is a safety limit. Will affect moves close to
                                                         ; the limits of the reachable volume.
@@ -42,6 +42,14 @@ M666 X170.0:170.0:170.0:170.0:170.0:170.0:170.0:170.0   ; Max planned force in a
 M666 Y117.2:117.2:117.2:117.2:117.2:117.2:117.2:117.2
 M666 B0                  ; Consider gravity forces when solving flex
 M666 P0                  ; Consider pretension when solving flex
+
+; Line attachment points on the mover. Needed for flex compensation on machines like this one,
+; where single lines attach to spread out points and together stop the mover from rotating.
+; X:Y:Z of each line's attachment point, measured from the mover's centre of mass,
+; listed in the same order as the anchors: A, B, C, D, I, J, L, O.
+; Flex compensation then also balances the moments that the line forces apply to the mover.
+; Leave this out on machines where parallel line pairs keep the mover from rotating.
+M666 E200.0:-200.0:200.0:200.0:200.0:200.0:-200.0:200.0:200.0:-200.0:-200.0:200.0:200.0:-200.0:-200.0:200.0:200.0:-200.0:-200.0:200.0:-200.0:-200.0:-200.0:-200.0
 
 ; Uncomment M564 S0 if you don't want G0/G1 moves to be be limited to a software defined volume
 M564 S0

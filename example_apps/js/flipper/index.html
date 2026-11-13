@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mindfulness Pinball (cable engine test)</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>
+  :root { --bg-1: #2d2d2d; --accent-1: #ff452a; --accent-2: #ffb347; --text-main: #fafafa; --text-dim: #c0c0c0; }
+  html, body { margin: 0; padding: 0; height: 100dvh; overflow: hidden; background: var(--bg-1); color: var(--text-main);
+    font-family: ui-sans-serif, system-ui, sans-serif; touch-action: none; display: flex; flex-direction: column; align-items: center; }
+  #controls { width: min(96vw, 560px); text-align: center; margin-block: 8px 4px; font-size: 0.85rem; color: var(--text-dim); }
+  #buttonRow { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  button { all: unset; cursor: pointer; padding: 4px 12px; border-radius: 4px; color: #fff; font-size: 0.85rem;
+    background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); }
+  summary { cursor: pointer; font-size: 0.72rem; margin-top: 4px; }
+  #flags { display: flex; flex-wrap: wrap; gap: 2px 10px; justify-content: center; margin-top: 6px; font-size: 0.72rem; }
+  #flags label { white-space: nowrap; }
+  #stats { margin-top: 4px; font-size: 0.72rem; white-space: pre; }
+  canvas { flex: 1; min-height: 0; aspect-ratio: 1 / 1.7; max-width: 96vw; outline: none; }
+</style>
+  <script type="module" crossorigin src="/hp-sim5/assets/example_apps/js/flipper/index.html-CDgtQyQo.js"></script>
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_scene_baker-B8F5eUGv.js">
+</head>
+<body>
+<div id="controls">
+  <div id="buttonRow">
+    <button id="pauseBtn" tabindex="-1">Start</button>
+    <button id="resetBtn" tabindex="-1">Reset</button>
+    <button id="stepBtn" tabindex="-1">Step</button>
+    <button id="dumpBtn" tabindex="-1">Dump State</button>
+    <span>Score: <span id="score">0</span></span>
+  </div>
+  <details id="flagBox"><summary>cable / collision flags</summary><div id="flags"></div></details>
+  <div id="stats"></div>
+</div>
+<canvas id="canvas"></canvas>
+
+</body>
+</html>
