@@ -48,13 +48,12 @@ source research-program/cloud/env.sh
 .venv/bin/python scripts/research_runtime_check.py
 ```
 
-Setup downloads dependencies and needs network access. Source env.sh before starting
-the runtime supervisor; it inherits that shell's tool paths. Include that source
-command in simulation workers' tasks: fresh contexts do not inherit the manager's
-shell. If the native build is stale, run `npm run build:native` in the sourced
-shell or let world configuration
-rebuild it. If a supervisor started without the toolchain, stop it and restart it
-from a sourced shell. Socket restrictions apply to the supervisor's
+Setup downloads dependencies and needs network access. Source env.sh in each shell
+that uses that installed toolchain, including before starting the runtime supervisor;
+it inherits that shell's tool paths. Include that source command in simulation
+workers' tasks: fresh contexts do not inherit the manager's shell. If a supervisor
+started without the toolchain, stop it and restart it from a sourced shell. Socket
+restrictions apply to the supervisor's
 actual launch context. The file tool transport lets a socket-denied worker call a
 supervisor launched in a permitted context; it cannot grant socket privileges to a
 supervisor that is itself forbidden to bind sockets. Inspect a failed readiness
