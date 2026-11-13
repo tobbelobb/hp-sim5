@@ -75,7 +75,6 @@
                   <label class="sim-toggle sim-select" for="colorTheme">
                     <span>Color Theme</span>
                     <select id="colorTheme" aria-describedby="colorThemeHelp"></select>
-                    <span id="colorThemeHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Changes the interface and 3D scene palette. Your choice is remembered on this device.</span>
                   </label>
                   <label id="referenceToggleWrapper" class="sim-toggle" for="referenceToggle">
                     <input id="referenceToggle" aria-describedby="referenceToggleHelp" type="checkbox" disabled>
@@ -90,29 +89,29 @@
                   <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
                     <input id="showForcesToggle" aria-describedby="showForcesToggleHelp" type="checkbox">
                     <span>Show Forces</span>
-                    <span id="showForcesToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Labels cable constraint forces in newtons (N). Larger values mean greater cable tension.</span>
+                    <span id="showForcesToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Labels cable tensions (N).</span>
                   </label>
                   <label id="highlightSlackToggleWrapper" class="sim-toggle" for="highlightSlackToggle">
                     <input id="highlightSlackToggle" aria-describedby="highlightSlackToggleHelp" type="checkbox">
                     <span>Highlight Slack Lines</span>
-                    <span id="highlightSlackToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Uses a contrasting color for slack cables, which cannot pull on the machine.</span>
+                    <span id="highlightSlackToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Uses a contrasting color to make it easier to spot slack cables.</span>
                   </label>
                   <span class="sim-menu-section-title">Simulation</span>
                   <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
                     <input id="lineLayeringToggle" aria-describedby="lineLayeringToggleHelp" type="checkbox" checked>
                     <span>Line Layering</span>
-                    <span id="lineLayeringToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Models cable layers on spools, which change the winding radius and cable travel.</span>
+                    <span id="lineLayeringToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Models cable layers on spools, aka line buildup. This effect changes the winding radius and cable travel.</span>
                   </label>
                   <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
                     <input id="closedLoopMotorsToggle" aria-describedby="closedLoopMotorsToggleHelp" type="checkbox">
                     <span>Closed Loop Motors</span>
-                    <span id="closedLoopMotorsToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Corrects motor position using feedback. Tracking is still limited by the available motor torque.</span>
+                    <span id="closedLoopMotorsToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Corrects motor position using feedback. Motor strength is still limited like a real closed loop motor.</span>
                   </label>
                   <label class="sim-toggle sim-select sim-range" for="motorStrength">
-                    <span>Holding Torque</span>
+                    <span>Motor Strength</span>
                     <input id="motorStrength" aria-describedby="motorStrengthHelp" type="range" min="0.25" max="4" step="0.25" value="1">
                     <output id="motorStrengthValue" for="motorStrength">— Nm</output>
-                    <span id="motorStrengthHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Holding torque at the motor shaft (Nm). Scales all motors; a range means different ratings. Available torque falls with speed.</span>
+                    <span id="motorStrengthHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Holding torque (Nm). Available torque falls with speed.</span>
                   </label>
                   <label class="sim-toggle sim-select" for="solverIterations">
                     <span>Solver Iterations</span>
