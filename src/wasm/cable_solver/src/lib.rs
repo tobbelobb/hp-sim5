@@ -648,6 +648,9 @@ pub(crate) struct Scratch {
     groups: Vec<(usize, V, V)>,
     rotors: Vec<(usize, V, V, f64, f64, f64)>,
     response: AngularResponse,
+    // Per segment of the row: direction and spin flags.
+    directions: Vec<V>,
+    joint_flags: Vec<u32>,
 }
 fn angular_response(
     es: &[Entity],
@@ -893,31 +896,27 @@ fn correct_spin(es: &mut [Entity], s: &Spin, l: f64) {
         update_local(es, s.id);
     }
 }
-/// A row's current geometry: its total error, and each segment's direction
-/// and spin flags. Its bodies and spins are written to `bodies`/`spins`.
-struct Gathered {
-    error: f64,
-    directions: [V; 16],
-    joint_flags: [u32; 16],
-}
+/// A row's current geometry: returns its total error and writes each
+/// segment's direction and spin flags, and the row's bodies and spins.
 fn gather(
     es: &[Entity],
     js: &[Joint],
     row: &Row,
     bodies: &mut Vec<Body>,
     spins: &mut Vec<Spin>,
-) -> Gathered {
+    directions: &mut Vec<V>,
+    joint_flags: &mut Vec<u32>,
+) -> f64 {
     bodies.clear();
     spins.clear();
-    let mut g = Gathered {
-        error: 0.0,
-        directions: [[0.0; 3]; 16],
-        joint_flags: [1; 16],
-    };
+    directions.clear();
+    directions.resize(row.end - row.start, [0.0; 3]);
+    joint_flags.clear();
+    joint_flags.resize(row.end - row.start, 1);
+    let mut error = 0.0;
     // Consecutive segments meet at one entity: reuse its frame.
     let mut shared: Frame = (usize::MAX, None, None);
-    for (n, j) in js[row.start..row.end].iter().enumerate() {
-        let k = n.min(15);
+    for (k, j) in js[row.start..row.end].iter().enumerate() {
         let weight = j[38];
         let (a, b) = (j[0] as usize, j[1] as usize);
         let first = if shared.0 == a { shared } else { frame(es, a) };
@@ -925,12 +924,12 @@ fn gather(
         let frames = [first, shared];
         let points = [place(&frames[0], v(j, 4)), place(&frames[1], v(j, 7))];
         let distance = length(sub(points[1], points[0]));
-        g.error += distance - j[10];
+        error += distance - j[10];
         if distance <= EPS {
             continue;
         }
         let direction = scale(sub(points[1], points[0]), 1.0 / distance);
-        g.directions[k] = direction;
+        directions[k] = direction;
         for side in 0..2 {
             // A member carried by its body acts on that body: the forces of a
             // span between two members of one body cancel on it.
@@ -944,7 +943,7 @@ fn gather(
             let grad = if side == 0 { direction } else { scale(direction, -1.0) };
             let s = spin(es, j, side, points[side], grad, &frames[side]);
             if s.active {
-                g.joint_flags[k] |= 2 << side;
+                joint_flags[k] |= 2 << side;
                 match spins.iter_mut().find(|x| x.id == s.id) {
                     Some(x) => {
                         x.grad += s.grad;
@@ -973,7 +972,7 @@ fn gather(
             }
         }
     }
-    g
+    error
 }
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn solve_row(
@@ -985,8 +984,8 @@ pub(crate) fn solve_row(
     accumulated: &mut f64,
     scratch: &mut Scratch,
 ) {
-    let Scratch { bodies, spins, groups, rotors, response } = scratch;
-    let Gathered { error, directions, joint_flags } = gather(es, js, row, bodies, spins);
+    let Scratch { bodies, spins, groups, rotors, response, directions, joint_flags } = scratch;
+    let error = gather(es, js, row, bodies, spins, directions, joint_flags);
     if error <= EPS && *accumulated == 0.0 {
         return;
     }
@@ -1033,8 +1032,7 @@ pub(crate) fn solve_row(
         load(es, *s, row, l, iter == 0);
     }
     // Force uses the total multiplier, including immobile compliant spans.
-    for (n, j) in js[row.start..row.end].iter_mut().enumerate() {
-        let k = n.min(15);
+    for (k, j) in js[row.start..row.end].iter_mut().enumerate() {
         let share = j[38] * *accumulated;
         j[37] = joint_flags[k] as f64;
         j[31] = share;

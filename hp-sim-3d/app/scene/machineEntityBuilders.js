@@ -146,7 +146,7 @@ function applyWheel(world, context, registry, prim, posArr) {
 }
 
 function applyAnchor(world, context, registry, prim, posArr) {
-    const { color } = materialProperties(context.stage, prim);
+    const { color, friction, restitution } = materialProperties(context.stage, prim);
     const palette = context.options.palette || null;
     const machineId = context.options.namespace || 'default';
     const namespace = context.options.namespace || null;
@@ -157,6 +157,7 @@ function applyAnchor(world, context, registry, prim, posArr) {
     world.addComponent(ent, new RadiusComponent(0.01));
     world.addComponent(ent, new MassComponent(-1.0));
     world.addComponent(ent, new RenderableComponent('circle', palette?.anchor ?? color ?? '#aaaaaa'));
+    addMaterialComponents(world, ent, restitution, friction);
     if (getAttribute(prim, "cable:linkable")) {
         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, null, DEFAULT_PLANE_NORMAL));
     }

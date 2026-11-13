@@ -144,18 +144,29 @@ fn spool_frame(es: &[Entity], id: usize) -> (Q, Q, Q) {
 struct Cable {
     // Public records are mutable observations/edits. Scratch is kept in Rust.
     data: Vec<f64>,
-    // Per link: capstan tension ratio, slip state (STICK, FREE, or the
-    // tighter side LEFT/RIGHT) and last step's material flow toward the right.
-    // Per segment: whether it shares a row.
+    // Per link: capstan tension ratio (infinite where no material can cross)
+    // and slip state (STICK, FREE, or the tighter side LEFT/RIGHT), which
+    // persists between steps, and the states (as bits) this step's solves
+    // have assumed. Per segment: whether it shares a row, and its strain when
+    // the last step ended.
     ratio: Vec<f64>,
     slip: Vec<f64>,
-    flow: Vec<f64>,
+    tried: Vec<u8>,
     merged: Vec<bool>,
+    strain: Vec<f64>,
 }
 const STICK: f64 = 0.0;
 const RIGHT: f64 = 1.0;
 const LEFT: f64 = -1.0;
 const FREE: f64 = 2.0;
+/// Solves per step while link states still contradict their solution.
+const SOLVES: usize = 4;
+fn tried(state: f64) -> u8 {
+    1 << (state + 1.0) as u8
+}
+/// Set once a link's sticking and slipping solves have contradicted each
+/// other this step: its slipping solve is then kept.
+const SETTLED: u8 = 16;
 /// Closed-loop servos integrate their error with this time constant (s): slow
 /// enough not to hunt in the soft sag modes of a cable robot, fast enough to
 /// pull a loaded motor back to its target within seconds.
@@ -496,6 +507,8 @@ pub struct PhysicsWorld {
     shared: Vec<Vec<(usize, usize)>>,
     pub topology_version: u32,
     scratch: Scratch,
+    // Entities before the cable solve, restored when it is repeated.
+    snapshot: Vec<Entity>,
 }
 impl PhysicsWorld {
     /// Entity records and path records are prepared once by the scene adapter.
@@ -513,7 +526,7 @@ impl PhysicsWorld {
         }
         let cables: Vec<Cable> = paths
             .into_iter()
-            .map(|data| Cable { data, ratio: Vec::new(), slip: Vec::new(), flow: Vec::new(), merged: Vec::new() })
+            .map(|data| Cable { data, ratio: Vec::new(), slip: Vec::new(), tried: Vec::new(), merged: Vec::new(), strain: Vec::new() })
             .collect();
         let mut by_id = std::collections::BTreeMap::<u64, Vec<(usize, usize)>>::new();
         for (p, c) in cables.iter().enumerate() {
@@ -540,6 +553,7 @@ impl PhysicsWorld {
             shared,
             topology_version: 0,
             scratch: Scratch::default(),
+            snapshot: Vec::new(),
         }
     }
     pub fn path_data(&mut self, index: usize) -> &mut [f64] {
@@ -903,7 +917,7 @@ fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: b
             let cw = c.cw(i + side, side == 0);
             shifts[side] = arc(old_rel, new_rel, [0.0; 3], radius, cw, normal, false);
             // A wheel passing material freely turns with it; its rotation
-            // carries none (the row redistributes, see `redistribute`).
+            // carries none (the row moves it, see `transport`).
             shifts[side] += if hybrid(kind) {
                 stored_delta(theta, e.delta, cw, es[ids[side]][104], half, radius)
             } else if c.slip.get(i + side) == Some(&FREE) {
@@ -1736,21 +1750,20 @@ impl PhysicsWorld {
             self.entities[id][125] = old + (offset - previous).abs();
         }
     }
-    /// Classify every interior link for this step. Frictionless links and
-    /// links slipping at the capstan limit join their segments into one row;
-    /// sticking links and attachments separate rows. A sticking link starts to
-    /// slip once its spans' tensions leave the capstan cone. Moving
-    /// material keeps slipping toward its flow, the tighter side under kinetic
-    /// friction, until it would flow backwards.
+    /// Capstan ratio of every interior link and its state for this step's
+    /// first solve. Frictionless links are FREE and join their segments into
+    /// one row, as do links slipping at the capstan limit; sticking links and
+    /// attachments separate rows. A frictional link starts from the state it
+    /// ended the last step with; `transport` then checks that state against
+    /// the solution.
     fn friction(&mut self) {
         let layering = self.options[3] != 0.0;
         for c in &mut self.cables {
             let n = c.count();
             if c.slip.len() != n + 1 {
                 c.slip = vec![STICK; n + 1];
-                c.flow = vec![0.0; n + 1];
             }
-            c.ratio = vec![1.0; n + 1];
+            c.ratio = vec![f64::INFINITY; n + 1];
             for li in 1..n {
                 let Some(ratio) = capstan(c, li, &self.entities, layering) else {
                     c.slip[li] = STICK;
@@ -1759,34 +1772,22 @@ impl PhysicsWorld {
                 c.ratio[li] = ratio;
                 if ratio <= 1.0 + 1e-12 {
                     c.slip[li] = FREE;
-                    continue;
+                } else if c.slip[li] == FREE {
+                    c.slip[li] = STICK;
                 }
-                if c.slip[li] != STICK && c.flow[li].abs() > 1e-12 {
-                    c.slip[li] = if c.flow[li] > 0.0 { RIGHT } else { LEFT };
-                    continue;
-                }
-                // Compare the spans' actual strains, the quantity slipping
-                // redistributes, so that slip can only release elastic energy.
-                let strain = |i: usize| {
-                    let d = length(sub(c.point(i, 0), c.point(i, 1)));
-                    if d > EPS { (d - c.rest(i)).max(0.0) / d } else { 0.0 }
-                };
-                let (left, right) = (strain(li - 1), strain(li));
-                c.slip[li] = if left > ratio * right + EPS {
-                    LEFT
-                } else if right > ratio * left + EPS {
-                    RIGHT
-                } else {
-                    STICK
-                };
             }
-
-
+            c.tried = c.slip.iter().map(|&state| tried(state)).collect();
+            if c.strain.len() != n {
+                c.strain = (0..n)
+                    .map(|i| {
+                        let d = length(sub(c.point(i, 0), c.point(i, 1)));
+                        if d > EPS { (d - c.rest(i)).max(0.0) / d } else { 0.0 }
+                    })
+                    .collect();
+            }
         }
     }
     fn constraints(&mut self, dt: f64) {
-        self.joints.clear();
-        self.rows.clear();
         let valid_dt = dt.is_finite() && dt > EPS;
         for id in 0..self.entities.len() {
             let es = &self.entities;
@@ -1824,157 +1825,170 @@ impl PhysicsWorld {
             e[48] = stiffness * dt * dt;
             e[61] = limit;
         }
+        // A frictional link's state is an assumption of the solve. When the
+        // solution contradicts it, the solve is repeated from the same
+        // predicted state with the corrected assumption.
+        let frictional = self
+            .cables
+            .iter()
+            .any(|c| (1..c.count()).any(|li| c.slip[li] != FREE && c.ratio[li].is_finite()));
+        if frictional {
+            self.snapshot.clone_from(&self.entities);
+        }
         let mut firsts = Vec::with_capacity(self.cables.len());
-        for c in self.cables.iter_mut() {
-            let first = self.joints.len();
-            firsts.push(first);
-            let count = c.count();
-            // Row boundaries and each segment's share of its row tension.
-            let mut weights = vec![1.0; count];
-            for i in 1..count {
-                weights[i] = match c.slip[i] {
-                    FREE => weights[i - 1],
-                    RIGHT => weights[i - 1] * c.ratio[i],
-                    LEFT => weights[i - 1] / c.ratio[i],
-                    _ => 1.0,
-                };
-            }
-            c.merged = vec![false; count];
-            for li in 1..count {
-                if c.slip[li] == STICK {
-                    c.flow[li] = 0.0;
+        for attempt in 0.. {
+            self.joints.clear();
+            self.rows.clear();
+            firsts.clear();
+            for c in self.cables.iter_mut() {
+                let first = self.joints.len();
+                firsts.push(first);
+                let count = c.count();
+                // Row boundaries and each segment's share of its row tension.
+                let mut weights = vec![1.0; count];
+                for i in 1..count {
+                    weights[i] = match c.slip[i] {
+                        FREE => weights[i - 1],
+                        RIGHT => weights[i - 1] * c.ratio[i],
+                        LEFT => weights[i - 1] / c.ratio[i],
+                        _ => 1.0,
+                    };
                 }
-            }
-            let mut start = 0;
-            for end in 1..=count {
-                if end < count && (c.slip[end] == FREE || c.slip[end] == LEFT || c.slip[end] == RIGHT) {
-                    continue;
-                }
-                // A span's spring constant is EA over its length, as in the
-                // firmware's springKPerUnitLength / distance.
-                let cpl = c.data[3];
-                let zero = cpl == f64::INFINITY;
-                let span = |i: usize| length(sub(c.point(i, 0), c.point(i, 1)));
-                let weighted: f64 = (start..end).map(|i| weights[i] * span(i)).sum();
-                let spans: f64 = (start..end).map(span).sum();
-                let compliance = if zero { 0.0 } else { cpl * weighted };
-                let b = if c.data[4].is_finite() { c.data[4].max(0.0) } else { 0.0 };
-                let damping = if spans > EPS { b / spans } else { 0.0 };
-                for i in start..end {
-                    c.merged[i] = end - start > 1;
-                }
-                self.rows.push(Row {
-                    start: first + start,
-                    end: first + end,
-                    iterations: c.data[5] as usize,
-                    zero,
-                    alpha: if !zero && valid_dt { compliance / (dt * dt) } else { 0.0 },
-                    gamma: if !zero && valid_dt { (cpl * b / dt).max(0.0) } else { 0.0 },
-                    damping_step: if valid_dt { damping * dt } else { 0.0 },
-                    inv_dt2: if valid_dt { 1.0 / (dt * dt) } else { 0.0 },
-                    spring: if compliance > EPS && compliance.is_finite() { 1.0 / compliance } else { 0.0 },
-                    damping,
-                });
-                start = end;
-            }
-            for (i, &weight) in weights.iter().enumerate() {
-                let mut j = [0.0; J];
-                let a = c.entity(i, 0);
-                let b = c.entity(i, 1);
-                let mapped = [
-                    mapped_id(&self.entities, a, b),
-                    mapped_id(&self.entities, b, a),
-                ];
-                j[..4].copy_from_slice(&[a as f64, b as f64, mapped[0] as f64, mapped[1] as f64]);
-                put_v(&mut j, 4, local_point(&self.entities, a, c.point(i, 0)));
-                put_v(&mut j, 7, local_point(&self.entities, b, c.point(i, 1)));
-                j[10] = c.rest(i);
-                j[38] = weight;
-                for slot in [13, 18, 29, 30] {
-                    j[slot] = -1.0;
-                }
-                // A spool or free wheel at a row boundary turns with the
-                // material its segment winds on or off. Inside a row a free
-                // wheel passes material on instead (see `redistribute`).
-                for side in 0..2 {
-                    let id = if side == 0 { a } else { b };
-                    let li = i + side;
-                    if !has(&self.entities[id], SPOOL)
-                        || !candidate(&self.entities[id])
-                        || c.slip[li] != STICK
-                    {
+                c.merged = vec![false; count];
+                let mut start = 0;
+                for end in 1..=count {
+                    if end < count && (c.slip[end] == FREE || c.slip[end] == LEFT || c.slip[end] == RIGHT) {
                         continue;
                     }
-                    let so = if side == 0 { 13 } else { 18 };
-                    j[so] = id as f64;
-                    let mut stored = 0.0;
-                    if hybrid(c.kind(li)) {
-                        let r = c.radius(&self.entities, li, id, self.options[3] != 0.0).0;
-                        if r > EPS {
-                            stored = (if c.cw(li, side == 0) { 1.0 } else { -1.0 }) * r;
-                            if side == 1 {
-                                stored = -stored;
+                    // A span's spring constant is EA over its length, as in the
+                    // firmware's springKPerUnitLength / distance.
+                    let cpl = c.data[3];
+                    let zero = cpl == f64::INFINITY;
+                    let span = |i: usize| length(sub(c.point(i, 0), c.point(i, 1)));
+                    let weighted: f64 = (start..end).map(|i| weights[i] * span(i)).sum();
+                    let spans: f64 = (start..end).map(span).sum();
+                    let compliance = if zero { 0.0 } else { cpl * weighted };
+                    let b = if c.data[4].is_finite() { c.data[4].max(0.0) } else { 0.0 };
+                    let damping = if spans > EPS { b / spans } else { 0.0 };
+                    for i in start..end {
+                        c.merged[i] = end - start > 1;
+                    }
+                    self.rows.push(Row {
+                        start: first + start,
+                        end: first + end,
+                        iterations: c.data[5] as usize,
+                        zero,
+                        alpha: if !zero && valid_dt { compliance / (dt * dt) } else { 0.0 },
+                        gamma: if !zero && valid_dt { (cpl * b / dt).max(0.0) } else { 0.0 },
+                        damping_step: if valid_dt { damping * dt } else { 0.0 },
+                        inv_dt2: if valid_dt { 1.0 / (dt * dt) } else { 0.0 },
+                        spring: if compliance > EPS && compliance.is_finite() { 1.0 / compliance } else { 0.0 },
+                        damping,
+                    });
+                    start = end;
+                }
+                for (i, &weight) in weights.iter().enumerate() {
+                    let mut j = [0.0; J];
+                    let a = c.entity(i, 0);
+                    let b = c.entity(i, 1);
+                    let mapped = [
+                        mapped_id(&self.entities, a, b),
+                        mapped_id(&self.entities, b, a),
+                    ];
+                    j[..4].copy_from_slice(&[a as f64, b as f64, mapped[0] as f64, mapped[1] as f64]);
+                    put_v(&mut j, 4, local_point(&self.entities, a, c.point(i, 0)));
+                    put_v(&mut j, 7, local_point(&self.entities, b, c.point(i, 1)));
+                    j[10] = c.rest(i);
+                    j[38] = weight;
+                    for slot in [13, 18, 29, 30] {
+                        j[slot] = -1.0;
+                    }
+                    // A spool or free wheel at a row boundary turns with the
+                    // material its segment winds on or off. Inside a row a free
+                    // wheel passes material on instead (see `transport`).
+                    for side in 0..2 {
+                        let id = if side == 0 { a } else { b };
+                        let li = i + side;
+                        if !has(&self.entities[id], SPOOL)
+                            || !candidate(&self.entities[id])
+                            || c.slip[li] != STICK
+                        {
+                            continue;
+                        }
+                        let so = if side == 0 { 13 } else { 18 };
+                        j[so] = id as f64;
+                        let mut stored = 0.0;
+                        if hybrid(c.kind(li)) {
+                            let r = c.radius(&self.entities, li, id, self.options[3] != 0.0).0;
+                            if r > EPS {
+                                stored = (if c.cw(li, side == 0) { 1.0 } else { -1.0 }) * r;
+                                if side == 1 {
+                                    stored = -stored;
+                                }
                             }
                         }
+                        j[23 + side] = stored;
+                        if stored.abs() > EPS {
+                            j[25 + side] = 7.0;
+                        }
                     }
-                    j[23 + side] = stored;
-                    if stored.abs() > EPS {
-                        j[25 + side] = 7.0;
+                    if c.kind(i) == 2 && i > 0 {
+                        j[29] = (first + i - 1) as f64;
+                    }
+                    if c.kind(i + 1) == 2 && i + 1 < count {
+                        j[30] = (first + i + 1) as f64;
+                    }
+                    self.joints.push(j);
+                }
+            }
+            let mut kinematic = vec![false; self.entities.len()];
+            for c in &self.cables {
+                for li in 1..c.count() {
+                    let id = c.entity(li - 1, 1);
+                    if c.kind(li) == 1 && c.slip[li] != STICK && has(&self.entities[id], SPOOL) {
+                        kinematic[id] = true;
                     }
                 }
-                if c.kind(i) == 2 && i > 0 {
-                    j[29] = (first + i - 1) as f64;
-                }
-                if c.kind(i + 1) == 2 && i + 1 < count {
-                    j[30] = (first + i + 1) as f64;
-                }
-                self.joints.push(j);
             }
-        }
-        let mut kinematic = vec![false; self.entities.len()];
-        for c in &self.cables {
-            for li in 1..c.count() {
-                let id = c.entity(li - 1, 1);
-                if c.kind(li) == 1 && c.slip[li] != STICK && has(&self.entities[id], SPOOL) {
-                    kinematic[id] = true;
+            let members = rotor_members(&self.entities, &kinematic);
+            let max = self.rows.iter().map(|r| r.iterations).max().unwrap_or(1);
+            let mut multipliers = vec![0.0; self.rows.len()];
+            for iter in 0..max {
+                let forward = iter % 2 == 0;
+                for k in 0..self.rows.len() {
+                    let r = if forward { k } else { self.rows.len() - 1 - k };
+                    let row = self.rows[r];
+                    if iter >= row.iterations {
+                        continue;
+                    }
+                    solve_row(
+                        &mut self.entities,
+                        &mut self.joints,
+                        &members,
+                        &row,
+                        iter,
+                        &mut multipliers[r],
+                        &mut self.scratch,
+                    );
                 }
             }
-        }
-        let members = rotor_members(&self.entities, &kinematic);
-        let max = self.rows.iter().map(|r| r.iterations).max().unwrap_or(1);
-        let mut multipliers = vec![0.0; self.rows.len()];
-        for iter in 0..max {
-            let forward = iter % 2 == 0;
-            for k in 0..self.rows.len() {
-                let r = if forward { k } else { self.rows.len() - 1 - k };
-                let row = self.rows[r];
-                if iter >= row.iterations {
-                    continue;
+            finalize_force_transfers(&mut self.joints);
+            for (p, c) in self.cables.iter_mut().enumerate() {
+                let first = firsts[p];
+                for i in 0..c.count() {
+                    let jo = c.jo(i);
+                    let j = &self.joints[first + i];
+                    c.data[jo + 10] = j[31];
+                    c.data[jo + 11] = j[35];
+                    c.data[jo + 12] = j[36];
+                    put_v(&mut c.data, jo + 13, v(j, 32));
                 }
-                solve_row(
-                    &mut self.entities,
-                    &mut self.joints,
-                    &members,
-                    &row,
-                    iter,
-                    &mut multipliers[r],
-                    &mut self.scratch,
-                );
             }
-        }
-        finalize_force_transfers(&mut self.joints);
-        for (p, c) in self.cables.iter_mut().enumerate() {
-            let first = firsts[p];
-            for i in 0..c.count() {
-                let jo = c.jo(i);
-                let j = &self.joints[first + i];
-                c.data[jo + 10] = j[31];
-                c.data[jo + 11] = j[35];
-                c.data[jo + 12] = j[36];
-                put_v(&mut c.data, jo + 13, v(j, 32));
+            if self.transport(&firsts, !frictional || attempt + 1 == SOLVES) {
+                break;
             }
+            self.entities.clone_from(&self.snapshot);
         }
-        self.redistribute(&firsts);
         for owners in &self.shared {
             let mut result = [0.0; 6];
             let mut transfer: f64 = 0.0;
@@ -1993,67 +2007,186 @@ impl PhysicsWorld {
         }
     }
     /// After the solve, material inside each slipping row settles where every
-    /// segment carries its share of the row's actual stretch: with cᵢ = dᵢ/EA
-    /// and tension ρᵢT, eᵢ ∝ dᵢρᵢ, conserving the row's material. Slack rows
-    /// share their slack in proportion to length. A slipping link whose
-    /// material moved against its slip direction sticks from the next step.
-    fn redistribute(&mut self, firsts: &[usize]) {
+    /// segment carries its share ρᵢT of the row's tension, conserving the
+    /// row's material (see `settle`).
+    ///
+    /// The outcome is checked against the link states it was solved with.
+    /// Material only moves toward a slipping link's tighter side: otherwise
+    /// the link holds it and sticks. A sticking link's tensions must lie
+    /// inside its capstan cone: otherwise it slips. Returns false, with the
+    /// states corrected and nothing else changed, for the solve to be
+    /// repeated with them. A link whose sticking solve calls for the slip
+    /// that its slipping solve refused keeps the slipping solve, holding its
+    /// material: few solver iterations leave sticking rows the less accurate.
+    fn transport(&mut self, firsts: &[usize], last: bool) -> bool {
         let layering = self.options[3] != 0.0;
+        // Per joint: span length (where needed) and rest length.
+        let mut spans = vec![f64::NAN; self.joints.len()];
+        let mut rests: Vec<f64> = self.joints.iter().map(|j| j[10]).collect();
+        let mut states = Vec::new();
         let mut wheels = Vec::new();
+        let frictional: Vec<bool> = self
+            .cables
+            .iter()
+            .map(|c| (1..c.count()).any(|li| c.slip[li] != FREE && c.ratio[li].is_finite()))
+            .collect();
         for row in &self.rows {
-            if row.end - row.start < 2 {
+            let p = firsts.iter().rposition(|&f| f <= row.start).unwrap();
+            let count = row.end - row.start;
+            if count < 2 && !frictional[p] {
                 continue;
             }
-            let p = firsts.iter().rposition(|&f| f <= row.start).unwrap();
-            let c = &mut self.cables[p];
-            let (s, e) = (row.start - firsts[p], row.end - firsts[p]);
-            let mut lengths = vec![0.0; e - s];
-            let mut weights = vec![0.0; e - s];
-            for i in s..e {
-                let j = &self.joints[row.start + i - s];
+            let c = &self.cables[p];
+            let s = row.start - firsts[p];
+            let lengths = &mut spans[row.start..row.end];
+            let settled = &mut rests[row.start..row.end];
+            let mut weights = vec![0.0; count];
+            for k in 0..count {
+                let j = &self.joints[row.start + k];
                 let a = attachment(&self.entities, j[0] as usize, v(j, 4));
                 let b = attachment(&self.entities, j[1] as usize, v(j, 7));
-                lengths[i - s] = length(sub(b, a));
-                weights[i - s] = lengths[i - s] * j[38];
+                lengths[k] = length(sub(b, a));
+                weights[k] = lengths[k] * j[38];
             }
-            let material: f64 = (s..e).map(|i| c.rest(i)).sum();
-            let total: f64 = lengths.iter().sum();
-            let weight: f64 = weights.iter().sum();
-            if total <= EPS || weight <= EPS || material <= 0.0 {
+            if count < 2 {
                 continue;
             }
-            let stretch = total - material;
-            let mut moved = 0.0;
-            for i in s..e {
-                let rest = if stretch > 0.0 {
-                    lengths[i - s] - stretch * weights[i - s] / weight
-                } else {
-                    material * lengths[i - s] / total
-                };
-                let jo = c.jo(i);
-                moved += rest - c.data[jo + 3];
-                c.data[jo + 3] = rest;
-                // `moved` is the material gained left of link i + 1.
-                if i + 1 < e {
-                    let li = i + 1;
-                    c.flow[li] = -moved;
-                    let id = c.entity(i, 1);
-                    let wheel = &self.entities[id];
-                    if c.kind(li) == 1 && has(wheel, SPOOL) && candidate(wheel) {
-                        let radius = c.radius(&self.entities, li, id, layering).0;
-                        if radius > EPS {
-                            wheels.push((id, moved / if c.cw(li, false) { radius } else { -radius }));
+            // The row settles between the links found to hold their material.
+            let mut held = vec![false; count + 1];
+            held[count] = true;
+            let mut state = vec![FREE; count];
+            loop {
+                for (k, rest) in settled.iter_mut().enumerate() {
+                    *rest = c.rest(s + k);
+                }
+                let mut start = 0;
+                let mut moved = 0.0;
+                let mut again = false;
+                for end in 1..=count {
+                    if !held[end] {
+                        continue;
+                    }
+                    let taut = settle(
+                        &lengths[start..end],
+                        &weights[start..end],
+                        &c.strain[s + start..s + end],
+                        row.gamma,
+                        &mut settled[start..end],
+                    );
+                    for k in start..end - 1 {
+                        // `moved` is the material gained left of link `li`.
+                        moved += settled[k] - c.rest(s + k);
+                        let li = s + k + 1;
+                        state[k + 1] = c.slip[li];
+                        if c.slip[li] == FREE {
+                            continue;
+                        }
+                        let toward = if moved > 1e-9 {
+                            LEFT
+                        } else if moved < -1e-9 {
+                            RIGHT
+                        } else {
+                            c.slip[li]
+                        };
+                        if toward == c.slip[li] {
+                            continue;
+                        }
+                        // Without tension the direction carries no force.
+                        if taut {
+                            held[k + 1] = true;
+                            again = true;
+                        } else {
+                            state[k + 1] = toward;
                         }
                     }
-                    if (c.slip[li] == RIGHT && moved > 1e-9) || (c.slip[li] == LEFT && moved < -1e-9) {
-                        c.slip[li] = STICK;
+                    moved = 0.0;
+                    start = end;
+                }
+                if !again {
+                    break;
+                }
+            }
+            let mut moved = 0.0;
+            for k in 0..count - 1 {
+                moved += settled[k] - c.rest(s + k);
+                let li = s + k + 1;
+                if held[k + 1] {
+                    states.push((p, li, STICK, c.tried[li] & (tried(STICK) | SETTLED) == 0));
+                } else if state[k + 1] != c.slip[li] {
+                    states.push((p, li, state[k + 1], false));
+                }
+                let id = c.entity(s + k, 1);
+                let wheel = &self.entities[id];
+                if c.kind(li) == 1 && has(wheel, SPOOL) && candidate(wheel) {
+                    let radius = c.radius(&self.entities, li, id, layering).0;
+                    if radius > EPS {
+                        wheels.push((id, moved / if c.cw(li, false) { radius } else { -radius }));
                     }
                 }
+            }
+        }
+        let strain = |joint: usize| {
+            if spans[joint] > EPS { (spans[joint] - rests[joint]).max(0.0) / spans[joint] } else { 0.0 }
+        };
+        for row in &self.rows {
+            let p = firsts.iter().rposition(|&f| f <= row.start).unwrap();
+            let c = &self.cables[p];
+            // The link a row starts at sticks. Tensions are over EA, by the
+            // law the rows are solved with.
+            let li = row.start - firsts[p];
+            if li == 0 || !c.ratio[li].is_finite() {
+                continue;
+            }
+            let tension = |joint: usize| {
+                if row.zero {
+                    self.joints[joint][35]
+                } else {
+                    let old = c.strain[joint - firsts[p]];
+                    (strain(joint) + row.gamma * (strain(joint) - old)).max(0.0)
+                }
+            };
+            let (left, right) = (tension(row.start - 1), tension(row.start));
+            let limit = c.ratio[li] * (1.0 + 1e-9);
+            let state = if left > limit * right + 1e-12 {
+                LEFT
+            } else if right > limit * left + 1e-12 {
+                RIGHT
+            } else {
+                continue;
+            };
+            states.push((p, li, state, c.tried[li] & SETTLED == 0));
+        }
+        let repeat = !last && states.iter().any(|state| state.3);
+        for (p, li, state, solve) in states {
+            let c = &mut self.cables[p];
+            if repeat && solve {
+                if c.tried[li] & tried(state) != 0 {
+                    c.tried[li] |= SETTLED;
+                }
+                c.tried[li] |= tried(state);
+                c.slip[li] = state;
+            } else if !repeat {
+                c.slip[li] = state;
+            }
+        }
+        if repeat {
+            return false;
+        }
+        for (p, c) in self.cables.iter_mut().enumerate() {
+            for i in 0..c.count() {
+                let joint = firsts[p] + i;
+                if spans[joint].is_nan() {
+                    continue;
+                }
+                let jo = c.jo(i);
+                c.data[jo + 3] = rests[joint];
+                c.strain[i] = strain(joint);
             }
         }
         for (id, angle) in wheels {
             self.turn_wheel(id, angle);
         }
+        true
     }
     /// Set a free wheel's rotation this step to `angle` about its own axis,
     /// relative to its carrier, replacing any predicted spin.
@@ -2075,6 +2208,46 @@ impl PhysicsWorld {
             put_q(&mut self.entities[id], 3, world);
         }
     }
+}
+/// Rest lengths of consecutive segments that share their material. The line
+/// is a Kelvin–Voigt solid, as in the row solve: with strain εᵢ, strain εᵢⁿ
+/// when the last step ended and relaxation time γ·dt, a segment's tension is
+/// EA(εᵢ + γ(εᵢ − εᵢⁿ)), and the segments settle where these are in proportion
+/// to their weights over length. Slack segments keep their material until
+/// another segment pulls it taut. Returns whether the segments are taut.
+fn settle(lengths: &[f64], weights: &[f64], strains: &[f64], gamma: f64, rests: &mut [f64]) -> bool {
+    let count = rests.len();
+    let stretch = lengths.iter().sum::<f64>() - rests.iter().sum::<f64>();
+    let weight: f64 = weights.iter().sum();
+    if stretch <= 0.0 || weight <= EPS {
+        // Taut spans draw their shortage from the slack further along, then
+        // from the slack behind them.
+        for k in 0..count - 1 {
+            let shortage = (lengths[k] - rests[k]).max(0.0);
+            rests[k] += shortage;
+            rests[k + 1] -= shortage;
+        }
+        for k in (1..count).rev() {
+            let shortage = (lengths[k] - rests[k]).max(0.0);
+            rests[k] += shortage;
+            rests[k - 1] -= shortage;
+        }
+        return false;
+    }
+    let retained = gamma / (1.0 + gamma);
+    let held: f64 = (0..count).map(|k| strains[k] * lengths[k]).sum();
+    let shared = stretch - retained * held;
+    for k in 0..count {
+        let old = strains[k] * lengths[k];
+        // Damping that cancels the whole tension leaves no share.
+        rests[k] = lengths[k]
+            - if shared >= 0.0 {
+                retained * old + shared * weights[k] / weight
+            } else {
+                stretch * old / held
+            };
+    }
+    true
 }
 /// Capstan tension ratio exp(μθ) across interior link `li`, or None when
 /// material cannot cross it (attachments bound rows).
