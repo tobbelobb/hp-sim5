@@ -16,7 +16,9 @@
     },
     "public/usd_scenes/cubecorners.usda": {
       "name": "CubeCorners",
-      "machine_type": "cubecorners"
+      "machine_type": "cubecorners",
+      "physics_substeps": 1,
+      "solver_iterations": 5
     },
     "public/usd_scenes/slideprinter_multi_unit.usda": {
       "name": "Slideprinter Multi Unit"
