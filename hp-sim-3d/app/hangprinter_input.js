@@ -15,10 +15,23 @@ import {
 import { SpoolTagComponent } from './hangprinter_spools.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
-// A grab is a short cord from the pointer to the grabbed body. Its axial
-// stiffness EA (N) bounds the pull: it rises with drag distance toward a firm
-// human pull, enough to make open-loop motors skip steps.
-export const HAND_CORD_STIFFNESS_PER_UNIT_LENGTH = 100.0;
+// Match the old cord's initial spring rate: EA=100 N over 0.1 m.
+// Keep that rate as it stretches, rather than approaching a 100 N ceiling.
+export const GRAB_SPRING_STIFFNESS = 1000.0; // N/m
+const GRAB_REST_LENGTH = 0.1;
+
+export function updateGrabSpring(world, { jointE, pathE, ptrE }) {
+  const joint = world.getComponent(jointE, CableJointComponent);
+  const path = world.getComponent(pathE, CablePathComponent);
+  const pointer = world.getComponent(ptrE, PositionComponent)?.pos;
+  if (!joint || !path || !pointer) return;
+  const length = joint.attachmentPointA_world.distanceTo(pointer);
+  // The cable solver uses k = EA / current span length. Adapt only this
+  // temporary grab path so the hand behaves as a linear, compliant spring.
+  const ea = GRAB_SPRING_STIFFNESS * Math.max(GRAB_REST_LENGTH, length);
+  path.stiffnessPerUnitLength = ea;
+  path.compliancePerUnitLength = 1 / ea;
+}
 
 export class RemoteInputSystem {
   runInPause = true;
@@ -1021,7 +1034,7 @@ export class InputSystem {
     const jointE = this.world.createEntity();
     this.world.addComponent(
       jointE,
-      CableJointComponent.fromWorld(closestBall, ptrE, 0.1, ballPos, ptrPos)
+      CableJointComponent.fromWorld(closestBall, ptrE, GRAB_REST_LENGTH, ballPos, ptrPos)
     );
     this.world.addComponent(jointE, new RenderableComponent('line', '#888888'));
 
@@ -1029,7 +1042,7 @@ export class InputSystem {
     this.world.addComponent(
       pathE,
       new CablePathComponent(this.world, [jointE], ['attachment', 'attachment'], [true, true],
-        HAND_CORD_STIFFNESS_PER_UNIT_LENGTH)
+        GRAB_SPRING_STIFFNESS * GRAB_REST_LENGTH)
     );
 
     this.grabSpring = { ptrE, jointE, pathE, ballE: closestBall };
@@ -1113,7 +1126,9 @@ export class InputSystem {
     this.handlePointerUp(event);
   }
 
-  update(world, dt) {}
+  update(world, dt) {
+    if (this.grabSpring) updateGrabSpring(world, this.grabSpring);
+  }
 
   handlePointerMove(event) {
     if (event.pointerType === 'touch') {
