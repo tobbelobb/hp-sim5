@@ -25,6 +25,10 @@ describe('colour themes', () => {
     }
   });
 
+  test('Graphite is the default theme', () => {
+    expect(DEFAULT_COLOR_THEME).toBe('graphite');
+  });
+
   test('unknown ids fall back to the default theme', () => {
     expect(resolveColorTheme('no-such-theme')).toBe(COLOR_THEMES[DEFAULT_COLOR_THEME]);
     expect(resolveColorTheme('graphite')).toBe(COLOR_THEMES.graphite);

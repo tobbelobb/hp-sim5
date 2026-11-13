@@ -94,8 +94,8 @@ export class MachineDetails3D {
     parent.add(this.group);
 
     this.materials = {
-      frame: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, metalness: 0.9 }),
-      eyelet: new THREE.MeshStandardMaterial({ color: 0xdfe2e6, roughness: 0.4, metalness: 1.0 }),
+      frame: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.8 }),
+      eyelet: new THREE.MeshStandardMaterial({ color: 0xdfe2e6, roughness: 0.22, metalness: 1.0 }),
     };
     this.geometries = {
       cylinder: new THREE.CylinderGeometry(1, 1, 1, 12, 1, false),
@@ -185,6 +185,10 @@ export class MachineDetails3D {
   setTheme(theme) {
     this.theme = theme;
     this.materials.eyelet.color.set(theme.eyelet);
+    // Matte surfaces preserve the high-contrast palette under studio lights.
+    const contrast = theme.label === 'High Contrast';
+    Object.assign(this.materials.frame, { roughness: contrast ? 0.85 : 0.42, metalness: contrast ? 0 : 0.8 });
+    Object.assign(this.materials.eyelet, { roughness: contrast ? 0.85 : 0.22, metalness: contrast ? 0 : 1.0 });
   }
 
   // The theme's frame colour with the machine tint mixed in; a null theme

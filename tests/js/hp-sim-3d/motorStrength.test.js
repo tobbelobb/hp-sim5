@@ -18,7 +18,7 @@ test('the motor strength slider scales every holding torque from its machine val
       slider.value = strength;
       listeners.input();
       expect(torques()).toEqual(Array(8).fill(Number(strength)));
-      expect(label.textContent).toBe(`${Number(strength)}×`);
+      expect(label.textContent).toBe(`${Number(strength)} Nm`);
     }
     slider.value = '2';
     listeners.input();
@@ -30,6 +30,16 @@ test('the motor strength slider scales every holding torque from its machine val
     }
     featureFlags.syncMotorStrengthState();
     expect(torques()).toEqual(Array(8).fill(2));
+    expect(label.textContent).toBe('2 Nm');
+    // Mixed motor ratings must be shown as a torque range, including after a
+    // machine is loaded while a strength override is active.
+    const stepper = world.getComponent(world.query([StepperMotorComponent])[0], StepperMotorComponent);
+    stepper.machineHoldingTorque = 0.5;
+    featureFlags.syncMotorStrengthState();
+    expect(label.textContent).toBe('1–2 Nm');
+    slider.value = '0.25';
+    listeners.input();
+    expect(label.textContent).toBe('0.125–0.25 Nm');
   } finally {
     world.getResource('cableSolverBackend')?.dispose();
   }

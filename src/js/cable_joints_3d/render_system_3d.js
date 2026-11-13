@@ -1935,6 +1935,10 @@ export class RenderSystem3D {
     axisColors.needsUpdate = true;
     this.axes.material.opacity = theme.axesOpacity;
     this.machineDetails.setTheme(theme);
+    // Satin metal spools, distinct from the polished eyelets and painted bodies.
+    const contrast = themeId === 'contrast';
+    this.orientedSphereMaterial.roughness = contrast ? 0.85 : 0.3;
+    this.orientedSphereMaterial.metalness = contrast ? 0 : 0.65;
     // Printed material is coloured as it is appended; redraw it in the new theme.
     this.extrusionPointCloud?.setShading(theme.printShading);
     this.clearExtrusions();

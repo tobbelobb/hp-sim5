@@ -1,30 +1,8 @@
-:root {
-  /* UI colour tokens per colour theme (scene colours: color_themes.js).
-     Classic is the default: the original navy look. */
-  color-scheme: dark;
-  --chrome: #151826;
-  --chrome-text: #f4f6ff;
-  --chrome-muted: #a3a9c4;
-  --control: #262a42;
-  --control-hover: #31365a;
-  --control-border: #3d4262;
-  --accent: #ff5c83;
-  --accent-hover: #ff7898;
-  --accent-text: #141421;
-  --focus: #7ae2ff;
-  --panel: #1b1f33;
-  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-  --glass: rgba(24, 28, 46, 0.88);
-  --glass-hover: rgba(49, 54, 90, 0.92);
-  --glass-text: #f4f6ff;
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --viewport: #1b2b3c;
-  --radius: 8px;
-}
-
-/* OKLCH graphite family (hue 255, chroma <= 0.012), accent from the line
-   colour's dusty-rose family (L 0.74, C 0.085, h 15). */
+/* UI tokens share theme ids with color_themes.js. Graphite is the default. */
+:root,
 :root[data-theme='graphite'] {
+  color-scheme: dark;
+  --radius: 8px;
   --chrome: #1c2024;
   --chrome-text: #e9ebee;
   --chrome-muted: #9a9fa6;
@@ -44,45 +22,69 @@
   --viewport: #2d3135;
 }
 
-:root[data-theme='daylight'] {
-  color-scheme: light;
-  --chrome: #e6e7e9;
-  --chrome-text: #1c1e22;
-  --chrome-muted: #5d6169;
-  --control: #ffffff;
-  --control-hover: #f1f2f4;
-  --control-border: rgba(20, 24, 32, 0.16);
-  --accent: #b5475a;
-  --accent-hover: #a23d4f;
-  --accent-text: #ffffff;
-  --focus: #2f6fe0;
-  --panel: #ffffff;
-  --panel-shadow: 0 12px 32px rgba(20, 24, 32, 0.18);
-  --glass: rgba(250, 250, 251, 0.92);
-  --glass-hover: rgba(236, 237, 240, 0.95);
-  --glass-text: #1c1e22;
-  --glass-border: rgba(20, 24, 32, 0.12);
-  --viewport: #c4c6c8;
+:root[data-theme='classic'] {
+  color-scheme: dark;
+  --chrome: #151826;
+  --chrome-text: #f4f6ff;
+  --chrome-muted: #a3a9c4;
+  --control: #262a42;
+  --control-hover: #31365a;
+  --control-border: #3d4262;
+  --accent: #ff5c83;
+  --accent-hover: #ff7898;
+  --accent-text: #141421;
+  --focus: #7ae2ff;
+  --panel: #1b1f33;
+  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --glass: rgba(24, 28, 46, 0.88);
+  --glass-hover: rgba(49, 54, 90, 0.92);
+  --glass-text: #f4f6ff;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --viewport: #1b2b3c;
 }
 
+/* Daylight: Everforest's warm paper and muted greens, with cool ink accents. */
+:root[data-theme='daylight'] {
+  color-scheme: light;
+  --chrome: #f3f0df;
+  --chrome-text: #3d484d;
+  --chrome-muted: #5c6b64;
+  --control: #faf8ef;
+  --control-hover: #e4e9d8;
+  --control-border: #919b88;
+  --accent: #386b70;
+  --accent-hover: #2c565b;
+  --accent-text: #ffffff;
+  --focus: #8054a0;
+  --panel: #faf8ef;
+  --panel-shadow: 0 12px 32px rgba(61, 72, 77, 0.16);
+  --glass: rgba(250, 248, 239, 0.96);
+  --glass-hover: rgba(228, 233, 216, 0.98);
+  --glass-text: #3d484d;
+  --glass-border: #919b88;
+  --viewport: #f3f0df;
+}
+
+/* Warm white and amber on charcoal; opaque panels keep contrast predictable. */
 :root[data-theme='contrast'] {
-  --chrome: #000000;
-  --chrome-text: #ffffff;
-  --chrome-muted: #d0d0d0;
-  --control: #121212;
-  --control-hover: #262626;
-  --control-border: #8a8a8a;
-  --accent: #ffe600;
-  --accent-hover: #fff27a;
-  --accent-text: #000000;
-  --focus: #5ca8ff;
-  --panel: #0a0a0a;
-  --panel-shadow: 0 0 0 1px #8a8a8a;
-  --glass: rgba(0, 0, 0, 0.92);
-  --glass-hover: rgba(38, 38, 38, 0.95);
-  --glass-text: #ffffff;
-  --glass-border: #8a8a8a;
-  --viewport: #000000;
+  color-scheme: dark;
+  --chrome: #101419;
+  --chrome-text: #f4f1de;
+  --chrome-muted: #c5c9c0;
+  --control: #1c242c;
+  --control-hover: #303d49;
+  --control-border: #a0afa9;
+  --accent: #f2c76b;
+  --accent-hover: #ffdf99;
+  --accent-text: #101419;
+  --focus: #83d6cf;
+  --panel: #101419;
+  --panel-shadow: 0 0 0 1px #a0afa9;
+  --glass: #101419;
+  --glass-hover: #303d49;
+  --glass-text: #f4f1de;
+  --glass-border: #a0afa9;
+  --viewport: #101419;
 }
 
 * {
@@ -99,6 +101,8 @@ body {
 }
 
 button,
+input,
+output,
 select {
   font: inherit;
 }
@@ -245,6 +249,8 @@ body {
 
 .sim-settings-menu {
   width: 310px;
+  max-height: none;
+  overflow: visible;
   gap: 2px;
 }
 
@@ -266,12 +272,18 @@ body {
 }
 
 .sim-toggle:has(input:disabled) {
-  opacity: 0.45;
   cursor: not-allowed;
 }
 
+.sim-toggle:has(input:disabled) > input,
+.sim-toggle:has(input:disabled) > span:not(.sim-setting-help) {
+  opacity: 0.45;
+}
+
 .sim-toggle {
+  position: relative;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 10px;
   min-height: 34px;
@@ -303,6 +315,8 @@ body {
 }
 
 .sim-select select {
+  flex: 1;
+  width: 0;
   min-width: 0;
   max-width: 60%;
   height: 28px;
@@ -323,9 +337,85 @@ body {
 }
 
 .sim-range output {
-  min-width: 4ch;
+  min-width: 5ch;
   text-align: right;
+  color: var(--chrome-text);
   font-variant-numeric: tabular-nums;
+}
+
+/* Tooltips float outside the menu's layout, so every control stays put. */
+.sim-toggle .sim-setting-help {
+  position: absolute;
+  right: calc(100% + 16px);
+  top: 0;
+  z-index: 1;
+  width: 260px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: var(--panel-shadow);
+  white-space: normal;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease, visibility 120ms;
+}
+
+.sim-setting-help::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
+.sim-toggle:hover .sim-setting-help,
+.sim-toggle:has(:focus-visible) .sim-setting-help {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 250ms;
+}
+
+/* Pointer help takes precedence over a previously focused control. */
+.sim-settings-menu:has(.sim-toggle:hover) .sim-toggle:not(:hover) .sim-setting-help {
+  opacity: 0;
+  visibility: hidden;
+  transition-delay: 0s;
+}
+
+@media (max-width: 700px) {
+  .sim-toggle .sim-setting-help {
+    right: 0;
+    top: auto;
+    bottom: calc(100% + 8px);
+    width: min(260px, 100%);
+  }
+
+  .sim-setting-help::after {
+    top: auto;
+    bottom: -5px;
+    right: 18px;
+  }
+
+  .sim-toggle[for='colorTheme'] .sim-setting-help,
+  .sim-toggle[for='referenceToggle'] .sim-setting-help {
+    top: calc(100% + 8px);
+    bottom: auto;
+  }
+
+  .sim-toggle[for='colorTheme'] .sim-setting-help::after,
+  .sim-toggle[for='referenceToggle'] .sim-setting-help::after {
+    top: -5px;
+    bottom: auto;
+  }
 }
 
 .sim-machines-section {

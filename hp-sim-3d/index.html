@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="graphite">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,7 +18,9 @@
       // Apply the remembered colour theme before first paint.
       try {
         const theme = localStorage.getItem('hp-sim-3d.colorTheme');
-        if (theme) document.documentElement.dataset.theme = theme;
+        if (['classic', 'graphite', 'daylight', 'contrast'].includes(theme)) {
+          document.documentElement.dataset.theme = theme;
+        }
       } catch {}
     </script>
     <link rel="stylesheet" href="./style.css" />
@@ -72,42 +74,49 @@
                   <span class="sim-menu-section-title">View</span>
                   <label class="sim-toggle sim-select" for="colorTheme">
                     <span>Color Theme</span>
-                    <select id="colorTheme"></select>
+                    <select id="colorTheme" aria-describedby="colorThemeHelp"></select>
+                    <span id="colorThemeHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Changes the interface and 3D scene palette. Your choice is remembered on this device.</span>
                   </label>
                   <label id="referenceToggleWrapper" class="sim-toggle" for="referenceToggle">
-                    <input id="referenceToggle" type="checkbox" disabled>
+                    <input id="referenceToggle" aria-describedby="referenceToggleHelp" type="checkbox" disabled>
                     <span>Show Reference Path</span>
+                    <span id="referenceToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Overlays the intended toolpath for comparison. Available after loading a file with reference data.</span>
                   </label>
                   <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
-                    <input id="qualityToggle" type="checkbox">
+                    <input id="qualityToggle" aria-describedby="qualityToggleHelp" type="checkbox">
                     <span>Live Quality Checks</span>
+                    <span id="qualityToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Checks the simulated print as it runs and reports deviations from the intended path.</span>
                   </label>
                   <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
-                    <input id="showForcesToggle" type="checkbox">
+                    <input id="showForcesToggle" aria-describedby="showForcesToggleHelp" type="checkbox">
                     <span>Show Forces</span>
+                    <span id="showForcesToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Labels cable constraint forces in newtons (N). Larger values mean greater cable tension.</span>
                   </label>
                   <label id="highlightSlackToggleWrapper" class="sim-toggle" for="highlightSlackToggle">
-                    <input id="highlightSlackToggle" type="checkbox">
+                    <input id="highlightSlackToggle" aria-describedby="highlightSlackToggleHelp" type="checkbox">
                     <span>Highlight Slack Lines</span>
+                    <span id="highlightSlackToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Uses a contrasting color for slack cables, which cannot pull on the machine.</span>
                   </label>
                   <span class="sim-menu-section-title">Simulation</span>
                   <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
-                    <input id="lineLayeringToggle" type="checkbox" checked>
+                    <input id="lineLayeringToggle" aria-describedby="lineLayeringToggleHelp" type="checkbox" checked>
                     <span>Line Layering</span>
+                    <span id="lineLayeringToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Models cable layers on spools, which change the winding radius and cable travel.</span>
                   </label>
                   <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
-                    <input id="closedLoopMotorsToggle" type="checkbox">
+                    <input id="closedLoopMotorsToggle" aria-describedby="closedLoopMotorsToggleHelp" type="checkbox">
                     <span>Closed Loop Motors</span>
+                    <span id="closedLoopMotorsToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Corrects motor position using feedback. Tracking is still limited by the available motor torque.</span>
                   </label>
                   <label class="sim-toggle sim-select sim-range" for="motorStrength">
-                    <span>Motor Strength</span>
-                    <input id="motorStrength" type="range" min="0.25" max="4" step="0.25" value="1"
-                      title="Scales the holding torque of every motor. 1 is the machine's own motors">
-                    <output id="motorStrengthValue" for="motorStrength">1×</output>
+                    <span>Holding Torque</span>
+                    <input id="motorStrength" aria-describedby="motorStrengthHelp" type="range" min="0.25" max="4" step="0.25" value="1">
+                    <output id="motorStrengthValue" for="motorStrength">— Nm</output>
+                    <span id="motorStrengthHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Holding torque at the motor shaft (Nm). Scales all motors; a range means different ratings. Available torque falls with speed.</span>
                   </label>
                   <label class="sim-toggle sim-select" for="solverIterations">
                     <span>Solver Iterations</span>
-                    <select id="solverIterations" title="More iterations improve cable constraint convergence but use more CPU">
+                    <select id="solverIterations" aria-describedby="solverIterationsHelp">
                       <option value="" selected>Machine default</option>
                       <option value="1">1</option>
                       <option value="2">2</option>
@@ -121,16 +130,18 @@
                       <option value="32">32</option>
                       <option value="64">64</option>
                     </select>
+                    <span id="solverIterationsHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Constraint corrections per physics substep. More iterations improve cable constraint convergence but use more CPU.</span>
                   </label>
                   <label class="sim-toggle sim-select" for="physicsSubsteps">
                     <span>Physics Substeps</span>
-                    <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
+                    <select id="physicsSubsteps" aria-describedby="physicsSubstepsHelp">
                       <option value="1" selected>1</option>
                       <option value="2">2</option>
                       <option value="4">4</option>
                       <option value="8">8</option>
                       <option value="16">16</option>
                     </select>
+                    <span id="physicsSubstepsHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Splits each simulation timestep into smaller physics steps. More substeps improve stability but use more CPU.</span>
                   </label>
                 </div>
               </div>

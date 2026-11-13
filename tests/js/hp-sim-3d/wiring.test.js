@@ -30,7 +30,7 @@ describe('hp-sim-3d wiring', () => {
 
     expect(lineLayeringToggleIndex).toBeGreaterThan(-1);
     expect(closedLoopToggleIndex).toBeGreaterThan(lineLayeringToggleIndex);
-    expect(html).toContain('<input id="closedLoopMotorsToggle" type="checkbox">');
+    expect(html).toMatch(/<input id="closedLoopMotorsToggle"[^>]*type="checkbox"/);
     expect(html).toContain('<span>Closed Loop Motors</span>');
     expect(bootstrap).toContain("closedLoopMotorsToggle: ownerDocument.getElementById('closedLoopMotorsToggle')");
     expect(featureFlags).toContain('setClosedLoopMotorFeatureFlags');
@@ -49,7 +49,7 @@ describe('hp-sim-3d wiring', () => {
     expect(html).toContain('<div id="settingsMenu" class="sim-settings-menu sim-hidden"');
     expect(showForcesToggleIndex).toBeGreaterThan(qualityToggleIndex);
     expect(lineLayeringToggleIndex).toBeGreaterThan(showForcesToggleIndex);
-    expect(html).toContain('<input id="showForcesToggle" type="checkbox">');
+    expect(html).toMatch(/<input id="showForcesToggle"[^>]*type="checkbox"/);
     expect(html).toContain('<span>Show Forces</span>');
     expect(bootstrap).toContain("showForcesToggle: ownerDocument.getElementById('showForcesToggle')");
     expect(featureFlags).toContain("world.setResource('showConstraintForces', next);");

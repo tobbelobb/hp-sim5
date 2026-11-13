@@ -1,7 +1,8 @@
+import { StepperMotorComponent } from './hangprinter_stepper_motor.js';
 import { setSolverIterations } from './solver-iterations.js';
 import { setPhysicsSubsteps } from './physics-substeps.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
-import { setMotorStrength, syncMotorStrength } from './motor-strength.js';
+import { setMotorStrength, syncMotorStrength, motorHoldingTorqueLabel } from './motor-strength.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { COLOR_THEMES, DEFAULT_COLOR_THEME } from '../../src/js/cable_joints_3d/color_themes.js';
 
@@ -93,7 +94,17 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
   function setMotorStrengthState(factor) {
     setMotorStrength(world, factor);
     if (toggles.motorStrength) toggles.motorStrength.value = String(factor);
-    if (toggles.motorStrengthValue) toggles.motorStrengthValue.textContent = `${factor}×`;
+    syncMotorStrengthState();
+  }
+
+  function syncMotorStrengthState() {
+    syncMotorStrength(world);
+    const label = motorHoldingTorqueLabel(world);
+    if (toggles.motorStrengthValue) toggles.motorStrengthValue.textContent = label;
+    if (toggles.motorStrength) {
+      toggles.motorStrength.disabled = world.query([StepperMotorComponent]).length === 0;
+      toggles.motorStrength.setAttribute?.('aria-valuetext', label);
+    }
   }
 
   function setPhysicsSubstepsState(count, options) {
@@ -212,7 +223,7 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     setShowConstraintForcesState,
     setLineLayeringEnabledState,
     setClosedLoopMotorsEnabledState,
-    syncMotorStrengthState: () => syncMotorStrength(world),
+    syncMotorStrengthState,
     bindUi,
   };
 }

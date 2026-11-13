@@ -17,3 +17,15 @@ export function syncMotorStrength(world) {
     stepper.holdingTorque = factor * stepper.machineHoldingTorque;
   }
 }
+
+// Multiple machines may have different ratings; do not present their multiplier
+// as a torque or imply that every motor has the same rating.
+export function motorHoldingTorqueLabel(world) {
+  const torques = world.query([StepperMotorComponent])
+    .map(id => world.getComponent(id, StepperMotorComponent).holdingTorque);
+  if (!torques.length) return '— Nm';
+  const min = Math.min(...torques);
+  const max = Math.max(...torques);
+  const format = value => Number(value.toPrecision(3)).toString();
+  return `${min === max ? format(min) : `${format(min)}–${format(max)}`} Nm`;
+}
