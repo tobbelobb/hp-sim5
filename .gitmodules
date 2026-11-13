@@ -4,7 +4,7 @@
   ignore = untracked
 [submodule "RRF/ReprapFirmware"]
 	path = RRF/ReprapFirmware
-	url = git@github.com:tobbelobb/ReprapFirmware
+	url = git@github.com:tobbelobb/RepRapFirmware.git
   branch = 3.7-x64
   ignore = untracked
 [submodule "RRF/CANlib"]
