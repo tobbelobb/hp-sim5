@@ -81,6 +81,11 @@ def test_real_open_close_does_not_publish_empty_session(live_repo):
     try:
         live=agent(repo,'--resume',prepared['id'],'--start-runtime')
         tool(repo,live['tool_connection'],'runtime_status')
+        failed=subprocess.run([sys.executable,str(repo/'scripts/research_tools.py'),'call',live['tool_connection'],
+                               'configure_session','--params',json.dumps({'configuration':{'machine':'invalid'}})],
+                              capture_output=True,text=True,timeout=100)
+        assert failed.returncode != 0
+        assert json.loads(failed.stdout)['isError'] is True
     finally:
         agent(repo,'--resume',prepared['id'],'--stop-runtime')
     assert not Path(prepared['session_dir']).exists()
