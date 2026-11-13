@@ -42,7 +42,7 @@ def main():
             print('Research world was reset; attaching to its fresh session.', file=sys.stderr)
         env = {**os.environ, 'HP_SIM5_RUNTIME_URL': config['runtime_endpoint'],
                'HP_SIM5_RUNTIME_TOKEN': config['runtime_token'],
-               'HP_SIM5_SESSION_DIR': str(descriptor.parent)}
+               'HP_SIM5_SESSION_DIR': config.get('artifact_dir', str(descriptor.parent))}
         command = ([str(ROOT / '.venv/bin/rerun'), 'viewer-mcp', '--endpoint', config['viewer_endpoint']]
                    if rerun else [sys.executable, str(ROOT / 'scripts/hp_sim5_mcp.py')])
         if rerun and not config['viewer_endpoint']:

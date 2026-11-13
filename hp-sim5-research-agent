@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-if [ ! -x "$repo_dir/.venv/bin/python" ]; then
-    echo 'Create .venv and install requirements.txt first. See research/README.md.' >&2
-    exit 1
+python="$repo_dir/.venv/bin/python"
+if [[ ! -x "$python" ]]; then
+    python=python3
 fi
-exec "$repo_dir/.venv/bin/python" "$repo_dir/scripts/research_agent.py" "$@"
+exec "$python" "$repo_dir/scripts/research_agent.py" "$@"

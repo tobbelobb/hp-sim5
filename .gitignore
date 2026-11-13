@@ -35,6 +35,8 @@ autocal/old_data
 !/.agents/skills/
 /.agents/skills/*
 !/.agents/skills/cloud-research-client/
+!/.agents/skills/research-program/
+!/.agents/skills/research-corpus/
 autocal/logo_work
 autocal/data/old_data/
 human_docs/old_debugging_conversations/
@@ -60,6 +62,7 @@ klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak
 public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak
 .codex
 /.research-programs*/
+/.research-state/
 experiments
 autocal/data/progressive_experiment/
 autocal/tests/test_progressive_fitting_experiment.py

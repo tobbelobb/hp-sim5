@@ -22,8 +22,7 @@ The [research architecture map](research/architecture.md) explains which tools
 own each world, how configuration reaches physics and what gets recorded.
 
 For a manager that delegates research and arranges review, see
-[Research Programs](human_docs/research-programs.md). The feature's code and two
-role prompts live in [`research-program-feature/`](research-program-feature/).
+[Research Programs](human_docs/research-programs.md). The implementation and short role prompts live in [`research-program/`](research-program/).
 
 Example usecases:
  - **Automate and Validate Hardware Design**

@@ -20,8 +20,8 @@ sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
 
 from hp_sim5_research.experiments import encode, write_json
-from hp_sim5_research.client_transport import client_adapter
 from hp_sim5_research.services import free_port, request, stop_process, wait_ready, register_test_process
+from hp_sim5_research.services import process_live
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.browser import BrowserConnection
 from hp_sim5_research.autocal_jobs import AutocalJobs
@@ -83,6 +83,7 @@ class Runtime:
         return digest.hexdigest()
 
     def spawn(self, name, command):
+        self.directory.mkdir(parents=True, exist_ok=True)
         log_path = self.directory / f'{name}.log'
         with log_path.open('a') as log:
             # Node restores inherited TTY modes on SIGTERM; resets must not touch Codex's TTY.
@@ -400,8 +401,6 @@ class Runtime:
         self.active_job = None
 
     async def dispatch(self, operation, args):
-        if operation in ('collect', 'start_collection', 'start_autocal', 'start_test'):
-            self._check_client_capacity(operation)
         if operation == 'preflight':
             if set(args) - {'expected_configuration'}:
                 raise ValueError('Supply only expected_configuration')
@@ -469,6 +468,7 @@ class Runtime:
                        'scene_generation': scene_generation, 'sim_step': step, 'sim_time_s': step * self.session.dt,
                        'timeline': 'sim_step', 'selected_entity': args.get('selected_entity'), 'message': message,
                        'recording': recording, 'observation': observation}
+            self.directory.mkdir(parents=True, exist_ok=True)
             with (self.directory / 'native-context.jsonl').open('a') as output:
                 output.write(encode(context) + '\n')
             return context
@@ -553,14 +553,6 @@ class Runtime:
             if operation != 'start_collection' or self.active_job is None:
                 self.busy = False
 
-    def _check_client_capacity(self, operation):
-        adapter = client_adapter()
-        if adapter:
-            active = [name for name, value in (('collection', self.active_job),
-                                               ('autocal', self.autocal.active),
-                                               ('test', self.tests.active)) if value]
-            adapter.check_jobs(operation, active)
-
     async def connection(self, reader, writer):
         task = asyncio.current_task()
         self.handlers.add(task)
@@ -622,11 +614,21 @@ async def main():
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, runtime.stop.set)
     server = None
+    async def watch_owner():
+        owner = json.loads(os.environ.get('HP_SIM5_RUNTIME_OWNER', 'null'))
+        while owner and not runtime.stop.is_set():
+            if not process_live(owner):
+                runtime.stop.set()
+                return
+            await asyncio.sleep(.2)
+    owner_watch = asyncio.create_task(watch_owner())
     try:
         server = await asyncio.start_server(runtime.connection, '127.0.0.1', urlparse(runtime.endpoint).port)
         async with server:
             await runtime.stop.wait()
     finally:
+        owner_watch.cancel()
+        await asyncio.gather(owner_watch, return_exceptions=True)
         if server is not None:
             server.close()
         await runtime.autocal.close()

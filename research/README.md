@@ -1,375 +1,90 @@
-# Hangprinter research with Codex or Claude Code
+# Hangprinter research tools
 
-`hp-sim5-research-agent --codex` or `hp-sim5-research-agent --claude` opens an interactive conversation with
-native experiment tools and an assigned Rerun Viewer. Conversation, steering,
-interrupts and resume belong to Codex. Goal mode works with both backends. The launcher owns the continuing
-physics world, real RRF planner, production collector bridge, optional browser
-service and requested browser recorder for the lifetime of the session.
+Use hp-sim5's native physics, production firmware/collector, autocalibration, and
+Rerun evidence from an ordinary coding conversation. The runtime starts with no
+physics world; configure_session creates one when the researcher needs it.
 
-Start with the [execution architecture map](architecture.md) for ownership,
-configuration flow and recording scope across the five research workflows.
-This README contains the operating instructions and tool arguments.
-
-For a manager above this worker, see the
-[program guide](../human_docs/research-programs.md).
+The [research-program guide](../research-program/README.md) describes programs,
+parallel researchers, private runtime state, explicit resume, and worktrees.
+The [architecture map](architecture.md) explains physics and recording ownership.
 
 ## Setup and interactive use
 
-### Setup
-
-From the repository root:
-
 ```bash
 .venv/bin/python -m pip install -r requirements.txt
-npm run build:native               # Rust and C compiler; Node-API headers are bundled
-codex login                       # choose ChatGPT
-./hp-sim5-research-agent --codex
-./hp-sim5-research-agent --codex --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
-./hp-sim5-research-agent --codex --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
-./hp-sim5-research-agent --codex --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
-./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
+npm run build:native
+codex login                            # or: claude auth login
+./hp-sim5-research-agent --codex --prompt 'Investigate calibration reliability'
+./hp-sim5-research-agent --claude --worktree --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --resume INVESTIGATION_ID
 ```
 
-Choose exactly one of `--codex` and `--claude`; omitting both exits with a usage
-error, including for diagnostics and service mode. Claude Code must be installed
-and authenticated (`claude auth login`, or an explicitly exported
-`ANTHROPIC_API_KEY`). The launcher does not read Claude API keys from `.env`, so
-a repository key cannot silently switch an account login to API billing. For
-API-key billing, export the key in the shell before launching. For example:
+The launcher opens the selected ordinary client and owns its private tools until
+exit. Ctrl-C interrupts an interactive client turn; explicitly cancel experiment
+jobs to stop them. Goal mode is enabled by default; use --no-goal-mode to disable it.
+Use --dont-ask to disable structured clarification questions. Forward additional
+client flags after --. --model works with either backend; --model-provider is
+Codex-only. Authentication uses existing client credentials. OpenAI API keys are
+removed for the default ChatGPT sign-in route. Claude never loads an API key from
+the repository .env; explicitly exported keys retain normal CLI billing behaviour.
+
+--resume reuses the investigation's artifact directory. With no value it reopens
+the last investigation on this host. Backend conversation IDs are separate: Claude
+and batch Codex retain them; interactive Codex offers its native picker when no ID
+is bound. Use --resume DIRECTORY --conversation CLIENT_ID to bind an old conversation.
+The previous live physics state is not restored after shutdown. Existing evidence
+is retained and a new world generation records its own provenance.
+
+Opening and closing a client writes only ignored .research-state metadata and logs.
+No placeholder abstract, empty evidence directory, or catalog entry is published.
+Reports and original experiment evidence go into the assigned stable artifact path.
+For corpus discovery and publishing, use the
+[research-corpus skill](../.agents/skills/research-corpus/SKILL.md).
+
+--worktree creates a checkout from the current commit, links ignored dependencies,
+and keeps tracked research as ordinary files. New evidence belongs to that worktree.
+Resume returns to it. For a T3-managed child, let T3 create its workspace and use
+--resume INVESTIGATION_ID --workspace to bind the prepared handoff. Do not create
+an additional worktree inside that child.
+
+## Tools in an existing T3 or hosted conversation
+
+No nested client is needed. Prepare an investigation and start tools when useful:
 
 ```bash
-./hp-sim5-research-agent --claude --prompt "Investigate HP3 calibration evidence."
-./hp-sim5-research-agent --claude --batch --model haiku --viewer none --prompt "Describe the attached tools." -- --max-budget-usd 0.02
+./hp-sim5-research-agent --prompt 'Investigate the observed failure'
+./hp-sim5-research-agent --resume INVESTIGATION_ID --start-runtime
+.venv/bin/python scripts/research_tools.py list TOOL_CONNECTION
+.venv/bin/python scripts/research_tools.py call TOOL_CONNECTION configure_session --params '{"configuration":{"machine":"hp3"}}'
+.venv/bin/python scripts/research_tools.py call TOOL_CONNECTION runtime_status
+./hp-sim5-research-agent --resume INVESTIGATION_ID --stop-runtime
 ```
 
-Arguments after `--` go unchanged to the selected CLI, including its resume
-options. To resume a Claude conversation while starting a fresh supervised
-research world, use `./hp-sim5-research-agent --claude -- --resume SESSION_ID`.
-The previous session's artifacts remain in its session directory; the physics
-world itself is not resumed. `--model` works with either backend; `--model-provider` is Codex-only.
-Claude receives root AGENTS.md and the explicit RESEARCHER.md role and loads
-only the session MCP servers from `attachment.json`. `instructions.md` records
-the supplied instructions. Both MCP servers use the supervised connection
-file, and their tools are allowed through Claude's permission checks. Other
-permissions follow Claude's local configuration; the Codex filesystem sandbox
-settings do not apply to Claude. `--dont-ask` disables Claude's AskUserQuestion
-tool. Goal mode is on by default for both backends: Codex `features.goals`, or
-Claude `modelProposedGoals` set to `auto` or `disabled`. `--no-goal-mode` turns off
-Codex's `features.goals` and stops Claude from proposing goals. A typed `/goal`
-still works in Claude, so the user can add goal mode manually later.
-`--goal-mode` enables it explicitly. Sidebar hooks and Codex structured questions are Codex features.
-Batch mode saves raw `events.jsonl` and extracts Claude's result into
-`final-message.md`; a Claude error result makes the launcher fail. Both backends
-share service lifetime, interruption handling and research artifact paths.
-`--serve` prints `attachment.json` for Claude or `attachment.toml` for Codex.
-See the official [Claude CLI reference](https://code.claude.com/docs/en/cli-reference)
-and [MCP configuration guide](https://code.claude.com/docs/en/mcp).
+TOOL_CONNECTION is the returned tool_connection path. File calls expose the real
+MCP tools without requiring command sockets. Each researcher owns its own runtime.
+Add --viewer headless or --viewer window when recording inspection is useful;
+--no-record skips Rerun logging. --serve keeps tools in the foreground instead of
+starting a detached supervisor. Stop detached tools explicitly before finishing;
+platform cancellation alone does not confirm service shutdown.
 
-The launcher checks the native Rust physics build before starting services and
-runs `npm run build:native` automatically when it is stale or missing, printing
-`Native Rust physics build is stale, recompiling`. A failed build stops startup.
-
-Continuing collection defaults to the production native Rust physics engine in
-headless Node, with the same fixed steps, forces, motors, encoders and cables
-as the browser. JavaScript handles scene preparation, commands and observations.
-See the [native host implementation](rust-native-engine.md) and the earlier
-[Wasm engine measurements](rust-wasm-engine.md). The launcher starts without a
-world; `configure_session` builds one for a machine from
-[`machines/catalog.json`](../machines/catalog.json). Use `--viewer none --no-record` for
-numerical batches without Rerun logging. Fresh `run_experiment` trials and
-continuing sessions use the same native Rust engine hosted in Node. See
-[measured collection performance](collection-performance.md).
-
-The terminal goes directly to Codex. Continue talking and steering in that same
-conversation; services remain alive between turns. Background services have
-closed input and separate process groups, so collection cancellation or session
-reset cannot restore Codex's terminal modes or consume its keys. Ctrl-C interrupts a Codex
-turn without shutting down the supervisor. It does **not** cancel an experiment
-job: call `cancel_collection` or `cancel_autocal` and inspect its stopped boundary. Exit Codex to
-stop owned services. Use `/goal` for autonomous continuation with a measurable
-outcome and explicit experiment, movement and compute limits. See the official
-[interactive CLI reference](https://learn.chatgpt.com/docs/developer-commands)
-and [Goal mode documentation](https://learn.chatgpt.com/docs/long-running-work).
-
-Put normal Codex arguments after `--`; the launcher forwards them unchanged:
-
-```bash
-./hp-sim5-research-agent --codex -- --model MODEL --no-alt-screen
-./hp-sim5-research-agent --codex -- --image output/example.png
-./hp-sim5-research-agent --codex -- resume --last
-```
-
-Structured clarification questions are enabled by default during interactive
-research, including Default mode. Codex can present short questions with answer
-choices and free-text input when your answer would materially improve the work.
-Use `--dont-ask` before the argument separator to disable these Default-mode
-question prompts:
-
-```bash
-./hp-sim5-research-agent --codex --dont-ask --prompt-file research/prompts/autocal.txt
-```
-
-The underlying Codex feature is `default_mode_request_user_input`. You can also
-enable it explicitly with a forwarded Codex option:
-
-```bash
-./hp-sim5-research-agent --codex -- --enable default_mode_request_user_input
-```
-
-Forwarded Codex options can override launcher defaults. Codex 0.160.1 labels
-this feature “under development”. Batch mode disables it because `codex exec`
-does not support interactive answers. The desktop `attachment.toml` includes
-the selected feature setting too; merge its networking and `[features]` sections
-as well as the MCP sections when attaching a desktop chat.
-
-Codex already supplies generic instructions for `request_user_input`: use it
-when available for optional questions whose answers materially improve the work,
-and continue with best judgment if no answer is returned. Comparing
-`codex debug prompt-input` with the feature off and on in 0.160.1 showed identical
-Default-mode instructions. The feature enables the tool; it does not add a
-research-specific policy for when to ask. No extra questioning instructions in
-`AGENTS.md` are needed for the basic behavior. Disabling the feature does not
-prohibit questions in ordinary conversation or change action-approval settings.
-
-Resume preserves the Codex conversation and experiment history, but this CLI
-invocation starts a **new runtime without a world**; `configure_session` builds
-one. It states this in the session instructions. Final snapshots are observations, not resumable checkpoints.
-To retain a world across clients, use the service-only route below while its
-supervisor remains alive. Use a separate worktree and supervisor for each
-independent research chat; do not forward `--cd` or `--worktree` to move the
-conversation away from its attached tools.
-
-### Research in a Git worktree
-
-`--worktree` creates a fresh worktree and runs the whole session from it, so
-`ROOT`, `--cd`, the MCP `cwd`, the sandbox and the session artifacts all follow
-the worktree instead of the original checkout:
-
-```bash
-./hp-sim5-research-agent --codex --worktree --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
-```
-
-It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
-links the shared runtime pieces a bare checkout lacks (`.venv`, `.env`,
-`node_modules`, `RRF/build`, `output/`, `research/output/` and the compiled native physics addon).
-The shared links replace the fresh checkout's tracked output files,
-make prior local research available and keep new session artifacts in the
-main checkout, including when launching from another worktree. Codex also gets
-sandbox write access to the shared output directories. It copies any additional
-repository paths listed in `.worktreeinclude` (when present) into the new
-worktree. It then re-executes the
-worktree's own launcher. The default
-parent directory is a sibling named `<repo>-worktrees`; override it with
-`--worktree-dir`. The shared addon is only a starting build: each worktree has
-local build metadata and build output, so rebuilding its native physics does
-not change another worktree. Each launched supervisor owns its own physics
-process; new session artifacts are stored in shared `research/output/`. The branch
-name derives from `--name`, otherwise from the prompt's first line, otherwise
-`research`. `.worktreeinclude` accepts comments, plain relative paths and
-simple globs; missing entries are ignored.
-
-The worktree checks out committed `HEAD`, so commit launcher or tool changes
-before using `--worktree`; uncommitted edits in the original checkout are not
-carried over. `--worktree` is a launcher option (before `--`); forwarding
-`--worktree` to Codex after `--` is not the same thing and is still unsupported.
-
-### Recover an interrupted conversation
-
-If `codex resume` says “This conversation is open in another app”, the transcript
-has loaded but another client owns the conversation. Close that conversation in
-the other Codex client and press `r` to retry. If the desktop app retains it,
-quit the app before retrying. An idle conversation can still be open in a client.
-Use the exact conversation ID rather than `--last`, which can select an unrelated
-chat. After releasing the other client, resume with fresh supervised tools:
-
-```bash
-./hp-sim5-research-agent --codex -- resume CONVERSATION_ID
-```
-
-Read the previous session's `report.md`, experiment manifests and current Git
-diff before continuing. The new session has a new artifact directory and world;
-link the previous evidence in its report. A cancelled collection cannot
-continue from its final snapshot or partial-point journal. Keep that evidence
-and start a new collection when needed. A live service-only supervisor can be
-reattached through its existing `attachment.toml` instead.
-
-The terminal's `f` shortcut offers a fork if the other client cannot be closed.
-That creates a separate conversation with copied history; it does not restore
-physics or release the original client's tool attachment. See the official
-[resume and fork commands](https://learn.chatgpt.com/docs/developer-commands).
-
-### Keep research conversations together
-
-Use an **Autonomous research** custom sidebar section in the desktop app for
-research runs and validation conversations. A section organizes existing chats
-without changing their working directories or tool attachments. It is distinct
-from ChatGPT project membership: the CLI uses its working directory as its local
-project and does not expose the ChatGPT Projects view. See
-[Projects and chats](https://learn.chatgpt.com/docs/projects).
-
-Categorization uses a `UserPromptSubmit` MCP lifecycle hook, outside the model's
-instructions. It passes the exact `${session_id}` from the lifecycle event to
-`codex_app.move_thread_to_sidebar_section`. Select an existing section with
-`--sidebar-section SECTION_UUID`, or save `{"section_id":"SECTION_UUID"}` in
-the ignored local file `research/output/sidebar.json`. Use `--sidebar-section none`
-to disable it. The launcher includes the hook in its Codex configuration and the
-desktop `attachment.toml`; merge that hook only into a dedicated research
-worktree's configuration when using desktop attachment.
-
-For CLI sessions, the launcher checks `codex mcp list --json` and skips its
-sidebar hook with a startup notice when `codex_app` is absent or disabled.
-The bundled app-tools server is disabled by default and requires a
-desktop-provided `CODEX_APP_TOOLS_PIPE_PATH`; enabling it alone in a terminal
-does not establish that connection. Use `--sidebar-section none` to suppress
-the startup notice when you do not need categorization. Service-only mode keeps
-the hook in `attachment.toml` for the desktop client's configuration.
-
-Codex requires reviewing and trusting the hook with `/hooks` before it runs.
-The connected `codex_app` MCP server must expose the sidebar tool. An enabled
-server can still fail to connect or lack the tool; those errors and
-disabled/untrusted hooks leave categorization unavailable without blocking
-research. This does not launch the desktop app or assign ChatGPT project
-membership. See the official
-[MCP lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
-
-The launcher defaults to the existing Codex ChatGPT login: it selects the OpenAI
-provider, makes no OpenAI API calls, and removes `OPENAI_API_KEY` and
-`CODEX_API_KEY` from its Codex child. ChatGPT plan limits apply. `--model-provider`
-and `--model` select another configured provider and model, and forwarded Codex
-`-c model_provider=... -m ...` arguments are detected too:
-
-```bash
-./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash
-./hp-sim5-research-agent --codex -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
-```
-
-When the selected provider declares an `env_key` in the Codex configuration, the
-launcher fills a missing variable from the Git-ignored repository `.env` before
-starting Codex. It reads only that provider's variable, leaves the surrounding
-environment unchanged, and never writes the value to prompts, launch metadata or
-logs. Such providers do not need the `codex login` step above. The launcher's
-defaults are `workspace-write`, `approval_policy="never"` and
-`sandbox_workspace_write.network_access=true`; normal Codex options can override
-them. Service
-startup leaves physics at step zero and never selects experiments or runs doctor.
-Default Viewer mode is `--viewer headless`; use `--viewer window` for a desktop
-window or `--viewer none` for numerical research. Headless Rerun still requires
-a graphics backend. Failed Viewer startup names its log and suggests numeric mode.
-
-The CLI warning “Running without the shared background server … requires
-embedded mode” is expected. Per-session `-c` overrides attach the experiment
-tools and instructions, so Codex runs its backend inside the CLI process instead
-of using the shared daemon. This still uses the normal Codex conversation and the
-configured login. It does not refer to embedding the Rerun Viewer. Provider and
-model selection apply to launcher sessions; a desktop client selects its own
-provider in its client configuration.
-
-## Desktop attachment
-
-Start a supervisor in a dedicated worktree and keep its terminal open:
-
-```bash
-./hp-sim5-research-agent --codex --serve --session-dir research/output/session-my-chat
-```
-
-The directory must be new. The launcher prints the path to `attachment.toml`.
-Copy its sandbox networking, feature and MCP sections into that trusted
-worktree's `.codex/config.toml`, merging with existing settings, then open or
-restart the Codex desktop chat in that
-worktree. This is project configuration shared by local Codex clients; see the
-[official MCP documentation](https://learn.chatgpt.com/docs/extend/mcp).
-The launcher never changes global or project configuration automatically.
-
-`research_attach.py` resolves the selected private `connection.json`, verifies
-that its supervisor is live and belongs to this worktree, and supplies credentials
-to the MCP child. Credentials are excluded from launch metadata, tool results
-and the configuration snippet. One native MCP attachment holds an exclusive
-lease: a second chat gets an explicit error instead of sharing mutable physics.
-The same chat can reconnect after its MCP connection closes. A coordinated
-reset reports a fresh world identity; an ended supervisor fails attachment
-and requires a new service session. Bare registration of `hp_sim5_mcp.py` only
-supports fresh numerical trials, not continuing-world tools.
-
-The launcher supplies [RESEARCHER.md](../research-program-feature/role-instructions/RESEARCHER.md)
-explicitly to research clients. MCP initialization supplies tool usage only.
-For a desktop chat intended to act as a researcher, load that role file explicitly.
-Keep one report.md with evidence links, a one-sentence abstract.md, and optional
-working notes in scratchbook/.
-
-## Finding previous research
-
-`research/prompts/` contains reusable research questions. Program role
-instructions and implementation live in [`research-program-feature/`](../research-program-feature/).
-Keep new working notes inside the assigned session's `scratchbook/` directory.
-
-Open the [research topic guide](catalog.md) for the main investigations and
-the local [session catalog](output/index.md) for one result sentence and a
-report link per session. The catalog includes standalone `session-*` directories
-and `program-*/session-*` researcher sessions. Search it with `--root
-research/output`. It reads `abstract.md`, so searching it does not require
-reading long reports or raw telemetry:
-
-```bash
-.venv/bin/python scripts/research_index.py
-.venv/bin/python scripts/research_index.py --search "winding"
-```
-
-The same run writes `output/topics.md`, one hub per topic shared by two or more
-sessions. Browse both, plus your own notes, in Obsidian: see
-[Using Obsidian with research output](../human_docs/obsidian.md).
-
-For worktree/session turnover, use the [portable handoff procedure](handoffs.md):
-`scripts/research_handoff.py export` copies explicitly selected evidence with
-hashes and relative references; `show` verifies a relocated bundle and `job`
-reads historical `job.json` outcomes without a running supervisor. A saved
-`running` observation does not establish current liveness, and CLI acceptance
-does not establish calibration accuracy.
-
-New default directories live directly under `research/output/` and use
-`session-YYYY-MM-DD-topic-unique-suffix`, with a UTC date. The topic comes
-from `--name` or the first prompt line. Use `--name` for a short, specific topic;
-interactive sessions without an initial prompt start as `interactive-research`.
-`--session-dir` still selects an exact new directory. Runtime world IDs and
-experiment IDs remain independent of these names.
-
-Each researcher maintains a one-sentence abstract.md using the
-[abstract template](abstract-template.md). Detailed findings and evidence belong
-in report.md. The launcher creates a pending abstract and refreshes the single
-catalog at startup and exit. Launcher bookkeeping and transcripts stay ignored;
-keep useful reports and original evidence in Git.
-
-Older hash paths contain absolute references in reports, manifests, attachment
-configuration and conversation history. Descriptive directory aliases let readers
-browse those sessions without moving the evidence. The catalog lists each
-physical session once and prefers its descriptive alias. Keep both paths stable
-while a supervisor is running. New reports and original evidence under
-`research/output/` can be committed.
+See [platforms.md](../research-program/platforms.md) for cloud setup and socket
+constraints. Large recordings must reach durable storage before a cloud workspace
+is disposed. The plain program and corpus remain portable without live credentials.
 
 ## Batch mode and diagnostics
 
 ```bash
 ./hp-sim5-research-agent --codex --batch --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --codex --dry-run --prompt "Optimize the HP4 anchor layout"
+./hp-sim5-research-agent --codex --dry-run --prompt 'Inspect the tools'
 ./hp-sim5-research-agent --codex --doctor
-./hp-sim5-research-agent --codex --preflight
+./hp-sim5-research-agent --preflight
 ```
 
-Batch mode retains `codex exec`, prompt input, JSONL events and the separate
-`final-message.md`. Interactive transcripts stay in Codex's own conversation
-store. Both routes keep `prompt.txt`, `launch.json`, the research record/report,
-service logs and `exit.json` in their session directory. Private attachment
-credentials live in mode-600 `connection.json`. Default directories are under
-`research/output/session-*`; fresh trials stay in each session's `experiments/`,
-loose trials use `research/output/scratch/experiments/`,
-and continuing collection evidence is under each session's `native/` directory.
-Reports and evidence can be committed with ordinary Git; live connection files
-are ignored. The explicit doctor checks dependencies/login/Viewer
-MCP and performs real RRF/native HP3 collection with autocal validation.
-It does not establish calibration accuracy or model
-access. See [collection evidence](native-collection-verification.md).
+Batch client events, prompts, final messages, and exit observations stay in private
+launcher state. --dry-run creates no files. --doctor explicitly checks dependencies,
+client authentication, and real physical collection; --preflight performs bounded
+non-moving tool checks. Neither establishes scientific success. Read the returned
+tool schema for the precise units, configuration, and supported operations.
 
 ## Experiment tools
 

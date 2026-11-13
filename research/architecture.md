@@ -1,13 +1,13 @@
 # Research execution architecture
 
-Checked against `30e91632` on 2026-10-12. This page maps the implemented
+Updated for platform-owned programs on 2026-11-13. This page maps the implemented
 ownership, configuration and recording contracts. Update it when those contracts
 change. The [research README](README.md) contains commands and tool arguments;
-[research instructions](AGENTS.md) describe how to conduct and report experiments.
+[corpus skill](../.agents/skills/research-corpus/SKILL.md) describes research records and publishing.
 
 The [Research Program](../human_docs/research-programs.md) places a manager
 above this worker layer. Its implementation is in
-[`research-program-feature/`](../research-program-feature/).
+[`research-program/`](../research-program/).
 
 ## Who owns execution
 
@@ -20,13 +20,13 @@ come from experiment telemetry and backend observations.
 ```mermaid
 flowchart TD
     human[Human question and steering] --> manager[Manager coding chat]
-    manager --> controller[Program CLI and retained host]
-    controller --> memory[SQLite program and evidence graph]
-    controller --> launcher[Existing hp-sim5-research-agent]
-    launcher --> chat[Research worker]
-    controller --> review[Separate fixed-evidence reviewer]
-    review --> controller
-    controller --> integration[Combined candidate and relevant checks]
+    manager --> agenda[Program question and living agenda]
+    manager --> platform[Platform-owned agents and workspaces]
+    platform --> chat[Research worker]
+    chat --> launcher[Optional private runtime]
+    manager --> review[Fresh fixed-evidence reviewer]
+    review --> manager
+    manager --> integration[Ordinary Git workflow and final candidate checks]
     chat --> tools[hp-sim5 MCP tools]
     tools --> fresh[Fresh trial with native Rust worker]
     tools --> supervisor[Launcher-owned supervisor]
@@ -100,12 +100,12 @@ configuration contracts interchangeable.
 ## Recording scope and identity
 
 Let `S` be the launcher-assigned session directory. Its default location is
-`research/output/session-<session-name>/`. Fresh trial artifacts have their own
-repository-level directory. Always use paths returned by tools and manifests.
+`research/output/session-<session-name>/`. Attached fresh trials use this investigation's experiments/ directory; unattached trials use scratch storage. Launcher metadata
+and logs stay under ignored .research-state/, outside the corpus. Always use paths returned by tools and manifests.
 
 | Workflow | Evidence location | Recording scope and sampling |
 | --- | --- | --- |
-| Fresh trial | `research/output/scratch/experiments/<run_id>/` | Frozen scene/commands, manifest, final snapshot and JSON telemetry at step zero and every update. Optional RRD records physics updates with the native blueprint. |
+| Fresh trial | `S/experiments/<run_id>/` when attached; otherwise scratch | Frozen scene/commands, manifest, final snapshot and JSON telemetry at step zero and every update. Optional RRD records physics updates with the native blueprint. |
 | Continuing collection | `S/native/<world_id>/<collection_job_id>/` | Each recorded collection finalizes its own RRD while the world continues. Observations are sampled at 10 simulated Hz and at encoder reads. Dataset, point journal, events and manifests retain roles, settings and step bounds. World inputs live in the parent generation directory. |
 | Full-autocal | `S/native/autocal/<job_id>/` by default | CLI logs, datasets, stage artifacts and `sweeps.headless/` command/encoder traces and manifests. `recording_mode` defaults to `events` (one RRD without physics); `none` skips RRD, `sampled` adds physics at stride 100, and `full` retains stride 10. Physics uses compact geometry; events span scene resets. |
 | Browser | `S/native/browser-recordings/` | Receiver writes separate recordings for page session/scene generations. Ordinary recording defaults to every physics step; extended recording defaults to stride 10. `browser_status` lists exact files, recording IDs and finalized bounds. |

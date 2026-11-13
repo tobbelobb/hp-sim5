@@ -19,11 +19,6 @@ def session_name(topic):
     return f'{date}-{slug}-{uuid.uuid4().hex[:8]}'
 
 
-def initial_abstract(topic):
-    title = ' '.join(topic.split())[:120]
-    return f'# {title}\n\nNo research result is available yet.\n\n[Full report](report.md)\n'
-
-
 def catalog_root(root):
     root = Path(root)
     if root.name == 'sessions' and root.parent.name == 'research':
@@ -49,13 +44,15 @@ def catalog_entries(root):
         if resolved in seen:
             continue
         seen.add(resolved)
-        if not any((directory / name).is_file() for name in
-                   ('abstract.md', 'report.md', 'research.md', 'prompt.txt', 'launch.json', 'exit.json')):
+        if not any((directory / name).is_file() for name in ('abstract.md', 'report.md', 'research.md')):
             continue
         abstract = directory / 'abstract.md'
         summary = (abstract.read_text() if abstract.is_file() else
                    f'# {directory.name}\n\nStatus: abstract missing. '
                    'Consult the original artifacts; tested hypotheses have not been cataloged.\n')
+        if 'No research result is available yet.' in summary and not any(
+                (directory / name).is_file() for name in ('report.md', 'research.md')):
+            continue
         yield directory, summary
 
 

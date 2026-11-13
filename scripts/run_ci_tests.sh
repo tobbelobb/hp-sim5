@@ -28,7 +28,7 @@ echo "== Python unit tests (autocal) =="
 
 echo ""
 echo "== Python research, service and integration tests =="
-(cd "$ROOT" && .venv/bin/python -m pytest tests/python .agents/skills/cloud-research-client/tests)
+(cd "$ROOT" && .venv/bin/python -m pytest tests/python research-program/tests)
 
 echo ""
 echo "== Python slow integration tests (simulators, recorders, MCP, hosts) =="

@@ -42,9 +42,7 @@ def repo_path(root, value):
 def run_directory(root, run_id):
     if not re.fullmatch(r'[0-9a-f]{32}', run_id):
         raise ValueError('Use the run_id returned by run_experiment')
-    # Launcher worktrees deliberately share output with the original checkout.
-    # Inputs stay inside the worktree; run IDs stay inside its approved output.
-    # A launcher session owns its experiments; loose runs use shared scratch.
+    # Attached runs belong to the stable investigation; loose trials use scratch.
     session = os.environ.get('HP_SIM5_SESSION_DIR')
     base = Path(session) if session else Path(root) / 'research/output/scratch'
     output = (base / 'experiments').resolve()

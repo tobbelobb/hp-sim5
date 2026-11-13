@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import tomllib
 
-from .client_transport import client_adapter, research_client
 
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
@@ -74,9 +73,6 @@ def dotenv_values(path):
 def codex_environment(provider=CHATGPT_SIGN_IN, *, root, env_file):
     # ChatGPT sign-in needs no OpenAI key. A selected API provider gets its configured
     # env_key from the Git-ignored .env when the caller has not already exported it.
-    adapter = client_adapter()
-    if adapter:
-        return adapter.codex_environment(provider=provider, root=root, env_file=env_file)
     environment = {key: value for key, value in os.environ.items() if key not in STRIPPED_KEYS}
     variable = provider_env_key(provider, root=root)
     if variable and not environment.get(variable):
@@ -111,11 +107,13 @@ def disabled_research_mcp_settings(root):
             'mcp_servers.rerun': {'enabled': False, 'command': str(root / '.venv/bin/rerun'),
                                   'args': ['viewer-mcp']},
             'mcp_servers.hp_sim5_program': {'enabled': False, 'command': str(root / '.venv/bin/python'),
-                                            'args': [str(root / 'research-program-feature/scripts/research_program.py')]}}
+                                            'args': [str(root / 'research-program/cli.py')]}}
 
 
 def writable_roots(root, session):
-    roots = [(root / 'output').resolve(), (root / 'research/output').resolve()]
+    from .workspace import common_root
+    roots = [(root / 'output').resolve(), (root / 'research/output').resolve(),
+             common_root(root) / '.research-state']
     session = session.resolve()
     if not any(session.is_relative_to(item) for item in roots):
         roots.append(session)
@@ -125,35 +123,28 @@ def writable_roots(root, session):
 def codex_command(root, session, *, batch=False, dont_ask=False, goal_mode=False,
                   codex_args=(), instructions='', model_provider=CHATGPT_SIGN_IN,
                   model=None, settings=None, sandbox='workspace-write'):
-    adapter = client_adapter()
-    if adapter:
-        return adapter.codex_command(root, session, batch=batch, model=model,
-                                     model_provider=model_provider, codex_args=codex_args, sandbox=sandbox)
-    command = ['codex'] + (['exec'] if batch else [])
+    command = ['codex', 'exec'] if batch else ['codex']
     command += ['--cd', str(root), '--sandbox', sandbox, '-c', 'approval_policy="never"']
-    if batch:
-        command += ['--json', '--output-last-message', str(session / 'final-message.md')]
     options = {'sandbox_workspace_write.network_access': True,
                'sandbox_workspace_write.writable_roots': writable_roots(root, session),
                'features.default_mode_request_user_input': not (dont_ask or batch),
                'features.goals': goal_mode}
     options.update(settings or {})
-    if model_provider:
+    if model_provider and 'model_provider' not in forwarded_settings(codex_args)[0]:
         options['model_provider'] = model_provider
     for key, value in options.items():
         command += ['-c', f'{key}={toml_literal(value)}']
-    if model:
+    if model and not forwarded_settings(codex_args)[1]:
         command += ['--model', model]
     if instructions:
         command += ['-c', f'developer_instructions={json.dumps(instructions)}']
-    return command + list(codex_args) + (['-'] if batch else [])
+    if batch:
+        return command + list(codex_args) + ['--json', '--output-last-message', str(session / 'final-message.md'), '-']
+    return command + list(codex_args)
 
 
 def claude_command(session, *, batch=False, dont_ask=False, goal_mode=False,
                    codex_args=(), model=None, allowed_tools='mcp__hp_sim5,mcp__rerun', **_):
-    adapter = client_adapter()
-    if adapter:
-        return adapter.claude_command(session)
     command = ['claude', '--mcp-config', str(session / 'attachment.json'), '--strict-mcp-config',
                '--append-system-prompt-file', str(session / 'instructions.md'),
                '--allowedTools', allowed_tools,

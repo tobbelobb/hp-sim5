@@ -1,6 +1,6 @@
 import re
 
-from hp_sim5_research.archive import catalog_entries, initial_abstract, render_index, render_topics, session_name, write_index
+from hp_sim5_research.archive import catalog_entries, render_index, render_topics, session_name, write_index
 
 
 def test_session_names_are_descriptive_safe_and_unique():
@@ -39,7 +39,7 @@ def test_catalog_deduplicates_aliases_and_keeps_evidence_links(tmp_path):
 def test_pending_and_legacy_sessions_do_not_claim_completed_research(tmp_path):
     pending = tmp_path / 'pending'
     pending.mkdir()
-    (pending / 'abstract.md').write_text(initial_abstract('HP3 candidate ranking'))
+    (pending / 'abstract.md').write_text('# HP3 candidate ranking\n\nNo research result is available yet.\n')
     legacy = tmp_path / 'legacy'
     legacy.mkdir()
     (legacy / 'exit.json').write_text('{"returncode": 0}')
@@ -47,8 +47,8 @@ def test_pending_and_legacy_sessions_do_not_claim_completed_research(tmp_path):
     unrelated.mkdir()
     (unrelated / 'telemetry.jsonl').write_text('{}')
     index = render_index(tmp_path)
-    assert 'No research result is available yet' in index
-    assert 'No result summary available' in index
+    assert 'No research result is available yet' not in index
+    assert 'No result summary available' not in index
     assert 'Tested hypotheses' not in index
     assert '[experiments]' not in index
 

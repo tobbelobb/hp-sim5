@@ -19,6 +19,27 @@ def free_port():
         return listener.getsockname()[1]
 
 
+def process_identity(pid):
+    """Linux birth identity prevents a recycled PID from identifying an old owner."""
+    try:
+        stat = Path(f'/proc/{pid}/stat').read_text().split(') ')[1].split()
+        return {'pid': pid, 'birth': stat[19]}
+    except FileNotFoundError:
+        return None
+
+
+def process_live(identity):
+    if not identity:
+        return False
+    current = process_identity(identity['pid'])
+    if current != identity:
+        return False
+    try:
+        return Path(f'/proc/{identity["pid"]}/stat').read_text().split(') ')[1].split()[0] != 'Z'
+    except FileNotFoundError:
+        return False
+
+
 def register_test_process(process):
     """Record detached test-owned groups so cancellation can also retire services."""
     registry = os.environ.get('HP_SIM5_TEST_PROCESS_REGISTRY')
@@ -79,10 +100,11 @@ def wait_ready(process, endpoint, operation, log, *, token='', timeout=30):
 
 
 class RuntimeService:
-    def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True):
+    def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True, log_directory=None):
         self.root = Path(root)
         self.directory = Path(directory).resolve()
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self.log_directory = Path(log_directory) if log_directory else self.directory
+        self.log_directory.mkdir(parents=True, exist_ok=True)
         self.token = secrets.token_hex(32)
         self.endpoint = f'http://127.0.0.1:{free_port()}'
         self.process = None
@@ -91,15 +113,16 @@ class RuntimeService:
         self.record = record
 
     def start(self):
-        log_path = self.directory / 'runtime.log'
+        log_path = self.log_directory / 'runtime.log'
         with log_path.open('w') as log:
             self.process = subprocess.Popen(
                 [sys.executable, str(self.root / 'scripts/research_runtime.py'), self.endpoint, str(self.directory)],
                 cwd=self.root, env={**os.environ, 'HP_SIM5_RUNTIME_TOKEN': self.token,
                                     'HP_SIM5_PHYSICS_BACKEND': self.backend,
                                     'HP_SIM5_RECORD': '1' if self.record else '0',
+                                    'HP_SIM5_RUNTIME_OWNER': json.dumps(process_identity(os.getpid())),
                                     'HP_SIM5_VIEWER_URL': self.viewer_endpoint or '',
-                                    'MPLCONFIGDIR': str(self.directory / 'matplotlib')},
+                                    'MPLCONFIGDIR': str(self.log_directory / 'matplotlib')},
                 stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
         register_test_process(self.process)
         try:

@@ -1,24 +1,3 @@
 #!/usr/bin/env bash
-# Source this file in each shell; exported settings do not survive new tasks.
-export HP_SIM5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-export HP_SIM5_CLOUD_TOOLS="${HP_SIM5_CLOUD_TOOLS:-/workspace/.tools}"
-export HP_SIM5_CLOUD_CACHE="${HP_SIM5_CLOUD_CACHE:-/workspace/.cache}"
-
-export CARGO_HOME="${CARGO_HOME:-$HP_SIM5_CLOUD_TOOLS/cargo}"
-export RUSTUP_HOME="${RUSTUP_HOME:-$HP_SIM5_CLOUD_TOOLS/rustup}"
-export PATH="$HP_SIM5_CLOUD_TOOLS/node/current/bin:$CARGO_HOME/bin:$HP_SIM5_ROOT/.venv/bin:$HP_SIM5_CLOUD_TOOLS/playwright-cli/node_modules/.bin:$PATH"
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HP_SIM5_CLOUD_CACHE}"
-export MPLCONFIGDIR="${MPLCONFIGDIR:-$HP_SIM5_CLOUD_CACHE/matplotlib}"
-export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$HP_SIM5_CLOUD_CACHE/pip}"
-export npm_config_cache="${npm_config_cache:-$HP_SIM5_CLOUD_CACHE/npm}"
-export PUPPETEER_EXECUTABLE_PATH="${PUPPETEER_EXECUTABLE_PATH:-/usr/bin/chromium}"
-export PUPPETEER_SKIP_DOWNLOAD=true
-export PLAYWRIGHT_MCP_CONFIG="$HP_SIM5_ROOT/output/cloud/playwright-cli.json"
-export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
-export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
-
-# The CPU cloud image includes Chromium's software Vulkan driver, but no system
-# ICD. Preserve explicit driver choices and hardware-equipped environments.
-if [[ -z "${VK_ICD_FILENAMES:-}${VK_DRIVER_FILES:-}" && ! -d /dev/dri && ! -e /dev/nvidia0 && -r /usr/lib/chromium/vk_swiftshader_icd.json ]]; then
-    export VK_ICD_FILENAMES=/usr/lib/chromium/vk_swiftshader_icd.json
-fi
+# Compatibility for existing hosted-environment setup commands.
+source "$(dirname "${BASH_SOURCE[0]}")/../../../../research-program/cloud/env.sh"

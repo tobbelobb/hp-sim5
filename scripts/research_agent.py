@@ -1,4 +1,4 @@
-"""Launch a chosen coding agent with local physics tools and a separately supervised Rerun Viewer."""
+"""Prepare or resume an investigation, optionally opening a coding client or private physics tools."""
 import argparse
 import signal
 from importlib import import_module
@@ -19,16 +19,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
 from hp_sim5_research import coding_client
-from hp_sim5_research.coding_client import toml_literal
 from hp_sim5_research.services import RuntimeService, free_port, stop_process, register_test_process
-from hp_sim5_research.archive import initial_abstract, session_name, write_index
+from hp_sim5_research.archive import write_index
+from hp_sim5_research.workspace import Sessions, lock, read_json, researcher_handoff, role, write_json
+from hp_sim5_research.services import process_identity, process_live
 
 
 ENV_FILE = ROOT / '.env'
 CHATGPT_SIGN_IN = 'openai'
-STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
-# Shared runtime pieces; output can also contain tracked research files.
-WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output', 'research/output',
+# Only ignored runtime pieces are shared; tracked research stays in each checkout.
+WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output',
                   'src/wasm/cable_solver/target/native/physics.node')
 
 
@@ -36,16 +36,8 @@ def provider_env_key(provider):
     return coding_client.provider_env_key(provider, root=ROOT)
 
 
-def dotenv_values(path=None):
-    return coding_client.dotenv_values(path or ENV_FILE)
-
-
 def codex_environment(provider=CHATGPT_SIGN_IN):
     return coding_client.codex_environment(provider, root=ROOT, env_file=ENV_FILE)
-
-
-def forwarded_settings(codex_args):
-    return coding_client.forwarded_settings(codex_args)
 
 
 def worktree_parent(directory=None):
@@ -113,12 +105,10 @@ def create_worktree(topic, directory=None):
         check=True, capture_output=True, text=True)
     shared_output = Path(common_git.stdout.strip()).parent / 'output'
     shared_output.mkdir(exist_ok=True)
-    shared_research = Path(common_git.stdout.strip()).parent / 'research/output'
-    shared_research.mkdir(parents=True, exist_ok=True)
     for entry in WORKTREE_LINKS:
         source, target = ROOT / entry, plan['path'] / entry
-        if entry in ('output', 'research/output'):
-            source = (shared_output if entry == 'output' else shared_research).resolve()
+        if entry == 'output':
+            source = shared_output.resolve()
             # This is a fresh checkout: discard only Git's checked-out copy,
             # before any includes or session artifacts can be written there.
             if target.is_symlink():
@@ -153,35 +143,6 @@ def strip_worktree_options(arguments):
             continue
         remaining.append(argument)
     return remaining
-
-
-def worktree_launch(args, launcher_args, codex_args, provider, model):
-    prompt = args.prompt or (args.prompt_file.read_text() if args.prompt_file else None)
-    topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else 'research')
-    if args.dry_run:
-        plan = worktree_plan(worktree_slug(topic), args.worktree_dir)
-        print(json.dumps({'mode': 'worktree', 'backend': args.backend, 'model_provider': provider, 'model': model,
-                          'worktree': {'path': str(plan['path']), 'branch': plan['branch'], 'links': plan['links'],
-                                       'includes': [str(source.relative_to(ROOT))
-                                                    for source in worktree_include_sources()]}}, indent=2))
-        return 0
-    worktree = create_worktree(topic, args.worktree_dir)
-    print(f'Research worktree: {worktree["path"]} (branch {worktree["branch"]}, base {worktree["base"]})',
-          file=sys.stderr, flush=True)
-    if worktree['includes']:
-        print(f'Copied {len(worktree["includes"])} .worktreeinclude path(s) into the worktree.',
-              file=sys.stderr, flush=True)
-    remaining = strip_worktree_options(launcher_args)
-    if codex_args:
-        remaining += ['--'] + codex_args
-    # Run the worktree's own launcher so ROOT, MCP cwd, sandbox and artifacts all follow it.
-    python = worktree['path'] / '.venv/bin/python'
-    script = worktree['path'] / 'scripts/research_agent.py'
-    if getattr(args, 'wall_deadline', None) is not None:
-        # exec resets signal handlers. The child re-arms the same absolute
-        # deadline, rather than inheriting an alarm with its default action.
-        signal.setitimer(signal.ITIMER_REAL, 0)
-    os.execv(str(python), [str(python), str(script), *remaining])
 
 
 def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
@@ -262,29 +223,6 @@ def sidebar_hooks(section_id):
     }]}]}
 
 
-def sidebar_server_enabled(codex_args, provider=CHATGPT_SIGN_IN):
-    # Ask Codex for effective configuration, including plugin servers and CLI overrides.
-    overrides = []
-    arguments = iter(codex_args)
-    for argument in arguments:
-        if argument in ('-c', '--config', '-p', '--profile', '--enable', '--disable'):
-            value = next(arguments, None)
-            if value is None:
-                return False  # Let the Codex invocation report its invalid arguments.
-            overrides.extend((argument, value))
-        elif argument.startswith(('--config=', '--profile=', '--enable=', '--disable=')):
-            overrides.append(argument)
-    try:
-        result = subprocess.run(['codex', *overrides, 'mcp', 'list', '--json'],
-                                capture_output=True, text=True, env=codex_environment(provider), timeout=10)
-        if result.returncode == 0:
-            return any(server['name'] == 'codex_app' and server['enabled']
-                       for server in json.loads(result.stdout))
-    except (OSError, subprocess.TimeoutExpired, ValueError):
-        pass
-    return False
-
-
 def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, goal_mode, codex_args=(), instructions='', sidebar_section=None,
                   model_provider=CHATGPT_SIGN_IN, model=None):
     settings = {'mcp_servers.hp_sim5.command': sys.executable,
@@ -360,272 +298,353 @@ def interrupted(_signum, _frame):
     raise KeyboardInterrupt
 
 
-def session_manifest(session, backend):
-    """Non-secret paths survive worktree re-exec; written before runtime startup."""
-    revision = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],
-                              capture_output=True, text=True, check=True).stdout.strip()
-    branch = subprocess.run(['git', '-C', str(ROOT), 'branch', '--show-current'],
-                            capture_output=True, text=True, check=True).stdout.strip()
-    return {'launcher_session_id': uuid.uuid4().hex, 'session_dir': str(session),
-            'repo': str(ROOT), 'source_revision': revision, 'branch': branch,
-            'pid': os.getpid(), 'backend': backend}
+def normalize_resume(arguments):
+    """Legacy client resume must reopen artifacts rather than silently allocate a new investigation."""
+    arguments = list(arguments)
+    for index, value in enumerate(arguments):
+        if value.startswith('--resume='):
+            return arguments[:index] + arguments[index + 1:], value.split('=', 1)[1]
+    for flag in ('--resume', 'resume'):
+        if flag in arguments:
+            index = arguments.index(flag)
+            value = arguments[index + 1] if index + 1 < len(arguments) else None
+            if value and not value.startswith('-'):
+                return arguments[:index] + arguments[index + 2:], value
+            return [v for v in arguments[:index] + arguments[index + 1:] if v != '--last'], 'latest'
+    return arguments, None
+
+
+def running_runtime(sessions, session):
+    path = sessions.state / 'runtime' / (session['id'] + '.json')
+    live = read_json(path) if path.is_file() else None
+    return live if live and (process_live(live.get('owner')) or process_live(live.get('runtime_owner'))) else None
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    backend = parser.add_mutually_exclusive_group(required=True)
-    backend.add_argument('--codex', action='store_const', const='codex', dest='backend', help='Use Codex CLI')
-    backend.add_argument('--claude', action='store_const', const='claude', dest='backend', help='Use Claude Code CLI')
+    backend = parser.add_mutually_exclusive_group()
+    backend.add_argument('--codex', help='Open a local Codex conversation', action='store_const', const='codex', dest='backend')
+    backend.add_argument('--claude', help='Open a local Claude Code conversation', action='store_const', const='claude', dest='backend')
     task = parser.add_mutually_exclusive_group()
-    task.add_argument('--prompt', help='Research or robot design task')
-    task.add_argument('--prompt-file', type=Path, help='UTF-8 task file')
-    parser.add_argument('--doctor', action='store_true', help='Explicitly run diagnostics, including real RRF/native collection and autocal loading')
-    parser.add_argument('--preflight', action='store_true', help='Run bounded non-moving supervised checks and exit; command networking remains untested')
-    parser.add_argument('--dry-run', action='store_true', help='Show the agent command and task without starting processes')
-    parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
-    parser.add_argument('--physics-backend', choices=['headless-js'], default='headless-js',
-                        help='Continuing physics: native Rust hosted in Node')
-    parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
-    parser.add_argument('--wall-deadline', type=float, help='Finite Unix wall deadline; expiration enters normal launcher cleanup')
-    parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN,
-                        help='Codex model provider; opencode_go reads OPENCODE_GO_API_KEY, falling back to the .env file')
-    parser.add_argument('--model', help='Model name for the selected backend')
-    parser.add_argument('--worktree', action='store_true',
-                        help='Create a fresh Git worktree and run the whole session from it')
-    parser.add_argument('--worktree-dir', type=Path,
-                        help='Parent directory for --worktree (default: a sibling of the repository)')
-    parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')
-    parser.add_argument('--goal-mode', action=argparse.BooleanOptionalAction, default=True,
-                        help='Goal mode for autonomous continuation: Codex goals or Claude /goal (default: on; --no-goal-mode disables)')
+    task.add_argument('--prompt', help='Research question or continuation instruction')
+    task.add_argument('--prompt-file', type=Path, help='Read the question from a file')
+    parser.add_argument('--resume', nargs='?', const='latest', help='Reopen investigation ID or artifact directory; omit value for latest')
+    parser.add_argument('--conversation', help='Bind an exact backend conversation ID when reopening')
+    parser.add_argument('--workspace', action='store_true', help='Bind a prepared handoff to the platform-provided current checkout')
+    parser.add_argument('--session-dir', type=Path, help='Artifact path for a new investigation; created only when evidence is written')
+    parser.add_argument('--name', help='Short investigation label')
+    parser.add_argument('--doctor', action='store_true', help='Check runtime dependencies and physics')
+    parser.add_argument('--preflight', action='store_true', help='Run client dependency and collection diagnostics')
+    parser.add_argument('--dry-run', action='store_true', help='Describe launch without writing state or starting services')
+    parser.add_argument('--viewer', choices=['none', 'headless', 'window'], default='none', help='Viewer mode (default: none)')
+    parser.add_argument('--physics-backend', choices=['headless-js'], default='headless-js', help='Physics execution backend')
+    parser.add_argument('--no-record', action='store_true', help='Disable Rerun recording')
+    parser.add_argument('--wall-deadline', type=float, help='Stop runtime at this Unix timestamp')
+    parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN, help='Codex provider from config.toml')
+    parser.add_argument('--model', help='Backend model override')
+    parser.add_argument('--worktree', action='store_true', help='Create an isolated Git worktree')
+    parser.add_argument('--worktree-dir', type=Path, help='Parent directory for launcher worktrees')
+    parser.add_argument('--dont-ask', action='store_true', help='Disable backend clarification tools')
+    parser.add_argument('--goal-mode', action=argparse.BooleanOptionalAction, default=True, help='Enable backend goal tracking')
+    parser.add_argument('--sidebar-section', help='Optional Codex sidebar section UUID')
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--batch', action='store_true', help='Run the selected backend non-interactively and save JSONL events')
-    mode.add_argument('--serve', action='store_true', help='Supervise services for desktop MCP attachment until interrupted')
-    parser.add_argument('--session-dir', type=Path, help='New session artifact directory (must not exist)')
-    parser.add_argument('--name', help='Short research topic used in the default session directory name')
-    parser.add_argument('--sidebar-section', help='Desktop sidebar section UUID, or none; defaults to research/output/sidebar.json')
-    # Everything after -- belongs to the selected backend, including resume and its normal options.
+    mode.add_argument('--batch', action='store_true', help='Run a local client noninteractively with the supplied prompt')
+    mode.add_argument('--serve', action='store_true', help='Keep private runtime and file tools alive in foreground')
+    mode.add_argument('--start-runtime', action='store_true', help='Start a detached runtime; no world until a tool configures one')
+    mode.add_argument('--stop-runtime', action='store_true', help='Stop the investigation runtime and finalize partial evidence')
+    mode.add_argument('--runtime-status', action='store_true', help='Inspect runtime ownership without sockets')
     argv = sys.argv[1:]
     split = argv.index('--') if '--' in argv else len(argv)
     args = parser.parse_args(argv[:split])
+    client_args, legacy_resume = normalize_resume(argv[split + 1:])
     if args.wall_deadline is not None and (not math.isfinite(args.wall_deadline) or args.wall_deadline <= 0):
         parser.error('--wall-deadline must be a positive finite Unix timestamp')
-    codex_args = argv[split + 1:]
-    # Forwarded `-c model_provider=...` and `--model` win, matching Codex's own last-wins order.
-    forwarded, forwarded_model = forwarded_settings(codex_args)
-    if args.backend == 'claude':
-        forwarded = {}
-        forwarded_model = None
-        arguments = iter(codex_args)
-        for argument in arguments:
-            if argument == '--model':
-                forwarded_model = next(arguments, None)
-            elif argument.startswith('--model='):
-                forwarded_model = argument.split('=', 1)[1]
-        if '--model-provider' in argv[:split] or any(a.startswith('--model-provider=') for a in argv[:split]):
-            parser.error('--model-provider is only supported with --codex')
-    command_builder = claude_command if args.backend == 'claude' else codex_command
-    provider = forwarded.get('model_provider', args.model_provider) if args.backend == 'codex' else None
-    model = forwarded_model or args.model
-    # Codex rejects a repeated --model, so only add options the caller did not forward.
-    injected_provider = None if 'model_provider' in forwarded else args.model_provider
-    injected_model = None if forwarded_model else args.model
     if args.worktree_dir and not args.worktree:
         parser.error('--worktree-dir requires --worktree')
-    adapter = coding_client.client_adapter()
-    external_client = adapter.agent_uses_external_client(args, parser) if adapter else True
-    previous_sigterm = signal.signal(signal.SIGTERM, interrupted)
-    previous_alarm = None
-    wall_expired = False
-    def deadline_interrupt(*_):
-        nonlocal wall_expired
-        wall_expired = True
-        raise KeyboardInterrupt
-    viewer = agent = session = runtime = None
-    session_created = False
-    returncode = 1
+    if args.worktree and args.resume:
+        parser.error('--resume reuses the saved worktree; omit --worktree')
+    if args.backend == 'claude' and any(v == '--model-provider' or v.startswith('--model-provider=') for v in argv[:split]):
+        parser.error('--model-provider is only supported with --codex')
+    if args.batch and not args.backend:
+        parser.error('--batch requires --codex or --claude')
     try:
-        if args.wall_deadline is not None and not args.dry_run:
-            previous_alarm = signal.signal(signal.SIGALRM, deadline_interrupt)
-            if args.wall_deadline <= time.time():
-                wall_expired = True
-                raise KeyboardInterrupt
-            signal.setitimer(signal.ITIMER_REAL, args.wall_deadline - time.time())
-        if args.worktree:
-            return worktree_launch(args, argv[:split], codex_args, provider, model)
+        sessions = Sessions(ROOT)
         if args.doctor:
-            if args.preflight:
-                parser.error('--doctor and --preflight are separate diagnostics; select one')
-            result = doctor(provider, model, backend=args.backend)
+            result = doctor(args.model_provider, args.model, backend=args.backend or 'codex')
             print(json.dumps(result, indent=2))
             return 0 if result['ok'] else 1
+        if legacy_resume:
+            if not args.resume:
+                matches = []
+                for path in (sessions.state / 'sessions').glob('*.json'):
+                    saved = read_json(path)
+                    if legacy_resume in saved.get('conversations', {}).values():
+                        matches.append(saved['id'])
+                if len(matches) == 1:
+                    args.resume = matches[0]
+                elif legacy_resume == 'latest':
+                    args.resume = 'latest'
+                else:
+                    raise ValueError('Client resume cannot identify its artifact directory. Use --resume ID_OR_DIRECTORY --conversation CLIENT_ID')
+            if legacy_resume != 'latest':
+                args.conversation = legacy_resume
         prompt = args.prompt_file.read_text() if args.prompt_file else args.prompt
-        if args.batch and not args.preflight and (not prompt or not prompt.strip()):
+        if args.batch and not args.preflight and not (prompt and prompt.strip()):
             parser.error('Batch mode requires --prompt or --prompt-file')
-        if args.serve and (prompt or codex_args):
-            parser.error('--serve accepts neither a task nor agent arguments')
-        sidebar_section = args.sidebar_section if args.backend == 'codex' else None
-        sidebar_config = ROOT / 'research/output/sidebar.json'
-        if args.backend == 'codex' and sidebar_section is None and sidebar_config.exists():
-            sidebar_section = json.loads(sidebar_config.read_text())['section_id']
-        if sidebar_section == 'none':
-            sidebar_section = None
-        if sidebar_section:
-            sidebar_section = str(uuid.UUID(sidebar_section))
-            if not args.serve and not sidebar_server_enabled(codex_args, provider):
-                print('Sidebar categorization skipped: codex_app MCP server is not enabled in this Codex CLI configuration.',
-                      file=sys.stderr)
-                sidebar_section = None
-        topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else
-                              'service research' if args.serve else 'interactive research')
-        session = (args.session_dir.resolve() if args.session_dir else
-                   ROOT / 'research/output' / ('dry-run' if args.dry_run else f'session-{session_name(topic)}'))
-        output_root = (ROOT / 'research/output').resolve()
-        catalog_root = output_root if session.resolve().is_relative_to(output_root) else session.parent
-        instructions = (ROOT / 'research-program-feature/role-instructions/RESEARCHER.md').read_text()
-        if args.backend == 'claude':
-            instructions = (ROOT / 'AGENTS.md').read_text() + '\n' + instructions
-        instructions += (f'\nSession artifacts: {session}\n'
-                         f'Write the report to {session / "report.md"}; keep working notes in {session / "scratchbook"}.\n'
-                         f'Keep the searchable abstract at {session / "abstract.md"} current too.\n'
-                         'The native runtime holds no world until configure_session builds one.\n')
-        full_prompt = prompt or ''
-        if args.dry_run:
-            endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'
-            print(json.dumps({'mode': 'serve' if args.serve else 'batch' if args.batch else 'interactive',
-                              'backend': args.backend, 'model_provider': provider, 'model': model,
-                              'mcp_config': claude_mcp_config(session, endpoint) if args.backend == 'claude' else None,
-                              'argv': (command_builder(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model) if external_client else []) + ([] if args.batch or not prompt else [prompt]),
-                              'prompt': full_prompt}, indent=2))
+        topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else 'interactive research')
+        session = sessions.open(resume=args.resume, directory=args.session_dir, topic=topic,
+                                backend=args.backend, conversation=args.conversation, dry_run=args.dry_run)
+        if args.workspace:
+            old_root = Path(session['repo'])
+            old_directory = Path(session['directory'])
+            if old_root != ROOT:
+                if old_directory.exists():
+                    raise ValueError('Existing evidence belongs to another workspace; reopen there or explicitly copy it first')
+                session['directory'] = str(ROOT / old_directory.relative_to(old_root))
+                session['repo'] = str(ROOT)
+                if not args.dry_run:
+                    sessions.save(session)
+        if args.worktree:
+            if args.dry_run:
+                print(json.dumps({'worktree': worktree_plan(worktree_slug(topic), args.worktree_dir),
+                                  'session_dir': session['directory']}, default=str, indent=2))
+                return 0
+            worktree = create_worktree(topic, args.worktree_dir)
+            # New evidence belongs to the isolated checkout; tracked corpus stays intact.
+            if args.session_dir is None:
+                session['directory'] = str(worktree['path'] / 'research/output' / session['id'])
+            session['repo'] = str(worktree['path'])
+            session['launcher_worktree'] = True
+            sessions.save(session)
+            remaining = strip_worktree_options(argv[:split])
+            if args.prompt_file:
+                index = next((i for i, value in enumerate(remaining) if value == '--prompt-file'), None)
+                if index is not None:
+                    remaining[index + 1] = str(args.prompt_file.resolve())
+                else:
+                    remaining = [('--prompt-file=' + str(args.prompt_file.resolve())) if value.startswith('--prompt-file=') else value for value in remaining]
+            if args.session_dir:
+                remaining = [('--session-dir=' + session['directory']) if value.startswith('--session-dir=') else value for value in remaining]
+                if '--session-dir' in remaining:
+                    remaining[remaining.index('--session-dir') + 1] = session['directory']
+            remaining += ['--resume', session['id']]
+            if client_args:
+                remaining += ['--', *client_args]
+            os.execv(str(worktree['path'] / '.venv/bin/python'),
+                     [str(worktree['path'] / '.venv/bin/python'), str(worktree['path'] / 'scripts/research_agent.py'), *remaining])
+        saved_root = Path(session['repo'])
+        if saved_root != ROOT and not session.get('launcher_worktree'):
+            raise ValueError(f'Investigation is bound to {saved_root}; use --resume {session["id"]} --workspace first')
+        if saved_root != ROOT and not args.dry_run:
+            if not (saved_root / 'scripts/research_agent.py').is_file():
+                raise ValueError(f'Saved worktree is unavailable: {saved_root}; reopen the evidence directory on this host')
+            remaining = argv[:split]
+            if not args.resume:
+                remaining += ['--resume', session['id']]
+            if client_args:
+                remaining += ['--', *client_args]
+            os.execv(str(saved_root / '.venv/bin/python'),
+                     [str(saved_root / '.venv/bin/python'), str(saved_root / 'scripts/research_agent.py'), *remaining])
+        live = running_runtime(sessions, session)
+        if args.runtime_status or args.stop_runtime:
+            if args.stop_runtime and live:
+                Path(live['run_dir'], 'stop').touch()
+                deadline = time.monotonic() + 30
+                while running_runtime(sessions, session) and time.monotonic() < deadline:
+                    time.sleep(.1)
+                if running_runtime(sessions, session):
+                    raise RuntimeError('Runtime is still finalizing; inspect --runtime-status before retrying')
+            print(json.dumps({'id': session['id'], 'running': bool(running_runtime(sessions, session)),
+                              'runtime': live}, indent=2))
             return 0
-        session.mkdir(parents=True)
-        session_created = True
-        (session / 'session.json').write_text(json.dumps(session_manifest(session, args.backend), indent=2) + '\n')
-        (session / 'prompt.txt').write_text(full_prompt)
-        (session / 'abstract.md').write_text(initial_abstract(topic))
-        write_index(catalog_root)
+        if args.start_runtime:
+            if live:
+                print(json.dumps(live, indent=2))
+                return 0
+            if args.dry_run:
+                print(json.dumps(researcher_handoff(ROOT, session), indent=2))
+                return 0
+            startup = sessions.run_directory(session)
+            command = [sys.executable, str(ROOT / 'scripts/research_agent.py'), '--serve', '--resume', session['id'],
+                       '--viewer', args.viewer]
+            if args.no_record:
+                command.append('--no-record')
+            if args.wall_deadline:
+                command += ['--wall-deadline', str(args.wall_deadline)]
+            with (startup / 'supervisor.log').open('w') as log:
+                process = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
+                                           start_new_session=True)
+            register_test_process(process)
+            deadline = time.monotonic() + 50
+            while process.poll() is None and time.monotonic() < deadline:
+                live = running_runtime(sessions, session)
+                if live:
+                    print(json.dumps(live, indent=2))
+                    return 0
+                time.sleep(.05)
+            stop_process(process)
+            raise RuntimeError(f'Runtime startup failed; read {startup / "supervisor.log"}')
+        backend_name = args.backend or (session.get('backend') if args.resume and not args.serve else None)
+        if not (backend_name or args.serve or args.preflight):
+            print(json.dumps(researcher_handoff(ROOT, session), indent=2, ensure_ascii=False))
+            return 0
+        if live:
+            raise ValueError('Runtime is already open. Use its file tools, or --stop-runtime before reopening a client')
+        instructions = role(ROOT, 'researcher') + f'\nInvestigation artifacts: {session["directory"]}\n'
+        instructions += 'The runtime has no physics world until configure_session builds one.\n'
+        if args.resume:
+            instructions += 'Continue the existing report and evidence; the previous live world is not restored.\n'
+        command_builder = claude_command if backend_name == 'claude' else codex_command
+        if args.dry_run:
+            run = sessions.state / 'runs' / session['id'] / 'dry-run'
+            command = command_builder(run, None, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode,
+                                      instructions=instructions, model=args.model, model_provider=args.model_provider,
+                                      codex_args=client_args) if backend_name else []
+            print(json.dumps({'id': session['id'], 'session_dir': session['directory'], 'argv': command,
+                              'instructions': instructions, 'prompt': prompt or ''}, indent=2))
+            return 0
+        with lock(sessions.state / 'session-locks' / (session['id'] + '.lock'), blocking=False):
+            return run_session(args, sessions, session, backend_name, client_args, prompt, instructions)
+    except KeyboardInterrupt:
+        return 130
+    except (OSError, ValueError, KeyError, RuntimeError, ImportError, subprocess.SubprocessError) as error:
+        parser.exit(1, f'hp-sim5-research-agent: {error}\n')
+
+
+def run_session(args, sessions, session, backend, client_args, prompt, instructions):
+    run = sessions.run_directory(session)
+    artifact = Path(session['directory'])
+    runtime = viewer = agent = relay = None
+    returncode = 1
+    old_term = signal.signal(signal.SIGTERM, interrupted)
+    old_alarm = None
+    try:
+        if args.wall_deadline:
+            old_alarm = signal.signal(signal.SIGALRM, interrupted)
+            if args.wall_deadline <= time.time():
+                raise KeyboardInterrupt
+            signal.setitimer(signal.ITIMER_REAL, args.wall_deadline - time.time())
         endpoint = None
         if args.viewer != 'none' and not args.preflight:
-            viewer, endpoint = start_viewer(args.viewer, session)
-        runtime = RuntimeService(ROOT, session / 'native', endpoint,
-                                 backend=args.physics_backend, record=not args.no_record)
+            viewer, endpoint = start_viewer(args.viewer, run)
+        runtime = RuntimeService(ROOT, artifact / 'native', endpoint, record=not args.no_record, log_directory=run)
         runtime.start()
-        runtime_status = runtime.call('status')
+        status = runtime.call('status')
         if args.preflight:
             result = runtime.call('preflight')
             print(json.dumps(result, indent=2))
             returncode = 0 if result['outcome'] == 'passed' else 1
             return returncode
-        descriptor = session / 'connection.json'
+        descriptor = run / 'connection.json'
         descriptor.touch(mode=0o600)
-        descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': runtime_status['session_id'],
-                                          'runtime_endpoint': runtime.endpoint, 'runtime_token': runtime.token,
-                                          'viewer_endpoint': endpoint}) + '\n')
-        attachment = ('[sandbox_workspace_write]\nnetwork_access = true\n'
-                      f'writable_roots = {toml_literal(coding_client.writable_roots(ROOT, session))}\n\n'
-                      '[features]\n'
-                      f'default_mode_request_user_input = {toml_literal(not (args.dont_ask or args.batch))}\n\n'
-                      f'[mcp_servers.hp_sim5]\ncommand = {json.dumps(sys.executable)}\n'
-                      f'args = {json.dumps([str(ROOT / "scripts/research_attach.py"), str(descriptor)])}\n'
-                      'required = true\ntool_timeout_sec = 14500\n')
-        if endpoint:
-            attachment += (f'\n[mcp_servers.rerun]\ncommand = {json.dumps(sys.executable)}\n'
-                           f'args = {json.dumps([str(ROOT / "scripts/research_attach.py"), str(descriptor), "--rerun"])}\n'
-                           'required = true\n')
-        if sidebar_section:
-            attachment += '\n[hooks]\n' + '\n'.join(f'{key} = {toml_literal(value)}' for key, value in sidebar_hooks(sidebar_section).items()) + '\n'
-        (session / 'attachment.toml').write_text(attachment)
-        (session / 'attachment.json').write_text(json.dumps(claude_mcp_config(session, endpoint), indent=2) + '\n')
-        (session / 'instructions.md').write_text(instructions)
-        command = (command_builder(
-            session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode,
-            codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section,
-            model_provider=injected_provider, model=injected_model) if external_client else [])
-        if not args.batch and prompt:
-            command += [prompt]
-        # Keep bearer credentials out of launch artifacts.
-        saved_command = [arg.replace(runtime.token, '<runtime token>') for arg in command]
-        (session / 'launch.json').write_text(json.dumps({'argv': saved_command, 'runtime_status': runtime_status,
-                                                       'backend': args.backend, 'model_provider': provider, 'model': model,
-                                                       'viewer_endpoint': endpoint, 'runtime_endpoint': runtime.endpoint}, indent=2) + '\n')
-        print(f'Research session: {session}', file=sys.stderr, flush=True)
+        descriptor.write_text(json.dumps({'repo': str(ROOT), 'artifact_dir': str(artifact),
+            'session_id': status['session_id'], 'runtime_endpoint': runtime.endpoint,
+            'runtime_token': runtime.token, 'viewer_endpoint': endpoint}) + '\n')
+        attachment = {'mcp_servers': claude_mcp_config(run, endpoint)['mcpServers']}
+        (run / 'attachment.json').write_text(json.dumps({'mcpServers': attachment['mcp_servers']}) + '\n')
+        (run / 'instructions.md').write_text(instructions)
+        (run / 'prompt.txt').write_text(prompt or '')
+        live = {'id': session['id'], 'session_dir': str(artifact), 'run_dir': str(run),
+                'owner': process_identity(os.getpid()),
+                'runtime_owner': process_identity(runtime.process.pid) if getattr(runtime, 'process', None) else None,
+                'connection': str(descriptor)}
         if args.serve:
-            print(f'MCP configuration: {session / ("attachment.json" if args.backend == "claude" else "attachment.toml")}', file=sys.stderr, flush=True)
-            while runtime.process.poll() is None:
-                time.sleep(.2)
-            if runtime.process.returncode == 0:
-                returncode = 0
-                return 0
-            raise RuntimeError(f'Runtime stopped; read {session / "native/runtime.log"}')
-        environment = claude_environment() if args.backend == 'claude' else codex_environment(provider)
+            import research_tools
+            relay, connection = research_tools.start(ROOT, run)
+            live['tool_connection'] = str(connection)
+        write_json(sessions.state / 'runtime' / (session['id'] + '.json'), live)
+        print(json.dumps(live), flush=True, file=sys.stdout if args.serve else sys.stderr)
+        if args.serve:
+            while runtime.process.poll() is None and not (run / 'stop').exists():
+                if relay.poll() is not None:
+                    raise RuntimeError(f'Tool relay stopped; read {run / "tools.log"}')
+                time.sleep(.1)
+            returncode = 0 if runtime.process.poll() in (None, 0) else 1
+            return returncode
+        conversation = session['conversations'].get(backend)
+        resume_client = bool(args.resume and (conversation or session.get('clients_started', {}).get(backend)))
+        extras = list(client_args)
+        if backend == 'codex' and resume_client:
+            if args.batch and not conversation:
+                raise ValueError('Batch resume requires --conversation CLIENT_ID from the original run')
+            extras = ['resume', *([conversation] if conversation else []), *extras]
+            if not conversation:
+                print('Choose the saved Codex conversation in the resume picker. The artifact path is already restored.', file=sys.stderr)
+        if backend == 'claude':
+            if resume_client and conversation:
+                extras += ['--resume', conversation]
+            elif not any(x in extras for x in ('--session-id', '--resume', '--continue')):
+                conversation = str(uuid.uuid4())
+                extras += ['--session-id', conversation]
+                session['conversations'][backend] = conversation
+                sessions.save(session)
+        builder = claude_command if backend == 'claude' else codex_command
+        command = builder(run, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode,
+                          codex_args=extras, instructions=instructions, model=args.model, model_provider=args.model_provider,
+                          sidebar_section=args.sidebar_section if args.sidebar_section != 'none' else None)
+        write_json(run / 'launch.json', {'argv': command, 'backend': backend, 'session_dir': str(artifact)})
+        environment = claude_environment() if backend == 'claude' else codex_environment(coding_client.forwarded_settings(client_args)[0].get('model_provider', args.model_provider))
         if not args.batch:
-            # The agent owns the terminal and conversation across all research turns.
+            if prompt and (not resume_client or conversation):
+                command.append(prompt)
             agent = subprocess.Popen(command, cwd=ROOT, env=environment)
-            # Ctrl-C belongs to the agent's turn interruption UI, not supervisor shutdown.
-            previous_sigint = signal.signal(signal.SIGINT, lambda *_: None)
+            session.setdefault('clients_started', {})[backend] = True
+            sessions.save(session)
+            previous = signal.signal(signal.SIGINT, lambda *_: None)
             try:
                 returncode = agent.wait()
+                return returncode
             finally:
-                signal.signal(signal.SIGINT, previous_sigint)
-            return returncode
-        agent = subprocess.Popen(command, cwd=ROOT, env=environment,
-                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-        agent.stdin.write(full_prompt)
+                signal.signal(signal.SIGINT, previous)
+        agent = subprocess.Popen(command, cwd=ROOT, env=environment, stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, text=True)
+        session.setdefault('clients_started', {})[backend] = True
+        sessions.save(session)
+        agent.stdin.write(prompt)
         agent.stdin.close()
-        batch_failed = args.backend == 'claude'
-        with (session / 'events.jsonl').open('w') as output:
+        batch_failed = backend == 'claude'
+        with (run / 'events.jsonl').open('w') as output:
             for line in agent.stdout:
                 output.write(line)
                 output.flush()
                 event = json.loads(line)
-                if args.backend == 'claude' and event.get('type') == 'result':
-                    message = event.get('result', '')
-                    (session / 'final-message.md').write_text(message + '\n')
-                    print(message or json.dumps(event), flush=True)
+                conversation = event.get('thread_id') or (event.get('session_id') if backend == 'claude' else None)
+                if conversation:
+                    session['conversations'][backend] = conversation
+                    sessions.save(session)
+                if backend == 'claude' and event.get('type') == 'result':
+                    (run / 'final-message.md').write_text(event.get('result', '') + '\n')
                     batch_failed = bool(event.get('is_error'))
+                    print(event.get('result', ''), flush=True)
                 elif event.get('type') == 'item.completed' and event.get('item', {}).get('type') == 'agent_message':
                     print(event['item']['text'], flush=True)
-                elif event.get('type') in ('error', 'turn.failed'):
-                    print(line.strip(), file=sys.stderr, flush=True)
         returncode = agent.wait() or int(batch_failed)
         return returncode
-    except KeyboardInterrupt:
-        returncode = 130
-        return 130
-    except (OSError, ValueError, RuntimeError, ImportError, subprocess.TimeoutExpired) as error:
-        parser.exit(1, f'hp-sim5-research-agent: {error}\n')
     finally:
-        if previous_alarm is not None:
+        if old_alarm is not None:
             signal.setitimer(signal.ITIMER_REAL, 0)
-            signal.signal(signal.SIGALRM, previous_alarm)
-        # A deadline and controller cancel can arrive together. Cleanup owns the
-        # shutdown until it has recorded its boundary; a second SIGTERM must wait.
+            signal.signal(signal.SIGALRM, old_alarm)
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
-        try:
-            cleanup_errors = []
-            for name, close in (('agent', lambda: stop_process(agent)),
-                                ('runtime', lambda: runtime.close() if runtime is not None else None),
-                                ('viewer', lambda: stop_process(viewer))):
-                try:
-                    close()
-                except Exception as error:
-                    cleanup_errors.append(f'{name}: {error}')
-                    print(f'Research cleanup failed: {name}: {error}', file=sys.stderr, flush=True)
-            if session_created:
-                exit_observation = {'returncode': returncode}
-                if args.wall_deadline is not None:
-                    exit_observation.update(wall_deadline=args.wall_deadline, wall_expired=wall_expired)
-                if cleanup_errors:
-                    exit_observation['cleanup_errors'] = cleanup_errors
-                (session / 'exit.json').write_text(json.dumps(exit_observation) + '\n')
-                try:
-                    write_index(catalog_root)
-                except OSError as error:
-                    print(f'Research catalog refresh failed: {error}; run scripts/research_index.py.', file=sys.stderr)
-        finally:
-            signal.signal(signal.SIGTERM, previous_sigterm)
+        errors = []
+        for name, close in [('agent', lambda: stop_process(agent)), ('relay', lambda: stop_process(relay)),
+                            ('runtime', lambda: runtime.close() if runtime else None), ('viewer', lambda: stop_process(viewer))]:
+            try:
+                close()
+            except Exception as error:
+                errors.append(f'{name}: {error}')
+        write_json(run / 'exit.json', {'returncode': returncode, 'cleanup_errors': errors})
+        current = sessions.state / 'runtime' / (session['id'] + '.json')
+        if current.is_file() and not errors:
+            saved = read_json(current)
+            if saved['run_dir'] == str(run):
+                saved.update(owner=None, runtime_owner=None)
+                write_json(current, saved)
+        if artifact.exists():
+            write_index(artifact.parent.parent if artifact.parent.name.startswith('program-') else artifact.parent)
+        signal.signal(signal.SIGTERM, old_term)
+        if errors:
+            print('Research cleanup: ' + '; '.join(errors), file=sys.stderr)
 
 
 if __name__ == '__main__':
-    from hp_sim5_research.client_transport import activate
-    activate(ROOT)
     sys.exit(main())
