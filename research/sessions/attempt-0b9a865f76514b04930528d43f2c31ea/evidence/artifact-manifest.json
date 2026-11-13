@@ -1,0 +1,614 @@
+[
+  {
+    "path": "evidence/old/sweeps.json.partial-points.jsonl",
+    "bytes": 28436,
+    "sha256": "03ddc923130be3391594a8d98a375228514e9d85959f3ff0f53cb571d28dd405",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/command.json",
+    "bytes": 1061,
+    "sha256": "19b5f6edf09d16c525d43d22a7b9c0bd7a05000fba648316786d6ee36abcd3da",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.full_auto.log",
+    "bytes": 7357,
+    "sha256": "e472e0b18bab12fd401ad6c6be0bbd53fddcc8362fca0b69b7c685926cb84758",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.json",
+    "bytes": 54348,
+    "sha256": "f30fc6af2762e636bc7e462e7cc6da394dde337aeab44c030df8898e7f391f66",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.full_auto_log.jsonl",
+    "bytes": 4225,
+    "sha256": "077fd4ae951cb345a058b21f60ae96dc0a7dd006e03849be08ac2938e119081f",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.json.force-tuning.json",
+    "bytes": 1241,
+    "sha256": "16b7e67e21f89ca4e44b7003f9f8cd5fab08a4ed816b595803e69af5543573ef",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.bootstrap_cfg.txt",
+    "bytes": 30,
+    "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/console.log",
+    "bytes": 1285,
+    "sha256": "f9c73bbc26615b6a070a0647523d5b262348dc11e8d2bf3d396d557460d997c1",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/hangprinter-20261113T230714.522610Z-b87859df.json",
+    "bytes": 554,
+    "sha256": "4ca7284db29e2c56e8295ed3f1bd1b8bc56e7087cf76c1e0f2e8e8e793e5c593",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/clock.json",
+    "bytes": 3091,
+    "sha256": "a00060becb5f3de737871b8888a567a82d828d7ae1a8965a597d578a61ef8927",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/hangprinter-20261113T230714.522610Z-b87859df.rrd",
+    "bytes": 25127542,
+    "sha256": "9ea2e62bf4516434ba6fbc385a1fc509706d65afa255b9e9b2f45ea08187a95d",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/baked-scene.usda",
+    "bytes": 23767,
+    "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/manifest.json",
+    "bytes": 5991,
+    "sha256": "4ce1575e6761dbca326c0a6df217542344913d5fe726963be64abeb355a19fe1",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/events.jsonl",
+    "bytes": 4539835,
+    "sha256": "cfe5832451df178efcc7e483128c16fc3c223d94540a3c68dfaf9c257ec556a0",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/scene.usda",
+    "bytes": 22837,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/recorder.log",
+    "bytes": 494,
+    "sha256": "e41ed36043405ad34a312a6d61fba7cadfad799a8be2ea2761daf9dcbef90c3e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/physics.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/firmware-config.g",
+    "bytes": 4727,
+    "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.headless/rrf.log",
+    "bytes": 13495,
+    "sha256": "36ca996409aede81bbc25d620b60a21d39ef1cdf4515b024de37aa020904567e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old/sweeps.stages/fit-001-default.json",
+    "bytes": 75636,
+    "sha256": "3bbf03e03612969a6660d3ed21ae267e52a1ac226a3bb4d29bc86584b83316b5",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.json.partial-points.jsonl",
+    "bytes": 28436,
+    "sha256": "5312454f81f345e094639c830ac956e31e8a028ee074534ec693f2269d1e257b",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/command.json",
+    "bytes": 1069,
+    "sha256": "401524adc754f2c3c6b638778d74cdc55bfcb3299e14c4d9efbcf8c44e1538b6",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.full_auto.log",
+    "bytes": 7409,
+    "sha256": "e7a3dd38bb67a3d86f142c8ba172568c7287f34a6ba77cfdcfd4b749135a9e85",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.json",
+    "bytes": 54348,
+    "sha256": "7ed130d39f1acd3aff6f2e1bc3e715033f8a9730ecb9750239def8d176cf7fa9",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.full_auto_log.jsonl",
+    "bytes": 4233,
+    "sha256": "a1b7cc584146aec85972c9ded4b5e3d31c93fb3def01ea7a9c9dddb75e3ad129",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.json.force-tuning.json",
+    "bytes": 1241,
+    "sha256": "0735101cff4505b9413b082fad612829930229d8bb96be3f96339fbc4a0f5bb1",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.bootstrap_cfg.txt",
+    "bytes": 30,
+    "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/console.log",
+    "bytes": 1305,
+    "sha256": "a64d8df5577b27f13fe1a4720e50a35cbd29af5576767da7d783eb5beb25ab37",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/clock.json",
+    "bytes": 3095,
+    "sha256": "4102be781fd2b27113b662118e1c208586fa90ffb4d49ddf9dbd460f95ec5714",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/baked-scene.usda",
+    "bytes": 23767,
+    "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/manifest.json",
+    "bytes": 6003,
+    "sha256": "3a49c0cb658ea979548cd32b4d698884adec4a2bf345e355c8ca1c0fd0bea438",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/events.jsonl",
+    "bytes": 4539835,
+    "sha256": "1837601ef8be3f92a318363c8fe17ce963c6826027f4b5a30a43d50bc3b85686",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/scene.usda",
+    "bytes": 22837,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/recorder.log",
+    "bytes": 502,
+    "sha256": "bc800ca086af610fe47f6f863fad0e8717284733b626900f558ba1a68c54c1fa",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/hangprinter-20261113T230754.223315Z-799e0715.rrd",
+    "bytes": 24980593,
+    "sha256": "28be0e4b5537e8cae746ac4f6fc660a3a07d5be3ed1d620c9c0b48f56fd11ec2",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/physics.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/firmware-config.g",
+    "bytes": 4727,
+    "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/rrf.log",
+    "bytes": 13495,
+    "sha256": "591b05daab856e6647c1a236ab27007a7d46847197ddc13d5d4c911fe70819a9",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.headless/hangprinter-20261113T230754.223315Z-799e0715.json",
+    "bytes": 558,
+    "sha256": "b69c61ac44c8e6df54e8eb421d58ef4841de3cb9806a48cd48373740c5f113b2",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current/sweeps.stages/fit-001-default.json",
+    "bytes": 75649,
+    "sha256": "1865e4cd434fec232114d0cc204655cb45d66e03de04e8ec2ff295bd5b2bc8b9",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.json.partial-points.jsonl",
+    "bytes": 95121,
+    "sha256": "97651f7b53668274a38df5ac0be52b105b20eeff86f13935412b9e3e357ee39f",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/command.json",
+    "bytes": 1066,
+    "sha256": "f5f2936a00fa4d84f74c8881d19f4968be4e55988aba2a91115ed1266d717b20",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.full_auto.log",
+    "bytes": 7447,
+    "sha256": "9ddfa26ea7aeab55025871d751270c9bfde8fb3628855e1213ff4fcfc6afaa88",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.json",
+    "bytes": 167947,
+    "sha256": "b06a2e21943d0b1aeceeead11167685ed8afc0e300b4ff7d21343ca6cbf9dc71",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.full_auto_log.jsonl",
+    "bytes": 4287,
+    "sha256": "95679ef2d3bbed8a32de02e25af07a0b5dfa4a4d6a7e5d53fbad52c0a145afa8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.json.force-tuning.json",
+    "bytes": 1241,
+    "sha256": "20fbb2e0e2b5ef02dc24eebb34c451cf7ef4a73fe7db66266857e20ecdcea675",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.bootstrap_cfg.txt",
+    "bytes": 30,
+    "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/console.log",
+    "bytes": 1295,
+    "sha256": "e23b40499947c037c8fe4b760965ea81782f4af44362749fb99215e709ef5416",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/clock.json",
+    "bytes": 3091,
+    "sha256": "4c4229e646ac72a2f2fc7e9d7c41a06051f41b62438e2960216757d4d0bd3b7b",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/baked-scene.usda",
+    "bytes": 23767,
+    "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/manifest.json",
+    "bytes": 5994,
+    "sha256": "fd668b278cad5956a9292166634a26be925585ac4280413614a7e82cd8ffecb5",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/events.jsonl",
+    "bytes": 6614004,
+    "sha256": "b2335090834418bf25cd2797abd1c7bc14c48a4b8d17e5fd6c145724139680e5",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/scene.usda",
+    "bytes": 22837,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/recorder.log",
+    "bytes": 498,
+    "sha256": "2dc3b83997ea9bb049ce66943f8ac248beecc316d1de1ea3038657e975edd095",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/hangprinter-20261113T230844.881709Z-74340974.rrd",
+    "bytes": 47304123,
+    "sha256": "72fdfac06841b2d1a5b002b1b37722c6125d13bb97fbed69da55602a14ef6a98",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/hangprinter-20261113T230844.881709Z-74340974.json",
+    "bytes": 556,
+    "sha256": "070fb80011c28ae9d5dde5671a095036cad5b57368ec1b6fb8061c3835031ccf",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/physics.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/firmware-config.g",
+    "bytes": 4727,
+    "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.headless/rrf.log",
+    "bytes": 23857,
+    "sha256": "f7c7e2492c2be9aff2daaa9da2362e28bb673133d2e7a6c73bd623ffe2ac4d8c",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20/sweeps.stages/fit-001-default.json",
+    "bytes": 189974,
+    "sha256": "a7b3d96005f4a99581d2b0148c38ed9bbb9b474f0e7f1b32b2ad1103c0a600f4",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.json.partial-points.jsonl",
+    "bytes": 95121,
+    "sha256": "6e44cac19cdfad33fca6621fca26896de47eebd8c65d0f136059adede2f203e8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/command.json",
+    "bytes": 1074,
+    "sha256": "6f5825f81b975e92b39579469c3c33413e199b0a82b30b60474f17a05a838a81",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.full_auto.log",
+    "bytes": 7499,
+    "sha256": "5a965627a4bf267087bc1bf9b9ebf8c42694a2d78bf4cded8b07b3774e353729",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.json",
+    "bytes": 167947,
+    "sha256": "7fd339722c6bfa1e6d42c858dcf627ea1a36184f7f6cfdf474a806031e11d840",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.full_auto_log.jsonl",
+    "bytes": 4295,
+    "sha256": "f0177ab921577d689f9e6d21b9ae5dd907100eb884cbca7bde8614a6eded4f26",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.json.force-tuning.json",
+    "bytes": 1241,
+    "sha256": "614141741ba461239544f6704c8358cfecdfdd1ca525cdf26414eff379ad76e3",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.bootstrap_cfg.txt",
+    "bytes": 30,
+    "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/console.log",
+    "bytes": 1315,
+    "sha256": "d67d2b77923fb6fc3c16d0015e48212cc5aefb3005c845a677be76f7a8683335",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/clock.json",
+    "bytes": 3101,
+    "sha256": "6c44fdb4a57ee002ed9a71caba2ac23f8f1aa5cbad95aa721482a8e89eefc824",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/baked-scene.usda",
+    "bytes": 23767,
+    "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/manifest.json",
+    "bytes": 6012,
+    "sha256": "1c69cad847344098e0696f796f7f04d49f4bbdbae13a836424eb9224cbb1ebe4",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/events.jsonl",
+    "bytes": 6614004,
+    "sha256": "37f6a671e812ed12890eaf586e2639a6c6626064a750f22adcdcbf74440ff952",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/hangprinter-20261113T230943.854830Z-4a6549c9.rrd",
+    "bytes": 47251939,
+    "sha256": "d80fb7e6d8be005cfa2fbbc0571590d388ce4221a286599cfc9949f7ebc41937",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/hangprinter-20261113T230943.854830Z-4a6549c9.json",
+    "bytes": 560,
+    "sha256": "feef280c25a6a033bcd60520ae46d072ffda05ce28acd526f08d0caccc4421c5",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/scene.usda",
+    "bytes": 22837,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/recorder.log",
+    "bytes": 506,
+    "sha256": "c5d37e0890131685a877d702f3e1ee1f6818d058891644dff444e125472f984d",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/physics.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/firmware-config.g",
+    "bytes": 4727,
+    "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.headless/rrf.log",
+    "bytes": 23857,
+    "sha256": "bed3108341a9fd493959bac80a02c72ee2e5e073083c2c1f95db7d1761a68e27",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/current20/sweeps.stages/fit-001-default.json",
+    "bytes": 189986,
+    "sha256": "5b782b5657cf29f41b4a35493a9bc9cf6221616ef01ffb895e405f0044ed4fa8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.json.partial-points.jsonl",
+    "bytes": 95121,
+    "sha256": "28eda669e323ef0cd6cbb8d4686582dd21ee5ee538dec2c3bf53ed60b522fdad",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/command.json",
+    "bytes": 1084,
+    "sha256": "c31f463b2136f8318c50e6b420a7e63e09ee578e9e00579b4f9c0e614d671ba7",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.full_auto.log",
+    "bytes": 7564,
+    "sha256": "c7c09336c73b795b8b8b0bb18e8f883da4f46b9e8a620744e57b4e88f13b40b2",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.json",
+    "bytes": 167947,
+    "sha256": "034721ab7e704e75b867a67d4666f7ae0536327219222da59c630c085b42eba1",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.full_auto_log.jsonl",
+    "bytes": 4305,
+    "sha256": "5bf7b64e14eef812722c9d843a1959da2421b8f387e9b8af270c2b996aab50d9",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.json.force-tuning.json",
+    "bytes": 1241,
+    "sha256": "cb1c29508695a44361ca86b2082cb78ea52a0f1d9269fe58981fec71c6cf2877",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.bootstrap_cfg.txt",
+    "bytes": 30,
+    "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/console.log",
+    "bytes": 1340,
+    "sha256": "26a42545ee12d0a37fc60d4f959bb9bc9b39f005e571d6a8b210a073d1541680",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/clock.json",
+    "bytes": 3097,
+    "sha256": "2593d83e2de3cae9c51f598b1a5b125fbe41d634bdae4d1d053f6766699d330f",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/baked-scene.usda",
+    "bytes": 23767,
+    "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/manifest.json",
+    "bytes": 6018,
+    "sha256": "0c7fc544032e9d3ad477639ed2e7564da7f3d2b108c19807b96a09e6bacfc92e",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/events.jsonl",
+    "bytes": 6614004,
+    "sha256": "8412e01386ce62fa7444ecad544833fede4b23b6762b4b6598d52cc985408e19",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/scene.usda",
+    "bytes": 22837,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/recorder.log",
+    "bytes": 516,
+    "sha256": "84aee5d9fcfae181a7096dc11fb13586ea05a473611becbe3a197b2b8a8f237a",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/hangprinter-20261113T231216.728146Z-048f897c.json",
+    "bytes": 565,
+    "sha256": "9bf3d3acc86fd0f731d1164808f20fead5e4a335591e752520f473477b7c6f28",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/physics.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/hangprinter-20261113T231216.728146Z-048f897c.rrd",
+    "bytes": 47351267,
+    "sha256": "91f0d32e2287fb0423fd1f7b61aaaa51cf8c0fe7c274920d99fa575d6f3e441b",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/firmware-config.g",
+    "bytes": 4727,
+    "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.headless/rrf.log",
+    "bytes": 23857,
+    "sha256": "2a4f650091c1ccfa2d1572adebb31635432b0290b35bba2614881a3d101e23d9",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/old20corrected/sweeps.stages/fit-001-default.json",
+    "bytes": 190001,
+    "sha256": "50be1d7e5c72cd999f990290dfcd67f094af82bf9d3ac6eb94292cc33e7c5f41",
+    "retention": "raw bundle and committed dataset retain small numerical evidence; original workspace retains journal/recording and service files"
+  },
+  {
+    "path": "evidence/native/current.node",
+    "bytes": 5858112,
+    "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+    "retention": "workspace only; rebuild from committed recipe and exact engine source revision"
+  },
+  {
+    "path": "evidence/native/old.node",
+    "bytes": 5858112,
+    "sha256": "98f4c408c637ed7d081a279d4ed048e3390722919c797b030a4fa5b591848742",
+    "retention": "workspace only; rebuild from committed recipe and exact engine source revision"
+  }
+]
