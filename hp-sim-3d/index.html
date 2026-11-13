@@ -18,7 +18,7 @@
       // Apply the remembered colour theme before first paint.
       try {
         const theme = localStorage.getItem('hp-sim-3d.colorTheme');
-        if (['classic', 'graphite', 'daylight', 'contrast'].includes(theme)) {
+        if (['classic', 'graphite', 'daylight', 'contrast', 'tokyo-night', 'gruvbox', 'nord'].includes(theme)) {
           document.documentElement.dataset.theme = theme;
         }
       } catch {}

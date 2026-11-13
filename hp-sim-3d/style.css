@@ -87,6 +87,70 @@
   --viewport: #101419;
 }
 
+/* Vim-inspired palettes: Tokyo Night, Gruvbox and Nord. */
+:root[data-theme='tokyo-night'] {
+  color-scheme: dark;
+  --chrome: #15161e;
+  --chrome-text: #c0caf5;
+  --chrome-muted: #a9b1d6;
+  --control: #24283b;
+  --control-hover: #414868;
+  --control-border: #565f89;
+  --accent: #bb9af7;
+  --accent-hover: #c7a9ff;
+  --accent-text: #15161e;
+  --focus: #7dcfff;
+  --panel: #1a1b26;
+  --glass-hover: #24283b;
+  --viewport: #1a1b26;
+  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --glass: #1a1b26;
+  --glass-text: #c0caf5;
+  --glass-border: #565f89;
+}
+
+:root[data-theme='gruvbox'] {
+  color-scheme: dark;
+  --chrome: #1d2021;
+  --chrome-text: #ebdbb2;
+  --chrome-muted: #bdae93;
+  --control: #3c3836;
+  --control-hover: #504945;
+  --control-border: #7c6f64;
+  --accent: #fabd2f;
+  --accent-hover: #f9d56e;
+  --accent-text: #1d2021;
+  --focus: #8ec07c;
+  --panel: #282828;
+  --glass-hover: #3c3836;
+  --viewport: #282828;
+  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --glass: #282828;
+  --glass-text: #ebdbb2;
+  --glass-border: #7c6f64;
+}
+
+:root[data-theme='nord'] {
+  color-scheme: dark;
+  --chrome: #2e3440;
+  --chrome-text: #eceff4;
+  --chrome-muted: #b8c5d9;
+  --control: #3b4252;
+  --control-hover: #434c5e;
+  --control-border: #687a96;
+  --accent: #88c0d0;
+  --accent-hover: #a5d5e2;
+  --accent-text: #2e3440;
+  --focus: #ebcb8b;
+  --panel: #343c4b;
+  --glass-hover: #434c5e;
+  --viewport: #2e3440;
+  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --glass: #343c4b;
+  --glass-text: #eceff4;
+  --glass-border: #687a96;
+}
+
 * {
   box-sizing: border-box;
 }
