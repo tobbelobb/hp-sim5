@@ -5,6 +5,7 @@ Build RRF/build/rrf_simulator first.
 """
 
 import csv
+import math
 import re
 import shutil
 import subprocess
@@ -158,6 +159,43 @@ M114
                 self.assertEqual(positions[0][2], 0)
                 self.assertGreater(positions[-1][2], 0.1)
                 self.assertEqual(motion, [])
+
+    def test_attachments_balance_moments_on_the_mover(self):
+        # A soft line makes each motor step a small force, so that step
+        # rounding does not hide the moments.
+        spring, weight, guy_wire = 2000.0, 0.216 * 9.81, 117.2
+        target = (300.0, 200.0, 0.0)
+        corners = [(x, y, z) for z in (200.0, -200.0)
+                   for x, y in ((200.0, -200.0), (200.0, 200.0), (-200.0, 200.0), (-200.0, -200.0))]
+        anchors = [(1284.9 * x / 200.0, 1284.9 * y / 200.0, 1900.0 if z > 0.0 else -280.0) for x, y, z in corners]
+        distances = [math.dist(anchor, target) for anchor in anchors]
+        move = 'G1 X%g Y%g Z%g F6000\nM400\nM114' % target
+        geometric = self.run_gcode(f'G28\n{move}', 'config_cubecorners.g')[1][-1]
+        steps_per_mm = [steps / (distance - math.dist(anchor, (0.0, 0.0, 0.0)))
+                        for steps, distance, anchor in zip(geometric, distances, anchors)]
+
+        def moment(extra_config):
+            counts = self.run_gcode(f'M666 S{spring}\n{extra_config}G28\nM666 F1\n{move}', 'config_cubecorners.g')[1][-1]
+            force = [0.0, 0.0, -weight]
+            moment = [0.0, 0.0, 0.0]
+            for i in range(8):
+                flex = (counts[i] - geometric[i]) / steps_per_mm[i]
+                tension = -flex * spring / (distances[i] + guy_wire)
+                self.assertGreater(tension, 2.5)
+                pull = [tension * (anchors[i][axis] - target[axis]) / distances[i] for axis in range(3)]
+                arm = corners[i]
+                for axis in range(3):
+                    force[axis] += pull[axis]
+                moment[0] += arm[1] * pull[2] - arm[2] * pull[1]
+                moment[1] += arm[2] * pull[0] - arm[0] * pull[2]
+                moment[2] += arm[0] * pull[1] - arm[1] * pull[0]
+            for value in force:
+                self.assertAlmostEqual(value, 0.0, delta=0.2)
+            return max(abs(value) for value in moment)  # N*mm
+
+        self.assertLess(moment(''), 40.0)
+        point_model = 'M666 E' + ':'.join(['0'] * 24) + '\n'
+        self.assertGreater(moment(point_model), 100.0)
 
     def test_invisible_anchor_preserves_position(self):
         positions, counts, motion, output = self.run_gcode(

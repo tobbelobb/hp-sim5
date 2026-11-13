@@ -16,6 +16,7 @@ M666 S parameter sets the Spring constant (rough approximation) of the line in u
 M666 I parameter sets the minimum planned force in each direction (unit N).
 M666 X parameter sets the maximum planned force in each direction (unit N). This is a safety limit, and will affect moves close to the edges of the reachable volume the most.
 M666 Y parameter sets the guy wire lengths. Needed for flex compensation. Guy wires go between spool and final line roller.
+M666 E parameter sets the line attachment points on the mover (effector), as X:Y:Z of each line's attachment point measured from the mover's centre of mass (unit mm), listed in anchor order, so three values per anchor. When set, flex compensation also balances the moments that the line forces apply to the mover, instead of treating the mover as a point. Use it on machines where single lines attach to spread out points and together stop the mover from rotating, like CubeCorners. Leave it out when parallel line pairs (M666 N) keep the mover from rotating. Default: all zero, which treats the mover as a point.
 M666 A and M669 N together define the Hangprinters anchor configuration.
 M666 A parameter sets the anchor mode. 0=None, 1=last-top, 2=all-top. Default: last-top.
 M669 K parameter sets the kinematics. Hangprinter users should have a M669 K6 line early in their Reprapfirmware config.g.

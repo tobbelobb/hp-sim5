@@ -55,6 +55,13 @@ zero-length `G1` does not tension the lines. Motor counters are preserved, so
 the first real move still includes the initial stretch correction. Geometry
 changes invalidate this saved position and retain their existing rehome rule.
 
+Hangprinter `M666 E` sets where each line attaches to the mover, as X:Y:Z
+measured from the mover's centre of mass, three values per anchor in anchor
+order. Flex compensation then balances the moments on the mover as well as the
+forces. It is meant for machines like CubeCorners, where single lines attach to
+spread out points and together stop the mover from rotating. Without `M666 E`
+the mover is treated as a point.
+
 After building, run `.venv/bin/python RRF/tests/test_flex_mode_position.py`
 from the repo root to check mode changes, subsequent motion, and visible and
 invisible anchor drives through the real G-code and CAN pipeline.
