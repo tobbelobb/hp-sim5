@@ -48,8 +48,11 @@ source research-program/cloud/env.sh
 .venv/bin/python scripts/research_runtime_check.py
 ```
 
-Setup downloads dependencies and needs network access. Source env.sh in each shell
-that uses that installed toolchain. Socket restrictions apply to the supervisor's
+Setup downloads dependencies and needs network access. Source env.sh before starting
+the runtime supervisor; it inherits that shell's tool paths. If the native build is
+stale, run `npm run build:native` in the sourced shell or let world configuration
+rebuild it. If a supervisor started without the toolchain, stop it and restart it
+from a sourced shell. Socket restrictions apply to the supervisor's
 actual launch context. The file tool transport lets a socket-denied worker call a
 supervisor launched in a permitted context; it cannot grant socket privileges to a
 supervisor that is itself forbidden to bind sockets. Inspect a failed readiness
@@ -60,10 +63,6 @@ Hosted workspaces are disposable. Commit useful small evidence and upload large
 recordings to durable storage before the workspace goes away. Credentials and live
 connections cannot be resumed on another host. Reopen the committed program by its
 directory; use `--agent-id` to reconstruct member metadata.
-
-The cloud-specific skill at `.agents/skills/cloud-research-client/SKILL.md` gives
-the shell setup needed before starting a supervisor and how to recover after a
-toolchain failure.
 
 ## Anthropic infrastructure
 
