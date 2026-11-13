@@ -174,6 +174,13 @@ export class MachineTagComponent {
     this.id = machineId;
   }
 }
+// A worn bearing: the friction torque (N·m) that resists the wheel's rotation.
+export class BearingFrictionComponent {
+  constructor(torque) {
+    this.torque = torque;
+  }
+}
+
 export class CoefficientOfFrictionComponent {
   constructor(mu = 0.1) { // Default static friction coefficient
     this.mu = mu; // Coefficient of static friction

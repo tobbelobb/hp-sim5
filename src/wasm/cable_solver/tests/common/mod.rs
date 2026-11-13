@@ -66,6 +66,21 @@ pub fn pulley(id: usize, p: [f64; 3], r: f64, mu: f64, inertia: f64) -> Entity {
     e
 }
 
+/// A free-spinning wheel in the xy plane with an encoder. A `bearing` friction
+/// torque makes its bearing worn.
+pub fn wheel(id: usize, p: [f64; 3], r: f64, mu: f64, inertia: f64, bearing: Option<f64>) -> Entity {
+    let mut e = pulley(id, p, r, mu, inertia);
+    e[75] += 8.0;
+    e[76..79].copy_from_slice(&[0.0, 0.0, 1.0]);
+    e[79..83].copy_from_slice(&[0.0, 0.0, 0.0, 1.0]);
+    e[67] = 1.0;
+    if let Some(torque) = bearing {
+        e[75] += 2048.0;
+        e[137] = torque;
+    }
+    e
+}
+
 pub struct Seg {
     pub a: usize,
     pub b: usize,

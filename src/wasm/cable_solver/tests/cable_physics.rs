@@ -151,11 +151,7 @@ fn straight_pinhole_has_no_capstan_friction() {
 #[test]
 fn free_wheel_atwood_turns_with_line() {
     let (m1, m2, r) = (2.0, 1.0, 0.05);
-    let mut top = pulley(0, [0.0, 0.0, 0.0], r, 0.5, 5e-8);
-    top[75] += 8.0; // free spool-type wheel
-    top[76..79].copy_from_slice(&[0.0, 0.0, 1.0]);
-    top[79..83].copy_from_slice(&[0.0, 0.0, 0.0, 1.0]);
-    top[67] = 1.0;
+    let top = wheel(0, [0.0, 0.0, 0.0], r, 0.5, 5e-8, None);
     let left = mass(1, [-r, -1.0, 0.0], m1);
     let right = mass(2, [r, -1.0, 0.0], m2);
     let segs = [

@@ -6,6 +6,12 @@
       "physics_substeps": 1,
       "solver_iterations": 10
     },
+    "public/usd_scenes/hp4_worn_bearings.usda": {
+      "name": "Hangprinter version 4 with worn bearings",
+      "machine_type": "hangprinter_4",
+      "physics_substeps": 1,
+      "solver_iterations": 10
+    },
     "public/usd_scenes/hp3.usda": {
       "name": "Hangprinter version 3",
       "machine_type": "hangprinter_3"
@@ -61,6 +67,44 @@
         "hangprinter_4_w_line_layers"
       ],
       "scene": "public/usd_scenes/hp4.usda",
+      "line_layering": true,
+      "rrf_config": "RRF/run/vsd/sys/config_hp4_w_line_layers.g",
+      "klipper_config": "public/klipper/hp4/printer-hp4-linux-mcu-with-buildup.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp4_w_line_layers.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp4_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "Hangprinter version 4 with worn bearings without line layering",
+      "nicknames": [
+        "hp4_worn_bearings",
+        "hangprinter_4_worn_bearings"
+      ],
+      "scene": "public/usd_scenes/hp4_worn_bearings.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_hp4.g",
+      "klipper_config": "public/klipper/hp4/printer-hp4-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp4_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp4_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Hangprinter version 4 with worn bearings with line layering",
+      "nicknames": [
+        "hp4_worn_bearings_w_line_layers",
+        "hangprinter_4_worn_bearings_w_line_layers"
+      ],
+      "scene": "public/usd_scenes/hp4_worn_bearings.usda",
       "line_layering": true,
       "rrf_config": "RRF/run/vsd/sys/config_hp4_w_line_layers.g",
       "klipper_config": "public/klipper/hp4/printer-hp4-linux-mcu-with-buildup.cfg",

@@ -80,6 +80,7 @@ export class RustPhysicsEngine {
         velocity: ecs.VelocityComponent, angular: ecs.AngularVelocityComponent, mass: ecs.MassComponent,
         inertia: ecs.MomentOfInertiaComponent, encoder: ecs.EncoderComponent, member: ecs.RigidBodyMemberComponent,
         body: ecs.RigidBodyComponent, radius: ecs.RadiusComponent, friction: ecs.CoefficientOfFrictionComponent,
+        bearing: ecs.BearingFrictionComponent,
         link: CableLinkComponent, spool: SpoolStateComponent, motor: StepperMotorComponent };
       const c = Object.fromEntries(Object.entries(types).map(([key, Type]) => [key, get(id, Type)]));
       putV(a, 0, c.position?.pos); putQ(a, 3, c.orientation?.quaternion);
@@ -102,12 +103,14 @@ export class RustPhysicsEngine {
       putV(a, 69, c.velocity?.vel); putV(a, 72, c.angular?.omega);
       a[75] = (c.velocity ? 1 : 0) | (c.angular ? 2 : 0) | (get(id, ecs.GravityAffectedComponent) ? 4 : 0)
         | (c.spool ? 8 : 0) | (c.motor ? 16 : 0) | (c.body ? 32 : 0) | (c.inertia ? 64 : 0)
-        | (c.mass ? 128 : 0) | (c.link ? 256 : 0) | (c.link?.cablePlaneNormalLocal ? 512 : 0) | (c.radius ? 1024 : 0);
+        | (c.mass ? 128 : 0) | (c.link ? 256 : 0) | (c.link?.cablePlaneNormalLocal ? 512 : 0) | (c.radius ? 1024 : 0)
+        | (c.bearing ? 2048 : 0);
       putV(a, 76, c.spool?.axisLocal); putQ(a, 79, c.spool?.referenceOrientation);
       putV(a, 83, c.body?.syncedPosition); putQ(a, 86, c.body?.syncedOrientation);
       putV(a, 90, c.link?.prevCableAttachmentTimePos); putQ(a, 93, c.link?.prevCableAttachmentTimeOrientation);
       putQ(a, 97, c.link?.prevCableAttachmentTimeLocalOrientation); putV(a, 101, c.link?.cablePlaneNormal);
       a[104] = c.radius?.radius ?? NaN; a[105] = c.friction?.mu ?? 0; a[106] = c.member?.physicalMass ?? NaN;
+      a[137] = c.bearing?.torque ?? 0;
       const m = c.motor;
       a.set([m?.commandedAngle ?? 0, m?.deltaAngle ?? 0, m?.holdingTorque ?? 0,
         m?.numPolePairs ?? 50, m?.dampingCoeff ?? 0, m?.maxSpeedRad ?? 600, +Boolean(m?.closedLoop),
@@ -172,7 +175,7 @@ export class RustPhysicsEngine {
         if (c[key]) this.vector(c[key], field, o + offset);
       }
       for (const [key, field, offset] of [['encoder', 'angle', 66], ['radius', 'radius', 104], ['friction', 'mu', 105],
-        ['member', 'physicalMass', 106], ['mass', 'mass', 124]]) if (c[key]) this.bind(c[key], field, o + offset, null,
+        ['bearing', 'torque', 137], ['member', 'physicalMass', 106], ['mass', 'mass', 124]]) if (c[key]) this.bind(c[key], field, o + offset, null,
           field === 'physicalMass' ? x => Number.isNaN(x) ? null : x : x => x, x => x ?? NaN);
       if (c.inertia) for (let r = 0; r < 3; r++) for (let col = 0; col < 3; col++) {
         this.bind(c.inertia.inertiaTensor[r], col, o + 25 + r * 3 + col);

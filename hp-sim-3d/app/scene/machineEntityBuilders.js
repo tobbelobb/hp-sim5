@@ -14,6 +14,7 @@ import {
     PrevFinalPosComponent,
     RestitutionComponent,
     CoefficientOfFrictionComponent,
+    BearingFrictionComponent,
     RenderableComponent,
     MachineTagComponent,
     SceneEntityInfoComponent,
@@ -141,6 +142,8 @@ function applyWheel(world, context, registry, prim, posArr) {
     world.addComponent(ent, vectorComponent(AngularVelocityComponent, angVelArr));
     world.addComponent(ent, new MomentOfInertiaComponent(inertiaTensor, { axisLocal: wheelAxisLocal }));
     addMaterialComponents(world, ent, restitution, friction);
+    const bearingFrictionTorque = readNumericAttribute(prim, "bearing:frictionTorque");
+    if (bearingFrictionTorque !== null) world.addComponent(ent, new BearingFrictionComponent(bearingFrictionTorque));
     world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, initialOrientation, null, wheelAxisLocal));
     registerNamedEntity(world, registry, namespace, prim, ent);
 }

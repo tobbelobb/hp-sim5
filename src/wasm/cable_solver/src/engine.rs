@@ -17,6 +17,7 @@ const MASS: u32 = 128;
 const CABLE_LINK: u32 = 256;
 const LOCAL_AXIS: u32 = 512;
 const RADIUS: u32 = 1024;
+const BEARING: u32 = 2048;
 const IDENTITY: Q = [0.0, 0.0, 0.0, 1.0];
 const Z: V = [0.0, 0.0, 1.0];
 const TAU: f64 = 2.0 * PI;
@@ -154,6 +155,32 @@ struct Cable {
     tried: Vec<u8>,
     merged: Vec<bool>,
     strain: Vec<f64>,
+    // Per link on a wheel with a worn bearing.
+    wheels: Vec<Option<Wheel>>,
+}
+/// A wheel whose bearing resists turning. The line turns it through capstan
+/// friction, against the bearing's friction torque and the wheel's inertia.
+#[derive(Clone, Copy, Default)]
+struct Wheel {
+    /// Whether the line's grip overcomes the bearing, so the rim follows the
+    /// line. Otherwise the line slides over the wheel.
+    grip: bool,
+    /// Rim travel the sliding line's drag adds per step, and the bearing
+    /// removes.
+    drive: f64,
+    brake: f64,
+    /// Rim travel of the last two steps, as material gained left of the link.
+    travel: [f64; 2],
+}
+impl Wheel {
+    /// Rim travel this step beside a line that travels `line`.
+    fn turn(&self, line: f64) -> f64 {
+        if self.grip {
+            return line;
+        }
+        let dragged = self.travel[0] + (line - self.travel[0]).clamp(-self.drive, self.drive);
+        dragged.signum() * (dragged.abs() - self.brake).max(0.0)
+    }
 }
 const STICK: f64 = 0.0;
 const RIGHT: f64 = 1.0;
@@ -526,7 +553,7 @@ impl PhysicsWorld {
         }
         let cables: Vec<Cable> = paths
             .into_iter()
-            .map(|data| Cable { data, ratio: Vec::new(), slip: Vec::new(), tried: Vec::new(), merged: Vec::new(), strain: Vec::new() })
+            .map(|data| Cable { data, ratio: Vec::new(), slip: Vec::new(), tried: Vec::new(), merged: Vec::new(), strain: Vec::new(), wheels: Vec::new() })
             .collect();
         let mut by_id = std::collections::BTreeMap::<u64, Vec<(usize, usize)>>::new();
         for (p, c) in cables.iter().enumerate() {
@@ -609,7 +636,7 @@ impl PhysicsWorld {
             self.options[15]
         };
         self.cache();
-        self.friction();
+        self.friction(solver_dt);
         self.constraints(solver_dt);
         self.overcorrections(solver_dt);
         self.sync_bodies(true);
@@ -916,11 +943,11 @@ fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: b
             }
             let cw = c.cw(i + side, side == 0);
             shifts[side] = arc(old_rel, new_rel, [0.0; 3], radius, cw, normal, false);
-            // A wheel passing material freely turns with it; its rotation
-            // carries none (the row moves it, see `transport`).
+            // A wheel no motor turns follows the line; its rotation carries
+            // no material (the row moves it, see `transport`).
             shifts[side] += if hybrid(kind) {
                 stored_delta(theta, e.delta, cw, es[ids[side]][104], half, radius)
-            } else if c.slip.get(i + side) == Some(&FREE) {
+            } else if passive_wheel(c, i + side, es) {
                 0.0
             } else if cw {
                 e.delta * radius
@@ -1756,27 +1783,19 @@ impl PhysicsWorld {
     /// attachments separate rows. A frictional link starts from the state it
     /// ended the last step with; `transport` then checks that state against
     /// the solution.
-    fn friction(&mut self) {
+    ///
+    /// A wheel with a worn bearing holds a tension difference of its friction
+    /// torque and inertial reaction over its radius, taken against the lower
+    /// of its spans' tensions when the last step ended, up to what the line's
+    /// capstan friction on the wheel can carry.
+    fn friction(&mut self, dt: f64) {
         let layering = self.options[3] != 0.0;
         for c in &mut self.cables {
             let n = c.count();
             if c.slip.len() != n + 1 {
                 c.slip = vec![STICK; n + 1];
+                c.wheels = vec![None; n + 1];
             }
-            c.ratio = vec![f64::INFINITY; n + 1];
-            for li in 1..n {
-                let Some(ratio) = capstan(c, li, &self.entities, layering) else {
-                    c.slip[li] = STICK;
-                    continue;
-                };
-                c.ratio[li] = ratio;
-                if ratio <= 1.0 + 1e-12 {
-                    c.slip[li] = FREE;
-                } else if c.slip[li] == FREE {
-                    c.slip[li] = STICK;
-                }
-            }
-            c.tried = c.slip.iter().map(|&state| tried(state)).collect();
             if c.strain.len() != n {
                 c.strain = (0..n)
                     .map(|i| {
@@ -1785,6 +1804,47 @@ impl PhysicsWorld {
                     })
                     .collect();
             }
+            c.ratio = vec![f64::INFINITY; n + 1];
+            for li in 1..n {
+                let Some(ratio) = capstan(c, li, &self.entities, layering) else {
+                    c.slip[li] = STICK;
+                    continue;
+                };
+                c.ratio[li] = ratio;
+                let id = c.entity(li - 1, 1);
+                let e = &self.entities[id];
+                if passive_wheel(c, li, &self.entities) && has(e, BEARING) {
+                    let radius = c.radius(&self.entities, li, id, layering).0;
+                    let axis = norm(v(e, 44));
+                    let inertia = positive_inertia(dot(axis, matrix_vec(e, 25, axis)));
+                    let tension = c.strain[li - 1].min(c.strain[li]) / c.data[3];
+                    let mut wheel = c.wheels[li].unwrap_or_default();
+                    let toward = match c.slip[li] {
+                        LEFT => 1.0,
+                        RIGHT => -1.0,
+                        _ if wheel.travel[0] != 0.0 => wheel.travel[0].signum(),
+                        _ => 0.0,
+                    };
+                    let step = if dt.is_finite() && dt > EPS { dt * dt } else { f64::INFINITY };
+                    let force = (e[137].max(0.0) / radius
+                        + toward * inertia * (wheel.travel[0] - wheel.travel[1]) / (radius * radius * step))
+                        .max(0.0);
+                    let bearing = if tension > EPS { 1.0 + force / tension } else { f64::INFINITY };
+                    wheel.grip = bearing <= ratio;
+                    wheel.drive = radius * radius * (ratio - 1.0) * tension * dt * dt / inertia;
+                    wheel.brake = e[137].max(0.0) * radius * dt * dt / inertia;
+                    c.ratio[li] = ratio.min(bearing);
+                    c.wheels[li] = Some(wheel);
+                } else {
+                    c.wheels[li] = None;
+                }
+                if c.ratio[li] <= 1.0 + 1e-12 {
+                    c.slip[li] = FREE;
+                } else if c.slip[li] == FREE {
+                    c.slip[li] = STICK;
+                }
+            }
+            c.tried = c.slip.iter().map(|&state| tried(state)).collect();
         }
     }
     fn constraints(&mut self, dt: f64) {
@@ -1912,6 +1972,7 @@ impl PhysicsWorld {
                         if !has(&self.entities[id], SPOOL)
                             || !candidate(&self.entities[id])
                             || c.slip[li] != STICK
+                            || passive_wheel(c, li, &self.entities)
                         {
                             continue;
                         }
@@ -1945,7 +2006,7 @@ impl PhysicsWorld {
             for c in &self.cables {
                 for li in 1..c.count() {
                     let id = c.entity(li - 1, 1);
-                    if c.kind(li) == 1 && c.slip[li] != STICK && has(&self.entities[id], SPOOL) {
+                    if passive_wheel(c, li, &self.entities) {
                         kinematic[id] = true;
                     }
                 }
@@ -2115,13 +2176,16 @@ impl PhysicsWorld {
                 } else if state[k + 1] != c.slip[li] {
                     states.push((p, li, state[k + 1], false));
                 }
-                let id = c.entity(s + k, 1);
-                let wheel = &self.entities[id];
-                if c.kind(li) == 1 && has(wheel, SPOOL) && candidate(wheel) {
-                    let radius = c.radius(&self.entities, li, id, layering).0;
-                    if radius > EPS {
-                        wheels.push((id, moved / if c.cw(li, false) { radius } else { -radius }));
-                    }
+                if passive_wheel(c, li, &self.entities) {
+                    wheels.push((p, li, c.wheels[li].map_or(moved, |wheel| wheel.turn(moved))));
+                }
+            }
+        }
+        // A worn wheel at a sticking link meets a line that does not travel.
+        for (p, c) in self.cables.iter().enumerate() {
+            for li in 1..c.count() {
+                if let (true, Some(wheel)) = (c.slip[li] == STICK, c.wheels[li]) {
+                    wheels.push((p, li, wheel.turn(0.0)));
                 }
             }
         }
@@ -2183,8 +2247,18 @@ impl PhysicsWorld {
                 c.strain[i] = strain(joint);
             }
         }
-        for (id, angle) in wheels {
-            self.turn_wheel(id, angle);
+        for (p, li, travel) in wheels {
+            let c = &mut self.cables[p];
+            if let Some(wheel) = &mut c.wheels[li] {
+                wheel.travel = [travel, wheel.travel[0]];
+            }
+            let id = c.entity(li - 1, 1);
+            let wheel = &self.entities[id];
+            let radius = c.radius(&self.entities, li, id, layering).0;
+            if candidate(wheel) && radius > EPS {
+                let angle = travel / if c.cw(li, false) { radius } else { -radius };
+                self.turn_wheel(id, angle);
+            }
         }
         true
     }
@@ -2258,9 +2332,15 @@ fn capstan(c: &Cable, li: usize, es: &[Entity], layering: bool) -> Option<f64> {
     }
     let e = &es[c.entity(li - 1, 1)];
     if kind == 1 && has(e, SPOOL) {
-        // A motor holds its material; a free-spinning wheel of negligible
-        // inertia passes it on at equal tension and turns with it.
-        return if has(e, MOTOR) { None } else { Some(1.0) };
+        // A motor holds its material. A wheel on an ideal bearing, of
+        // negligible inertia, passes it on at equal tension and turns with
+        // it. On a worn bearing the line grips the wheel as it would a roller.
+        if has(e, MOTOR) {
+            return None;
+        }
+        if !has(e, BEARING) {
+            return Some(1.0);
+        }
     }
     if !(kind == 1 || kind == 2) || e[105] <= EPS {
         return Some(1.0);
@@ -2283,6 +2363,15 @@ fn capstan(c: &Cable, li: usize, es: &[Entity], layering: bool) -> Option<f64> {
         }
     };
     Some((e[105] * angle).exp())
+}
+/// Whether interior link `li` runs over a wheel no motor turns: the line
+/// moves over it, and its rotation follows from the line.
+fn passive_wheel(c: &Cable, li: usize, es: &[Entity]) -> bool {
+    if li == 0 || li >= c.count() || c.kind(li) != 1 {
+        return false;
+    }
+    let e = &es[c.entity(li - 1, 1)];
+    has(e, SPOOL) && !has(e, MOTOR)
 }
 fn candidate(e: &Entity) -> bool {
     has(e, LOCAL_AXIS) && e[52] != 0.0 && e[56] != 0.0

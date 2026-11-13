@@ -387,3 +387,57 @@ fn long_rows_report_every_segment() {
         assert!((along.abs() - magnitude).abs() < 1e-9 * magnitude, "segment {i} force {force:?} is off its span");
     }
 }
+
+/// Atwood machine over a wheel with a worn bearing: friction torque `bearing`,
+/// rim-equivalent mass `rim`, line friction `mu` over half a turn.
+/// Returns (acceleration of the heavy side, rim travel over line travel).
+fn worn_wheel_atwood(mu: f64, rim: f64, bearing: f64) -> (f64, f64) {
+    let (m1, m2, r) = (2.0, 1.0, 0.05);
+    let es = vec![
+        wheel(0, [0.0; 3], r, mu, rim * r * r, Some(bearing)),
+        mass(1, [-r, -1.0, 0.0], m1),
+        mass(2, [r, -1.0, 0.0], m2),
+    ];
+    let segs = [
+        Seg { a: 1, b: 0, rest: 1.0, pa: [-r, -1.0, 0.0], pb: [-r, 0.0, 0.0] },
+        Seg { a: 0, b: 2, rest: 1.0, pa: [r, 0.0, 0.0], pb: [r, -1.0, 0.0] },
+    ];
+    let links = [(ATTACHMENT, true, 0.0), (ROLLING, true, PI * r), (ATTACHMENT, true, 0.0)];
+    let mut w = world(es, vec![path(&links, &segs, 1e6, 1e3, 10.0)]);
+    let before = material(&mut w, 0);
+    let dt = 0.0005;
+    for _ in 0..400 {
+        w.step(dt);
+    }
+    let (v0, y0, angle0) = (vy(&w, 1), y(&w, 1), w.entities[0][66]);
+    for _ in 0..400 {
+        w.step(dt);
+    }
+    assert!((material(&mut w, 0) - before).abs() < 1e-9);
+    let travel = y0 - y(&w, 1);
+    let turned = (w.entities[0][66] - angle0).abs() * r;
+    (-(vy(&w, 1) - v0) / (400.0 * dt), if travel.abs() > 1e-6 { turned / travel } else { turned })
+}
+
+#[test]
+fn worn_bearing_resists_the_line() {
+    let (m1, m2, r): (f64, f64, f64) = (2.0, 1.0, 0.05);
+    // (line friction, rim mass, bearing torque, expected acceleration, rim follows)
+    for (mu, rim, bearing, expected, follows) in [
+        // Bearing drag as a force at the rim.
+        (0.5, 1e-4, 0.1, (G * (m1 - m2) - 0.1 / r) / (m1 + m2), true),
+        // Too little load to turn the bearing or to slide over the wheel.
+        (0.5, 1e-4, 1.0, 0.0, false),
+        // Seized: the line slides over the wheel at the capstan ratio.
+        (0.1, 1e-4, 1.0, G * (m1 - m2 * (0.1 * PI).exp()) / (m1 + m2 * (0.1 * PI).exp()), false),
+        // Inertia alone.
+        (0.5, 0.5, 0.0, G * (m1 - m2) / (m1 + m2 + 0.5), true),
+        // No grip: the wheel is left behind.
+        (0.0, 0.5, 0.1, G * (m1 - m2) / (m1 + m2), false),
+    ] {
+        let (a, turn) = worn_wheel_atwood(mu, rim, bearing);
+        eprintln!("worn wheel mu {mu} rim {rim} kg bearing {bearing} Nm: a {a:.4} expected {expected:.4}, rim/line travel {turn:.4}");
+        assert!((a - expected).abs() < 0.01 * G, "a {a} vs {expected}");
+        assert!(if follows { (turn - 1.0).abs() < 0.01 } else { turn < 0.01 }, "rim/line {turn}");
+    }
+}
