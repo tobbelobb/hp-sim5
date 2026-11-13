@@ -207,6 +207,8 @@ def main():
         result = call(args.connection, args.server, 'list_tools' if args.operation == 'list' else 'call_tool',
                       tool=args.tool, arguments=json.loads(args.params), timeout=args.timeout)
         print(json.dumps(result))
+        if args.operation == 'call' and result.get('isError'):
+            raise SystemExit(1)
 
 
 if __name__ == '__main__':

@@ -51,7 +51,7 @@ curl_post "G92 X0 Y0 Z0" > /dev/null
 resp_x=$(curl_post "G1 X100")
 [[ "$resp_x" == *"---MOTION---"* ]] || fail "G1 X100 did not return motion data"
 motion_x=$(echo "$resp_x" | sed -n '/---MOTION---/,$p' | tail -n +3 | tr -d '\r')
-first_idx_x=$(echo "$motion_x" | awk -F',' '/^[0-9]+/{print $1; exit}')
+first_idx_x=$(awk -F',' '/^[0-9]+/ && !found {print $1; found=1}' <<< "$motion_x")
 last_idx_x=$(echo "$motion_x" | awk -F',' '/^[0-9]+/{val=$1} END{print val}')
 count_x=$(echo "$motion_x" | awk -F',' '/^[0-9]+/{c++} END{print c+0}')
 [[ -n "${first_idx_x:-}" && -n "${last_idx_x:-}" && -n "${count_x:-}" ]] || fail "Could not parse CAN indices for G1 X100"
@@ -62,7 +62,7 @@ echo "  Motion capture continuity (X): OK"
 resp_y=$(curl_post "G1 Y100")
 [[ "$resp_y" == *"---MOTION---"* ]] || fail "G1 Y100 did not return motion data"
 motion_y=$(echo "$resp_y" | sed -n '/---MOTION---/,$p' | tail -n +3 | tr -d '\r')
-first_idx_y=$(echo "$motion_y" | awk -F',' '/^[0-9]+/{print $1; exit}')
+first_idx_y=$(awk -F',' '/^[0-9]+/ && !found {print $1; found=1}' <<< "$motion_y")
 [[ -n "${first_idx_y:-}" ]] || fail "Could not parse CAN indices for G1 Y100"
 (( first_idx_y == last_idx_x + 1 )) || fail "Motion capture dropped CAN packets between sequential moves"
 

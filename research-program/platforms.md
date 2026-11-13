@@ -49,7 +49,11 @@ source research-program/cloud/env.sh
 ```
 
 Setup downloads dependencies and needs network access. Source env.sh in each shell
-that uses that installed toolchain. Socket restrictions apply to the supervisor's
+that uses that installed toolchain, including before starting the runtime supervisor;
+it inherits that shell's tool paths. Include that source command in simulation
+workers' tasks: fresh contexts do not inherit the manager's shell. If a supervisor
+started without the toolchain, stop it and restart it from a sourced shell. Socket
+restrictions apply to the supervisor's
 actual launch context. The file tool transport lets a socket-denied worker call a
 supervisor launched in a permitted context; it cannot grant socket privileges to a
 supervisor that is itself forbidden to bind sockets. Inspect a failed readiness
@@ -98,7 +102,8 @@ and [Agent SDK skills](https://platform.claude.com/docs/en/agent-sdk/skills).
 The supervisor initially has no world. configure_session creates one; tools list
 shows the exact supported arguments and units. Add `--viewer headless` to runtime
 startup when Rerun inspection is useful. Tools return actual MCP results including
-isError and structuredContent. Long jobs return IDs; inspect and explicitly cancel
+isError and structuredContent. A failed tool call exits nonzero while retaining its
+JSON response on stdout. Long jobs return IDs; inspect and explicitly cancel
 jobs as needed. File calls default to 120 seconds; use --timeout up to 14500 only
 for a tool that needs it. After a timeout, outcome can be unknown: inspect status
 before retrying a mutation. Separate investigations have separate descriptors,
