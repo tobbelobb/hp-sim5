@@ -154,9 +154,19 @@ same world. The first machine supplies global physics resources such as gravity
 and the fixed timestep derived from USDA `timeCodesPerSecond`.
 
 The renderer is stored as the `renderSystem` world resource rather than as a
-simulation system. `app/runner.js` advances physics and invokes rendering
-separately, so ASAP playback can simulate several steps between rendered
-frames.
+simulation system. `app/runner.js` advances physics independently of animation
+frames: normal playback uses a dedicated worker clock, and ASAP playback uses
+time-budgeted message batches. Switching tabs or covering/minimizing the window
+can stop drawing without stopping physics, command playback or recording.
+Hidden tabs skip drawing, and returning to the tab shows the current state.
+On cross-origin-isolated hosts, the worker sleeps with `Atomics.wait` to avoid
+timer throttling; other hosts fall back to browser-dependent worker timers.
+
+Browser execution is still subject to browser freezing, memory-saving tab
+discarding, tab closure and computer sleep; a worker cannot guarantee continuous
+execution through those events. The app remains a static browser application
+that can be hosted on GitHub Pages, with no persistent server or native process
+required.
 
 ## Simulation Step Order
 

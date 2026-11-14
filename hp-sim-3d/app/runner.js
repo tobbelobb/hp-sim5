@@ -1,6 +1,7 @@
 import { dumpWorldState } from '../../src/js/cable_joints_3d/debugUtils.js';
 import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { InputSystem } from './hangprinter_input.js';
+import { startSimulationClock } from './workerController.js';
 
 const ASAP_RENDER_STRIDE = 10;
 const ASAP_SLICE_BUDGET_MS = 28;
@@ -22,6 +23,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   const {
     initialTimeScale = 1.0,
     onTimeScaleChange,
+    startClock = startSimulationClock,
   } = options;
 
   function sanitizeTimeScale(value, fallback) {
@@ -82,6 +84,8 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const stopLoops = () => {
+    stopClock?.();
+    stopClock = null;
     const renderSystem = getRenderSystem();
     if (renderSystem && typeof renderSystem.clearAnimationLoop === 'function') {
       renderSystem.clearAnimationLoop();
@@ -108,7 +112,7 @@ export function runGame(world, internalSetupScene, options = {}) {
 
   const renderOnce = () => {
     const renderSystem = getRenderSystem();
-    if (!renderSystem || renderSystem.drawingSuspended) {
+    if (document.hidden || !renderSystem || renderSystem.drawingSuspended) {
       return;
     }
 
@@ -163,7 +167,7 @@ export function runGame(world, internalSetupScene, options = {}) {
 
   const maybeRender = () => {
     const renderSystem = getRenderSystem();
-    if (!renderSystem || renderSystem.drawingSuspended) {
+    if (document.hidden || !renderSystem || renderSystem.drawingSuspended) {
       return;
     }
     if (renderStride === Number.POSITIVE_INFINITY) {
@@ -248,7 +252,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   // playback: external command sources may wait for simulated time to pass.
   const recorderReady = () => world.getResource('flightRecorder')?.readyForStep() !== false;
 
-  const runLinearFrame = (currentTime) => {
+  const runLinearTick = (currentTime) => {
     updatePauseButtonLabel();
     const dt = world.getResource('dt');
     if (dtEl && dtEl.textContent === 'N/A') {
@@ -256,7 +260,6 @@ export function runGame(world, internalSetupScene, options = {}) {
     }
     const pauseState = getPauseState();
     if (!pauseState) {
-      maybeRender();
       return;
     }
     if (lastTime === 0) {
@@ -300,7 +303,6 @@ export function runGame(world, internalSetupScene, options = {}) {
     if (frameCounter % SPEED_UPDATE_PERIOD === 0) {
       updateSpeedMeter();
     }
-    maybeRender();
   };
 
   const runAsapBatch = () => {
@@ -369,16 +371,27 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const startLinearLoop = (token) => {
-    const step = (time) => {
+    stopClock = startClock((time) => {
       if (token !== loopToken) {
         return;
       }
-      runLinearFrame(time);
+      runLinearTick(time);
+      if (token !== loopToken) return;
       if (!shouldRunContinuously()) {
         stopLoops();
         enterIdleMode();
+      }
+    }, (error) => {
+      if (token !== loopToken) return;
+      console.error('hp-sim-3d: simulation clock failed.', error);
+      pauseSimulation();
+    });
+
+    const step = () => {
+      if (token !== loopToken) {
         return;
       }
+      maybeRender();
       const renderSystem = getRenderSystem();
       if (!renderSystem || typeof renderSystem.setAnimationLoop === 'function') {
         return;
@@ -394,8 +407,8 @@ export function runGame(world, internalSetupScene, options = {}) {
     rafHandle = requestAnimationFrame(step);
   };
 
-  // A posted message yields to input and worker messages without the timer
-  // clamp, and keeps running in a background tab, unlike frames and timers.
+  // Posted messages yield to input and workers without the window timer clamp.
+  // They continue in hidden tabs, but cannot prevent browser freezing/discarding.
   const asapChannel = new MessageChannel();
   const startAsapLoop = (token) => {
     const iterate = () => {
@@ -621,10 +634,15 @@ export function runGame(world, internalSetupScene, options = {}) {
   let renderStrideOverride = null;
   let renderStride = 1;
   let rafHandle = null;
+  let stopClock = null;
   let asapTimer = null;
   let idleTimer = null;
   let loopToken = 0;
   let asapError = null;
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !shouldRunContinuously()) renderOnce();
+  });
 
   recomputeRenderStride();
   resetGame({ autoPause: false });

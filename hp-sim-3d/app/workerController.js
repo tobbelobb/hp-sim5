@@ -5,6 +5,33 @@ import { createKlipperRawBridge } from '../../integrations/klipper/klipperSimula
 import klipperMcuCommandPlayerWorkerUrl from '../../integrations/klipper/klipperMcuCommandPlayer.js?worker&url';
 import rrfCanPlayerWorkerUrl from '../../integrations/rrf/rrfCanPlayer.js?worker&url';
 import moveCommanderWorkerUrl from './workers/moveCommander.js?worker&url';
+import simulationClockWorkerUrl from './workers/simulationClock.js?worker&url';
+
+// Pace physics independently of rendering and the window's background timers.
+// Request the next tick only after consuming this one, so slow steps cannot
+// leave a backlog of clock messages when playback is paused or reset.
+export function startSimulationClock(onTick, onError) {
+  const worker = new Worker(simulationClockWorkerUrl, { type: 'module' });
+  let stopped = false;
+  const stop = () => {
+    stopped = true;
+    worker.terminate();
+  };
+  worker.onerror = onError;
+  worker.onmessage = () => {
+    if (stopped) return;
+    const now = performance.now();
+    try {
+      onTick(now);
+    } catch (error) {
+      onError(error);
+      return;
+    }
+    if (!stopped) worker.postMessage(Math.max(0, 16 - (performance.now() - now)));
+  };
+  worker.postMessage(0);
+  return stop;
+}
 
 export const KLIPPER_UPLOAD_PIPELINE = 'player';
 
