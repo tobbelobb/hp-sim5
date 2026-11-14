@@ -1398,6 +1398,8 @@ export async function collectSweepData(send, context) {
   const m669Values = parseM669(m669Reply?.reply);
   const m92Reply = await send('M92');
   const m92Values = parseM666(m92Reply?.reply);
+  // RRF applies G90 to H2 moves as absolute motor coordinates; every H2 move here is a delta.
+  if (firmware === 'rrf') await send('G91');
 
   const forcedBuildupFactor = resolveForcedBuildupFactor({
     forceBuildupFactor,

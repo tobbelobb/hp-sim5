@@ -134,3 +134,29 @@ test.each([false, true])('final dataset records projection mode %s', async proje
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('selects relative coordinates before RRF motion starts', async () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'relative-moves-'));
+  const sent = [];
+  tuneForce.mockResolvedValue({ forceLow: .0124, forceMid: .248, forceMax: 2.61 });
+  collectWithSlipRecovery.mockResolvedValue({
+    forces: { forceLow: .0124, forceMid: .248, forceMax: 2.61 },
+    dataPoints: [{ l_drive: 1, l_sensor: 2 }], recoveries: [],
+  });
+  const send = async line => {
+    sent.push(line);
+    if (line === 'M666') return { reply: 'M666 R30:30:30:30 Q0 U1:1:1:1 O1:1:1:1' };
+    return { reply: '' };
+  };
+  try {
+    await collectSweepData(send, {
+      args: { outputFile: path.join(directory, 'sweeps.json'), maxSweeps: 1, sensorCollectionForce: 1, fixedTargets: '0,0' },
+      machineType: 'hangprinter_3', machineConfig: MACHINE_CONFIGS.hangprinter_3,
+      motorIds: ['40.0', '41.0', '42.0', '43.0'], speedup: 1,
+    });
+    expect(sent.indexOf('G91')).toBeGreaterThanOrEqual(0);
+    expect(sent.indexOf('G91')).toBeLessThan(sent.findIndex(line => line.startsWith('M569.4')));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
