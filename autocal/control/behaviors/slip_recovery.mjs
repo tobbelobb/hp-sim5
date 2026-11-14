@@ -1,5 +1,9 @@
 import { applyForceModeState, FixedAnchorDriftError } from '../primitives/uncalibrated_actions.mjs';
 
+// A held motor that moved more than a full turn did not slip under load: the
+// machine no longer matches what the collector believes, so retrying is unsafe.
+const GROSS_DRIFT_DEG = 360;
+
 // Retry the whole direction: never mix points from before/after a slip.
 export async function collectWithSlipRecovery(send, collect, {
   motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
@@ -14,6 +18,9 @@ export async function collectWithSlipRecovery(send, collect, {
     } catch (error) {
       if (!(error instanceof FixedAnchorDriftError)) throw error;
       await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
+      if (Math.abs(error.driftDeg) > GROSS_DRIFT_DEG) {
+        throw new Error(`Stopping with all motors held: ${error.message}, more than one full turn, which no force reduction can explain`);
+      }
       if (attempt >= maxRetries) throw new Error(`Slip recovery exhausted after ${maxRetries} retries: ${error.message}`);
       const lower = force => Math.min(force, Math.max(forceLow, force * .5));
       const reduced = {

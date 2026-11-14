@@ -44,3 +44,14 @@ test('recovery never raises an explicit force that is already below idle preload
   });
   await collectWithSlipRecovery(async () => {}, collect, { ...options, sensorCollectionForce: .005 });
 });
+
+test('a held motor drifting more than a full turn stops collection instead of retrying', async () => {
+  const send = jest.fn(async () => {});
+  const collect = jest.fn(async () => { throw new FixedAnchorDriftError(1, -2478.4, 1.5); });
+  const onRecovery = jest.fn();
+  await expect(collectWithSlipRecovery(send, collect, { ...options, onRecovery }))
+    .rejects.toThrow('Stopping with all motors held: Fixed anchor 1 drifted -2478.400deg');
+  expect(collect).toHaveBeenCalledTimes(1);
+  expect(onRecovery).not.toHaveBeenCalled();
+  expect(send).toHaveBeenCalledWith('M569.4 PA:B T0.0:0.0');
+});
