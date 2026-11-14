@@ -38,8 +38,11 @@ changes. Uploaded scenes without a catalogue identity retain authored
 **Physics Substeps** selects 1, 2, 4, 8 or 16 integrations per tick. More steps
 and iterations cost more CPU; command and recorder cadence stay unchanged.
 Autocal accepts `--solver-iterations 8` and `--physics-substeps 4`, for both
-browser `--sim` and `--headless-sim` collection. Without these flags, collection
-preserves the simulator's settings.
+browser `--sim` and `--headless-sim` collection. Without `--solver-iterations`,
+simulated autocal uses the scene's `autocal_solver_iterations` from
+`machines/catalog.json` (20 for every catalogued autocal machine), so line
+softness stays the same in every pose. Without `--physics-substeps`, collection
+preserves the simulator's setting.
 
 Remote `simulation_settings` messages accept `solverIterations` (1–64, or
 `null` to restore machine defaults) and `physicsSubsteps` (1–16). Encoder

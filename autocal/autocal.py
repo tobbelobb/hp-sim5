@@ -1356,6 +1356,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         except FileNotFoundError as exc:
             parser.error(str(exc))
     collector_args = _clean_collector_args(args.collector_args)
+    if args.solver_iterations is None and args.sim:
+        args.solver_iterations = autocal_solver_iterations(args.machine_type)
     if args.solver_iterations is not None and not _arg_has_flag(collector_args, "--solver-iterations"):
         collector_args.extend(["--solver-iterations", str(args.solver_iterations)])
     if args.physics_substeps is not None and not _arg_has_flag(collector_args, "--physics-substeps"):

@@ -583,6 +583,15 @@ def catalogued_machine(machine_type: str) -> dict:
     return machines.machine(_normalize_machine_type(machine_type))
 
 
+def autocal_solver_iterations(machine_type: str) -> Optional[int]:
+    """Return the catalogued cable solver iterations for simulated autocal runs of this machine."""
+    try:
+        entry = catalogued_machine(machine_type)
+    except ValueError:
+        return None
+    return machines.scene(entry).get("autocal_solver_iterations")
+
+
 def _effective_hp_sim_reset(
     *,
     sim: bool,
@@ -3658,7 +3667,7 @@ def get_firmware_provider(firmware: str) -> FirmwareProvider:
 
 def _add_collector_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--solver-iterations", type=int, choices=range(1, 65), metavar="N",
-                        help="Cable solver iterations per integration, 1..64 (default: machine setting)")
+                        help="Cable solver iterations per integration, 1..64 (default: the machine's autocal_solver_iterations in machines/catalog.json)")
     parser.add_argument("--physics-substeps", type=int, choices=range(1, 17), metavar="N",
                         help="Physics steps per firmware tick, 1..16 (default: simulator setting)")
     parser.add_argument("--open-loop-motors", action="store_true",

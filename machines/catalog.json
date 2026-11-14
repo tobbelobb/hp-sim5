@@ -3,26 +3,31 @@
     "public/usd_scenes/hp4.usda": {
       "name": "Hangprinter version 4",
       "machine_type": "hangprinter_4",
+      "autocal_solver_iterations": 20,
       "physics_substeps": 1,
       "solver_iterations": 10
     },
     "public/usd_scenes/hp4_worn_bearings.usda": {
       "name": "Hangprinter version 4 with worn bearings",
       "machine_type": "hangprinter_4",
+      "autocal_solver_iterations": 20,
       "physics_substeps": 1,
       "solver_iterations": 10
     },
     "public/usd_scenes/hp3.usda": {
       "name": "Hangprinter version 3",
-      "machine_type": "hangprinter_3"
+      "machine_type": "hangprinter_3",
+      "autocal_solver_iterations": 20
     },
     "public/usd_scenes/four_high_anchors.usda": {
       "name": "Four High Anchors",
-      "machine_type": "skycam"
+      "machine_type": "skycam",
+      "autocal_solver_iterations": 20
     },
     "public/usd_scenes/cubecorners.usda": {
       "name": "CubeCorners",
       "machine_type": "cubecorners",
+      "autocal_solver_iterations": 20,
       "physics_substeps": 1,
       "solver_iterations": 5
     },
@@ -31,7 +36,8 @@
     },
     "public/usd_scenes/slideprinter.usda": {
       "name": "Slideprinter",
-      "machine_type": "slideprinter"
+      "machine_type": "slideprinter",
+      "autocal_solver_iterations": 20
     },
     "public/usd_scenes/slideprinter_hexagon.usda": {
       "name": "Slideprinter Hexagon"

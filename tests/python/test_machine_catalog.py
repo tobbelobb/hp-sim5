@@ -36,6 +36,14 @@ def test_scene_identity_resolves_to_its_catalogue_defaults():
         assert isinstance(count, int) and 1 <= count <= 16
         count = settings.get('solver_iterations', 1)
         assert isinstance(count, int) and 1 <= count <= 64
+        count = settings.get('autocal_solver_iterations', 1)
+        assert isinstance(count, int) and 1 <= count <= 64
+
+
+def test_simulated_autocal_uses_the_catalogued_solver_iterations():
+    from autocal._autocal_common import autocal_solver_iterations
+    assert autocal_solver_iterations('hangprinter_3') == 20
+    assert autocal_solver_iterations('hangprinter_5') is None
 
 
 def test_catalogued_collector_types_are_accepted_by_the_dataset_schema():
