@@ -6,9 +6,11 @@ import fg from 'fast-glob';
 
 
 const rootRedirectPlugin = () => {
+  const redirectPaths = new Set(['/', '/hp-sim5', '/hp-sim5/']);
+
   const redirect = (server) => {
     server.middlewares.use((req, res, next) => {
-      if (new URL(req.url || '/', 'http://localhost').pathname !== '/') {
+      if (!redirectPaths.has(new URL(req.url || '/', 'http://localhost').pathname)) {
         return next();
       }
 
