@@ -33,6 +33,8 @@ export class RemoteSpoolSystem {
       },
     });
     this.axisToEntity = {};
+    // Axes whose next Move only sets a new command origin (see 'Rebase reference').
+    this.rebaseAxes = null;
     this.wasPaused = false;
     this.baseHighWaterMark = 320;
     this.baseLowWaterMark = 160;
@@ -189,6 +191,13 @@ export class RemoteSpoolSystem {
       return;
     }
 
+    if (commandType === 'Rebase reference') {
+      // A new command stream counts motor angles from its own origin. Its first
+      // Move per axis maps onto the motor's current target instead of moving it.
+      this.rebaseAxes = new Set();
+      return;
+    }
+
     for (const axis of Object.keys(this.axisToEntity)) {
       const axisValue = command[axis] ?? (command.axes ? command.axes[axis] : undefined);
       if (axisValue === undefined) {
@@ -230,6 +239,11 @@ export class RemoteSpoolSystem {
 
         if (commandType === 'Move') {
           const stepperComp = stepperStore ? stepperStore.get(entityId) : world.getComponent(entityId, StepperMotorComponent);
+          if (stepperComp != null && this.rebaseAxes && !this.rebaseAxes.has(axis)) {
+            stepperComp.deltaAngle += axisValue - stepperComp.commandedAngle;
+            stepperComp.commandedAngle = axisValue;
+            continue;
+          }
           if (stepperComp != null) {
             if (stepperComp.torqueMode) {
               continue;
@@ -243,6 +257,9 @@ export class RemoteSpoolSystem {
             stepperComp.deltaAngle += axisValue;
           }
         }
+      }
+      if (commandType === 'Move') {
+        this.rebaseAxes?.add(axis);
       }
     }
 

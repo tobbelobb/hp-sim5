@@ -385,7 +385,11 @@ export function createExternalCommandController({
         WebSocketCtor,
         logger,
         onPayload: handlePayload,
-        onOpen: flushQueue,
+        onOpen() {
+          flushQueue();
+          // Every bridge connection counts motor angles from its own origin.
+          pushCommands([{ type: 'Rebase reference' }]);
+        },
       });
     }
     socketController.connect();
