@@ -1,0 +1,593 @@
+{
+  "prior": {
+    "max_drive_conversion_error_mm": 0.0,
+    "max_sensor_conversion_error_mm": 0.0,
+    "fixed_axis_mean_length_ranges_mm": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "configuration": {
+      "angles_unit": "deg",
+      "lengths_unit": "mm",
+      "m666_before_data_collection": {
+        "M": 666,
+        "A": 1,
+        "Q": 0,
+        "R": [
+          30,
+          30,
+          30,
+          30
+        ],
+        "U": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "O": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "L": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "H": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "J": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "W": 0.08,
+        "S": 20000,
+        "I": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "X": [
+          170,
+          170,
+          170,
+          170
+        ],
+        "Y": [
+          528.3,
+          528.3,
+          528.3,
+          398.9
+        ],
+        "C": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "F": 0,
+        "B": 0,
+        "P": 0
+      },
+      "m666_adjusted_by_data_collector": {
+        "M": 666,
+        "A": 1,
+        "Q": 0,
+        "R": [
+          30,
+          30,
+          30,
+          30
+        ],
+        "U": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "O": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "L": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "H": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "J": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "W": 0.08,
+        "S": 20000,
+        "I": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "X": [
+          170,
+          170,
+          170,
+          170
+        ],
+        "Y": [
+          528.3,
+          528.3,
+          528.3,
+          398.9
+        ],
+        "C": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "F": 0,
+        "B": 0,
+        "P": 0
+      },
+      "m669": {
+        "A": [
+          0,
+          -1900,
+          -280
+        ],
+        "B": [
+          1645.45,
+          950,
+          -280
+        ],
+        "C": [
+          -1645.45,
+          950,
+          -280
+        ],
+        "D": [
+          0,
+          0,
+          1900
+        ],
+        "P": []
+      },
+      "m92": {
+        "X": [],
+        "Y": [],
+        "Z": [],
+        "U": [],
+        "E": []
+      },
+      "mm_per_degree": [
+        0.5235987755982988,
+        0.5235987755982988,
+        0.5235987755982988,
+        0.5235987755982988
+      ],
+      "noise_model": {
+        "project_zero_tension": false
+      },
+      "notes": {
+        "buildup_factor_forced": 0,
+        "base_radii_forced_mm": [
+          30,
+          30,
+          30,
+          30
+        ]
+      },
+      "force_tuning": {
+        "auto_tuned": false,
+        "method": "manual",
+        "force_low_n": 0.01,
+        "force_mid_n": 0.05,
+        "force_max_n": 0.5,
+        "pullout_force_n": 0.5
+      },
+      "max_travel_mm": 1.2692034320502763,
+      "encoder_noise": {
+        "method": "mad",
+        "units": "deg",
+        "sigma_floor_deg": 0.02,
+        "min_samples": 8,
+        "sample_count": 16,
+        "sample_interval_ms": 25,
+        "sample_rate_hz": 40
+      }
+    }
+  },
+  "stock": {
+    "max_drive_conversion_error_mm": 0.0,
+    "max_sensor_conversion_error_mm": 0.0,
+    "fixed_axis_mean_length_ranges_mm": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "configuration": {
+      "angles_unit": "deg",
+      "lengths_unit": "mm",
+      "m666_before_data_collection": {
+        "M": 666,
+        "A": 1,
+        "Q": 0,
+        "R": [
+          30,
+          30,
+          30,
+          30
+        ],
+        "U": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "O": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "L": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "H": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "J": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "W": 0.08,
+        "S": 20000,
+        "I": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "X": [
+          170,
+          170,
+          170,
+          170
+        ],
+        "Y": [
+          528.3,
+          528.3,
+          528.3,
+          398.9
+        ],
+        "C": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "F": 0,
+        "B": 0,
+        "P": 0
+      },
+      "m666_adjusted_by_data_collector": {
+        "M": 666,
+        "A": 1,
+        "Q": 0,
+        "R": [
+          30,
+          30,
+          30,
+          30
+        ],
+        "U": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "O": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "L": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "H": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "J": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "W": 0.08,
+        "S": 20000,
+        "I": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "X": [
+          170,
+          170,
+          170,
+          170
+        ],
+        "Y": [
+          528.3,
+          528.3,
+          528.3,
+          398.9
+        ],
+        "C": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "F": 0,
+        "B": 0,
+        "P": 0
+      },
+      "m669": {
+        "A": [
+          0,
+          -1900,
+          -280
+        ],
+        "B": [
+          1645.45,
+          950,
+          -280
+        ],
+        "C": [
+          -1645.45,
+          950,
+          -280
+        ],
+        "D": [
+          0,
+          0,
+          1900
+        ],
+        "P": []
+      },
+      "m92": {
+        "X": [],
+        "Y": [],
+        "Z": [],
+        "U": [],
+        "E": []
+      },
+      "mm_per_degree": [
+        0.5235987755982988,
+        0.5235987755982988,
+        0.5235987755982988,
+        0.5235987755982988
+      ],
+      "noise_model": {
+        "project_zero_tension": false
+      },
+      "notes": {
+        "buildup_factor_forced": 0,
+        "base_radii_forced_mm": [
+          30,
+          30,
+          30,
+          30
+        ]
+      },
+      "force_tuning": {
+        "auto_tuned": true,
+        "method": "incremental-compliance",
+        "tuned_at": "2026-11-14T07:26:09.035Z",
+        "force_low_n": 0.012396628070399991,
+        "force_mid_n": 0.24793256140799982,
+        "force_max_n": 2.613544005371242,
+        "pullout_force_n": 2.613544005371242,
+        "active_anchor": 1,
+        "fixed_anchor": 3,
+        "rest_anchors": [
+          0,
+          2
+        ],
+        "idle_force_initial": 0.01,
+        "idle_force_final": 0.012396628070399991,
+        "force_start": 0.24793256140799982,
+        "force_edge": 2.613544005371242,
+        "force_cap": 20,
+        "force_start_bracket_no": 0.20661046783999987,
+        "force_start_bracket_yes": 0.2892546549759998,
+        "d_max_deg": 1516.22,
+        "edge_at_cap": false,
+        "edge_reason": "incremental compliance declined below comfortable limit",
+        "edge_knee": {
+          "force": 2.613544005371242,
+          "travelDeg": 920.97,
+          "peakComplianceDegPerN": 572.0778823418435,
+          "complianceRatio": 0.5
+        },
+        "edge_samples": [
+          {
+            "force": 0.24793256140799982,
+            "travelDeg": 1.33,
+            "moved": true,
+            "stalled": true,
+            "fixedDriftDeg": 0
+          },
+          {
+            "force": 0.3471055859711997,
+            "travelDeg": 44.309999999999995,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 433.3839790538018
+          },
+          {
+            "force": 0.4859478203596796,
+            "travelDeg": 75.04,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 221.33034760891002
+          },
+          {
+            "force": 0.6803269485035514,
+            "travelDeg": 186.24,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 572.0778823418435
+          },
+          {
+            "force": 0.9524577279049719,
+            "travelDeg": 313.78,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 468.6717183573914
+          },
+          {
+            "force": 1.3334408190669604,
+            "travelDeg": 471.23,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 413.2729342916023
+          },
+          {
+            "force": 1.8668171466937444,
+            "travelDeg": 671.05,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 374.6322992793537
+          },
+          {
+            "force": 2.613544005371242,
+            "travelDeg": 920.97,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 334.6873051313901
+          },
+          {
+            "force": 3.6589616075197386,
+            "travelDeg": 1216.75,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 282.92999791865554
+          },
+          {
+            "force": 5.122546250527634,
+            "travelDeg": 1516.22,
+            "moved": true,
+            "stalled": false,
+            "fixedDriftDeg": 0,
+            "complianceDegPerN": 204.6140627606903
+          }
+        ],
+        "noise_samples": 20,
+        "noise_duration_ms": 4000,
+        "noise_sigma_deg": [
+          0,
+          0.004769696007084568,
+          0,
+          0
+        ],
+        "move_thresholds_deg": {
+          "active": 0.5,
+          "residual_active": 0.3,
+          "residual_sum": 0.8,
+          "other_by_anchor": {
+            "0": 0.5,
+            "2": 0.5
+          }
+        },
+        "stall_speed_deg_per_sec": 0.05723635208501481,
+        "stall_window_ms": 25000
+      },
+      "max_travel_mm": 474.56479746106936,
+      "encoder_noise_origin_deg": [
+        0,
+        0.004769696007084568,
+        0,
+        0
+      ],
+      "encoder_noise_origin_mm": [
+        0,
+        0.0024974069892855742,
+        0,
+        0
+      ],
+      "encoder_noise": {
+        "method": "mad",
+        "units": "deg",
+        "sigma_floor_deg": 0.02,
+        "min_samples": 8,
+        "sample_count": 16,
+        "sample_interval_ms": 25,
+        "sample_rate_hz": 40
+      }
+    }
+  }
+}

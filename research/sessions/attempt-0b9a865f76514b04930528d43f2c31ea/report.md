@@ -1,5 +1,7 @@
 # Recent simulator changes and HP3 autocal
 
+A [follow-up repair](../attempt-64d28c7e5e6c4e778656afa4639a46c6/report.md) replaced the unsuitable manual-force acquisition and fixed historical-wrapper loading; both versions now complete automatically and apply a calibration. This earlier report remains the record of the failed initial comparison.
+
 The October 21 open-loop inertia correction fixes a bounded torque-equilibrium defect. This session tests whether it changes HP3 autocal while keeping current calibration code fixed. Four initial native-only runs masked the historical behavior because their current wrapper zeroed the old stiffness input. They are retained as an unsuccessful experiment design. The assigning manager authorized one corrected fifth attempt with the historical wrapper.
 
 ## Scope and prior evidence
