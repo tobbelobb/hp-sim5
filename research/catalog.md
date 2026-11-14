@@ -271,3 +271,7 @@ duplicate exclusion, spread stopping and held-out final selection.
 CLI controls removed, range/exclusion bugs fixed, selected final model identified.
 Six paired replays did not justify changing stopping defaults; 533 tests and four
 selected calibration regressions passed. [Session evidence](../research/output/session-2026-10-22-autocal-lane06-integration/report.md).
+
+## HP3 stretch bias and measurement design (2026-11-14)
+
+[Canonical report](output/autocal_research_with_Fable5p2/report.md), [abstract](output/autocal_research_with_Fable5p2/abstract.md), and [topic synthesis](topics/autocal-stretch.md). Archived simulation diagnosis and exploratory direct-collector design; no production integration or hardware validation. Excellent fit scores can hide millimetre anchor bias. Raw recordings remain temporary only.

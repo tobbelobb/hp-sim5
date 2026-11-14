@@ -1,0 +1,3 @@
+# Autocal stretch and identifiability
+
+The [HP3 investigation](../output/autocal_research_with_Fable5p2/report.md) shows that smooth elastic bias can hide in anchors despite tiny fit residuals. Its geometry substitution test identifies stretch in those simulations. Height diversity alone and more solver iterations alone did not solve the bias; constant weighted per-strand force plus an offset gave promising translation-aligned shape accuracy with an independent fitter. Absolute home shift remains. Production autocal integration, held-out validation and hardware transfer remain open. This does not supersede earlier collector/settling verification: those studies test different behavior.
