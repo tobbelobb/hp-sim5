@@ -1,0 +1,488 @@
+[
+  {
+    "path": "evidence/stock-auto/command.json",
+    "bytes": 914,
+    "sha256": "ae0dea3658d4023be96f3aed99555e80be8ffa4ab168cc67142c3349a91e80f9",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/console.log",
+    "bytes": 2885,
+    "sha256": "49cb39e658a198e139ba10cb1ac0992dff2f194842846c551d1b7a1a11349784",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/result.json",
+    "bytes": 133,
+    "sha256": "6d34465b5052fd773cb064cacd2f92e4f33f021f5df122cb16e3adbe9a03df33",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.active_sweep_cfg.default.txt",
+    "bytes": 10,
+    "sha256": "43959483087ed678e9eaa9799d338d33b6aead76e7337a9ddda78d2a6c2e5507",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.active_sweep_cfg.default.warm.txt",
+    "bytes": 10,
+    "sha256": "5a7f7e41387a2163b973b733d01fb0f0966780c55b693e47f322de54fa49364c",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.bootstrap_cfg.txt",
+    "bytes": 30,
+    "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.full_auto.log",
+    "bytes": 44565,
+    "sha256": "ef0a3f2ff553f2fd8e190e90d4dc3b1b1e1a31149306a1adc5a2dadb68890682",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.full_auto_log.jsonl",
+    "bytes": 32764,
+    "sha256": "24971d1c80f235251eddfd2d1323948f270d981c9a88646bfcaa60ede37cd9bb",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/baked-scene.usda",
+    "bytes": 23767,
+    "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/clock.json",
+    "bytes": 3005,
+    "sha256": "dcf602019f0e6fc6ae3efdceac779ecf6f98d19f913f379ad4960df3fa7383f6",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/events.jsonl",
+    "bytes": 126295860,
+    "sha256": "033aebc985fa132e8bcac956971c46720151ab6460abedbff7950b14513f6bf3",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/firmware-config.g",
+    "bytes": 4727,
+    "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/hangprinter-20261114T072518.063504Z-c3d223f5.json",
+    "bytes": 561,
+    "sha256": "88d68a3d4105283feb7e0f912b751fa04401c189415934c2afbf8d278345e6a6",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/hangprinter-20261114T072518.063504Z-c3d223f5.rrd",
+    "bytes": 214277492,
+    "sha256": "cc2cf59813a21809c8a5813c756d47920cb80119b3d72446cad2a696d8f082a5",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/manifest.json",
+    "bytes": 6793,
+    "sha256": "75b6066a07bfa642f9429f4c8a6252974b0e5492217ace11e44e73588d9cc85f",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/physics.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/recorder.log",
+    "bytes": 508,
+    "sha256": "a0e9a64af293b1382e909f8e4e62fc3f4d6f614c6b4bc55176ae888ec0c98e27",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/rrf.log",
+    "bytes": 97006,
+    "sha256": "2566e17f61d8be7da981dae929920fe21b850a184097af8f60cdeb90d79824af",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.headless/scene.usda",
+    "bytes": 22837,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.json",
+    "bytes": 413693,
+    "sha256": "b4bbe2b2b542c6ca43709613736d17151e1e615c1c015a3e2c2c46bb64ebae8b",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.json.force-tuning.json",
+    "bytes": 4513,
+    "sha256": "960689c8132368876d6b9817b5c6386a49700f6c4959dd2d8a5fa7eb0bc7e78f",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.json.partial-points.jsonl",
+    "bytes": 100025,
+    "sha256": "c6085138385c986ece13b83534e60528437fd4144ab1cd22ec241c21c53d6114",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_001.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "e18b7215cfd77d873b06a72fd185621eb2c9c056ed1eb942ca14061a05dd68e1",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_001.json.partial-points.jsonl",
+    "bytes": 35893,
+    "sha256": "ef6fa87f9e23a9429f88b39077b17364554823dd39fe94579cd2dab88c1d9c09",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_002.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "dc179e589d9b981407338db08f86ce79c731cee54757377b3c8da5d6087ff774",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_002.json.partial-points.jsonl",
+    "bytes": 36015,
+    "sha256": "58c20ee269e21891f12ef7f17b7f4dab35245f3ca62ed07d6a42e5e89f96c426",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_003.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "f52bd0d87d3ee4e9a5d58c69d41908c1d65c3a11eb95f59fcfdfb701d7c470be",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_003.json.partial-points.jsonl",
+    "bytes": 35612,
+    "sha256": "37c7aa74fd4c83e46f5911d29c5e4f4e58d9808cf81af3ce72256b268351a5f1",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_004.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "9e9adc4e51d8d649ffb455bb2d2a78d55014431ba1025c23d97000735f8bf4d4",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.new_004.json.partial-points.jsonl",
+    "bytes": 36074,
+    "sha256": "8fc5cb532a4781431f740cd5b617a2dbc9daefd87b2c52a2ced23abb0dac9ece",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-001-default.json",
+    "bytes": 204782,
+    "sha256": "f7a24bac768f7c68ba0240fd3f84d19d2367c0a5e0caf1791c6c9e8186844d9a",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-002-default.json",
+    "bytes": 268930,
+    "sha256": "0a8b4edd49688936ed9697bd40b873ed50b06b389eb9114c0f90420bc57cd297",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-002-default.warm.json",
+    "bytes": 269139,
+    "sha256": "a7775a6e191cd9827fc3b9bbfe9b1f0a801af2ee40dc236389c0b7b0664720ab",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-003-default.json",
+    "bytes": 333282,
+    "sha256": "35c464ca17c44874fc135992da0807359acc3be65bdedc7f26e28b94c25e2cb8",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-003-default.warm.json",
+    "bytes": 333533,
+    "sha256": "e58971fc7a7e64201f4ad49cca727ac0a3f4323d7c60da9456f5351cbf885a24",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-004-default.json",
+    "bytes": 396880,
+    "sha256": "c0583d63eb8a57f67c46f2f7570cf5333c1b4c503dce3549ce9c02f0c9b7b62e",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-004-default.warm.json",
+    "bytes": 397098,
+    "sha256": "21f747c5b99c541ca84d7a4485f72c2752f1643e63a4fc8324e05e1b9f6b548c",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-005-default.json",
+    "bytes": 461090,
+    "sha256": "ad3b1d3da2b944616cb228c986b955a478b50f5b834b15b3eaed0cf78eb54142",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/fit-005-default.warm.json",
+    "bytes": 461568,
+    "sha256": "a675b1874d04452944b9adeadabdc1200cd1baf3f3cd568c61bc988549ee4876",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/stock-auto/sweeps.stages/history-005.json",
+    "bytes": 3354082,
+    "sha256": "803aaac79270c677135b6bf2e4e3459b868f0b6b4c0df59c3c64a1b8f363c467",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/command.json",
+    "bytes": 924,
+    "sha256": "8bdfe4c4c22fe149b3eabecddda9ed1d97db80fbdc09e6ee85712842a4378277",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/console.log",
+    "bytes": 2930,
+    "sha256": "628f9f553b0e9803bbdf13ffda688f6f96b68070b7effa758d74690bdfa03443",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/result.json",
+    "bytes": 133,
+    "sha256": "9b2d7cf45b3691faeaf54d5152f3a71db2d32d0ba4559f7c7c16a2a019ff58fd",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/runtime-environment.json",
+    "bytes": 335,
+    "sha256": "6910a3981a052ea7f09736b14d5e2642dd191605c5882634fee1e872f99800e8",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.active_sweep_cfg.default.txt",
+    "bytes": 10,
+    "sha256": "43959483087ed678e9eaa9799d338d33b6aead76e7337a9ddda78d2a6c2e5507",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.active_sweep_cfg.default.warm.txt",
+    "bytes": 10,
+    "sha256": "5a7f7e41387a2163b973b733d01fb0f0966780c55b693e47f322de54fa49364c",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.bootstrap_cfg.txt",
+    "bytes": 30,
+    "sha256": "827fe7f63096247ba207acd24f3f47581d1aa4b44848e5677c5eef26341c3069",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.full_auto.log",
+    "bytes": 44837,
+    "sha256": "8622610bfa5717f0f1af9e233690a7208ab22b56aa957954e7ceb19166be5966",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.full_auto_log.jsonl",
+    "bytes": 32794,
+    "sha256": "c234eeb30d55070c8b73b106447ac9df2cb4a328ec1800cc6317e32e61e777c1",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/baked-scene.usda",
+    "bytes": 23767,
+    "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/clock.json",
+    "bytes": 3084,
+    "sha256": "3d41bc75f6d31bdd66c12650298941bd15ced8376349eccdafca35df680731bb",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/events.jsonl",
+    "bytes": 126321814,
+    "sha256": "404fd30bdf11c1d94370fb5800a28f17b78f57246b030721ce959f2e2c9b600f",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/firmware-config.g",
+    "bytes": 4727,
+    "sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/hangprinter-20261114T073052.500353Z-544a46d6.json",
+    "bytes": 566,
+    "sha256": "eed7ec911d5e6467cb9967de9db524b4f9df2e3d313e57e4dc4404178d1dbffd",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/hangprinter-20261114T073052.500353Z-544a46d6.rrd",
+    "bytes": 214999571,
+    "sha256": "797fa1715025ccde9c246912284f04578435789b2fa626b6914d63496805d364",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/manifest.json",
+    "bytes": 6890,
+    "sha256": "e1b37018ebb16e7d87838959f2de0678a4092fa0ae1ddd0dc39a974375c140cc",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/physics.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/recorder.log",
+    "bytes": 518,
+    "sha256": "f24cccaf7db652f639fdd9b7b9c8b0a228d20cb9d2e8e505ec6595435b70bc2d",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/rrf.log",
+    "bytes": 97006,
+    "sha256": "6451ffa6929e60d382e05917e4bbddbb9f4dc966c615db71242e6cc391d223fd",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.headless/scene.usda",
+    "bytes": 22837,
+    "sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.json",
+    "bytes": 413693,
+    "sha256": "5edb3107f922bc13cbc1b5797d6cb7101789216b6dc8ea5c576b517c6804de0a",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.json.force-tuning.json",
+    "bytes": 4513,
+    "sha256": "c887e3140418ad0b96e44c49337d32205e9689d51b5bdf8ef4fcfb0252026a29",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.json.partial-points.jsonl",
+    "bytes": 100025,
+    "sha256": "11e41ab1ca8cdb043558af11c23e4c8a8241a7892c710506603e3027f7b17a01",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_001.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "59eedac25a7037eae835789840f7dc161d371db6cd686a4c9c955abeafcb0947",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_001.json.partial-points.jsonl",
+    "bytes": 35893,
+    "sha256": "973a6fc0b66fb7d110f8b32eae40147e44404d39819771f58c08c1e54505cf28",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_002.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "defdb766bd8f2482fb12a67662f60d6fec836ed93aa128fda968a22003dd67cc",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_002.json.partial-points.jsonl",
+    "bytes": 36015,
+    "sha256": "51372bf35ade332a15c658549c8d04002cdc8dc5d572211bb625635cc00784a8",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_003.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "83355a04990d4d2e6f8105bb1007d8012498784cdd677647ec062bc5ddd1e1e5",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_003.json.partial-points.jsonl",
+    "bytes": 35612,
+    "sha256": "a8ec0976dc335dd7efa2aece0f590c4da035010f7484c5edbd4f7de8b48ee8d7",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_004.json.force-tuning.json",
+    "bytes": 1319,
+    "sha256": "66f0f82718595108f2e025a4b96b3b7b104acc6d3c3230e95bacda49f0bcb649",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.new_004.json.partial-points.jsonl",
+    "bytes": 36074,
+    "sha256": "1fe3c9a8c3a675de91117d445f6cbfd793c9452bad3732077734971be87d892a",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-001-default.json",
+    "bytes": 204798,
+    "sha256": "1f5671865db3ddcf0d0fe1d0d34d6f374f797ad911adbdf9a07c9a8963b8c2d6",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-002-default.json",
+    "bytes": 268945,
+    "sha256": "e21f99f2dcc1a7894249c7d443496ad7e85ecea8b6fa354c6bb6ec8b4031ccf8",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-002-default.warm.json",
+    "bytes": 269154,
+    "sha256": "fe82dcd8f6b465916f0a2d1e7e1d6eede792c4c9869d0b0da78ba0bcf323ba02",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-003-default.json",
+    "bytes": 333298,
+    "sha256": "d3da92cdf57e82d0f667a678e588a3de3c1ce340adf556b65f646c39c4647e96",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-003-default.warm.json",
+    "bytes": 333548,
+    "sha256": "c14917547baba7df4f9d962fc57ae4fde0644ac67d00ed19ae08768c2e632d0b",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-004-default.json",
+    "bytes": 396895,
+    "sha256": "2ee2e528e62982d49b495f85bd82243cf2345c2a4c6334f222776376f65ced2c",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-004-default.warm.json",
+    "bytes": 397114,
+    "sha256": "bdc30605bb24e1614cb367a5f671bf4e12927e4f98b387ffaafa1f44512b487c",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-005-default.json",
+    "bytes": 461106,
+    "sha256": "db582334874c6189bb2a8f5c8da69eb2c9a67966393424539d0eb14a5cc5d8db",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/fit-005-default.warm.json",
+    "bytes": 461584,
+    "sha256": "10dd5053aae21800cc8b2c9711261eeb8d0af2c18ab62895ae42a1fe20b3e1dc",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  },
+  {
+    "path": "evidence/historical-auto/sweeps.stages/history-005.json",
+    "bytes": 3354232,
+    "sha256": "35e2fde1d82a7a4c2e8560565bf41f5eb8d4362a8e549da74b494058731efe46",
+    "retention": "Exact stage JSON, logs, metadata and force checkpoints embedded in raw bundle; datasets committed separately; original RRD/journal/service files workspace-only."
+  }
+]

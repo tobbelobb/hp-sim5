@@ -1,0 +1,141 @@
+{
+  "old": {
+    "status": "failed",
+    "applied_parameters": null,
+    "applied_anchor_errors_mm": null,
+    "applied_rmse_mm": null,
+    "max_applied_error_mm": null,
+    "steps": 171557,
+    "simulated_seconds": 343.11400000000003,
+    "sweeps": 3,
+    "points": 36,
+    "per_sweep_points": [
+      12,
+      12,
+      12
+    ],
+    "sweeps_sha256": "c34df731af2986566ce8ca740ae5a8ad0cbf31e45aa49f2142d93bdb5413ed11",
+    "dataset_sha256": "f30fc6af2762e636bc7e462e7cc6da394dde337aeab44c030df8898e7f391f66",
+    "rejected_candidate_nominal_frame_errors_mm": [
+      1434.608550684981,
+      3307.1223701911067,
+      141.82598457888005,
+      1516.6092154071976
+    ],
+    "rejected_candidate_nominal_frame_rmse_mm": 1956.7433523125042,
+    "rejected_candidate_nominal_frame_max_error_mm": 3307.1223701911067
+  },
+  "current": {
+    "status": "failed",
+    "applied_parameters": null,
+    "applied_anchor_errors_mm": null,
+    "applied_rmse_mm": null,
+    "max_applied_error_mm": null,
+    "steps": 171557,
+    "simulated_seconds": 343.11400000000003,
+    "sweeps": 3,
+    "points": 36,
+    "per_sweep_points": [
+      12,
+      12,
+      12
+    ],
+    "sweeps_sha256": "c34df731af2986566ce8ca740ae5a8ad0cbf31e45aa49f2142d93bdb5413ed11",
+    "dataset_sha256": "7ed130d39f1acd3aff6f2e1bc3e715033f8a9730ecb9750239def8d176cf7fa9",
+    "rejected_candidate_nominal_frame_errors_mm": [
+      1434.608550684981,
+      3307.1223701911067,
+      141.82598457888005,
+      1516.6092154071976
+    ],
+    "rejected_candidate_nominal_frame_rmse_mm": 1956.7433523125042,
+    "rejected_candidate_nominal_frame_max_error_mm": 3307.1223701911067
+  },
+  "old20": {
+    "status": "failed",
+    "applied_parameters": null,
+    "applied_anchor_errors_mm": null,
+    "applied_rmse_mm": null,
+    "max_applied_error_mm": null,
+    "steps": 239664,
+    "simulated_seconds": 479.32800000000003,
+    "sweeps": 3,
+    "points": 120,
+    "per_sweep_points": [
+      40,
+      40,
+      40
+    ],
+    "sweeps_sha256": "03fa4f6fcd47a1345d4accf8a227455b9b9a572e9e24ca1375c27477d1c0d5ff",
+    "dataset_sha256": "b06a2e21943d0b1aeceeead11167685ed8afc0e300b4ff7d21343ca6cbf9dc71",
+    "rejected_candidate_nominal_frame_errors_mm": [
+      1670.179718887358,
+      3333.951530939863,
+      402.6060137281445,
+      1474.840845739668
+    ],
+    "rejected_candidate_nominal_frame_rmse_mm": 2015.0670104608853,
+    "rejected_candidate_nominal_frame_max_error_mm": 3333.951530939863
+  },
+  "current20": {
+    "status": "failed",
+    "applied_parameters": null,
+    "applied_anchor_errors_mm": null,
+    "applied_rmse_mm": null,
+    "max_applied_error_mm": null,
+    "steps": 239664,
+    "simulated_seconds": 479.32800000000003,
+    "sweeps": 3,
+    "points": 120,
+    "per_sweep_points": [
+      40,
+      40,
+      40
+    ],
+    "sweeps_sha256": "03fa4f6fcd47a1345d4accf8a227455b9b9a572e9e24ca1375c27477d1c0d5ff",
+    "dataset_sha256": "7fd339722c6bfa1e6d42c858dcf627ea1a36184f7f6cfdf474a806031e11d840",
+    "rejected_candidate_nominal_frame_errors_mm": [
+      1670.179718887358,
+      3333.951530939863,
+      402.6060137281445,
+      1474.840845739668
+    ],
+    "rejected_candidate_nominal_frame_rmse_mm": 2015.0670104608853,
+    "rejected_candidate_nominal_frame_max_error_mm": 3333.951530939863
+  },
+  "old20corrected": {
+    "status": "failed",
+    "applied_parameters": null,
+    "applied_anchor_errors_mm": null,
+    "applied_rmse_mm": null,
+    "max_applied_error_mm": null,
+    "steps": 239664,
+    "simulated_seconds": 479.32800000000003,
+    "sweeps": 3,
+    "points": 120,
+    "per_sweep_points": [
+      40,
+      40,
+      40
+    ],
+    "sweeps_sha256": "03fa4f6fcd47a1345d4accf8a227455b9b9a572e9e24ca1375c27477d1c0d5ff",
+    "dataset_sha256": "034721ab7e704e75b867a67d4666f7ae0536327219222da59c630c085b42eba1",
+    "rejected_candidate_nominal_frame_errors_mm": [
+      1670.179718887358,
+      3333.951530939863,
+      402.6060137281445,
+      1474.840845739668
+    ],
+    "rejected_candidate_nominal_frame_rmse_mm": 2015.0670104608853,
+    "rejected_candidate_nominal_frame_max_error_mm": 3333.951530939863
+  },
+  "old/current": {
+    "sweeps_identical": true
+  },
+  "old20/current20": {
+    "sweeps_identical": true
+  },
+  "old20corrected/current20": {
+    "sweeps_identical": true
+  }
+}

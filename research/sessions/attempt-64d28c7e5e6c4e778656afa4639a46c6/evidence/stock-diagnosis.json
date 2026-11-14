@@ -1,0 +1,156 @@
+{
+  "max_travel_mm": 474.56479746106936,
+  "candidates": 693,
+  "novel": 690,
+  "fixed_lengths": [
+    [
+      474.53757032473817,
+      0
+    ],
+    [
+      474.53757032473817,
+      0
+    ],
+    [
+      474.53757032473817,
+      0
+    ]
+  ],
+  "force_tuning": {
+    "auto_tuned": true,
+    "method": "incremental-compliance",
+    "tuned_at": "2026-11-14T07:26:09.035Z",
+    "force_low_n": 0.012396628070399991,
+    "force_mid_n": 0.24793256140799982,
+    "force_max_n": 2.613544005371242,
+    "pullout_force_n": 2.613544005371242,
+    "active_anchor": 1,
+    "fixed_anchor": 3,
+    "rest_anchors": [
+      0,
+      2
+    ],
+    "idle_force_initial": 0.01,
+    "idle_force_final": 0.012396628070399991,
+    "force_start": 0.24793256140799982,
+    "force_edge": 2.613544005371242,
+    "force_cap": 20,
+    "force_start_bracket_no": 0.20661046783999987,
+    "force_start_bracket_yes": 0.2892546549759998,
+    "d_max_deg": 1516.22,
+    "edge_at_cap": false,
+    "edge_reason": "incremental compliance declined below comfortable limit",
+    "edge_knee": {
+      "force": 2.613544005371242,
+      "travelDeg": 920.97,
+      "peakComplianceDegPerN": 572.0778823418435,
+      "complianceRatio": 0.5
+    },
+    "edge_samples": [
+      {
+        "force": 0.24793256140799982,
+        "travelDeg": 1.33,
+        "moved": true,
+        "stalled": true,
+        "fixedDriftDeg": 0
+      },
+      {
+        "force": 0.3471055859711997,
+        "travelDeg": 44.309999999999995,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 433.3839790538018
+      },
+      {
+        "force": 0.4859478203596796,
+        "travelDeg": 75.04,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 221.33034760891002
+      },
+      {
+        "force": 0.6803269485035514,
+        "travelDeg": 186.24,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 572.0778823418435
+      },
+      {
+        "force": 0.9524577279049719,
+        "travelDeg": 313.78,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 468.6717183573914
+      },
+      {
+        "force": 1.3334408190669604,
+        "travelDeg": 471.23,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 413.2729342916023
+      },
+      {
+        "force": 1.8668171466937444,
+        "travelDeg": 671.05,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 374.6322992793537
+      },
+      {
+        "force": 2.613544005371242,
+        "travelDeg": 920.97,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 334.6873051313901
+      },
+      {
+        "force": 3.6589616075197386,
+        "travelDeg": 1216.75,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 282.92999791865554
+      },
+      {
+        "force": 5.122546250527634,
+        "travelDeg": 1516.22,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 204.6140627606903
+      }
+    ],
+    "noise_samples": 20,
+    "noise_duration_ms": 4000,
+    "noise_sigma_deg": [
+      0,
+      0.004769696007084568,
+      0,
+      0
+    ],
+    "move_thresholds_deg": {
+      "active": 0.5,
+      "residual_active": 0.3,
+      "residual_sum": 0.8,
+      "other_by_anchor": {
+        "0": 0.5,
+        "2": 0.5
+      }
+    },
+    "stall_speed_deg_per_sec": 0.05723635208501481,
+    "stall_window_ms": 25000
+  },
+  "mm_per_degree": [
+    0.5235987755982988,
+    0.5235987755982988,
+    0.5235987755982988,
+    0.5235987755982988
+  ]
+}

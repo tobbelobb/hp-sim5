@@ -1,0 +1,24 @@
+[
+  {
+    "label": "old",
+    "steps": 500,
+    "dt_s": 0.002,
+    "simulated_s": 1,
+    "expected_angle_rad": 0.005946490467682952,
+    "angle_rad": 0.005946490467681932,
+    "absolute_angle_error_rad": 1.0200174038743626e-15,
+    "motor_torque_nm": 0.14648158579082907,
+    "cable_torque_nm": 0.14648158579082857
+  },
+  {
+    "label": "current",
+    "steps": 500,
+    "dt_s": 0.002,
+    "simulated_s": 1,
+    "expected_angle_rad": 0.005946490467682952,
+    "angle_rad": 0.005946490467681932,
+    "absolute_angle_error_rad": 1.0200174038743626e-15,
+    "motor_torque_nm": 0.14648158579082907,
+    "cable_torque_nm": 0.14648158579082857
+  }
+]

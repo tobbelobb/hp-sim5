@@ -1,0 +1,16 @@
+[
+  {
+    "label": "current",
+    "angle_rad": 0.005946490467681932,
+    "motor_torque_nm": 0.14648158579082907,
+    "cable_torque_nm": 0.14648158579082857,
+    "artifact": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+  },
+  {
+    "label": "historical",
+    "angle_rad": 0.002386002181024799,
+    "motor_torque_nm": 0.05950866012360575,
+    "cable_torque_nm": 0.1785259803708142,
+    "artifact": "98f4c408c637ed7d081a279d4ed048e3390722919c797b030a4fa5b591848742"
+  }
+]

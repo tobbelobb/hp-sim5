@@ -1,0 +1,33 @@
+{
+  "profile": "release",
+  "platform": "linux",
+  "arch": "x64",
+  "nodeApi": 8,
+  "artifactSha256": "98f4c408c637ed7d081a279d4ed048e3390722919c797b030a4fa5b591848742",
+  "nodeApiHeaders": {
+    "directory": "/workspace/hp-sim5/research/sessions/attempt-0b9a865f76514b04930528d43f2c31ea/scratchbook/buildroot/src/wasm/cable_solver/native/node-api",
+    "sha256": {
+      "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+      "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+      "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+      "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+    }
+  },
+  "sources": {
+    "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+    "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+    "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+    "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+    "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+    "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+    "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+    "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+    "src/engine.rs": "1056d36668d33bf87b2710cd142cffc17e90fa50367aad294933a9d14706aca6",
+    "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+  },
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "target": "x86_64-unknown-linux-gnu",
+  "rustflags": null,
+  "compiler": "cc",
+  "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+}

@@ -1,0 +1,473 @@
+{
+  "stock-auto": {
+    "status": "complete",
+    "normal_completion": true,
+    "stop_reason": "spread-consensus",
+    "applied_command": "M669 A0.00:-1904.34:-279.35 B1647.90:951.39:-279.35 C-1648.45:951.93:-279.35 D-0.09:0.00:1902.02",
+    "applied_anchors_mm": [
+      [
+        0.0,
+        -1904.34,
+        -279.35
+      ],
+      [
+        1647.9,
+        951.39,
+        -279.35
+      ],
+      [
+        -1648.45,
+        951.93,
+        -279.35
+      ],
+      [
+        -0.09,
+        0.0,
+        1902.02
+      ]
+    ],
+    "applied_errors": {
+      "per_anchor_mm": [
+        4.388405177282433,
+        2.892333620020757,
+        3.6273681726596982,
+        2.022003956474845
+      ],
+      "max_mm": 4.388405177282433,
+      "rmse_mm": 3.3492534104456073
+    },
+    "truth_nominal_home_mm": [
+      [
+        0,
+        -1900,
+        -280
+      ],
+      [
+        1645.448267190434,
+        950,
+        -280
+      ],
+      [
+        -1645.448267190434,
+        950,
+        -280
+      ],
+      [
+        0,
+        0,
+        1900
+      ]
+    ],
+    "fit_candidates": [
+      {
+        "stage": "fit-001-default.json",
+        "per_anchor_mm": [
+          3.6856959228198134,
+          3.6060420511623463,
+          3.5976926132496345,
+          0.3710419987768325
+        ],
+        "max_mm": 3.6856959228198134,
+        "rmse_mm": 3.1491648898767206,
+        "cost": 0.26011518989661636,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-002-default.json",
+        "per_anchor_mm": [
+          3.686500327086305,
+          3.605184275250331,
+          3.5978616428354475,
+          0.37116237822405096
+        ],
+        "max_mm": 3.686500327086305,
+        "rmse_mm": 3.1492065759535053,
+        "cost": 0.26011518723680915,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-002-default.warm.json",
+        "per_anchor_mm": [
+          3.686010805445742,
+          3.6053088434659695,
+          3.598103193908801,
+          0.3713594431827191
+        ],
+        "max_mm": 3.686010805445742,
+        "rmse_mm": 3.1491737783383114,
+        "cost": 0.2601151857534949,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-003-default.json",
+        "per_anchor_mm": [
+          4.519734728965659,
+          2.15025407366512,
+          4.748624585441727,
+          3.4127248354450574
+        ],
+        "max_mm": 4.748624585441727,
+        "rmse_mm": 3.8486270557647186,
+        "cost": 0.3244825147980055,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-003-default.warm.json",
+        "per_anchor_mm": [
+          4.519734728965659,
+          2.15025407366512,
+          4.748624585441727,
+          3.4127248354450574
+        ],
+        "max_mm": 4.748624585441727,
+        "rmse_mm": 3.8486270557647186,
+        "cost": 0.3244825147980055,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-004-default.json",
+        "per_anchor_mm": [
+          6.9841109261533525,
+          15.705458638167523,
+          4.161192749155675,
+          4.8221110276410375
+        ],
+        "max_mm": 15.705458638167523,
+        "rmse_mm": 9.165253901591168,
+        "cost": 2.0073141707415085,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-004-default.warm.json",
+        "per_anchor_mm": [
+          4.438445475589316,
+          2.8092537485579556,
+          3.896134562669131,
+          2.5528339259771937
+        ],
+        "max_mm": 4.438445475589316,
+        "rmse_mm": 3.5102895339135243,
+        "cost": 0.28179175304952225,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-005-default.json",
+        "per_anchor_mm": [
+          80.19750387185657,
+          471.806723132404,
+          410.7130766347891,
+          1928.2832142354075
+        ],
+        "max_mm": 1928.2832142354075,
+        "rmse_mm": 1014.3957079514214,
+        "cost": 100.0,
+        "info_rank": 9
+      },
+      {
+        "stage": "fit-005-default.warm.json",
+        "per_anchor_mm": [
+          4.3461173457649815,
+          2.980346841273359,
+          3.375965006791923,
+          1.485090768796028
+        ],
+        "max_mm": 4.3461173457649815,
+        "rmse_mm": 3.2161249041390674,
+        "cost": 0.33578898356515297,
+        "info_rank": 10
+      }
+    ],
+    "steps": 2240486,
+    "simulated_s": 4480.972,
+    "wall_s": 325.14109701800004,
+    "sweeps": 7,
+    "points": 280,
+    "dataset_sha256": "b4bbe2b2b542c6ca43709613736d17151e1e615c1c015a3e2c2c46bb64ebae8b",
+    "canonical_sweeps_sha256": "fa74f0072452ecae05e47424d29d414a127d028c5890ee7ba221fdcb6339c83b",
+    "native_artifact": {
+      "path": "/workspace/hp-sim5-worktrees/research-question-147ee7bc/src/wasm/cable_solver/target/native/physics.node",
+      "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+      "build": {
+        "profile": "release",
+        "platform": "linux",
+        "arch": "x64",
+        "nodeApi": 8,
+        "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "nodeApiHeaders": {
+          "directory": "/workspace/hp-sim5/src/wasm/cable_solver/native/node-api",
+          "sha256": {
+            "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+          }
+        },
+        "sources": {
+          "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+          "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+          "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+          "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+          "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+          "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+          "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+          "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+          "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+          "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+        },
+        "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+        "target": "x86_64-unknown-linux-gnu",
+        "rustflags": null,
+        "compiler": "cc",
+        "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+      }
+    },
+    "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "fit_candidate_error_distribution_mm": {
+      "count": 36,
+      "median": 3.6856959228198134,
+      "p95_nearest_rank": 471.806723132404,
+      "max": 1928.2832142354075
+    },
+    "stage_source_hashes_agree": true
+  },
+  "historical-auto": {
+    "status": "complete",
+    "normal_completion": true,
+    "stop_reason": "spread-consensus",
+    "applied_command": "M669 A0.00:-1904.34:-279.35 B1647.90:951.39:-279.35 C-1648.45:951.93:-279.35 D-0.09:0.00:1902.02",
+    "applied_anchors_mm": [
+      [
+        0.0,
+        -1904.34,
+        -279.35
+      ],
+      [
+        1647.9,
+        951.39,
+        -279.35
+      ],
+      [
+        -1648.45,
+        951.93,
+        -279.35
+      ],
+      [
+        -0.09,
+        0.0,
+        1902.02
+      ]
+    ],
+    "applied_errors": {
+      "per_anchor_mm": [
+        4.388405177282433,
+        2.892333620020757,
+        3.6273681726596982,
+        2.022003956474845
+      ],
+      "max_mm": 4.388405177282433,
+      "rmse_mm": 3.3492534104456073
+    },
+    "truth_nominal_home_mm": [
+      [
+        0,
+        -1900,
+        -280
+      ],
+      [
+        1645.448267190434,
+        950,
+        -280
+      ],
+      [
+        -1645.448267190434,
+        950,
+        -280
+      ],
+      [
+        0,
+        0,
+        1900
+      ]
+    ],
+    "fit_candidates": [
+      {
+        "stage": "fit-001-default.json",
+        "per_anchor_mm": [
+          3.6856959228198134,
+          3.6060420511623463,
+          3.5976926132496345,
+          0.3710419987768325
+        ],
+        "max_mm": 3.6856959228198134,
+        "rmse_mm": 3.1491648898767206,
+        "cost": 0.26011518989661636,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-002-default.json",
+        "per_anchor_mm": [
+          3.686500327086305,
+          3.605184275250331,
+          3.5978616428354475,
+          0.37116237822405096
+        ],
+        "max_mm": 3.686500327086305,
+        "rmse_mm": 3.1492065759535053,
+        "cost": 0.26011518723680915,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-002-default.warm.json",
+        "per_anchor_mm": [
+          3.686010805445742,
+          3.6053088434659695,
+          3.598103193908801,
+          0.3713594431827191
+        ],
+        "max_mm": 3.686010805445742,
+        "rmse_mm": 3.1491737783383114,
+        "cost": 0.2601151857534949,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-003-default.json",
+        "per_anchor_mm": [
+          4.519734728965659,
+          2.15025407366512,
+          4.748624585441727,
+          3.4127248354450574
+        ],
+        "max_mm": 4.748624585441727,
+        "rmse_mm": 3.8486270557647186,
+        "cost": 0.3244825147980055,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-003-default.warm.json",
+        "per_anchor_mm": [
+          4.519734728965659,
+          2.15025407366512,
+          4.748624585441727,
+          3.4127248354450574
+        ],
+        "max_mm": 4.748624585441727,
+        "rmse_mm": 3.8486270557647186,
+        "cost": 0.3244825147980055,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-004-default.json",
+        "per_anchor_mm": [
+          6.9841109261533525,
+          15.705458638167523,
+          4.161192749155675,
+          4.8221110276410375
+        ],
+        "max_mm": 15.705458638167523,
+        "rmse_mm": 9.165253901591168,
+        "cost": 2.0073141707415085,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-004-default.warm.json",
+        "per_anchor_mm": [
+          4.438445475589316,
+          2.8092537485579556,
+          3.896134562669131,
+          2.5528339259771937
+        ],
+        "max_mm": 4.438445475589316,
+        "rmse_mm": 3.5102895339135243,
+        "cost": 0.28179175304952225,
+        "info_rank": 10
+      },
+      {
+        "stage": "fit-005-default.json",
+        "per_anchor_mm": [
+          80.19750387185657,
+          471.806723132404,
+          410.7130766347891,
+          1928.2832142354075
+        ],
+        "max_mm": 1928.2832142354075,
+        "rmse_mm": 1014.3957079514214,
+        "cost": 100.0,
+        "info_rank": 9
+      },
+      {
+        "stage": "fit-005-default.warm.json",
+        "per_anchor_mm": [
+          4.3461173457649815,
+          2.980346841273359,
+          3.375965006791923,
+          1.485090768796028
+        ],
+        "max_mm": 4.3461173457649815,
+        "rmse_mm": 3.2161249041390674,
+        "cost": 0.33578898356515297,
+        "info_rank": 10
+      }
+    ],
+    "steps": 2240486,
+    "simulated_s": 4480.972,
+    "wall_s": 299.092274419,
+    "sweeps": 7,
+    "points": 280,
+    "dataset_sha256": "5edb3107f922bc13cbc1b5797d6cb7101789216b6dc8ea5c576b517c6804de0a",
+    "canonical_sweeps_sha256": "fa74f0072452ecae05e47424d29d414a127d028c5890ee7ba221fdcb6339c83b",
+    "native_artifact": {
+      "path": "/workspace/hp-sim5/research/sessions/attempt-0b9a865f76514b04930528d43f2c31ea/evidence/native/old.node",
+      "sha256": "98f4c408c637ed7d081a279d4ed048e3390722919c797b030a4fa5b591848742",
+      "build": {
+        "profile": "release",
+        "platform": "linux",
+        "arch": "x64",
+        "nodeApi": 8,
+        "artifactSha256": "98f4c408c637ed7d081a279d4ed048e3390722919c797b030a4fa5b591848742",
+        "nodeApiHeaders": {
+          "directory": "/workspace/hp-sim5/research/sessions/attempt-0b9a865f76514b04930528d43f2c31ea/scratchbook/buildroot/src/wasm/cable_solver/native/node-api",
+          "sha256": {
+            "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+          }
+        },
+        "sources": {
+          "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+          "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+          "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+          "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+          "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+          "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+          "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+          "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+          "src/engine.rs": "1056d36668d33bf87b2710cd142cffc17e90fa50367aad294933a9d14706aca6",
+          "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+        },
+        "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+        "target": "x86_64-unknown-linux-gnu",
+        "rustflags": null,
+        "compiler": "cc",
+        "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+      }
+    },
+    "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "fit_candidate_error_distribution_mm": {
+      "count": 36,
+      "median": 3.6856959228198134,
+      "p95_nearest_rank": 471.806723132404,
+      "max": 1928.2832142354075
+    },
+    "stage_source_hashes_agree": true
+  },
+  "pair_checks": {
+    "sweeps_exactly_equal": true,
+    "mm_per_degree_equal": true,
+    "m666_equal": true,
+    "force_tuning_equal_without_timestamp": true,
+    "baked_scene_equal": true,
+    "applied_commands_equal": true,
+    "fit_source_hashes_equal": true
+  }
+}

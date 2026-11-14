@@ -1,0 +1,231 @@
+{
+  "authored_virtual_anchor_derivations_mm": {
+    "A": [
+      [
+        0.0,
+        -1900.0000000000002,
+        -280.0
+      ],
+      [
+        0.0,
+        -1900.0000000000002,
+        -280.0
+      ]
+    ],
+    "B": [
+      [
+        1645.4482671904339,
+        950.0,
+        -280.0
+      ],
+      [
+        1645.448267190434,
+        950.0000000000001,
+        -280.0
+      ]
+    ],
+    "C": [
+      [
+        -1645.448267190433,
+        950.0000000000001,
+        -280.0
+      ],
+      [
+        -1645.4482671904339,
+        950.0,
+        -280.0
+      ]
+    ],
+    "D": [
+      [
+        0.0,
+        0.0,
+        1900.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ]
+  },
+  "initial_tip_home_mm": [
+    0,
+    0,
+    0
+  ],
+  "frame": "Authored attachment centroid z=0.1m plus tip offset z=-0.1m yields tip-home zero. Encoder component initialized zero; production readback returns angle directly. No later zero reset observed.",
+  "runs": {
+    "stock-auto": {
+      "epochs": [
+        0
+      ],
+      "encoder_zero_commands": 0,
+      "settings": [
+        {
+          "step": 0,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 0,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1319869,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1319869,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1571952,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1571952,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1798745,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1798745,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 2045717,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 2045717,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        }
+      ]
+    },
+    "historical-auto": {
+      "epochs": [
+        0
+      ],
+      "encoder_zero_commands": 0,
+      "settings": [
+        {
+          "step": 0,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 0,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1319869,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1319869,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1571952,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1571952,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1798745,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 1798745,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 2045717,
+          "payload": {
+            "type": "simulation_settings",
+            "closedLoopMotorsEnabled": true,
+            "lineLayeringEnabled": false
+          }
+        },
+        {
+          "step": 2045717,
+          "payload": {
+            "type": "simulation_settings",
+            "lineLayeringEnabled": false
+          }
+        }
+      ]
+    }
+  }
+}
