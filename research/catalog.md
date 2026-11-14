@@ -274,4 +274,4 @@ selected calibration regressions passed. [Session evidence](../research/output/s
 
 ## HP3 stretch bias and measurement design (2026-11-14)
 
-[Canonical report](output/autocal_research_with_Fable5p2/report.md), [abstract](output/autocal_research_with_Fable5p2/abstract.md), and [topic synthesis](topics/autocal-stretch.md). Archived simulation diagnosis and exploratory direct-collector design; no production integration or hardware validation. Excellent fit scores can hide millimetre anchor bias. Raw recordings remain temporary only.
+[Canonical report](output/autocal_research_with_Fable5p2/report.md), [abstract](output/autocal_research_with_Fable5p2/abstract.md), and [topic synthesis](topics/autocal-stretch.md). Archived simulation diagnosis and exploratory direct-collector design; no production integration or hardware validation. Excellent fit scores can hide millimetre anchor bias. [Recovery guide](output/autocal_research_with_Fable5p2/recovery.md) locates the unfinished implementation snapshot, additional small evidence and Git-ignored local copies of raw recordings; no off-host backup is established.

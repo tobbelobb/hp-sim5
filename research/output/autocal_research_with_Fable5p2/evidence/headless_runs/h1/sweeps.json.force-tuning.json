@@ -1,0 +1,220 @@
+{
+  "version": "1.0",
+  "stage": "force_tuning_complete_before_sweeps",
+  "timestamp": "2026-11-14T21:00:51.741Z",
+  "machine_type": "hangprinter_3",
+  "firmware": "rrf",
+  "m666": {
+    "M": 666,
+    "A": 1,
+    "Q": 0,
+    "R": [
+      30,
+      30,
+      30,
+      30
+    ],
+    "U": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "O": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "N": [
+      2,
+      2,
+      2,
+      3
+    ],
+    "L": [
+      20,
+      20,
+      20,
+      20
+    ],
+    "H": [
+      20,
+      20,
+      20,
+      20
+    ],
+    "J": [
+      200,
+      200,
+      200,
+      200
+    ],
+    "W": 0.08,
+    "S": 20000,
+    "I": [
+      3,
+      3,
+      3,
+      3
+    ],
+    "X": [
+      170,
+      170,
+      170,
+      170
+    ],
+    "Y": [
+      528.3,
+      528.3,
+      528.3,
+      398.9
+    ],
+    "C": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "E": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "F": 0,
+    "B": 0,
+    "P": 0
+  },
+  "mm_per_degree": [
+    0.5235987755982988,
+    0.5235987755982988,
+    0.5235987755982988,
+    0.5235987755982988
+  ],
+  "requested_sensor_collection_force_n": null,
+  "sensor_collection_force_n": 2.227260843315198,
+  "force_tuning": {
+    "auto_tuned": true,
+    "method": "incremental-compliance",
+    "tuned_at": "2026-11-14T21:00:51.741Z",
+    "force_low_n": 0.022272608433151982,
+    "force_mid_n": 0.4454521686630396,
+    "force_max_n": 2.3957486715903054,
+    "pullout_force_n": 2.3957486715903054,
+    "active_anchor": 1,
+    "fixed_anchor": 3,
+    "rest_anchors": [
+      0,
+      2
+    ],
+    "idle_force_initial": 0.01,
+    "idle_force_final": 0.022272608433151982,
+    "force_start": 0.4454521686630396,
+    "force_edge": 2.3957486715903054,
+    "force_cap": 20,
+    "force_start_bracket_no": 0.40495651696639967,
+    "force_start_bracket_yes": 0.5669391237529595,
+    "d_max_deg": 1737.32,
+    "edge_at_cap": false,
+    "edge_reason": "incremental compliance declined below comfortable limit",
+    "edge_knee": {
+      "force": 2.3957486715903054,
+      "travelDeg": 1355.89,
+      "peakComplianceDegPerN": 904.9588655561433,
+      "complianceRatio": 0.5
+    },
+    "edge_samples": [
+      {
+        "force": 0.4454521686630396,
+        "travelDeg": 1.18,
+        "moved": true,
+        "stalled": true,
+        "fixedDriftDeg": 0
+      },
+      {
+        "force": 0.6236330361282554,
+        "travelDeg": 30.849999999999998,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 166.51619459531554
+      },
+      {
+        "force": 0.8730862505795575,
+        "travelDeg": 208.38,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 711.6765377848325
+      },
+      {
+        "force": 1.2223207508113805,
+        "travelDeg": 521.6999999999999,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 897.162221349887
+      },
+      {
+        "force": 1.7112490511359326,
+        "travelDeg": 964.16,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 904.9588655561433
+      },
+      {
+        "force": 2.3957486715903054,
+        "travelDeg": 1355.89,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 572.2866577193552
+      },
+      {
+        "force": 3.3540481402264275,
+        "travelDeg": 1642.19,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 298.75838333446006
+      },
+      {
+        "force": 4.695667396316998,
+        "travelDeg": 1737.32,
+        "moved": true,
+        "stalled": false,
+        "fixedDriftDeg": 0,
+        "complianceDegPerN": 70.90685346691073
+      }
+    ],
+    "noise_samples": 20,
+    "noise_duration_ms": 4000,
+    "noise_sigma_deg": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "move_thresholds_deg": {
+      "active": 0.5,
+      "residual_active": 0.3,
+      "residual_sum": 0.8,
+      "other_by_anchor": {
+        "0": 0.5,
+        "2": 0.5
+      }
+    },
+    "stall_speed_deg_per_sec": 0.05,
+    "stall_window_ms": 25000
+  }
+}

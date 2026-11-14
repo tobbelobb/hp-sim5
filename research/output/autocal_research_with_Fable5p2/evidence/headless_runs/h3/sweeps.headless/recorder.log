@@ -1,0 +1,4 @@
+Recording: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.headless/hangprinter-20261114T210559.910465Z-1e89a9de.rrd
+Flight recorder: ws://127.0.0.1:37897
+Connect the simulator recorder, then start collection or playback. Ctrl-C stops recording.
+Recording finalized: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.headless/hangprinter-20261114T210559.910465Z-1e89a9de.rrd (last timestep 1925500)

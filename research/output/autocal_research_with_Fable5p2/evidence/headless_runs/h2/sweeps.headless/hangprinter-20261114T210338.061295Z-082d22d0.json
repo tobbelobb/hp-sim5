@@ -1,0 +1,31 @@
+{
+  "backend": "headless-js",
+  "scene_generation": 0,
+  "recording_id": "a8f275a12da34f7e8fda7fb49fc2e5bd",
+  "rrd": "/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h2/sweeps.headless/hangprinter-20261114T210338.061295Z-082d22d0.rrd",
+  "status": "finalized",
+  "start_step": 0,
+  "format_version": 1,
+  "extended_reference": true,
+  "autocal_complete": true,
+  "rejected_messages": [],
+  "sample_stride": 100,
+  "geometry_detail": "compact",
+  "headless_segments": [
+    {
+      "session": "914aac5b-328e-446f-a211-dcedb69ce213",
+      "generation": 0,
+      "start_step": 0,
+      "start_time_s": 0,
+      "start_wall_time_ms": 1794690218292,
+      "end_step": 1147300,
+      "end_time_s": 2294.599999959564,
+      "end_wall_time_ms": 1794690351020
+    }
+  ],
+  "headless_session": "914aac5b-328e-446f-a211-dcedb69ce213",
+  "end_step": 1147300,
+  "end_time_s": 2294.599999959564,
+  "physics_samples": 11474,
+  "event_count": 373307
+}

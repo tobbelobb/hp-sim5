@@ -1,0 +1,10 @@
+h2 exit 0
+M669 A0.00:-1903.69:-274.54 B1648.71:951.92:-274.54 C-1648.73:951.82:-274.54 D0.05:0.02:1873.06
+raw encoder                        rms_res=0.0358mm  anchor err max= 26.28 rms= 8.28  A.y -4.38 zlow +5.10 B +3.73,+2.25 C -3.58,+1.99 D +0.12,-0.01,-26.28
+all lines true geometry            rms_res=0.0000mm  anchor err max=  0.00 rms= 0.00  A.y +0.00 zlow -0.00 B -0.00,-0.00 C -0.00,+0.00 D -0.00,+0.00,+0.00
+h3 exit 0
+M669 A0.00:-1907.53:-293.50 B1653.66:954.68:-293.50 C-1652.95:954.22:-293.50 D-0.06:0.02:1958.30
+raw encoder                        rms_res=0.2382mm  anchor err max= 52.45 rms=16.17  A.y -4.56 zlow -10.28 B +4.20,+2.36 C -4.39,+2.53 D -0.03,+0.06,+52.45
+all lines true geometry            rms_res=0.0000mm  anchor err max=  0.00 rms= 0.00  A.y -0.00 zlow -0.00 B -0.00,-0.00 C +0.00,-0.00 D -0.00,-0.00,-0.00
+
+[exited with code 0]

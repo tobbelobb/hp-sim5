@@ -1,0 +1,39 @@
+[pytest]
+addopts = -m "not slow and not heavy"
+asyncio_default_fixture_loop_scope = function
+markers =
+    slow: starts simulators, recorders, hosts or MCP servers; excluded by default, opt in with -m slow
+    heavy: full auto-calibration runs that take minutes; opt in with -m heavy
+testpaths =
+    autocal/tests
+    tests/python
+    research-program/tests
+norecursedirs =
+    .git
+    node_modules
+    dist
+    dist-hangprinter-org
+    RRF
+    klipper
+    hangprinter-org
+    slideprinter
+    examples
+    public
+    run
+    specs
+    debug_sessions
+    debug_plots
+    plots
+........................................................................ [ 17%]
+........................................................................ [ 35%]
+........................................................................ [ 52%]
+........................................................................ [ 70%]
+........................................................................ [ 88%]
+.................................................                        [100%]
+409 passed, 29 deselected in 7.62s
+
+real	0m8,045s
+user	0m9,980s
+sys	0m0,625s
+
+[exited with code 0]

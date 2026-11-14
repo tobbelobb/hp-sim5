@@ -5,42 +5,48 @@
       "path": "/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.headless/hangprinter-20261114T210027.512570Z-a05ac722.rrd",
       "size_bytes": 133108889,
       "sha256": "dd8dadf894630c6e77eb3f626ef28073534092dd44f1f7ca11d9e43bb37e8a86",
-      "storage": "temporary only; no durable copy identified"
+      "storage": "Local repository filesystem copy (Git-ignored); original temporary copy retained; no off-host copy established",
+      "local_recovery_copy": "recovery-originals/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.headless/hangprinter-20261114T210027.512570Z-a05ac722.rrd"
     },
     {
       "run": "h1",
       "path": "/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.headless/events.jsonl",
       "size_bytes": 88722659,
       "sha256": "ba58fec531454d2878aa3d668d96061a8860d75dbd24d31c839368e4c42ccf35",
-      "storage": "temporary only; no durable copy identified"
+      "storage": "Local repository filesystem copy (Git-ignored); original temporary copy retained; no off-host copy established",
+      "local_recovery_copy": "recovery-originals/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.headless/events.jsonl"
     },
     {
       "run": "h2",
       "path": "/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h2/sweeps.headless/hangprinter-20261114T210338.061295Z-082d22d0.rrd",
       "size_bytes": 134531263,
       "sha256": "487e5ef1a6f8f81314d49d22f14c9ad4aae788219ae0a576eaacaaf9193529c6",
-      "storage": "temporary only; no durable copy identified"
+      "storage": "Local repository filesystem copy (Git-ignored); original temporary copy retained; no off-host copy established",
+      "local_recovery_copy": "recovery-originals/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h2/sweeps.headless/hangprinter-20261114T210338.061295Z-082d22d0.rrd"
     },
     {
       "run": "h2",
       "path": "/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h2/sweeps.headless/events.jsonl",
       "size_bytes": 84007843,
       "sha256": "6143b57c08e8c4e98318abe38c662e1edbbb41316cdf7ae537b2deb750bf4b42",
-      "storage": "temporary only; no durable copy identified"
+      "storage": "Local repository filesystem copy (Git-ignored); original temporary copy retained; no off-host copy established",
+      "local_recovery_copy": "recovery-originals/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h2/sweeps.headless/events.jsonl"
     },
     {
       "run": "h3",
       "path": "/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.headless/events.jsonl",
       "size_bytes": 95389430,
       "sha256": "d211bc2f7ced4b52f68ee9c45d2a0105573e7502bab92f5ee20698a4dd398c98",
-      "storage": "temporary only; no durable copy identified"
+      "storage": "Local repository filesystem copy (Git-ignored); original temporary copy retained; no off-host copy established",
+      "local_recovery_copy": "recovery-originals/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.headless/events.jsonl"
     },
     {
       "run": "h3",
       "path": "/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.headless/hangprinter-20261114T210559.910465Z-1e89a9de.rrd",
       "size_bytes": 217061355,
       "sha256": "44d138c5ef56d362918b07fe6626b3abc6890d734b7aa5d53dde9a9dfc096a79",
-      "storage": "temporary only; no durable copy identified"
+      "storage": "Local repository filesystem copy (Git-ignored); original temporary copy retained; no off-host copy established",
+      "local_recovery_copy": "recovery-originals/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.headless/hangprinter-20261114T210559.910465Z-1e89a9de.rrd"
     }
   ],
   "missing_inventory": false

@@ -1,0 +1,61 @@
+
+real	0m58,956s
+user	2m18,783s
+sys	0m37,687s
+; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/1 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 4
+; reached max steps; dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.json
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 0.4884
+Anchors (M669): M669 A0.00:-1908.47:-278.65 B1652.61:954.16:-278.65 C-1652.47:954.05:-278.65 D-0.02:0.04:1894.27
+Interpretation: A Quality score below 2 indicates a near-perfect fit.
+-rw-rw-r-- 1 torbjorn torbjorn   1570 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/stdout.log
+-rw-rw-r-- 1 torbjorn torbjorn     10 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.active_sweep_cfg.default.txt
+-rw-rw-r-- 1 torbjorn torbjorn     30 nov 14 22:00 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.bootstrap_cfg.txt
+-rw-rw-r-- 1 torbjorn torbjorn  11926 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.full_auto.log
+-rw-rw-r-- 1 torbjorn torbjorn   4158 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.full_auto_log.jsonl
+-rw-rw-r-- 1 torbjorn torbjorn 123099 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.json
+-rw-rw-r-- 1 torbjorn torbjorn   4258 nov 14 22:00 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.json.force-tuning.json
+-rw-rw-r-- 1 torbjorn torbjorn  50725 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.json.partial-points.jsonl
+-rw-rw-r-- 1 torbjorn torbjorn   1498 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.new_001.json.force-tuning.json
+-rw-rw-r-- 1 torbjorn torbjorn  18243 nov 14 22:01 /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.new_001.json.partial-points.jsonl
+
+/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1:
+total 256
+drwxrwxr-x 4 torbjorn torbjorn   4096 nov 14 22:01 .
+drwx------ 3 torbjorn torbjorn   4096 nov 14 22:00 ..
+-rw-rw-r-- 1 torbjorn torbjorn   1570 nov 14 22:01 stdout.log
+-rw-rw-r-- 1 torbjorn torbjorn     10 nov 14 22:01 sweeps.active_sweep_cfg.default.txt
+-rw-rw-r-- 1 torbjorn torbjorn     30 nov 14 22:00 sweeps.bootstrap_cfg.txt
+-rw-rw-r-- 1 torbjorn torbjorn  11926 nov 14 22:01 sweeps.full_auto.log
+-rw-rw-r-- 1 torbjorn torbjorn   4158 nov 14 22:01 sweeps.full_auto_log.jsonl
+drwxrwxr-x 2 torbjorn torbjorn   4096 nov 14 22:01 sweeps.headless
+-rw-rw-r-- 1 torbjorn torbjorn 123099 nov 14 22:01 sweeps.json
+-rw-rw-r-- 1 torbjorn torbjorn   4258 nov 14 22:00 sweeps.json.force-tuning.json
+-rw-rw-r-- 1 torbjorn torbjorn  50725 nov 14 22:01 sweeps.json.partial-points.jsonl
+-rw-rw-r-- 1 torbjorn torbjorn   1498 nov 14 22:01 sweeps.new_001.json.force-tuning.json
+-rw-rw-r-- 1 torbjorn torbjorn  18243 nov 14 22:01 sweeps.new_001.json.partial-points.jsonl
+drwxrwxr-x 2 torbjorn torbjorn   4096 nov 14 22:01 sweeps.stages
+
+/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h1/sweeps.headless:
+total 216776
+drwxrwxr-x 2 torbjorn torbjorn      4096 nov 14 22:01 .
+drwxrwxr-x 4 torbjorn torbjorn      4096 nov 14 22:01 ..
+-rw-rw-r-- 1 torbjorn torbjorn     24039 nov 14 22:00 baked-scene.usda
+-rw-rw-r-- 1 torbjorn torbjorn      3024 nov 14 22:01 clock.json
+-rw-rw-r-- 1 torbjorn torbjorn  88722659 nov 14 22:01 events.jsonl
+-rw-rw-r-- 1 torbjorn torbjorn      4814 nov 14 22:00 firmware-config.g
+-rw-rw-r-- 1 torbjorn torbjorn       984 nov 14 22:01 hangprinter-20261114T210027.512570Z-a05ac722.json
+-rw-rw-r-- 1 torbjorn torbjorn 133108889 nov 14 22:01 hangprinter-20261114T210027.512570Z-a05ac722.rrd
+-rw-rw-r-- 1 torbjorn torbjorn      7256 nov 14 22:01 manifest.json
+-rw-rw-r-- 1 torbjorn torbjorn         0 nov 14 22:00 physics.log
+
+[exited with code 0]

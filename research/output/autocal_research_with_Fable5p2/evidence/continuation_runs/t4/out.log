@@ -1,0 +1,19 @@
+Writing additional info to log: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/t4/sweeps.full_auto.log
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/t4/sweeps.full_auto.stop to request stop (cross-platform)
+; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/1 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/t4/sweeps.replay_tmp.json ===
+The best try so far.
+Patience reset.
+Replaying next sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 4
+; reached max steps; dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/t4/sweeps.replay_tmp.json
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 0.157
+Anchors (M669): M669 A0.00:-1906.47:-273.13 B1651.32:953.58:-273.13 C-1650.17:952.56:-273.13 D0.10:0.03:1863.96
+Interpretation: A Quality score below 2 indicates a near-perfect fit.
+Sending M669 A0.00:-1906.47:-273.13 B1651.32:953.58:-273.13 C-1650.17:952.56:-273.13 D0.10:0.03:1863.96 to http://localhost:8081
+; failed to send M669: <urlopen error [Errno 111] Connection refused>

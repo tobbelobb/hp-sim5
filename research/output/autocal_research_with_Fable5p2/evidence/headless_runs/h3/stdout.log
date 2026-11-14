@@ -1,0 +1,19 @@
+; headless simulator manifest: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.headless/manifest.json
+Writing stage artifacts to: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.stages
+Writing additional info to log: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.full_auto.log
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.full_auto.stop to request stop (cross-platform)
+; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/1 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 4
+; reached max steps; dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/6be52c02-0bfa-4f95-a23e-a262242026a8/scratchpad/h3/sweeps.json
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 0.4185
+Anchors (M669): M669 A0.00:-1907.53:-293.50 B1653.66:954.68:-293.50 C-1652.95:954.22:-293.50 D-0.06:0.02:1958.30
+Interpretation: A Quality score below 2 indicates a near-perfect fit.
