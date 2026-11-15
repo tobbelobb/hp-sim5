@@ -12,7 +12,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
-from autocal.equal_strain import write_sensor_force_profile
+from autocal.equal_strain import is_equal_strain, write_sensor_force_profile
+from autocal.home_compensation import compensate_home
 from autocal.rough_bootstrap import MAX_EXTRA_ROUGH_SWEEPS, assess_rough_geometry, next_rough_sweep
 from autocal.history_selection import (
     HISTORY_CONSENSUS_MAX_SPREAD_MM,
@@ -141,6 +142,19 @@ def full_auto_loop(
         m669 = _m669_from_plan(best_plan)
         m666 = _m666_from_plan(best_plan)
         anchors = best_plan.get("anchors")
+        fit_dataset = best_plan.get("dataset") or {}
+        home_evidence = (fit_dataset.get("config") or {}).get("home_extension_evidence")
+        if home_evidence is not None:
+            try:
+                if not fit_dataset.get("sweeps") or not is_equal_strain(fit_dataset):
+                    raise ValueError("home compensation requires an equal-strain fit")
+                anchors, shift = compensate_home(anchors, best_plan.get("home_offsets_mm"), home_evidence)
+                m669 = _format_m669_command(anchors, machine_type)
+                _log_console("; physical home shift applied (mm): " + np.array2string(shift, precision=3))
+            except (TypeError, ValueError) as exc:
+                _log_console(f"; physical home compensation skipped: {exc}")
+        elif fit_dataset.get("sweeps") and is_equal_strain(fit_dataset):
+            _log_console("; physical home compensation unavailable: independent home and measurement extension evidence is missing")
         anchor_str = ""
         if isinstance(anchors, np.ndarray):
             anchor_str = np.array2string(anchors, precision=2, separator=", ")
