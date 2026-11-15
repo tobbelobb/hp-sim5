@@ -3384,6 +3384,12 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
     )
     parser.add_argument(
+        "--terminal-validation",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Experiment: at normal live stopping, compare frozen candidates on one fresh unfitted sweep (default: disabled).",
+    )
+    parser.add_argument(
         "--equal-strain",
         action=argparse.BooleanOptionalAction,
         default=True,

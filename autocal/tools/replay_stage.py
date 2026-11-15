@@ -11,11 +11,12 @@ from autocal.fit_stage import fit_ellipse_dataset
 from autocal.history_selection import evaluate_history_candidates, select_history_plan
 from autocal.planning_pass import plan_ellipse_sweep
 from autocal.stage_artifacts import read_stage_artifact, write_stage_artifact
+from autocal.terminal_validation import evaluate_terminal_candidates, select_terminal_plan
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("fit", "plan", "evaluate", "rank"))
+    parser.add_argument("stage", choices=("fit", "plan", "evaluate", "rank", "terminal"))
     parser.add_argument("artifact", type=Path)
     parser.add_argument("--options", type=Path, help="JSON object overriding this stage's saved keyword options")
     parser.add_argument("--output", type=Path, required=True)
@@ -27,7 +28,15 @@ def main(argv=None):
     if removed_flex.intersection(overrides):
         parser.error("removed options: " + ", ".join(sorted(removed_flex.intersection(overrides))))
     started = time.perf_counter()
-    if args.stage in ("fit", "plan"):
+    if args.stage == "terminal":
+        if artifact["kind"] != "terminal_validation":
+            parser.error("terminal requires a terminal_validation artifact")
+        options = {**payload["validation_options"], **overrides}
+        evaluated = evaluate_terminal_candidates(payload["candidates"], payload["validation_dataset"], **options)
+        plan, meta, _ = select_terminal_plan(evaluated)
+        output = {**payload, "evaluated": evaluated, "validation_options": options, "selected": meta}
+        kind = "terminal_validation"
+    elif args.stage in ("fit", "plan"):
         if artifact["kind"] != "fit":
             parser.error("fit and plan require a fit artifact")
         if args.stage == "fit":

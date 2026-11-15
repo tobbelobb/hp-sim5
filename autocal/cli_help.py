@@ -34,7 +34,7 @@ _RESEARCH = {
     },
     "Research: planning and run comparisons": {
         "candidate_count", "delta_min", "delta_max", "regularization",
-        "min_fixed_delta_spacing_mm", "full_auto_run", "shotgun",
+        "min_fixed_delta_spacing_mm", "full_auto_run", "shotgun", "terminal_validation",
     },
     "Diagnostics and advanced configuration": {
         "stage_artifacts", "full_auto_log", "robust_debug", "residuals_csv",
