@@ -1,0 +1,310 @@
+; command: autocal/autocal.py --headless-sim --machine-type hangprinter_3 --dataset /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json
+Wrote to console: Writing additional info to log: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.full_auto.log
+; bootstrapping dataset (3 sweeps, auto size-tune):
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.bootstrap_cfg.txt --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; auto-tune force start
+; auto-tune probe 1/120: test=0.0100 moved=no travel=0.000deg stalled=yes
+; auto-tune probe 2/120: test=0.0140 moved=no travel=0.010deg stalled=yes
+; auto-tune probe 3/120: test=0.0196 moved=no travel=0.030deg stalled=yes
+; auto-tune probe 4/120: test=0.0274 moved=no travel=0.040deg stalled=yes
+; auto-tune probe 5/120: test=0.0384 moved=no travel=0.070deg stalled=yes
+; auto-tune probe 6/120: test=0.0538 moved=no travel=0.110deg stalled=yes
+; auto-tune probe 7/120: test=0.0753 moved=no travel=0.160deg stalled=yes
+; auto-tune probe 8/120: test=0.1054 moved=no travel=0.220deg stalled=yes
+; auto-tune probe 9/120: test=0.1476 moved=no travel=0.310deg stalled=yes
+; auto-tune probe 10/120: test=0.2066 moved=no travel=0.470deg stalled=yes
+; auto-tune probe 11/120: test=0.2893 moved=no travel=0.690deg stalled=yes
+; auto-tune probe 12/120: test=0.4050 moved=yes travel=1.130deg stalled=yes
+; auto-tune bisect-start 1/60: test=0.3471 moved=no travel=0.900deg stalled=yes
+; auto-tune bisect-start 2/60: test=0.3760 moved=no travel=0.970deg stalled=yes
+; auto-tune edge-ramp 1/120: test=0.4050 moved=yes travel=1.110deg stalled=yes
+; auto-tune edge-ramp 2/120: test=0.5669 moved=yes travel=1.700deg stalled=yes
+; auto-tune edge-ramp 3/120: test=0.7937 moved=yes travel=223.740deg stalled=no
+; auto-tune edge-ramp 4/120: test=1.1112 moved=yes travel=440.110deg stalled=no
+; auto-tune edge-ramp 5/120: test=1.5557 moved=yes travel=844.340deg stalled=no
+; auto-tune edge-ramp 6/120: test=2.1780 moved=yes travel=1250.360deg stalled=no
+; auto-tune edge-ramp 7/120: test=3.0491 moved=yes travel=1583.090deg stalled=no
+; auto-tune edge-ramp 8/120: test=4.2688 moved=yes travel=1716.740deg stalled=no
+; auto-tune selected: idle=0.0202 start=0.4050 edge=2.1780 d_max=1716.740deg
+; force-tuning checkpoint saved to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json.force-tuning.json
+; size-tune max travel raw=487.146mm scaled=389.717mm
+
+Sweep 1/3: fix [0, 3], pair 1/2
+  Sub-sweep 1/2: drive 1, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 1
+  Collected 20 points from 2 sub-sweeps
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 2/3: fix [1, 3], pair 0/2
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 3/3: fix [2, 3], pair 0/1
+  Sub-sweep 1/2: drive 0, sensor 1
+  Sub-sweep 2/2: drive 1, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 3 sweeps to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json
+Returned all motors to encoder origin.
+; bootstrap dataset written to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json
+; full-auto log: /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.full_auto_log.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.full_auto.stop to request stop (cross-platform)
+Wrote to console: ; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 1/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=48 origin=0 min=0 mixed=0 total=48
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=7.661e-06 cost_noise_normalized=0.09014 J=0.09014 chi2_red=0.1109 raw_fit_score_ui=0.09014 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=48 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1903.69, -274.54], [1648.71, 951.92, -274.54], [-1648.73, 951.82, -274.54], [0.05, 0.02, 1873.06]]
+M669 A0.00:-1903.69:-274.54 B1648.71:951.92:-274.54 C-1648.73:951.82:-274.54 D0.05:0.02:1873.06
+; cost=7.661e-06 cost_noise_normalized=0.09014 origin_norms=[1923.384, 1923.479, 1923.449, 1873.056] pairwise=[d01=3297.385, d02=3297.309, d03=2869.894, d12=3297.443, d13=2869.910, d23=2869.945]
+; pose_fit: anchors=[[0.00, -1904.58, -275.38], [1649.76, 952.61, -275.38], [-1649.22, 952.05, -275.38], [0.13, 0.00, 1875.70]] rms=0.0207mm points=60 max_diff_vs_ellipse_fit=2.64mm
+; noise_cost: J=0.09014 chi2_red=0.1109 |z|_med=0.1856 |z|_p95=0.578 outlier_ratio=0 N=48 mode=sigma lengths=mu J_trim=0.09014 chi2_red_trim=0.1109 N_trim=48
+; rank_coverage: effective_obs=48 total_obs=48 filtered_ratio=0 obs_bonus=0 filtered_penalty=0 rank_adjust=0
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.3001mm used_sigma=0.3001mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2025mm flex=0.2158mm floor=0.05mm non_layered=0.3001mm layer_changes=0mm mode_add=0mm total=0.3001mm model=0.3001mm used=0.3001mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=990mm, p4=980mm, p7=980mm, p8=979mm, p5=979mm)
+; covariance_scaled: chi2_red=0.1109 std_scaled(p11=333mm, p0=330mm, p4=326mm, p7=326mm, p8=326mm, p5=326mm)
+; CI95: max_std=332.9mm max_ci=652.4mm workspace=1350 rel_std=0.2466 rel_ci=0.4832 scale=chi2_red=0.1109
+; encoder_noise: points=60/60 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=60 sigma_nonfinite=0
+; next_sweep score=0.190275 fixed=[0, 3] targets=[350.74499676562453, -19.485833153645842] pair=[1,2]
+; top_candidates:
+;   0.190275 fixed=[0, 3] targets=[350.74499676562453, -19.485833153645842] pair=[1,2]
+;   0.190268 fixed=[0, 3] targets=[331.25916361197875, -19.485833153645842] pair=[1,2]
+;   0.190267 fixed=[0, 3] targets=[350.74499676562453, -38.97166630729163] pair=[1,2]
+;   0.190262 fixed=[0, 3] targets=[311.77333045833296, -19.485833153645842] pair=[1,2]
+;   0.19026 fixed=[0, 3] targets=[331.25916361197875, -38.97166630729163] pair=[1,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.active_sweep_cfg.default.txt --fixed-targets 350.74499676562453,-19.485833153645842 --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_001.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.020247825848319984 --force-mid 0.40495651696639967 --force-max 2.1779533378093685 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02025N mid=0.405N max=2.178N
+; selected run=default fit_score_ui=0.09014 raw_fit_score_ui=0.09014 score_basis=standard-noise cost=0.09014 rel_std=0.2466 max_std=332.9mm rank_score=0.09014 iteration_adjust=0 coverage_adjust=0 history_rank_score=0.09014
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.active_sweep_cfg.default.txt --fixed-targets 350.74499676562453,-19.485833153645842 --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_001.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.020247825848319984 --force-mid 0.40495651696639967 --force-max 2.1779533378093685 --no-auto-tune-force --return-to-origin
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_001.json.force-tuning.json
+
+Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [350.745, -19.486]
+  Sub-sweep 1/2: drive 1, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 1
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_001.json
+Returned all motors to encoder origin.
+; merged /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_001.json -> /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json sweeps=4
+Wrote to console: Collected sweep nr 4
+
+; === full-auto iteration 2/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 2/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=8.983e-06 cost_noise_normalized=0.3135 J=0.3135 chi2_red=0.3532 raw_fit_score_ui=0.3135 score_basis=standard-noise rank_coverage_adjust=-0.0863 effective_obs=80 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=8.983e-06 cost_noise_normalized=0.3135 J=0.3135 chi2_red=0.3532 raw_fit_score_ui=0.3135 score_basis=standard-noise rank_coverage_adjust=-0.0863 effective_obs=80 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1906.16, -277.77], [1651.83, 953.91, -277.77], [-1649.83, 952.35, -277.77], [0.03, -0.08, 1885.41]]
+M669 A0.00:-1906.16:-277.77 B1651.83:953.91:-277.77 C-1649.83:952.35:-277.77 D0.03:-0.08:1885.41
+; cost=8.983e-06 cost_noise_normalized=0.3135 origin_norms=[1926.289, 1927.596, 1925.115, 1885.415] pairwise=[d01=3302.803, d02=3300.453, d03=2883.136, d12=3301.659, d13=2884.072, d23=2882.453]
+; pose_fit: anchors=[[0.00, -1905.82, -277.11], [1651.62, 953.80, -277.11], [-1649.45, 952.11, -277.11], [0.03, -0.07, 1882.42]] rms=0.0226mm points=80 max_diff_vs_ellipse_fit=2.99mm
+; noise_cost: J=0.3135 chi2_red=0.3532 |z|_med=0.4408 |z|_p95=0.9327 outlier_ratio=0 N=80 mode=sigma lengths=mu J_trim=0.3135 chi2_red_trim=0.3532 N_trim=80
+; rank_coverage: effective_obs=80 total_obs=80 filtered_ratio=0 obs_bonus=0.0863 filtered_penalty=0 rank_adjust=-0.0863
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.3001mm used_sigma=0.3001mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2025mm flex=0.2158mm floor=0.05mm non_layered=0.3001mm layer_changes=0mm mode_add=0mm total=0.3001mm model=0.3001mm used=0.3001mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=987mm, p2=980mm, p5=974mm, p8=974mm, p4=973mm)
+; covariance_scaled: chi2_red=0.3532 std_scaled(p11=594mm, p0=586mm, p2=582mm, p5=579mm, p8=579mm, p4=578mm)
+; CI95: max_std=593.8mm max_ci=1164mm workspace=1350 rel_std=0.4398 rel_ci=0.8621 scale=chi2_red=0.3532
+; encoder_noise: points=80/80 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=80 sigma_nonfinite=0
+; next_sweep score=0.180205 fixed=[2, 3] targets=[331.25916361197875, -58.45749946093747] pair=[0,1]
+; top_candidates:
+;   0.180205 fixed=[2, 3] targets=[331.25916361197875, -58.45749946093747] pair=[0,1]
+;   0.180199 fixed=[2, 3] targets=[311.77333045833296, -58.45749946093747] pair=[0,1]
+;   0.180193 fixed=[2, 3] targets=[292.2874973046872, -58.45749946093747] pair=[0,1]
+;   0.180191 fixed=[2, 3] targets=[311.77333045833296, -77.94333261458326] pair=[0,1]
+;   0.180188 fixed=[2, 3] targets=[272.8016641510413, -58.45749946093747] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.active_sweep_cfg.default.txt --fixed-targets 331.25916361197875,-58.45749946093747 --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_002.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.020247825848319984 --force-mid 0.40495651696639967 --force-max 2.1779533378093685 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02025N mid=0.405N max=2.178N
+; selected run=default fit_score_ui=0.3135 raw_fit_score_ui=0.3135 score_basis=standard-noise cost=0.3135 rel_std=0.4398 max_std=593.8mm rank_score=0.3135 iteration_adjust=-0.1919 coverage_adjust=-0.0863 history_rank_score=0.1043
+Wrote to console: The 2nd best try so far.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 2 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.active_sweep_cfg.default.txt --fixed-targets 331.25916361197875,-58.45749946093747 --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_002.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.020247825848319984 --force-mid 0.40495651696639967 --force-max 2.1779533378093685 --no-auto-tune-force --return-to-origin
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_002.json.force-tuning.json
+
+Sweep 1/1: fix [2, 3], pair 0/1, fixed targets [331.259, -58.457]
+  Sub-sweep 1/2: drive 0, sensor 1
+  Sub-sweep 2/2: drive 1, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_002.json
+Returned all motors to encoder origin.
+; merged /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_002.json -> /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json sweeps=5
+Wrote to console: Collected sweep nr 5
+
+; === full-auto iteration 3/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 3/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=1.239e-05 cost_noise_normalized=0.4221 J=0.4221 chi2_red=0.4639 raw_fit_score_ui=0.4221 score_basis=standard-noise rank_coverage_adjust=-0.1532 effective_obs=100 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=1.239e-05 cost_noise_normalized=0.4221 J=0.4221 chi2_red=0.4639 raw_fit_score_ui=0.4221 score_basis=standard-noise rank_coverage_adjust=-0.1532 effective_obs=100 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1907.81, -279.50], [1652.66, 954.34, -279.50], [-1651.13, 953.30, -279.50], [-0.10, -0.14, 1891.96]]
+M669 A0.00:-1907.81:-279.50 B1652.66:954.34:-279.50 C-1651.13:953.30:-279.50 D-0.10:-0.14:1891.96
+; cost=1.239e-05 cost_noise_normalized=0.4221 origin_norms=[1928.176, 1928.776, 1926.949, 1891.964] pairwise=[d01=3305.024, d02=3303.359, d03=2890.411, d12=3303.795, d13=2891.006, d23=2889.667]
+; pose_fit: anchors=[[0.00, -1907.93, -279.59], [1652.82, 954.43, -279.59], [-1651.41, 953.44, -279.59], [-0.09, -0.07, 1891.99]] rms=0.0285mm points=100 max_diff_vs_ellipse_fit=0.28mm
+; noise_cost: J=0.4221 chi2_red=0.4639 |z|_med=0.4935 |z|_p95=1.239 outlier_ratio=0 N=100 mode=sigma lengths=mu J_trim=0.4221 chi2_red_trim=0.4639 N_trim=100
+; rank_coverage: effective_obs=100 total_obs=100 filtered_ratio=0 obs_bonus=0.1532 filtered_penalty=0 rank_adjust=-0.1532
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.3001mm used_sigma=0.3001mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2025mm flex=0.2158mm floor=0.05mm non_layered=0.3001mm layer_changes=0mm mode_add=0mm total=0.3001mm model=0.3001mm used=0.3001mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=986mm, p2=974mm, p8=974mm, p4=972mm, p7=970mm)
+; covariance_scaled: chi2_red=0.4639 std_scaled(p11=680mm, p0=671mm, p2=663mm, p8=663mm, p4=662mm, p7=661mm)
+; CI95: max_std=680.3mm max_ci=1333mm workspace=1350 rel_std=0.5039 rel_ci=0.9877 scale=chi2_red=0.4639
+; encoder_noise: points=100/100 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=100 sigma_nonfinite=0
+; next_sweep score=0.169611 fixed=[1, 3] targets=[292.2874973046872, -97.42916576822904] pair=[0,2]
+; top_candidates:
+;   0.169611 fixed=[1, 3] targets=[292.2874973046872, -97.42916576822904] pair=[0,2]
+;   0.169606 fixed=[1, 3] targets=[272.8016641510413, -97.42916576822904] pair=[0,2]
+;   0.169601 fixed=[1, 3] targets=[253.3158309973955, -97.42916576822904] pair=[0,2]
+;   0.169598 fixed=[1, 3] targets=[272.8016641510413, -116.91499892187488] pair=[0,2]
+;   0.169596 fixed=[1, 3] targets=[233.8299978437497, -97.42916576822904] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.active_sweep_cfg.default.txt --fixed-targets 292.2874973046872,-97.42916576822904 --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_003.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.020247825848319984 --force-mid 0.40495651696639967 --force-max 2.1779533378093685 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02025N mid=0.405N max=2.178N
+; selected run=default fit_score_ui=0.4221 raw_fit_score_ui=0.4221 score_basis=standard-noise cost=0.4221 rel_std=0.5039 max_std=680.3mm rank_score=0.4221 iteration_adjust=-0.2544 coverage_adjust=-0.1532 history_rank_score=0.1371
+Wrote to console: The 3rd best try so far.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 1 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.active_sweep_cfg.default.txt --fixed-targets 292.2874973046872,-97.42916576822904 --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_003.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.020247825848319984 --force-mid 0.40495651696639967 --force-max 2.1779533378093685 --no-auto-tune-force --return-to-origin
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_003.json.force-tuning.json
+
+Sweep 1/1: fix [1, 3], pair 0/2, fixed targets [292.287, -97.429]
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_003.json
+Returned all motors to encoder origin.
+; merged /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_003.json -> /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json sweeps=6
+Wrote to console: Collected sweep nr 6
+
+; === full-auto iteration 4/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 4/20 dataset=/tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=120 origin=0 min=0 mixed=0 total=120
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=1.396e-05 cost_noise_normalized=0.4685 J=0.4685 chi2_red=0.5065 raw_fit_score_ui=0.4685 score_basis=standard-noise rank_coverage_adjust=-0.2079 effective_obs=120 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=120 origin=0 min=0 mixed=0 total=120
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=1.396e-05 cost_noise_normalized=0.4685 J=0.4685 chi2_red=0.5065 raw_fit_score_ui=0.4685 score_basis=standard-noise rank_coverage_adjust=-0.2079 effective_obs=120 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1908.33, -280.00], [1653.51, 954.90, -280.00], [-1651.28, 953.29, -280.00], [-0.01, -0.13, 1893.49]]
+M669 A0.00:-1908.33:-280.00 B1653.51:954.90:-280.00 C-1651.28:953.29:-280.00 D-0.01:-0.13:1893.49
+; cost=1.396e-05 cost_noise_normalized=0.4685 origin_norms=[1928.760, 1929.852, 1927.145, 1893.486] pairwise=[d01=3306.384, d02=3303.873, d03=2892.277, d12=3304.790, d13=2893.140, d23=2891.324]
+; pose_fit: anchors=[[0.00, -1908.58, -280.04], [1653.49, 954.94, -280.04], [-1651.35, 953.33, -280.04], [0.02, -0.10, 1893.42]] rms=0.0294mm points=120 max_diff_vs_ellipse_fit=0.26mm
+; noise_cost: J=0.4685 chi2_red=0.5065 |z|_med=0.5505 |z|_p95=1.318 outlier_ratio=0 N=120 mode=sigma lengths=mu J_trim=0.4685 chi2_red_trim=0.5065 N_trim=120
+; rank_coverage: effective_obs=120 total_obs=120 filtered_ratio=0 obs_bonus=0.2079 filtered_penalty=0 rank_adjust=-0.2079
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.3001mm used_sigma=0.3001mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2025mm flex=0.2158mm floor=0.05mm non_layered=0.3001mm layer_changes=0mm mode_add=0mm total=0.3001mm model=0.3001mm used=0.3001mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=985mm, p4=970mm, p7=969mm, p5=969mm, p2=969mm)
+; covariance_scaled: chi2_red=0.5065 std_scaled(p11=711mm, p0=701mm, p4=690mm, p7=690mm, p5=690mm, p2=690mm)
+; CI95: max_std=710.7mm max_ci=1393mm workspace=1350 rel_std=0.5265 rel_ci=1.032 scale=chi2_red=0.5065
+; encoder_noise: points=120/120 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=120 sigma_nonfinite=0
+; next_sweep score=0.145608 fixed=[2, 3] targets=[253.3158309973955, -136.4008320755207] pair=[0,1]
+; top_candidates:
+;   0.145608 fixed=[2, 3] targets=[253.3158309973955, -136.4008320755207] pair=[0,1]
+;   0.145604 fixed=[2, 3] targets=[233.8299978437497, -136.4008320755207] pair=[0,1]
+;   0.1456 fixed=[2, 3] targets=[214.34416469010392, -136.4008320755207] pair=[0,1]
+;   0.145597 fixed=[2, 3] targets=[233.8299978437497, -155.8866652291665] pair=[0,1]
+;   0.145596 fixed=[2, 3] targets=[194.85833153645814, -136.4008320755207] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.active_sweep_cfg.default.txt --fixed-targets 253.3158309973955,-136.4008320755207 --output-file /tmp/claude-1000/-home-torbjorn-repos-hp-sim5/250f5229-e6de-4292-a20a-787a99f0c740/scratchpad/b1/sweeps.new_004.json --solver-iterations 20 --server http://127.0.0.1:46697 --headless-url http://127.0.0.1:40507 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.020247825848319984 --force-mid 0.40495651696639967 --force-max 2.1779533378093685 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02025N mid=0.405N max=2.178N
+; history_select: spread_stop spread_mm=2.099 limit_mm=4.959 streak=1/2
+; selected run=default fit_score_ui=0.4685 raw_fit_score_ui=0.4685 score_basis=standard-noise cost=0.4685 rel_std=0.5265 max_std=710.7mm rank_score=0.4685 iteration_adjust=-0.2638 coverage_adjust=-0.2079 history_rank_score=0.1631
+Wrote to console: The 4th best try so far.
+; history_select: reason=patience candidates=3 total_iterations=4
+; history_select: iter=3 run=default rank=0.4221 anchor_comparison=1.012 heldout_prediction=1.012 heldout_sweeps=1 iteration_adjust=-0.2544 coverage_adjust=-0.1532 selection_score=0.1371
+; history_select: iter=2 run=default rank=0.3135 anchor_comparison=3.709 heldout_prediction=3.709 heldout_sweeps=2 iteration_adjust=-0.1919 coverage_adjust=-0.0863 selection_score=0.1043
+; history_select: iter=1 run=default rank=0.09014 anchor_comparison=7.775 heldout_prediction=7.775 heldout_sweeps=3 iteration_adjust=0 coverage_adjust=0 selection_score=0.09014
+; history_select: consensus reason=patience selected_iter=3 selected_run=default members=[3, 4] spread_mm=2.099 max_spread_mm=5 applied=consensus
+Wrote to console: 
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of ideal quality
+Wrote to console: Fit quality score (lower is better): 0.4221
+Wrote to console: Anchors (M669): M669 A0.00:-1908.07:-279.75 B1653.09:954.62:-279.75 C-1651.21:953.29:-279.75 D-0.06:-0.13:1892.73
+Wrote to console: Interpretation: A Quality score below 2 indicates a near-perfect fit.

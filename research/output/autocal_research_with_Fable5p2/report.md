@@ -125,3 +125,18 @@ Next steps are to integrate and validate the single offset and per-point force r
 The evidence directory retains the original conversation, summary, diagnostic scripts (`resid.py`, `fit.py`, `rrd.py`, `an1.py`, `statics.py`, `val.py`), static-model/design scripts (`elastic.py`, `design*.py`), direct collector (`direct.mjs`), driver (`plan.py`), plans/results (`sim_results/`) and three headless datasets/logs/manifests. Scripts retain hard-coded scratchpad paths and are archival helpers, not portable commands from this directory. They were not rewritten or executed during filing. The conversation includes a corrected mode-switch ordering bug in the test collector; only the final reported results are used here.
 
 [Raw artifact inventory](evidence/raw-recordings.json) records paths, SHA-256 and byte sizes. A [recovery salvage on 2026-11-15](recovery.md) copied the large RRD/event artifacts and other session originals out of `/tmp` into the Git-ignored `recovery-originals/` directory beside this report. These are local filesystem copies; no off-host backup is established. Missing small run, stage, tuning, continuation-fit and task evidence was also copied into the evidence directory. The [recovery inventory](evidence/recovery-inventory.json) records hashes and locations. Small copied evidence belongs in Git; the large local originals do not travel with a clone. No fresh independent scientific review or reproduction was performed during archival filing or salvage.
+
+## Implementation follow-up, 2026-11-15
+
+The three ingredients are now in autocal for `hangprinter_3`/`hangprinter_4` (commits `aae32d13`, `0d700bad`, `ae476f33`). Each row is one full `--headless-sim --machine-type hangprinter_3` run with default settings at that stage, judged against the scene anchors. Evidence: [implementation runs](evidence/implementation_runs/).
+
+| Run | Planner | Sensor force | Home offset fitted | Worst anchor coordinate error |
+| --- | --- | --- | --- | --- |
+| b1 | ellipse geometry | constant | no | 8.1 mm (A.y); D.z −7.3 |
+| c1 | position information | constant | no | 8.4 mm (A.y); D.z −0.2 |
+| c2 | position information | constant | yes (`--fit-home-offsets`) | 3.2 mm (A.y) |
+| d2 | position information | equal strain, bootstrap re-measured | yes (automatic) | 1.4 mm (C.x, D.z) |
+
+d2 result: `A0.00:-1899.17:-280.73 B1644.47:949.63:-280.73 C-1644.08:949.06:-280.73 D0.19:-0.04:1898.63`. Its errors are not removed by a common shift: XY is about 0.9 mm short on every low anchor and Z is 0.7–1.4 mm low. Intermediate fits in the same run moved by about 1 mm between iterations, so 1.4 mm is a single-run figure, not a repeatable bound.
+
+Not done: the final home-shift compensation, repeated runs, encoder noise, HP4 and other machines, hardware. `sw.py`, `mix.py`, `seq.py` and `rank.py` are the sweep-form elastic-model checks used to choose the design (they contain absolute scratchpad paths). They showed that constant-force bootstrap sweeps must not be mixed with equal-strain sweeps (about 2.6–2.9 mm), which is why the bootstrap is measured twice.
