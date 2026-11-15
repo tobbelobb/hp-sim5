@@ -3,7 +3,7 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2 } = {}) {
   let now = 0;
   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
   let preparing = preparationDrift;
@@ -50,7 +50,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
   };
   const run = () => performForceSweep(send, { driveAnchor: 1, sensorAnchor: 2 }, {
     axes: ['X', 'Y', 'Z', 'U'], motorIds: ['40.0', '41.0', '42.0', '43.0'],
-    sweepPoints: 2, feed: 1400, speedup: 1, mmPerDeg: [1, 1, 1, 1], datasetStartMs: 0,
+    sweepPoints, feed: 1400, speedup: 1, mmPerDeg: [1, 1, 1, 1], datasetStartMs: 0,
     forceLow: .01, forceMid: .23, forceMax: 2.4, fixedAnchors: [0, 3], fixedTargets: [0, 0],
     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
@@ -81,15 +81,16 @@ test('half-turn sensor reserve follows spindle gearing, not a drive radius guess
   const result = await movingPullout({ sensorSpoolGearRatio: 2 }).run();
   expect(result.dataPoints[0].raw_angles_deg[2]).toBeLessThanOrEqual(600.5 - 360);
   expect(result.spoolReserve.guarded_sensor_rewind_mm).toBeGreaterThanOrEqual(360);
-  expect(result.spoolReserve.probe.accepted).toBe(false);
+  expect(result.spoolReserve.coupling_probes).toEqual([]);
 });
 
 test('later collection can reclaim only a reversibly tested part of the reserved interval', async () => {
-  const early = await movingPullout().run();
-  const later = await movingPullout({ probeSpoolReserve: true }).run();
-  expect(early.spoolReserve.probe.accepted).toBe(false);
-  expect(later.spoolReserve.probe.accepted).toBe(true);
-  expect(later.spoolReserve.guarded_sensor_rewind_mm).toBeGreaterThanOrEqual(180);
+  const early = await movingPullout({ sensorGain: 1, sweepPoints: 4 }).run();
+  const later = await movingPullout({ probeSpoolReserve: true, sensorGain: 1, sweepPoints: 4 }).run();
+  expect(early.spoolReserve.initial_half_turn_required).toBe(true);
+  expect(early.spoolReserve.coupling_probes).toEqual([]);
+  expect(later.spoolReserve.coupling_probes.some(probe => probe.accepted)).toBe(true);
+  expect(later.spoolReserve.initial_half_turn_required).toBe(false);
   expect(later.dataPoints[0].l_drive).toBeLessThan(early.dataPoints[0].l_drive);
 });
 
@@ -120,10 +121,32 @@ test('rejects a guard that consumes all available travel instead of repeating on
 });
 
 test('probe approval cannot authorize later samples outside its preload and interval', async () => {
-  const trial = movingPullout({ probeSpoolReserve: true, forceLosesCoupling: true,
+  const trial = movingPullout({ probeSpoolReserve: true, forceLosesCoupling: true, sweepPoints: 4,
     sensorForceProfile: { drive_mm: [-600, 0], force_n: [1, 3] } });
-  await expect(trial.run()).rejects.toThrow('half-turn interval');
+  await expect(trial.run()).rejects.toThrow('Insufficient coupled measurement points');
   expect(trial.points.every(point => point.sensor_force_n < 2.5)).toBe(true);
+});
+
+test('later short arcs need successful local evidence at each unreserved point', async () => {
+  const result = await movingPullout({ probeSpoolReserve: true, pulloutLimit: 20,
+    sensorGain: 10, sweepPoints: 5 }).run();
+  expect(result.dataPoints).toHaveLength(5);
+  expect(new Set(result.dataPoints.map(point => point.drive_setpoint_mm)).size).toBe(5);
+  expect(result.dataPoints.every(point => point.spool_reserve_method === 'local_encoder_coupling')).toBe(true);
+});
+
+test('unreserved samples with different profile forces receive fresh local probes', async () => {
+  const trial = movingPullout({ probeSpoolReserve: true, sensorGain: 1, sweepPoints: 10,
+    sensorForceProfile: { drive_mm: [-600, 0], force_n: [1, 3] } });
+  const result = await trial.run();
+  const accepted = result.spoolReserve.coupling_probes.filter(probe => probe.accepted);
+  expect(accepted.length).toBeGreaterThan(1);
+  expect(new Set(accepted.map(probe => probe.sensor_force_n)).size).toBe(accepted.length);
+  const force = result.dataPoints[0].sensor_force_n;
+  const changes = trial.commands.filter(command => command.line.startsWith('M569.4'));
+  const first = changes.findIndex(command => Number(command.line.split(' T')[1].split(':')[2]) === force);
+  const duringProbe = changes.slice(first).filter(command => command.now <= result.dataPoints[0].clock_time_ms);
+  expect(duringProbe.every(command => Number(command.line.split(' T')[1].split(':')[2]) === force)).toBe(true);
 });
 
 test('allows slow fixed-target preparation before starting the bounded pullout', async () => {

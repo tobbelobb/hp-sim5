@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
-from autocal.equal_strain import is_equal_strain, write_sensor_force_profile
+from autocal.equal_strain import is_equal_strain, write_sensor_force_profile, profile_policy_error
 from autocal.pose_fit import dataset_line_lengths
 from autocal.pose_planning import rank_candidates_pose_information
 from autocal.workspace import exploration_grid
@@ -191,12 +191,14 @@ def plan_ellipse_sweep(
     if best_cfg is not None:
         if is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4"):
             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
-            if not equal_strain:
+            if error := profile_policy_error(dataset):
+                collection_error = error
+            elif not equal_strain:
                 collection_error = "Cannot append constant-force measurements to profiled data; use a fresh dataset for --no-equal-strain"
             elif write_sensor_force_profile(profile_path, dataset, anchors, [best_cfg]):
                 collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
             else:
-                collection_error = "Cannot continue profiled collection without M666 W/N/Y and tuned forces"
+                collection_error = "Cannot continue profiled collection without M666 W/N/Y/U and tuned forces"
         if collection_error is None:
             cmd = _suggested_collect_command(
                 cfg_path, best_cfg, machine_type=machine_type,

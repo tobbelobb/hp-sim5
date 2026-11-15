@@ -12,7 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
-from autocal.equal_strain import is_equal_strain, write_sensor_force_profile
+from autocal.equal_strain import is_equal_strain, write_sensor_force_profile, profile_policy_error
 from autocal.home_compensation import compensate_home
 from autocal.rough_bootstrap import (
     MAX_EXTRA_ROUGH_SWEEPS, assess_rough_geometry, next_rough_sweep,
@@ -99,6 +99,10 @@ def full_auto_loop(
     if error := bootstrap_state_error(dataset_path):
         print(f"; {error}")
         return 2
+    if dataset_path.exists() and not no_collect:
+        if error := profile_policy_error(_load_json(dataset_path)):
+            print(f"; {error}")
+            return 2
     log_path = Path(full_auto_log) if full_auto_log is not None else _unique_path(
         dataset_path.with_name(f"{dataset_path.stem}.full_auto_log.jsonl")
     )
@@ -564,7 +568,7 @@ def full_auto_loop(
                     write_bootstrap_state(dataset_path, "remeasuring", sweep=index)
                     profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
                     if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
-                        raise ValueError("missing M666 W/N/Y or tuned forces for equal-strain bootstrap")
+                        raise ValueError("missing M666 W/N/Y/U or tuned forces for equal-strain bootstrap")
                     measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
                     refined = _merge_sweep_datasets(refined, measured)
                     _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
@@ -1493,6 +1497,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     _apply_optimizer_mode_env(str(args.optimizer_mode))
     if args.dataset is not None and (error := bootstrap_state_error(args.dataset)):
         parser.error(error)
+    if args.dataset is not None and args.dataset.exists() and not args.no_collect:
+        if error := profile_policy_error(_load_json(args.dataset)):
+            parser.error(error)
     spool_opts = _resolve_spool_cli_options(parser, args)
     if args.fit_home_offsets and any(_spool_mode_enabled(spool_opts[name]) for name in ("find_radii", "find_buildup_factor")):
         parser.error("Home-offset and spool fitting are not jointly supported; use --no-fit-home-offsets with --find-radii or --find-buildup-factor")

@@ -29,6 +29,32 @@ function createSettleOptions() {
 }
 
 describe('uncalibrated_actions', () => {
+  test('an unchanged verified noise window is reused with its original raw reading', async () => {
+    const { send } = createCollectDataSend();
+    const recordPoint = jest.fn();
+    const settledNoiseStats = { muByMotorDeg: [1.01, 2.01, 3.01], sigmaByMotorDeg: [.01,.01,.01], sampleCount: 16 };
+    const result = await collectDataPoint(send, {
+      motorIds: ['40.0','41.0','42.0'], axes: ['X','Y','Z'], mmPerDeg: [1,1,1],
+      driveAnchor: 0, sensorAnchors: [1], settledMeasurement: { anglesDeg: [1,2,3] },
+      settledNoiseStats, recordPoint, encoderNoiseOptions: { sampleCount: 16 },
+    });
+    expect(send).not.toHaveBeenCalled();
+    expect(result.lengths).toEqual([1,2,3]);
+    expect(result.noiseStats).toBe(settledNoiseStats);
+    expect(recordPoint.mock.calls[0][0]).toEqual([1,2,3]);
+  });
+
+  test('noise reuse without its verified raw measurement is rejected before side effects', async () => {
+    const { send } = createCollectDataSend();
+    const recordPoint = jest.fn();
+    await expect(collectDataPoint(send, {
+      motorIds: ['40.0','41.0','42.0'], axes: ['X','Y','Z'], mmPerDeg: [1,1,1],
+      driveAnchor: 0, sensorAnchors: [1], settledNoiseStats: {}, recordPoint,
+    })).rejects.toThrow('unchanged settled measurement');
+    expect(send).not.toHaveBeenCalled();
+    expect(recordPoint).not.toHaveBeenCalled();
+  });
+
   test('a settled measurement retains noise sampling and the fixed-angle guard', async () => {
     const { commands, send } = createCollectDataSend('1 2 3');
     const validateAngles = jest.fn();

@@ -418,6 +418,7 @@ export async function collectDataPoint(sendFn, options = {}) {
     restoreToModeWhenFinished,
     skipReturnModePrep = false,
     settledMeasurement = null,
+    settledNoiseStats = null,
     encoderNoiseOptions = null,
   } = options;
 
@@ -455,6 +456,9 @@ export async function collectDataPoint(sendFn, options = {}) {
   // The sweep caller can supply its just-completed quiet check when no motor
   // mode or measurement force changed after that check.
   const reuseMeasurement = settledMeasurement !== null;
+  if (settledNoiseStats !== null && !reuseMeasurement) {
+    throw new Error('Reusing encoder noise requires its unchanged settled measurement');
+  }
   if (!skipReturnModePrep && !reuseMeasurement) {
     await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
     await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
@@ -481,8 +485,8 @@ export async function collectDataPoint(sendFn, options = {}) {
     }
   }
 
-  let noiseStats = null;
-  if (encoderNoiseOptions) {
+  let noiseStats = settledNoiseStats;
+  if (encoderNoiseOptions && noiseStats === null) {
     noiseStats = await sampleEncoderNoise(sendFn, motorIds, {
       ...encoderNoiseOptions,
       speedup,

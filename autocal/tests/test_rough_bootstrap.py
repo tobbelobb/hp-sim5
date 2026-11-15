@@ -121,3 +121,21 @@ def test_corrupt_complete_dataset_is_rejected_before_headless_context_entry(tmp_
     with pytest.raises(SystemExit) as error:
         ac.main(["--headless-sim", "--machine-type", "hangprinter_3", "--dataset", str(path)])
     assert error.value.code == 2
+
+
+def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path, monkeypatch):
+    from autocal.headless_sim import HeadlessSimulation
+    path = tmp_path / "legacy.json"
+    data = _dataset()
+    data['version'] = '2.0'
+    data['config']['m666_before_data_collection'] = {'U': [2,2,2,4]}
+    for i, sweep in enumerate(data['sweeps']):
+        sweep['id'] = f'sweep_{i:03d}'
+        sweep['metadata'] = {'sensor_force_profile': True}
+    path.write_text(json.dumps(data))
+    def forbidden(*args):
+        raise AssertionError('Headless context must not start')
+    monkeypatch.setattr(HeadlessSimulation, '__enter__', forbidden)
+    with pytest.raises(SystemExit) as error:
+        ac.main(['--headless-sim', '--machine-type', 'hangprinter_4', '--dataset', str(path)])
+    assert error.value.code == 2

@@ -10,6 +10,8 @@ from autocal.equal_strain import (
     is_equal_strain,
     sensor_force_profiles,
     write_sensor_force_profile,
+    profile_policy_error,
+    PROFILE_STRAIN_MODEL,
 )
 
 ANCHORS = np.array([[0.0, -1900.0, -280.0], [1645.4, 950.0, -280.0], [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]])
@@ -49,12 +51,56 @@ def test_profile_file_needs_the_line_description_and_tuned_forces(tmp_path):
     path = tmp_path / "profile.json"
     assert not write_sensor_force_profile(path, {"config": {"force_tuning": {"force_mid_n": 0.4}}}, ANCHORS, [CFG])
     assert not path.exists()
-    config = {"m666_before_data_collection": {"W": 0.081, "N": [2, 2, 2, 3], "Y": EXTRA.tolist()},
+    config = {"m666_before_data_collection": {"W": 0.081, "N": [2, 2, 2, 3], "Y": EXTRA.tolist(), "U": [1]*4},
               "force_tuning": {"force_mid_n": 0.4}}
     assert write_sensor_force_profile(path, {"config": config}, ANCHORS, [CFG])
     profiles = json.loads(path.read_text())
     expected = sensor_force_profiles(ANCHORS, CFG, minimum_force_n=0.4, **OPTIONS)
     assert profiles[0]["force_n"] == pytest.approx(expected[0]["force_n"])
+
+
+def test_hp4_invariant_matches_the_firmware_flex_equation_with_unequal_reeving():
+    position = np.array([250., -150., 800.])
+    advantage = np.array([2., 2., 2., 4.])
+    lengths = np.linalg.norm(ANCHORS - position, axis=1)
+    directions = (ANCHORS - position) / lengths[:, None]
+    null = np.linalg.svd(directions.T)[2][-1]
+    def projected_flex_error(tensions):
+        # SpringK=EA/(U*distance+Y), flex=F/(SpringK*U²*N).
+        flex_times_ea = tensions * (advantage*lengths + EXTRA) / (advantage**2 * STRANDS)
+        harmless_scale_plus_reference = lengths + EXTRA / advantage
+        return null @ (flex_times_ea - harmless_scale_plus_reference)
+    corrected = equal_strain_tensions(ANCHORS, position, range(4), mechanical_advantage=advantage, **OPTIONS)
+    old = equal_strain_tensions(ANCHORS, position, range(4), **OPTIONS)
+    assert directions.T @ corrected == pytest.approx([0., 0., WEIGHT], abs=1e-9)
+    assert projected_flex_error(corrected) == pytest.approx(0., abs=1e-9)
+    assert abs(projected_flex_error(old)) > 1.
+
+
+def test_profile_file_refuses_unknown_mechanical_advantage(tmp_path):
+    config = {"m666_before_data_collection": {"W": .081, "N": [2,2,2,3], "Y": EXTRA.tolist()},
+              "force_tuning": {"force_mid_n": .4}}
+    assert not write_sensor_force_profile(tmp_path / 'unknown.json', {"config": config}, ANCHORS, [CFG])
+
+
+def test_corrected_reeving_profiles_cannot_continue_legacy_data():
+    sweep = {"metadata": {"sensor_force_profile": True}}
+    dataset = {"config": {"m666_before_data_collection": {"U": [2,2,2,4]}}, "sweeps": [sweep]}
+    assert "fresh dataset" in profile_policy_error(dataset)
+    sweep["metadata"]["sensor_force_profile_model"] = PROFILE_STRAIN_MODEL
+    assert profile_policy_error(dataset) is None
+    sweep["metadata"].pop("sensor_force_profile_model")
+    dataset["config"]["m666_before_data_collection"]["U"] = [1]*4
+    assert profile_policy_error(dataset) is None
+
+
+def test_force_retuning_does_not_change_the_existing_datasets_strain_target(tmp_path):
+    config = {"m666_before_data_collection": {"W": .081, "N": [2,2,2,3], "Y": EXTRA.tolist(), "U": [1]*4},
+              "force_tuning": {"force_mid_n": .2}}
+    dataset = {"config": config, "sweeps": [{"metadata": {"strand_tension_n": 1.}}]}
+    path = tmp_path / 'preserved.json'
+    assert write_sensor_force_profile(path, dataset, ANCHORS, [CFG])
+    assert all(profile['strand_tension_n'] == 1. for profile in json.loads(path.read_text()))
 
 
 def test_dataset_is_equal_strain_only_when_every_sweep_used_a_profile():

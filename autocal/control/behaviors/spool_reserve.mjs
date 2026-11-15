@@ -29,5 +29,6 @@ export async function probeSpoolInterval(moveAndSample, {
   const accepted = tracks(nearer, toward)
     && Math.abs(inward) > threshold(base, nearer, sensorAnchor) && outward * inward < 0;
   return { accepted, reason: accepted ? 'reversible encoder coupling' : 'flat, reversed or hysteretic response',
+    sample: restored,
     tested_drive_mm: [start, toward], sensor_response_deg: inward };
 }
