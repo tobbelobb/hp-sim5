@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
+from autocal.pose_fit import dataset_line_lengths
+from autocal.pose_planning import rank_candidates_pose_information
 
 _PLANNING_ONLY = (
     "candidate_deltas", "candidate_count", "delta_min", "delta_max",
@@ -102,7 +104,22 @@ def plan_ellipse_sweep(
         # Relax novelty spacing if needed, but never re-admit excluded repeats.
         candidates = novel_candidates
 
-    if spool_params is not None:
+    if machine_type in ("hangprinter_3", "hangprinter_4"):
+        # Position-based ranking: it values sweeps with a shortened D line, which the
+        # ellipse-geometry ranking below never picks.
+        estimation_dataset = fit["dataset_for_estimation"]
+        ranked = rank_candidates_pose_information(
+            anchors,
+            machine_type=machine_type,
+            low_anchor_z=dataset.get("_low_anchor_z"),
+            observed_lengths_mm=dataset_line_lengths(estimation_dataset)["lengths_mm"],
+            candidates=candidates,
+            points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
+            sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
+            regularization=float(regularization),
+            top_k=int(top_k),
+        )
+    elif spool_params is not None:
         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
         id_map = {id(cfg_model): cfg_base for cfg_base, cfg_model in zip(candidates, candidates_model)}
         ranked_model = rank_candidates_d_optimal(
