@@ -164,6 +164,10 @@ One result sentence per session; follow the report for evidence.
 
 - [Frozen candidate full-path and paired-fit evaluation](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/report.md) — Four simulated production runs stopped normally but exceeded 1 mm, with rough-stage and final-selection counterexamples; see report.
 
+- [Boundary recovery and feasible force-profile review](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/report.md) — Frozen `dfc0e3e3` passes offline rejection/stopping and v2 force-profile checks, but two surrounding return-movement gaps require changes before acceptance; see the report.
+
+- [Progressive workspace and reserve review](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-progressive-workspace-planning-and-sensor-s-e57f8f1b/report.md) — No result summary available.
+
 - [Independent review of combined autocal hardening](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-the-combined-autocal-hardening-candidate-fo-ec4f1013/report.md) — The review finds bootstrap restart and measurement-model recovery gaps and no evidence yet of a robust accuracy improvement or independently validated physical home correction.
 
 - [Independent review of the terminal-validation pilot](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-the-default-off-terminal-validation-pilot-f-8b45b54e/report.md) — At `a2f47d14`, the frozen common-sweep scorer works in bounded synthetic checks, but command overrides, stop handling, firmware application and artifact integrity defects block treating the pilot as a safe validated-model application path; see the review and evidence.
@@ -171,6 +175,10 @@ One result sentence per session; follow the report for evidence.
 - [Targeted review of bootstrap fixes and joint baseline](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-fixes-to-bootstrap-restart-refusal-measurement-model-puri-8dda2804/report.md) — The review confirms the ordinary restart, model-purity and historical-marker fixes but finds that a complete marker allows malformed data past the pre-simulation guard; the joint baseline's local convergence does not establish accuracy.
 
 - [Production pose, planning and force integration review](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-production-integration-of-pose-fit-information-planning-a-84abd4be/report.md) — A synthetic independent review found a force-profile lookup collision and showed that direct reuse of the HP3 reachability and fixed-circle models fails for representative four-high and cube layouts; see the report for scope, other integration concerns and rollout plan.
+
+- [Recorded motor-phase diagnosis independently reproduced](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-the-recorded-motor-phase-diagnosis-in-validation-workspac-e3e7ab8f/report.md) — No result summary available.
+
+- [Local coupling and reeving review](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-the-revised-per-point-coupling-protocol-initial-reserve-c-010e9604/report.md) — No result summary available.
 
 - [Common terminal validation pilot](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/report.md) — No result summary available.
 
