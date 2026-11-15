@@ -38,7 +38,7 @@ function interruptedCollection(outputFile, args = {}, interrupt = true) {
 beforeEach(() => {
   tuneForce.mockReset();
   collectWithSlipRecovery.mockReset();
-  returnMotorsToOriginOneAtATime.mockClear();
+  returnMotorsToOriginOneAtATime.mockReset().mockResolvedValue(undefined);
 });
 
 test.each([false, true])('only resolved later boundary failures become rejected-probe evidence, later=%s', async later => {
@@ -82,6 +82,22 @@ test('ordinary collector errors never masquerade as learned reach boundaries', a
   try {
     await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: 3 }, false)).rejects.toThrow('Transport disconnected');
     expect(existsSync(outputFile)).toBe(false);
+  } finally { rmSync(directory, {recursive: true, force: true}); }
+});
+
+test.each([1, 2])('ordinary return failures abort collection with maxSweeps=%s', async maxSweeps => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'ordinary-return-'));
+  const outputFile = path.join(directory, 'sweeps.json');
+  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
+  collectWithSlipRecovery.mockResolvedValue({ forces: { forceLow: .01, forceMid: .2, forceMax: 2 },
+    dataPoints: [{ l_drive: 1, l_sensor: 2 }], recoveries: [] });
+  returnMotorsToOriginOneAtATime.mockRejectedValue(new Error('Return movement failed'));
+  try {
+    await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', maxSweeps, returnToOrigin: true }, false))
+      .rejects.toThrow('Return movement failed');
+    // A final-return failure retains measurement evidence; a between-sweep
+    // failure never publishes a completed multi-sweep dataset.
+    expect(existsSync(outputFile)).toBe(maxSweeps === 1);
   } finally { rmSync(directory, {recursive: true, force: true}); }
 });
 

@@ -1930,18 +1930,14 @@ export async function collectSweepData(send, context) {
       `  Collected ${aggregatedPoints.length} points from ${subSweeps.length} sub-sweep${subSweeps.length === 1 ? '' : 's'}`,
     );
     if (returnToOrigin && sweepOrdinal < totalPlannedSweeps) {
-      try {
-        await returnMotorsToOriginOneAtATime(send, {
-          motorIds,
-          axes: machineConfig.axes,
-          mmPerDeg,
-          feed,
-          speedup,
-        });
-        console.log('Returned all motors to encoder origin (between sweeps).');
-      } catch (err) {
-        console.warn(`Warning: failed to return to encoder origin: ${err?.message || err}`);
-      }
+      await returnMotorsToOriginOneAtATime(send, {
+        motorIds,
+        axes: machineConfig.axes,
+        mmPerDeg,
+        feed,
+        speedup,
+      });
+      console.log('Returned all motors to encoder origin (between sweeps).');
     }
   }
 
@@ -2011,18 +2007,14 @@ export async function collectSweepData(send, context) {
   console.log(`\nSaved ${sweeps.length} sweeps to ${outputFile}`);
 
   if (returnToOrigin) {
-    try {
-      await returnMotorsToOriginOneAtATime(send, {
-        motorIds,
-        axes: machineConfig.axes,
-        mmPerDeg,
-        feed,
-        speedup,
-      });
-      console.log('Returned all motors to encoder origin.');
-    } catch (err) {
-      console.warn(`Warning: failed to return to encoder origin: ${err?.message || err}`);
-    }
+    await returnMotorsToOriginOneAtATime(send, {
+      motorIds,
+      axes: machineConfig.axes,
+      mmPerDeg,
+      feed,
+      speedup,
+    });
+    console.log('Returned all motors to encoder origin.');
   }
 
   return { sweeps, outputFile, collectionOptions: options };

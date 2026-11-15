@@ -560,11 +560,16 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
   if (!Array.isArray(axes) || axes.length !== motorIds.length) {
     throw new Error('returnMotorsToOriginOneAtATime requires full axes mapping');
   }
+  if (!Array.isArray(mmPerDeg) || mmPerDeg.length !== motorIds.length
+      || !mmPerDeg.every(value => Number.isFinite(value) && value > 0)) {
+    throw new Error('Return to origin requires positive finite encoder conversions');
+  }
 
   // A force trial can still be pulling. Hold the motors before waiting for
   // return coordinates, rather than waiting for the trial force to stop moving.
   await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
   const stableBefore = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  let stableAfter = stableBefore;
   const lengths = anglesToLengths(stableBefore.anglesDeg, mmPerDeg);
   const order = calculateReturnOrder({ fixedAnchors, currentLengths: lengths });
   const forbidden = new Set(forbiddenForceAnchors ?? []);
@@ -603,9 +608,16 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
       motorIds,
       modes: motorIds.map(() => 'position')
     });
+    // Check this axis before a later return puts it back into force mode. A
+    // quiet but unmoved encoder is not evidence that the return succeeded.
+    stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    const angle = stableAfter.anglesDeg[anchorIdx];
+    const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
+    if (!Number.isFinite(angle) || Math.abs(angle) > toleranceDeg) {
+      throw new Error(`Return on axis ${axis} did not reach its encoder origin (${angle}deg; limit ${toleranceDeg}deg)`);
+    }
   }
 
-  const stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   return anglesToLengths(stableAfter.anglesDeg, mmPerDeg);
 }
 

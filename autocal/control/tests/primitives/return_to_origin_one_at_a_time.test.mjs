@@ -17,12 +17,14 @@ describe('returnMotorsToOriginOneAtATime', () => {
 
   test('returns motors in expected order', async () => {
     const sent = [];
-    const encoderReply = '10 20 5';
+    const angles = [10, 20, 5];
     const send = async (line) => {
       sent.push(line);
       if (line.startsWith('M569.3')) {
-        return { reply: encoderReply };
+        return { reply: angles.join(' ') };
       }
+      const move = line.match(/G1 H2 ([ABC])([-\d.]+)/);
+      if (move) angles['ABC'.indexOf(move[1])] += Number(move[2]);
       return { reply: '' };
     };
     let nowMs = 0;
@@ -55,6 +57,26 @@ describe('returnMotorsToOriginOneAtATime', () => {
     });
 
     expect(axesOrder).toEqual(['A', 'C', 'B']);
+  });
+
+  test('acknowledged moves with quiet unmoved encoders fail before the next return', async () => {
+    const sent = [];
+    let now = 0;
+    const send = async line => { sent.push(line); return { reply: '100 200' }; };
+    send.simulationClock = { now: () => now, sleep: async ms => { now += ms; } };
+    await expect(returnMotorsToOriginOneAtATime(send, {
+      motorIds: ['40.0', '41.0'], axes: ['X', 'Y'], mmPerDeg: [1, 1], feed: 1000,
+    })).rejects.toThrow('Return on axis Y did not reach its encoder origin');
+    expect(sent.filter(line => line.startsWith('G1'))).toHaveLength(1);
+    expect(sent.at(-1)).toMatch(/^M569.3/);
+  });
+
+  test.each([[1, 0], [1, NaN], [1]])('refuses invalid encoder conversions %s', async (...values) => {
+    const send = jest.fn();
+    await expect(returnMotorsToOriginOneAtATime(send, {
+      motorIds: ['40.0', '41.0'], axes: ['X', 'Y'], mmPerDeg: values, feed: 1000,
+    })).rejects.toThrow('positive finite encoder conversions');
+    expect(send).not.toHaveBeenCalled();
   });
 
   test('waits for the final return move to settle before reporting lengths', async () => {
