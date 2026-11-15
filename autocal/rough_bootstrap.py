@@ -57,7 +57,8 @@ def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):
     return anchors, {
         "ready": bool(ready), "sweeps": len(dataset["sweeps"]), "rank": rank,
         "parameters": int(vector.size), "assumed_line_sigma_mm": sigma,
-        "max_anchor_std_mm": max_std, "restart_difference_mm": restart_difference,
+        "max_anchor_std_mm": max_std if np.isfinite(max_std) else None,
+        "restart_difference_mm": restart_difference,
         "inlier_fraction": float(np.mean(inliers)), "rms_mm": float(fit["rms_mm"]),
         "converged": all(result["success"] for result in fits),
     }

@@ -72,6 +72,12 @@ def sensor_force_profiles(
                               extra_line_length_mm=extra_line_length_mm)
         for position in positions
     ]).reshape(-1, len(lines))
+    # Gravity can make a line go slack at the tails of the self-stress curve.
+    # Never tabulate those poses as realizable equal-strain measurements.
+    feasible = np.all(np.isfinite(tensions) & (tensions > 0.0), axis=1)
+    positions, tensions = positions[feasible], tensions[feasible]
+    if len(positions) < 2:
+        raise ValueError("Equal-strain profile needs reachable positions with positive finite line tensions")
     profiles = []
     for drive, sensor in ((cfg.drive_anchor, cfg.sensor_anchor), (cfg.sensor_anchor, cfg.drive_anchor)):
         drive_mm = np.linalg.norm(anchors[drive] - positions, axis=1) - np.linalg.norm(anchors[drive])

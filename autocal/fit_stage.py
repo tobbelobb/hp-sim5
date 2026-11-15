@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.filter_pass import estimate_effective_radii_with_spool_model
+from autocal.equal_strain import is_equal_strain
 from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets
 from autocal.projection_mode import resolve_projection_mode
 
@@ -78,6 +79,11 @@ def fit_ellipse_dataset(
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
+    profiles = [bool((sweep.get("metadata") or {}).get("sensor_force_profile")) for sweep in dataset["sweeps"]]
+    if any(profiles) and not all(profiles):
+        raise ValueError("Dataset mixes constant-force and profiled sweeps; fit each measurement model separately")
+    if is_equal_strain(dataset) and (search_radii or search_buildup):
+        raise ValueError("Spool fitting on profiled sweeps is not supported; use a constant-force dataset")
     if fit_home_offsets and (search_radii or search_buildup):
         raise ValueError("Home-offset and spool fitting are not jointly supported; use --no-fit-home-offsets with --find-radii or --find-buildup-factor")
     if r0_bounds is not None and not _spool_mode_enabled(find_radii_mode):
@@ -507,4 +513,5 @@ def fit_ellipse_dataset(
         "dataset_for_estimation": dataset_for_estimation,
         "pose_fit": pose_fit,
         "home_offsets_mm": home_offsets_mm,
+        "home_offsets_fitted": bool(fit_home_offsets),
     }

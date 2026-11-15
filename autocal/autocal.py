@@ -142,16 +142,23 @@ def full_auto_loop(
         m669 = _m669_from_plan(best_plan)
         m666 = _m666_from_plan(best_plan)
         anchors = best_plan.get("anchors")
+        home_compensation = {"applied": False}
         fit_dataset = best_plan.get("dataset") or {}
         home_evidence = (fit_dataset.get("config") or {}).get("home_extension_evidence")
         if home_evidence is not None:
             try:
                 if not fit_dataset.get("sweeps") or not is_equal_strain(fit_dataset):
                     raise ValueError("home compensation requires an equal-strain fit")
+                if not best_plan.get("home_offsets_fitted", False):
+                    raise ValueError("home compensation requires fitted home offsets")
+                if isinstance(summary_meta, dict) and len(summary_meta.get("history_consensus_members", [])) > 1:
+                    raise ValueError("home extension evidence is not tied to an averaged consensus fit")
                 anchors, shift = compensate_home(anchors, best_plan.get("home_offsets_mm"), home_evidence)
                 m669 = _format_m669_command(anchors, machine_type)
+                home_compensation = {"applied": True, "shift_mm": shift.tolist()}
                 _log_console("; physical home shift applied (mm): " + np.array2string(shift, precision=3))
             except (TypeError, ValueError) as exc:
+                home_compensation["reason"] = str(exc)
                 _log_console(f"; physical home compensation skipped: {exc}")
         elif fit_dataset.get("sweeps") and is_equal_strain(fit_dataset):
             _log_console("; physical home compensation unavailable: independent home and measurement extension evidence is missing")
@@ -173,6 +180,14 @@ def full_auto_loop(
             float(summary_fit_score_ui) if np.isfinite(summary_fit_score_ui) else None
         )
         quality_label = _solution_quality_label(summary_fit_score_for_quality)
+        _append_jsonl(log_path, {
+            "timestamp": datetime.now().isoformat(), "dataset": str(work_path),
+            "event": "summary", "m669": m669, "m666": m666,
+            "anchors": np.asarray(anchors, dtype=float).tolist(),
+            "fitted_anchors": np.asarray(best_plan["anchors"], dtype=float).tolist(),
+            "home_compensation": home_compensation,
+            "selection": meta_for_summary,
+        })
         _log_console("")
         _log_console("== Calibration summary ==")
         _log_console(f"Found parameters of {quality_label} quality")

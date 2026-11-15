@@ -680,10 +680,14 @@ async function resolveSweepConfigs({ sweepConfigFile, machineType, machineConfig
 // against the drive line's length change (mm, ascending).
 export async function loadSensorForceProfiles(filePath) {
   const profiles = JSON.parse(await fs.readFile(filePath, 'utf8'));
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    throw new Error(`Sensor force profile must contain at least one table: ${filePath}`);
+  }
   for (const profile of profiles) {
     const { drive_mm: driveMm, force_n: forceN } = profile;
     if (!Array.isArray(driveMm) || !Array.isArray(forceN) || driveMm.length < 2 || driveMm.length !== forceN.length
-      || ![...driveMm, ...forceN].every(Number.isFinite) || driveMm.some((v, i) => i > 0 && v <= driveMm[i - 1])) {
+      || ![...driveMm, ...forceN].every(Number.isFinite) || forceN.some(v => v <= 0)
+      || driveMm.some((v, i) => i > 0 && v <= driveMm[i - 1])) {
       throw new Error(`Invalid sensor force profile in ${filePath}`);
     }
   }
