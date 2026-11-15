@@ -2,6 +2,7 @@ import copy
 
 from autocal.active_learning import generate_candidate_sweeps
 from autocal.workspace import exploration_grid
+from autocal._autocal_common import _merge_sweep_datasets
 
 
 def _data():
@@ -43,3 +44,15 @@ def test_recorded_free_line_motion_can_seed_a_legacy_zero_fixed_target_dataset()
     data["sweeps"][0]["fixed_lengths"] = [0., 0.]
     data["sweeps"][0]["data_points"][0]["l_drive"] = 100.
     assert exploration_grid(data, 9)[1][3][0] == -100.
+
+
+def test_failed_probe_records_boundary_without_changing_measurements_or_force_reference():
+    base = {**_data(), 'machine_type': 'hangprinter_3', 'dimensions': 3}
+    rejected = {**copy.deepcopy(base), 'sweeps': [], 'config': {'force_tuning': {'force_mid_n': 99.}},
+                'acquisition_rejections': [{'fixed_anchors': [0,3], 'fixed_lengths': [0.,-780.],
+                                            'drive_anchor': 1, 'sensor_anchor': 2, 'reason': 'uncoupled'}]}
+    merged = _merge_sweep_datasets(base, rejected)
+    assert merged['sweeps'] == base['sweeps']
+    assert merged['config'] == base['config']
+    assert len(merged['acquisition_rejections']) == 1
+    assert exploration_grid(merged, 9)[1] == exploration_grid(base, 9)[1]

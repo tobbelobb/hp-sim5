@@ -246,6 +246,19 @@ def test_exhausted_candidates_do_not_recollect_existing_sweeps(tmp_path):
     assert not plan["cfg_path"].exists()
 
 
+def test_boundary_rejection_is_excluded_when_spacing_is_relaxed(tmp_path):
+    fit = _frozen_fit(False)
+    first = plan_ellipse_sweep(fit, tmp_path / 'sweeps.json', candidate_deltas=[0., 15.],
+                               min_fixed_delta_spacing_mm=100.)
+    cfg = first['best_cfg']
+    fit['dataset']['acquisition_rejections'] = [{'fixed_anchors': list(cfg.fixed_anchors),
+        'fixed_lengths': list(cfg.fixed_deltas_mm), 'drive_anchor': cfg.drive_anchor,
+        'sensor_anchor': cfg.sensor_anchor}]
+    rejected = plan_ellipse_sweep(fit, tmp_path / 'sweeps.json', candidate_deltas=[0., 15.],
+                                  min_fixed_delta_spacing_mm=100.)
+    assert rejected['best_cfg'].normalized_key(tol_mm=10.) != cfg.normalized_key(tol_mm=10.)
+
+
 def test_spacing_exhaustion_relaxes_spacing_without_recollecting_existing(tmp_path):
     fit = _frozen_fit(False)
     plan = plan_ellipse_sweep(fit, tmp_path / "sweeps.json", candidate_deltas=[0.0, 15.0],

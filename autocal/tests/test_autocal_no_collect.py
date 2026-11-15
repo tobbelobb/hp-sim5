@@ -1,4 +1,5 @@
 import copy
+import subprocess
 
 import numpy as np
 import pytest
@@ -70,6 +71,60 @@ def test_build_semi_auto_parser_accepts_no_collect():
         ]
     )
     assert args.no_collect is True
+
+
+@pytest.mark.parametrize('transport_failure', [False, True])
+def test_resolved_boundary_replans_without_refitting_but_transport_failure_aborts(tmp_path, monkeypatch, transport_failure):
+    import autocal.history_selection as selection
+    path = tmp_path / 'sweeps.json'
+    _write_dataset(path, sweeps=3)
+    fits, collects, replans, sent = [], [], [], []
+    def fitted(data_path, **kwargs):
+        data = ac._load_json(data_path)
+        fits.append(len(data['sweeps']))
+        plan = _fake_plan()
+        plan.update(dataset=data, cfg_path=tmp_path/'cfg.txt', collect_command=['node', 'collector', '--output-file', str(kwargs['collector_output'])])
+        return plan
+    def replan(frozen, data_path, **kwargs):
+        assert fits == [3]
+        assert len(frozen['dataset']['sweeps']) == 3
+        assert len(frozen['dataset']['acquisition_rejections']) == 1
+        replans.append(frozen)
+        return {**frozen, 'collect_command': ['node', 'collector', '--output-file', str(kwargs['collector_output'])]}
+    real_run = ac.subprocess.run
+    def collect(command, **kwargs):
+        if command[0] != 'node':
+            return real_run(command, **kwargs)
+        collects.append(command)
+        if transport_failure:
+            raise subprocess.CalledProcessError(1, command)
+        output = ac.Path(command[command.index('--output-file')+1])
+        if len(collects) == 1:
+            rejected = ac._load_json(path)
+            rejected['sweeps'] = []
+            rejected['acquisition_rejections'] = [{**_valid_sweep(1), 'reason': 'No coupled interval'}]
+            ac._write_json(output, rejected)
+        else:
+            _write_dataset(output, sweeps=1)
+    monkeypatch.setattr(ac, 'plan_next_ellipse_sweep', fitted)
+    monkeypatch.setattr(ac, 'plan_ellipse_sweep', replan)
+    monkeypatch.setattr(ac, '_print_ellipse_plan', lambda *a, **kw: None)
+    monkeypatch.setattr(ac, '_plan_hits_underconstrained_penalty', lambda *a: False)
+    monkeypatch.setattr(ac.StoppingPolicy, 'update', lambda *a, **kw: StopDecision(1, True, False, None, None, 'accept' if 4 in fits else 'collect'))
+    monkeypatch.setattr(selection, 'score_future_sweeps', lambda *a, **kw: (.1, 1))
+    monkeypatch.setattr(ac.subprocess, 'run', collect)
+    monkeypatch.setattr(ac.RRFFirmwareProvider, 'send_gcode', lambda *a: sent.append(a) or '')
+    code = ac.main(['--sim', '--machine-type', 'slideprinter', '--dataset', str(path), '--max-steps', '4',
+                    '--collector-args', '--server', 'http://127.0.0.1:12345'])
+    data = ac._load_json(path)
+    if transport_failure:
+        assert code == 2 and not sent and not replans
+        assert len(data['sweeps']) == 3
+    else:
+        assert code == 0 and len(sent) == 1 and len(collects) == 2 and len(replans) == 1
+        assert fits[0] == 3 and all(count == 4 for count in fits[1:])
+        assert len(data['sweeps']) == 4 and len(data['acquisition_rejections']) == 1
+        assert path.with_name('sweeps.new_001.json').exists()
 
 
 @pytest.mark.parametrize("mode", ["apply_interrupt", "stop_during_fit"])

@@ -85,6 +85,9 @@ def plan_ellipse_sweep(
         fixed_delta_bounds_by_anchor=exploration_bounds,
     )
     if exclude_existing:
+        rejected = dataset_sweep_configs({"sweeps": dataset.get("acquisition_rejections", [])})
+        rejected_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in rejected}
+        candidates = [cfg for cfg in candidates if cfg.normalized_key(tol_mm=existing_tol_mm) not in rejected_keys]
         existing_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in sweeps_obs}
         candidates = [cfg for cfg in candidates
                       if cfg.normalized_key(tol_mm=existing_tol_mm) not in existing_keys]
@@ -149,7 +152,7 @@ def plan_ellipse_sweep(
 
     collection_fallback = False
     best_cfg = ranked[0][1] if ranked else None
-    if best_cfg is None and candidates:
+    if best_cfg is None and candidates and machine_type not in ("hangprinter_3", "hangprinter_4"):
         # The fit can be too degenerate to score any candidate. The generated
         # candidates still satisfy machine constraints, so keep collection
         # moving with a moderate novel candidate from the current dataset.

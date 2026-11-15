@@ -4,6 +4,8 @@ import path from 'node:path';
 import { collectSweepData, MACHINE_CONFIGS } from '../../behaviors/sweep_data_collection.mjs';
 import { tuneForce } from '../../behaviors/force_tuning.mjs';
 import { collectWithSlipRecovery } from '../../behaviors/slip_recovery.mjs';
+import { UnmeasurableSweepError } from '../../behaviors/spool_reserve.mjs';
+import { returnMotorsToOriginOneAtATime } from '../../primitives/uncalibrated_actions.mjs';
 
 jest.mock('../../behaviors/force_tuning.mjs', () => ({
   ...jest.requireActual('../../behaviors/force_tuning.mjs'),
@@ -17,6 +19,7 @@ jest.mock('../../primitives/uncalibrated_actions.mjs', () => ({
   ...jest.requireActual('../../primitives/uncalibrated_actions.mjs'),
   waitForStableEncoders: jest.fn().mockResolvedValue(undefined),
   getCurrentLengths: jest.fn().mockResolvedValue([1, 2, 3, 0]),
+  returnMotorsToOriginOneAtATime: jest.fn().mockResolvedValue(undefined),
 }));
 
 function interruptedCollection(outputFile, args = {}, interrupt = true) {
@@ -35,6 +38,51 @@ function interruptedCollection(outputFile, args = {}, interrupt = true) {
 beforeEach(() => {
   tuneForce.mockReset();
   collectWithSlipRecovery.mockReset();
+  returnMotorsToOriginOneAtATime.mockClear();
+});
+
+test.each([false, true])('only resolved later boundary failures become rejected-probe evidence, later=%s', async later => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'probe-rejection-'));
+  const outputFile = path.join(directory, 'sweeps.json');
+  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
+  collectWithSlipRecovery.mockRejectedValue(new UnmeasurableSweepError('No coupled interval', { retained_points: 0 }));
+  try {
+    const pending = interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: later ? 3 : 0 }, false);
+    if (later) {
+      await pending;
+      const dataset = JSON.parse(readFileSync(outputFile, 'utf8'));
+      expect(dataset.sweeps).toEqual([]);
+      expect(dataset.acquisition_rejections).toHaveLength(1);
+      expect(dataset.acquisition_rejections[0]).toMatchObject({ fixed_anchors: [0,3], fixed_lengths: [0,0], reason: 'No coupled interval' });
+      expect(returnMotorsToOriginOneAtATime).toHaveBeenCalledTimes(1);
+    } else {
+      await expect(pending).rejects.toThrow('No coupled interval');
+      expect(existsSync(outputFile)).toBe(false);
+    }
+  } finally { rmSync(directory, {recursive: true, force: true}); }
+});
+
+test('failed return to origin aborts without publishing a boundary', async () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'probe-return-'));
+  const outputFile = path.join(directory, 'sweeps.json');
+  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
+  collectWithSlipRecovery.mockRejectedValue(new UnmeasurableSweepError('No coupled interval'));
+  returnMotorsToOriginOneAtATime.mockRejectedValueOnce(new Error('Return failed'));
+  try {
+    await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: 3 }, false)).rejects.toThrow('Return failed');
+    expect(existsSync(outputFile)).toBe(false);
+  } finally { rmSync(directory, {recursive: true, force: true}); }
+});
+
+test('ordinary collector errors never masquerade as learned reach boundaries', async () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'probe-transport-'));
+  const outputFile = path.join(directory, 'sweeps.json');
+  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
+  collectWithSlipRecovery.mockRejectedValue(new Error('Transport disconnected'));
+  try {
+    await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: 3 }, false)).rejects.toThrow('Transport disconnected');
+    expect(existsSync(outputFile)).toBe(false);
+  } finally { rmSync(directory, {recursive: true, force: true}); }
 });
 
 test.each([false, true])('preserves completed tuning before a later failure, tuning_failed=%s', async tuningFailed => {

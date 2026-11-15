@@ -44,7 +44,7 @@ DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 # cannot drift apart on the spelling.
 FULL_AUTO_STOP_REASON_PATIENCE = "patience"
 SPREAD_STOP_REASON = "spread-consensus"
-NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON)
+NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON, "workspace-exhausted")
 _MIN_RADIUS_SCALE = 0.2
 _MAX_RADIUS_SCALE = 5.0
 _DEFAULT_B_BOUNDS = (0.0, 1.0)
@@ -1596,6 +1596,9 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
     new_sweeps = new.get("sweeps")
     if not isinstance(base_sweeps, list) or not isinstance(new_sweeps, list):
         raise ValueError("Invalid sweep datasets (missing sweeps list)")
+    rejections = [*base.get("acquisition_rejections", []), *new.get("acquisition_rejections", [])]
+    if not new_sweeps and new.get("acquisition_rejections"):
+        return {**base, "acquisition_rejections": rejections}
 
     base_projection = resolve_projection_mode(base)
     new_projection = resolve_projection_mode(new)
@@ -1617,6 +1620,8 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
     merged = dict(base)
     merged["timestamp"] = datetime.now().isoformat()
     merged["sweeps"] = merged_sweeps
+    if rejections:
+        merged["acquisition_rejections"] = rejections
 
     base_config = merged.get("config")
     new_config = new.get("config")

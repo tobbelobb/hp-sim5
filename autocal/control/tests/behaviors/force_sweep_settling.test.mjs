@@ -192,6 +192,13 @@ test('sensor force follows the profile at every point of the sweep', async () =>
   }
 });
 
+test('only the intersection of observed travel and force-profile support is measured', async () => {
+  const result = await movingPullout({ probeSpoolReserve: true, sweepPoints: 5,
+    sensorForceProfile: { drive_mm: [-200,-100], force_n: [1,2] } }).run();
+  expect(result.dataPoints).toHaveLength(5);
+  expect(result.dataPoints.every(point => point.l_drive >= -200 && point.l_drive <= -100)).toBe(true);
+});
+
 test('sensor force profile interpolates, holds its end values and must match the sweep direction', () => {
   const profile = { drive_anchor: 1, sensor_anchor: 2, fixed_anchors: [0, 3], fixed_lengths: [390, -100],
     drive_mm: [-100, 0, 200], force_n: [1, 2, 4] };

@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from autocal.active_learning import SweepConfig
+from autocal.pose_planning import predict_sweep_positions
 from autocal.equal_strain import (
     GRAVITY_M_PER_S2,
     equal_strain_tensions,
@@ -59,6 +60,28 @@ def test_profile_file_needs_the_line_description_and_tuned_forces(tmp_path):
     assert profiles[0]["force_n"] == pytest.approx(expected[0]["force_n"])
 
 
+def test_tabulated_sensor_forces_preserve_the_firmware_strain_invariant():
+    advantage = np.array([2., 2., 2., 4.])
+    profiles = sensor_force_profiles(ANCHORS, CFG, minimum_force_n=.4,
+                                      mechanical_advantage=advantage, **OPTIONS)
+    positions = predict_sweep_positions(ANCHORS, CFG, 60, .05)
+    for profile in profiles:
+        drive, sensor = profile['drive_anchor'], profile['sensor_anchor']
+        predicted_drive = np.linalg.norm(ANCHORS[drive] - positions, axis=1) - np.linalg.norm(ANCHORS[drive])
+        assert len(profile['drive_mm']) < len(positions)  # infeasible tails are removed, never clamped
+        for drive_mm, force in zip(profile['drive_mm'], profile['force_n']):
+            index = np.argmin(np.abs(predicted_drive - drive_mm))
+            assert predicted_drive[index] == pytest.approx(drive_mm)
+            vectors = ANCHORS - positions[index]
+            lengths = np.linalg.norm(vectors, axis=1)
+            directions = (vectors / lengths[:, None]).T
+            carrying = np.linalg.lstsq(directions, [0., 0., WEIGHT], rcond=None)[0]
+            null = np.linalg.svd(directions)[2][-1]
+            tensions = carrying + null * (force - carrying[sensor]) / null[sensor]
+            flex_times_ea = tensions * (advantage * lengths + EXTRA) / (advantage**2 * STRANDS)
+            assert null @ (flex_times_ea - (lengths + EXTRA / advantage)) == pytest.approx(0., abs=1e-8)
+
+
 def test_hp4_invariant_matches_the_firmware_flex_equation_with_unequal_reeving():
     position = np.array([250., -150., 800.])
     advantage = np.array([2., 2., 2., 4.])
@@ -91,7 +114,7 @@ def test_corrected_reeving_profiles_cannot_continue_legacy_data():
     assert profile_policy_error(dataset) is None
     sweep["metadata"].pop("sensor_force_profile_model")
     dataset["config"]["m666_before_data_collection"]["U"] = [1]*4
-    assert profile_policy_error(dataset) is None
+    assert "fresh dataset" in profile_policy_error(dataset)
 
 
 def test_force_retuning_does_not_change_the_existing_datasets_strain_target(tmp_path):

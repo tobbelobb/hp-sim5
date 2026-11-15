@@ -123,7 +123,8 @@ def test_corrupt_complete_dataset_is_rejected_before_headless_context_entry(tmp_
     assert error.value.code == 2
 
 
-def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path, monkeypatch):
+@pytest.mark.parametrize('mixed', [False, True])
+def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path, monkeypatch, mixed):
     from autocal.headless_sim import HeadlessSimulation
     path = tmp_path / "legacy.json"
     data = _dataset()
@@ -132,6 +133,8 @@ def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path
     for i, sweep in enumerate(data['sweeps']):
         sweep['id'] = f'sweep_{i:03d}'
         sweep['metadata'] = {'sensor_force_profile': True}
+    if mixed:
+        data['sweeps'][0]['metadata']['sensor_force_profile'] = False
     path.write_text(json.dumps(data))
     def forbidden(*args):
         raise AssertionError('Headless context must not start')

@@ -11,7 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from autocal._autocal_common import *  # noqa: F401,F403
-from autocal.planning_pass import plan_next_ellipse_sweep
+from autocal.planning_pass import plan_next_ellipse_sweep, plan_ellipse_sweep
 from autocal.equal_strain import is_equal_strain, write_sensor_force_profile, profile_policy_error
 from autocal.home_compensation import compensate_home
 from autocal.rough_bootstrap import (
@@ -90,6 +90,7 @@ def full_auto_loop(
     headless_sim=None,
     stage_artifacts: Optional[Path] = None,
 ) -> int:
+    max_steps = max(1, int(max_steps))
     if work_dataset is not None:
         dataset_path = Path(work_dataset)
     else:
@@ -937,8 +938,11 @@ def full_auto_loop(
             "optimizer_runs": (plan.get("calibration") or {}).get("optimizer_runs", []),
         }
 
+    rejected_probe_count = 0
     try:
-        for step in range(1, max(1, int(max_steps)) + 1):
+        for step in range(1, max_steps + 1):
+            if step + rejected_probe_count > max_steps:
+                break
             if stopping.stop_requested():
                 return _accept_best(f"stop-file {stop_file}")
             _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
@@ -1397,42 +1401,64 @@ def full_auto_loop(
                     return _finalize(2)
                 return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
 
-            cmd = plan.get("collect_command")
-            if not isinstance(cmd, list) or not cmd:
-                if plan.get("collection_error"):
-                    _log_console("; " + str(plan["collection_error"]))
-                _log_line("; No valid candidate to collect; stopping.")
-                _log_console("; No valid candidate to collect; stopping.")
-                _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
-                return _finalize(2)
+            while True:
+                if stopping.stop_requested():
+                    return _accept_best("stop-file")
+                cmd = plan.get("collect_command")
+                if not isinstance(cmd, list) or not cmd:
+                    if plan.get("collection_error"):
+                        _log_console("; " + str(plan["collection_error"]))
+                        return _finalize(2)
+                    if _load_json(work_path).get("acquisition_rejections"):
+                        return _accept_best("workspace-exhausted")
+                    _log_console("; No valid candidate to collect; stopping.")
+                    return _finalize(2)
 
-            _log_console("Collecting new sweep to try and beat it.")
-            _log_console(f"Still has patience for {remaining} more attempts.")
-            _log_line(f"; collecting next sweep ({selected_id})")
-            _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
-            with _log_context():
-                _run_collection_command(cmd)
-            reset_pending = False
+                _log_console("Collecting new sweep to try and beat it.")
+                _log_console(f"Still has patience for {remaining} more attempts.")
+                _log_line(f"; collecting next sweep ({selected_id})")
+                _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
+                try:
+                    with _log_context():
+                        _run_collection_command(cmd)
+                except subprocess.CalledProcessError as error:
+                    _log_console(f"; collection failed with exit {error.returncode}; stopping without applying calibration")
+                    return _finalize(2)
+                reset_pending = False
 
-            base_dataset = _load_json(work_path)
-            new_dataset = _load_json(collector_output)
-            if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
-                cfg = new_dataset.get("config")
-                if isinstance(cfg, dict):
-                    cfg["force_tuning"] = dict(plan["force_tuning"])
-                    _write_json(collector_output, new_dataset)
+                base_dataset = _load_json(work_path)
+                new_dataset = _load_json(collector_output)
+                if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
+                    cfg = new_dataset.get("config")
+                    if isinstance(cfg, dict):
+                        cfg["force_tuning"] = dict(plan["force_tuning"])
+                        _write_json(collector_output, new_dataset)
 
-            merged = _merge_sweep_datasets(base_dataset, new_dataset)
-            _write_json(work_path, merged)
-            sweeps = merged.get("sweeps", [])
-            count = len(sweeps) if isinstance(sweeps, list) else "?"
-            _log_line(f"; merged {collector_output} -> {work_path} sweeps={count}")
-            _log_console(f"Collected sweep nr {count}")
-            try:
-                if collector_output != work_path:
-                    collector_output.unlink()
-            except OSError:
-                pass
+                merged = _merge_sweep_datasets(base_dataset, new_dataset)
+                _write_json(work_path, merged)
+                if stopping.stop_requested():
+                    return _accept_best("stop-file")
+                if new_dataset.get("sweeps"):
+                    _log_console(f"Collected sweep nr {len(merged['sweeps'])}")
+                    if collector_output != work_path:
+                        collector_output.unlink(missing_ok=True)
+                    break
+                if not new_dataset.get("acquisition_rejections"):
+                    _log_console("; Collector returned neither measurements nor boundary evidence; stopping")
+                    return _finalize(2)
+                rejected_probe_count += 1
+                _log_console("; boundary probe rejected; retaining evidence and planning another sweep without refitting")
+                if step + rejected_probe_count >= max_steps:
+                    return _accept_best("max-steps")
+                collector_output = _unique_path(work_path.with_name(f"{work_path.stem}.new_{step:03d}.json"))
+                frozen = {**plan, "dataset": merged}
+                plan = plan_ellipse_sweep(
+                    frozen, work_path, candidate_count=candidate_count, delta_min=delta_min,
+                    delta_max=delta_max, regularization=regularization,
+                    min_fixed_delta_spacing_mm=min_fixed_delta_spacing_mm,
+                    write_cfg=plan.get("cfg_path"), collector_output=collector_output,
+                    collector_args=collector_args_eff, equal_strain=equal_strain,
+                )
     except KeyboardInterrupt:
         if applying_solution:
             _log_console("; application interrupted; firmware outcome is unknown, stopping without retry")

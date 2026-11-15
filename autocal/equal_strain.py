@@ -20,12 +20,12 @@ from autocal.pose_planning import predict_sweep_positions
 from autocal.projection_mode import resolve_projection_mode
 
 GRAVITY_M_PER_S2 = 9.81
-# The table reaches past where sweeps turn, so the collector rarely has to extrapolate.
+# Predict a broad arc; collection is restricted to the resulting feasible table.
 _PROFILE_PRETENSION_SHARE = 0.05
 _PROFILE_POINTS = 60
 # The collector's constant measurement force is this multiple of the tuned start force.
 _COLLECTION_FORCE_MULTIPLE = 5.0
-PROFILE_STRAIN_MODEL = "reeving-aware-v1"
+PROFILE_STRAIN_MODEL = "reeving-aware-v2"
 
 
 def equal_strain_tensions(
@@ -85,14 +85,19 @@ def sensor_force_profiles(
     # Gravity can make a line go slack at the tails of the self-stress curve.
     # Never tabulate those poses as realizable equal-strain measurements.
     feasible = np.all(np.isfinite(tensions) & (tensions > 0.0), axis=1)
-    positions, tensions = positions[feasible], tensions[feasible]
+    sensors = [lines.index(cfg.drive_anchor), lines.index(cfg.sensor_anchor)]
+    feasible &= np.all(tensions[:, sensors] >= minimum_force_n, axis=1)
+    # Never interpolate across an infeasible gap in the predicted arc.
+    runs = np.split(np.flatnonzero(feasible), np.flatnonzero(np.diff(np.flatnonzero(feasible)) > 1) + 1)
+    keep = max(runs, key=len)
+    positions, tensions = positions[keep], tensions[keep]
     if len(positions) < 2:
         raise ValueError("Equal-strain profile needs reachable positions with positive finite line tensions")
     profiles = []
     for drive, sensor in ((cfg.drive_anchor, cfg.sensor_anchor), (cfg.sensor_anchor, cfg.drive_anchor)):
         drive_mm = np.linalg.norm(anchors[drive] - positions, axis=1) - np.linalg.norm(anchors[drive])
         order = np.argsort(drive_mm)
-        force = np.maximum(tensions[:, lines.index(sensor)], minimum_force_n)
+        force = tensions[:, lines.index(sensor)]
         profiles.append({
             "strain_model": PROFILE_STRAIN_MODEL,
             "strand_tension_n": float(strand_tension_n),
@@ -153,9 +158,12 @@ def is_equal_strain(dataset: dict) -> bool:
 
 
 def profile_policy_error(dataset: dict):
-    """Legacy 1:1 force tables cannot be mixed with corrected reeving tables."""
-    if not is_equal_strain(dataset):
+    """Refuse continuation across incompatible force-table policies."""
+    flags = [(sweep.get("metadata") or {}).get("sensor_force_profile", False) for sweep in dataset.get("sweeps", [])]
+    if not any(flags) or resolve_projection_mode(dataset) is True:
         return None
+    if not all(flags):
+        return "Cannot continue mixed profiled and constant-force measurement data"
     advantage = ((dataset.get("config") or {}).get("m666_before_data_collection") or {}).get("U")
     if advantage is None:
         return "Profiled collection requires M666 U for mechanical-advantage-aware forces"
@@ -170,8 +178,7 @@ def profile_policy_error(dataset: dict):
     if targets and (not np.all(np.isfinite(targets)) or min(targets) <= 0
                     or not np.allclose(targets, targets[0], rtol=1e-9, atol=0)):
         return "Cannot combine different equal-strain targets in one refinement dataset"
-    if np.any(advantage != 1):
-        if any((sweep.get("metadata") or {}).get("sensor_force_profile_model") != PROFILE_STRAIN_MODEL
-               for sweep in dataset["sweeps"]):
-            return "Legacy profiled reeving data requires a fresh dataset for corrected equal-strain collection; offline replay remains available"
+    if any((sweep.get("metadata") or {}).get("sensor_force_profile_model") != PROFILE_STRAIN_MODEL
+           for sweep in dataset["sweeps"]):
+        return "Legacy profiled data requires a fresh dataset for corrected equal-strain collection; offline replay remains available"
     return None

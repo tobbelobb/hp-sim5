@@ -15,7 +15,7 @@ import {
 import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
 import { ENCODER_NOISE_DEFAULTS, sampleEncoderNoise } from '../primitives/encoder_noise.mjs';
 import { collectWithSlipRecovery } from './slip_recovery.mjs';
-import { probeSpoolInterval } from './spool_reserve.mjs';
+import { probeSpoolInterval, UnmeasurableSweepError } from './spool_reserve.mjs';
 import {
   angleToLength,
   assertFixedAnchorAngles,
@@ -1176,7 +1176,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     onProgress: message => console.log(`; sweep preparation: ${message.replace(/^; /, '')}`),
   });
   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-  const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
+  let driveStartPointMm = initialLengths[driveAnchor] ?? 0;
 
   const modesPullout = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {
@@ -1224,10 +1224,21 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   const endAngles = forceStable.anglesDeg;
   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
 
-  const driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
+  let driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
+  const rawDriveInterval = [driveEndPointMm, driveStartPointMm];
+  const rawDirection = Math.sign(driveStartPointMm - driveEndPointMm);
+  if (sensorForceProfile) {
+    const lo = Math.max(Math.min(...rawDriveInterval), sensorForceProfile.drive_mm[0]);
+    const hi = Math.min(Math.max(...rawDriveInterval), sensorForceProfile.drive_mm.at(-1));
+    if (hi - lo <= DEFAULT_FIXED_TOLERANCE_MM) {
+      throw new UnmeasurableSweepError('No measured interval lies inside the force profile support', { rawDriveInterval });
+    }
+    driveEndPointMm = rawDirection >= 0 ? lo : hi;
+    driveStartPointMm = rawDirection >= 0 ? hi : lo;
+  }
   const totalDelta = driveStartPointMm - driveEndPointMm;
   if (!Number.isFinite(totalDelta) || Math.abs(totalDelta) <= DEFAULT_FIXED_TOLERANCE_MM) {
-    throw new Error('No measured drive interval remains for this sweep');
+    throw new UnmeasurableSweepError('No measured drive interval remains for this sweep', { rawDriveInterval });
   }
   const stepDirection = Math.sign(totalDelta);
   const initialStepMm = Math.min(Math.abs(totalDelta), computeInitialForceSweepStepMm(baseRadiusMm));
@@ -1302,6 +1313,10 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     const force = resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce });
     const tested = reserveProbe.tested_drive_mm;
     const driveMm = angles[driveAnchor] * mmPerDeg[driveAnchor];
+    if (sensorForceProfile && (driveMm < sensorForceProfile.drive_mm[0] - DEFAULT_FIXED_TOLERANCE_MM
+        || driveMm > sensorForceProfile.drive_mm.at(-1) + DEFAULT_FIXED_TOLERANCE_MM)) {
+      throw new Error('Measurement is outside the force profile support');
+    }
     const locallyProbed = reserveProbe.accepted && Math.abs(force - reserveProbe.sensor_force_n) < 1e-9
       && driveMm >= Math.min(...tested) - DEFAULT_FIXED_TOLERANCE_MM
       && driveMm <= Math.max(...tested) + DEFAULT_FIXED_TOLERANCE_MM;
@@ -1487,10 +1502,12 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     }
   }
   if (dataPoints.length < Math.min(5, sweepPoints)) {
-    throw new Error('Insufficient coupled measurement points in the observed sweep interval');
+    throw new UnmeasurableSweepError('Insufficient coupled measurement points in the observed sweep interval',
+      { rawDriveInterval, retained_points: dataPoints.length, coupling_probes: couplingProbes });
   }
   return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
     spoolReserve: { sensor_payout_mm: sensorPayoutMm, required_sensor_rewind_mm: sensorReserveMm,
+      raw_measured_drive_interval_mm: rawDriveInterval,
       guarded_sensor_rewind_mm: reserved ? sensorPayoutMm - reserved.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor] : null,
       guarded_start_drive_mm: reserved ? guardedStartMm : null,
       first_drive_mm: dataPoints[0].drive_setpoint_mm, initial_half_turn_required: !probeSpoolReserve,
@@ -1558,6 +1575,7 @@ export async function collectSweepData(send, context) {
   }
 
   const sweeps = [];
+  const rejectedSweeps = [];
   const datasetStartMs = send.simulationClock?.now() ?? Date.now();
 
   const m666BeforeReply = await send('M666');
@@ -1773,6 +1791,7 @@ export async function collectSweepData(send, context) {
     const recoveryEvents = [];
     const directionForces = [];
     const spoolReserves = [];
+    let rejected = false;
     for (let i = 0; i < subSweeps.length; i += 1) {
       const subCfg = subSweeps[i];
       console.log(
@@ -1782,58 +1801,74 @@ export async function collectSweepData(send, context) {
       // Re-apply positioning for each sub-sweep to cover the full circle arc in both directions.
       // This ensures fixed anchors are retightened before changing drive/sensor roles.
       // eslint-disable-next-line no-await-in-loop
-      const sweepResult = await collectWithSlipRecovery(send, async (forces, attempt) => {
-        if (attempt > 0) {
-          await returnMotorsToOriginOneAtATime(send, {
-            motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
-            midForce: forces.forceLow,
+      let sweepResult;
+      try {
+        sweepResult = await collectWithSlipRecovery(send, async (forces, attempt) => {
+          if (attempt > 0) {
+            await returnMotorsToOriginOneAtATime(send, {
+              motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
+              midForce: forces.forceLow,
+              forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+            });
+          }
+          await prepareSweepPositioning(send, subCfg, {
+            motorIds,
+            axes: machineConfig.axes,
+            mmPerDeg,
+            ...forces,
             forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+            fixedTargets,
+            feed,
+            speedup,
           });
-        }
-        await prepareSweepPositioning(send, subCfg, {
-          motorIds,
-          axes: machineConfig.axes,
-          mmPerDeg,
-          ...forces,
-          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
-          fixedTargets,
-          feed,
-          speedup,
-        });
 
-        return performForceSweep(send, subCfg, {
-          axes: machineConfig.axes,
-          motorIds,
-          sweepPoints,
-          feed,
-          speedup,
-          mmPerDeg,
-          datasetStartMs,
-          ...forces,
-          sensorForceProfile: sensorForceProfiles
-            ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor,
-              sweepConfig.fixedAnchors, fixedTargets)
-            : null,
-          collectionAttempt: attempt,
-          noiseSampleCount,
-          noiseSampleIntervalMs,
-          noiseMinSamples,
-          noiseSigmaFloorDeg,
-          fixedAnchors: sweepConfig.fixedAnchors,
-          fixedTargets,
-          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
-          onPoint: context.onPoint,
-          baseRadiusMm: Array.isArray(m666ForCollection?.R)
-            ? m666ForCollection.R[subCfg.driveAnchor]
-            : m666ForCollection?.R,
-          sensorSpoolGearRatio: (Array.isArray(m666ForCollection?.H) ? m666ForCollection.H[subCfg.sensorAnchor] : m666ForCollection?.H ?? 1)
-            / (Array.isArray(m666ForCollection?.L) ? m666ForCollection.L[subCfg.sensorAnchor] : m666ForCollection?.L ?? 1),
-          probeSpoolReserve: options.completedSweeps >= 3,
+          return performForceSweep(send, subCfg, {
+            axes: machineConfig.axes,
+            motorIds,
+            sweepPoints,
+            feed,
+            speedup,
+            mmPerDeg,
+            datasetStartMs,
+            ...forces,
+            sensorForceProfile: sensorForceProfiles
+              ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor,
+                sweepConfig.fixedAnchors, fixedTargets)
+              : null,
+            collectionAttempt: attempt,
+            noiseSampleCount,
+            noiseSampleIntervalMs,
+            noiseMinSamples,
+            noiseSigmaFloorDeg,
+            fixedAnchors: sweepConfig.fixedAnchors,
+            fixedTargets,
+            forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+            onPoint: context.onPoint,
+            baseRadiusMm: Array.isArray(m666ForCollection?.R)
+              ? m666ForCollection.R[subCfg.driveAnchor]
+              : m666ForCollection?.R,
+            sensorSpoolGearRatio: (Array.isArray(m666ForCollection?.H) ? m666ForCollection.H[subCfg.sensorAnchor] : m666ForCollection?.H ?? 1)
+              / (Array.isArray(m666ForCollection?.L) ? m666ForCollection.L[subCfg.sensorAnchor] : m666ForCollection?.L ?? 1),
+            probeSpoolReserve: options.completedSweeps >= 3,
+          });
+        }, {
+          motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
+          onRecovery: recovery => context.onRecovery?.({ ...recovery, sweep: subCfg, direction: i }),
         });
-      }, {
-        motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
-        onRecovery: recovery => context.onRecovery?.({ ...recovery, sweep: subCfg, direction: i }),
-      });
+      } catch (error) {
+        if (!(error instanceof UnmeasurableSweepError) || options.completedSweeps < 3) throw error;
+        await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
+        await returnMotorsToOriginOneAtATime(send, {
+          motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup, midForce: forceLow,
+          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+        });
+        rejectedSweeps.push({ fixed_anchors: sweepConfig.fixedAnchors, fixed_lengths: fixedTargets,
+          drive_anchor: sweepConfig.driveAnchor, sensor_anchor: sweepConfig.sensorAnchor,
+          direction: i, reason: error.message, evidence: error.evidence });
+        console.log(`; rejected unmeasurable sweep after returning to origin: ${error.message}`);
+        rejected = true;
+        break;
+      }
       ({ forceMid, forceMax } = sweepResult.forces);
       sensorCollectionForce = sweepResult.forces.sensorCollectionForce;
       recoveryEvents.push(...sweepResult.recoveries.map(event => ({ ...event, direction: i })));
@@ -1848,6 +1883,8 @@ export async function collectSweepData(send, context) {
       );
       aggregatedPoints.push(...remapped);
     }
+
+    if (rejected) continue;
 
     const lengths = await getCurrentLengths(send, motorIds, mmPerDeg);
     const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
@@ -1963,6 +2000,7 @@ export async function collectSweepData(send, context) {
       },
     },
     sweeps,
+    acquisition_rejections: rejectedSweeps,
   };
 
   const outputDir = path.dirname(outputFile);

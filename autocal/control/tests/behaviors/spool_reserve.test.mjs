@@ -32,9 +32,9 @@ test.each(['flat', 'noise', 'reversed', 'lost motion'])(
   },
 );
 
-test('stops when reversal cannot restore the previously reserved state', async () => {
+test('hysteretic sensor return rejects relaxation after restoring the held drive', async () => {
   const t = trial('hysteresis');
-  await expect(t.run()).rejects.toThrow('did not return');
+  expect((await t.run()).accepted).toBe(false);
   expect(t.visited.at(-1)).toBe(100);
 });
 
