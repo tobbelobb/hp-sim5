@@ -1,0 +1,54 @@
+; command: autocal/autocal.py --headless-sim --machine-type hangprinter_3 --dataset research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.json
+Wrote to console: Writing additional info to log: research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.full_auto.log
+; bootstrapping dataset (3 sweeps, auto size-tune):
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.bootstrap_cfg.txt --output-file research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.json --solver-iterations 20 --server http://127.0.0.1:40371 --headless-url http://127.0.0.1:43967 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; auto-tune force start
+; auto-tune probe 1/120: test=0.0100 moved=no travel=0.000deg stalled=yes
+; auto-tune probe 2/120: test=0.0140 moved=no travel=0.010deg stalled=yes
+; auto-tune probe 3/120: test=0.0196 moved=no travel=0.030deg stalled=yes
+; auto-tune probe 4/120: test=0.0274 moved=no travel=0.040deg stalled=yes
+; auto-tune probe 5/120: test=0.0384 moved=no travel=0.070deg stalled=yes
+; auto-tune probe 6/120: test=0.0538 moved=no travel=0.110deg stalled=yes
+; auto-tune probe 7/120: test=0.0753 moved=no travel=0.160deg stalled=yes
+; auto-tune probe 8/120: test=0.1054 moved=no travel=0.220deg stalled=yes
+; auto-tune probe 9/120: test=0.1476 moved=no travel=0.310deg stalled=yes
+; auto-tune probe 10/120: test=0.2066 moved=no travel=0.470deg stalled=yes
+; auto-tune probe 11/120: test=0.2893 moved=no travel=0.690deg stalled=yes
+; auto-tune probe 12/120: test=0.4050 moved=yes travel=1.130deg stalled=yes
+; auto-tune bisect-start 1/60: test=0.3471 moved=no travel=0.900deg stalled=yes
+; auto-tune bisect-start 2/60: test=0.3760 moved=no travel=0.970deg stalled=yes
+; auto-tune edge-ramp 1/120: test=0.4050 moved=yes travel=1.110deg stalled=yes
+; auto-tune edge-ramp 2/120: test=0.5669 moved=yes travel=1.700deg stalled=yes
+; auto-tune edge-ramp 3/120: test=0.7937 moved=yes travel=223.740deg stalled=no
+; auto-tune edge-ramp 4/120: test=1.1112 moved=yes travel=440.110deg stalled=no
+; auto-tune edge-ramp 5/120: test=1.5557 moved=yes travel=844.340deg stalled=no
+; auto-tune edge-ramp 6/120: test=2.1780 moved=yes travel=1250.360deg stalled=no
+; auto-tune edge-ramp 7/120: test=3.0491 moved=yes travel=1583.090deg stalled=no
+; auto-tune edge-ramp 8/120: test=4.2688 moved=yes travel=1716.740deg stalled=no
+; auto-tune selected: idle=0.0202 start=0.4050 edge=2.1780 d_max=1716.740deg
+; force-tuning checkpoint saved to research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.json.force-tuning.json
+; size-tune max travel raw=487.146mm scaled=389.717mm
+
+Sweep 1/3: fix [0, 3], pair 1/2
+  Sub-sweep 1/2: drive 1, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 1
+  Collected 20 points from 2 sub-sweeps
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 2/3: fix [1, 3], pair 0/2
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 3/3: fix [2, 3], pair 0/1
+  Sub-sweep 1/2: drive 0, sensor 1
+  Sub-sweep 2/2: drive 1, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 3 sweeps to research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.json
+Returned all motors to encoder origin.
+; bootstrap dataset written to research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.json
+Wrote to console: ; equal-strain bootstrap stopped: research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.rough_bootstrap_checks.json: missing required key 'version'; rough data: research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.rough_bootstrap.json; checks: research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.rough_bootstrap_checks.json

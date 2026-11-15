@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "id": "program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a",
+  "question": "Review and harden stretch-insensitive autocal: robust bootstrap, home compensation, HP3/HP4 regression battery and broader machine support",
+  "agents": [
+    {
+      "id": "session-2026-11-15-determine-and-implement-physically-justified-final-home-shift-co-fc8f5233",
+      "question": "Determine and implement physically justified final home-shift compensation for stretch-insensitive autocal, using existing RRF/Klipper flex models; quantify evidence and limitations.",
+      "directory": "session-2026-11-15-determine-and-implement-physically-justified-final-home-shift-co-fc8f5233"
+    },
+    {
+      "id": "session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7",
+      "question": "Build and exercise reproducible full HP3/HP4 autocal sanity battery including varied stiffness/noise and HP4 worn bearings, plus lightweight recorded-data solver comparisons and regressions.",
+      "directory": "session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7"
+    },
+    {
+      "id": "session-2026-11-15-review-production-integration-of-pose-fit-information-planning-a-84abd4be",
+      "question": "Review production integration of pose fit, information planning and equal-strain forces; pilot or plan four_high_anchors and cube_corners support; identify concrete correctness defects.",
+      "directory": "session-2026-11-15-review-production-integration-of-pose-fit-information-planning-a-84abd4be"
+    },
+    {
+      "id": "session-2026-11-15-independently-review-the-combined-autocal-hardening-candidate-fo-ec4f1013",
+      "question": "Independently review the combined autocal hardening candidate for bootstrap, profile selection, offset propagation, ablation correctness and guarded home compensation; reproduce decisive checks and identify regressions.",
+      "directory": "session-2026-11-15-independently-review-the-combined-autocal-hardening-candidate-fo-ec4f1013"
+    }
+  ]
+}

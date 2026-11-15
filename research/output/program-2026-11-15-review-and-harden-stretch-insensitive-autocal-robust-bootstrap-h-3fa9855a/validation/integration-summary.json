@@ -1,0 +1,16 @@
+{
+  "stage": "intermediate integration check, before final frozen-candidate reruns",
+  "hp3_adaptive_1": {
+    "status": "stopped with data retained",
+    "cause": "diagnostics sidecar was incorrectly written through the sweep-dataset schema; fixed in 2fbf80cb"
+  },
+  "hp3_adaptive_2": {
+    "status": "completed",
+    "rough_sweeps": 4,
+    "refinement_initial_sweeps": 4,
+    "final_sweeps": 8,
+    "selected_m669": "M669 A0.00:-1900.29:-280.72 B1644.33:949.29:-280.72 C-1643.77:949.29:-280.72 D-0.16:0.04:1898.69",
+    "worst_coordinate_error_mm_rounded": 1.68,
+    "limitation": "Source changed during integration. Python modules loaded on startup; collector source was updated between invocations. Do not treat this as frozen-final-candidate validation."
+  }
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-2/sweeps.headless/events.jsonl",
+    "bytes": 159619016,
+    "sha256": "5527b83fb2721acfb5ca7ca072c02aed2891c3b4abf245b4426e15e770c5739c",
+    "availability": "local Git-ignored file only; no off-host copy established"
+  },
+  {
+    "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.headless/events.jsonl",
+    "bytes": 73433548,
+    "sha256": "b3662efdae157cbc92b6a742030ea1f8b684f56186c1e54bdeefd2ff3fc9d471",
+    "availability": "local Git-ignored file only; no off-host copy established"
+  }
+]
