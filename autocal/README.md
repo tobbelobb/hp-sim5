@@ -167,9 +167,7 @@ Run complete simulated full-auto calibration without a browser:
 ```bash
 .venv/bin/python autocal/autocal.py \
   --headless-sim --machine-type hangprinter_3 \
-  --dataset output/headless-trial/sweeps.json \
-  --no-fit-home-offsets --find-radii global --base-radii 30 \
-  --buildup-factor 0.636619 --r0-bounds 39,40
+  --dataset output/headless-trial/sweeps.json
 ```
 
 `--headless-sim` implies `--sim` and requires the built RRF simulator and Node
@@ -409,7 +407,8 @@ fixed-anchor slip, stalled clocks and transport errors remain failures.
 On acceptance, RRF receives M669 for the selected anchors.
 Fitted M666 spool settings are printed but are not sent automatically.
 Klipper skips the M669 send.
-Reaching `--max-steps` ends the loop without applying calibration.
+Reaching `--max-steps` emits and applies the best available calibration, while
+the headless manifest records a budget stop rather than normal completion.
 
 Useful options:
 
@@ -420,7 +419,8 @@ Useful options:
   restart with bounded `trf`. It is off by default: changing the candidate fits
   can worsen the final consensus. `--no-trf-solver-fallback` explicitly disables it.
 - `--find-radii` and `--find-buildup-factor` enable spool fitting.
-  Each accepts `global` or `per-anchor`. Both default to `off`.
+  Each accepts `global` or `per-anchor`. Both default to `off` and require
+  `--no-fit-home-offsets` with a constant-force dataset.
 - `--sparse-recovery` adds a sparse seed fit during underconstrained recovery.
 - `--shotgun` adds solver variants from `shotgun.conf`.
 

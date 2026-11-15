@@ -90,6 +90,8 @@ The default residual is Sampson distance to the predicted ellipse in squared len
 Noise normalization uses encoder statistics and the configured noise model.
 
 Enable spool fitting with `--find-radii` or `--find-buildup-factor`.
+Use `--no-fit-home-offsets` and constant-force data for these experiments;
+joint spool/offset and profiled-spool fitting are not implemented.
 Each accepts `global` or `per-anchor`; a bare flag means `per-anchor`.
 The pipeline transforms raw encoder angles into modeled length deltas.
 It alternates spool steps with anchor proposals and can polish their shared scale.

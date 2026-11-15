@@ -318,7 +318,7 @@ def test_full_auto_loop_registers_cleanup_for_keyboard_interrupt_before_main_loo
         verbose=False,
         no_collect=False,
     )
-    assert result == 2
+    assert result == 130
 
     assert len(registered_callbacks) == 1
     assert stopped == [fake_proc]

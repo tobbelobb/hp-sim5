@@ -506,7 +506,9 @@ def full_auto_loop(
             if checked_bootstrap:
                 write_bootstrap_state(dataset_path, "failed", reason=str(error))
             _log_console(f"; bootstrap collection stopped: {error}; partial data retained")
-            return _finalize(2)
+            if headless_sim is not None:
+                headless_sim.manifest["stop_reason"] = "bootstrap-interrupted" if isinstance(error, KeyboardInterrupt) else "bootstrap-collection-failed"
+            return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
         reset_pending = False
         _log_line(f"; bootstrap dataset written to {dataset_path}")
 
@@ -568,8 +570,8 @@ def full_auto_loop(
                 write_bootstrap_state(dataset_path, "failed", reason=str(error))
                 _log_console(f"; equal-strain bootstrap stopped: {error}; rough data: {rough_path}; checks: {check_path}")
                 if headless_sim is not None:
-                    headless_sim.manifest["stop_reason"] = "unreliable-rough-bootstrap"
-                return _finalize(2)
+                    headless_sim.manifest["stop_reason"] = "bootstrap-interrupted" if isinstance(error, KeyboardInterrupt) else "unreliable-rough-bootstrap"
+                return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
 
     replay_mode = False
     replay_sweeps: List[dict] = []

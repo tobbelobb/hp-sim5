@@ -204,7 +204,8 @@ class HeadlessSimulation:
             extended_reference.close()
             if self.recording_started:
                 recording_error = extended_reference.failure() or recording_error
-        interrupted = error_type is KeyboardInterrupt or (error_type is SystemExit and error.code == 130)
+        interrupted = (error_type is KeyboardInterrupt or (error_type is SystemExit and error.code == 130)
+                       or self.manifest.get("exit_code") == 130)
         self.manifest.update(status="interrupted" if interrupted else "failed" if error else "complete",
                              wall_s=time.monotonic() - self.started)
         if error:
@@ -243,7 +244,7 @@ class HeadlessSimulation:
                 if not self.manifest.get("recording_drained"):
                     recording_error = recording_error or 'Headless physics did not confirm recording drain; see physics.log'
         if self.manifest.get("exit_code"):
-            self.manifest["status"] = "failed"
+            self.manifest["status"] = "interrupted" if interrupted else "failed"
         self.manifest["normal_completion"] = (
             self.manifest["status"] == "complete"
             and self.manifest.get("stop_reason") in NORMAL_STOP_REASONS
