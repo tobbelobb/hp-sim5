@@ -1716,7 +1716,18 @@ def _suggested_collect_command(
     ]
     if output_file is not None:
         cmd.extend(["--output-file", str(output_file)])
-    cmd.extend(list(extra_args))
+    # Planner-owned acquisition fields must not be overridden by a later alias.
+    owned = {"--machineType", "--machine-type", "--sweep-config-file", "--sweep-config", "--sweepFile",
+             "--fixed-targets", "--fixedTargets", "--fixed-target"}
+    if output_file is not None:
+        owned.update(("--output-file", "--output", "--out"))
+    forwarded = iter(extra_args)
+    for arg in forwarded:
+        if str(arg).split("=", 1)[0] in owned:
+            if "=" not in str(arg):
+                next(forwarded, None)
+        elif str(arg) != "--hp-sim-reset":  # reset belongs to the initial bootstrap only
+            cmd.append(str(arg))
     return cmd
 
 
@@ -3382,12 +3393,6 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=float,
         default=None,
         help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
-    )
-    parser.add_argument(
-        "--terminal-validation",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Experiment: at normal live stopping, compare frozen candidates on one fresh unfitted sweep (default: disabled).",
     )
     parser.add_argument(
         "--equal-strain",

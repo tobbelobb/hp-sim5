@@ -82,14 +82,11 @@ not a replacement for production sweep rejection. Frozen historical log
 regressions remain in `tools/regress_calibration_logs.py` with their original
 no-offset model; matching those references alone does not establish accuracy.
 
-`--terminal-validation` is a default-off experiment for fresh live full-auto
-runs. At normal patience or spread stopping it collects one planned sweep,
-keeps it out of every fit, and compares frozen candidates on those common new
-observations. It applies a validated candidate without consensus averaging.
-It skips replay, no-collect, user-stop and budget-stop paths. Failed validation
-stops without applying calibration. The separate `*.terminal_validation.json`
-and `.stage.json` preserve measurements, original selection and frozen models;
-replay the decision with `tools/replay_stage.py terminal`.
+The archived terminal-validation pilot is replayable with
+`tools/replay_stage.py terminal`. Its live collection/application option was
+removed after mixed accuracy results and review findings about output overrides,
+firmware state and interruptions. Offline comparison does not prove physical
+accuracy or the freshness of a supplied recording.
 
 ## Everyday and research options
 

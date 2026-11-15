@@ -27,7 +27,6 @@ from autocal.stage_artifacts import write_stage_artifact
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
-from autocal.terminal_validation import evaluate_terminal_candidates, select_terminal_plan
 
 
 def full_auto_loop(
@@ -79,7 +78,6 @@ def full_auto_loop(
     low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
     equal_strain: bool = True,
-    terminal_validation: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -97,6 +95,7 @@ def full_auto_loop(
     else:
         dataset_path = Path("autocal/data/default_dataset.json")
     work_path = dataset_path
+    applying_solution = False
     if error := bootstrap_state_error(dataset_path):
         print(f"; {error}")
         return 2
@@ -140,6 +139,7 @@ def full_auto_loop(
         *,
         summary_meta: Optional[Dict[str, object]] = None,
     ) -> int:
+        nonlocal applying_solution
         dataset_now = _load_json(work_path)
         sweep_ids: List[str] = []
         sweeps_now = dataset_now.get("sweeps")
@@ -216,6 +216,7 @@ def full_auto_loop(
 
         skip_sim_send = bool(sim and no_collect and not server_explicit)
         if headless_sim is not None and not no_collect:
+            applying_solution = True
             try:
                 headless_sim.apply_parameters([m669, m666])
             except Exception as exc:
@@ -229,6 +230,7 @@ def full_auto_loop(
                 _log_console("; --firmware klipper set; skipping M669 send.")
             else:
                 _log_console(f"Sending {m669} to {rrf_server}")
+                applying_solution = True
                 try:
                     reply = provider.send_gcode(rrf_server, m669)
                 except Exception as exc:
@@ -1327,56 +1329,13 @@ def full_auto_loop(
             )
 
             if stop.decision == "accept":
+                if stopping.stop_requested():
+                    return _accept_best("stop-file")
                 stop_reason = stop.reason
                 if headless_sim is not None:
                     headless_sim.manifest["stop_reason"] = stop_reason
                 summary_plan, summary_meta = _select_history_summary_candidate(reason=stop_reason)
-                if (terminal_validation and stop_reason in ("patience", "spread-consensus")
-                        and not no_collect and not replay_mode and step < max_steps
-                        and not stop_file.exists()):
-                    original_selection = dict(summary_meta or {})
-                    original_selection["m669"] = _m669_from_plan(summary_plan) if summary_plan is not None else None
-                    try:
-                        cmd = list(history_candidates[-1]["plan"].get("collect_command") or [])
-                        if not cmd or "--output-file" not in cmd:
-                            raise ValueError("No valid terminal collection command")
-                        validation_path = _unique_path(dataset_path.with_suffix(".terminal_validation.json"))
-                        cmd[cmd.index("--output-file") + 1] = str(validation_path)
-                        _log_console("; collecting one terminal validation sweep without refitting candidates")
-                        with _log_context():
-                            _run_collection_command(cmd)
-                        validation = _load_json(validation_path)
-                        _normalize_dataset_point_roles(validation)
-                        for index, sweep in enumerate(validation["sweeps"], start=1):
-                            sweep["id"] = f"terminal_{index:03d}"
-                        _write_json(validation_path, validation)
-                        validation_options = {
-                            "use_noise_mean": bool(use_noise_mean),
-                            "pointwise_residual_mode": str(pointwise_residual_mode), "sigma_source": str(sigma_source),
-                        }
-                        evaluated = evaluate_terminal_candidates(history_candidates, validation, **validation_options)
-                        summary_plan, summary_meta, ranked = select_terminal_plan(evaluated)
-                        write_stage_artifact(validation_path.with_suffix(".stage.json"), "terminal_validation", {
-                            "candidates": history_candidates, "validation_dataset": validation,
-                            "validation_options": validation_options, "evaluated": evaluated,
-                            "original_selection": original_selection, "selected": summary_meta,
-                            "collection_command": cmd,
-                        })
-                        _append_jsonl(log_path, {
-                            "timestamp": datetime.now().isoformat(), "dataset": str(work_path),
-                            "event": "terminal_validation", "validation_dataset": str(validation_path),
-                            "original_selection": original_selection, "selected": summary_meta,
-                            "scores": [{"iteration": candidate["iteration"], "run_id": candidate.get("run_id"),
-                                        "prediction": info["prediction_score"] if np.isfinite(info["prediction_score"]) else None}
-                                       for _key, candidate, info in evaluated],
-                        })
-                        if summary_plan is None and headless_sim is not None:
-                            headless_sim.manifest["stop_reason"] = "terminal-validation-failed"
-                    except (ValueError, subprocess.CalledProcessError, KeyboardInterrupt) as error:
-                        _log_console(f"; terminal validation stopped without applying calibration: {error}")
-                        if headless_sim is not None:
-                            headless_sim.manifest["stop_reason"] = "terminal-validation-failed"
-                        return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
+
                 if summary_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
                     _log_console(_solution_quality_message(None))
@@ -1471,6 +1430,11 @@ def full_auto_loop(
             except OSError:
                 pass
     except KeyboardInterrupt:
+        if applying_solution:
+            _log_console("; application interrupted; firmware outcome is unknown, stopping without retry")
+            if headless_sim is not None:
+                headless_sim.manifest["stop_reason"] = "apply-interrupted"
+            return _finalize(130)
         return _accept_best("Ctrl-C")
 
     _log_line(f"; reached max steps; dataset={work_path}")
@@ -1611,7 +1575,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
         equal_strain=bool(args.equal_strain),
-        terminal_validation=bool(args.terminal_validation),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
         delta_max=args.delta_max,

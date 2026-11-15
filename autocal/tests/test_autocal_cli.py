@@ -10,8 +10,10 @@ from autocal._autocal_common import (
     _parse_full_auto_run_spec,
     _parse_objective_schedule,
     _resolve_spool_cli_options,
+    _suggested_collect_command,
     build_semi_auto_parser,
 )
+from autocal.active_learning import SweepConfig
 
 
 def _parse_spool_args(*extra_args):
@@ -35,6 +37,24 @@ def test_home_offsets_and_equal_strain_default_on_with_explicit_ablation():
     assert not args.fit_home_offsets and not args.equal_strain
     _, overrides = _parse_full_auto_run_spec("--no-fit-home-offsets")
     assert overrides["fit_home_offsets"] is False
+
+
+def test_planned_collection_cannot_be_redirected_by_forwarded_aliases(tmp_path):
+    cfg = SweepConfig((0,), (12.0,), 1, 2)
+    command = _suggested_collect_command(
+        tmp_path / "planned.txt", cfg, machine_type="slideprinter",
+        output_file=tmp_path / "new.json",
+        extra_args=["--out", "training.json", "--output=training.json",
+                    "--machine-type", "hp4", "--sweepFile=wrong.txt",
+                    "--fixedTargets", "90", "--hp-sim-reset",
+                    "--server", "http://example.invalid", "--force-mode", "constant"],
+    )
+    assert command == [
+        "node", "autocal/control/cli/collect_sweep_data.mjs",
+        "--machineType", "slideprinter", "--sweep-config-file", str(tmp_path / "planned.txt"),
+        "--fixed-targets", "12.0", "--output-file", str(tmp_path / "new.json"),
+        "--server", "http://example.invalid", "--force-mode", "constant",
+    ]
 
 
 def test_spool_cli_options_parse_modes_and_bounds():

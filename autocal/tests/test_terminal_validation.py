@@ -8,9 +8,6 @@ from autocal.pose_fit import shift_dataset_home_offsets
 from autocal.stage_artifacts import read_stage_artifact, write_stage_artifact
 from autocal.tools.replay_stage import main as replay
 from autocal.tests.test_predictive_validation import _dataset
-import autocal.autocal as ac
-from autocal.stopping import StopDecision
-from autocal.tests.test_autocal_no_collect import _write_dataset, _fake_plan
 
 
 def _case():
@@ -65,54 +62,3 @@ def test_terminal_artifact_replays_without_fitting(tmp_path, monkeypatch):
     output = tmp_path / "selected.json"
     assert replay(["terminal", str(artifact), "--output", str(output)]) == 0
     assert read_stage_artifact(output)["payload"]["selected"]["iteration"] == 2
-
-
-@pytest.mark.parametrize("mode", ["success", "collection_failure", "interrupt", "no_collect", "budget", "stop_file", "replay"])
-def test_terminal_collection_keeps_models_frozen_and_honors_stops(tmp_path, monkeypatch, mode):
-    import subprocess
-    path = tmp_path / "sweeps.json"
-    _write_dataset(path, sweeps=5 if mode == "replay" else 3)
-    fit_calls, collections, applied = [], [], []
-    real_run = ac.subprocess.run
-    def fit(data_path, **kwargs):
-        fit_calls.append(data_path)
-        plan = _fake_plan()
-        plan["dataset"] = ac._load_json(data_path)
-        plan["collect_command"] += ["--output-file", str(tmp_path / "planned.json")]
-        return plan
-    def collect(command, **kwargs):
-        if command[0] != "node":
-            return real_run(command, **kwargs)
-        collections.append(command)
-        if mode == "collection_failure":
-            raise subprocess.CalledProcessError(1, command)
-        if mode == "interrupt":
-            raise KeyboardInterrupt
-        _write_dataset(command[command.index("--output-file") + 1], sweeps=1)
-    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fit)
-    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *a, **kw: None)
-    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *a: False)
-    monkeypatch.setattr(ac.StoppingPolicy, "update", lambda *a, **kw: StopDecision(1, True, False, None, None, "accept"))
-    monkeypatch.setattr(ac.subprocess, "run", collect)
-    monkeypatch.setattr(ac.RRFFirmwareProvider, "send_gcode", lambda *a: applied.append(a) or "")
-    monkeypatch.setattr(terminal, "score_future_sweeps", lambda *a, **kw: (.1, 1))
-    if mode == "stop_file":
-        ac._full_auto_stop_path(path).touch()
-    argv = ["--sim", "--machine-type", "slideprinter", "--dataset", str(path),
-            "--terminal-validation", "--max-steps", "1" if mode == "budget" else "3"]
-    if mode == "no_collect":
-        argv.append("--no-collect")
-    argv.extend(["--collector-args", "--server", "http://127.0.0.1:12345", "--no-ws"])
-    code = ac.main(argv)
-    if mode in ("success", "collection_failure", "interrupt"):
-        assert len(collections) == 1 and len(fit_calls) == 1
-    else:
-        assert not collections
-    if mode in ("collection_failure", "interrupt"):
-        assert not applied
-        assert code == (130 if mode == "interrupt" else 2)
-    if mode == "success":
-        assert code == 0 and len(applied) == 1
-        assert len(ac._load_json(path)["sweeps"]) == 3
-        artifact = read_stage_artifact(path.with_suffix(".terminal_validation.stage.json"))
-        assert artifact["payload"]["validation_dataset"]["sweeps"][0]["id"] == "terminal_001"

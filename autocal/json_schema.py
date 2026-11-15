@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import tempfile
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
@@ -34,8 +35,16 @@ def write_json_file(path: Path, payload: Any, *, schema: Optional[SchemaName] = 
     validate_payload(payload, schema=schema, source=str(path))
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as fh:
-        json.dump(payload, fh, indent=indent)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent,
+                                         prefix=f".{path.name}.", suffix=".tmp", delete=False) as fh:
+            temporary = Path(fh.name)
+            json.dump(payload, fh, indent=indent)
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def append_jsonl_line(path: Path, payload: Any, *, schema: Optional[SchemaName] = None) -> None:

@@ -5,6 +5,7 @@ import pytest
 
 import autocal.autocal as ac
 from autocal.sweep_types import DataPoint, MachineConfig, MachineType, Sweep
+from autocal.stopping import StopDecision
 
 
 def _worse_warm_duplicate(cold_plans: list) -> dict:
@@ -69,6 +70,44 @@ def test_build_semi_auto_parser_accepts_no_collect():
         ]
     )
     assert args.no_collect is True
+
+
+@pytest.mark.parametrize("mode", ["apply_interrupt", "stop_during_fit"])
+def test_final_application_does_not_retry_and_preserves_stop_reason(tmp_path, monkeypatch, capsys, mode):
+    dataset = tmp_path / "sweeps.json"
+    _write_dataset(dataset, sweeps=3)
+    sent = []
+
+    def fit(path, **kwargs):
+        if mode == "stop_during_fit":
+            ac._full_auto_stop_path(dataset).touch()
+        plan = _fake_plan()
+        plan["dataset"] = ac._load_json(path)
+        return plan
+
+    def send(self, server, gcode):
+        sent.append(gcode)
+        if mode == "apply_interrupt":
+            raise KeyboardInterrupt
+        return ""
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fit)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *a, **kw: None)
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *a: False)
+    monkeypatch.setattr(ac.StoppingPolicy, "update", lambda *a, **kw: StopDecision(1, True, False, None, None, "accept"))
+    monkeypatch.setattr(ac.RRFFirmwareProvider, "send_gcode", send)
+    code = ac.main([
+        "--sim", "--no-collect", "--machine-type", "slideprinter", "--dataset", str(dataset),
+        "--max-steps", "3", "--collector-args", "--server", "http://127.0.0.1:12345",
+    ])
+    assert len(sent) == 1
+    output = capsys.readouterr().out
+    if mode == "apply_interrupt":
+        assert code == 130
+        assert "stopping without retry" in output
+    else:
+        assert code == 0
+        assert "stop requested (stop-file)" in output
 
 
 def test_full_auto_stops_when_every_future_prediction_fails(tmp_path, monkeypatch, capsys):
