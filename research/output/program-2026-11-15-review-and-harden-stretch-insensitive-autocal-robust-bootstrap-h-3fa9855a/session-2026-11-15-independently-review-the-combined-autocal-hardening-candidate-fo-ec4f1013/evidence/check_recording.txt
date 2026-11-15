@@ -1,0 +1,5 @@
+rough 3 {"assumed_line_sigma_mm": 0.5, "converged": true, "inlier_fraction": 1.0, "max_anchor_std_mm": 76.15356081960157, "parameters": 9, "rank": 9, "ready": false, "restart_difference_mm": 0.000273933768085044, "rms_mm": 0.020738128322638688, "sweeps": 3}
+rough 4 {"assumed_line_sigma_mm": 0.5, "converged": true, "inlier_fraction": 1.0, "max_anchor_std_mm": 18.19303369524656, "parameters": 9, "rank": 9, "ready": true, "restart_difference_mm": 2.760628888154315e-05, "rms_mm": 0.029067157912826408, "sweeps": 4}
+iteration 5 production point-fit anchors [[0.0, -1899.7763465551675, -280.6833530771725], [1643.8714897069917, 948.9336014515682, -280.6833530771725], [-1644.3806414504952, 949.7088482862114, -280.6833530771725], [-0.13032353397936716, -0.0059493344570029985, 1898.7798747158458]]
+point-fit rms 0.030032622802857012 max difference from corresponding ellipse fit 0.633552115962857
+Caution: point-fit and ellipse share data, initialization and fitted offsets; this is not independent LS.
