@@ -3384,11 +3384,19 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
     )
     parser.add_argument(
+        "--equal-strain",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Use a checked rough pass and per-point sensor forces on Hangprinter (default: enabled). Disable for constant-force comparisons.",
+    )
+    parser.add_argument(
         "--fit-home-offsets",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help="Fit home length offsets with the point-based fit and apply them before the ellipse fit. "
              "They absorb the difference between slack lines at the encoder origin and tensioned lines "
-             "during measurement. Not available together with --find-radii or --find-buildup-factor.",
+             "during measurement (default: enabled). Not available together with --find-radii or --find-buildup-factor; "
+             "use --no-fit-home-offsets for those experiments.",
     )
     parser.add_argument(
         "--r0-bounds",
@@ -4009,6 +4017,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--low-anchor-z", type=float, default=None)
+    parser.add_argument("--fit-home-offsets", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
     parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default=None)

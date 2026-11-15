@@ -379,11 +379,9 @@ function buildDataPointModes({
   const measurementModes = buildModes(measurementSensorForce);
 
   return {
-    buildModes,
     measurementModes,
     measurementSensorForce,
     preloadModes,
-    fallbackForce,
   };
 }
 
@@ -418,7 +416,6 @@ export async function collectDataPoint(sendFn, options = {}) {
     stepIndex,
     stepCount,
     restoreToModeWhenFinished,
-    projectZeroTension = false,
     skipReturnModePrep = false,
     settledMeasurement = null,
     encoderNoiseOptions = null,
@@ -441,10 +438,8 @@ export async function collectDataPoint(sendFn, options = {}) {
   }
 
   const {
-    buildModes,
     measurementModes,
     preloadModes,
-    fallbackForce,
   } = buildDataPointModes({
     motorIds,
     driveAnchor,
@@ -459,7 +454,7 @@ export async function collectDataPoint(sendFn, options = {}) {
 
   // The sweep caller can supply its just-completed quiet check when no motor
   // mode or measurement force changed after that check.
-  const reuseMeasurement = !projectZeroTension && settledMeasurement !== null;
+  const reuseMeasurement = settledMeasurement !== null;
   if (!skipReturnModePrep && !reuseMeasurement) {
     await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
     await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
@@ -468,61 +463,7 @@ export async function collectDataPoint(sendFn, options = {}) {
   let anglesDeg = null;
   let stableData = null;
 
-  if (projectZeroTension) {
-    const maxForce = Number.isFinite(forceMax) ? forceMax : null;
-    const minForce = Number.isFinite(forceMin) ? forceMin : null;
-    const samples = [];
-    if (maxForce !== null && minForce !== null) {
-      const steps = 10;
-      const stepDelta = steps > 1 ? (minForce - maxForce) / (steps - 1) : 0;
-      for (let idx = 0; idx < steps; idx += 1) {
-        const f = maxForce + stepDelta * idx;
-        await applyForceModeState(sendFn, { motorIds, modes: buildModes(f) });
-        // eslint-disable-next-line no-await-in-loop
-        const stable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-        samples.push({ force: f, anglesDeg: stable.anglesDeg });
-        stableData = stable;
-      }
-    }
-
-    const valid = samples.filter((sample) =>
-      Number.isFinite(sample.force)
-      && Array.isArray(sample.anglesDeg)
-      && sample.anglesDeg.length === motorIds.length
-      && sample.anglesDeg.every((val) => Number.isFinite(val)),
-    );
-    let projected = null;
-    if (valid.length >= 2) {
-      const forces = valid.map((sample) => sample.force);
-      const meanForce = forces.reduce((acc, v) => acc + v, 0) / forces.length;
-      const varForce = forces.reduce((acc, v) => acc + (v - meanForce) ** 2, 0);
-      if (varForce > 1e-9) {
-        projected = new Array(motorIds.length).fill(0);
-        for (let axisIdx = 0; axisIdx < motorIds.length; axisIdx += 1) {
-          let meanAngle = 0;
-          for (let i = 0; i < valid.length; i += 1) {
-            meanAngle += valid[i].anglesDeg[axisIdx];
-          }
-          meanAngle /= valid.length;
-          let cov = 0;
-          for (let i = 0; i < valid.length; i += 1) {
-            cov += (forces[i] - meanForce) * (valid[i].anglesDeg[axisIdx] - meanAngle);
-          }
-          const slope = cov / varForce;
-          const intercept = meanAngle - slope * meanForce;
-          if (!Number.isFinite(intercept)) {
-            projected = null;
-            break;
-          }
-          projected[axisIdx] = intercept;
-        }
-      }
-    }
-    if (projected === null) {
-      throw new Error('Zero-tension projection requires finite encoder samples at distinct forces');
-    }
-    anglesDeg = projected;
-  } else if (reuseMeasurement) {
+  if (reuseMeasurement) {
     stableData = settledMeasurement;
     anglesDeg = stableData.anglesDeg;
     settleOptions.validateAngles?.(anglesDeg);
@@ -536,10 +477,7 @@ export async function collectDataPoint(sendFn, options = {}) {
   if (Array.isArray(anglesDeg)) {
     lengths = anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
     if (typeof recordPoint === 'function') {
-      const extraFields = projectZeroTension
-        ? { raw_angles_zero_tension_deg: [...anglesDeg] }
-        : null;
-      recordPoint(anglesDeg, driveSetpointMm, stepIndex, stepCount, extraFields);
+      recordPoint(anglesDeg, driveSetpointMm, stepIndex, stepCount, null);
     }
   }
 

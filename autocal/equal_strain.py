@@ -80,6 +80,8 @@ def sensor_force_profiles(
         profiles.append({
             "drive_anchor": int(drive),
             "sensor_anchor": int(sensor),
+            "fixed_anchors": list(cfg.fixed_anchors),
+            "fixed_lengths": list(cfg.fixed_deltas_mm),
             "drive_mm": drive_mm[order].tolist(),
             "force_n": force[order].tolist(),
         })
@@ -114,4 +116,5 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
 
 def is_equal_strain(dataset: dict) -> bool:
     """Whether every sweep of the dataset was measured with a sensor force profile."""
-    return all((sweep.get("metadata") or {}).get("sensor_force_profile") for sweep in dataset["sweeps"])
+    sweeps = dataset.get("sweeps", [])
+    return bool(sweeps) and all((sweep.get("metadata") or {}).get("sensor_force_profile") for sweep in sweeps)

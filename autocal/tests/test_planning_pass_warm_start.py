@@ -134,6 +134,7 @@ def test_plan_next_ellipse_sweep_uses_explicit_warm_start_seeds(monkeypatch, tmp
         generate_report=False,
         find_radii="global",
         find_buildup_factor="global",
+        fit_home_offsets=False,
         base_radii=[30.0, 30.0, 30.0],
         buildup_factor=0.636619,
         r0_bounds=None,

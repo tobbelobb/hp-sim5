@@ -126,10 +126,11 @@ Ellipse calibration no longer accepts `--flex` or `--spring-k-multiplier`.
 The collector does not record the per-point tensions that correction required.
 The legacy `calibrate.py point` solver retains its separate elasticity model.
 
-`--project-zero-tension` requires a valid extrapolation from distinct collection
-forces. Collection stops if projection fails, and fitting requires
-`raw_angles_zero_tension_deg` on every point when projection is requested.
-Unprojected data must be fitted without this flag.
+Zero-tension extrapolation was retired from collection after failing the stretch
+comparison. New HP3/HP4 collection uses equal-strain profiles and home-offset
+fitting. Historical projected datasets remain readable with `--no-collect`;
+they require `raw_angles_zero_tension_deg` on every point, use projected lengths
+rather than tensioned noise means, and skip home-offset fitting.
 
 If filtering leaves too few constraints, full-auto retries with sweep filtering off,
 then with point filtering off. Recovery uses the current data and warm-start seeds.

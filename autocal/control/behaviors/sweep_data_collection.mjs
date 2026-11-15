@@ -129,7 +129,6 @@ export const SWEEP_DEFAULTS = {
  * autoTuneForce/noAutoTuneForce: booleans, auto-tuning behavior flags.
  * returnToOrigin: boolean, return all motors to origin between sweeps and after collection.
  * outputFile: string or null, output dataset JSON path.
- * projectZeroTension: boolean, project encoder readings to zero tension during collection.
  */
 
 function range(n) {
@@ -607,7 +606,6 @@ function validateSweepCollectionInput(context) {
     autoTuneForce: !!args.autoTuneForce,
     noAutoTuneForce: !!args.noAutoTuneForce,
     returnToOrigin: !!args.returnToOrigin,
-    projectZeroTension: !!args.projectZeroTension,
     outputFile: args.outputFile ?? null,
   };
 }
@@ -692,12 +690,16 @@ export async function loadSensorForceProfiles(filePath) {
   return profiles;
 }
 
-export function sensorForceProfileFor(profiles, driveAnchor, sensorAnchor) {
-  const profile = profiles.find(p => p.drive_anchor === driveAnchor && p.sensor_anchor === sensorAnchor);
-  if (!profile) {
-    throw new Error(`Sensor force profile has no entry for drive ${driveAnchor}, sensor ${sensorAnchor}`);
+export function sensorForceProfileFor(profiles, driveAnchor, sensorAnchor, fixedAnchors, fixedTargets) {
+  const matches = profiles.filter(p => p.drive_anchor === driveAnchor && p.sensor_anchor === sensorAnchor
+    && Array.isArray(p.fixed_anchors) && Array.isArray(p.fixed_lengths)
+    && p.fixed_anchors.length === fixedAnchors.length && p.fixed_lengths.length === fixedTargets.length
+    && fixedAnchors.every((anchor, i) => p.fixed_anchors[i] === anchor
+      && Math.abs(p.fixed_lengths[i] - fixedTargets[i]) <= 1e-3));
+  if (matches.length !== 1) {
+    throw new Error(`Sensor force profile needs exactly one entry for drive ${driveAnchor}, sensor ${sensorAnchor}, fixed [${fixedAnchors}] at [${fixedTargets}]; found ${matches.length}`);
   }
-  return profile;
+  return matches[0];
 }
 
 // Linear interpolation; beyond the table the nearest end value applies.
@@ -1148,7 +1150,6 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     noiseSigmaFloorDeg,
     fixedAnchors,
     fixedTargets,
-    projectZeroTension,
     forbiddenForceAnchors = [],
     baseRadiusMm = null,
   } = options;
@@ -1322,7 +1323,6 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       driveSetpointMm: target,
       stepIndex: stepIdx - 1,
       stepCount,
-      projectZeroTension: !!projectZeroTension,
       settledMeasurement,
       skipReturnModePrep: Number.isFinite(delta) && Math.abs(delta) > 1e-6,
       encoderNoiseOptions: {
@@ -1331,7 +1331,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         speedup,
       },
     });
-    measurementPreloadActive = !projectZeroTension;
+    measurementPreloadActive = true;
     const noiseStats = collected?.noiseStats;
     if (noiseStats && dataPoints.length > 0) {
       const point = dataPoints[dataPoints.length - 1];
@@ -1683,7 +1683,8 @@ export async function collectSweepData(send, context) {
           datasetStartMs,
           ...forces,
           sensorForceProfile: sensorForceProfiles
-            ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor)
+            ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor,
+              sweepConfig.fixedAnchors, fixedTargets)
             : null,
           collectionAttempt: attempt,
           noiseSampleCount,
@@ -1692,7 +1693,6 @@ export async function collectSweepData(send, context) {
           noiseSigmaFloorDeg,
           fixedAnchors: sweepConfig.fixedAnchors,
           fixedTargets,
-          projectZeroTension: options.projectZeroTension,
           forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
           onPoint: context.onPoint,
           baseRadiusMm: Array.isArray(m666ForCollection?.R)
@@ -1808,7 +1808,7 @@ export async function collectSweepData(send, context) {
       m669: m669Values,
       m92: m92Values,
       mm_per_degree: mmPerDeg,
-      noise_model: { project_zero_tension: !!options.projectZeroTension },
+      noise_model: { project_zero_tension: false },
       notes: {
         buildup_factor_forced: Number.isFinite(forcedBuildupFactor) ? forcedBuildupFactor : undefined,
         base_radii_forced_mm: forcedBaseRadii ?? undefined,

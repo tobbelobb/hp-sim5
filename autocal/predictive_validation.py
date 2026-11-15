@@ -7,12 +7,14 @@ import numpy as np
 from autocal.ellipse_cost import EllipseCostFunction
 from autocal.projection_mode import resolve_projection_mode
 from autocal.spool_model import SpoolModelParams, dataset_with_modeled_lengths
+from autocal.pose_fit import shift_dataset_home_offsets
 
 
 def score_future_sweeps(
     dataset: Dict[str, object], anchors: np.ndarray, training_sweep_ids: Iterable[str],
     *,
     spool_params: Optional[SpoolModelParams] = None,
+    home_offsets_mm=None,
     prefer_zero_tension_angles: bool = False,
     use_noise_mean: bool = True,
     pointwise_residual_mode: str = "sampson",
@@ -47,6 +49,8 @@ def score_future_sweeps(
                 validation_data, spool_params,
                 prefer_zero_tension_angles=projected,
             )
+        if home_offsets_mm is not None:
+            validation_data = shift_dataset_home_offsets(validation_data, home_offsets_mm)
         cost = EllipseCostFunction(
             validation_data,
             pointwise_filtering=False,

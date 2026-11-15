@@ -28,6 +28,15 @@ def _parse_spool_args(*extra_args):
     return parser, args
 
 
+def test_home_offsets_and_equal_strain_default_on_with_explicit_ablation():
+    _, args = _parse_spool_args()
+    assert args.fit_home_offsets and args.equal_strain
+    _, args = _parse_spool_args("--no-fit-home-offsets", "--no-equal-strain")
+    assert not args.fit_home_offsets and not args.equal_strain
+    _, overrides = _parse_full_auto_run_spec("--no-fit-home-offsets")
+    assert overrides["fit_home_offsets"] is False
+
+
 def test_spool_cli_options_parse_modes_and_bounds():
     parser, args = _parse_spool_args(
         "--find-radii",

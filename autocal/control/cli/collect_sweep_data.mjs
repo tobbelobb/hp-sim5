@@ -396,7 +396,7 @@ export function parseBridgeArgs(argv) {
     } else if (arg === '--return-to-origin' || arg === '--returnToOrigin') {
       args.returnToOrigin = true;
     } else if (arg === '--project-zero-tension' || arg === '--projectZeroTension') {
-      args.projectZeroTension = true;
+      throw new Error('--project-zero-tension collection was retired; use equal-strain autocal');
     }
   }
 
@@ -444,7 +444,6 @@ Options:
   --open-loop-motors         Use open-loop simulator motors (default: closed-loop)
   --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
   --no-trace                 Disable hp-sim trace plotting
-  --project-zero-tension     Project encoder readings to zero tension during each data point
   --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
   --observability-file <path> Sidecar histogram JSON path (default: <output>.obs.json)
   --firmware <rrf|klipper>   Firmware flavor to target (default: rrf)

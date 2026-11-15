@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
-from autocal.equal_strain import write_sensor_force_profile
+from autocal.equal_strain import is_equal_strain, write_sensor_force_profile
 from autocal.pose_fit import dataset_line_lengths
 from autocal.pose_planning import rank_candidates_pose_information
 
 _PLANNING_ONLY = (
     "candidate_deltas", "candidate_count", "delta_min", "delta_max",
     "exclude_existing", "existing_tol_mm", "min_fixed_delta_spacing_mm",
-    "top_k", "write_cfg", "collector_output",
+    "top_k", "write_cfg", "collector_output", "equal_strain",
 )
 _PLANNING_OPTIONS = _PLANNING_ONLY + ("fd_eps_mm", "regularization", "collector_args")
 
@@ -30,6 +30,7 @@ def plan_ellipse_sweep(
     write_cfg: Optional[Path] = None,
     collector_output: Optional[Path] = None,
     collector_args: Sequence[str] = (),
+    equal_strain: bool = True,
 ) -> Dict[str, object]:
     """Plan from a frozen fit; no optimizer or measurement collection is run."""
     dataset = fit["dataset"]
@@ -105,7 +106,7 @@ def plan_ellipse_sweep(
         # Relax novelty spacing if needed, but never re-admit excluded repeats.
         candidates = novel_candidates
 
-    if machine_type in ("hangprinter_3", "hangprinter_4"):
+    if machine_type in ("hangprinter_3", "hangprinter_4") and spool_params is None:
         # Position-based ranking: it values sweeps with a shortened D line, which the
         # ellipse-geometry ranking below never picks.
         estimation_dataset = fit["dataset_for_estimation"]
@@ -197,7 +198,7 @@ def plan_ellipse_sweep(
 
     cmd = None
     if best_cfg is not None:
-        if machine_type in ("hangprinter_3", "hangprinter_4"):
+        if equal_strain and is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4"):
             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
             if write_sensor_force_profile(profile_path, dataset, anchors, [best_cfg]):
                 collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
@@ -252,7 +253,8 @@ def plan_next_ellipse_sweep(
     collector_output: Optional[Path],
     collector_args: Sequence[str],
     low_anchor_z: Optional[float] = None,
-    fit_home_offsets: bool = False,
+    fit_home_offsets: bool = True,
+    equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.filter_pass import estimate_effective_radii_with_spool_model
-from autocal.equal_strain import is_equal_strain
 from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets
 from autocal.projection_mode import resolve_projection_mode
 
@@ -47,7 +46,7 @@ def fit_ellipse_dataset(
     regularization: float,
     collector_args: Sequence[str],
     low_anchor_z: Optional[float] = None,
-    fit_home_offsets: bool = False,
+    fit_home_offsets: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -80,7 +79,7 @@ def fit_ellipse_dataset(
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
     if fit_home_offsets and (search_radii or search_buildup):
-        raise ValueError("--fit-home-offsets cannot be combined with --find-radii or --find-buildup-factor")
+        raise ValueError("Home-offset and spool fitting are not jointly supported; use --no-fit-home-offsets with --find-radii or --find-buildup-factor")
     if r0_bounds is not None and not _spool_mode_enabled(find_radii_mode):
         warnings.append("r0_bounds_ignored_without_find_radii")
     if r0_prior_sigma_mm is not None and not _spool_mode_enabled(find_radii_mode):
@@ -139,6 +138,11 @@ def fit_ellipse_dataset(
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
     prefer_zero_tension_angles = _uses_projected_angles(dataset, collector_args)
+    if prefer_zero_tension_angles:
+        use_noise_mean = False
+        if fit_home_offsets:
+            warnings.append("home_offsets_skipped_for_projected_data")
+        fit_home_offsets = False
     _annotate_dataset_noise_model(
         dataset,
         line_width_mm=float(line_width),
@@ -337,17 +341,20 @@ def fit_ellipse_dataset(
         }
     else:
         anchor_initial_guess = _resolve_anchor_seed(None)
-        # Equal-strain data turns the stretch into a home length offset, which must then be fitted.
-        if fit_home_offsets or is_equal_strain(dataset):
-            home_offsets_mm = fit_pose_least_squares(
+        if fit_home_offsets:
+            offset_fit = fit_pose_least_squares(
                 dataset,
                 anchor_initial_guess,
                 fit_home_offsets=True,
                 home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
                 low_anchor_z=low_anchor_z,
                 use_noise_mean=bool(use_noise_mean),
-            )["home_offsets_mm"]
+            )
+            if not offset_fit["success"]:
+                raise ValueError("Home-offset fit did not converge: " + str(offset_fit["message"]))
+            home_offsets_mm = offset_fit["home_offsets_mm"]
             dataset_for_estimation = shift_dataset_home_offsets(dataset, home_offsets_mm)
+        sweep_configs_for_info = dataset_sweep_configs(dataset_for_estimation)
         cal = calibrate_elliptical(
             dataset_for_estimation,
             output_path=None,

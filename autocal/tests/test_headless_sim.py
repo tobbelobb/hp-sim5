@@ -27,7 +27,7 @@ def test_headless_implies_sim_and_keeps_fitting_options(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ac, '_run_full_auto', run)
     assert ac.main(['--headless-sim', '--machine-type', 'hangprinter_3', '--no-collect',
-                    '--dataset', str(tmp_path / 'sweeps.json'), '--find-radii', 'global',
+                    '--dataset', str(tmp_path / 'sweeps.json'), '--no-fit-home-offsets', '--find-radii', 'global',
                     '--base-radii', '30', '--r0-bounds', '39,40']) == 0
     assert captured == dict(sim=True, machine='hangprinter_3', radii='global', bounds=(39., 40.),
                             no_collect=True, headless=None)

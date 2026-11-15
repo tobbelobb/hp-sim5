@@ -5,6 +5,7 @@ import pytest
 
 from autocal.predictive_validation import score_future_sweeps
 from autocal.spool_model import WinchSpoolModel, build_spool_model_params
+from autocal.pose_fit import shift_dataset_home_offsets
 
 
 def _dataset():
@@ -61,6 +62,18 @@ def test_score_future_sweeps_requires_a_whole_sweep_outside_training():
     dataset, anchors = _dataset()
 
     assert score_future_sweeps(dataset, anchors, training_sweep_ids=["heldout"]) is None
+
+
+def test_frozen_home_offsets_are_applied_once_without_modifying_validation_data():
+    dataset, anchors = _dataset()
+    offsets = [0.0, 0.0, 1.5]
+    raw = shift_dataset_home_offsets(dataset, -np.asarray(offsets))
+    before = copy.deepcopy(raw)
+    expected = score_future_sweeps(dataset, anchors, [])
+    corrected = score_future_sweeps(raw, anchors, [], home_offsets_mm=offsets)
+    assert corrected == pytest.approx(expected)
+    assert score_future_sweeps(raw, anchors, [])[0] > corrected[0]
+    assert raw == before
 
 
 def test_projected_validation_uses_projected_lengths_without_metadata():

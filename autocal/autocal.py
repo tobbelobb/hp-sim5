@@ -12,9 +12,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
-from autocal.calibrate import build_anchor_initial_guess
 from autocal.equal_strain import write_sensor_force_profile
-from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares
+from autocal.rough_bootstrap import MAX_EXTRA_ROUGH_SWEEPS, assess_rough_geometry, next_rough_sweep
 from autocal.history_selection import (
     HISTORY_CONSENSUS_MAX_SPREAD_MM,
     evaluate_history_candidates,
@@ -73,7 +72,8 @@ def full_auto_loop(
     patience: int,
     verbose: bool,
     low_anchor_z: Optional[float] = None,
-    fit_home_offsets: bool = False,
+    fit_home_offsets: bool = True,
+    equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -91,6 +91,9 @@ def full_auto_loop(
     else:
         dataset_path = Path("autocal/data/default_dataset.json")
     work_path = dataset_path
+    log_path = Path(full_auto_log) if full_auto_log is not None else _unique_path(
+        dataset_path.with_name(f"{dataset_path.stem}.full_auto_log.jsonl")
+    )
     text_log_path = _unique_path(dataset_path.with_name(f"{dataset_path.stem}.full_auto.log"))
     text_log_path.parent.mkdir(parents=True, exist_ok=True)
     text_log_path.write_text("", encoding="utf-8")
@@ -397,7 +400,8 @@ def full_auto_loop(
         finally:
             _stop_process(process)
 
-    if not dataset_path.exists():
+    collected_bootstrap = not dataset_path.exists()
+    if collected_bootstrap:
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
         bootstrap_cfg = dataset_path.with_suffix(".bootstrap_cfg.txt")
         bootstrap_sweep_count = _write_bootstrap_sweep_config(
@@ -460,48 +464,63 @@ def full_auto_loop(
         reset_pending = False
         _log_line(f"; bootstrap dataset written to {dataset_path}")
 
-        if str(machine_type) in ("hangprinter_3", "hangprinter_4"):
-            # The bootstrap sweeps give rough anchors. Those are enough to measure the same
-            # sweeps again at equal strain, and only that second set is kept for calibration.
+        if (equal_strain and str(machine_type) in ("hangprinter_3", "hangprinter_4")
+                and not (_spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode))):
             rough = _load_json(dataset_path)
-            rough_sweeps = dataset_sweep_configs(rough)
-            rough_anchors = fit_pose_least_squares(
-                rough,
-                build_anchor_initial_guess(rough, machine_type=str(machine_type), base_radii_mm=None,
-                                           low_anchor_z=low_anchor_z),
-                fit_home_offsets=False,
-                home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
-                low_anchor_z=low_anchor_z,
-                use_noise_mean=bool(use_noise_mean),
-            )["anchors"]
-            profile_path = dataset_path.with_suffix(".bootstrap_sensor_force_profile.json")
-            if write_sensor_force_profile(profile_path, rough, rough_anchors, rough_sweeps):
-                rough_path = dataset_path.with_suffix(".rough_bootstrap.json")
-                dataset_path.replace(rough_path)
-                force_args, _, _ = _inject_force_args(rough, argv_eff)
-                cmd = [
-                    "node",
-                    "autocal/control/cli/collect_sweep_data.mjs",
-                    "--machineType",
-                    str(machine_type),
-                    "--sweep-config-file",
-                    str(bootstrap_cfg),
-                    "--fixed-targets",
-                    _fixed_targets_spec(rough_sweeps[0]),
-                    "--sensor-force-profile",
-                    str(profile_path),
-                    "--output-file",
-                    str(dataset_path),
-                    *force_args,
-                ]
-                _log_line(f"; measuring the bootstrap sweeps again at equal strain (rough data kept in {rough_path}):")
+            checks = []
+            rough_path = dataset_path.with_suffix(".rough_bootstrap.json")
+            check_path = dataset_path.with_suffix(".rough_bootstrap_checks.json")
+            # Tune once; every subsequent collection shares the encoder origin and forces.
+            force_args, _, _ = _inject_force_args(rough, [arg for arg in argv_eff if arg != "--hp-sim-reset"])
+
+            def _collect_bootstrap_sweep(cfg, tag, *, profile=None):
+                cfg_path = dataset_path.with_suffix(f".{tag}.cfg.txt")
+                output_path = dataset_path.with_suffix(f".{tag}.json")
+                _write_sweep_config_file(cfg_path, cfg)
+                cmd = ["node", "autocal/control/cli/collect_sweep_data.mjs",
+                       "--machineType", str(machine_type), "--sweep-config-file", str(cfg_path),
+                       "--fixed-targets", _fixed_targets_spec(cfg), "--output-file", str(output_path),
+                       *force_args]
+                if profile is not None:
+                    cmd.extend(["--sensor-force-profile", str(profile)])
                 _log_line(";   " + " ".join(cmd))
                 with _log_context():
                     _run_collection_command(cmd)
-                equal_strain = _load_json(dataset_path)
-                merged = _merge_sweep_datasets(rough, equal_strain)
-                merged["sweeps"] = merged["sweeps"][len(rough_sweeps):]
-                _write_json(dataset_path, merged)
+                return _load_json(output_path)
+
+            try:
+                for extra in range(MAX_EXTRA_ROUGH_SWEEPS + 1):
+                    _write_json(rough_path, rough)
+                    rough_anchors, check = assess_rough_geometry(
+                        rough, low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+                    )
+                    checks.append(check)
+                    check_path.write_text(json.dumps({"checks": checks}, indent=2) + "\n", encoding="utf-8")
+                    _log_console(f"; rough bootstrap: {check}")
+                    if check["ready"]:
+                        break
+                    if extra == MAX_EXTRA_ROUGH_SWEEPS:
+                        raise ValueError(f"rough geometry is still unreliable after {len(rough['sweeps'])} sweeps")
+                    cfg = next_rough_sweep(rough, rough_anchors, low_anchor_z=low_anchor_z)
+                    added = _collect_bootstrap_sweep(cfg, f"rough_extra_{extra + 1}")
+                    rough = _merge_sweep_datasets(rough, added)
+                    _write_json(dataset_path, rough)
+                # Never mix rough constant-force observations with refined observations.
+                # Each sweep has its own fixed targets and matching force table.
+                refined = {**rough, "sweeps": []}
+                for index, cfg in enumerate(dataset_sweep_configs(rough), start=1):
+                    profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
+                    if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
+                        raise ValueError("missing M666 W/N/Y or tuned forces for equal-strain bootstrap")
+                    measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
+                    refined = _merge_sweep_datasets(refined, measured)
+                    _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
+                _write_json(dataset_path, refined)
+            except (ValueError, np.linalg.LinAlgError) as error:
+                _log_console(f"; equal-strain bootstrap stopped: {error}; rough data: {rough_path}; checks: {check_path}")
+                if headless_sim is not None:
+                    headless_sim.manifest["stop_reason"] = "unreliable-rough-bootstrap"
+                return _finalize(2)
 
     replay_mode = False
     replay_sweeps: List[dict] = []
@@ -510,7 +529,7 @@ def full_auto_loop(
     if dataset_path.exists():
         dataset_full = _load_json(dataset_path)
         sweeps_full = dataset_full.get("sweeps")
-        if isinstance(sweeps_full, list) and len(sweeps_full) > 3:
+        if not collected_bootstrap and isinstance(sweeps_full, list) and len(sweeps_full) > 3:
             replay_mode = True
             replay_work_path = dataset_path.with_suffix(".replay_tmp.json")
             work_path = replay_work_path
@@ -531,9 +550,6 @@ def full_auto_loop(
             )
 
     runs = _build_full_auto_runs(full_auto_runs)
-    log_path = Path(full_auto_log) if full_auto_log is not None else _unique_path(
-        dataset_path.with_name(f"{dataset_path.stem}.full_auto_log.jsonl")
-    )
     stop_file = _full_auto_stop_path(dataset_path)
     _append_jsonl(
         log_path,
@@ -590,6 +606,7 @@ def full_auto_loop(
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "low_anchor_z": (None if low_anchor_z is None else float(low_anchor_z)),
+        "fit_home_offsets": bool(fit_home_offsets),
     }
 
     best_cost = float("inf")
@@ -829,7 +846,8 @@ def full_auto_loop(
                     if settings.get("low_anchor_z") is None
                     else float(settings.get("low_anchor_z"))
                 ),
-                fit_home_offsets=bool(fit_home_offsets),
+                fit_home_offsets=bool(settings["fit_home_offsets"]),
+                equal_strain=bool(equal_strain),
                 candidate_count=int(candidate_count),
                 delta_min=delta_min,
                 delta_max=delta_max,
@@ -1378,6 +1396,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--headless-sim", action="store_true",
                         help='Collect in the headless production simulator; implies --sim')
     args = parser.parse_args(argv)
+    if args.project_zero_tension and not args.no_collect:
+        parser.error("--project-zero-tension collection was retired; use equal-strain collection with home-offset fitting. Historical projected datasets can still be replayed with --no-collect.")
     if args.extended_recording:
         if args.no_collect or not (args.sim or args.headless_sim):
             parser.error("--extended-recording requires simulated collection (--sim or --headless-sim)")
@@ -1407,6 +1427,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.dataset = Path("autocal/data/default_dataset.json")
     _apply_optimizer_mode_env(str(args.optimizer_mode))
     spool_opts = _resolve_spool_cli_options(parser, args)
+    if args.fit_home_offsets and any(_spool_mode_enabled(spool_opts[name]) for name in ("find_radii", "find_buildup_factor")):
+        parser.error("Home-offset and spool fitting are not jointly supported; use --no-fit-home-offsets with --find-radii or --find-buildup-factor")
     machine_type = _normalize_machine_type(str(args.machine_type))
     full_auto_runs = list(args.full_auto_run or [])
     if bool(args.shotgun):
@@ -1485,6 +1507,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
+        equal_strain=bool(args.equal_strain),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
         delta_max=args.delta_max,

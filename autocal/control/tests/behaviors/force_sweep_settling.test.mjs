@@ -109,11 +109,14 @@ test('sensor force follows the profile at every point of the sweep', async () =>
 });
 
 test('sensor force profile interpolates, holds its end values and must match the sweep direction', () => {
-  const profile = { drive_anchor: 1, sensor_anchor: 2, drive_mm: [-100, 0, 200], force_n: [1, 2, 4] };
+  const profile = { drive_anchor: 1, sensor_anchor: 2, fixed_anchors: [0, 3], fixed_lengths: [390, -100],
+    drive_mm: [-100, 0, 200], force_n: [1, 2, 4] };
   expect(sensorForceAt(profile, -500)).toBe(1);
   expect(sensorForceAt(profile, -50)).toBeCloseTo(1.5);
   expect(sensorForceAt(profile, 100)).toBeCloseTo(3);
   expect(sensorForceAt(profile, 900)).toBe(4);
-  expect(sensorForceProfileFor([profile], 1, 2)).toBe(profile);
-  expect(() => sensorForceProfileFor([profile], 2, 1)).toThrow('no entry for drive 2, sensor 1');
+  const otherHeight = { ...profile, fixed_lengths: [390, -200], force_n: [2, 3, 5] };
+  expect(sensorForceProfileFor([profile, otherHeight], 1, 2, [0, 3], [390, -200])).toBe(otherHeight);
+  expect(() => sensorForceProfileFor([profile], 2, 1, [0, 3], [390, -100])).toThrow('found 0');
+  expect(() => sensorForceProfileFor([profile, profile], 1, 2, [0, 3], [390, -100])).toThrow('found 2');
 });

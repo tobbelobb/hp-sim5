@@ -59,6 +59,7 @@ def evaluate_history_candidates(
                 np.asarray(candidate_plan.get("anchors"), dtype=float),
                 candidate.get("training_sweep_ids", ()),
                 spool_params=candidate_plan.get("spool_model_params"),
+                home_offsets_mm=candidate_plan.get("home_offsets_mm"),
                 prefer_zero_tension_angles=projected,
                 use_noise_mean=bool(settings.get("use_noise_mean", use_noise_mean)),
                 pointwise_residual_mode=str(

@@ -39,6 +39,26 @@ Autocal collects circular sweeps and fits anchor positions from their ellipse ge
 It chooses new sweeps by information gain. It can also fit spool radii and buildup.
 At final acceptance, it checks saved estimates against sweeps collected after their fit.
 
+On HP3/HP4, new runs use sweeps spread over height and a per-point sensor force
+profile computed from rough anchors, mover weight and strand counts. Before using
+those anchors to set forces, a two-start point fit must pass a local geometry
+check: full rank, at least 80% inliers, and at most 25 mm estimated parameter
+standard deviation using a 0.5 mm minimum line-error assumption. Weak geometry
+triggers additional constant-force sweeps, up to nine; failure stops collection
+and preserves `*.rough_bootstrap.json` and `*.rough_bootstrap_checks.json`.
+These are observability checks, not bounds on systematic mechanical errors.
+All rough sweeps are then measured again with the checked force profiles; only
+the profiled observations enter the refinement fit. Resuming constant-force data
+keeps constant-force collection so the two measurement models are never mixed.
+
+`--fit-home-offsets` is enabled by default. It estimates the non-translational
+home-length offsets with the independent point fitter before the ellipse fit.
+Both fitters remain active, with their anchors and difference logged each pass.
+Use `--no-fit-home-offsets` and `--no-equal-strain` for ablation comparisons.
+Joint spool/offset fitting is not implemented: spool searches require
+`--no-fit-home-offsets` and retain constant-force collection. Historical projected
+datasets remain replayable, but `--project-zero-tension` collection is retired.
+
 ## Everyday and research options
 
 Start with ordinary help for routine calibration:
@@ -125,7 +145,7 @@ Run complete simulated full-auto calibration without a browser:
 .venv/bin/python autocal/autocal.py \
   --headless-sim --machine-type hangprinter_3 \
   --dataset output/headless-trial/sweeps.json \
-  --find-radii global --base-radii 30 \
+  --no-fit-home-offsets --find-radii global --base-radii 30 \
   --buildup-factor 0.636619 --r0-bounds 39,40
 ```
 

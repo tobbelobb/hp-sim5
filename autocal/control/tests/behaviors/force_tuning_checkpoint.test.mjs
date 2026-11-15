@@ -118,7 +118,7 @@ test('final dataset records recovered forces while checkpoint retains the earlie
   }
 });
 
-test.each([false, true])('final dataset records projection mode %s', async projected => {
+test('final dataset records unprojected collection', async () => {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'projection-mode-'));
   const outputFile = path.join(directory, 'sweeps.json');
   tuneForce.mockResolvedValue({ forceLow: .0124, forceMid: .248, forceMax: 2.61 });
@@ -127,9 +127,9 @@ test.each([false, true])('final dataset records projection mode %s', async proje
     dataPoints: [{ l_drive: 1, l_sensor: 2 }], recoveries: [],
   });
   try {
-    await interruptedCollection(outputFile, { fixedTargets: '0,0', projectZeroTension: projected }, false);
+    await interruptedCollection(outputFile, { fixedTargets: '0,0' }, false);
     const dataset = JSON.parse(readFileSync(outputFile, 'utf8'));
-    expect(dataset.config.noise_model.project_zero_tension).toBe(projected);
+    expect(dataset.config.noise_model.project_zero_tension).toBe(false);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

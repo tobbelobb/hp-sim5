@@ -36,8 +36,8 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);
   });
 
-  test('--project-zero-tension enables zero-tension projection', () => {
-    expect(parseBridgeArgs(['--project-zero-tension']).projectZeroTension).toBe(true);
+  test('rejects retired zero-tension collection', () => {
+    expect(() => parseBridgeArgs(['--project-zero-tension'])).toThrow('retired');
   });
 
   test('machine aliases select their own config in both layering modes', () => {

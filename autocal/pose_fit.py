@@ -99,6 +99,8 @@ def fit_pose_least_squares(
     machine_type = str(dataset["machine_type"])
     num_anchors, dimensions = int(dataset["num_anchors"]), int(dataset["dimensions"])
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
+    if not lengths.size or not np.all(np.isfinite(lengths)):
+        raise ValueError("Point fit requires finite measurements on at least one point")
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
 
@@ -123,9 +125,10 @@ def fit_pose_least_squares(
               np.concatenate([anchor_ub, np.full(num_offsets, np.inf)]))
 
     def solve(start_anchors: np.ndarray):
+        anchor_start = ((anchor_lb + anchor_ub) / 2.0 if start_anchors is None else
+                        anchors_matrix_to_opt_vec(np.asarray(start_anchors, dtype=float), machine_type, low_anchor_z))
         start = np.concatenate([
-            np.clip(anchors_matrix_to_opt_vec(np.asarray(start_anchors, dtype=float), machine_type, low_anchor_z),
-                    anchor_lb, anchor_ub),
+            np.clip(anchor_start, anchor_lb, anchor_ub),
             np.zeros(num_offsets),
         ])
         x_scale = np.concatenate([np.full(start.size - num_offsets, 100.0), np.ones(num_offsets)])
@@ -137,7 +140,14 @@ def fit_pose_least_squares(
                              bounds=bounds, x_scale=x_scale, loss="cauchy", f_scale=3.0 * scale, xtol=1e-12, ftol=1e-12), scale
 
     solutions = [solve(start) for start in [initial_anchors, *extra_initial_anchors]]
-    best, scale = min(solutions, key=lambda solution: solution[0].cost)
+    # Starts can estimate different scales. Compare them with one common Cauchy
+    # objective, rather than rewarding a solution for choosing a smaller scale.
+    scale = min(solution[1] for solution in solutions)
+    def common_cost(solution):
+        values = residuals(solution[0].x, scale / home_offset_prior_sigma_mm)
+        return float(np.sum(np.log1p((values / (3.0 * scale)) ** 2)))
+    converged = [solution for solution in solutions if solution[0].success]
+    best, _ = min(converged or solutions, key=common_cost)
     anchors, offsets = unpack(best.x)
     per_point = np.linalg.norm(best.fun[: lengths.size].reshape(lengths.shape), axis=1)
     return {
@@ -148,6 +158,9 @@ def fit_pose_least_squares(
         "point_residuals_mm": per_point,
         "num_points": int(lengths.shape[0]),
         "fit_home_offsets": bool(fit_home_offsets),
+        "success": bool(best.success),
+        "status": int(best.status),
+        "message": str(best.message),
     }
 
 
