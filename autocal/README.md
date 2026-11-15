@@ -46,6 +46,10 @@ check: full rank, at least 80% inliers, and at most 25 mm estimated parameter
 standard deviation using a 0.5 mm minimum line-error assumption. Weak geometry
 triggers additional constant-force sweeps, up to nine; failure stops collection
 and preserves `*.rough_bootstrap.json` and `*.rough_bootstrap_checks.json`.
+An atomic `*.bootstrap_state.json` marker prevents a restarted command from
+using incomplete rough or remeasured data. After interruption or rejection, use
+a fresh dataset path after reestablishing the encoder origin; partial evidence
+is retained. A complete profiled run can continue only with valid force inputs.
 These are observability checks, not bounds on systematic mechanical errors.
 All rough sweeps are then measured again with the checked force profiles; only
 the profiled observations enter the refinement fit. Resuming constant-force data
@@ -58,6 +62,25 @@ Use `--no-fit-home-offsets` and `--no-equal-strain` for ablation comparisons.
 Joint spool/offset fitting is not implemented: spool searches require
 `--no-fit-home-offsets` and retain constant-force collection. Historical projected
 datasets remain replayable, but `--project-zero-tension` collection is retired.
+
+For full simulation sanity checks, run `python -m autocal.tools.sanity_battery
+OUTPUT --machine hangprinter_3` with `.venv/bin/python`. Use `--stiffness 12000`
+or `--scene public/usd_scenes/hp4_worn_bearings.usda` for controlled variants.
+It retains provenance and both absolute and translation-aligned anchor errors,
+and fails unless normal completion meets `--max-error-mm` (default 1 mm).
+The reference is the initial firmware geometry; a changed-geometry scene needs
+an independently verified reference.
+
+For fast same-data comparisons, use `python -m autocal.tools.compare_fit_replays
+FIT_STAGE OUTPUT OPTIONS.json... --reference-m669 REFERENCE.txt --joint`.
+Each options file is an explicit JSON override such as
+`{"fit_home_offsets":false}` or `{"fit_home_offsets":true}`. Results include
+the ellipse fit and production point fit; `--joint` additionally fits raw data
+with its own offsets and explicit position variables. It shares neither the
+ellipse's length-offset estimates nor its filtering, and is an offline baseline,
+not a replacement for production sweep rejection. Frozen historical log
+regressions remain in `tools/regress_calibration_logs.py` with their original
+no-offset model; matching those references alone does not establish accuracy.
 
 ## Everyday and research options
 

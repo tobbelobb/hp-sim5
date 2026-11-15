@@ -7,6 +7,9 @@ import sys
 
 from autocal.tools.sanity_battery import anchor_errors
 from autocal.stage_artifacts import read_stage_artifact
+from autocal.calibrate import build_anchor_initial_guess
+from autocal.tools.joint_pose_baseline import fit_joint_ranges
+from autocal.projection_mode import resolve_projection_mode
 
 
 def main():
@@ -15,6 +18,8 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('options', type=Path, nargs='+', help='JSON option objects; one per fit')
     parser.add_argument('--reference-m669', type=Path, help='Reference M669 anchors in millimetres')
+    parser.add_argument('--joint', action='store_true',
+                        help='Also fit raw observations with independent joint anchor/offset/position least squares (Hangprinter)')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     summary = []
@@ -26,11 +31,22 @@ def main():
         (args.output / f'fit-{index}.log').write_text(result.stdout + result.stderr)
         row = {'options': json.loads(options.read_text()), 'command': command, 'exit_code': result.returncode}
         if result.returncode == 0:
-            fit = read_stage_artifact(target)['payload']['fit']
+            replay = read_stage_artifact(target)['payload']
+            fit = replay['fit']
             row.update(anchors=fit['anchors'].tolist(), cost_noise_normalized=fit.get('cost_noise_normalized'),
                        home_offsets_mm=fit['home_offsets_mm'].tolist(),
                        pose_fit_anchors=fit['pose_fit']['anchors'].tolist(),
                        pose_fit_rms_mm=fit['pose_fit']['rms_mm'])
+            if args.joint:
+                seed = build_anchor_initial_guess(fit['dataset'], low_anchor_z=fit['dataset'].get('_low_anchor_z'))
+                joint = fit_joint_ranges(
+                    fit['dataset'], fit['anchors'] if seed is None else seed,
+                    fit_home_offsets=fit['home_offsets_fitted'],
+                    use_noise_mean=bool(replay['fit_options'].get('use_noise_mean', True))
+                                   and resolve_projection_mode(fit['dataset']) is not True,
+                )
+                row['joint_fit'] = {key: value.tolist() if hasattr(value, 'tolist') else value
+                                    for key, value in joint.items()}
             if args.reference_m669:
                 anchors = fit['anchors']
                 m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
@@ -39,9 +55,13 @@ def main():
                 pose_m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
                                     for name, anchor in zip('ABCD', fit['pose_fit']['anchors']))
                 row['pose_fit_errors'] = anchor_errors(args.reference_m669.read_text(), pose_m669)
+                if args.joint:
+                    joint_m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
+                                         for name, anchor in zip('ABCD', joint['anchors']))
+                    row['joint_fit_errors'] = anchor_errors(args.reference_m669.read_text(), joint_m669)
         summary.append(row)
     (args.output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
-    return int(any(row['exit_code'] for row in summary))
+    return int(any(row['exit_code'] or row.get('joint_fit', {}).get('success') is False for row in summary))
 
 
 if __name__ == '__main__':
