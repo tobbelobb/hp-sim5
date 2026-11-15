@@ -6,9 +6,21 @@
     "availability": "local Git-ignored file only; no off-host copy established"
   },
   {
+    "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-stateful/sweeps.headless/events.jsonl",
+    "bytes": 159643382,
+    "sha256": "883ad4da1d3023743e0e137b83a536ee2a76d492be044fd77fc5326515c7a1bb",
+    "availability": "local Git-ignored file only; no off-host copy established"
+  },
+  {
     "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-adaptive-1/sweeps.headless/events.jsonl",
     "bytes": 73433548,
     "sha256": "b3662efdae157cbc92b6a742030ea1f8b684f56186c1e54bdeefd2ff3fc9d471",
+    "availability": "local Git-ignored file only; no off-host copy established"
+  },
+  {
+    "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-final/sweeps.headless/events.jsonl",
+    "bytes": 159619016,
+    "sha256": "ff0844c199e9cdeda910eb7659dfa50d22f31767ba5c6aecf6be2a286bb2d2e3",
     "availability": "local Git-ignored file only; no off-host copy established"
   }
 ]

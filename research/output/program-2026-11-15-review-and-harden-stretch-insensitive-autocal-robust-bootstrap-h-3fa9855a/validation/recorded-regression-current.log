@@ -1,0 +1,56 @@
+
+========= seventh_hp3_dataset =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=2 score_selected_iter=2 physical_best_iter=3 selected_anchor_error_sum_mm=257.599 selected_radius_error_sum_mm=0.738 selection_regret_mm=100.737 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.000 [equal], true_gen_iter_std=2421.637 (n=5)
+Calibration summary:
+  metric           | ref     | gen     | delta(gen-ref) | verdict
+  -----------------+---------+---------+----------------+--------
+  param_total      | -       | -       | 0.000          | exact  
+  param_anchors    | -       | -       | 0.000          | -      
+  param_R*2π       | -       | -       | 0.000          | -      
+  fit_score_ui     | 25.020  | 25.020  | 0.000          | equal  
+  true_err_total   | 202.047 | 202.047 | 0.000          | equal  
+  true_err_anchors | 197.410 | 197.410 | 0.000          | -      
+  true_err_R*2π    | 4.637   | 4.637   | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=5 gen=5
+COLLECTION: sweeps ref=7 gen=7 saved=0; points ref=140 gen=140 saved=0
+ITERATIONS: worst_param_delta_total=0.000 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/seventh_hp3_dataset_e09339d5/seventh_hp3_dataset.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/seventh_hp3_dataset.full_auto_reference_run_october_15_2_2026.log
+
+========= hp4_no_buildup_Oct_16_2026_4x_substepping =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=2 score_selected_iter=3 physical_best_iter=4 selected_anchor_error_sum_mm=25.320 selected_radius_error_sum_mm=0.000 selection_regret_mm=11.923 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.000 [equal], true_gen_iter_std=2007.706 (n=4)
+Calibration summary:
+  metric           | ref    | gen    | delta(gen-ref) | verdict
+  -----------------+--------+--------+----------------+--------
+  param_total      | -      | -      | 0.000          | exact  
+  param_anchors    | -      | -      | 0.000          | -      
+  param_R*2π       | -      | -      | 0.000          | -      
+  fit_score_ui     | 0.403  | 0.403  | 0.000          | equal  
+  true_err_total   | 25.320 | 25.320 | 0.000          | equal  
+  true_err_anchors | 25.320 | 25.320 | 0.000          | -      
+  true_err_R*2π    | 0.000  | 0.000  | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=4 gen=4
+COLLECTION: sweeps ref=6 gen=6 saved=0; points ref=120 gen=120 saved=0
+ITERATIONS: worst_param_delta_total=0.000 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/hp4_no_buildup_Oct_16_2026_4x_substepping_b1fc0e60/hp4_no_buildup_Oct_16_2026_4x_substepping.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/hp4_no_buildup_Oct_16_2026_4x_substepping.full_auto_reference_run_october_16_2026.log
+
+RUN_TRACKER: true_err_total delta(gen-ref) and true_iter mean delta by dataset
+  dataset                                   | delta(gen-ref) | verdict | true_iter_mean_delta | true_gen_std | n_true_gen
+  ------------------------------------------+----------------+---------+----------------------+--------------+-----------
+  hp4_no_buildup_Oct_16_2026_4x_substepping | 0.000          | equal   | 0.000                | 2007.706     | 4         
+  seventh_hp3_dataset                       | 0.000          | equal   | 0.000                | 2421.637     | 5         
+RUN_TRACKER: sum_true_err_total_delta(gen-ref)=0.000 over 2 datasets [equal]
+RUN_TRACKER: final_score=0.000 (sum_true_err_total_delta + sum_true_mean_delta, sum_true_mean_delta=0.000) [diagnostic only; does not establish selected calibration improvement]
+COLLECTION_TOTAL: sweeps ref=13 gen=13 saved=0 (2 datasets)
+COLLECTION_TOTAL: points ref=260 gen=260 saved=0 (2 datasets)
+
+ALL DATASETS: PASS

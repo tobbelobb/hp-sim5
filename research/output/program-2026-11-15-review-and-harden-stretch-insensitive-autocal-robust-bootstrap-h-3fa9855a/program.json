@@ -22,6 +22,16 @@
       "id": "session-2026-11-15-independently-review-the-combined-autocal-hardening-candidate-fo-ec4f1013",
       "question": "Independently review the combined autocal hardening candidate for bootstrap, profile selection, offset propagation, ablation correctness and guarded home compensation; reproduce decisive checks and identify regressions.",
       "directory": "session-2026-11-15-independently-review-the-combined-autocal-hardening-candidate-fo-ec4f1013"
+    },
+    {
+      "id": "session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091",
+      "question": "Evaluate the hardened candidate on full HP3/HP4 compliance and bearing variants, and paired same-data fitter/offset/filtering ablations including deterministic noise stress.",
+      "directory": "session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091"
+    },
+    {
+      "id": "session-2026-11-15-review-fixes-to-bootstrap-restart-refusal-measurement-model-puri-8dda2804",
+      "question": "Review fixes to bootstrap restart refusal, measurement-model purity and historical projection handling, and the independent joint range benchmark against the prior review findings.",
+      "directory": "session-2026-11-15-review-fixes-to-bootstrap-restart-refusal-measurement-model-puri-8dda2804"
     }
   ]
 }

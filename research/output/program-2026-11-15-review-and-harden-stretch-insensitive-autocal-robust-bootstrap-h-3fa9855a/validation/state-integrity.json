@@ -1,0 +1,18 @@
+[
+  {
+    "case": "real profiled bootstrap prefix",
+    "error": null
+  },
+  {
+    "case": "full real data after adaptive extension",
+    "error": null
+  },
+  {
+    "case": "bootstrap point replaced",
+    "rejected": true
+  },
+  {
+    "case": "malformed completed dataset",
+    "rejected": true
+  }
+]

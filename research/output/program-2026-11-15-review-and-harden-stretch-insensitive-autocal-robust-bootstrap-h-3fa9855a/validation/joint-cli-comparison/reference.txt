@@ -1,0 +1,6 @@
+Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm
+A:0.00, -1900.00, -280.00
+B:1645.45, 950.00, -280.00
+C:-1645.45, 950.00, -280.00
+D:0.00, 0.00, 1900.00
+P:Print radius: 1500.0
