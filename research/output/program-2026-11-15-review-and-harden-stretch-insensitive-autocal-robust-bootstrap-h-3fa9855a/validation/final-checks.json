@@ -1,0 +1,34 @@
+{
+  "code_revision": "60efc291",
+  "python": {
+    "command": ".venv/bin/python -m pytest -q autocal/tests tests/python research-program/tests",
+    "passed": 645,
+    "deselected": 73,
+    "elapsed_s": 23.29,
+    "exit_code": 0
+  },
+  "collector": {
+    "passed": 126,
+    "scope": "separate collector suite before final Python-only fixes; source unchanged afterward"
+  },
+  "separate_evidence": [
+    "interrupted-bootstrap-pytest.log",
+    "recorded-regression-current.log"
+  ],
+  "limits": [
+    "Quick suite excludes slow/heavy tests.",
+    "Full simulation evidence uses the separately recorded frozen revisions; no new physics run is claimed at 60efc291."
+  ],
+  "terminal_owned_services": {
+    "recorded_pids": [
+      157436,
+      157440,
+      151501,
+      151505,
+      151514,
+      151518
+    ],
+    "remaining_at_final_check": [],
+    "check": "ps -p recorded_pids -o pid=,comm="
+  }
+}

@@ -6,6 +6,8 @@ One result sentence per session; follow the report for evidence.
 
 - [program-0a82df7fd4b34b8181716630492a1af4](program-0a82df7fd4b34b8181716630492a1af4/report.md) — No result summary available.
 
+- [Autocal hardening and robustness](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/report.md) — No result summary available.
+
 - [program-7aa80aa18f10499e85cb24ffeae712cb](program-7aa80aa18f10499e85cb24ffeae712cb/report.md) — No result summary available.
 
 - [program-d71e9395e72e43db97d4e21c0d052f51](program-d71e9395e72e43db97d4e21c0d052f51/report.md) — No result summary available.
@@ -156,7 +158,21 @@ One result sentence per session; follow the report for evidence.
 
 - [Hangprinter simulator UI and rendering review](session-2026-11-12-you-are-a-reviewer-do-not-modify-any-files-in-the-repository-exc-f163f8ce/report.md) — The review found toolbar overflow, floor occlusion risk and a rendering-resource leak, while all 102 UI-related JavaScript tests passed; see the report.
 
+- [HP3/HP4 production autocal sanity battery](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/report.md) — In deterministic simulated production-path trials, nominal HP3 reproduced 1.37 mm worst-coordinate error, while halving cable stiffness led to 9.98 mm error despite a 1.36 quality score; the report preserves the comparisons, remaining HP4 cases, and limitations.
+
+- [Final home shift and flex reference](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-determine-and-implement-physically-justified-final-home-shift-co-fc8f5233/report.md) — No result summary available.
+
+- [Frozen candidate full-path and paired-fit evaluation](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/report.md) — Four simulated production runs stopped normally but exceeded 1 mm, with rough-stage and final-selection counterexamples; see report.
+
+- [Independent review of combined autocal hardening](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-the-combined-autocal-hardening-candidate-fo-ec4f1013/report.md) — The review finds bootstrap restart and measurement-model recovery gaps and no evidence yet of a robust accuracy improvement or independently validated physical home correction.
+
+- [Independent review of the terminal-validation pilot](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-the-default-off-terminal-validation-pilot-f-8b45b54e/report.md) — At `a2f47d14`, the frozen common-sweep scorer works in bounded synthetic checks, but command overrides, stop handling, firmware application and artifact integrity defects block treating the pilot as a safe validated-model application path; see the review and evidence.
+
+- [Targeted review of bootstrap fixes and joint baseline](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-fixes-to-bootstrap-restart-refusal-measurement-model-puri-8dda2804/report.md) — The review confirms the ordinary restart, model-purity and historical-marker fixes but finds that a complete marker allows malformed data past the pre-simulation guard; the joint baseline's local convergence does not establish accuracy.
+
 - [Production pose, planning and force integration review](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-production-integration-of-pose-fit-information-planning-a-84abd4be/report.md) — A synthetic independent review found a force-profile lookup collision and showed that direct reuse of the HP3 reachability and fixed-circle models fails for representative four-high and cube layouts; see the report for scope, other integration concerns and rollout plan.
+
+- [Common terminal validation pilot](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/report.md) — No result summary available.
 
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 

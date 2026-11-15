@@ -1,0 +1,20 @@
+{
+  "command": [
+    "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+    "-m",
+    "autocal.autocal",
+    "--headless-sim",
+    "--machine-type",
+    "hangprinter_3",
+    "--dataset",
+    "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/evidence/hp3-soft/sweeps.json",
+    "--recording-mode",
+    "none",
+    "--max-steps",
+    "20",
+    "--terminal-validation"
+  ],
+  "source_scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3.usda",
+  "scene_override": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/evidence/hp3-soft/input-scene.usda",
+  "stiffness": 10000.0
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "case": "hp3",
+    "revision": "a2f47d14fa183337bd0b9242dd1fc91e76d3f25b",
+    "normal_completion": true,
+    "accuracy_gate_passed": false,
+    "original_error_mm": 1.6800000000000637,
+    "applied_error_mm": 1.9100000000000819,
+    "applied_aligned_error_mm": 1.7900000000000886,
+    "original_prediction_score": 1.4767293593968434,
+    "selected_prediction_score": 1.3514479379812347,
+    "selected_iteration": 3,
+    "selected_run": "default.warm",
+    "training_points": 160,
+    "validation_points": 20
+  },
+  {
+    "case": "hp3-soft",
+    "revision": "a2f47d14fa183337bd0b9242dd1fc91e76d3f25b",
+    "normal_completion": true,
+    "accuracy_gate_passed": false,
+    "original_error_mm": 4.599999999999909,
+    "applied_error_mm": 4.599999999999909,
+    "applied_aligned_error_mm": 2.159999999999984,
+    "original_prediction_score": 2.1314976235112475,
+    "selected_prediction_score": 2.1314976235112475,
+    "selected_iteration": 3,
+    "selected_run": "default.warm",
+    "training_points": 160,
+    "validation_points": 20
+  },
+  {
+    "case": "hp4",
+    "revision": "a2f47d14fa183337bd0b9242dd1fc91e76d3f25b",
+    "normal_completion": true,
+    "accuracy_gate_passed": false,
+    "original_error_mm": 4.819999999999936,
+    "applied_error_mm": 4.329999999999927,
+    "applied_aligned_error_mm": 2.6099999999999284,
+    "original_prediction_score": 0.5652401768258233,
+    "selected_prediction_score": 0.5253217429247146,
+    "selected_iteration": 2,
+    "selected_run": "default",
+    "training_points": 160,
+    "validation_points": 20
+  }
+]

@@ -1,20 +1,25 @@
 # Autocal hardening and robustness
 
-## Current understanding
+## Completed scope
 
-Reviewed commits `1254e..5f718` and the original Fable conversation. The reported 1.4 mm result is one full HP3 simulation, not a robustness bound. Independent review found an incorrect profile lookup key and invalid assumptions for extending the Hangprinter reachability and circle models to four-high and cube layouts. See the layout investigation report in this program.
+Reviewed `1254e..5f718` and the Fable conversation; implemented default offsets, checked/adaptive rough collection, model-purity/restart protections, correct profile lookup and offset-aware held-out predictions. Retired new zero-tension collection. Independent reviews and focused regressions are preserved in the program investigations.
 
-The parent implementation enables home offsets with an explicit off switch, preserves candidate-specific offsets in held-out validation, and retires zero-tension collection while keeping historical replay. Rough geometry now requires two-start agreement, convergence, full rank and <=25 mm estimated parameter standard deviation with a conservative 0.5 mm line-error floor. It collects more informative rough sweeps or stops after nine extras. This is a local statistical check, not a guarantee against arbitrary systematic bias. On historical c1 prefixes, three sweeps fail at 76 mm and four pass at 22 mm.
+Built full simulator and recorded-data comparison tools. Baseline and hardened batteries cover nominal HP3/HP4, two softer HP3 variants and worn HP4 bearings. Same-data arms compare offsets/filtering and both production fitters; a separate joint-range least-squares baseline fits its own offsets and point positions. Seeded recorded-length corruption is covered. Full simulated encoder noise and hardware are not covered.
 
-The home investigation established a translation gauge and existing absolute firmware flex correction. It implemented correction only with independent extension evidence; current collection does not provide that evidence. Configured stiffness alone cannot justify automatic physical-home translation.
+Home correction is implemented only for independently justified extension evidence. Ordinary collection has no such reference and therefore does not apply it. The four-high/cube pilot establishes concrete model blockers and a staged extension plan.
 
-## Open questions and alternatives
+## Findings that change the next decision
 
-- Does the checked rough pass improve end-to-end accuracy and remain useful across HP3, HP4, worn bearings and modest compliance/noise variation?
-- How much do ellipse filtering, independent point fitting, offsets and force profiles help on the same observed data? Preserve failures and compare absolute and translation-aligned errors.
-- Can home extension evidence be measured cheaply without relying on nominal stiffness? Avoid adding an unidentifiable translation to ordinary results.
-- Four-high needs gravity-supported nonnegative equilibrium and branch handling. Cube corners needs an active/slack set, all fixed constraints and multi-dimensional tension allocation. The HP3 predictor cannot simply be enabled there.
+Accuracy remains uneven: the hardened cases range from 1.68 to 4.82 mm worst coordinate error, all above the 1 mm gate. Half-stiffness HP3 improves relative to the earlier trial, while nominal HP3 and worn HP4 worsen. Different collection costs prevent attribution to one intervention. Offsets clearly help one common multi-height recording but harmed old single-height data. Filtering can lower cost while worsening geometry.
 
-## Next decision
+The rough gate can accept estimates about 25 mm from truth. It checks local observability and convergence for planning, not systematic physical bias. Independent joint least squares retains substantial errors on problematic recordings; solver replacement alone has not removed them.
 
-Finish production simulator comparisons on the combined candidate, inspect failures, and obtain fresh review before claiming an accuracy improvement. Keep the scope of synthetic and hardware evidence separate. Parent owns integration and topic synthesis; researchers own their reports and small evidence. No hardware validity is claimed.
+A bounded terminal-validation pilot collected one fresh sweep without refitting. It worsened nominal HP3, left soft HP3 unchanged and modestly improved HP4. Independent review found live application defects. The live option was removed; the negative evidence and offline scorer/replay remain. Shared alias, write and interrupt issues were fixed.
+
+## Open research beyond this delivery
+
+- Establish which force tracking, compliance and observation-model errors explain the remaining shape bias, with paired collection budgets and repeated/noise trials.
+- Measure an independent compatible home reference without double-counting existing firmware flex compensation.
+- Before new-method four-high support, solve affine gravity equilibrium with nonnegative tensions and branch/gauge tests. Before cube support, enforce all fixed-length constraints with active/slack sets and bounded multidimensional tension allocation.
+
+No live investigation or simulator job remains pending. The canonical report and topic synthesis distinguish implemented checks, observed benefits, counterexamples and unvalidated physical behavior.

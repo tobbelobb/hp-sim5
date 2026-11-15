@@ -37,6 +37,11 @@
       "id": "session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3",
       "question": "Test one bounded terminal-validation sweep that compares frozen final autocal candidates on common fresh data, without refitting the held-out sweep; determine whether it reduces observed final-selection regret.",
       "directory": "session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3"
+    },
+    {
+      "id": "session-2026-11-15-independently-review-the-default-off-terminal-validation-pilot-f-8b45b54e",
+      "question": "Independently review the default-off terminal validation pilot for frozen common data, stopping and failure semantics, and offline replay correctness.",
+      "directory": "session-2026-11-15-independently-review-the-default-off-terminal-validation-pilot-f-8b45b54e"
     }
   ]
 }

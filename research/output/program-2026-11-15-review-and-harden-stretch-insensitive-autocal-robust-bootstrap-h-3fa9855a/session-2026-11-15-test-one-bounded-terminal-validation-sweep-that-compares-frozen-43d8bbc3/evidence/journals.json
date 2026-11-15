@@ -1,0 +1,20 @@
+[
+  {
+    "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/evidence/hp4/sweeps.headless/events.jsonl",
+    "bytes": 176534140,
+    "sha256": "976861577c8c927c46f1321fdea6dd828586ee1f25d67c153fffafac3038a13d",
+    "availability": "local Git-ignored journal only; no off-host backup"
+  },
+  {
+    "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/evidence/hp3-soft/sweeps.headless/events.jsonl",
+    "bytes": 152023136,
+    "sha256": "fbf56a058589a6d3b73e8dc89a0337584ee1d7984bb4025533b94673f7e9e435",
+    "availability": "local Git-ignored journal only; no off-host backup"
+  },
+  {
+    "path": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/evidence/hp3/sweeps.headless/events.jsonl",
+    "bytes": 167772215,
+    "sha256": "d5d7da38b6157db98db719a4cba2b3ab59d799c36c1dc738adde37d533e9fa0e",
+    "availability": "local Git-ignored journal only; no off-host backup"
+  }
+]
