@@ -1,9 +1,9 @@
-import { performForceSweep } from '../../behaviors/sweep_data_collection.mjs';
+import { performForceSweep, sensorForceAt, sensorForceProfileFor } from '../../behaviors/sweep_data_collection.mjs';
 import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primitives/uncalibrated_actions.mjs';
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null } = {}) {
   let now = 0;
   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
   let preparing = preparationDrift;
@@ -43,7 +43,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     forceLow: .01, forceMid: .23, forceMax: 2.4, fixedAnchors: [0, 3], fixedTargets: [0, 0],
     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
-    onPoint: point => points.push(point),
+    onPoint: point => points.push(point), sensorForceProfile,
   });
   return { run, commands, points };
 }
@@ -91,4 +91,29 @@ test('does not recover stalled simulation advances', async () => {
   const trial = movingPullout({ stalled: true });
   await expect(trial.run()).rejects.toThrow('Simulation advance stalled');
   expect(trial.points).toHaveLength(0);
+});
+
+test('sensor force follows the profile at every point of the sweep', async () => {
+  const profile = { drive_anchor: 1, sensor_anchor: 2, drive_mm: [0, 600], force_n: [1, 3] };
+  const trial = movingPullout({ sensorForceProfile: profile });
+  const result = await trial.run();
+  const forces = result.dataPoints.map(point => point.sensor_force_n);
+  expect(forces).toEqual(result.dataPoints.map(point => sensorForceAt(profile, point.drive_setpoint_mm)));
+  expect(new Set(forces).size).toBe(2);
+  for (const point of result.dataPoints) {
+    const applied = trial.commands.filter(command => command.line.startsWith('M569.4')
+      && Math.abs(Number(command.line.split(' T')[1].split(':')[2]) - point.sensor_force_n) < 1e-9);
+    expect(applied.length).toBeGreaterThan(0);
+    expect(applied[0].now).toBeLessThan(point.timestamp_ms);
+  }
+});
+
+test('sensor force profile interpolates, holds its end values and must match the sweep direction', () => {
+  const profile = { drive_anchor: 1, sensor_anchor: 2, drive_mm: [-100, 0, 200], force_n: [1, 2, 4] };
+  expect(sensorForceAt(profile, -500)).toBe(1);
+  expect(sensorForceAt(profile, -50)).toBeCloseTo(1.5);
+  expect(sensorForceAt(profile, 100)).toBeCloseTo(3);
+  expect(sensorForceAt(profile, 900)).toBe(4);
+  expect(sensorForceProfileFor([profile], 1, 2)).toBe(profile);
+  expect(() => sensorForceProfileFor([profile], 2, 1)).toThrow('no entry for drive 2, sensor 1');
 });

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.filter_pass import estimate_effective_radii_with_spool_model
+from autocal.equal_strain import is_equal_strain
 from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets
 from autocal.projection_mode import resolve_projection_mode
 
@@ -336,7 +337,8 @@ def fit_ellipse_dataset(
         }
     else:
         anchor_initial_guess = _resolve_anchor_seed(None)
-        if fit_home_offsets:
+        # Equal-strain data turns the stretch into a home length offset, which must then be fitted.
+        if fit_home_offsets or is_equal_strain(dataset):
             home_offsets_mm = fit_pose_least_squares(
                 dataset,
                 anchor_initial_guess,

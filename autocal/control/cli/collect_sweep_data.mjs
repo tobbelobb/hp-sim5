@@ -216,6 +216,7 @@ export function parseBridgeArgs(argv) {
     maxTravelMm: null,
     sensorForce: null,
     sensorCollectionForce: null,
+    sensorForceProfile: null,
     forceLow: null,
     forceMid: null,
     forceMax: null,
@@ -336,6 +337,8 @@ export function parseBridgeArgs(argv) {
       args.sensorForce = argv[++i] || null;
     } else if (arg === '--sensor-collection-force' || arg === '--sensorCollectionForce') {
       args.sensorCollectionForce = argv[++i] || null;
+    } else if (arg === '--sensor-force-profile') {
+      args.sensorForceProfile = argv[++i] || null;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
     } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
@@ -424,6 +427,9 @@ Options:
   --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
   --sensor-collection-force <N>
                               measurement preload force for sensor anchors
+  --sensor-force-profile <file>
+                              JSON table of sensor force against drive length change;
+                              replaces the constant measurement force at every point
   --sim, --simulation        Enable simulation mode (autostarts Klippy in --firmware klipper)
   --preserve-buildup-factor  Keep current M666 Q (default behavior when no Q override is provided)
   --force-buildup-factor <k> Force M666 Q to this value before collection

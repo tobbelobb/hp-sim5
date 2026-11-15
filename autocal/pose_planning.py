@@ -19,7 +19,7 @@ from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix
 _CIRCLE_SAMPLES = 360
 # A position counts as reachable while each of the sweep's lines carries at least
 # this share of the largest pretension. 0.25 reproduces where recorded HP3 sweeps turn.
-_MIN_PRETENSION_SHARE = 0.25
+SWEEP_PRETENSION_SHARE = 0.25
 _FD_STEP_MM = 0.5
 
 
@@ -47,7 +47,9 @@ def _fixed_length_circle(anchors: np.ndarray, cfg: SweepConfig) -> np.ndarray:
             + np.sqrt(radius_squared) * (np.cos(angles)[:, None] * first + np.sin(angles)[:, None] * second))
 
 
-def predict_sweep_positions(anchors: np.ndarray, cfg: SweepConfig, points: int) -> np.ndarray:
+def predict_sweep_positions(
+    anchors: np.ndarray, cfg: SweepConfig, points: int, min_pretension_share: float,
+) -> np.ndarray:
     """Effector positions a sweep would visit: where its fixed, drive and sensor lines can all pull."""
     anchors = np.asarray(anchors, dtype=float)
     curve = _fixed_length_circle(anchors, cfg)
@@ -59,7 +61,7 @@ def predict_sweep_positions(anchors: np.ndarray, cfg: SweepConfig, points: int) 
     # The pretension is the one combination of line pulls that cancels out.
     pretension = np.linalg.svd(np.transpose(directions, (0, 2, 1)))[2][:, -1, :]
     pretension *= np.sign(np.sum(pretension, axis=1))[:, None]
-    reachable = np.min(pretension, axis=1) > _MIN_PRETENSION_SHARE * np.max(pretension, axis=1)
+    reachable = np.min(pretension, axis=1) > min_pretension_share * np.max(pretension, axis=1)
     # Start in the reachable stretch nearest home and stay on it.
     order = np.roll(np.arange(curve.shape[0]), -int(np.argmin(np.where(reachable, np.inf, 0.0))))
     reachable_ordered = reachable[order]
@@ -134,7 +136,7 @@ def rank_candidates_pose_information(
 
     scored: List[Tuple[float, SweepConfig]] = []
     for cfg in candidates:
-        positions = predict_sweep_positions(anchors, cfg, points_per_sweep)
+        positions = predict_sweep_positions(anchors, cfg, points_per_sweep, SWEEP_PRETENSION_SHARE)
         if positions.shape[0] == 0:
             continue
         lengths = np.linalg.norm(anchors[None, :, :] - positions[:, None, :], axis=2) - home_lengths

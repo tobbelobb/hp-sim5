@@ -1,20 +1,20 @@
 import numpy as np
 
 from autocal.active_learning import SweepConfig, generate_candidate_sweeps
-from autocal.pose_planning import predict_sweep_positions, rank_candidates_pose_information
+from autocal.pose_planning import SWEEP_PRETENSION_SHARE, predict_sweep_positions, rank_candidates_pose_information
 
 ANCHORS = np.array([[0.0, -1900.0, -280.0], [1645.4, 950.0, -280.0], [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]])
 HOME = np.linalg.norm(ANCHORS, axis=1)
 
 
 def _lengths(configs):
-    positions = np.concatenate([predict_sweep_positions(ANCHORS, cfg, 20) for cfg in configs])
+    positions = np.concatenate([predict_sweep_positions(ANCHORS, cfg, 20, SWEEP_PRETENSION_SHARE) for cfg in configs])
     return np.linalg.norm(ANCHORS[None, :, :] - positions[:, None, :], axis=2) - HOME
 
 
 def test_predicted_positions_keep_the_fixed_lengths_and_stay_between_the_anchors():
     cfg = SweepConfig((0, 3), (390.0, -150.0), 1, 2)
-    positions = predict_sweep_positions(ANCHORS, cfg, 20)
+    positions = predict_sweep_positions(ANCHORS, cfg, 20, SWEEP_PRETENSION_SHARE)
     assert positions.shape == (20, 3)
     lengths = np.linalg.norm(ANCHORS[None, :, :] - positions[:, None, :], axis=2) - HOME
     assert np.allclose(lengths[:, 0], 390.0) and np.allclose(lengths[:, 3], -150.0)
@@ -24,7 +24,7 @@ def test_predicted_positions_keep_the_fixed_lengths_and_stay_between_the_anchors
 
 
 def test_unreachable_fixed_lengths_give_no_positions():
-    assert predict_sweep_positions(ANCHORS, SweepConfig((0, 3), (-1500.0, -1500.0), 1, 2), 20).shape[0] == 0
+    assert predict_sweep_positions(ANCHORS, SweepConfig((0, 3), (-1500.0, -1500.0), 1, 2), 20, SWEEP_PRETENSION_SHARE).shape[0] == 0
 
 
 def test_data_on_one_d_sphere_makes_a_shortened_d_line_the_best_next_sweep():

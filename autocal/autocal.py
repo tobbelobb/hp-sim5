@@ -12,6 +12,9 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
+from autocal.calibrate import build_anchor_initial_guess
+from autocal.equal_strain import write_sensor_force_profile
+from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares
 from autocal.history_selection import (
     HISTORY_CONSENSUS_MAX_SPREAD_MM,
     evaluate_history_candidates,
@@ -456,6 +459,49 @@ def full_auto_loop(
             _run_collection_command(cmd)
         reset_pending = False
         _log_line(f"; bootstrap dataset written to {dataset_path}")
+
+        if str(machine_type) in ("hangprinter_3", "hangprinter_4"):
+            # The bootstrap sweeps give rough anchors. Those are enough to measure the same
+            # sweeps again at equal strain, and only that second set is kept for calibration.
+            rough = _load_json(dataset_path)
+            rough_sweeps = dataset_sweep_configs(rough)
+            rough_anchors = fit_pose_least_squares(
+                rough,
+                build_anchor_initial_guess(rough, machine_type=str(machine_type), base_radii_mm=None,
+                                           low_anchor_z=low_anchor_z),
+                fit_home_offsets=False,
+                home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+                low_anchor_z=low_anchor_z,
+                use_noise_mean=bool(use_noise_mean),
+            )["anchors"]
+            profile_path = dataset_path.with_suffix(".bootstrap_sensor_force_profile.json")
+            if write_sensor_force_profile(profile_path, rough, rough_anchors, rough_sweeps):
+                rough_path = dataset_path.with_suffix(".rough_bootstrap.json")
+                dataset_path.replace(rough_path)
+                force_args, _, _ = _inject_force_args(rough, argv_eff)
+                cmd = [
+                    "node",
+                    "autocal/control/cli/collect_sweep_data.mjs",
+                    "--machineType",
+                    str(machine_type),
+                    "--sweep-config-file",
+                    str(bootstrap_cfg),
+                    "--fixed-targets",
+                    _fixed_targets_spec(rough_sweeps[0]),
+                    "--sensor-force-profile",
+                    str(profile_path),
+                    "--output-file",
+                    str(dataset_path),
+                    *force_args,
+                ]
+                _log_line(f"; measuring the bootstrap sweeps again at equal strain (rough data kept in {rough_path}):")
+                _log_line(";   " + " ".join(cmd))
+                with _log_context():
+                    _run_collection_command(cmd)
+                equal_strain = _load_json(dataset_path)
+                merged = _merge_sweep_datasets(rough, equal_strain)
+                merged["sweeps"] = merged["sweeps"][len(rough_sweeps):]
+                _write_json(dataset_path, merged)
 
     replay_mode = False
     replay_sweeps: List[dict] = []

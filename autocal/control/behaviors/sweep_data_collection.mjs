@@ -602,6 +602,7 @@ function validateSweepCollectionInput(context) {
     fixedTargets,
     maxTravelMm,
     sweepConfigFile: args.sweepConfigFile ?? null,
+    sensorForceProfileFile: args.sensorForceProfile ?? null,
     debugSweep: !!args.debugSweep,
     autoTuneForce: !!args.autoTuneForce,
     noAutoTuneForce: !!args.noAutoTuneForce,
@@ -675,6 +676,39 @@ async function resolveSweepConfigs({ sweepConfigFile, machineType, machineConfig
     sweepConfigs = selectRepresentativeConfigs(sweepConfigs, machineConfig, maxSweepCount);
   }
   return sweepConfigs;
+}
+
+// Each entry of the file is one sweep direction: sensor force (N) tabulated
+// against the drive line's length change (mm, ascending).
+export async function loadSensorForceProfiles(filePath) {
+  const profiles = JSON.parse(await fs.readFile(filePath, 'utf8'));
+  for (const profile of profiles) {
+    const { drive_mm: driveMm, force_n: forceN } = profile;
+    if (!Array.isArray(driveMm) || !Array.isArray(forceN) || driveMm.length < 2 || driveMm.length !== forceN.length
+      || ![...driveMm, ...forceN].every(Number.isFinite) || driveMm.some((v, i) => i > 0 && v <= driveMm[i - 1])) {
+      throw new Error(`Invalid sensor force profile in ${filePath}`);
+    }
+  }
+  return profiles;
+}
+
+export function sensorForceProfileFor(profiles, driveAnchor, sensorAnchor) {
+  const profile = profiles.find(p => p.drive_anchor === driveAnchor && p.sensor_anchor === sensorAnchor);
+  if (!profile) {
+    throw new Error(`Sensor force profile has no entry for drive ${driveAnchor}, sensor ${sensorAnchor}`);
+  }
+  return profile;
+}
+
+// Linear interpolation; beyond the table the nearest end value applies.
+export function sensorForceAt(profile, driveMm) {
+  const { drive_mm: xs, force_n: forces } = profile;
+  if (driveMm <= xs[0]) return forces[0];
+  if (driveMm >= xs[xs.length - 1]) return forces[forces.length - 1];
+  let hi = 1;
+  while (xs[hi] < driveMm) hi += 1;
+  const t = (driveMm - xs[hi - 1]) / (xs[hi] - xs[hi - 1]);
+  return forces[hi - 1] + t * (forces[hi] - forces[hi - 1]);
 }
 
 export function generateSweepConfigs(machineType) {
@@ -1106,7 +1140,8 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     forceLow,
     forceMid,
     forceMax,
-    sensorCollectionForce = null,
+    sensorCollectionForce: constantSensorForce = null,
+    sensorForceProfile = null,
     noiseSampleCount,
     noiseSampleIntervalMs,
     noiseMinSamples,
@@ -1182,6 +1217,8 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
 
   const driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
 
+  // With a profile the sensor force follows the drive setpoint; otherwise it stays constant.
+  let sensorCollectionForce = constantSensorForce;
   const dataPoints = [];
   const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount, extraFields = null) => {
     settleOptions.validateAngles(angles);
@@ -1224,6 +1261,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       ? driveEndPointMm + initialStepMm
       : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
+    if (sensorForceProfile) sensorCollectionForce = sensorForceAt(sensorForceProfile, target);
     let settledMeasurement = null;
     if (Number.isFinite(delta) && Math.abs(delta) > 1e-6) {
       if (!measurementPreloadActive) {
@@ -1263,7 +1301,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       // eslint-disable-next-line no-await-in-loop
       const settled = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
       // Moving the drive leaves the sensor's measurement force unchanged.
-      if (measurementPreloadActive) settledMeasurement = settled;
+      if (measurementPreloadActive && !sensorForceProfile) settledMeasurement = settled;
     }
     // eslint-disable-next-line no-await-in-loop
     const collected = await collectDataPoint(sendFn, {
@@ -1375,6 +1413,9 @@ export async function collectSweepData(send, context) {
     machineConfig,
     maxSweepCount,
   });
+  const sensorForceProfiles = options.sensorForceProfileFile
+    ? await loadSensorForceProfiles(options.sensorForceProfileFile)
+    : null;
 
   if (debugSweep) {
     console.log(`Planned sweeps (${sweepConfigs.length}):`);
@@ -1641,6 +1682,9 @@ export async function collectSweepData(send, context) {
           mmPerDeg,
           datasetStartMs,
           ...forces,
+          sensorForceProfile: sensorForceProfiles
+            ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor)
+            : null,
           collectionAttempt: attempt,
           noiseSampleCount,
           noiseSampleIntervalMs,
@@ -1704,6 +1748,7 @@ export async function collectSweepData(send, context) {
         sweep_method: 'position',
         feed_rate: feed,
         sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
+        sensor_force_profile: sensorForceProfiles !== null,
         direction_forces: directionForces,
         slip_recoveries: recoveryEvents,
         settle_ms: settleMs,

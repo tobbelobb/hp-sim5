@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
+from autocal.equal_strain import write_sensor_force_profile
 from autocal.pose_fit import dataset_line_lengths
 from autocal.pose_planning import rank_candidates_pose_information
 
@@ -196,6 +197,10 @@ def plan_ellipse_sweep(
 
     cmd = None
     if best_cfg is not None:
+        if machine_type in ("hangprinter_3", "hangprinter_4"):
+            profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
+            if write_sensor_force_profile(profile_path, dataset, anchors, [best_cfg]):
+                collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
         cmd = _suggested_collect_command(
             cfg_path,
             best_cfg,
