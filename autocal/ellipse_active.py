@@ -98,6 +98,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_output=args.collector_output,
         collector_args=collector_args,
         low_anchor_z=args.low_anchor_z,
+        fit_home_offsets=bool(args.fit_home_offsets),
         filter_schedule=spool_options["filter_schedule"],
         objective_schedule=spool_options["objective_schedule"],
         fit_structure=spool_options["fit_structure"],

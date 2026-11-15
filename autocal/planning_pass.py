@@ -230,6 +230,7 @@ def plan_next_ellipse_sweep(
     collector_output: Optional[Path],
     collector_args: Sequence[str],
     low_anchor_z: Optional[float] = None,
+    fit_home_offsets: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,

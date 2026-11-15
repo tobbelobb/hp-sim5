@@ -70,6 +70,7 @@ def full_auto_loop(
     patience: int,
     verbose: bool,
     low_anchor_z: Optional[float] = None,
+    fit_home_offsets: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -642,7 +643,18 @@ def full_auto_loop(
         if underconstrained_penalty and "underconstrained_penalty" not in warnings:
             warnings.append("underconstrained_penalty")
         valid = bool(np.isfinite(primary_cost) and np.isfinite(rank_score) and cov_ok)
+        pose_fit_metrics: Dict[str, object] = {}
+        pose_fit = plan.get("pose_fit")
+        if isinstance(pose_fit, dict):
+            pose_anchors = np.asarray(pose_fit["anchors"], dtype=float)
+            pose_fit_metrics = {
+                "pose_fit_anchors": pose_anchors.tolist(),
+                "pose_fit_rms_mm": float(pose_fit["rms_mm"]),
+                "pose_fit_max_diff_mm": float(np.max(np.abs(pose_anchors - np.asarray(plan["anchors"], dtype=float)))),
+                "home_offsets_mm": np.asarray(plan["home_offsets_mm"], dtype=float).tolist(),
+            }
         return {
+            **pose_fit_metrics,
             "primary_cost": primary_cost,
             "raw_fit_score_ui": raw_fit_score_ui,
             "score_ui": raw_fit_score_ui,
@@ -771,6 +783,7 @@ def full_auto_loop(
                     if settings.get("low_anchor_z") is None
                     else float(settings.get("low_anchor_z"))
                 ),
+                fit_home_offsets=bool(fit_home_offsets),
                 candidate_count=int(candidate_count),
                 delta_min=delta_min,
                 delta_max=delta_max,
@@ -1425,6 +1438,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         line_width=float(spool_opts["line_width"]),
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         low_anchor_z=args.low_anchor_z,
+        fit_home_offsets=bool(args.fit_home_offsets),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
         delta_max=args.delta_max,

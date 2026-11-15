@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.filter_pass import estimate_effective_radii_with_spool_model
+from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets
 from autocal.projection_mode import resolve_projection_mode
 
 
@@ -45,6 +46,7 @@ def fit_ellipse_dataset(
     regularization: float,
     collector_args: Sequence[str],
     low_anchor_z: Optional[float] = None,
+    fit_home_offsets: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -76,6 +78,8 @@ def fit_ellipse_dataset(
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
+    if fit_home_offsets and (search_radii or search_buildup):
+        raise ValueError("--fit-home-offsets cannot be combined with --find-radii or --find-buildup-factor")
     if r0_bounds is not None and not _spool_mode_enabled(find_radii_mode):
         warnings.append("r0_bounds_ignored_without_find_radii")
     if r0_prior_sigma_mm is not None and not _spool_mode_enabled(find_radii_mode):
@@ -130,6 +134,7 @@ def fit_ellipse_dataset(
 
     length_model: Optional[Dict[str, object]] = None
     spool_params: Optional[SpoolModelParams] = None
+    home_offsets_mm = np.zeros(int(num_anchors))
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
     prefer_zero_tension_angles = _uses_projected_angles(dataset, collector_args)
@@ -331,8 +336,18 @@ def fit_ellipse_dataset(
         }
     else:
         anchor_initial_guess = _resolve_anchor_seed(None)
+        if fit_home_offsets:
+            home_offsets_mm = fit_pose_least_squares(
+                dataset,
+                anchor_initial_guess,
+                fit_home_offsets=True,
+                home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+                low_anchor_z=low_anchor_z,
+                use_noise_mean=bool(use_noise_mean),
+            )["home_offsets_mm"]
+            dataset_for_estimation = shift_dataset_home_offsets(dataset, home_offsets_mm)
         cal = calibrate_elliptical(
-            dataset,
+            dataset_for_estimation,
             output_path=None,
             num_restarts=int(solve_restarts),
             max_iterations=int(solve_iterations),
@@ -355,6 +370,17 @@ def fit_ellipse_dataset(
 
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
+    # The point-based fit sees the same lengths as the ellipse fit, starting from both
+    # the shared seed and the ellipse result, so the two answers can always be compared.
+    pose_fit = fit_pose_least_squares(
+        dataset_for_estimation,
+        _resolve_anchor_seed(None),
+        fit_home_offsets=False,
+        home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+        low_anchor_z=low_anchor_z,
+        use_noise_mean=bool(use_noise_mean),
+        extra_initial_anchors=[anchors],
+    )
     cost_raw = float(
         _evaluate_cost_at_anchors(
             dataset_for_estimation,
@@ -470,4 +496,6 @@ def fit_ellipse_dataset(
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "fit_structure_levels": [int(v) for v in fit_structure_levels],
         "dataset_for_estimation": dataset_for_estimation,
+        "pose_fit": pose_fit,
+        "home_offsets_mm": home_offsets_mm,
     }

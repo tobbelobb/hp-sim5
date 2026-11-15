@@ -2769,6 +2769,17 @@ def _print_ellipse_plan(
     print(
         f"; cost={cost_raw_str} cost_noise_normalized={cost_norm_str} {_format_anchor_stats(anchors)}"
     )
+    pose_fit = plan.get("pose_fit")
+    if isinstance(pose_fit, dict):
+        pose_anchors = np.asarray(pose_fit["anchors"], dtype=float)
+        print(
+            f"; pose_fit: anchors={format_anchor_matrix_plain(pose_anchors)} "
+            f"rms={pose_fit['rms_mm']:.4f}mm points={pose_fit['num_points']} "
+            f"max_diff_vs_ellipse_fit={float(np.max(np.abs(pose_anchors - anchors))):.2f}mm"
+        )
+    home_offsets = np.asarray(plan.get("home_offsets_mm", []), dtype=float)
+    if np.any(home_offsets != 0.0):
+        print("; home_offsets_mm: [" + ", ".join(f"{float(v):.3f}" for v in home_offsets.tolist()) + "]")
     if isinstance(length_model, dict):
         base = np.asarray(length_model.get("base_radii_mm", []), dtype=float)
         eff = np.asarray(length_model.get("effective_radii_mm", []), dtype=float)
@@ -3371,6 +3382,13 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=float,
         default=None,
         help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
+    )
+    parser.add_argument(
+        "--fit-home-offsets",
+        action="store_true",
+        help="Fit home length offsets with the point-based fit and apply them before the ellipse fit. "
+             "They absorb the difference between slack lines at the encoder origin and tensioned lines "
+             "during measurement. Not available together with --find-radii or --find-buildup-factor.",
     )
     parser.add_argument(
         "--r0-bounds",
