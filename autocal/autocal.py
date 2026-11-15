@@ -198,6 +198,7 @@ def full_auto_loop(
         _log_console("== Calibration summary ==")
         _log_console(f"Found parameters of {quality_label} quality")
         _log_console(f"Fit quality score (lower is better): {_fmt_float(summary_fit_score_for_quality)}")
+        _log_console("; Fit quality measures agreement with the length model. Absolute anchor accuracy needs independent validation.")
         if m669:
             _log_console(f"Anchors (M669): {m669}")
         elif anchor_str:
