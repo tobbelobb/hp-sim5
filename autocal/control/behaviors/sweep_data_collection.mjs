@@ -13,8 +13,9 @@ import {
   resolveMotorToken,
 } from '../../../integrations/klipper/klipperMotorAddressConfig.js';
 import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
-import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
+import { ENCODER_NOISE_DEFAULTS, sampleEncoderNoise } from '../primitives/encoder_noise.mjs';
 import { collectWithSlipRecovery } from './slip_recovery.mjs';
+import { probeSpoolInterval } from './spool_reserve.mjs';
 import {
   angleToLength,
   assertFixedAnchorAngles,
@@ -41,9 +42,6 @@ export const MACHINE_CONFIGS = {
     axes: ['X', 'Y', 'Z', 'U'],
     mustBeInFixedSet: [3],
     fixedTargetBoundsByAnchor: {
-      0: { minFixed: 0 },
-      1: { minFixed: 0 },
-      2: { minFixed: 0 },
       3: { maxFixed: 0 },
     },
     measuredMaxTravelScale: 0.8,
@@ -475,8 +473,8 @@ export function buildM666AdjustmentCommand({ forcedBaseRadii = null, forcedBuild
   return `M666 ${fields.join(' ')}`;
 }
 
-// In case spool was fully wound out, wind back in a quarter of a rotation so that line
-// attachment point is tangent to the spool.
+// Initial drive displacement for seeking the reserved part of the arc. The
+// sensor's actual half-spindle-turn retraction is checked separately below.
 export function computeInitialForceSweepStepMm(baseRadiusMm) {
   if (!Number.isFinite(baseRadiusMm) || baseRadiusMm <= 0) {
     return 100;
@@ -602,6 +600,7 @@ function validateSweepCollectionInput(context) {
     maxTravelMm,
     sweepConfigFile: args.sweepConfigFile ?? null,
     sensorForceProfileFile: args.sensorForceProfile ?? null,
+    completedSweeps: parseOptionalNumber(args.completedSweeps, 'completed-sweeps', { integer: true }) ?? 0,
     debugSweep: !!args.debugSweep,
     autoTuneForce: !!args.autoTuneForce,
     noAutoTuneForce: !!args.noAutoTuneForce,
@@ -1156,6 +1155,8 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     fixedTargets,
     forbiddenForceAnchors = [],
     baseRadiusMm = null,
+    sensorSpoolGearRatio = 1,
+    probeSpoolReserve = false,
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
   const driveAxis = axes[driveAnchor];
@@ -1201,6 +1202,9 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     console.log('; sweep pullout reached travel time limit; holding drive before settling');
   }
 
+  // Capture maximum payout before the stronger preload may take up loose line.
+  const pulloutLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+  const sensorPayoutMm = pulloutLengths[sensorAnchor];
   const preloadModes = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {
       return 'position';
@@ -1221,12 +1225,78 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
 
   const driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
+  const totalDelta = driveStartPointMm - driveEndPointMm;
+  if (!Number.isFinite(totalDelta) || Math.abs(totalDelta) <= DEFAULT_FIXED_TOLERANCE_MM) {
+    throw new Error('No measured drive interval remains for this sweep');
+  }
+  const stepDirection = Math.sign(totalDelta);
+  const initialStepMm = Math.min(Math.abs(totalDelta), computeInitialForceSweepStepMm(baseRadiusMm));
+  const sensorReserveMm = 180 * sensorSpoolGearRatio * mmPerDeg[sensorAnchor];
+  if (!(Number.isFinite(sensorPayoutMm) && sensorReserveMm > 0)) {
+    throw new Error('Cannot establish the sensor half-turn reserve from encoder gearing');
+  }
+  const forceAt = target => sensorForceProfile ? sensorForceAt(sensorForceProfile, target)
+    : resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce: constantSensorForce });
+  const moveForReserve = async (target, sensorForce = forceAt(target)) => {
+    await applyDataPointPreloadModes(sendFn, {
+      motorIds, driveAnchor, sensorAnchors: [sensorAnchor], fixedAnchors, forbiddenForceAnchors,
+      forceMax, forceMin: forceMid, forceMid, sensorCollectionForce: sensorForce, speedup, settleOptions,
+    });
+    await applyForceModeState(sendFn, { motorIds, modes: motorIds.map((_, idx) => {
+      if (idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
+      return idx === sensorAnchor ? sensorForce : forceMid;
+    }) });
+    await enforceFixedAnchors(sendFn, { motorIds, axes, mmPerDeg, fixedTargetByAnchor, feed, speedup });
+    const current = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+    const delta = target - current[driveAnchor];
+    if (Math.abs(delta) > 1e-6) await runMoveWithWait(sendFn,
+      `G1 H2 ${driveAxis}${delta.toFixed(3)} F${feed}`, speedup, { axes });
+    await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    const sample = await sampleEncoderNoise(sendFn, motorIds, {
+      sampleCount: noiseSampleCount, sampleIntervalMs: noiseSampleIntervalMs, speedup,
+    });
+    settleOptions.validateAngles(sample.muByMotorDeg);
+    if (sample.sampleCount < noiseMinSamples || sample.muByMotorDeg.length !== motorIds.length
+        || !sample.muByMotorDeg.every(Number.isFinite)) {
+      throw new Error('Insufficient encoder evidence for the spool reserve');
+    }
+    if (Math.abs(sample.muByMotorDeg[driveAnchor] * mmPerDeg[driveAnchor] - target) > DEFAULT_FIXED_TOLERANCE_MM) {
+      throw new Error('Drive did not track the spool-reserve probe target');
+    }
+    return sample;
+  };
+  let measurementStartMm = driveEndPointMm + stepDirection * initialStepMm;
+  let reserved = await moveForReserve(measurementStartMm);
+  while (sensorPayoutMm - reserved.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor] < sensorReserveMm) {
+    const remaining = stepDirection * (driveStartPointMm - measurementStartMm);
+    if (remaining <= DEFAULT_FIXED_TOLERANCE_MM) {
+      throw new Error('Measured sweep is too short to wind the sensor in half a spindle turn');
+    }
+    measurementStartMm += stepDirection * Math.min(initialStepMm, remaining);
+    reserved = await moveForReserve(measurementStartMm);
+  }
+  let reserveProbe = { accepted: false, reason: 'initial half-turn reserve' };
+  const room = Math.abs(driveStartPointMm - measurementStartMm);
+  if (probeSpoolReserve && room > DEFAULT_FIXED_TOLERANCE_MM) {
+    const toward = (measurementStartMm + driveEndPointMm) / 2;
+    const away = measurementStartMm + stepDirection * Math.min(initialStepMm / 2, room / 2);
+    const sensorForce = forceAt(toward);
+    reserveProbe = await probeSpoolInterval(target => moveForReserve(target, sensorForce), {
+      start: measurementStartMm, away, toward, driveAnchor, sensorAnchor, mmPerDeg,
+      sigmaFloorDeg: noiseSigmaFloorDeg,
+    });
+    if (reserveProbe.accepted) measurementStartMm = toward;
+    await moveForReserve(measurementStartMm);
+  }
 
   // With a profile the sensor force follows the drive setpoint; otherwise it stays constant.
   let sensorCollectionForce = constantSensorForce;
   const dataPoints = [];
   const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount, extraFields = null) => {
     settleOptions.validateAngles(angles);
+    if (!reserveProbe.accepted && sensorPayoutMm - angles[sensorAnchor] * mmPerDeg[sensorAnchor] < sensorReserveMm) {
+      throw new Error('Sensor left the reserved half-turn interval before measurement');
+    }
     const lengths = angles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
     const point = {
       l_drive: lengths[driveAnchor],
@@ -1254,17 +1324,12 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
 
   const steps = Math.max(2, sweepPoints + 1);
   const stepCount = steps - 1;
-  const totalDelta = driveStartPointMm - driveEndPointMm;
-  const stepDirection = Math.sign(totalDelta) || 1;
-  const initialStepMm = computeInitialForceSweepStepMm(baseRadiusMm) * stepDirection;
   const remainingSteps = Math.max(1, stepCount - 1);
-  const stepDelta = (totalDelta - initialStepMm) / remainingSteps;
-  let currentDrive = driveEndPointMm;
+  const stepDelta = (driveStartPointMm - measurementStartMm) / remainingSteps;
+  let currentDrive = measurementStartMm;
   let measurementPreloadActive = false;
   for (let stepIdx = 1; stepIdx < steps; stepIdx += 1) {
-    const target = stepIdx === 1
-      ? driveEndPointMm + initialStepMm
-      : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
+    const target = measurementStartMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
     if (sensorForceProfile) sensorCollectionForce = sensorForceAt(sensorForceProfile, target);
     let settledMeasurement = null;
@@ -1374,7 +1439,10 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     }
   }
 
-  return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm } };
+  return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
+    spoolReserve: { sensor_payout_mm: sensorPayoutMm, required_sensor_rewind_mm: sensorReserveMm,
+      guarded_sensor_rewind_mm: sensorPayoutMm - reserved.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor],
+      first_drive_mm: measurementStartMm, probe: reserveProbe } };
 }
 
 // Collect sweeps for each config once; fixed anchors use explicit targets or size-tuned travel.
@@ -1649,6 +1717,7 @@ export async function collectSweepData(send, context) {
     const aggregatedPoints = [];
     const recoveryEvents = [];
     const directionForces = [];
+    const spoolReserves = [];
     for (let i = 0; i < subSweeps.length; i += 1) {
       const subCfg = subSweeps[i];
       console.log(
@@ -1702,6 +1771,9 @@ export async function collectSweepData(send, context) {
           baseRadiusMm: Array.isArray(m666ForCollection?.R)
             ? m666ForCollection.R[subCfg.driveAnchor]
             : m666ForCollection?.R,
+          sensorSpoolGearRatio: (Array.isArray(m666ForCollection?.H) ? m666ForCollection.H[subCfg.sensorAnchor] : m666ForCollection?.H ?? 1)
+            / (Array.isArray(m666ForCollection?.L) ? m666ForCollection.L[subCfg.sensorAnchor] : m666ForCollection?.L ?? 1),
+          probeSpoolReserve: options.completedSweeps >= 3,
         });
       }, {
         motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
@@ -1710,6 +1782,7 @@ export async function collectSweepData(send, context) {
       ({ forceMid, forceMax } = sweepResult.forces);
       sensorCollectionForce = sweepResult.forces.sensorCollectionForce;
       recoveryEvents.push(...sweepResult.recoveries.map(event => ({ ...event, direction: i })));
+      spoolReserves.push({ direction: i, ...sweepResult.spoolReserve });
       directionForces.push({ drive_anchor: subCfg.driveAnchor, sensor_anchor: subCfg.sensorAnchor,
         sensor_force_n: resolveCollectionForce(sweepResult.forces),
         pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }) });
@@ -1755,6 +1828,7 @@ export async function collectSweepData(send, context) {
         sensor_force_profile: sensorForceProfiles !== null,
         direction_forces: directionForces,
         slip_recoveries: recoveryEvents,
+        spool_reserves: spoolReserves,
         settle_ms: settleMs,
       },
     });

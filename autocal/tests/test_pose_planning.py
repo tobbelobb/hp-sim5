@@ -33,7 +33,7 @@ def test_data_on_one_d_sphere_makes_a_shortened_d_line_the_best_next_sweep():
     observed = [SweepConfig((low, 3), (390.0, 0.0), *[a for a in range(3) if a != low]) for low in range(3)]
     candidates = generate_candidate_sweeps(
         num_anchors=4, dimensions=3, fixed_delta_values_mm=[-390.0, -195.0, 0.0, 195.0, 390.0],
-        machine_type="hangprinter_3", max_total_fixed_delta_mm=390.0,
+        machine_type="hangprinter_3",
     )
     ranked = rank_candidates_pose_information(
         ANCHORS, machine_type="hangprinter_3", low_anchor_z=None, observed_lengths_mm=_lengths(observed),

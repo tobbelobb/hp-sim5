@@ -6,6 +6,7 @@ from autocal.fit_stage import fit_ellipse_dataset
 from autocal.equal_strain import is_equal_strain, write_sensor_force_profile
 from autocal.pose_fit import dataset_line_lengths
 from autocal.pose_planning import rank_candidates_pose_information
+from autocal.workspace import exploration_grid
 
 _PLANNING_ONLY = (
     "candidate_deltas", "candidate_count", "delta_min", "delta_max",
@@ -63,36 +64,25 @@ def plan_ellipse_sweep(
         raw_max_travel = config.get("max_travel_mm")
         if isinstance(raw_max_travel, (int, float)) and np.isfinite(raw_max_travel):
             max_travel_mm = float(raw_max_travel)
-    max_total_fixed_delta_mm = None
-    if (
-        str(machine_type) in ("hangprinter_3", "hangprinter_4")
-        and max_travel_mm is not None
-        and np.isfinite(max_travel_mm)
-        and max_travel_mm > 0.0
-    ):
-        max_total_fixed_delta_mm = float(max_travel_mm)
-
+    exploration_bounds = None
     if candidate_deltas is None:
-        # Resolve the machine's range first, then replace only explicit bounds.
-        default_range = _default_delta_range(
-            max_travel_mm=max_travel_mm, observed_deltas=observed_deltas,
-        )
-        lo, hi = default_range or (-600.0, 600.0)
-        if delta_min is not None:
-            lo = float(delta_min)
-        if delta_max is not None:
-            hi = float(delta_max)
-        if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
-            raise ValueError("candidate delta range must be finite with delta_min < delta_max")
-        values = np.linspace(lo, hi, max(3, int(candidate_count)))
-        candidate_deltas = [float(v) for v in values.tolist()]
+        if machine_type in ("hangprinter_3", "hangprinter_4") and delta_min is None and delta_max is None:
+            candidate_deltas, exploration_bounds = exploration_grid(dataset, candidate_count)
+        else:
+            default_range = _default_delta_range(max_travel_mm=max_travel_mm, observed_deltas=observed_deltas)
+            lo, hi = default_range or (-600.0, 600.0)
+            lo = float(delta_min) if delta_min is not None else lo
+            hi = float(delta_max) if delta_max is not None else hi
+            if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+                raise ValueError("candidate delta range must be finite with delta_min < delta_max")
+            candidate_deltas = np.linspace(lo, hi, max(3, int(candidate_count))).tolist()
 
     candidates = generate_candidate_sweeps(
         num_anchors=num_anchors,
         dimensions=dimensions,
         fixed_delta_values_mm=candidate_deltas,
         machine_type=machine_type,
-        max_total_fixed_delta_mm=max_total_fixed_delta_mm,
+        fixed_delta_bounds_by_anchor=exploration_bounds,
     )
     if exclude_existing:
         existing_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in sweeps_obs}
@@ -210,13 +200,15 @@ def plan_ellipse_sweep(
         if collection_error is None:
             cmd = _suggested_collect_command(
                 cfg_path, best_cfg, machine_type=machine_type,
-                output_file=collector_output, extra_args=collector_args_eff,
+                output_file=collector_output, completed_sweeps=len(dataset.get("sweeps", [])),
+                extra_args=collector_args_eff,
             )
 
     return {**fit, "ranked": ranked, "best_cfg": best_cfg, "cfg_path": cfg_path,
             "collection_fallback": collection_fallback,
             "collect_command": cmd, "force_tuning": force_tuning,
             "collection_error": collection_error,
+            "exploration_bounds_mm": exploration_bounds,
             "force_args_applied": force_args_applied}
 
 

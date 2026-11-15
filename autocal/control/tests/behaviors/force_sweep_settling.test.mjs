@@ -3,7 +3,7 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4 } = {}) {
   let now = 0;
   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
   let preparing = preparationDrift;
@@ -21,7 +21,10 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
       return { reply: angles.join(' ') };
     }
     const move = line.match(/^G1 H2 Y([-\d.]+)/);
-    if (move) angles[1] += Number(move[1]);
+    if (move) {
+      angles[1] += Number(move[1]);
+      angles[2] -= sensorGain * Number(move[1]);
+    }
     return { reply: '' };
   };
   send.simulationClock = {
@@ -31,8 +34,9 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
       now += ms;
       if (preparing && now >= 60000) return;
       if (modes[1] > 0) {
-        angles[1] += ms / 1000;
-        angles[2] -= ms / 1000;
+        const next = Math.max(-pulloutLimit, angles[1] - ms / 1000);
+        angles[2] -= next - angles[1];
+        angles[1] = next;
         if (fixedDrift) angles[0] = 2;
       } else if (measurementDrift && modes[2] > 0) angles[2] += ms / 1000;
     },
@@ -43,7 +47,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     forceLow: .01, forceMid: .23, forceMax: 2.4, fixedAnchors: [0, 3], fixedTargets: [0, 0],
     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
-    onPoint: point => points.push(point), sensorForceProfile,
+    onPoint: point => points.push(point), sensorForceProfile, sensorSpoolGearRatio, probeSpoolReserve,
   });
   return { run, commands, points };
 }
@@ -54,7 +58,8 @@ test('bounds moving endpoint search, then holds and settles before recording all
   const hold = trial.commands.find(command => command.now > 600000 && command.line === 'M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0');
   expect(hold).toBeDefined();
   expect(result.dataPoints).toHaveLength(2);
-  expect(result.driveRange.start).toBeCloseTo(600.5);
+  expect(result.driveRange.start).toBeCloseTo(-600.5);
+  expect(result.dataPoints[0].raw_angles_deg[2]).toBeLessThanOrEqual(600.5 - 180);
   expect(trial.points[0].timestamp_ms).toBeGreaterThanOrEqual(hold.now + 1500);
   expect(result.dataPoints.every(point => point.sample_count === 16)).toBe(true);
 });
@@ -62,6 +67,36 @@ test('bounds moving endpoint search, then holds and settles before recording all
 test('continues to reject measurement drift after a bounded pullout', async () => {
   const trial = movingPullout({ measurementDrift: true });
   await expect(trial.run()).rejects.toBeInstanceOf(EncoderStabilityTimeoutError);
+  expect(trial.points).toHaveLength(0);
+});
+
+test('half-turn sensor reserve follows spindle gearing, not a drive radius guess', async () => {
+  const result = await movingPullout({ sensorSpoolGearRatio: 2 }).run();
+  expect(result.dataPoints[0].raw_angles_deg[2]).toBeLessThanOrEqual(600.5 - 360);
+  expect(result.spoolReserve.guarded_sensor_rewind_mm).toBeGreaterThanOrEqual(360);
+  expect(result.spoolReserve.probe.accepted).toBe(false);
+});
+
+test('later collection can reclaim only a reversibly tested part of the reserved interval', async () => {
+  const early = await movingPullout().run();
+  const later = await movingPullout({ probeSpoolReserve: true }).run();
+  expect(early.spoolReserve.probe.accepted).toBe(false);
+  expect(later.spoolReserve.probe.accepted).toBe(true);
+  expect(later.spoolReserve.guarded_sensor_rewind_mm).toBeGreaterThanOrEqual(180);
+  expect(later.dataPoints[0].l_drive).toBeLessThan(early.dataPoints[0].l_drive);
+});
+
+test.each([0, 20])('does not invent or overshoot a %s mm measured interval to satisfy reserve', async limit => {
+  const trial = movingPullout({ pulloutLimit: limit });
+  await expect(trial.run()).rejects.toThrow(limit === 0 ? 'No measured drive interval' : 'too short');
+  expect(trial.points).toHaveLength(0);
+  const total = trial.commands.reduce((sum, {line}) => sum + Number(line.match(/^G1 H2 Y([-\d.]+)/)?.[1] ?? 0), 0);
+  expect(total).toBeLessThanOrEqual(limit);
+});
+
+test('drive movement without a sensor response never satisfies the initial reserve', async () => {
+  const trial = movingPullout({ sensorGain: 0 });
+  await expect(trial.run()).rejects.toThrow('too short');
   expect(trial.points).toHaveLength(0);
 });
 
@@ -94,7 +129,7 @@ test('does not recover stalled simulation advances', async () => {
 });
 
 test('sensor force follows the profile at every point of the sweep', async () => {
-  const profile = { drive_anchor: 1, sensor_anchor: 2, drive_mm: [0, 600], force_n: [1, 3] };
+  const profile = { drive_anchor: 1, sensor_anchor: 2, drive_mm: [-600, 0], force_n: [1, 3] };
   const trial = movingPullout({ sensorForceProfile: profile });
   const result = await trial.run();
   const forces = result.dataPoints.map(point => point.sensor_force_n);

@@ -125,15 +125,14 @@ def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):
 
 
 def next_rough_sweep(dataset, anchors, *, low_anchor_z=None):
-    travel = float(dataset["config"]["max_travel_mm"])
-    if not np.isfinite(travel) or travel <= 0:
-        raise ValueError("Rough bootstrap requires a positive measured max_travel_mm")
+    from autocal.workspace import exploration_grid
+    deltas, bounds = exploration_grid(dataset, 9)
     observed = dataset_sweep_configs(dataset)
     seen = {cfg.normalized_key(tol_mm=1.0) for cfg in observed}
     candidates = generate_candidate_sweeps(
         num_anchors=int(dataset["num_anchors"]), dimensions=int(dataset["dimensions"]),
-        fixed_delta_values_mm=np.linspace(-travel, travel, 9),
-        machine_type=dataset["machine_type"], max_total_fixed_delta_mm=travel,
+        fixed_delta_values_mm=deltas,
+        machine_type=dataset["machine_type"], fixed_delta_bounds_by_anchor=bounds,
     )
     ranked = rank_candidates_pose_information(
         anchors, machine_type=dataset["machine_type"], low_anchor_z=low_anchor_z,

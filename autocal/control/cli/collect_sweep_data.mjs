@@ -325,6 +325,8 @@ export function parseBridgeArgs(argv) {
       args.machineType = argv[++i] || null;
     } else if (arg === '--sweepRange') {
       args.sweepRange = argv[++i] || null;
+    } else if (arg === '--completed-sweeps') {
+      args.completedSweeps = argv[++i];
     } else if (arg === '--sweepPoints') {
       args.sweepPoints = argv[++i] || null;
     } else if (arg === '--maxSweeps') {

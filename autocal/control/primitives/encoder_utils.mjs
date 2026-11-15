@@ -63,7 +63,7 @@ export function parseEncoderReply(reply) {
   if (typeof reply !== 'string') {
     return [];
   }
-  const matches = reply.match(/-?[0-9]+(?:\.[0-9]+)?/g);
+  const matches = reply.match(/[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?/g);
   if (!matches) {
     return [];
   }

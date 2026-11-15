@@ -47,9 +47,9 @@ describe('sweep config generation', () => {
     expect(subSweeps.every((entry) => entry.sensorAnchor !== 3)).toBe(true);
   });
 
-  test('hangprinter_4 fixed targets stay within physical sign bounds', () => {
+  test('carrying line remains fixed and lower lines can wind in as well as out', () => {
     expect(resolveFixedTargets([0, 3], [25, -25], null, MACHINE_CONFIGS.hangprinter_4)).toEqual([25, -25]);
-    expect(resolveFixedTargets([0, 3], [-25, 25], null, MACHINE_CONFIGS.hangprinter_4)).toEqual([0, 0]);
+    expect(resolveFixedTargets([0, 3], [-25, 25], null, MACHINE_CONFIGS.hangprinter_4)).toEqual([-25, 0]);
   });
 });
 

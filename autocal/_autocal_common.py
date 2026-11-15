@@ -1702,6 +1702,7 @@ def _suggested_collect_command(
     *,
     machine_type: str,
     output_file: Optional[Path] = None,
+    completed_sweeps: Optional[int] = None,
     extra_args: Sequence[str] = (),
 ) -> List[str]:
     cmd = [
@@ -1716,11 +1717,15 @@ def _suggested_collect_command(
     ]
     if output_file is not None:
         cmd.extend(["--output-file", str(output_file)])
+    if completed_sweeps is not None:
+        cmd.extend(["--completed-sweeps", str(int(completed_sweeps))])
     # Planner-owned acquisition fields must not be overridden by a later alias.
     owned = {"--machineType", "--machine-type", "--sweep-config-file", "--sweep-config", "--sweepFile",
              "--fixed-targets", "--fixedTargets", "--fixed-target"}
     if output_file is not None:
         owned.update(("--output-file", "--output", "--out"))
+    if completed_sweeps is not None:
+        owned.add("--completed-sweeps")
     forwarded = iter(extra_args)
     for arg in forwarded:
         if str(arg).split("=", 1)[0] in owned:

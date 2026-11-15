@@ -1,4 +1,8 @@
-import { runMoveWithWait, sendHpSimSettings } from '../../primitives/encoder_utils.mjs';
+import { parseEncoderReply, runMoveWithWait, sendHpSimSettings } from '../../primitives/encoder_utils.mjs';
+
+test('scientific encoder values near zero remain one value per motor', () => {
+  expect(parseEncoderReply('0 -5.684341886080802e-14 3.1E+2 +.25')).toEqual([0, -5.684341886080802e-14, 310, .25]);
+});
 
 describe('runMoveWithWait', () => {
   test('skips fallback delay for klipper motion commands that already waited in the bridge', async () => {

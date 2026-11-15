@@ -44,15 +44,17 @@ def test_planned_collection_cannot_be_redirected_by_forwarded_aliases(tmp_path):
     command = _suggested_collect_command(
         tmp_path / "planned.txt", cfg, machine_type="slideprinter",
         output_file=tmp_path / "new.json",
+        completed_sweeps=3,
         extra_args=["--out", "training.json", "--output=training.json",
                     "--machine-type", "hp4", "--sweepFile=wrong.txt",
-                    "--fixedTargets", "90", "--hp-sim-reset",
+                    "--fixedTargets", "90", "--hp-sim-reset", "--completed-sweeps", "90",
                     "--server", "http://example.invalid", "--force-mode", "constant"],
     )
     assert command == [
         "node", "autocal/control/cli/collect_sweep_data.mjs",
         "--machineType", "slideprinter", "--sweep-config-file", str(tmp_path / "planned.txt"),
         "--fixed-targets", "12.0", "--output-file", str(tmp_path / "new.json"),
+        "--completed-sweeps", "3",
         "--server", "http://example.invalid", "--force-mode", "constant",
     ]
 
@@ -298,8 +300,8 @@ def test_planning_ridge_requires_a_finite_positive_value(value):
 
 @pytest.mark.parametrize("value,expected", [
     ("off", 0.0), ("0", 0.0), ("-1", 0.0), ("0.002", 0.002),
-    ("nan", SPREAD_STOP_FRAC), ("inf", SPREAD_STOP_FRAC),
-    ("typo", SPREAD_STOP_FRAC),
+    ("nan", 0.), ("inf", 0.),
+    ("typo", 0.),
 ])
 def test_spread_stop_override_requires_a_finite_fraction(monkeypatch, value, expected):
     monkeypatch.setenv("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", value)

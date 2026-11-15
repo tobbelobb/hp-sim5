@@ -50,16 +50,13 @@ class MachineConfig:
             MachineType.SLIDEPRINTER: (3, 2, [], [], {}),
             # Anchor 3 is the load-bearing line on hangprinter_4:
             # keep it in the fixed set, never command a positive fixed delta on
-            # it, and keep the other fixed anchors from going negative.
+            # it. Lower anchors may wind in as well as out during exploration.
             MachineType.HANGPRINTER_4: (
                 4,
                 3,
                 [3],
                 [3],
                 {
-                    0: (0.0, None),
-                    1: (0.0, None),
-                    2: (0.0, None),
                     3: (None, 0.0),
                 },
             ),

@@ -21,22 +21,22 @@ from autocal.history_selection import (
 def spread_stop_fraction() -> float:
     """Optional early-stop heuristic based on geometric fit agreement.
 
-    Agreement is not calibrated uncertainty or proof of accuracy. The default
-    and its override are retained pending broader acquisition evidence.
+    Agreement is not calibrated uncertainty or proof of accuracy. This is opt-in:
+    the old default stopped collection before the workspace had been explored.
     `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off` disables this heuristic; invalid or
     non-finite values retain the default.
     """
     raw = os.environ.get("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", "").strip()
     if not raw:
-        return float(SPREAD_STOP_FRAC)
+        return 0.0
     if raw.lower() in {"off", "false", "no", "none", "disabled"}:
         return 0.0
     try:
         value = float(raw)
     except ValueError:
-        return float(SPREAD_STOP_FRAC)
+        return 0.0
     if not np.isfinite(value):
-        return float(SPREAD_STOP_FRAC)
+        return 0.0
     return 0.0 if value <= 0.0 else float(value)
 
 
