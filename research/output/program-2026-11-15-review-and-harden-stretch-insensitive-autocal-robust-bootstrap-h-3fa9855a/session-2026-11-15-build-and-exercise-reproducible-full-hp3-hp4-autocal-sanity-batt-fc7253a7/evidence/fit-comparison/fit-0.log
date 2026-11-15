@@ -1,0 +1,9 @@
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=1.9e-05 floor_mm=0.329
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.329303 used=0.329303 floor=0.329303 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.237 floor=0.05 non_layered=0.329 layer_changes=0 mode_add=0 total=0.329 model=0.329 used=0.329 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+{"stage": "fit", "seconds": 3.088150424999185, "output": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/fit-comparison/fit-0.json"}

@@ -46,7 +46,8 @@ class HeadlessSimulation:
             find_buildup_mode=args.find_buildup_factor, rrf_config=args.rrf_config,
             config=args.config, layering=_arg_has_flag(collector_args, "--line-layering") or bool(getattr(args, "buildup_factor", None)),
         )
-        self.scene = REPO_ROOT / catalogued_machine(args.machine_type)["scene"]
+        self.scene = Path(os.environ.get("HP_SIM5_AUTOCAL_SCENE") or
+                          REPO_ROOT / catalogued_machine(args.machine_type)["scene"]).resolve()
         self.args, self.collector_args = args, collector_args
         self.processes = []
         self.physics = None

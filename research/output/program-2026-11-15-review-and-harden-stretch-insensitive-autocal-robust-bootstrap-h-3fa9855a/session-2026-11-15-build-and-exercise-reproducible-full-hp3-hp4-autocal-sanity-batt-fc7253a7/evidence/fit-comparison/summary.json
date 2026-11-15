@@ -1,0 +1,298 @@
+[
+  {
+    "options": {},
+    "command": [
+      "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/.venv/bin/python",
+      "-m",
+      "autocal.tools.replay_stage",
+      "fit",
+      "research/output/autocal_research_with_Fable5p2/evidence/headless_runs/h1/sweeps.stages/fit-001-default.json",
+      "--options",
+      "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/fit-inputs/default.json",
+      "--output",
+      "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/fit-comparison/fit-0.json"
+    ],
+    "exit_code": 0,
+    "anchors": {
+      "$type": "array",
+      "value": [
+        [
+          0.0,
+          -1908.4663839286006,
+          -278.65254339593827
+        ],
+        [
+          1652.612871334704,
+          954.1579011850332,
+          -278.65254339593827
+        ],
+        [
+          -1652.4654060841535,
+          954.0516801888527,
+          -278.65254339593827
+        ],
+        [
+          -0.022382813050489905,
+          0.04073803150482008,
+          1894.2737191402796
+        ]
+      ]
+    },
+    "cost_noise_normalized": 0.4884053248970279,
+    "home_offsets_mm": {
+      "$type": "array",
+      "value": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "errors": {
+      "reference_mm": [
+        [
+          0.0,
+          -1900.0,
+          -280.0
+        ],
+        [
+          1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          -1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          0.0,
+          0.0,
+          1900.0
+        ]
+      ],
+      "fitted_mm": [
+        [
+          0.0,
+          -1908.4663839286006,
+          -278.65254339593827
+        ],
+        [
+          1652.612871334704,
+          954.1579011850332,
+          -278.65254339593827
+        ],
+        [
+          -1652.4654060841535,
+          954.0516801888527,
+          -278.65254339593827
+        ],
+        [
+          -0.022382813050489905,
+          0.04073803150482008,
+          1894.2737191402796
+        ]
+      ],
+      "error_mm": [
+        [
+          0.0,
+          -8.466383928600635,
+          1.3474566040617333
+        ],
+        [
+          7.16287133470405,
+          4.157901185033211,
+          1.3474566040617333
+        ],
+        [
+          -7.015406084153483,
+          4.0516801888527425,
+          1.3474566040617333
+        ],
+        [
+          -0.022382813050489905,
+          0.04073803150482008,
+          -5.7262808597204184
+        ]
+      ],
+      "mean_translation_mm": [
+        0.03127060937501937,
+        -0.05401613080246541,
+        -0.42097776188380465
+      ],
+      "aligned_error_mm": [
+        [
+          -0.03127060937501937,
+          -8.41236779779817,
+          1.768434365945538
+        ],
+        [
+          7.131600725329031,
+          4.211917315835676,
+          1.768434365945538
+        ],
+        [
+          -7.046676693528502,
+          4.105696319655208,
+          1.768434365945538
+        ],
+        [
+          -0.05365342242550927,
+          0.09475416230728549,
+          -5.305303097836614
+        ]
+      ],
+      "max_abs_coordinate_mm": 8.466383928600635,
+      "max_aligned_abs_coordinate_mm": 8.41236779779817
+    }
+  },
+  {
+    "options": {
+      "fit_home_offsets": true
+    },
+    "command": [
+      "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/.venv/bin/python",
+      "-m",
+      "autocal.tools.replay_stage",
+      "fit",
+      "research/output/autocal_research_with_Fable5p2/evidence/headless_runs/h1/sweeps.stages/fit-001-default.json",
+      "--options",
+      "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/fit-inputs/offset.json",
+      "--output",
+      "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/fit-comparison/fit-1.json"
+    ],
+    "exit_code": 0,
+    "anchors": {
+      "$type": "array",
+      "value": [
+        [
+          0.0,
+          -1891.4573093904032,
+          -289.39582245023644
+        ],
+        [
+          1637.8839278381504,
+          945.6533936576976,
+          -289.39582245023644
+        ],
+        [
+          -1637.7373142436886,
+          945.5483930065623,
+          -289.39582245023644
+        ],
+        [
+          -0.023661912267513175,
+          0.04304269654654821,
+          1960.3816078179868
+        ]
+      ]
+    },
+    "cost_noise_normalized": 0.4882606211657544,
+    "home_offsets_mm": {
+      "$type": "array",
+      "value": [
+        0.0,
+        0.0,
+        0.0,
+        2.1846409135686553
+      ]
+    },
+    "errors": {
+      "reference_mm": [
+        [
+          0.0,
+          -1900.0,
+          -280.0
+        ],
+        [
+          1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          -1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          0.0,
+          0.0,
+          1900.0
+        ]
+      ],
+      "fitted_mm": [
+        [
+          0.0,
+          -1891.4573093904032,
+          -289.39582245023644
+        ],
+        [
+          1637.8839278381504,
+          945.6533936576976,
+          -289.39582245023644
+        ],
+        [
+          -1637.7373142436886,
+          945.5483930065623,
+          -289.39582245023644
+        ],
+        [
+          -0.023661912267513175,
+          0.04304269654654821,
+          1960.3816078179868
+        ]
+      ],
+      "error_mm": [
+        [
+          0.0,
+          8.542690609596775,
+          -9.395822450236437
+        ],
+        [
+          -7.566072161849661,
+          -4.34660634230238,
+          -9.395822450236437
+        ],
+        [
+          7.71268575631143,
+          -4.451606993437736,
+          -9.395822450236437
+        ],
+        [
+          -0.023661912267513175,
+          0.04304269654654821,
+          60.38160781798683
+        ]
+      ],
+      "mean_translation_mm": [
+        0.030737920548563964,
+        -0.053120007399197984,
+        8.04853511681938
+      ],
+      "aligned_error_mm": [
+        [
+          -0.030737920548563964,
+          8.595810616995973,
+          -17.444357567055818
+        ],
+        [
+          -7.596810082398225,
+          -4.293486334903181,
+          -17.444357567055818
+        ],
+        [
+          7.681947835762866,
+          -4.398486986038537,
+          -17.444357567055818
+        ],
+        [
+          -0.05439983281607714,
+          0.09616270394574619,
+          52.33307270116745
+        ]
+      ],
+      "max_abs_coordinate_mm": 60.38160781798683,
+      "max_aligned_abs_coordinate_mm": 52.33307270116745
+    }
+  }
+]

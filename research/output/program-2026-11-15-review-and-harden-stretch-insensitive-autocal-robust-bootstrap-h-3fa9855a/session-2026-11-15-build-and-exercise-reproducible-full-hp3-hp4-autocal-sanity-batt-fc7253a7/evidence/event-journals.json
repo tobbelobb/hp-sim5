@@ -1,0 +1,20 @@
+[
+  {
+    "path": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp3/sweeps.headless/events.jsonl",
+    "size_bytes": 135932766,
+    "sha256": "a3c59b59f3a61243fc9020a28f35eed67370cfb3d2c372a84b687a09cf6ee229",
+    "access": "local workspace; not committed or backed up"
+  },
+  {
+    "path": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp3-soft/sweeps.headless/events.jsonl",
+    "size_bytes": 122408919,
+    "sha256": "e8063185a3d9ee1fa1f212e57ce22f68257b803b5539e6c18b4670e3ee15fb14",
+    "access": "local workspace; not committed or backed up"
+  },
+  {
+    "path": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp4/sweeps.headless/events.jsonl",
+    "size_bytes": 145327703,
+    "sha256": "291ad96232cb8f23fb9f5abbcb979366c4ee275abb9cca29421d47b49ba32cce",
+    "access": "local workspace; not committed or backed up"
+  }
+]

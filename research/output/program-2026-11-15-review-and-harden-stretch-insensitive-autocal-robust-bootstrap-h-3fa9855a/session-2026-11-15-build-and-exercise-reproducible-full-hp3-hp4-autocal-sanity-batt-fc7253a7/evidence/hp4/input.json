@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/.venv/bin/python",
+    "-m",
+    "autocal.autocal",
+    "--headless-sim",
+    "--machine-type",
+    "hangprinter_4",
+    "--dataset",
+    "/tmp/hp-sim5-battery-hp4/sweeps.json",
+    "--recording-mode",
+    "none",
+    "--max-steps",
+    "20"
+  ],
+  "source_scene": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/public/usd_scenes/hp4.usda",
+  "scene_override": "/tmp/hp-sim5-battery-hp4/input-scene.usda",
+  "stiffness": null
+}

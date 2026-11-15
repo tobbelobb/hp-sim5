@@ -456,3 +456,15 @@ def test_headless_config_matches_scene(tmp_path, monkeypatch, machine, stem, sce
     service = HeadlessSimulation(args, [])
     assert service.config == f"sys/config_{stem}{'_w_line_layers' if layered else ''}.g"
     assert service.scene.name == f"{scene}.usda"
+
+
+def test_scene_override_is_recorded(tmp_path, monkeypatch):
+    from argparse import Namespace
+    scene = tmp_path / 'custom.usda'
+    scene.write_text('#usda 1.0\n')
+    monkeypatch.setenv('HP_SIM5_AUTOCAL_SCENE', str(scene))
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json', keep_sim_alive=False)
+    service = HeadlessSimulation(args, [])
+    assert service.scene == scene
+    assert service.manifest['scene'] == str(scene)
