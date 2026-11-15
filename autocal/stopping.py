@@ -13,7 +13,7 @@ from autocal._autocal_common import (
     _float_or_none, _fmt_float, _full_auto_history_selection_score,
 )
 from autocal.history_selection import (
-    SPREAD_STOP_CONSECUTIVE, SPREAD_STOP_FRAC, SPREAD_STOP_MIN_CANDIDATES,
+    SPREAD_STOP_CONSECUTIVE, SPREAD_STOP_MIN_CANDIDATES,
     consensus_anchor_estimate, consensus_spread_hit,
 )
 
@@ -24,7 +24,7 @@ def spread_stop_fraction() -> float:
     Agreement is not calibrated uncertainty or proof of accuracy. This is opt-in:
     the old default stopped collection before the workspace had been explored.
     `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off` disables this heuristic; invalid or
-    non-finite values retain the default.
+    non-finite values leave it disabled.
     """
     raw = os.environ.get("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", "").strip()
     if not raw:

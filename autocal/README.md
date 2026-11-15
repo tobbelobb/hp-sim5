@@ -17,10 +17,9 @@ drift checks and all noise samples, and settles again whenever measurement force
 changes. This removes a repeated wait without reducing the number of points.
 Encoder sampling averages deviations from the first reading, preserving constant
 readings exactly and avoiding accumulation error at large unwrapped angles.
-THe "click of a button" is currently a terminal call to a python script with many flags and options, and the wiggling goes on for 1-2 hours.
-But it does work.
-Even if huge parts of the data turns out to be rubbish, it still works.
-It's able to detect and ignore bad data points.
+The current interface is a terminal call to a Python script. Autocal can reject
+inconsistent observations, but smooth mechanical biases can survive with small
+fit residuals. The validation report below records measured accuracy and its limits.
 
 It does not retract to the anchors in order to find a stable reference point, as this is often highly impractical with huge CDPRs and heavy, expensive effectors.
 The wiggling happens inside the machine's comfortably reachable volume.
@@ -40,7 +39,7 @@ It chooses new sweeps by information gain. It can also fit spool radii and build
 At final acceptance, it checks saved estimates against sweeps collected after their fit.
 
 On HP3/HP4, new runs use sweeps spread over height and a per-point sensor force
-profile computed from rough anchors, mover weight and strand counts. Before using
+profile computed from rough anchors, mover weight, strand counts and reeving. Before using
 those anchors to set forces, a two-start point fit must pass a local geometry
 check: full rank, at least 80% inliers, and at most 25 mm estimated parameter
 standard deviation using a 0.5 mm minimum line-error assumption. Weak geometry
@@ -49,11 +48,35 @@ and preserves `*.rough_bootstrap.json` and `*.rough_bootstrap_checks.json`.
 An atomic `*.bootstrap_state.json` marker prevents a restarted command from
 using incomplete rough or remeasured data. After interruption or rejection, use
 a fresh dataset path after reestablishing the encoder origin; partial evidence
-is retained. A complete profiled run can continue only with valid force inputs.
+is retained. A complete profiled run can continue only with valid force inputs
+and the same force-profile policy; older profiles remain replayable offline.
 These are observability checks, not bounds on systematic mechanical errors.
 All rough sweeps are then measured again with the checked force profiles; only
 the profiled observations enter the refinement fit. Resuming constant-force data
 keeps constant-force collection so the two measurement models are never mixed.
+
+Automatic HP3/HP4 planning expands each successfully measured fixed-target range
+by one size-tuned excursion. The initial `max_travel_mm` no longer imposes a
+permanent travel ceiling or a sum-of-fixed-deltas budget. Planning uses measured
+sweeps and fitted geometry. Carrying D remains fixed, and force feasibility,
+position tracking, slip and stability checks still apply. Explicit delta bounds
+remain available. Historic-fit spread alone no longer stops collection by default;
+`HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` can enable that heuristic for comparisons.
+
+The first three nonempty sweeps require measured sensor rewind of half a spindle
+turn before taking data. Later points may use a smaller reserve only after a
+reversible local encoder-coupling test at their intended measurement force.
+Both raw readings and noise means must satisfy the reserve or the tested interval.
+Unmeasurable later sweeps return to origin and record boundary evidence so planning
+can try another configuration without refitting unchanged data. Rejections consume
+the overall budget, not convergence patience. Failed movement or recovery stops
+collection; each commanded return is checked before another motor enters force mode.
+Coupling tests establish local transmission, not absolute spool occupancy.
+
+Force tables preserve the reeving-aware strain target rather than clamping it to
+a minimum force. Infeasible tails are removed, and measurements stay within the
+table's support. Commanded profiles do not guarantee actual equal strain: friction,
+force tracking and unequal compliance can still bias the observations.
 
 `--fit-home-offsets` is enabled by default. It estimates the non-translational
 home-length offsets with the independent point fitter before the ellipse fit.
@@ -63,6 +86,11 @@ Joint spool/offset fitting is not implemented: spool searches require
 `--no-fit-home-offsets` and retain constant-force collection. Historical projected
 datasets remain replayable, but `--project-zero-tension` collection is retired.
 
+Fitted home-length offsets and physical-home translation are separate. The guarded
+home-shift helper needs independently measured compatible extension evidence.
+Ordinary collection does not supply that evidence, so it does not automatically
+apply a physical-home shift.
+
 For full simulation sanity checks, run `python -m autocal.tools.sanity_battery
 OUTPUT --machine hangprinter_3` with `.venv/bin/python`. Use `--stiffness 12000`
 or `--scene public/usd_scenes/hp4_worn_bearings.usda` for controlled variants.
@@ -70,6 +98,11 @@ It retains provenance and both absolute and translation-aligned anchor errors,
 and fails unless normal completion meets `--max-error-mm` (default 1 mm).
 The reference is the initial firmware geometry; a changed-geometry scene needs
 an independently verified reference.
+
+The [workspace validation report](../research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/report.md)
+preserves the current full-path trials, actual sampled coverage, recorded-data
+ablations and negative results. Passing the coordinate gate in one simulated case
+does not establish a hardware accuracy guarantee.
 
 For fast same-data comparisons, use `python -m autocal.tools.compare_fit_replays
 FIT_STAGE OUTPUT OPTIONS.json... --reference-m669 REFERENCE.txt --joint`.
