@@ -9,6 +9,7 @@ from scipy.optimize import least_squares
 from scipy.sparse import coo_matrix
 
 from autocal.pose_fit import dataset_line_lengths, HOME_OFFSET_PRIOR_SIGMA_MM
+from autocal.projection_mode import resolve_projection_mode
 from autocal.theoretical_ellipse import (
     anchors_matrix_to_opt_vec, anchor_opt_vec_to_matrix, get_anchor_opt_bounds,
 )
@@ -18,6 +19,8 @@ def fit_joint_ranges(dataset, initial_anchors, *, fit_home_offsets=True, use_noi
     machine = dataset["machine_type"]
     if machine not in ("hangprinter_3", "hangprinter_4"):
         raise ValueError("Joint baseline currently supports Hangprinter only")
+    if resolve_projection_mode(dataset) is True:
+        raise ValueError("Joint baseline comparison of projected data is not validated")
     n, d = int(dataset["num_anchors"]), int(dataset["dimensions"])
     low_z = dataset.get("_low_anchor_z")
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
@@ -90,4 +93,6 @@ def fit_joint_ranges(dataset, initial_anchors, *, fit_home_offsets=True, use_noi
     return {"anchors": anchors_of(fit.x), "home_offsets_mm": np.r_[np.zeros(n-o), fit.x[m+count*d:]],
             "rms_mm": float(np.sqrt(np.mean(np.sum(fit.fun[:count*n].reshape(count, n)**2, axis=1)))),
             "success": bool(fit.success), "message": str(fit.message), "nfev": first.nfev+fit.nfev,
-            "optimality": float(fit.optimality)}
+            "optimality": float(fit.optimality),
+            "first_pass": {"success": bool(first.success), "message": str(first.message),
+                           "nfev": int(first.nfev), "optimality": float(first.optimality)}}

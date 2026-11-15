@@ -1,11 +1,11 @@
-"""Sensor force that keeps the line strain the same at every measured position.
+"""Sensor force targeting a constant weighted mean tension per strand.
 
 At a position the line tensions are fixed by the mover weight up to one free
 amount of pretension, and the torque-controlled sensor line sets that amount.
 Stretch biases the fit through the pretension-weighted mean strain of the lines.
-Choosing the sensor force so that this mean is the same at every position makes
-the stretch act like a uniform scale plus a home length offset, whatever the
-line stiffness is.
+The target makes shared compliance resemble a common scale plus a home length
+offset in the first-order model, without using nominal stiffness. Actual strain
+also depends on force tracking, friction, routing and unequal compliance.
 """
 from __future__ import annotations
 
@@ -122,7 +122,7 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
 
 
 def is_equal_strain(dataset: dict) -> bool:
-    """Whether every sweep of the dataset was measured with a sensor force profile."""
+    """Whether every tensioned sweep commanded a sensor force profile."""
     sweeps = dataset.get("sweeps", [])
     return (resolve_projection_mode(dataset) is not True and bool(sweeps)
             and all((sweep.get("metadata") or {}).get("sensor_force_profile") for sweep in sweeps))

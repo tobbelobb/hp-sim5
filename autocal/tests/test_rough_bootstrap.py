@@ -92,7 +92,32 @@ def test_pending_stage_is_refused_even_without_a_dataset(tmp_path, stage):
 
 def test_complete_marker_requires_the_saved_dataset(tmp_path):
     path = tmp_path / "sweeps.json"
-    bootstrap.write_bootstrap_state(path, "complete")
+    path.with_suffix(".bootstrap_state.json").write_text('{"stage":"complete"}')
     assert "missing" in bootstrap.bootstrap_state_error(path)
-    path.write_text(json.dumps({"sweeps": []}))
+    dataset = _dataset()
+    dataset["version"] = "2.0"
+    for index, sweep in enumerate(dataset["sweeps"]):
+        sweep.update(id=f"sweep_{index}", metadata={"sensor_force_profile": True})
+    path.write_text(json.dumps(dataset))
+    bootstrap.write_bootstrap_state(path, "complete")
     assert bootstrap.bootstrap_state_error(path) is None
+    # Additional adaptive sweeps preserve the authenticated bootstrap prefix.
+    dataset["sweeps"].append({**dataset["sweeps"][0], "id": "extra"})
+    path.write_text(json.dumps(dataset))
+    assert bootstrap.bootstrap_state_error(path) is None
+    dataset["sweeps"][0]["data_points"][0]["l_sensor"] += 1.
+    path.write_text(json.dumps(dataset))
+    assert "no longer matches" in bootstrap.bootstrap_state_error(path)
+
+
+def test_corrupt_complete_dataset_is_rejected_before_headless_context_entry(tmp_path, monkeypatch):
+    from autocal.headless_sim import HeadlessSimulation
+    path = tmp_path / "sweeps.json"
+    path.write_text("{")
+    path.with_suffix(".bootstrap_state.json").write_text('{"stage":"complete"}')
+    def forbidden(*args):
+        raise AssertionError("Headless context must not start")
+    monkeypatch.setattr(HeadlessSimulation, "__enter__", forbidden)
+    with pytest.raises(SystemExit) as error:
+        ac.main(["--headless-sim", "--machine-type", "hangprinter_3", "--dataset", str(path)])
+    assert error.value.code == 2

@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import numpy as np
 import json
+import hashlib
 from pathlib import Path
+from autocal.json_schema import load_json_file
 
 from autocal.active_learning import dataset_sweep_configs, generate_candidate_sweeps
 from autocal.calibrate import build_anchor_initial_guess
@@ -24,8 +26,20 @@ MAX_ROUGH_ANCHOR_STD_MM = 25.0
 ROUGH_LINE_SIGMA_MM = 0.5
 
 
+def _prefix_hash(sweeps):
+    return hashlib.sha256(json.dumps(sweeps, sort_keys=True, separators=(",", ":"),
+                                     allow_nan=False).encode()).hexdigest()
+
+
 def write_bootstrap_state(dataset_path, stage, **details):
     path = Path(dataset_path).with_suffix(".bootstrap_state.json")
+    if stage == "complete":
+        dataset = load_json_file(dataset_path, schema="sweep_dataset")
+        from autocal.equal_strain import is_equal_strain
+        if not is_equal_strain(dataset):
+            raise ValueError("A complete bootstrap requires profiled measurements")
+        details.update(bootstrap_sweeps=len(dataset["sweeps"]),
+                       prefix_sha256=_prefix_hash(dataset["sweeps"]))
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps({"stage": stage, **details}, indent=2) + "\n", encoding="utf-8")
     temporary.replace(path)
@@ -44,10 +58,22 @@ def bootstrap_state_error(dataset_path):
             return f"Incomplete bootstrap ({state_path}); use a fresh dataset path after reestablishing the encoder origin. Partial and rough data are retained."
         if not path.exists():
             return f"Completed bootstrap dataset is missing: {path}"
+        try:
+            dataset = load_json_file(path, schema="sweep_dataset")
+            from autocal.equal_strain import is_equal_strain
+            count = state.get("bootstrap_sweeps")
+            if (not isinstance(count, int) or count <= 0 or count > len(dataset["sweeps"])
+                    or not is_equal_strain(dataset)
+                    or _prefix_hash(dataset["sweeps"][:count]) != state.get("prefix_sha256")):
+                return f"Completed bootstrap data no longer matches its state: {path}"
+        except (OSError, ValueError, TypeError):
+            return f"Invalid completed bootstrap dataset: {path}"
     elif path.exists() and path.with_suffix(".rough_bootstrap.json").exists():
         # Recognize interrupted passes from before the explicit state marker.
         try:
             dataset = json.loads(path.read_text())
+            if not isinstance(dataset, dict):
+                return f"Unreadable legacy bootstrap dataset: {path}"
             from autocal.equal_strain import is_equal_strain
             if not is_equal_strain(dataset):
                 return f"Unfinished legacy bootstrap: {path}; use a fresh dataset path. Rough data are retained."
