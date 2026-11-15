@@ -16,5 +16,11 @@
     "size_bytes": 145327703,
     "sha256": "291ad96232cb8f23fb9f5abbcb979366c4ee275abb9cca29421d47b49ba32cce",
     "access": "local workspace; not committed or backed up"
+  },
+  {
+    "path": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-2ab09534-c90a8474ca3205ee/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp4-worn/sweeps.headless/events.jsonl",
+    "size_bytes": 120050486,
+    "sha256": "b367aebe8fc29ff05986f7d295b0785f0e9da63464407089e6a400176961578d",
+    "access": "local workspace; not committed or backed up"
   }
 ]
