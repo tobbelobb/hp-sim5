@@ -35,3 +35,11 @@ def test_probe_excursion_can_seed_exploration_without_historical_max_travel():
     data = _data()
     data["config"].clear()
     assert exploration_grid(data, 9)[1][3][0] == -780.
+
+
+def test_recorded_free_line_motion_can_seed_a_legacy_zero_fixed_target_dataset():
+    data = _data()
+    data["config"].clear()
+    data["sweeps"][0]["fixed_lengths"] = [0., 0.]
+    data["sweeps"][0]["data_points"][0]["l_drive"] = 100.
+    assert exploration_grid(data, 9)[1][3][0] == -100.

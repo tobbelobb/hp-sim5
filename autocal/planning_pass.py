@@ -200,7 +200,8 @@ def plan_ellipse_sweep(
         if collection_error is None:
             cmd = _suggested_collect_command(
                 cfg_path, best_cfg, machine_type=machine_type,
-                output_file=collector_output, completed_sweeps=len(dataset.get("sweeps", [])),
+                output_file=collector_output,
+                completed_sweeps=sum(bool(sweep.get("data_points")) for sweep in dataset.get("sweeps", [])),
                 extra_args=collector_args_eff,
             )
 

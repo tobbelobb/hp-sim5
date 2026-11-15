@@ -1275,6 +1275,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     measurementStartMm += stepDirection * Math.min(initialStepMm, remaining);
     reserved = await moveForReserve(measurementStartMm);
   }
+  const guardedStartMm = measurementStartMm;
   let reserveProbe = { accepted: false, reason: 'initial half-turn reserve' };
   const room = Math.abs(driveStartPointMm - measurementStartMm);
   if (probeSpoolReserve && room > DEFAULT_FIXED_TOLERANCE_MM) {
@@ -1285,23 +1286,41 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       start: measurementStartMm, away, toward, driveAnchor, sensorAnchor, mmPerDeg,
       sigmaFloorDeg: noiseSigmaFloorDeg,
     });
+    reserveProbe.sensor_force_n = sensorForce;
     if (reserveProbe.accepted) measurementStartMm = toward;
     await moveForReserve(measurementStartMm);
+  }
+  if (Math.abs(driveStartPointMm - measurementStartMm) <= DEFAULT_FIXED_TOLERANCE_MM) {
+    throw new Error('No measurement interval remains after establishing the sensor reserve');
   }
 
   // With a profile the sensor force follows the drive setpoint; otherwise it stays constant.
   let sensorCollectionForce = constantSensorForce;
   const dataPoints = [];
-  const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount, extraFields = null) => {
+  const validateMeasurementAngles = angles => {
+    if (angles.length !== motorIds.length || !angles.every(Number.isFinite)) {
+      throw new Error('Incomplete encoder readings cannot establish the sensor reserve');
+    }
     settleOptions.validateAngles(angles);
-    if (!reserveProbe.accepted && sensorPayoutMm - angles[sensorAnchor] * mmPerDeg[sensorAnchor] < sensorReserveMm) {
+    const force = resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce });
+    const tested = reserveProbe.tested_drive_mm;
+    const driveMm = angles[driveAnchor] * mmPerDeg[driveAnchor];
+    const locallyProbed = reserveProbe.accepted && Math.abs(force - reserveProbe.sensor_force_n) < 1e-9
+      && driveMm >= Math.min(...tested) - DEFAULT_FIXED_TOLERANCE_MM
+      && driveMm <= Math.max(...tested) + DEFAULT_FIXED_TOLERANCE_MM;
+    if (!locallyProbed && sensorPayoutMm - angles[sensorAnchor] * mmPerDeg[sensorAnchor] < sensorReserveMm) {
       throw new Error('Sensor left the reserved half-turn interval before measurement');
     }
+  };
+  const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount, extraFields = null) => {
+    validateMeasurementAngles(angles);
     const lengths = angles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
     const point = {
       l_drive: lengths[driveAnchor],
       l_sensor: lengths[sensorAnchor],
       timestamp_ms: (sendFn.simulationClock?.now() ?? Date.now()) - datasetStartMs,
+      clock_time_ms: sendFn.simulationClock?.now() ?? Date.now(),
+      clock_source: sendFn.simulationClock ? 'simulation' : 'wall',
       raw_angles_deg: angles,
       drive_setpoint_mm: driveSetpointMm,
       step_index: stepIndex,
@@ -1329,7 +1348,12 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   let currentDrive = measurementStartMm;
   let measurementPreloadActive = false;
   for (let stepIdx = 1; stepIdx < steps; stepIdx += 1) {
-    const target = measurementStartMm + stepDelta * (stepIdx - 1);
+    // A variable force profile invalidates the constant-preload probe between
+    // its endpoints. Sample the tested first point, then the reserved arc.
+    const target = reserveProbe.accepted && sensorForceProfile && stepIdx > 1
+      ? (stepCount === 2 ? driveStartPointMm
+        : guardedStartMm + (driveStartPointMm - guardedStartMm) * (stepIdx - 2) / (stepCount - 2))
+      : measurementStartMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
     if (sensorForceProfile) sensorCollectionForce = sensorForceAt(sensorForceProfile, target);
     let settledMeasurement = null;
@@ -1412,7 +1436,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         point.sample_duration_ms = noiseStats.durationMs;
       }
       if (Array.isArray(noiseStats.muByMotorDeg)) {
-        settleOptions.validateAngles(noiseStats.muByMotorDeg);
+        validateMeasurementAngles(noiseStats.muByMotorDeg);
         point.fixed_error_angles_mu_deg = point.fixed_target_angles_deg.map((target, idx) => (
           Number.isFinite(target) ? noiseStats.muByMotorDeg[idx] - target : null
         ));
@@ -1442,6 +1466,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
     spoolReserve: { sensor_payout_mm: sensorPayoutMm, required_sensor_rewind_mm: sensorReserveMm,
       guarded_sensor_rewind_mm: sensorPayoutMm - reserved.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor],
+      guarded_start_drive_mm: guardedStartMm,
       first_drive_mm: measurementStartMm, probe: reserveProbe } };
 }
 

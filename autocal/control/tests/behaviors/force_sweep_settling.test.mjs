@@ -3,17 +3,19 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4 } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false } = {}) {
   let now = 0;
   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
   let preparing = preparationDrift;
   let angles = [0, 0, 0, 0];
   const commands = [];
   const points = [];
+  let lastSleepMs = null, noiseBatch = 0;
   const send = async line => {
     commands.push({ line, now });
     if (line.startsWith('M569.4')) {
       modes = line.split(' T')[1].split(':').map(Number);
+      if (forceLosesCoupling && modes[2] > 2.5) angles[2] = 600.5;
       preparing = false;
     }
     if (line.startsWith('M569.3')) {
@@ -23,7 +25,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     const move = line.match(/^G1 H2 Y([-\d.]+)/);
     if (move) {
       angles[1] += Number(move[1]);
-      angles[2] -= sensorGain * Number(move[1]);
+      if (!(forceLosesCoupling && modes[2] > 2.5)) angles[2] -= sensorGain * Number(move[1]);
     }
     return { reply: '' };
   };
@@ -39,6 +41,11 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
         angles[1] = next;
         if (fixedDrift) angles[0] = 2;
       } else if (measurementDrift && modes[2] > 0) angles[2] += ms / 1000;
+      if (ms === 40 && lastSleepMs !== 40) {
+        noiseBatch += 1;
+        if (meanCrossing && noiseBatch === 2) angles[2] += .1;
+      }
+      lastSleepMs = ms;
     },
   };
   const run = () => performForceSweep(send, { driveAnchor: 1, sensorAnchor: 2 }, {
@@ -98,6 +105,25 @@ test('drive movement without a sensor response never satisfies the initial reser
   const trial = movingPullout({ sensorGain: 0 });
   await expect(trial.run()).rejects.toThrow('too short');
   expect(trial.points).toHaveLength(0);
+});
+
+test('does not publish an encoder mean that crosses the initial half-turn boundary', async () => {
+  const trial = movingPullout({ meanCrossing: true, sensorGain: 180.01 / 47.124 });
+  await expect(trial.run()).rejects.toThrow('half-turn interval');
+  expect(trial.points).toHaveLength(0);
+});
+
+test('rejects a guard that consumes all available travel instead of repeating one point', async () => {
+  const trial = movingPullout({ pulloutLimit: 20, sensorGain: 10 });
+  await expect(trial.run()).rejects.toThrow('No measurement interval');
+  expect(trial.points).toHaveLength(0);
+});
+
+test('probe approval cannot authorize later samples outside its preload and interval', async () => {
+  const trial = movingPullout({ probeSpoolReserve: true, forceLosesCoupling: true,
+    sensorForceProfile: { drive_mm: [-600, 0], force_n: [1, 3] } });
+  await expect(trial.run()).rejects.toThrow('half-turn interval');
+  expect(trial.points.every(point => point.sensor_force_n < 2.5)).toBe(true);
 });
 
 test('allows slow fixed-target preparation before starting the bounded pullout', async () => {

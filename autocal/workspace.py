@@ -22,6 +22,10 @@ def exploration_grid(dataset: dict, count: int):
     if not isinstance(step, (int, float)) or not np.isfinite(step) or step <= 0:
         step = max(abs(value) for axis in values for value in axis)
     if step <= 0:
+        step = max((abs(float(point[key])) for sweep in dataset.get("sweeps", [])
+                    for point in sweep.get("data_points", []) for key in ("l_drive", "l_sensor")
+                    if point.get(key) is not None and np.isfinite(point[key])), default=0.0)
+    if step <= 0:
         raise ValueError("Workspace exploration needs a positive tuned excursion or a completed fixed-target probe")
     bounds = {axis: (min(observed) - step, max(observed) + step)
               for axis, observed in enumerate(values)}
