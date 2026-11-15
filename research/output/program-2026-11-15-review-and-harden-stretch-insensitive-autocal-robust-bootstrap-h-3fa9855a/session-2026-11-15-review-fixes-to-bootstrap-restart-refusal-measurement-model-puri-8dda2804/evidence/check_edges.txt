@@ -1,0 +1,13 @@
+collecting_rough Incomplete bootstrap (/tmp/tmp_nu1terw/sweeps.bootstrap_state.json)
+checking_rough Incomplete bootstrap (/tmp/tmp_nu1terw/sweeps.bootstrap_state.json)
+remeasuring Incomplete bootstrap (/tmp/tmp_nu1terw/sweeps.bootstrap_state.json)
+failed Incomplete bootstrap (/tmp/tmp_nu1terw/sweeps.bootstrap_state.json)
+complete missing: Completed bootstrap dataset is missing: /tmp/tmp_nu1terw/sweeps.json
+complete malformed dataset: None
+malformed marker: Unreadable bootstrap state: /tmp/tmp_nu1terw/sweeps.bootstrap_state.json
+legacy list exception: AttributeError 'list' object has no attribute 'get'
+legacy complete profiled with stale sidecar: None
+jacobian max abs errors, prior rho at z=100: [(2.5031047831691744e-08, [100.0, 1.0, 0.0]), (3.792806765878787e-08, [100.0, 1.0, 0.0])]
+joint convergence: True `gtol` termination condition is satisfied. nfev 17 optimality 5.584467629496724e-09
+changing projected angles changes joint input: False
+complete malformed headless: ['constructed', 'entered'] stopped before real physics
