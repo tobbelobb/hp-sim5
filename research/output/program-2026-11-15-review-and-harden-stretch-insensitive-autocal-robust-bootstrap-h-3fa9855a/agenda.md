@@ -16,6 +16,10 @@ The rough gate can accept estimates about 25 mm from truth. It checks local obse
 
 A bounded terminal-validation pilot collected one fresh sweep without refitting. It worsened nominal HP3, left soft HP3 unchanged and modestly improved HP4. Independent review found live application defects. The live option was removed; the negative evidence and offline scorer/replay remain. Shared alias, write and interrupt issues were fixed.
 
+## Priority after the Fable crossover
+
+The offline reference replay and cross-fitting are complete; the [next experiment plan](next_steps.md) prioritizes reproducing the passing fixed plan in current physics, then passing exactly that plan through firmware. The current point fitter passes the best saved observations, while the original Fable fitter misses 1 mm on current full-autocal observations. A ~390 mm planning budget and reconstructed 40–423 mm height coverage differ materially from the 0–1200 mm direct reference. Resolve that collection/protocol gap before running another broad unchanged battery. Shape and absolute-home requirements remain separate.
+
 ## Open research beyond this delivery
 
 - Establish which force tracking, compliance and observation-model errors explain the remaining shape bias, with paired collection budgets and repeated/noise trials.

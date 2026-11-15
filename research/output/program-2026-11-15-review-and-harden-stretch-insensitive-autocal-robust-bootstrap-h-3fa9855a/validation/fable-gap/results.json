@@ -1,0 +1,600 @@
+{
+  "source_revision": "587590f6f684904d9742b3bc8a3c389999310cb3",
+  "inputs": [
+    {
+      "path": "research/output/autocal_research_with_Fable5p2/evidence/sim_results/v_equal10.out.json",
+      "sha256": "40e503d771b09ac60be19fa8c61cb7f885a10d5a9006b73516116d69178253c2"
+    },
+    {
+      "path": "research/output/autocal_research_with_Fable5p2/evidence/sim_results/v_equal15.out.json",
+      "sha256": "705f5a751784164690ebfd2b44c8c2494074390ee42823600450e144981491a2"
+    },
+    {
+      "path": "research/output/autocal_research_with_Fable5p2/evidence/sim_results/v_equal25.out.json",
+      "sha256": "32673629786c860f52a53342993be42c0ea18a120c8992776040fcfcde0e4250"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/hp3-stateful/sweeps.json",
+      "sha256": "6e0c485f7f87f70427494135681cbd2446b36171f8da77f306eb767c7654d076"
+    }
+  ],
+  "fitter_source_hashes": [
+    {
+      "path": "research/output/autocal_research_with_Fable5p2/evidence/design.py",
+      "sha256": "5df77f73b46f498ac47b291721b37d508f1f321e06fb915142ace93af3ded72b"
+    },
+    {
+      "path": "research/output/autocal_research_with_Fable5p2/evidence/design2.py",
+      "sha256": "322ed18655f4dee6bf93cc79253556e8275fbad85afc2b35a1e84c3a627ea892"
+    },
+    {
+      "path": "research/output/autocal_research_with_Fable5p2/evidence/elastic.py",
+      "sha256": "231025bf71a4e30a9bbece5ba3e29c6a824fe159b3f22f290c10f5acf819ba5a"
+    },
+    {
+      "path": "autocal/pose_fit.py",
+      "sha256": "aff80008f502a17601a5155bde8578d2fd97f677cdbc15461cf7c97b661d9cba"
+    },
+    {
+      "path": "autocal/tools/joint_pose_baseline.py",
+      "sha256": "d1a1291cc0066df105fc5eb5823ce5d89f7cf88eb319df8ce9fe144c0350015d"
+    }
+  ],
+  "direct_recordings": [
+    {
+      "case": "v_equal10",
+      "points": 48,
+      "solver_iterations": 20,
+      "recorded_z_range_mm": [
+        -0.32328009673998626,
+        1199.9436667213195
+      ],
+      "archived_fable": {
+        "absolute_mm": 0.8012352801129055,
+        "aligned_mm": 0.12005142872641435,
+        "mean_translation_mm": [
+          -0.003448208758923754,
+          -0.0966506208398061,
+          -0.7785301167987058
+        ],
+        "reported_rms_mm": 0.03552251963724866,
+        "offset_mm": 0.9154309493516877
+      },
+      "production_point": {
+        "absolute_mm": 0.8138675799846169,
+        "aligned_mm": 0.17915516187760902,
+        "mean_translation_mm": [
+          -0.0024912918303056034,
+          -0.12738125297334357,
+          -0.7810813811237267
+        ],
+        "reported_rms_mm": 0.03562504090033135,
+        "offset_mm": 0.9137213795636517,
+        "success": true
+      },
+      "independent_joint": {
+        "absolute_mm": 0.813524264482794,
+        "aligned_mm": 0.1930989074162954,
+        "mean_translation_mm": [
+          -0.0023667604306830676,
+          -0.13442575266687737,
+          -0.7807691547158271
+        ],
+        "reported_rms_mm": 0.035921192619500386,
+        "offset_mm": 0.913105272411286,
+        "success": true
+      }
+    },
+    {
+      "case": "v_equal15",
+      "points": 55,
+      "solver_iterations": 20,
+      "recorded_z_range_mm": [
+        -0.443347446241249,
+        1199.9127646819547
+      ],
+      "archived_fable": {
+        "absolute_mm": 1.2678015798030629,
+        "aligned_mm": 0.621653200057628,
+        "mean_translation_mm": [
+          -0.0028279908010318045,
+          -0.28121177408500114,
+          -1.1679910678315792
+        ],
+        "reported_rms_mm": 0.038662798121237255,
+        "offset_mm": 1.4099418877743235
+      },
+      "production_point": {
+        "absolute_mm": 1.3310541746407125,
+        "aligned_mm": 0.7254358951235532,
+        "mean_translation_mm": [
+          -0.002300630237243566,
+          -0.3867456279171221,
+          -1.1786279621669138
+        ],
+        "reported_rms_mm": 0.038879530012357034,
+        "offset_mm": 1.4015548316569213,
+        "success": true
+      },
+      "independent_joint": {
+        "absolute_mm": 1.3997040551969349,
+        "aligned_mm": 0.8660588461924162,
+        "mean_translation_mm": [
+          -0.002770714858499543,
+          -0.4865283201746512,
+          -1.18505722798389
+        ],
+        "reported_rms_mm": 0.041809108936114475,
+        "offset_mm": 1.3971389823971472,
+        "success": true
+      }
+    },
+    {
+      "case": "v_equal25",
+      "points": 55,
+      "solver_iterations": 20,
+      "recorded_z_range_mm": [
+        -0.8409451574615118,
+        1199.855554009839
+      ],
+      "archived_fable": {
+        "absolute_mm": 2.340315490311241,
+        "aligned_mm": 0.5159665000214968,
+        "mean_translation_mm": [
+          0.0006979029865110656,
+          0.026649687474696603,
+          -2.2434229766440126
+        ],
+        "reported_rms_mm": 0.044395614534174024,
+        "offset_mm": 2.3030044372857827
+      },
+      "production_point": {
+        "absolute_mm": 2.306652137033552,
+        "aligned_mm": 0.5997194400429294,
+        "mean_translation_mm": [
+          0.000518982343908148,
+          0.04327632204734017,
+          -2.246121328887199
+        ],
+        "reported_rms_mm": 0.044439689707790886,
+        "offset_mm": 2.294729829593501,
+        "success": true
+      },
+      "independent_joint": {
+        "absolute_mm": 2.285497371926567,
+        "aligned_mm": 0.6090057981583011,
+        "mean_translation_mm": [
+          0.0003107796914666806,
+          0.04025878804304625,
+          -2.2438800042410634
+        ],
+        "reported_rms_mm": 0.04479767013401896,
+        "offset_mm": 2.2930843485377808,
+        "success": true
+      }
+    }
+  ],
+  "height_subsets": [
+    {
+      "case": "v_equal10",
+      "subset_seed": 20261115,
+      "below_450_mm": {
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42
+        ],
+        "points": 43,
+        "absolute_mm": 1.096979686331224,
+        "aligned_mm": 0.5776843523566599,
+        "mean_translation_mm": [
+          -0.005063114199125645,
+          -0.20189938910776117,
+          -0.8686945154932175
+        ],
+        "reported_rms_mm": 0.03600149062987853,
+        "offset_mm": 0.8970391252220772
+      },
+      "same_count_full_height": {
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          15,
+          16,
+          17,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47
+        ],
+        "points": 43,
+        "absolute_mm": 0.8385471928284005,
+        "aligned_mm": 0.2072435484422236,
+        "mean_translation_mm": [
+          0.07587105217130748,
+          -0.08896334543780217,
+          -0.8041655550888578
+        ],
+        "reported_rms_mm": 0.03576855192329882,
+        "offset_mm": 0.9117034494348081
+      }
+    },
+    {
+      "case": "v_equal15",
+      "subset_seed": 20261115,
+      "below_450_mm": {
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46
+        ],
+        "points": 47,
+        "absolute_mm": 1.1361459196789383,
+        "aligned_mm": 1.1358664425120872,
+        "mean_translation_mm": [
+          -0.00027947716685115126,
+          -0.38523144773616913,
+          -1.0398103942811048
+        ],
+        "reported_rms_mm": 0.03655984426236689,
+        "offset_mm": 1.4463864628986332
+      },
+      "same_count_full_height": {
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          20,
+          21,
+          22,
+          24,
+          25,
+          26,
+          27,
+          28,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53
+        ],
+        "points": 47,
+        "absolute_mm": 1.2170992406392998,
+        "aligned_mm": 0.6873858937191196,
+        "mean_translation_mm": [
+          -0.02056357346953544,
+          -0.22246499832730243,
+          -1.152603132512354
+        ],
+        "reported_rms_mm": 0.039173779068261305,
+        "offset_mm": 1.4332486982783472
+      }
+    },
+    {
+      "case": "v_equal25",
+      "subset_seed": 20261115,
+      "below_450_mm": {
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46
+        ],
+        "points": 47,
+        "absolute_mm": 3.1309856144330297,
+        "aligned_mm": 1.7107222634074384,
+        "mean_translation_mm": [
+          0.0016575334427620023,
+          0.1782588308556768,
+          -2.4717709711074463
+        ],
+        "reported_rms_mm": 0.04165651923176147,
+        "offset_mm": 2.1820326526763387
+      },
+      "same_count_full_height": {
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          20,
+          21,
+          22,
+          24,
+          25,
+          26,
+          27,
+          28,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53
+        ],
+        "points": 47,
+        "absolute_mm": 2.567844455135628,
+        "aligned_mm": 0.7360839876345435,
+        "mean_translation_mm": [
+          0.16336763519743186,
+          -0.03898150331784442,
+          -2.323910452688011
+        ],
+        "reported_rms_mm": 0.04522801543539592,
+        "offset_mm": 2.3152778138551473
+      }
+    }
+  ],
+  "production_recording": {
+    "points": 160,
+    "reconstructed_z_range_mm": [
+      39.98377152770827,
+      422.86609849758764
+    ],
+    "reconstructed_z_percentiles_mm": [
+      39.98377152770827,
+      72.0134294085873,
+      135.25041363512466,
+      273.1861731454612,
+      422.86609849758764
+    ],
+    "planner_max_travel_mm": 389.7166630729162,
+    "archived_fable": {
+      "absolute_mm": 1.474830937874458,
+      "aligned_mm": 1.3121488687038525,
+      "mean_translation_mm": [
+        -0.1626820691706054,
+        -0.2772356258471279,
+        -0.8254359397616753
+      ],
+      "reported_rms_mm": 0.03000364926581287,
+      "offset_mm": 1.0168780336696552
+    },
+    "production_point": {
+      "absolute_mm": 1.5770363632875615,
+      "aligned_mm": 1.4171357044480173,
+      "mean_translation_mm": [
+        -0.1599006588395443,
+        -0.284973824756197,
+        -0.8175225132049491
+      ],
+      "reported_rms_mm": 0.0300326558559069,
+      "offset_mm": 1.028080343378289,
+      "success": true
+    },
+    "independent_joint": {
+      "absolute_mm": 1.5801823159767991,
+      "aligned_mm": 1.4224958772038259,
+      "mean_translation_mm": [
+        -0.15768643877297328,
+        -0.28697867822317114,
+        -0.8217380107395229
+      ],
+      "reported_rms_mm": 0.030145580692959816,
+      "offset_mm": 1.0292496075106803,
+      "success": true
+    }
+  },
+  "scope": "Offline replay only; no fresh physics. No ellipse fit on arbitrary one-point groups. Local solver results; truth-based diagnostic initialization. Height subsets also change XY/force composition."
+}
