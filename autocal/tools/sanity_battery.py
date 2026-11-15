@@ -44,9 +44,15 @@ def main(argv=None):
     parser.add_argument('--scene', type=Path)
     parser.add_argument('--stiffness', type=float, help='Set all cable stiffness-per-unit-length values')
     parser.add_argument('--max-steps', type=int, default=20)
+    parser.add_argument('--max-error-mm', type=float, default=1.0,
+                        help='Maximum absolute coordinate error for a passing run (default: 1 mm)')
+    parser.add_argument('--autocal-args', nargs=argparse.REMAINDER, default=[],
+                        help='Additional autocal options, placed last')
     args = parser.parse_args(argv)
-    if args.stiffness is not None and args.stiffness <= 0:
+    if args.stiffness is not None and (not math.isfinite(args.stiffness) or args.stiffness <= 0):
         parser.error('stiffness must be positive')
+    if not math.isfinite(args.max_error_mm) or args.max_error_mm <= 0:
+        parser.error('max-error-mm must be finite and positive')
     args.output.mkdir(parents=True, exist_ok=False)
     output = args.output.resolve()
     source = (args.scene or REPO_ROOT / catalogued_machine(args.machine)['scene']).resolve()
@@ -59,7 +65,8 @@ def main(argv=None):
     scene_path = output / 'input-scene.usda'
     scene_path.write_text(scene)
     command = [sys.executable, '-m', 'autocal.autocal', '--headless-sim', '--machine-type', args.machine,
-               '--dataset', str(output / 'sweeps.json'), '--recording-mode', 'none', '--max-steps', str(args.max_steps)]
+               '--dataset', str(output / 'sweeps.json'), '--recording-mode', 'none', '--max-steps', str(args.max_steps),
+               *args.autocal_args]
     env = dict(os.environ, HP_SIM5_AUTOCAL_SCENE=str(scene_path), PYTHONUNBUFFERED='1')
     (output / 'input.json').write_text(json.dumps({'command': command, 'source_scene': str(source),
         'scene_override': str(scene_path), 'stiffness': args.stiffness}, indent=2) + '\n')
@@ -74,9 +81,13 @@ def main(argv=None):
             summary['anchors'] = anchor_errors(manifest['firmware_initial']['M669'], manifest['firmware_final']['M669'])
         except (KeyError, ValueError) as exc:
             summary['anchor_error'] = str(exc)
+    error = summary.get('anchors', {}).get('max_abs_coordinate_mm', float('inf'))
+    summary['max_error_mm'] = args.max_error_mm
+    summary['passed'] = bool(result.returncode == 0 and summary.get('normal_completion')
+                             and math.isfinite(error) and error <= args.max_error_mm)
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary, indent=2))
-    return result.returncode
+    return 0 if summary['passed'] else (result.returncode or 1)
 
 
 if __name__ == '__main__':

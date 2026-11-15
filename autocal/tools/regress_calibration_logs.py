@@ -725,6 +725,8 @@ def run_autocal(
         "--buildup-factor",
         dataset_spec.buildup_factor,
         "--no-collect",
+        # These frozen references predate home-offset fitting.
+        "--no-fit-home-offsets",
         *(('--sparse-recovery',) if sparse_recovery else ()),
         *extra_args,
     ]

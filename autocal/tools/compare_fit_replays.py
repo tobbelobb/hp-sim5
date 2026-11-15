@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 from autocal.tools.sanity_battery import anchor_errors
+from autocal.stage_artifacts import read_stage_artifact
 
 
 def main():
@@ -25,13 +26,19 @@ def main():
         (args.output / f'fit-{index}.log').write_text(result.stdout + result.stderr)
         row = {'options': json.loads(options.read_text()), 'command': command, 'exit_code': result.returncode}
         if result.returncode == 0:
-            fit = json.loads(target.read_text())['payload']['fit']
-            row.update({key: fit.get(key) for key in ('anchors', 'cost_noise_normalized', 'home_offsets_mm')})
+            fit = read_stage_artifact(target)['payload']['fit']
+            row.update(anchors=fit['anchors'].tolist(), cost_noise_normalized=fit.get('cost_noise_normalized'),
+                       home_offsets_mm=fit['home_offsets_mm'].tolist(),
+                       pose_fit_anchors=fit['pose_fit']['anchors'].tolist(),
+                       pose_fit_rms_mm=fit['pose_fit']['rms_mm'])
             if args.reference_m669:
-                anchors = fit['anchors']['value']
+                anchors = fit['anchors']
                 m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
                                 for name, anchor in zip('ABCD', anchors))
                 row['errors'] = anchor_errors(args.reference_m669.read_text(), m669)
+                pose_m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
+                                    for name, anchor in zip('ABCD', fit['pose_fit']['anchors']))
+                row['pose_fit_errors'] = anchor_errors(args.reference_m669.read_text(), pose_m669)
         summary.append(row)
     (args.output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     return int(any(row['exit_code'] for row in summary))
