@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/.venv/bin/python",
+    "-m",
+    "autocal.autocal",
+    "--headless-sim",
+    "--machine-type",
+    "hangprinter_3",
+    "--dataset",
+    "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.json",
+    "--recording-mode",
+    "none",
+    "--max-steps",
+    "20"
+  ],
+  "source_scene": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/public/usd_scenes/hp3.usda",
+  "scene_override": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/input-scene.usda",
+  "stiffness": 12000.0
+}

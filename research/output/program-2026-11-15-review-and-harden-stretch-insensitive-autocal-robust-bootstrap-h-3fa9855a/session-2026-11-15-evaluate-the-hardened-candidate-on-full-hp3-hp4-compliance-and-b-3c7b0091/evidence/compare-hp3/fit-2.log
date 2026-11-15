@@ -1,0 +1,6 @@
+[robust] pointwise sigma_source: mode=auto point=140 origin=0 min=0 mixed=0 total=140
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=1.73e-05 floor_mm=0.3
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.300091 used=0.300091 floor=0.300091 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.202 flex=0.216 floor=0.05 non_layered=0.3 layer_changes=0 mode_add=0 total=0.3 model=0.3 used=0.3 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+{"stage": "fit", "seconds": 1.942686796000089, "output": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3/fit-2.json"}

@@ -1,0 +1,664 @@
+{
+  "candidate": "921ced3c9523847c03753f5bf0e227d6c45519e6",
+  "repo_at_run": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4",
+  "tracked_evidence": [
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-hp4/fit-0.log",
+      "bytes": 981,
+      "sha256": "7cdb65df13921fe56c66e0eb5f8cf3b1f83529ec3d6054ad4d360a3d45a5bfe9"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-hp4/fit-1.log",
+      "bytes": 1096,
+      "sha256": "3dd6dce1664234b400d4e3536f42a0c2a362b6f2bd0a6c1f366c9e6d18b37904"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-hp4/fit-2.log",
+      "bytes": 981,
+      "sha256": "b8bc06db971a323038381d88c93932f875099c0c1948d940b8e4bbdf929a068f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-hp4/fit-3.log",
+      "bytes": 1095,
+      "sha256": "602328f42b294adf07a6c0adf031bff0567372372a592b42d9e9f7d378354da0"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-hp4/summary.json",
+      "bytes": 26888,
+      "sha256": "c0cf6f6d74e3797eece4542df61d2312fd0904c643d2e87ec31d29b472c669ce"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-soft/fit-0.log",
+      "bytes": 983,
+      "sha256": "6c742c879c577deb7cb74a0126171fba53abfe9746116a26d746e0f0f81a9cc4"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-soft/fit-1.log",
+      "bytes": 1097,
+      "sha256": "e8a50b4aba8ca3a0b73716e1930bcc926b002adc1fada50b88038a504ef53cdc"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-soft/fit-2.log",
+      "bytes": 982,
+      "sha256": "48e816725f1d16c7b2cae1a6324c1d3ae7c3ed5a571546f39e2e26ef743ea235"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-soft/fit-3.log",
+      "bytes": 1097,
+      "sha256": "0319c8e1dfdcda5c655f992b0da46f483027c430efa32a857e32baea3d0985f3"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-candidate-soft/summary.json",
+      "bytes": 26879,
+      "sha256": "fd7db859dd178515bac499aea55a64002367b92fc0f4ab5ad48e7a81b7bbe13a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt-v2/fit-0.log",
+      "bytes": 988,
+      "sha256": "153e8e4e045f181a8d50f74bd34c7ca704061d2affe3b136e3cd6c248ef7a456"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt-v2/fit-1.log",
+      "bytes": 1102,
+      "sha256": "7f141ac1a57c33e1f8532ab26c3a2dedddba2f07a8e8c90a3891ea798d00b241"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt-v2/fit-2.log",
+      "bytes": 988,
+      "sha256": "2324eb9e5b5faa0160050997d82ff1254d75237b6fdefd555ee9c3eaf2609e26"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt-v2/fit-3.log",
+      "bytes": 1100,
+      "sha256": "538b3f6f300f033f2b6b97e28f2f79685cd3dbc0e33d37c0debd593608364615"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt-v2/summary.json",
+      "bytes": 26875,
+      "sha256": "985ebfd5f97a2e3fbe210094755dee6383accd61ee1f003d2618867bd53bace3"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt/fit-0.log",
+      "bytes": 985,
+      "sha256": "fbcddfa9c615a6e855bef971dd47e5efa50b8a70c6853540991b0bd058ee4fbb"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt/fit-1.log",
+      "bytes": 1100,
+      "sha256": "9446f1753c628cb27919e848eb53c70501b08bea5ecb7c1a831b4619f913db36"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt/fit-2.log",
+      "bytes": 985,
+      "sha256": "3e81695d1da2ab9a2f245be4a965c8d6bff19551fe3b733a395fa7523db402ca"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt/fit-3.log",
+      "bytes": 1099,
+      "sha256": "4a5cc64deb1ef36c9623ffb2f5887ab8a01290ce60568c9902b758bc52ddd9f3"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft-corrupt/summary.json",
+      "bytes": 26853,
+      "sha256": "530fddb5036c7f56d38fc2bdb165bec6646349586a031dd5eb9f2a0d229efa3e"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft/fit-0.log",
+      "bytes": 977,
+      "sha256": "dcd3ff54e051dd6cb4cfc5b14f0fbd20aaf2813f2000ec5b5b632655067bbd35"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft/fit-1.log",
+      "bytes": 1092,
+      "sha256": "ef82c8d66b350cb8ae4c84812319d301ead67d7fd2a30a702f230a476b0a7eac"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft/fit-2.log",
+      "bytes": 977,
+      "sha256": "ddeed3e896b332311e6396b10d6b68853014419c04549cff1c9d88c63a9095e0"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft/fit-3.log",
+      "bytes": 1091,
+      "sha256": "b6f360ab81d00d0ba1f70df7432df6280a47f6b5c8f53659d1051be5201f09dd"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3-soft/summary.json",
+      "bytes": 26757,
+      "sha256": "f0eabbb5cfa97ee28396990ea50c73e5029fc612d0235e1132f1fd5bbef717fd"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3/fit-0.log",
+      "bytes": 939,
+      "sha256": "4af5375ed94a2cd6c3eb54dba9a98b1611af39680a86b8d512e5be24b869e3b7"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3/fit-1.log",
+      "bytes": 1051,
+      "sha256": "5439f88937d41820d14b14e3ce1d3da90fd83827c1a15db156a0cb057f2a5aba"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3/fit-2.log",
+      "bytes": 938,
+      "sha256": "8acf3378bbc8ed21ba5456579df41a96225f82361edc7c4a8d7448e814e5d9c4"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3/fit-3.log",
+      "bytes": 1054,
+      "sha256": "da0ad49121713c6d45b0a05cc9f023329053f9c887fe515daa3c4ecd169592e7"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/compare-hp3/summary.json",
+      "bytes": 26797,
+      "sha256": "cd9d200808ae74dd795ca05bac09f6dbba950c2a47018c01c3a117ab2e73b8b5"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000-exit.txt",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/input-scene.usda",
+      "bytes": 23118,
+      "sha256": "4348577579e80016c230fa77d23ab5a77106eb7a394e7485e6f76e139ca10c08"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/input.json",
+      "bytes": 1063,
+      "sha256": "1068990ea7f14d87d0df40fa8e22dc15ffa8f6a18f303c2d12b4ea259f566c7d"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/summary.json",
+      "bytes": 2124,
+      "sha256": "bc1feb478f0c992eac4e7f3cccc89e1faa149923cec8e52ef5cc3e4045a53dbc"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.full_auto.log",
+      "bytes": 60876,
+      "sha256": "ffaee683eaa600b4d48a8ee38a47b889906ec02a762fba24196907876a7eaf4b"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.full_auto_log.jsonl",
+      "bytes": 30547,
+      "sha256": "dd5084bbee4dd3daaf1d866cecf685bc9338a3f0b44708a3c13c15f090815d31"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.headless/baked-scene.usda",
+      "bytes": 24039,
+      "sha256": "2c313f138b374d187f3babe0b42b3906aa5c963b2b1013658477a7077ebe8965"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.headless/manifest.json",
+      "bytes": 8115,
+      "sha256": "f6aec6c0748e95f6253aad4e8a61586f7bcf00ca4cf3c96e5fa44cf86ab6961a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.json",
+      "bytes": 234682,
+      "sha256": "9d341467277c705fdefa21b7c7013b9c40ab13e2f44857b0425c6fd233cfd271"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.rough_bootstrap.json",
+      "bytes": 147601,
+      "sha256": "3295a1a7c6c3d8fe2ed5442ba59546d07772a5bcfa60b8c833d4dcf4b128e751"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.rough_bootstrap_checks.json",
+      "bytes": 984,
+      "sha256": "bdb59391eeb205dae76653765b78a2a51377fff1a4dda20a3d3e7977a25db62f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000-exit.txt",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/input-scene.usda",
+      "bytes": 23118,
+      "sha256": "5cf92a493f66004789e067ccea00f5898775f58d8d6e353834ad7c05ed97ed1d"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/input.json",
+      "bytes": 1063,
+      "sha256": "17c0b15fe6532ac5b72466f38520665cd95a6eaca7685ebf3bb951644743e779"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/summary.json",
+      "bytes": 2146,
+      "sha256": "54925453df3750cf7b20dea94ddedc72ae12e1f649ed29280fbb6d28ef85ab52"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.full_auto.log",
+      "bytes": 60838,
+      "sha256": "b3756ef7d09d2e2e3a72c742c8a604b53245b002d3e5b565ead7aea44040f142"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.full_auto_log.jsonl",
+      "bytes": 30559,
+      "sha256": "2df113cb2ad56543b148fd578f4fb333dcb90fae9219c2da8387c0f482b4339f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.headless/baked-scene.usda",
+      "bytes": 24039,
+      "sha256": "79ed324a14aec014a20221808af596fc920075587095f3ae9639f86e4e34cedd"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.headless/manifest.json",
+      "bytes": 8113,
+      "sha256": "40b3d9d3cbbd5c5adcbc6e3feda8737c1ec76a696d61cd650d9a567d580cdcb7"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.json",
+      "bytes": 234133,
+      "sha256": "f665ce052ab987abe91fd2925acd84e5c3da69c87c5f001a82091be95db1ab5c"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.rough_bootstrap.json",
+      "bytes": 147223,
+      "sha256": "a9adcb774c131a46e7075baf9ee876065164aeda364adf2f164b196cb28e6bbf"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.rough_bootstrap_checks.json",
+      "bytes": 985,
+      "sha256": "8535f117f1e74bf9f457be97c689417a55f6027a57f89f0fc71dc9002e7e67fb"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-exit.txt",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn-exit.txt",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/input-scene.usda",
+      "bytes": 65811,
+      "sha256": "22905fca64111e9932bfe062cb11fee059cbf98c716b01c5603726ee12a36e24"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/input.json",
+      "bytes": 1072,
+      "sha256": "fc5a0a1d97ea0cc621a96271fa305623306051e53cb0cf696f3b2f67b4265dae"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/summary.json",
+      "bytes": 2109,
+      "sha256": "a15591dd1531295eb7555dd68cb6c10f6f394cefe14a0c36f4cd11c2903026f9"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.full_auto.log",
+      "bytes": 71485,
+      "sha256": "6745694a4c38738701d851acf7638eabdb8898df658087481d0750b639c63be8"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.full_auto_log.jsonl",
+      "bytes": 38761,
+      "sha256": "98201d7b3f181ed5b7a3177237061b41c8b5ee64135b7eaa924fbc860d6ea3b8"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.headless/baked-scene.usda",
+      "bytes": 73304,
+      "sha256": "77d08220fb358ed062b0fc692fc7370928323a26a9567c6a312ae005537600c5"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.headless/manifest.json",
+      "bytes": 8125,
+      "sha256": "133bc3da1edd41cbc0858babefede2a01623f07bd420f332e9b6cd6a091c85b7"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.json",
+      "bytes": 235843,
+      "sha256": "a345a3a14880c10fbd67d6bc28f933777d147865ebeb24f60b90a39b67084aa8"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.rough_bootstrap.json",
+      "bytes": 119980,
+      "sha256": "210ef8edfe85e6fafe7e3ca62432c911ac61721cc58eeb096441b74f66c4b96a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.rough_bootstrap_checks.json",
+      "bytes": 664,
+      "sha256": "5b5be191b00054413dfd3ce5f9c4c28d6d55926c567e381fa7b954c7166c5dbd"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/input-scene.usda",
+      "bytes": 64069,
+      "sha256": "748d97eccbf5aec63013325caf9224661c958e4cf14033093873cda8c515005f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/input.json",
+      "bytes": 1048,
+      "sha256": "0d963ca82f931fb512ac4d397feae123bf2f2def8d9b8fc8d5480135345dc790"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/summary.json",
+      "bytes": 2148,
+      "sha256": "b49d18f7f2aa4ef10fe484e63712c33f34316ccd7a192867b52fec734e0c0673"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.full_auto.log",
+      "bytes": 66449,
+      "sha256": "f82d68ef74a75182c8dc18487dfb1ccea1e1ac492b40f0475b940c6c91050ce7"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.full_auto_log.jsonl",
+      "bytes": 38644,
+      "sha256": "2822710f639208fc884c4b2672189179aad741ed60536804dc37ab8130cd54de"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.headless/baked-scene.usda",
+      "bytes": 71853,
+      "sha256": "9c4e266289e4440cf0602b1dab42f214065b33e9c3ff3755f821c755a2cf4573"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.headless/manifest.json",
+      "bytes": 8111,
+      "sha256": "5bdb6c279605f31fcb77d32b3e152981747a995f0b4c6d8eda4345fb216b377b"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json",
+      "bytes": 236361,
+      "sha256": "febec113b6213346773c2444b29acf1b6cb503a96c1d8465d194b5d2c56967af"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.rough_bootstrap.json",
+      "bytes": 118942,
+      "sha256": "2dd4a23e7cacef4ba7492651314c37b3fe5d70cbb474535b6573248a4940f827"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.rough_bootstrap_checks.json",
+      "bytes": 663,
+      "sha256": "e9b2be7694e773310a64b5788358081f0b86a8a8718cc286c6dc3f33b58c587e"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-hp4/input.json",
+      "bytes": 835,
+      "sha256": "b849c1cedca6b05f51c171d51b5ac28e72f8c540d7be873abc1b66c1d476a948"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-hp4/offset-false-filter-false.json",
+      "bytes": 89,
+      "sha256": "498ea813f5fcc5bc04eea27f4cd8cd20fe258a74ec10177613a2bd6acf029184"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-hp4/offset-false-filter-true.json",
+      "bytes": 87,
+      "sha256": "fd6922effc9c05f0bf7ac7a5df9c3ec94e852111a76274dcca2986a178ab5066"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-hp4/offset-true-filter-false.json",
+      "bytes": 88,
+      "sha256": "46ab8284dec782b91daa76e3ead9621121a5fec2cc5507694580eedc49856186"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-hp4/offset-true-filter-true.json",
+      "bytes": 86,
+      "sha256": "28f9781b2a6cf30f76f3925e0cfe2041cf62849a45cb2b89d50a87a9875df122"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-hp4/reference.txt",
+      "bytes": 61,
+      "sha256": "913271454c00684f998b4d94163068db3d343a916f778800a1d4c3ece61b4dee"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-hp4/stage.json",
+      "bytes": 194069,
+      "sha256": "bdee27e1540d4dd34bce716e5b2c2f086f96537f9ddbb00582551a44a4931c1a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-soft/input.json",
+      "bytes": 841,
+      "sha256": "03320c78b05ef0665b14548ff6cc4a7b314d1b33f2f669c22574a2241a007de0"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-soft/offset-false-filter-false.json",
+      "bytes": 89,
+      "sha256": "498ea813f5fcc5bc04eea27f4cd8cd20fe258a74ec10177613a2bd6acf029184"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-soft/offset-false-filter-true.json",
+      "bytes": 87,
+      "sha256": "fd6922effc9c05f0bf7ac7a5df9c3ec94e852111a76274dcca2986a178ab5066"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-soft/offset-true-filter-false.json",
+      "bytes": 88,
+      "sha256": "46ab8284dec782b91daa76e3ead9621121a5fec2cc5507694580eedc49856186"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-soft/offset-true-filter-true.json",
+      "bytes": 86,
+      "sha256": "28f9781b2a6cf30f76f3925e0cfe2041cf62849a45cb2b89d50a87a9875df122"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-soft/reference.txt",
+      "bytes": 61,
+      "sha256": "913271454c00684f998b4d94163068db3d343a916f778800a1d4c3ece61b4dee"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-candidate-soft/stage.json",
+      "bytes": 192390,
+      "sha256": "42ef7fcf874859d40ad04ec4fb4b46f8a7240dfdd34a0d756dcc379a723de0b2"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt-v2/input.json",
+      "bytes": 867,
+      "sha256": "5168f83917f8d4678deefd46d5871892249406270ec7e293df72ff7503ba1634"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt-v2/offset-false-filter-false.json",
+      "bytes": 89,
+      "sha256": "498ea813f5fcc5bc04eea27f4cd8cd20fe258a74ec10177613a2bd6acf029184"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt-v2/offset-false-filter-true.json",
+      "bytes": 87,
+      "sha256": "fd6922effc9c05f0bf7ac7a5df9c3ec94e852111a76274dcca2986a178ab5066"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt-v2/offset-true-filter-false.json",
+      "bytes": 88,
+      "sha256": "46ab8284dec782b91daa76e3ead9621121a5fec2cc5507694580eedc49856186"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt-v2/offset-true-filter-true.json",
+      "bytes": 86,
+      "sha256": "28f9781b2a6cf30f76f3925e0cfe2041cf62849a45cb2b89d50a87a9875df122"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt-v2/reference.txt",
+      "bytes": 61,
+      "sha256": "913271454c00684f998b4d94163068db3d343a916f778800a1d4c3ece61b4dee"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt-v2/stage.json",
+      "bytes": 177776,
+      "sha256": "edb5888eb54b439ff952124e7051312d66a4cee6305c50d11a564b983af9d035"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt/input.json",
+      "bytes": 867,
+      "sha256": "5168f83917f8d4678deefd46d5871892249406270ec7e293df72ff7503ba1634"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt/offset-false-filter-false.json",
+      "bytes": 89,
+      "sha256": "498ea813f5fcc5bc04eea27f4cd8cd20fe258a74ec10177613a2bd6acf029184"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt/offset-false-filter-true.json",
+      "bytes": 87,
+      "sha256": "fd6922effc9c05f0bf7ac7a5df9c3ec94e852111a76274dcca2986a178ab5066"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt/offset-true-filter-false.json",
+      "bytes": 88,
+      "sha256": "46ab8284dec782b91daa76e3ead9621121a5fec2cc5507694580eedc49856186"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt/offset-true-filter-true.json",
+      "bytes": 86,
+      "sha256": "28f9781b2a6cf30f76f3925e0cfe2041cf62849a45cb2b89d50a87a9875df122"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt/reference.txt",
+      "bytes": 61,
+      "sha256": "913271454c00684f998b4d94163068db3d343a916f778800a1d4c3ece61b4dee"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft-corrupt/stage.json",
+      "bytes": 177772,
+      "sha256": "fe639a4bea18ec0de07a214d698ca910789dcdd058bc7b9be2bb1eccc313e89f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft/input.json",
+      "bytes": 840,
+      "sha256": "95e189a288812e9a20b3375e2e904f78dac0993aff93ad0762f789a4a219fdeb"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft/offset-false-filter-false.json",
+      "bytes": 89,
+      "sha256": "498ea813f5fcc5bc04eea27f4cd8cd20fe258a74ec10177613a2bd6acf029184"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft/offset-false-filter-true.json",
+      "bytes": 87,
+      "sha256": "fd6922effc9c05f0bf7ac7a5df9c3ec94e852111a76274dcca2986a178ab5066"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft/offset-true-filter-false.json",
+      "bytes": 88,
+      "sha256": "46ab8284dec782b91daa76e3ead9621121a5fec2cc5507694580eedc49856186"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft/offset-true-filter-true.json",
+      "bytes": 86,
+      "sha256": "28f9781b2a6cf30f76f3925e0cfe2041cf62849a45cb2b89d50a87a9875df122"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft/reference.txt",
+      "bytes": 61,
+      "sha256": "913271454c00684f998b4d94163068db3d343a916f778800a1d4c3ece61b4dee"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3-soft/stage.json",
+      "bytes": 177778,
+      "sha256": "c633af7595cf15ab197d231ec956f68ee9efbc53fea2eb6d3cbb937d13b27104"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3/input.json",
+      "bytes": 835,
+      "sha256": "79dd7d748e1f38609c82863259146386214f144d63a10a2f08aaa0305984e104"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3/offset-false-filter-false.json",
+      "bytes": 89,
+      "sha256": "498ea813f5fcc5bc04eea27f4cd8cd20fe258a74ec10177613a2bd6acf029184"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3/offset-false-filter-true.json",
+      "bytes": 87,
+      "sha256": "fd6922effc9c05f0bf7ac7a5df9c3ec94e852111a76274dcca2986a178ab5066"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3/offset-true-filter-false.json",
+      "bytes": 88,
+      "sha256": "46ab8284dec782b91daa76e3ead9621121a5fec2cc5507694580eedc49856186"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3/offset-true-filter-true.json",
+      "bytes": 86,
+      "sha256": "28f9781b2a6cf30f76f3925e0cfe2041cf62849a45cb2b89d50a87a9875df122"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3/reference.txt",
+      "bytes": 61,
+      "sha256": "913271454c00684f998b4d94163068db3d343a916f778800a1d4c3ece61b4dee"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp3/stage.json",
+      "bytes": 176253,
+      "sha256": "4467bde36eef8aafe80bedfa0bd62a5fbc4d91bc6f8754daaecbb58d553bc042"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp4/input.json",
+      "bytes": 835,
+      "sha256": "01dc4380cd042fde1988b7186a85dd43afbc0347989223164008a79e67be0905"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp4/offset-false-filter-false.json",
+      "bytes": 89,
+      "sha256": "498ea813f5fcc5bc04eea27f4cd8cd20fe258a74ec10177613a2bd6acf029184"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp4/offset-false-filter-true.json",
+      "bytes": 87,
+      "sha256": "fd6922effc9c05f0bf7ac7a5df9c3ec94e852111a76274dcca2986a178ab5066"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp4/offset-true-filter-false.json",
+      "bytes": 88,
+      "sha256": "46ab8284dec782b91daa76e3ead9621121a5fec2cc5507694580eedc49856186"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp4/offset-true-filter-true.json",
+      "bytes": 86,
+      "sha256": "28f9781b2a6cf30f76f3925e0cfe2041cf62849a45cb2b89d50a87a9875df122"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp4/reference.txt",
+      "bytes": 61,
+      "sha256": "913271454c00684f998b4d94163068db3d343a916f778800a1d4c3ece61b4dee"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/prepared-hp4/stage.json",
+      "bytes": 177944,
+      "sha256": "460632668f75c241952b0bd21f7305010fef97d702ee1c09a37657f55c8a6c04"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/rough-replay.json",
+      "bytes": 10515,
+      "sha256": "71b0f34d70acb6e7117ce90604704503d7881e4c32cd41a1169a50a9ffad30e2"
+    }
+  ],
+  "local_only_event_journals": [
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-10000/sweeps.headless/events.jsonl",
+      "bytes": 145272385,
+      "sha256": "230d962b47d34752958929c2d6334f47582a6b2dce2967ed86d6791e1d59420b",
+      "availability": "local only; not committed or uploaded"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.headless/events.jsonl",
+      "bytes": 143742919,
+      "sha256": "a36977a99eab56fc82d5fc5ef4942e16d1842fc3f8ec91ee46bcf810b13b5de5",
+      "availability": "local only; not committed or uploaded"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.headless/events.jsonl",
+      "bytes": 165499597,
+      "sha256": "df0df3e3dacae67500a2d94dedf1d761518d1241649e3458f4bca6690e7236b0",
+      "availability": "local only; not committed or uploaded"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.headless/events.jsonl",
+      "bytes": 137272569,
+      "sha256": "214e05caa8a9e47a7cd72b0c6704479a23c78f3a7d4d52537560c762618ae63d",
+      "availability": "local only; not committed or uploaded"
+    }
+  ],
+  "local_binaries": [
+    {
+      "path": "RRF/build/rrf_simulator",
+      "bytes": 12938880,
+      "sha256": "77f46c356de3062c078b375046f5f4f61188507ae4f9286eaec578d6917a4a7d"
+    },
+    {
+      "path": "src/wasm/cable_solver/target/native/physics.node",
+      "bytes": 5790000,
+      "sha256": "b29961a446b568a25827f01d5e3151ecb418037a9a234cba8919d4366fec8b91"
+    }
+  ]
+}

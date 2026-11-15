@@ -1,0 +1,13 @@
+{
+  "dataset": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp3-soft/sweeps.json",
+  "dataset_sha256": "9bc3afb8bcb6c2bafab11d3f72a9ab34cbc5ddc34c42947ded1cd6fa2ca5c69a",
+  "template": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/autocal_research_with_Fable5p2/evidence/headless_runs/h1/sweeps.stages/fit-001-default.json",
+  "template_sha256": "d623a25842677a67ef9908d8075449ebc99f07b143c31fe199078dbdc0f19e70",
+  "points": 140,
+  "sweeps": 7,
+  "corrupt": false,
+  "seed": null,
+  "noise_sigma_mm": null,
+  "sensor_outliers_mm": null,
+  "outlier_point_indices": []
+}

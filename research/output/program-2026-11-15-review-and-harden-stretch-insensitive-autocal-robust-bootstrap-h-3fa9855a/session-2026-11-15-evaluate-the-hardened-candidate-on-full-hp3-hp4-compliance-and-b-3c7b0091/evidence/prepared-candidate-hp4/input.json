@@ -1,0 +1,13 @@
+{
+  "dataset": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json",
+  "dataset_sha256": "febec113b6213346773c2444b29acf1b6cb503a96c1d8465d194b5d2c56967af",
+  "template": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/autocal_research_with_Fable5p2/evidence/headless_runs/h1/sweeps.stages/fit-001-default.json",
+  "template_sha256": "d623a25842677a67ef9908d8075449ebc99f07b143c31fe199078dbdc0f19e70",
+  "points": 160,
+  "sweeps": 8,
+  "corrupt": false,
+  "seed": null,
+  "noise_sigma_mm": null,
+  "sensor_outliers_mm": null,
+  "outlier_point_indices": []
+}

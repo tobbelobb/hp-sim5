@@ -1,0 +1,453 @@
+; command: /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/autocal/autocal.py --headless-sim --machine-type hangprinter_4 --dataset /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json --recording-mode none --max-steps 20
+Wrote to console: Writing additional info to log: /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.full_auto.log
+; bootstrapping dataset (3 sweeps, auto size-tune):
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.bootstrap_cfg.txt --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; auto-tune force start
+; auto-tune probe 1/120: test=0.0100 moved=no travel=0.000deg stalled=yes
+; auto-tune probe 2/120: test=0.0140 moved=no travel=0.040deg stalled=yes
+; auto-tune probe 3/120: test=0.0196 moved=no travel=0.030deg stalled=yes
+; auto-tune probe 4/120: test=0.0274 moved=no travel=0.030deg stalled=yes
+; auto-tune probe 5/120: test=0.0384 moved=no travel=0.030deg stalled=yes
+; auto-tune probe 6/120: test=0.0538 moved=no travel=0.060deg stalled=yes
+; auto-tune probe 7/120: test=0.0753 moved=no travel=0.120deg stalled=yes
+; auto-tune probe 8/120: test=0.1054 moved=no travel=0.180deg stalled=yes
+; auto-tune probe 9/120: test=0.1476 moved=no travel=0.200deg stalled=yes
+; auto-tune probe 10/120: test=0.2066 moved=no travel=0.210deg stalled=yes
+; auto-tune probe 11/120: test=0.2893 moved=no travel=0.350deg stalled=yes
+; auto-tune probe 12/120: test=0.4050 moved=no travel=0.500deg stalled=yes
+; auto-tune probe 13/120: test=0.5669 moved=no travel=0.720deg stalled=yes
+; auto-tune probe 14/120: test=0.7937 moved=yes travel=1.140deg stalled=yes
+; auto-tune bisect-start 1/60: test=0.6803 moved=no travel=0.950deg stalled=yes
+; auto-tune bisect-start 2/60: test=0.7370 moved=no travel=0.910deg stalled=yes
+; auto-tune edge-ramp 1/120: test=0.7937 moved=no travel=0.980deg stalled=yes
+; auto-tune edge-ramp 2/120: test=1.1112 moved=yes travel=1.670deg stalled=yes
+; auto-tune edge-ramp 3/120: test=1.5557 moved=yes travel=331.690deg stalled=no
+; auto-tune edge-ramp 4/120: test=2.1780 moved=yes travel=844.060deg stalled=no
+; auto-tune edge-ramp 5/120: test=3.0491 moved=yes travel=2045.830deg stalled=no
+; auto-tune edge-ramp 6/120: test=4.2688 moved=yes travel=2949.430deg stalled=no
+; auto-tune edge-ramp 7/120: test=5.9763 moved=yes travel=3394.650deg stalled=no
+; auto-tune edge-ramp 8/120: test=8.3668 moved=yes travel=3498.960deg stalled=no
+; auto-tune selected: idle=0.0397 start=0.7937 edge=4.2688 d_max=3498.960deg
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json.force-tuning.json
+; size-tune travel: waiting for encoder stability: 5.0s wall, 50.0s simulation, 13 samples
+; size-tune max travel raw=537.629mm scaled=430.103mm
+
+Sweep 1/3: fix [0, 3], pair 1/2
+  Sub-sweep 1/2: drive 1, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 1
+  Collected 20 points from 2 sub-sweeps
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 2/3: fix [1, 3], pair 0/2
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 3/3: fix [2, 3], pair 0/1
+  Sub-sweep 1/2: drive 0, sensor 1
+  Sub-sweep 2/2: drive 1, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 3 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json
+Returned all motors to encoder origin.
+; bootstrap dataset written to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json
+Wrote to console: ; rough bootstrap: {'ready': False, 'sweeps': 3, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 61.53117973089668, 'restart_difference_mm': 9.927897031047905e-05, 'inlier_fraction': 1.0, 'rms_mm': 0.02594281771428097, 'converged': True}
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.rough_extra_1.cfg.txt --fixed-targets 0.0,-430.1028838323642 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.rough_extra_1.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.rough_extra_1.json.force-tuning.json
+
+Sweep 1/1: fix [2, 3], pair 0/1, fixed targets [0.000, -430.103]
+  Sub-sweep 1/2: drive 0, sensor 1
+  Sub-sweep 2/2: drive 1, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.rough_extra_1.json
+Returned all motors to encoder origin.
+Wrote to console: ; rough bootstrap: {'ready': True, 'sweeps': 4, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 15.851587186954994, 'restart_difference_mm': 8.978480968835356e-05, 'inlier_fraction': 1.0, 'rms_mm': 0.03404507135156471, 'converged': True}
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_1.cfg.txt --fixed-targets 430.0945062519546,0.0 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_1.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.bootstrap_force_1.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_1.json.force-tuning.json
+
+Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [430.095, 0.000]
+  Sub-sweep 1/2: drive 1, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 1
+; sweep pullout: waiting for encoder stability: 5.0s wall, 50.0s simulation, 13 samples
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_1.json
+Returned all motors to encoder origin.
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_2.cfg.txt --fixed-targets 430.0945062519546,0.0 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_2.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.bootstrap_force_2.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_2.json.force-tuning.json
+
+Sweep 1/1: fix [1, 3], pair 0/2, fixed targets [430.095, 0.000]
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_2.json
+Returned all motors to encoder origin.
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_3.cfg.txt --fixed-targets 430.0945062519546,0.0 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_3.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.bootstrap_force_3.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_3.json.force-tuning.json
+
+Sweep 1/1: fix [2, 3], pair 0/1, fixed targets [430.095, 0.000]
+  Sub-sweep 1/2: drive 0, sensor 1
+  Sub-sweep 2/2: drive 1, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_3.json
+Returned all motors to encoder origin.
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_4.cfg.txt --fixed-targets 0.0,-430.10890521828355 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_4.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --return-to-origin --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.bootstrap_force_4.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_4.json.force-tuning.json
+
+Sweep 1/1: fix [2, 3], pair 0/1, fixed targets [0.000, -430.109]
+  Sub-sweep 1/2: drive 0, sensor 1
+  Sub-sweep 2/2: drive 1, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.equal_strain_4.json
+Returned all motors to encoder origin.
+; full-auto log: /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.full_auto_log.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.full_auto.stop to request stop (cross-platform)
+Wrote to console: ; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 1/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.003524 cost_noise_normalized=0.3011 J=0.3011 chi2_red=0.3543 raw_fit_score_ui=0.3011 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=60 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1895.22, -278.29], [1641.76, 947.84, -278.29], [-1642.15, 948.09, -278.29], [0.04, -0.07, 1886.37]]
+M669 A0.00:-1895.22:-278.29 B1641.76:947.84:-278.29 C-1642.15:948.09:-278.29 D0.04:-0.07:1886.37
+; cost=0.003524 cost_noise_normalized=0.3011 origin_norms=[1915.540, 1916.046, 1916.498, 1886.367] pairwise=[d01=3283.041, d02=3283.449, d03=2877.033, d12=3283.909, d13=2877.419, d23=2877.767]
+; pose_fit: anchors=[[0.00, -1896.23, -280.65], [1642.79, 948.35, -280.65], [-1643.75, 949.05, -280.65], [0.04, -0.08, 1896.22]] rms=0.0274mm points=80 max_diff_vs_ellipse_fit=9.86mm
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.238]
+; noise_cost: J=0.3011 chi2_red=0.3543 |z|_med=0.5128 |z|_p95=0.8894 outlier_ratio=0 N=60 mode=sigma lengths=mu J_trim=0.3011 chi2_red_trim=0.3543 N_trim=60
+; rank_coverage: effective_obs=60 total_obs=60 filtered_ratio=0 obs_bonus=0 filtered_penalty=0 rank_adjust=0
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.5821mm used_sigma=0.5821mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0.005924mm friction_cogging=0.3969mm flex=0.4229mm floor=0.05mm non_layered=0.5821mm layer_changes=0mm mode_add=0mm total=0.5821mm model=0.5821mm used=0.5821mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=989mm, p8=980mm, p4=979mm, p7=977mm, p5=974mm)
+; covariance_scaled: chi2_red=0.3543 std_scaled(p11=595mm, p0=589mm, p8=583mm, p4=583mm, p7=582mm, p5=580mm)
+; CI95: max_std=594.7mm max_ci=1166mm workspace=1490 rel_std=0.3991 rel_ci=0.7823 scale=chi2_red=0.3543
+; encoder_noise: points=80/80 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=80 sigma_nonfinite=0
+; next_sweep score=4.82232 fixed=[1, 3] targets=[0.0, -408.597739640746] pair=[0,2]
+; top_candidates:
+;   4.82232 fixed=[1, 3] targets=[0.0, -408.597739640746] pair=[0,2]
+;   4.76287 fixed=[1, 3] targets=[21.50514419161817, -408.597739640746] pair=[0,2]
+;   4.71574 fixed=[0, 3] targets=[0.0, -408.597739640746] pair=[1,2]
+;   4.67624 fixed=[0, 3] targets=[43.0102883832364, -387.0925954491278] pair=[1,2]
+;   4.66303 fixed=[1, 3] targets=[0.0, -387.0925954491278] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.txt --fixed-targets 0.0,-408.597739640746 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_001.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.sensor_force_profile.json
+; reusing force tuning: low=0.03969N mid=0.7937N max=4.269N
+; selected run=default fit_score_ui=0.3011 raw_fit_score_ui=0.3011 score_basis=standard-noise cost=0.3011 rel_std=0.3991 max_std=594.7mm rank_score=0.3011 iteration_adjust=0 coverage_adjust=0 history_rank_score=0.3011
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.txt --fixed-targets 0.0,-408.597739640746 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_001.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.sensor_force_profile.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_001.json.force-tuning.json
+
+Sweep 1/1: fix [1, 3], pair 0/2, fixed targets [0.000, -408.598]
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_001.json
+Returned all motors to encoder origin.
+; merged /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_001.json -> /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json sweeps=5
+Wrote to console: Collected sweep nr 5
+
+; === full-auto iteration 2/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 2/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=2.209e-05 cost_noise_normalized=0.5866 J=0.5866 chi2_red=0.6446 raw_fit_score_ui=0.5866 score_basis=standard-noise rank_coverage_adjust=-0.1532 effective_obs=100 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=2.209e-05 cost_noise_normalized=0.5866 J=0.5866 chi2_red=0.6446 raw_fit_score_ui=0.5866 score_basis=standard-noise rank_coverage_adjust=-0.1532 effective_obs=100 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1898.60, -280.85], [1645.08, 949.83, -280.85], [-1644.77, 949.54, -280.85], [0.05, -0.09, 1895.67]]
+M669 A0.00:-1898.60:-280.85 B1645.08:949.83:-280.85 C-1644.77:949.54:-280.85 D0.05:-0.09:1895.67
+; cost=2.209e-05 cost_noise_normalized=0.5866 origin_norms=[1919.262, 1920.243, 1919.838, 1895.670] pairwise=[d01=3289.353, d02=3288.949, d03=2888.182, d12=3289.849, d13=2888.895, d23=2888.680]
+; pose_fit: anchors=[[0.00, -1898.44, -280.81], [1644.84, 949.67, -280.81], [-1644.72, 949.53, -280.81], [0.05, -0.09, 1895.78]] rms=0.0286mm points=100 max_diff_vs_ellipse_fit=0.24mm
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.041]
+; noise_cost: J=0.5866 chi2_red=0.6446 |z|_med=0.5796 |z|_p95=1.578 outlier_ratio=0 N=100 mode=sigma lengths=mu J_trim=0.5866 chi2_red_trim=0.6446 N_trim=100
+; rank_coverage: effective_obs=100 total_obs=100 filtered_ratio=0 obs_bonus=0.1532 filtered_penalty=0 rank_adjust=-0.1532
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.5821mm used_sigma=0.5821mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0.005924mm friction_cogging=0.3969mm flex=0.4229mm floor=0.05mm non_layered=0.5821mm layer_changes=0mm mode_add=0mm total=0.5821mm model=0.5821mm used=0.5821mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=988mm, p4=976mm, p7=976mm, p5=974mm, p8=974mm)
+; covariance_scaled: chi2_red=0.6446 std_scaled(p11=802mm, p0=793mm, p4=784mm, p7=784mm, p5=782mm, p8=782mm)
+; CI95: max_std=802.1mm max_ci=1572mm workspace=1490 rel_std=0.5383 rel_ci=1.055 scale=chi2_red=0.6446
+; encoder_noise: points=100/100 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=100 sigma_nonfinite=0
+; next_sweep score=2.89556 fixed=[1, 3] targets=[43.0102883832364, -21.50514419161823] pair=[0,2]
+; top_candidates:
+;   2.89556 fixed=[1, 3] targets=[43.0102883832364, -21.50514419161823] pair=[0,2]
+;   2.89392 fixed=[2, 3] targets=[43.0102883832364, -21.50514419161823] pair=[0,1]
+;   2.88094 fixed=[0, 3] targets=[0.0, -21.50514419161823] pair=[1,2]
+;   2.8632 fixed=[2, 3] targets=[64.51543257485463, -21.50514419161823] pair=[0,1]
+;   2.8605 fixed=[1, 3] targets=[64.51543257485463, -21.50514419161823] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.txt --fixed-targets 43.0102883832364,-21.50514419161823 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_002.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.sensor_force_profile.json
+; reusing force tuning: low=0.03969N mid=0.7937N max=4.269N
+; selected run=default fit_score_ui=0.5866 raw_fit_score_ui=0.5866 score_basis=standard-noise cost=0.5866 rel_std=0.5383 max_std=802.1mm rank_score=0.5866 iteration_adjust=-0.1919 coverage_adjust=-0.1532 history_rank_score=0.364
+Wrote to console: The 2nd best try so far.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 2 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.txt --fixed-targets 43.0102883832364,-21.50514419161823 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_002.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.sensor_force_profile.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_002.json.force-tuning.json
+
+Sweep 1/1: fix [1, 3], pair 0/2, fixed targets [43.010, -21.505]
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_002.json
+Returned all motors to encoder origin.
+; merged /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_002.json -> /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json sweeps=6
+Wrote to console: Collected sweep nr 6
+
+; === full-auto iteration 3/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 3/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=2.196e-05 cost_noise_normalized=0.6138 J=0.6138 chi2_red=0.6745 raw_fit_score_ui=0.6138 score_basis=standard-noise rank_coverage_adjust=-0.1532 effective_obs=100 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=2.196e-05 cost_noise_normalized=0.6138 J=0.6138 chi2_red=0.6745 raw_fit_score_ui=0.6138 score_basis=standard-noise rank_coverage_adjust=-0.1532 effective_obs=100 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1900.98, -281.05], [1647.09, 951.03, -281.05], [-1646.54, 950.53, -281.05], [0.06, -0.08, 1895.16]]
+M669 A0.00:-1900.98:-281.05 B1647.09:951.03:-281.05 C-1646.54:950.53:-281.05 D0.06:-0.08:1895.16
+; cost=2.196e-05 cost_noise_normalized=0.6138 origin_norms=[1921.643, 1922.594, 1921.871, 1895.161] pairwise=[d01=3293.461, d02=3292.750, d03=2889.517, d12=3293.634, d13=2890.191, d23=2889.779]
+; pose_fit: anchors=[[0.00, -1900.70, -281.00], [1646.75, 950.78, -281.00], [-1646.65, 950.60, -281.00], [0.09, -0.06, 1895.35]] rms=0.0302mm points=120 max_diff_vs_ellipse_fit=0.34mm
+; home_offsets_mm: [0.000, 0.000, 0.000, 0.797]
+; noise_cost: J=0.6138 chi2_red=0.6745 |z|_med=0.5435 |z|_p95=1.345 outlier_ratio=0 N=100 mode=sigma lengths=mu J_trim=0.6138 chi2_red_trim=0.6745 N_trim=100
+; rank_coverage: effective_obs=100 total_obs=100 filtered_ratio=0 obs_bonus=0.1532 filtered_penalty=0 rank_adjust=-0.1532
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.5821mm used_sigma=0.5821mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0.005924mm friction_cogging=0.3969mm flex=0.4229mm floor=0.05mm non_layered=0.5821mm layer_changes=0mm mode_add=0mm total=0.5821mm model=0.5821mm used=0.5821mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=987mm, p7=975mm, p5=974mm, p4=974mm, p8=970mm)
+; covariance_scaled: chi2_red=0.6745 std_scaled(p11=820mm, p0=811mm, p7=801mm, p5=800mm, p4=800mm, p8=797mm)
+; CI95: max_std=820.3mm max_ci=1608mm workspace=1490 rel_std=0.5506 rel_ci=1.079 scale=chi2_red=0.6745
+; encoder_noise: points=120/120 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=120 sigma_nonfinite=0
+; next_sweep score=2.02395 fixed=[1, 3] targets=[387.09259544912777, -43.01028838323646] pair=[0,2]
+; top_candidates:
+;   2.02395 fixed=[1, 3] targets=[387.09259544912777, -43.01028838323646] pair=[0,2]
+;   2.00238 fixed=[2, 3] targets=[387.09259544912777, -43.01028838323646] pair=[0,1]
+;   1.97599 fixed=[1, 3] targets=[365.58745125750954, -64.51543257485463] pair=[0,2]
+;   1.97534 fixed=[0, 3] targets=[43.0102883832364, -387.0925954491278] pair=[1,2]
+;   1.96527 fixed=[2, 3] targets=[365.58745125750954, -64.51543257485463] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.txt --fixed-targets 387.09259544912777,-43.01028838323646 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_003.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.sensor_force_profile.json
+; reusing force tuning: low=0.03969N mid=0.7937N max=4.269N
+; selected run=default.warm fit_score_ui=0.6138 raw_fit_score_ui=0.6138 score_basis=standard-noise cost=0.6138 rel_std=0.5506 max_std=820.3mm rank_score=0.6138 iteration_adjust=-0.2544 coverage_adjust=-0.1532 history_rank_score=0.3288
+Wrote to console: The 2nd best try so far.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 1 more attempts.
+; collecting next sweep (default.warm)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.txt --fixed-targets 387.09259544912777,-43.01028838323646 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_003.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.sensor_force_profile.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_003.json.force-tuning.json
+
+Sweep 1/1: fix [1, 3], pair 0/2, fixed targets [387.093, -43.010]
+  Sub-sweep 1/2: drive 0, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 0
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_003.json
+Returned all motors to encoder origin.
+; merged /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_003.json -> /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json sweeps=7
+Wrote to console: Collected sweep nr 7
+
+; === full-auto iteration 4/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 4/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=2.212e-05 cost_noise_normalized=0.5728 J=0.5728 chi2_red=0.6454 raw_fit_score_ui=0.5728 score_basis=standard-noise rank_coverage_adjust=-0.0863 effective_obs=80 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=2.212e-05 cost_noise_normalized=0.5728 J=0.5728 chi2_red=0.6454 raw_fit_score_ui=0.5728 score_basis=standard-noise rank_coverage_adjust=-0.0863 effective_obs=80 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1901.00, -281.05], [1646.87, 950.88, -281.05], [-1646.54, 950.57, -281.05], [0.05, -0.08, 1895.21]]
+M669 A0.00:-1901.00:-281.05 B1646.87:950.88:-281.05 C-1646.54:950.57:-281.05 D0.05:-0.08:1895.21
+; cost=2.212e-05 cost_noise_normalized=0.5728 origin_norms=[1921.660, 1922.328, 1921.889, 1895.208] pairwise=[d01=3293.234, d02=3292.796, d03=2889.565, d12=3293.410, d13=2890.057, d23=2889.825]
+; pose_fit: anchors=[[0.00, -1900.63, -280.98], [1646.66, 950.75, -280.98], [-1646.43, 950.45, -280.98], [0.08, -0.06, 1895.54]] rms=0.0314mm points=140 max_diff_vs_ellipse_fit=0.36mm
+; home_offsets_mm: [0.000, 0.000, 0.000, 0.805]
+; noise_cost: J=0.5728 chi2_red=0.6454 |z|_med=0.5717 |z|_p95=1.309 outlier_ratio=0 N=80 mode=sigma lengths=mu J_trim=0.5728 chi2_red_trim=0.6454 N_trim=80
+; rank_coverage: effective_obs=80 total_obs=80 filtered_ratio=0 obs_bonus=0.0863 filtered_penalty=0 rank_adjust=-0.0863
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.5821mm used_sigma=0.5821mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0.005924mm friction_cogging=0.3969mm flex=0.4229mm floor=0.05mm non_layered=0.5821mm layer_changes=0mm mode_add=0mm total=0.5821mm model=0.5821mm used=0.5821mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=999mm, p0=987mm, p5=974mm, p7=974mm, p4=972mm, p8=967mm)
+; covariance_scaled: chi2_red=0.6454 std_scaled(p11=802mm, p0=793mm, p5=783mm, p7=782mm, p4=781mm, p8=777mm)
+; CI95: max_std=802.2mm max_ci=1572mm workspace=1490 rel_std=0.5385 rel_ci=1.055 scale=chi2_red=0.6454
+; encoder_noise: points=140/140 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=140 sigma_nonfinite=0
+; next_sweep score=1.92433 fixed=[0, 3] targets=[43.0102883832364, -387.0925954491278] pair=[1,2]
+; top_candidates:
+;   1.92433 fixed=[0, 3] targets=[43.0102883832364, -387.0925954491278] pair=[1,2]
+;   1.87396 fixed=[0, 3] targets=[0.0, -387.0925954491278] pair=[1,2]
+;   1.83782 fixed=[0, 3] targets=[21.50514419161817, -365.5874512575096] pair=[1,2]
+;   1.8323 fixed=[0, 3] targets=[21.50514419161817, -387.0925954491278] pair=[1,2]
+;   1.82911 fixed=[2, 3] targets=[365.58745125750954, -64.51543257485463] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.txt --fixed-targets 43.0102883832364,-387.0925954491278 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_004.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.sensor_force_profile.json
+; reusing force tuning: low=0.03969N mid=0.7937N max=4.269N
+; history_select: spread_stop spread_mm=0.2765 limit_mm=4.94 streak=1/2
+; selected run=default.warm fit_score_ui=0.5728 raw_fit_score_ui=0.5728 score_basis=standard-noise cost=0.5728 rel_std=0.5385 max_std=802.2mm rank_score=0.5728 iteration_adjust=-0.2638 coverage_adjust=-0.0863 history_rank_score=0.2917
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; collecting next sweep (default.warm)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.txt --fixed-targets 43.0102883832364,-387.0925954491278 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_004.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.warm.sensor_force_profile.json
+Requested hp-sim position trace mode: on.
+Requested hp-sim position trace mode: on.
+; force-tuning checkpoint saved to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_004.json.force-tuning.json
+
+Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [43.010, -387.093]
+  Sub-sweep 1/2: drive 1, sensor 2
+  Sub-sweep 2/2: drive 2, sensor 1
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_004.json
+Returned all motors to encoder origin.
+; merged /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_004.json -> /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json sweeps=8
+Wrote to console: Collected sweep nr 8
+
+; === full-auto iteration 5/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 5/20 dataset=/home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=109 origin=0 min=0 mixed=0 total=109
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=3.277e-05 cost_noise_normalized=0.6401 J=0.6455 chi2_red=0.7036 raw_fit_score_ui=0.6401 score_basis=standard-noise rank_coverage_adjust=-0.1791 effective_obs=109 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=160 origin=0 min=0 mixed=0 total=160
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=3.36e-05 floor_mm=0.582
+[robust] pointwise sigma_floor_mm: origin=0.0059243 mult=3 scaled=0.0177729 min=0.05 model=0.582137 used=0.582137 floor=0.582137 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00592 friction_cogging=0.397 flex=0.423 floor=0.05 non_layered=0.582 layer_changes=0 mode_add=0 total=0.582 model=0.582 used=0.582 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=2.494e-05 cost_noise_normalized=0.6962 J=0.6962 chi2_red=0.7377 raw_fit_score_ui=0.6962 score_basis=standard-noise rank_coverage_adjust=-0.2942 effective_obs=160 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1899.27, -280.45], [1642.94, 949.08, -280.45], [-1645.72, 949.84, -280.45], [0.67, -0.06, 1897.98]]
+M669 A0.00:-1899.27:-280.45 B1642.94:949.08:-280.45 C-1645.72:949.84:-280.45 D0.67:-0.06:1897.98
+; cost=3.277e-05 cost_noise_normalized=0.6401 origin_norms=[1919.861, 1917.977, 1920.738, 1897.980] pairwise=[d01=3288.204, d02=3290.258, d03=2890.082, d12=3288.652, d13=2888.508, d23=2891.100]
+; pose_fit: anchors=[[0.00, -1900.52, -280.93], [1646.17, 950.42, -280.93], [-1646.41, 950.51, -280.93], [0.06, -0.07, 1895.51]] rms=0.0319mm points=160 max_diff_vs_ellipse_fit=3.23mm
+; home_offsets_mm: [0.000, 0.000, 0.000, 0.824]
+; noise_cost: J=0.6455 chi2_red=0.7036 |z|_med=0.5833 |z|_p95=1.428 outlier_ratio=0 N=109 mode=sigma lengths=mu J_trim=0.6455 chi2_red_trim=0.7036 N_trim=109
+; rank_coverage: effective_obs=109 total_obs=109 filtered_ratio=0 obs_bonus=0.1791 filtered_penalty=0 rank_adjust=-0.1791
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.5821mm used_sigma=0.5821mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0.005924mm friction_cogging=0.3969mm flex=0.4229mm floor=0.05mm non_layered=0.5821mm layer_changes=0mm mode_add=0mm total=0.5821mm model=0.5821mm used=0.5821mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm 
+; info rank: 10/12 std(p11=998mm, p0=984mm, p5=969mm, p7=968mm, p4=966mm, p8=963mm)
+; covariance_scaled: chi2_red=0.7036 std_scaled(p11=838mm, p0=825mm, p5=813mm, p7=812mm, p4=810mm, p8=808mm)
+; CI95: max_std=837.5mm max_ci=1642mm workspace=1490 rel_std=0.5621 rel_ci=1.102 scale=chi2_red=0.7036
+; encoder_noise: points=160/160 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=160 sigma_nonfinite=0
+; next_sweep score=1.70606 fixed=[2, 3] targets=[365.58745125750954, -64.51543257485463] pair=[0,1]
+; top_candidates:
+;   1.70606 fixed=[2, 3] targets=[365.58745125750954, -64.51543257485463] pair=[0,1]
+;   1.68502 fixed=[2, 3] targets=[344.0823070658913, -86.02057676647286] pair=[0,1]
+;   1.61832 fixed=[2, 3] targets=[344.0823070658913, -64.51543257485463] pair=[0,1]
+;   1.57397 fixed=[0, 3] targets=[365.58745125750954, -64.51543257485463] pair=[1,2]
+;   1.56685 fixed=[2, 3] targets=[236.55658610780029, -193.5462977245639] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.txt --fixed-targets 365.58745125750954,-64.51543257485463 --output-file /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.new_005.json --solver-iterations 20 --server http://127.0.0.1:45849 --headless-url http://127.0.0.1:56253 --no-spawn-rrf-simulator --firmware rrf --sim --force-low 0.039685738662707165 --force-mid 0.7937147732541433 --force-max 4.268788542106362 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/.t3/worktrees/hp-sim5/t3-6de9c4f9-783c3d5e5a4e7bf4/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.active_sweep_cfg.default.sensor_force_profile.json
+; reusing force tuning: low=0.03969N mid=0.7937N max=4.269N
+; history_select: spread_stop spread_mm=0.2765 limit_mm=4.94 streak=2/2
+; selected run=default fit_score_ui=0.6401 raw_fit_score_ui=0.6401 score_basis=standard-noise cost=0.6401 rel_std=0.5621 max_std=837.5mm rank_score=0.6401 iteration_adjust=-0.2442 coverage_adjust=-0.1791 history_rank_score=0.36
+Wrote to console: The 4th best try so far.
+Wrote to console: ; full-auto: stopping early; the two closest distinct fits agree to 0.2765mm (limit 4.94mm).
+; history_select: reason=spread-consensus candidates=4 total_iterations=5
+; history_select: iter=3 run=default.warm rank=0.6138 anchor_comparison=0.6945 heldout_prediction=0.7062 heldout_sweeps=2 iteration_adjust=-0.2544 coverage_adjust=-0.1532 selection_score=0.3288
+; history_select: iter=4 run=default.warm rank=0.5728 anchor_comparison=0.7976 heldout_prediction=0.8369 heldout_sweeps=1 iteration_adjust=-0.2638 coverage_adjust=-0.0863 selection_score=0.2917
+; history_select: iter=2 run=default rank=0.5866 anchor_comparison=2.389 heldout_prediction=0.9338 heldout_sweeps=3 iteration_adjust=-0.1919 coverage_adjust=-0.1532 selection_score=0.364
+; history_select: iter=1 run=default rank=0.3011 anchor_comparison=9.546 heldout_prediction=16.8 heldout_sweeps=4 iteration_adjust=0 coverage_adjust=0 selection_score=0.3011
+; history_select: consensus reason=spread-consensus selected_iter=3 selected_run=default.warm members=[3, 4] spread_mm=0.2765 max_spread_mm=5 applied=consensus
+Wrote to console: ; physical home compensation unavailable: independent home and measurement extension evidence is missing
+Wrote to console: 
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of ideal quality
+Wrote to console: Fit quality score (lower is better): 0.6138
+Wrote to console: Anchors (M669): M669 A0.00:-1900.99:-281.05 B1646.98:950.96:-281.05 C-1646.54:950.55:-281.05 D0.06:-0.08:1895.18
+Wrote to console: Interpretation: A Quality score below 2 indicates a near-perfect fit.
