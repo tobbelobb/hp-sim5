@@ -1,0 +1,1 @@
+(function(){"use strict";const e=typeof SharedArrayBuffer=="function"?new Int32Array(new SharedArrayBuffer(4)):null;self.onmessage=({data:s})=>{e?(Atomics.wait(e,0,0,s),self.postMessage(null)):setTimeout(()=>self.postMessage(null),s)}})();
