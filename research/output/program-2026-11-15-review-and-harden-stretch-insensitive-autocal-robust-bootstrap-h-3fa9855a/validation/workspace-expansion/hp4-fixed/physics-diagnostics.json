@@ -1,0 +1,58 @@
+{
+  "scope": "Sampled physics diagnostic; reference geometry is never a calibration/planning input. Geometric lengths use a point-effector model, so discrepancies include stretch, reference and routing/model errors.",
+  "points": 120,
+  "recording": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.headless/hangprinter-20261115T152630.555225Z-503bc317.rrd",
+  "reference_origin_world_m": [
+    3.728395370217186e-11,
+    -5.185184746847593e-12,
+    0.0903037041425705
+  ],
+  "height_range_mm": [
+    48.71419072151184,
+    1314.2659217119217
+  ],
+  "height_percentiles_mm": [
+    48.71419072151184,
+    69.34987008571625,
+    322.47384637594223,
+    892.7907645702362,
+    1314.2659217119217
+  ],
+  "max_pose_latest_at_lag_s": 0.19800000004579488,
+  "max_force_latest_at_lag_s": 0.19800000004579488,
+  "declared_strand_target_n": null,
+  "command_implied_weighted_strand_target_percentiles_n": [
+    0.843152650380737,
+    0.8584017032822037,
+    0.8985828388560757,
+    0.9536193553563278,
+    0.9543905469848274
+  ],
+  "realized_weighted_strand_target_percentiles_n": [
+    0.6285401393668479,
+    0.7338077905096373,
+    0.8738696989138761,
+    1.0684306037825537,
+    1.0918527457020226
+  ],
+  "force_balance_proxy_rms_n": 0.015016182719394887,
+  "sensor_actual_minus_command_percentiles_n": [
+    -0.6951396369170268,
+    -0.6374270174692569,
+    -0.1937772641308798,
+    0.6384852538122493,
+    0.6933441173496764
+  ],
+  "encoder_minus_point_geometry_max_abs_by_axis_mm": [
+    0.2947416084153929,
+    0.2555067715426844,
+    0.29270124775030126,
+    0.05680008024592098
+  ],
+  "encoder_minus_point_geometry_rms_by_axis_mm": [
+    0.1616822670124379,
+    0.11283660582649208,
+    0.15769460373122482,
+    0.02799764500500733
+  ]
+}

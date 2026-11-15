@@ -1,0 +1,39 @@
+{
+  "code": 0,
+  "fit_sweep_counts": [
+    3
+  ],
+  "stopping_updates": [
+    {
+      "iteration": 1,
+      "history_size": 1
+    }
+  ],
+  "replans": [
+    1,
+    2
+  ],
+  "collections": [
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/repeated-rejections/dataset.new_001.json"
+    ],
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/repeated-rejections/dataset.new_001_3.json"
+    ],
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/repeated-rejections/dataset.new_001_4.json"
+    ]
+  ],
+  "applications": [
+    "M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00"
+  ]
+}

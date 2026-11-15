@@ -1,0 +1,28 @@
+{
+  "checks": [
+    {
+      "ready": false,
+      "sweeps": 3,
+      "rank": 9,
+      "parameters": 9,
+      "assumed_line_sigma_mm": 0.5,
+      "max_anchor_std_mm": 61.56385086746151,
+      "restart_difference_mm": 7.582656348859018e-05,
+      "inlier_fraction": 1.0,
+      "rms_mm": 0.026268778353451525,
+      "converged": true
+    },
+    {
+      "ready": true,
+      "sweeps": 4,
+      "rank": 9,
+      "parameters": 9,
+      "assumed_line_sigma_mm": 0.5,
+      "max_anchor_std_mm": 11.49484175838079,
+      "restart_difference_mm": 8.619029063083872e-05,
+      "inlier_fraction": 1.0,
+      "rms_mm": 0.039844721834315214,
+      "converged": true
+    }
+  ]
+}

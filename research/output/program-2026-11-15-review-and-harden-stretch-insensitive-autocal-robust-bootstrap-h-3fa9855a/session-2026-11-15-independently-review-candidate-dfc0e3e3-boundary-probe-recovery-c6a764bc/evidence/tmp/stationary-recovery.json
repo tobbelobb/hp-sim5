@@ -1,0 +1,81 @@
+{
+  "version": "2.0",
+  "machine_type": "hangprinter_3",
+  "num_anchors": 4,
+  "dimensions": 3,
+  "timestamp": "2026-11-15T16:28:10.841Z",
+  "config": {
+    "angles_unit": "deg",
+    "lengths_unit": "mm",
+    "m666_before_data_collection": {
+      "M": 666,
+      "R": [
+        57.29577951308232,
+        57.29577951308232,
+        57.29577951308232,
+        57.29577951308232
+      ],
+      "U": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "O": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "m669": {},
+    "m92": {},
+    "mm_per_degree": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "noise_model": {
+      "project_zero_tension": false
+    },
+    "notes": {},
+    "force_tuning": {
+      "auto_tuned": false,
+      "method": "manual",
+      "force_low_n": 0.01,
+      "force_mid_n": 0.2,
+      "force_max_n": 2,
+      "pullout_force_n": 2
+    },
+    "encoder_noise": {
+      "method": "mad",
+      "units": "deg",
+      "sigma_floor_deg": 0.02,
+      "min_samples": 8,
+      "sample_count": 16,
+      "sample_interval_ms": 25,
+      "sample_rate_hz": 40
+    }
+  },
+  "sweeps": [],
+  "acquisition_rejections": [
+    {
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_lengths": [
+        0,
+        0
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2,
+      "direction": 0,
+      "reason": "Review locally unresolved coupling",
+      "evidence": {
+        "retained_points": 0
+      }
+    }
+  ]
+}

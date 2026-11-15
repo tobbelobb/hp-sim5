@@ -1,0 +1,17 @@
+{
+  "reviewed_base": "6ade9822",
+  "reviewed_candidate": "6ab979c367c286451d05a06b839ca770c51eeab3",
+  "date": "2026-11-15",
+  "evidence_type": [
+    "synthetic command/encoder mocks",
+    "analytical ideal rigid geometry"
+  ],
+  "python": "3.12.3",
+  "numpy": "2.4.3",
+  "scipy": "1.17.1",
+  "node": "v24.14.1",
+  "services_started": false,
+  "physics_started": false,
+  "production_files_edited": false,
+  "assertions": "both helpers passed"
+}

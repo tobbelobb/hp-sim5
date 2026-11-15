@@ -1,0 +1,19 @@
+{
+  "revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+  "base_revision": "8338be8f585f4552bca4af74155bd87132daa9a9",
+  "python": "3.12.3",
+  "node": "v24.14.1",
+  "files": {
+    "autocal/autocal.py": "4a7271cab0dd337a28053a5bc9edfa59ea8d5e5d7af81ba0082d7abc677ead62",
+    "autocal/_autocal_common.py": "9bf3088b666596abdca5e3d405722361607bdc2f0dc406bf2a596e726929ab87",
+    "autocal/planning_pass.py": "f48f59733a20ad8905f4c725b22422b9baaa12a4d1c96400c0dbd054cbbcef4e",
+    "autocal/equal_strain.py": "95e45068ab37828de4d709b82cd84d0b23afc30add3b4a25a8deee402e14a6fc",
+    "autocal/workspace.py": "a038f8e3cd7a9a11600b6717e6c54d749a6851f6d07897892449a7b1b09de0dc",
+    "autocal/stopping.py": "8afe1751ca27db0102eba3d6862f31ce072b5c1b6cfbd97eba267f424f3dd44a",
+    "autocal/control/behaviors/spool_reserve.mjs": "a5ffa3c64883cfa81b1c23f5739e637af4d0a3b69d21ca5e1c5b9e82a75487af",
+    "autocal/control/behaviors/sweep_data_collection.mjs": "2c4767952128b3ba059148351e4de80e689365d6957ebfb741d0870550aebbd0",
+    "autocal/control/behaviors/slip_recovery.mjs": "16f6dc3378244f5dac07e838175c0060461803fa8f3ab46f4de91846aa0b750c",
+    "autocal/control/primitives/uncalibrated_actions.mjs": "1d86819e103c166e461185845d336f9fd76824790c45e14b79848ddb84e1a8f0",
+    "autocal/control/primitives/encoder_utils.mjs": "83c76ee1efd668945dba156d06579071ebfadf3bb7a0b4817b2199427f922b8c"
+  }
+}

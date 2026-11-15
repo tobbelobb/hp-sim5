@@ -1,0 +1,4 @@
+Recording: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/hangprinter-20261115T162331.849584Z-adb78b79.rrd
+Flight recorder: ws://127.0.0.1:47549
+Connect the simulator recorder, then start collection or playback. Ctrl-C stops recording.
+Recording finalized: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/hangprinter-20261115T162331.849584Z-adb78b79.rrd (last timestep 2794900)

@@ -1,0 +1,2832 @@
+{
+  "scope": "Independent saved-data diagnostic; zero-index even sweeps train, zero-index odd sweeps test; no new physics.",
+  "machines": {
+    "hp3-final": {
+      "recorded_revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+      "physics_engine": "rust-native",
+      "recorded_build_source_checks": {
+        "src/engine.rs": true,
+        "src/lib.rs": true
+      },
+      "scene_hash_matches_manifest": true,
+      "baked_scene_hash_matches_manifest": true,
+      "points": 197,
+      "saved_sweeps": 10,
+      "sweeps": [
+        {
+          "index": 0,
+          "id": "sweep_001",
+          "points": 20
+        },
+        {
+          "index": 1,
+          "id": "sweep_002",
+          "points": 20
+        },
+        {
+          "index": 2,
+          "id": "sweep_003",
+          "points": 20
+        },
+        {
+          "index": 3,
+          "id": "sweep_004",
+          "points": 20
+        },
+        {
+          "index": 4,
+          "id": "sweep_005",
+          "points": 20
+        },
+        {
+          "index": 5,
+          "id": "sweep_006",
+          "points": 20
+        },
+        {
+          "index": 6,
+          "id": "sweep_007",
+          "points": 18
+        },
+        {
+          "index": 7,
+          "id": "sweep_008",
+          "points": 20
+        },
+        {
+          "index": 8,
+          "id": "sweep_009",
+          "points": 19
+        },
+        {
+          "index": 9,
+          "id": "sweep_010",
+          "points": 20
+        }
+      ],
+      "noncanonical_source_sensor_points": 99,
+      "all_simulation_timestamps": true,
+      "npz_midpoint_time_max_abs_diff_s": 0.0,
+      "minimum_time_separation_s": 3.290000000670261,
+      "raw_mean_sensor_max_abs_diff_deg": 0.01749999999992724,
+      "raw_mean_sensor_rms_diff_deg": 0.0063305407003149934,
+      "sensor_mad_sigma_max_deg": 0.014825999999986515,
+      "all_mu_present": true,
+      "reeving_U": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "strand_count_N": [
+        2,
+        2,
+        2,
+        3
+      ],
+      "source_amplitude_resultant_n": [
+        0.33333333333333337,
+        0.33333333333333337,
+        0.33333333333333337,
+        0.33333333333333337
+      ],
+      "reproduction_max_abs_metric_diff": 4.829470157119431e-15,
+      "original_split_mean_angles": [
+        {
+          "axis": 0,
+          "train_points": 30,
+          "test_points": 40,
+          "train_sweep_indices": [
+            2,
+            4,
+            8
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "coefficient_n": [
+            0.3262076004897785,
+            0.0043539950850129214,
+            -0.008652201054213137
+          ],
+          "amplitude_n": 0.32623665626428194,
+          "phase_shift_electrical_deg": 0.764699318595719,
+          "design_condition": 1.7601908074804262,
+          "test": {
+            "raw_rms_n": 0.23618131263835226,
+            "residual_rms_n": 0.025683057528723723,
+            "residual_mean_n": 0.005119676127670006,
+            "explained_variance": 0.9886418508606855,
+            "r2_test_centered": 0.9881718390707392,
+            "mse_reduction_from_zero": 0.9881749663522499
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.23618131263835226,
+            "residual_rms_n": 0.2421732291235223,
+            "residual_mean_n": 0.0536750288830524,
+            "explained_variance": 1.1102230246251565e-16,
+            "r2_test_centered": -0.05166165908798437,
+            "mse_reduction_from_zero": -0.05138360723515789
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 48,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            2,
+            4,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            7,
+            9
+          ],
+          "coefficient_n": [
+            0.33549711630462015,
+            -0.00700574430256962,
+            0.004834395352837967
+          ],
+          "amplitude_n": 0.3355702541971633,
+          "phase_shift_electrical_deg": -1.196258429429012,
+          "design_condition": 1.836410675834692,
+          "test": {
+            "raw_rms_n": 0.23558429737965564,
+            "residual_rms_n": 0.026803024493198706,
+            "residual_mean_n": -0.018380380208657253,
+            "explained_variance": 0.9928210073689164,
+            "r2_test_centered": 0.9864479903757495,
+            "mse_reduction_from_zero": 0.9870558085660935
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.23558429737965564,
+            "residual_rms_n": 0.2410029100726125,
+            "residual_mean_n": 0.07121557407978549,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.09567226461160416,
+            "mse_reduction_from_zero": -0.04653050987918195
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 19,
+          "test_points": 40,
+          "train_sweep_indices": [
+            0,
+            6
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            9
+          ],
+          "coefficient_n": [
+            0.33489389100246286,
+            0.002617738712945919,
+            0.011029888085407806
+          ],
+          "amplitude_n": 0.3349041217822479,
+          "phase_shift_electrical_deg": 0.4478502880485039,
+          "design_condition": 1.8267708176547655,
+          "test": {
+            "raw_rms_n": 0.2175569322370371,
+            "residual_rms_n": 0.029481289441155297,
+            "residual_mean_n": -0.01431395248003226,
+            "explained_variance": 0.9835622184541202,
+            "r2_test_centered": 0.9784920068870668,
+            "mse_reduction_from_zero": 0.9816368535940521
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.2175569322370371,
+            "residual_rms_n": 0.20804687888825826,
+            "residual_mean_n": -0.053601418645431706,
+            "explained_variance": -2.220446049250313e-16,
+            "r2_test_centered": -0.07109834766489365,
+            "mse_reduction_from_zero": 0.08551506083976956
+          }
+        }
+      ],
+      "original_split_raw_angles": [
+        {
+          "axis": 0,
+          "train_points": 30,
+          "test_points": 40,
+          "train_sweep_indices": [
+            2,
+            4,
+            8
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "coefficient_n": [
+            0.3264733819747037,
+            0.0037791954278454457,
+            -0.008274572849686208
+          ],
+          "amplitude_n": 0.3264952548752932,
+          "phase_shift_electrical_deg": 0.6632157136825072,
+          "design_condition": 1.7650259669566997,
+          "test": {
+            "raw_rms_n": 0.23618131263835226,
+            "residual_rms_n": 0.02585228361467949,
+            "residual_mean_n": 0.004908556478992123,
+            "explained_variance": 0.988447501022757,
+            "r2_test_centered": 0.9880154536580293,
+            "mse_reduction_from_zero": 0.9880186222867293
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.23618131263835226,
+            "residual_rms_n": 0.2421732291235223,
+            "residual_mean_n": 0.0536750288830524,
+            "explained_variance": 1.1102230246251565e-16,
+            "r2_test_centered": -0.05166165908798437,
+            "mse_reduction_from_zero": -0.05138360723515789
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 48,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            2,
+            4,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            7,
+            9
+          ],
+          "coefficient_n": [
+            0.3358991564186056,
+            -0.007296560475308191,
+            0.005104659300804169
+          ],
+          "amplitude_n": 0.3359783967422619,
+          "phase_shift_electrical_deg": -1.2444103368764716,
+          "design_condition": 1.8403762898267881,
+          "test": {
+            "raw_rms_n": 0.23558429737965564,
+            "residual_rms_n": 0.02677957525064715,
+            "residual_mean_n": -0.018275018589356273,
+            "explained_variance": 0.9927718550543873,
+            "r2_test_centered": 0.986471692577741,
+            "mse_reduction_from_zero": 0.9870784477058588
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.23558429737965564,
+            "residual_rms_n": 0.2410029100726125,
+            "residual_mean_n": 0.07121557407978549,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.09567226461160416,
+            "mse_reduction_from_zero": -0.04653050987918195
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 19,
+          "test_points": 40,
+          "train_sweep_indices": [
+            0,
+            6
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            9
+          ],
+          "coefficient_n": [
+            0.3350388339969605,
+            0.00302091876344991,
+            0.011396530687244355
+          ],
+          "amplitude_n": 0.33505245296254466,
+          "phase_shift_electrical_deg": 0.5166004279666632,
+          "design_condition": 1.8282448451209263,
+          "test": {
+            "raw_rms_n": 0.2175569322370371,
+            "residual_rms_n": 0.02973224881370653,
+            "residual_mean_n": -0.014504284325422523,
+            "explained_variance": 0.9833302196089584,
+            "r2_test_centered": 0.9781242749307753,
+            "mse_reduction_from_zero": 0.9813228905145556
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.2175569322370371,
+            "residual_rms_n": 0.20804687888825826,
+            "residual_mean_n": -0.053601418645431706,
+            "explained_variance": -2.220446049250313e-16,
+            "r2_test_centered": -0.07109834766489365,
+            "mse_reduction_from_zero": 0.08551506083976956
+          }
+        }
+      ],
+      "reverse_parity": [
+        {
+          "axis": 0,
+          "train_points": 40,
+          "test_points": 30,
+          "train_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "test_sweep_indices": [
+            2,
+            4,
+            8
+          ],
+          "coefficient_n": [
+            0.33133624736733913,
+            0.000239769924914506,
+            -0.0024343119312883912
+          ],
+          "amplitude_n": 0.33133633412151986,
+          "phase_shift_electrical_deg": 0.04146181549086223,
+          "design_condition": 1.6996912702299962,
+          "test": {
+            "raw_rms_n": 0.21161617297263471,
+            "residual_rms_n": 0.023236144662415345,
+            "residual_mean_n": -0.004649299909058125,
+            "explained_variance": 0.9875027704304574,
+            "r2_test_centered": 0.9869815689662604,
+            "mse_reduction_from_zero": 0.9879432451297859
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.21161617297263471,
+            "residual_rms_n": 0.2106048313464343,
+            "residual_mean_n": -0.05367502888305236,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.06946644548084979,
+            "mse_reduction_from_zero": 0.00953542391829576
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 20,
+          "test_points": 48,
+          "train_sweep_indices": [
+            7,
+            9
+          ],
+          "test_sweep_indices": [
+            0,
+            2,
+            4,
+            6,
+            8
+          ],
+          "coefficient_n": [
+            0.34492995799627024,
+            -0.007777461288232788,
+            -0.015188440028407281
+          ],
+          "amplitude_n": 0.34501762973419015,
+          "phase_shift_electrical_deg": -1.291683141410063,
+          "design_condition": 1.6816699359745275,
+          "test": {
+            "raw_rms_n": 0.21796953121364293,
+            "residual_rms_n": 0.032098947742503714,
+            "residual_mean_n": 0.020902315081679893,
+            "explained_variance": 0.9873887417046703,
+            "r2_test_centered": 0.9781039203245714,
+            "mse_reduction_from_zero": 0.9783134728064384
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.21796953121364293,
+            "residual_rms_n": 0.2283148742073368,
+            "residual_mean_n": -0.0712155740797855,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.1077791445755254,
+            "mse_reduction_from_zero": -0.09717734404559164
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 40,
+          "test_points": 19,
+          "train_sweep_indices": [
+            1,
+            3,
+            5,
+            9
+          ],
+          "test_sweep_indices": [
+            0,
+            6
+          ],
+          "coefficient_n": [
+            0.3222860281273136,
+            -0.0013278356454144418,
+            -0.005779883687117156
+          ],
+          "amplitude_n": 0.3222887634925872,
+          "phase_shift_electrical_deg": -0.23606033540238577,
+          "design_condition": 1.8294141561288746,
+          "test": {
+            "raw_rms_n": 0.2034254611938195,
+            "residual_rms_n": 0.028160171632512734,
+            "residual_mean_n": 0.016291949268255487,
+            "explained_variance": 0.9869757014443492,
+            "r2_test_centered": 0.9804229713545162,
+            "mse_reduction_from_zero": 0.980837155461149
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.2034254611938195,
+            "residual_rms_n": 0.20827752658785176,
+            "residual_mean_n": 0.05360141864543171,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.07092980234907986,
+            "mse_reduction_from_zero": -0.04827252828135453
+          }
+        }
+      ],
+      "chronological_first_five_sweeps_train": [
+        {
+          "axis": 0,
+          "train_points": 40,
+          "test_points": 30,
+          "train_sweep_indices": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "test_sweep_indices": [
+            5,
+            7,
+            8
+          ],
+          "coefficient_n": [
+            0.33329868633751647,
+            0.006551227541111183,
+            -0.0075652950640454075
+          ],
+          "amplitude_n": 0.3333630646856511,
+          "phase_shift_electrical_deg": 1.1260451235320688,
+          "design_condition": 2.0039002737730898,
+          "test": {
+            "raw_rms_n": 0.2136148484777581,
+            "residual_rms_n": 0.024554686122573735,
+            "residual_mean_n": 0.004226060527559513,
+            "explained_variance": 0.9860598114313935,
+            "r2_test_centered": 0.9856342816105444,
+            "mse_reduction_from_zero": 0.9867868641817797
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.2136148484777581,
+            "residual_rms_n": 0.21316804782434018,
+            "residual_mean_n": -0.05890992495674101,
+            "explained_variance": -2.220446049250313e-16,
+            "r2_test_centered": -0.08268667220223347,
+            "mse_reduction_from_zero": 0.004178861052620109
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 30,
+          "test_points": 38,
+          "train_sweep_indices": [
+            0,
+            2,
+            4
+          ],
+          "test_sweep_indices": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "coefficient_n": [
+            0.34021238677226046,
+            -0.007453397968090844,
+            0.006028544013173095
+          ],
+          "amplitude_n": 0.3402940217731556,
+          "phase_shift_electrical_deg": -1.2550393822304802,
+          "design_condition": 2.5346279567007426,
+          "test": {
+            "raw_rms_n": 0.23108410247343358,
+            "residual_rms_n": 0.02547130455469041,
+            "residual_mean_n": -0.011659985575103463,
+            "explained_variance": 0.9900823963903452,
+            "r2_test_centered": 0.9874531724515535,
+            "mse_reduction_from_zero": 0.9878503927470049
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.23108410247343358,
+            "residual_rms_n": 0.2460802248061623,
+            "residual_mean_n": 0.09405425067233923,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.17107573205148507,
+            "mse_reduction_from_zero": -0.1340006191207228
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 30,
+          "test_points": 29,
+          "train_sweep_indices": [
+            0,
+            1,
+            3
+          ],
+          "test_sweep_indices": [
+            5,
+            6,
+            9
+          ],
+          "coefficient_n": [
+            0.3273774023941928,
+            -0.0006262904025586386,
+            -0.004389296638811396
+          ],
+          "amplitude_n": 0.3273780014570887,
+          "phase_shift_electrical_deg": -0.10960974330639493,
+          "design_condition": 1.941147298461658,
+          "test": {
+            "raw_rms_n": 0.20911760867428214,
+            "residual_rms_n": 0.025890235088136666,
+            "residual_mean_n": 0.009689533052037557,
+            "explained_variance": 0.9858492387609735,
+            "r2_test_centered": 0.983544357526037,
+            "mse_reduction_from_zero": 0.984671813357759
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.20911760867428214,
+            "residual_rms_n": 0.2030232827195329,
+            "residual_mean_n": 0.022010117702560898,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.011892895016521798,
+            "mse_reduction_from_zero": 0.0574367921937885
+          }
+        }
+      ],
+      "source_amplitude_zero_phase_zero_offset_no_fit": [
+        {
+          "axis": 0,
+          "test": {
+            "raw_rms_n": 0.23618131263835226,
+            "residual_rms_n": 0.024898119955104225,
+            "residual_mean_n": -0.002362782391772894,
+            "explained_variance": 0.9889838949039466,
+            "r2_test_centered": 0.9888837863410372,
+            "mse_reduction_from_zero": 0.98888672538876
+          }
+        },
+        {
+          "axis": 1,
+          "test": {
+            "raw_rms_n": 0.23558429737965564,
+            "residual_rms_n": 0.025371134484805373,
+            "residual_mean_n": -0.014846507470451149,
+            "explained_variance": 0.9920152851352066,
+            "r2_test_centered": 0.987857283103087,
+            "mse_reduction_from_zero": 0.9884018934165961
+          }
+        },
+        {
+          "axis": 2,
+          "test": {
+            "raw_rms_n": 0.2175569322370371,
+            "residual_rms_n": 0.025495567364918207,
+            "residual_mean_n": -0.003309348377318426,
+            "explained_variance": 0.9841854498026678,
+            "r2_test_centered": 0.9839144356844564,
+            "mse_reduction_from_zero": 0.9862664279741191
+          }
+        }
+      ],
+      "frequency_negative_controls": {
+        "1": [
+          {
+            "axis": 0,
+            "train_points": 30,
+            "test_points": 40,
+            "train_sweep_indices": [
+              2,
+              4,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              0.052510649560375225,
+              0.09980084603045501,
+              -0.027618309742821562
+            ],
+            "amplitude_n": 0.11277223588120935,
+            "phase_shift_electrical_deg": 62.24870308766735,
+            "design_condition": 1.9268638206081385,
+            "test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.23856912840573408,
+              "residual_mean_n": 0.01740238171330934,
+              "explained_variance": -0.015161726823149868,
+              "r2_test_centered": -0.020592243560226597,
+              "mse_reduction_from_zero": -0.02032240623959236
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.2421732291235223,
+              "residual_mean_n": 0.0536750288830524,
+              "explained_variance": 1.1102230246251565e-16,
+              "r2_test_centered": -0.05166165908798437,
+              "mse_reduction_from_zero": -0.05138360723515789
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 48,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              7,
+              9
+            ],
+            "coefficient_n": [
+              0.02894142853820107,
+              0.10061047949075613,
+              -0.009099954617253062
+            ],
+            "amplitude_n": 0.10469037620140478,
+            "phase_shift_electrical_deg": 73.95168533615482,
+            "design_condition": 1.7426765568832054,
+            "test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2539666128137072,
+              "residual_mean_n": 0.063168408375502,
+              "explained_variance": -0.14144392767577574,
+              "r2_test_centered": -0.21671636237532566,
+              "mse_reduction_from_zero": -0.16214568554983488
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2410029100726125,
+              "residual_mean_n": 0.07121557407978549,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.09567226461160416,
+              "mse_reduction_from_zero": -0.04653050987918195
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 19,
+            "test_points": 40,
+            "train_sweep_indices": [
+              0,
+              6
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              9
+            ],
+            "coefficient_n": [
+              -0.0427974080830376,
+              0.04415929105816046,
+              -0.029059987235736273
+            ],
+            "amplitude_n": 0.061495212215142266,
+            "phase_shift_electrical_deg": 134.10272850208148,
+            "design_condition": 1.6683937776120537,
+            "test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.20400413809907436,
+              "residual_mean_n": -0.054692493670606704,
+              "explained_variance": 0.044146373250566584,
+              "r2_test_centered": -0.02987589516924749,
+              "mse_reduction_from_zero": 0.12071006608340629
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.20804687888825826,
+              "residual_mean_n": -0.053601418645431706,
+              "explained_variance": -2.220446049250313e-16,
+              "r2_test_centered": -0.07109834766489365,
+              "mse_reduction_from_zero": 0.08551506083976956
+            }
+          }
+        ],
+        "25": [
+          {
+            "axis": 0,
+            "train_points": 30,
+            "test_points": 40,
+            "train_sweep_indices": [
+              2,
+              4,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              -0.10926225390383626,
+              0.04325441802011805,
+              -0.0451556400593537
+            ],
+            "amplitude_n": 0.11751248787429144,
+            "phase_shift_electrical_deg": 158.40252443135697,
+            "design_condition": 1.6693425884365847,
+            "test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.2483339099865354,
+              "residual_mean_n": 0.03916655931266143,
+              "explained_variance": -0.0783412760722142,
+              "r2_test_centered": -0.10584899756578103,
+              "mse_reduction_from_zero": -0.1055566189665782
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.2421732291235223,
+              "residual_mean_n": 0.0536750288830524,
+              "explained_variance": 1.1102230246251565e-16,
+              "r2_test_centered": -0.05166165908798437,
+              "mse_reduction_from_zero": -0.05138360723515789
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 48,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              7,
+              9
+            ],
+            "coefficient_n": [
+              0.059965850912340996,
+              -0.052447979622293764,
+              -0.018999645405124756
+            ],
+            "amplitude_n": 0.07966613987197854,
+            "phase_shift_electrical_deg": -41.173941883383065,
+            "design_condition": 1.743173666551756,
+            "test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2554019808498044,
+              "residual_mean_n": 0.05008413907972946,
+              "explained_variance": -0.1831893934481834,
+              "r2_test_centered": -0.23050849833683396,
+              "mse_reduction_from_zero": -0.17531923346768497
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2410029100726125,
+              "residual_mean_n": 0.07121557407978549,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.09567226461160416,
+              "mse_reduction_from_zero": -0.04653050987918195
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 19,
+            "test_points": 40,
+            "train_sweep_indices": [
+              0,
+              6
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              9
+            ],
+            "coefficient_n": [
+              -0.12268878193050456,
+              0.05202906859282885,
+              -0.015268583708430601
+            ],
+            "amplitude_n": 0.13326500362146168,
+            "phase_shift_electrical_deg": 157.01948312575504,
+            "design_condition": 1.7349618218903406,
+            "test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.2160938297169774,
+              "residual_mean_n": -0.06130213300438438,
+              "explained_variance": -0.06256311527837632,
+              "r2_test_centered": -0.1555577968343469,
+              "mse_reduction_from_zero": 0.013405067949183391
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.20804687888825826,
+              "residual_mean_n": -0.053601418645431706,
+              "explained_variance": -2.220446049250313e-16,
+              "r2_test_centered": -0.07109834766489365,
+              "mse_reduction_from_zero": 0.08551506083976956
+            }
+          }
+        ],
+        "49": [
+          {
+            "axis": 0,
+            "train_points": 30,
+            "test_points": 40,
+            "train_sweep_indices": [
+              2,
+              4,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              -0.09133835105276558,
+              0.036972013056222296,
+              -0.04349767881084837
+            ],
+            "amplitude_n": 0.09853742498395072,
+            "phase_shift_electrical_deg": 157.96284163742706,
+            "design_condition": 1.7752540243178077,
+            "test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.24485333968466155,
+              "residual_mean_n": 0.03628682279805654,
+              "explained_variance": -0.05145636767832795,
+              "r2_test_centered": -0.0750677635883168,
+              "mse_reduction_from_zero": -0.07478352332815663
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.2421732291235223,
+              "residual_mean_n": 0.0536750288830524,
+              "explained_variance": 1.1102230246251565e-16,
+              "r2_test_centered": -0.05166165908798437,
+              "mse_reduction_from_zero": -0.05138360723515789
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 48,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              7,
+              9
+            ],
+            "coefficient_n": [
+              -0.086360502527106,
+              0.04215814434114608,
+              -0.010852030307897081
+            ],
+            "amplitude_n": 0.09610122543975799,
+            "phase_shift_electrical_deg": 153.98000539476544,
+            "design_condition": 1.535812963590258,
+            "test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2544101780856047,
+              "residual_mean_n": 0.04305845404495784,
+              "explained_variance": -0.185995568216746,
+              "r2_test_centered": -0.22097018470657326,
+              "mse_reduction_from_zero": -0.16620872063527092
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2410029100726125,
+              "residual_mean_n": 0.07121557407978549,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.09567226461160416,
+              "mse_reduction_from_zero": -0.04653050987918195
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 19,
+            "test_points": 40,
+            "train_sweep_indices": [
+              0,
+              6
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              9
+            ],
+            "coefficient_n": [
+              0.02635995580530248,
+              -0.027481015013546016,
+              -0.031565711622013104
+            ],
+            "amplitude_n": 0.03807956743756737,
+            "phase_shift_electrical_deg": -46.19282175326122,
+            "design_condition": 1.7014001080399097,
+            "test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.21028313200449653,
+              "residual_mean_n": -0.05379785639353797,
+              "explained_variance": -0.022627707366690286,
+              "r2_test_centered": -0.09424813043920621,
+              "mse_reduction_from_zero": 0.06575018328385429
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.20804687888825826,
+              "residual_mean_n": -0.053601418645431706,
+              "explained_variance": -2.220446049250313e-16,
+              "r2_test_centered": -0.07109834766489365,
+              "mse_reduction_from_zero": 0.08551506083976956
+            }
+          }
+        ],
+        "51": [
+          {
+            "axis": 0,
+            "train_points": 30,
+            "test_points": 40,
+            "train_sweep_indices": [
+              2,
+              4,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              -0.10497721463761936,
+              -0.030848744196528492,
+              -0.031990290286460915
+            ],
+            "amplitude_n": 0.10941599796910713,
+            "phase_shift_electrical_deg": -163.62397708851302,
+            "design_condition": 1.7443738201904757,
+            "test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.2642232981813117,
+              "residual_mean_n": 0.05076588592066308,
+              "explained_variance": -0.2056761146415953,
+              "r2_test_centered": -0.25188949262641214,
+              "mse_reduction_from_zero": -0.2515585019604021
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.2421732291235223,
+              "residual_mean_n": 0.0536750288830524,
+              "explained_variance": 1.1102230246251565e-16,
+              "r2_test_centered": -0.05166165908798437,
+              "mse_reduction_from_zero": -0.05138360723515789
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 48,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              7,
+              9
+            ],
+            "coefficient_n": [
+              -0.08673247386798558,
+              0.05989575559667911,
+              -0.0004962999481453872
+            ],
+            "amplitude_n": 0.10540409651317124,
+            "phase_shift_electrical_deg": 145.3717978870257,
+            "design_condition": 1.6666028671799193,
+            "test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2628218815177852,
+              "residual_mean_n": 0.07018490236899406,
+              "explained_variance": -0.21012110433419595,
+              "r2_test_centered": -0.3030441626882756,
+              "mse_reduction_from_zero": -0.2446016167586853
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2410029100726125,
+              "residual_mean_n": 0.07121557407978549,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.09567226461160416,
+              "mse_reduction_from_zero": -0.04653050987918195
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 19,
+            "test_points": 40,
+            "train_sweep_indices": [
+              0,
+              6
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              9
+            ],
+            "coefficient_n": [
+              -0.029969950791239288,
+              -0.11442047885025912,
+              -0.020222738123062814
+            ],
+            "amplitude_n": 0.11828036155994746,
+            "phase_shift_electrical_deg": -104.67765017057394,
+            "design_condition": 1.8030028948629604,
+            "test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.21705137692561718,
+              "residual_mean_n": -0.04909438198426498,
+              "explained_variance": -0.10617690065350804,
+              "r2_test_centered": -0.16582141878295165,
+              "mse_reduction_from_zero": 0.004642167965539734
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.20804687888825826,
+              "residual_mean_n": -0.053601418645431706,
+              "explained_variance": -2.220446049250313e-16,
+              "r2_test_centered": -0.07109834766489365,
+              "mse_reduction_from_zero": 0.08551506083976956
+            }
+          }
+        ],
+        "100": [
+          {
+            "axis": 0,
+            "train_points": 30,
+            "test_points": 40,
+            "train_sweep_indices": [
+              2,
+              4,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              0.05342368730575603,
+              0.04787473360684884,
+              -0.06707929271762447
+            ],
+            "amplitude_n": 0.07173618670705838,
+            "phase_shift_electrical_deg": 41.86456911681371,
+            "design_condition": 1.6200158948033792,
+            "test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.24700285551706663,
+              "residual_mean_n": 0.0652088453413704,
+              "explained_variance": -0.017776738192399444,
+              "r2_test_centered": -0.09402620233911763,
+              "mse_reduction_from_zero": -0.09373694960277179
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23618131263835226,
+              "residual_rms_n": 0.2421732291235223,
+              "residual_mean_n": 0.0536750288830524,
+              "explained_variance": 1.1102230246251565e-16,
+              "r2_test_centered": -0.05166165908798437,
+              "mse_reduction_from_zero": -0.05138360723515789
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 48,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              7,
+              9
+            ],
+            "coefficient_n": [
+              0.13005872265240195,
+              0.0438213738789092,
+              -0.05027258805879724
+            ],
+            "amplitude_n": 0.13724279269458764,
+            "phase_shift_electrical_deg": 18.620487083182798,
+            "design_condition": 1.7076980229264287,
+            "test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2631857132813299,
+              "residual_mean_n": 0.07841412010370144,
+              "explained_variance": -0.1906632482595101,
+              "r2_test_centered": -0.30665434156876437,
+              "mse_reduction_from_zero": -0.24804987630360698
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.23558429737965564,
+              "residual_rms_n": 0.2410029100726125,
+              "residual_mean_n": 0.07121557407978549,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.09567226461160416,
+              "mse_reduction_from_zero": -0.04653050987918195
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 19,
+            "test_points": 40,
+            "train_sweep_indices": [
+              0,
+              6
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              9
+            ],
+            "coefficient_n": [
+              0.12061675558263521,
+              0.15549168609738015,
+              -0.06267895350182127
+            ],
+            "amplitude_n": 0.1967893954782304,
+            "phase_shift_electrical_deg": 52.19884039477735,
+            "design_condition": 2.295167622022723,
+            "test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.193734632015386,
+              "residual_mean_n": -0.043295984012981,
+              "explained_variance": 0.11758921702854241,
+              "r2_test_centered": 0.07120158871809401,
+              "mse_reduction_from_zero": 0.20700824486848235
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.2175569322370371,
+              "residual_rms_n": 0.20804687888825826,
+              "residual_mean_n": -0.053601418645431706,
+              "explained_variance": -2.220446049250313e-16,
+              "r2_test_centered": -0.07109834766489365,
+              "mse_reduction_from_zero": 0.08551506083976956
+            }
+          }
+        ]
+      },
+      "rrd_check": {
+        "recording": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/hangprinter-20261115T162331.849584Z-adb78b79.rrd",
+        "raw_force_series": {
+          "AL": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "AR": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "BL": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "BR": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "CL": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "CR": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "D0": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "D1": {
+            "rows": 27950,
+            "segments": 2
+          },
+          "D2": {
+            "rows": 27950,
+            "segments": 2
+          }
+        },
+        "cached_proxy_max_abs_diff_n": 0.0,
+        "force_latest_at_lag_range_s": [
+          4.8203219193965197e-11,
+          0.1999999997328814
+        ],
+        "minimum_recorded_samples_in_noise_window": 2,
+        "sensor_start_minus_mid_rms_n": 0.0012332780173038977,
+        "sensor_end_minus_mid_rms_n": 0.0009559554690790821,
+        "sensor_window_mean_minus_mid_rms_n": 0.00046951919404707995,
+        "segment_difference_at_window_start_mid_end": {
+          "AL": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "AR": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "BL": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "BR": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "CL": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "CR": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "D0": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "D1": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          },
+          "D2": {
+            "segments": 2,
+            "max_segment_minus_first_n": 0.0
+          }
+        }
+      },
+      "window_mean_force_original_split": [
+        {
+          "axis": 0,
+          "train_points": 30,
+          "test_points": 40,
+          "train_sweep_indices": [
+            2,
+            4,
+            8
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "coefficient_n": [
+            0.3262174327363151,
+            0.004288898067991773,
+            -0.00846789722645314
+          ],
+          "amplitude_n": 0.3262456253617968,
+          "phase_shift_electrical_deg": 0.753244848803639,
+          "design_condition": 1.7601908074804262,
+          "test": {
+            "raw_rms_n": 0.23615298738314375,
+            "residual_rms_n": 0.025582723020266582,
+            "residual_mean_n": 0.004925639762930104,
+            "explained_variance": 0.9886963815413873,
+            "r2_test_centered": 0.9882612156166747,
+            "mse_reduction_from_zero": 0.988264363479997
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.23615298738314375,
+            "residual_rms_n": 0.24210155520460863,
+            "residual_mean_n": 0.053477886539826235,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.0512953572648176,
+            "mse_reduction_from_zero": -0.051013442716603796
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 48,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            2,
+            4,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            7,
+            9
+          ],
+          "coefficient_n": [
+            0.3355191595306595,
+            -0.006713100221335705,
+            0.004854571312269695
+          ],
+          "amplitude_n": 0.33558631099426844,
+          "phase_shift_electrical_deg": -1.146226633218491,
+          "design_condition": 1.836410675834692,
+          "test": {
+            "raw_rms_n": 0.23569018844963704,
+            "residual_rms_n": 0.026801162581863505,
+            "residual_mean_n": -0.018333237750681863,
+            "explained_variance": 0.9927950746641991,
+            "r2_test_centered": 0.9864589581506983,
+            "mse_reduction_from_zero": 0.9870692338023467
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.23569018844963704,
+            "residual_rms_n": 0.24109192700544885,
+            "residual_mean_n": 0.07126714793796964,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.09574664646433595,
+            "mse_reduction_from_zero": -0.046362891052112776
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 19,
+          "test_points": 40,
+          "train_sweep_indices": [
+            0,
+            6
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            9
+          ],
+          "coefficient_n": [
+            0.33478522241363645,
+            0.002965330541872266,
+            0.010922613522735443
+          ],
+          "amplitude_n": 0.3347983547327713,
+          "phase_shift_electrical_deg": 0.5074790361823318,
+          "design_condition": 1.8267708176547655,
+          "test": {
+            "raw_rms_n": 0.21753535714252376,
+            "residual_rms_n": 0.029459927979837743,
+            "residual_mean_n": -0.014252258867926183,
+            "explained_variance": 0.9835477548629266,
+            "r2_test_centered": 0.9785205406972126,
+            "mse_reduction_from_zero": 0.9816598175696346
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.21753535714252376,
+            "residual_rms_n": 0.20802748248664582,
+            "residual_mean_n": -0.053572166834611065,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.07102944291005153,
+            "mse_reduction_from_zero": 0.0855041975514721
+          }
+        }
+      ]
+    },
+    "hp4-final": {
+      "recorded_revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+      "physics_engine": "rust-native",
+      "recorded_build_source_checks": {
+        "src/engine.rs": true,
+        "src/lib.rs": true
+      },
+      "scene_hash_matches_manifest": true,
+      "baked_scene_hash_matches_manifest": true,
+      "points": 179,
+      "saved_sweeps": 9,
+      "sweeps": [
+        {
+          "index": 0,
+          "id": "sweep_001",
+          "points": 20
+        },
+        {
+          "index": 1,
+          "id": "sweep_002",
+          "points": 20
+        },
+        {
+          "index": 2,
+          "id": "sweep_003",
+          "points": 20
+        },
+        {
+          "index": 3,
+          "id": "sweep_004",
+          "points": 20
+        },
+        {
+          "index": 4,
+          "id": "sweep_005",
+          "points": 20
+        },
+        {
+          "index": 5,
+          "id": "sweep_006",
+          "points": 19
+        },
+        {
+          "index": 6,
+          "id": "sweep_007",
+          "points": 20
+        },
+        {
+          "index": 7,
+          "id": "sweep_008",
+          "points": 20
+        },
+        {
+          "index": 8,
+          "id": "sweep_009",
+          "points": 20
+        }
+      ],
+      "noncanonical_source_sensor_points": 89,
+      "all_simulation_timestamps": true,
+      "npz_midpoint_time_max_abs_diff_s": 0.0,
+      "minimum_time_separation_s": 3.0300000006163827,
+      "raw_mean_sensor_max_abs_diff_deg": 0.016249999999672582,
+      "raw_mean_sensor_rms_diff_deg": 0.006332038391833812,
+      "sensor_mad_sigma_max_deg": 0.029652000000310135,
+      "all_mu_present": true,
+      "reeving_U": [
+        2,
+        2,
+        2,
+        4
+      ],
+      "strand_count_N": [
+        2,
+        2,
+        2,
+        3
+      ],
+      "source_amplitude_resultant_n": [
+        0.6666666666666667,
+        0.6666666666666667,
+        0.6666666666666667,
+        1.3333333333333335
+      ],
+      "reproduction_max_abs_metric_diff": 1.3988810110276972e-14,
+      "original_split_mean_angles": [
+        {
+          "axis": 0,
+          "train_points": 20,
+          "test_points": 39,
+          "train_sweep_indices": [
+            2,
+            4
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "coefficient_n": [
+            0.6691173780094712,
+            -0.015487561843370879,
+            0.00338287362562251
+          ],
+          "amplitude_n": 0.6692965935413999,
+          "phase_shift_electrical_deg": -1.3259459985154307,
+          "design_condition": 2.0840803281410216,
+          "test": {
+            "raw_rms_n": 0.46444178101255146,
+            "residual_rms_n": 0.028662840977720334,
+            "residual_mean_n": -0.0043178853689549955,
+            "explained_variance": 0.996222082092851,
+            "r2_test_centered": 0.9961343566578047,
+            "mse_reduction_from_zero": 0.9961913075517428
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.46444178101255146,
+            "residual_rms_n": 0.46759145987202977,
+            "residual_mean_n": 0.0781889598626518,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.0287656495529367,
+            "mse_reduction_from_zero": -0.013609278877107167
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 40,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            2,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            3,
+            5
+          ],
+          "coefficient_n": [
+            0.6590476445759831,
+            -0.009367764725316068,
+            -0.002654007952329277
+          ],
+          "amplitude_n": 0.6591142183545279,
+          "phase_shift_electrical_deg": -0.8143527159925058,
+          "design_condition": 1.6150045314682908,
+          "test": {
+            "raw_rms_n": 0.524076121317053,
+            "residual_rms_n": 0.02815582156688583,
+            "residual_mean_n": 0.011527804723345848,
+            "explained_variance": 0.9975310746474504,
+            "r2_test_centered": 0.9970338537482768,
+            "mse_reduction_from_zero": 0.9971136588299421
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.524076121317053,
+            "residual_rms_n": 0.5414817842393813,
+            "residual_mean_n": 0.16104794442561504,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.0970435162758434,
+            "mse_reduction_from_zero": -0.06752722140134093
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 40,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            4,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            1,
+            7
+          ],
+          "coefficient_n": [
+            0.6716954623718211,
+            -0.01308886202536077,
+            0.0031873746089851607
+          ],
+          "amplitude_n": 0.6718229770408374,
+          "phase_shift_electrical_deg": -1.1163416984736567,
+          "design_condition": 1.7930453234335968,
+          "test": {
+            "raw_rms_n": 0.49455257327044005,
+            "residual_rms_n": 0.02838820424938554,
+            "residual_mean_n": -0.0008475221401319774,
+            "explained_variance": 0.9966998782100097,
+            "r2_test_centered": 0.9966969341714693,
+            "mse_reduction_from_zero": 0.9967050342042825
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.49455257327044005,
+            "residual_rms_n": 0.5070411396399008,
+            "residual_mean_n": -0.11449127920119151,
+            "explained_variance": 2.220446049250313e-16,
+            "r2_test_centered": -0.05372620959510099,
+            "mse_reduction_from_zero": -0.05114218090269973
+          }
+        }
+      ],
+      "original_split_raw_angles": [
+        {
+          "axis": 0,
+          "train_points": 20,
+          "test_points": 39,
+          "train_sweep_indices": [
+            2,
+            4
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "coefficient_n": [
+            0.6688330993611102,
+            -0.012586241105627987,
+            0.002653253711027849
+          ],
+          "amplitude_n": 0.6689515141369797,
+          "phase_shift_electrical_deg": -1.0780767125151756,
+          "design_condition": 2.083735787878007,
+          "test": {
+            "raw_rms_n": 0.46444178101255146,
+            "residual_rms_n": 0.028983105340159743,
+            "residual_mean_n": -0.0038113192274169673,
+            "explained_variance": 0.9961158377653371,
+            "r2_test_centered": 0.9960474884819992,
+            "mse_reduction_from_zero": 0.9961057191681553
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.46444178101255146,
+            "residual_rms_n": 0.46759145987202977,
+            "residual_mean_n": 0.0781889598626518,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.0287656495529367,
+            "mse_reduction_from_zero": -0.013609278877107167
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 40,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            2,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            3,
+            5
+          ],
+          "coefficient_n": [
+            0.6587629870593863,
+            -0.0075090041606329415,
+            -0.003389320003095374
+          ],
+          "amplitude_n": 0.6588057818984967,
+          "phase_shift_electrical_deg": -0.6530658572855472,
+          "design_condition": 1.6143147394591817,
+          "test": {
+            "raw_rms_n": 0.524076121317053,
+            "residual_rms_n": 0.027926091716894887,
+            "residual_mean_n": 0.01213721578371887,
+            "explained_variance": 0.9976332403039977,
+            "r2_test_centered": 0.9970820592273146,
+            "mse_reduction_from_zero": 0.9971605673256673
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.524076121317053,
+            "residual_rms_n": 0.5414817842393813,
+            "residual_mean_n": 0.16104794442561504,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.0970435162758434,
+            "mse_reduction_from_zero": -0.06752722140134093
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 40,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            4,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            1,
+            7
+          ],
+          "coefficient_n": [
+            0.6713848592546817,
+            -0.011307095155978502,
+            0.0037556823726165338
+          ],
+          "amplitude_n": 0.6714800664482119,
+          "phase_shift_electrical_deg": -0.964852843684933,
+          "design_condition": 1.7924446647239807,
+          "test": {
+            "raw_rms_n": 0.49455257327044005,
+            "residual_rms_n": 0.02811032317406895,
+            "residual_mean_n": -0.0016685664460084847,
+            "explained_variance": 0.9967726936552255,
+            "r2_test_centered": 0.9967612825319179,
+            "mse_reduction_from_zero": 0.9967692247647179
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.49455257327044005,
+            "residual_rms_n": 0.5070411396399008,
+            "residual_mean_n": -0.11449127920119151,
+            "explained_variance": 2.220446049250313e-16,
+            "r2_test_centered": -0.05372620959510099,
+            "mse_reduction_from_zero": -0.05114218090269973
+          }
+        }
+      ],
+      "reverse_parity": [
+        {
+          "axis": 0,
+          "train_points": 39,
+          "test_points": 20,
+          "train_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "test_sweep_indices": [
+            2,
+            4
+          ],
+          "coefficient_n": [
+            0.671015563956077,
+            -0.00041570188405470583,
+            -0.0053528501165344316
+          ],
+          "amplitude_n": 0.6710156927221214,
+          "phase_shift_electrical_deg": -0.03549539194662099,
+          "design_condition": 1.8963833971247146,
+          "test": {
+            "raw_rms_n": 0.47070514406860586,
+            "residual_rms_n": 0.026436490378361942,
+            "residual_mean_n": 0.003412780099261387,
+            "explained_variance": 0.996622171338833,
+            "r2_test_centered": 0.9965649253324462,
+            "mse_reduction_from_zero": 0.9968456512404023
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.47070514406860586,
+            "residual_rms_n": 0.4577880972177766,
+            "residual_mean_n": -0.07818895986265179,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.030048268757980168,
+            "mse_reduction_from_zero": 0.05413075600003281
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 20,
+          "test_points": 40,
+          "train_sweep_indices": [
+            3,
+            5
+          ],
+          "test_sweep_indices": [
+            0,
+            2,
+            6,
+            8
+          ],
+          "coefficient_n": [
+            0.660556030747465,
+            0.00306162961011337,
+            0.005463857672588535
+          ],
+          "amplitude_n": 0.6605631259256873,
+          "phase_shift_electrical_deg": 0.26555990831514176,
+          "design_condition": 2.1683620194749382,
+          "test": {
+            "raw_rms_n": 0.4597392374263316,
+            "residual_rms_n": 0.028514480296889265,
+            "residual_mean_n": -0.010057281751257363,
+            "explained_variance": 0.9965393830504894,
+            "r2_test_centered": 0.9960477064937951,
+            "mse_reduction_from_zero": 0.9961531276193734
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.4597392374263316,
+            "residual_rms_n": 0.4813095796905378,
+            "residual_mean_n": -0.16104794442561501,
+            "explained_variance": -2.220446049250313e-16,
+            "r2_test_centered": -0.12607490210118932,
+            "mse_reduction_from_zero": -0.09603865011774992
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 20,
+          "test_points": 40,
+          "train_sweep_indices": [
+            1,
+            7
+          ],
+          "test_sweep_indices": [
+            0,
+            4,
+            6,
+            8
+          ],
+          "coefficient_n": [
+            0.6536472799834965,
+            -0.011344986090847104,
+            0.0024122466695349915
+          ],
+          "amplitude_n": 0.6537457268229178,
+          "phase_shift_electrical_deg": -0.9943505946131821,
+          "design_condition": 2.214120279247962,
+          "test": {
+            "raw_rms_n": 0.47261768771455404,
+            "residual_rms_n": 0.028533255462026993,
+            "residual_mean_n": 0.004099803195027412,
+            "explained_variance": 0.9960924664375516,
+            "r2_test_centered": 0.9960100932028548,
+            "mse_reduction_from_zero": 0.9963551244261185
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.47261768771455404,
+            "residual_rms_n": 0.4660040807233296,
+            "residual_mean_n": 0.11449127920119148,
+            "explained_variance": 2.220446049250313e-16,
+            "r2_test_centered": -0.06423990897328258,
+            "mse_reduction_from_zero": 0.027791312884289154
+          }
+        }
+      ],
+      "chronological_first_five_sweeps_train": [
+        {
+          "axis": 0,
+          "train_points": 40,
+          "test_points": 19,
+          "train_sweep_indices": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "test_sweep_indices": [
+            5,
+            7
+          ],
+          "coefficient_n": [
+            0.669935314016037,
+            -0.012991761955492282,
+            -0.001726616276256328
+          ],
+          "amplitude_n": 0.6700612739477445,
+          "phase_shift_electrical_deg": -1.1109726886643776,
+          "design_condition": 2.027196542376557,
+          "test": {
+            "raw_rms_n": 0.42487731783562865,
+            "residual_rms_n": 0.03139636859561464,
+            "residual_mean_n": 0.004756868221429998,
+            "explained_variance": 0.99462123400952,
+            "r2_test_centered": 0.9944948617852031,
+            "mse_reduction_from_zero": 0.9945395083847933
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.42487731783562865,
+            "residual_rms_n": 0.4282374576136487,
+            "residual_mean_n": 0.06580733785606228,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.024185665030830084,
+            "mse_reduction_from_zero": -0.015879532558129794
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 30,
+          "test_points": 30,
+          "train_sweep_indices": [
+            0,
+            2,
+            3
+          ],
+          "test_sweep_indices": [
+            5,
+            6,
+            8
+          ],
+          "coefficient_n": [
+            0.6686549239547612,
+            0.004543938883936552,
+            -0.00756903482539041
+          ],
+          "amplitude_n": 0.6686703632654347,
+          "phase_shift_electrical_deg": 0.38935556069875854,
+          "design_condition": 1.8600027997114892,
+          "test": {
+            "raw_rms_n": 0.5041297328634566,
+            "residual_rms_n": 0.02957114652133345,
+            "residual_mean_n": 0.012574601937516462,
+            "explained_variance": 0.9971766602898819,
+            "r2_test_centered": 0.9965534462628609,
+            "mse_reduction_from_zero": 0.9965592612246176
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.5041297328634566,
+            "residual_rms_n": 0.5106963323825288,
+            "residual_mean_n": 0.08421845471222876,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.027955242559344118,
+            "mse_reduction_from_zero": -0.026220895475580486
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 30,
+          "test_points": 30,
+          "train_sweep_indices": [
+            0,
+            1,
+            4
+          ],
+          "test_sweep_indices": [
+            6,
+            7,
+            8
+          ],
+          "coefficient_n": [
+            0.6638585233156679,
+            -0.015362770269386346,
+            6.812613995054416e-05
+          ],
+          "amplitude_n": 0.6640362593181257,
+          "phase_shift_electrical_deg": -1.3256812825266089,
+          "design_condition": 1.8398510778342971,
+          "test": {
+            "raw_rms_n": 0.5125424574554688,
+            "residual_rms_n": 0.028760669108968562,
+            "residual_mean_n": 0.009318890996761095,
+            "explained_variance": 0.9968232012633338,
+            "r2_test_centered": 0.9964505605865536,
+            "mse_reduction_from_zero": 0.9968512492972156
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.5125424574554688,
+            "residual_rms_n": 0.5034186362703629,
+            "residual_mean_n": 0.14278016083080367,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.08747773506789236,
+            "mse_reduction_from_zero": 0.03528532714617094
+          }
+        }
+      ],
+      "source_amplitude_zero_phase_zero_offset_no_fit": [
+        {
+          "axis": 0,
+          "test": {
+            "raw_rms_n": 0.46444178101255146,
+            "residual_rms_n": 0.027425341124591746,
+            "residual_mean_n": -0.005808520053355768,
+            "explained_variance": 0.9966196945717942,
+            "r2_test_centered": 0.9964609443649936,
+            "mse_reduction_from_zero": 0.9965130837799029
+          }
+        },
+        {
+          "axis": 1,
+          "test": {
+            "raw_rms_n": 0.524076121317053,
+            "residual_rms_n": 0.02563359379934927,
+            "residual_mean_n": 0.0055216426795720195,
+            "explained_variance": 0.9976555476553843,
+            "r2_test_centered": 0.9975414720584245,
+            "mse_reduction_from_zero": 0.9976076195125629
+          }
+        },
+        {
+          "axis": 2,
+          "test": {
+            "raw_rms_n": 0.49455257327044005,
+            "residual_rms_n": 0.027480902180063837,
+            "residual_mean_n": -0.002372561586926534,
+            "explained_variance": 0.9969277671722175,
+            "r2_test_centered": 0.9969046956432841,
+            "mse_reduction_from_zero": 0.9969122861873899
+          }
+        }
+      ],
+      "frequency_negative_controls": {
+        "1": [
+          {
+            "axis": 0,
+            "train_points": 20,
+            "test_points": 39,
+            "train_sweep_indices": [
+              2,
+              4
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              0.027127921334642504,
+              0.2823108481513062,
+              -0.08236697390036445
+            ],
+            "amplitude_n": 0.28361124642695046,
+            "phase_shift_electrical_deg": 84.5111649449824,
+            "design_condition": 1.701430930818355,
+            "test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.5102481607913594,
+              "residual_mean_n": 0.0747101808955392,
+              "explained_variance": -0.19876563512247802,
+              "r2_test_centered": -0.22502854779135362,
+              "mse_reduction_from_zero": -0.20698071856331968
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.46759145987202977,
+              "residual_mean_n": 0.0781889598626518,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0287656495529367,
+              "mse_reduction_from_zero": -0.013609278877107167
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              3,
+              5
+            ],
+            "coefficient_n": [
+              -0.17665092998727297,
+              0.12026263950819052,
+              -0.07516031533671849
+            ],
+            "amplitude_n": 0.2137022543794178,
+            "phase_shift_electrical_deg": 145.7532572342729,
+            "design_condition": 1.6630226784433677,
+            "test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5493602623925428,
+              "residual_mean_n": 0.1276171400240828,
+              "explained_variance": -0.06826336157023172,
+              "r2_test_centered": -0.12919939314689355,
+              "mse_reduction_from_zero": -0.09881793446658671
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5414817842393813,
+              "residual_mean_n": 0.16104794442561504,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0970435162758434,
+              "mse_reduction_from_zero": -0.06752722140134093
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              7
+            ],
+            "coefficient_n": [
+              -0.03640634597549164,
+              -0.06125180299378086,
+              0.146001903131426
+            ],
+            "amplitude_n": 0.0712545114170053,
+            "phase_shift_electrical_deg": -120.72605692169014,
+            "design_condition": 1.587916666980674,
+            "test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5076419233872156,
+              "residual_mean_n": -0.13517752460310076,
+              "explained_variance": 0.018669805083349034,
+              "r2_test_centered": -0.05622477068946319,
+              "mse_reduction_from_zero": -0.053634614832815064
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5070411396399008,
+              "residual_mean_n": -0.11449127920119151,
+              "explained_variance": 2.220446049250313e-16,
+              "r2_test_centered": -0.05372620959510099,
+              "mse_reduction_from_zero": -0.05114218090269973
+            }
+          }
+        ],
+        "25": [
+          {
+            "axis": 0,
+            "train_points": 20,
+            "test_points": 39,
+            "train_sweep_indices": [
+              2,
+              4
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              0.14646157964105483,
+              0.12714200182479102,
+              -0.16857449281783948
+            ],
+            "amplitude_n": 0.19394866057533938,
+            "phase_shift_electrical_deg": 40.960959160777065,
+            "design_condition": 2.159229192824551,
+            "test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.48336016703474094,
+              "residual_mean_n": 0.07999241562477526,
+              "explained_variance": -0.06921434647973701,
+              "r2_test_centered": -0.09932227923405379,
+              "mse_reduction_from_zero": -0.08312642747373333
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.46759145987202977,
+              "residual_mean_n": 0.0781889598626518,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0287656495529367,
+              "mse_reduction_from_zero": -0.013609278877107167
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              3,
+              5
+            ],
+            "coefficient_n": [
+              0.06314808221434946,
+              0.08666988087056052,
+              -0.08678154422504997
+            ],
+            "amplitude_n": 0.10723501544489743,
+            "phase_shift_electrical_deg": 53.92274331719259,
+            "design_condition": 1.6393644078033713,
+            "test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5440131085918191,
+              "residual_mean_n": 0.17775752136355774,
+              "explained_variance": 0.010901332171667333,
+              "r2_test_centered": -0.1073244304623433,
+              "mse_reduction_from_zero": -0.07753152441407596
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5414817842393813,
+              "residual_mean_n": 0.16104794442561504,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0970435162758434,
+              "mse_reduction_from_zero": -0.06752722140134093
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              7
+            ],
+            "coefficient_n": [
+              -0.11816890771397302,
+              0.043013270003484094,
+              0.12647673265094247
+            ],
+            "amplitude_n": 0.12575385539499812,
+            "phase_shift_electrical_deg": 159.99858500157652,
+            "design_condition": 1.7630336737595136,
+            "test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5145214574304932,
+              "residual_mean_n": -0.11160626376459297,
+              "explained_variance": -0.03399386835187124,
+              "r2_test_centered": -0.0850465460455152,
+              "mse_reduction_from_zero": -0.082385711208115
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5070411396399008,
+              "residual_mean_n": -0.11449127920119151,
+              "explained_variance": 2.220446049250313e-16,
+              "r2_test_centered": -0.05372620959510099,
+              "mse_reduction_from_zero": -0.05114218090269973
+            }
+          }
+        ],
+        "49": [
+          {
+            "axis": 0,
+            "train_points": 20,
+            "test_points": 39,
+            "train_sweep_indices": [
+              2,
+              4
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              0.07062152530990222,
+              0.04309252196438296,
+              -0.1449263898901505
+            ],
+            "amplitude_n": 0.08273067923296645,
+            "phase_shift_electrical_deg": 31.39110865001316,
+            "design_condition": 1.8720342435959967,
+            "test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.4814846033157157,
+              "residual_mean_n": 0.09524998508484372,
+              "explained_variance": -0.04811879453277079,
+              "r2_test_centered": -0.09080751584868185,
+              "mse_reduction_from_zero": -0.0747371085082269
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.46759145987202977,
+              "residual_mean_n": 0.0781889598626518,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0287656495529367,
+              "mse_reduction_from_zero": -0.013609278877107167
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              3,
+              5
+            ],
+            "coefficient_n": [
+              0.24642133913886938,
+              0.08367757625890035,
+              -0.07937643614551139
+            ],
+            "amplitude_n": 0.2602410673809146,
+            "phase_shift_electrical_deg": 18.756004898608687,
+            "design_condition": 1.6466920605594029,
+            "test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5837672370846803,
+              "residual_mean_n": 0.1602186296653987,
+              "explained_variance": -0.17902793776819226,
+              "r2_test_centered": -0.27507457816062586,
+              "mse_reduction_from_zero": -0.24076830254110182
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5414817842393813,
+              "residual_mean_n": 0.16104794442561504,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0970435162758434,
+              "mse_reduction_from_zero": -0.06752722140134093
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              7
+            ],
+            "coefficient_n": [
+              0.16554356693419703,
+              -0.04171903955955518,
+              0.14477907817529173
+            ],
+            "amplitude_n": 0.1707195091811967,
+            "phase_shift_electrical_deg": -14.144714120406835,
+            "design_condition": 1.5147922113666332,
+            "test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5218607548604864,
+              "residual_mean_n": -0.10443108291315391,
+              "explained_variance": -0.07152289474101914,
+              "r2_test_centered": -0.11622221815697276,
+              "mse_reduction_from_zero": -0.11348493193162423
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5070411396399008,
+              "residual_mean_n": -0.11449127920119151,
+              "explained_variance": 2.220446049250313e-16,
+              "r2_test_centered": -0.05372620959510099,
+              "mse_reduction_from_zero": -0.05114218090269973
+            }
+          }
+        ],
+        "51": [
+          {
+            "axis": 0,
+            "train_points": 20,
+            "test_points": 39,
+            "train_sweep_indices": [
+              2,
+              4
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              -0.2288880828988142,
+              0.06581701714359203,
+              -0.0681374458974178
+            ],
+            "amplitude_n": 0.23816304129477003,
+            "phase_shift_electrical_deg": 163.95735310637747,
+            "design_condition": 1.7640305610293334,
+            "test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.4335314557525702,
+              "residual_mean_n": 0.025244391063548532,
+              "explained_variance": 0.11864782625069659,
+              "r2_test_centered": 0.11564926370439499,
+              "mse_reduction_from_zero": 0.12867803033609926
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.46759145987202977,
+              "residual_mean_n": 0.0781889598626518,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0287656495529367,
+              "mse_reduction_from_zero": -0.013609278877107167
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              3,
+              5
+            ],
+            "coefficient_n": [
+              0.019133529398089162,
+              -0.05357359232455403,
+              -0.07108938728536728
+            ],
+            "amplitude_n": 0.056887799586423246,
+            "phase_shift_electrical_deg": -70.34607770824053,
+            "design_condition": 1.618799410921295,
+            "test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5568205899001493,
+              "residual_mean_n": 0.15460671250857408,
+              "explained_variance": -0.07064065655129692,
+              "r2_test_centered": -0.16007675465488624,
+              "mse_reduction_from_zero": -0.1288645310197758
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5414817842393813,
+              "residual_mean_n": 0.16104794442561504,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0970435162758434,
+              "mse_reduction_from_zero": -0.06752722140134093
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              7
+            ],
+            "coefficient_n": [
+              0.12427014605760234,
+              -0.0018363709207429258,
+              0.13900618348335037
+            ],
+            "amplitude_n": 0.12428371357235979,
+            "phase_shift_electrical_deg": -0.8466123934608832,
+            "design_condition": 1.5125827185631358,
+            "test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5272306101095044,
+              "residual_mean_n": -0.11650835597590958,
+              "explained_variance": -0.08367591093383808,
+              "r2_test_centered": -0.13931186433151188,
+              "mse_reduction_from_zero": -0.13651795589474913
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5070411396399008,
+              "residual_mean_n": -0.11449127920119151,
+              "explained_variance": 2.220446049250313e-16,
+              "r2_test_centered": -0.05372620959510099,
+              "mse_reduction_from_zero": -0.05114218090269973
+            }
+          }
+        ],
+        "100": [
+          {
+            "axis": 0,
+            "train_points": 20,
+            "test_points": 39,
+            "train_sweep_indices": [
+              2,
+              4
+            ],
+            "test_sweep_indices": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "coefficient_n": [
+              0.30139271519427807,
+              0.18249033144359225,
+              -0.04865697776429753
+            ],
+            "amplitude_n": 0.3523354791141127,
+            "phase_shift_electrical_deg": 31.194493856439852,
+            "design_condition": 1.728157533297441,
+            "test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.4137710285876712,
+              "residual_mean_n": 0.061099980896783104,
+              "explained_variance": 0.21199535294251814,
+              "r2_test_centered": 0.1944296528924222,
+              "mse_reduction_from_zero": 0.2062977812572493
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.46444178101255146,
+              "residual_rms_n": 0.46759145987202977,
+              "residual_mean_n": 0.0781889598626518,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0287656495529367,
+              "mse_reduction_from_zero": -0.013609278877107167
+            }
+          },
+          {
+            "axis": 1,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              2,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              3,
+              5
+            ],
+            "coefficient_n": [
+              0.21370618278239123,
+              -0.01759169370514172,
+              -0.039261025845585794
+            ],
+            "amplitude_n": 0.21442900980706023,
+            "phase_shift_electrical_deg": -4.705817979162,
+            "design_condition": 1.516733713898936,
+            "test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.48351991476331246,
+              "residual_mean_n": 0.05071912740431853,
+              "explained_variance": 0.13487309675270887,
+              "r2_test_centered": 0.1252481197900157,
+              "mse_reduction_from_zero": 0.14878358949130266
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.524076121317053,
+              "residual_rms_n": 0.5414817842393813,
+              "residual_mean_n": 0.16104794442561504,
+              "explained_variance": 0.0,
+              "r2_test_centered": -0.0970435162758434,
+              "mse_reduction_from_zero": -0.06752722140134093
+            }
+          },
+          {
+            "axis": 2,
+            "train_points": 40,
+            "test_points": 20,
+            "train_sweep_indices": [
+              0,
+              4,
+              6,
+              8
+            ],
+            "test_sweep_indices": [
+              1,
+              7
+            ],
+            "coefficient_n": [
+              0.08857724935768113,
+              -0.048153624015144794,
+              0.13827051480454106
+            ],
+            "amplitude_n": 0.10082013990054146,
+            "phase_shift_electrical_deg": -28.530016498280673,
+            "design_condition": 1.5510695034951179,
+            "test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.48157303427488546,
+              "residual_mean_n": -0.12186248873345777,
+              "explained_variance": 0.11033720465886232,
+              "r2_test_centered": 0.04947026405930288,
+              "mse_reduction_from_zero": 0.05180122639874696
+            },
+            "constant_train_mean_test": {
+              "raw_rms_n": 0.49455257327044005,
+              "residual_rms_n": 0.5070411396399008,
+              "residual_mean_n": -0.11449127920119151,
+              "explained_variance": 2.220446049250313e-16,
+              "r2_test_centered": -0.05372620959510099,
+              "mse_reduction_from_zero": -0.05114218090269973
+            }
+          }
+        ]
+      },
+      "rrd_check": {
+        "recording": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/hangprinter-20261115T162331.876939Z-293b3438.rrd",
+        "raw_force_series": {
+          "AL": {
+            "rows": 24768,
+            "segments": 6
+          },
+          "AR": {
+            "rows": 24768,
+            "segments": 6
+          },
+          "BL": {
+            "rows": 24768,
+            "segments": 6
+          },
+          "BR": {
+            "rows": 24768,
+            "segments": 6
+          },
+          "CL": {
+            "rows": 24768,
+            "segments": 6
+          },
+          "CR": {
+            "rows": 24768,
+            "segments": 6
+          },
+          "D0": {
+            "rows": 24768,
+            "segments": 5
+          },
+          "D1": {
+            "rows": 24768,
+            "segments": 5
+          },
+          "D2": {
+            "rows": 24768,
+            "segments": 5
+          }
+        },
+        "cached_proxy_max_abs_diff_n": 0.0,
+        "force_latest_at_lag_range_s": [
+          2.2737367544323206e-11,
+          0.19999999999390639
+        ],
+        "minimum_recorded_samples_in_noise_window": 2,
+        "sensor_start_minus_mid_rms_n": 0.0018684536912065622,
+        "sensor_end_minus_mid_rms_n": 0.0025303650841869535,
+        "sensor_window_mean_minus_mid_rms_n": 0.0012665173349997317,
+        "segment_difference_at_window_start_mid_end": {
+          "AL": {
+            "segments": 6,
+            "max_segment_minus_first_n": 0.0
+          },
+          "AR": {
+            "segments": 6,
+            "max_segment_minus_first_n": 0.0
+          },
+          "BL": {
+            "segments": 6,
+            "max_segment_minus_first_n": 0.0
+          },
+          "BR": {
+            "segments": 6,
+            "max_segment_minus_first_n": 0.0
+          },
+          "CL": {
+            "segments": 6,
+            "max_segment_minus_first_n": 0.0
+          },
+          "CR": {
+            "segments": 6,
+            "max_segment_minus_first_n": 0.0
+          },
+          "D0": {
+            "segments": 5,
+            "max_segment_minus_first_n": 0.0
+          },
+          "D1": {
+            "segments": 5,
+            "max_segment_minus_first_n": 0.0
+          },
+          "D2": {
+            "segments": 5,
+            "max_segment_minus_first_n": 0.0
+          }
+        }
+      },
+      "window_mean_force_original_split": [
+        {
+          "axis": 0,
+          "train_points": 20,
+          "test_points": 39,
+          "train_sweep_indices": [
+            2,
+            4
+          ],
+          "test_sweep_indices": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "coefficient_n": [
+            0.6691663075595693,
+            -0.015012865702784154,
+            0.00332553293484477
+          ],
+          "amplitude_n": 0.6693346945359384,
+          "phase_shift_electrical_deg": -1.285225448206695,
+          "design_condition": 2.0840803281410216,
+          "test": {
+            "raw_rms_n": 0.4644351910728111,
+            "residual_rms_n": 0.028684712677983226,
+            "residual_mean_n": -0.004321908212210182,
+            "explained_variance": 0.9962163925659864,
+            "r2_test_centered": 0.9961285047233828,
+            "mse_reduction_from_zero": 0.9961853845004645
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.4644351910728111,
+            "residual_rms_n": 0.46758872511069227,
+            "residual_mean_n": 0.07815511071435077,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.02874037899540971,
+            "mse_reduction_from_zero": -0.013626186867723211
+          }
+        },
+        {
+          "axis": 1,
+          "train_points": 40,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            2,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            3,
+            5
+          ],
+          "coefficient_n": [
+            0.6588955350427248,
+            -0.008903771994726953,
+            -0.0028740530219876926
+          ],
+          "amplitude_n": 0.6589556914201232,
+          "phase_shift_electrical_deg": -0.7742008880950069,
+          "design_condition": 1.6150045314682908,
+          "test": {
+            "raw_rms_n": 0.5242699429891761,
+            "residual_rms_n": 0.02837213127773946,
+            "residual_mean_n": 0.011840143171738602,
+            "explained_variance": 0.9975142115430851,
+            "r2_test_centered": 0.996990014758412,
+            "mse_reduction_from_zero": 0.9970713059715742
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.5242699429891761,
+            "residual_rms_n": 0.5417336225194077,
+            "residual_mean_n": 0.16136762501459248,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.09736732960106731,
+            "mse_reduction_from_zero": -0.06773053262434914
+          }
+        },
+        {
+          "axis": 2,
+          "train_points": 40,
+          "test_points": 20,
+          "train_sweep_indices": [
+            0,
+            4,
+            6,
+            8
+          ],
+          "test_sweep_indices": [
+            1,
+            7
+          ],
+          "coefficient_n": [
+            0.6706930652008435,
+            -0.012664166120914535,
+            0.003677990494037015
+          ],
+          "amplitude_n": 0.6708126182564256,
+          "phase_shift_electrical_deg": -1.0817422914783208,
+          "design_condition": 1.7930453234335968,
+          "test": {
+            "raw_rms_n": 0.494718766356888,
+            "residual_rms_n": 0.027985617188636555,
+            "residual_mean_n": -0.0014835091856047317,
+            "explained_variance": 0.9968011474398327,
+            "r2_test_centered": 0.9967921332433112,
+            "mse_reduction_from_zero": 0.9967999776727707
+          },
+          "constant_train_mean_test": {
+            "raw_rms_n": 0.494718766356888,
+            "residual_rms_n": 0.5072968893003497,
+            "residual_mean_n": -0.11489983845999205,
+            "explained_variance": 0.0,
+            "r2_test_centered": -0.0540736117905245,
+            "mse_reduction_from_zero": -0.051496009065695514
+          }
+        }
+      ]
+    }
+  }
+}

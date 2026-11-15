@@ -1,0 +1,1424 @@
+{
+  "candidate_revision": "8338be8f",
+  "evidence_type": "synthetic command/encoder mocks; no physics, service, or hardware",
+  "source_sha256": {
+    "autocal/control/behaviors/spool_reserve.mjs": "7f41cb1b7c4cb89918ea85fb61c29bffbd0b829877a3007bc27ebcbaad373a90",
+    "autocal/control/behaviors/sweep_data_collection.mjs": "e2e1b432ae8b39fb8e8d2c9f58abaf977dc3bf40dfd179c216a2db21c1ea8154"
+  },
+  "logs": [
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling"
+  ],
+  "meanCrossing": {
+    "error": "Sensor left the reserved half-turn interval before measurement",
+    "points": [],
+    "relative_moves_mm": [
+      47.124
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 607259.6,
+        "drive_mm": -552.876
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 608259.6,
+        "drive_mm": -552.876
+      }
+    ]
+  },
+  "meanBaseline": {
+    "error": null,
+    "driveRange": {
+      "start": -600,
+      "end": 0
+    },
+    "spoolReserve": {
+      "sensor_payout_mm": 600,
+      "required_sensor_rewind_mm": 180,
+      "guarded_sensor_rewind_mm": 180.0100000000001,
+      "guarded_start_drive_mm": -552.8761101961531,
+      "first_drive_mm": -552.8761101961531,
+      "initial_half_turn_required": true,
+      "coupling_probes": []
+    },
+    "points": [
+      {
+        "drive_setpoint_mm": -552.8761101961531,
+        "l_drive": -552.876,
+        "l_drive_mu": -552.876,
+        "l_sensor": 419.9899999999999,
+        "l_sensor_mu": 419.9899999999999,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 180.0100000000001,
+        "mean_rewind_deg": 180.0100000000001,
+        "sample_count": 16,
+        "clock_time_ms": 609259.6,
+        "timestamp_ms": 609259.6,
+        "noise_clock_start_ms": 609259.6,
+        "noise_clock_end_ms": 609899.6,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -276.4380550980766,
+        "l_drive": -276.438,
+        "l_drive_mu": -276.438,
+        "l_sensor": -635.9815724471605,
+        "l_sensor_mu": -635.9815724471605,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 1235.9815724471605,
+        "mean_rewind_deg": 1235.9815724471605,
+        "sample_count": 16,
+        "clock_time_ms": 622846.9428571429,
+        "timestamp_ms": 622846.9428571429,
+        "noise_clock_start_ms": 622846.9428571429,
+        "noise_clock_end_ms": 623486.9428571429,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": 0,
+        "l_drive": 0,
+        "l_drive_mu": 0,
+        "l_sensor": -1691.9531448943212,
+        "l_sensor_mu": -1691.9531448943212,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 2291.953144894321,
+        "mean_rewind_deg": 2291.953144894321,
+        "sample_count": 16,
+        "clock_time_ms": 636434.2857142858,
+        "timestamp_ms": 636434.2857142858,
+        "noise_clock_start_ms": 636434.2857142858,
+        "noise_clock_end_ms": 637074.2857142858,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      }
+    ],
+    "relative_moves_mm": [
+      47.124,
+      276.438,
+      276.438
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 607259.6,
+        "drive_mm": -552.876
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 608259.6,
+        "drive_mm": -552.876
+      }
+    ]
+  },
+  "consumedInterval": {
+    "error": "No measurement interval remains after establishing the sensor reserve",
+    "points": [],
+    "relative_moves_mm": [
+      20
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 22000,
+        "drive_mm": -20
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 23000,
+        "drive_mm": -20
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 24000,
+        "drive_mm": -20
+      }
+    ]
+  },
+  "shortBaseline": {
+    "error": "Measured sweep is too short to wind the sensor in half a spindle turn",
+    "points": [],
+    "relative_moves_mm": [
+      20
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 22000,
+        "drive_mm": -20
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 23000,
+        "drive_mm": -20
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 24000,
+        "drive_mm": -20
+      }
+    ]
+  },
+  "gearedInitial": {
+    "error": null,
+    "driveRange": {
+      "start": -600,
+      "end": 0
+    },
+    "spoolReserve": {
+      "sensor_payout_mm": 600,
+      "required_sensor_rewind_mm": 360,
+      "guarded_sensor_rewind_mm": 376.9920000000002,
+      "guarded_start_drive_mm": -505.75222039230624,
+      "first_drive_mm": -505.75222039230624,
+      "initial_half_turn_required": true,
+      "coupling_probes": []
+    },
+    "points": [
+      {
+        "drive_setpoint_mm": -505.75222039230624,
+        "l_drive": -505.75199999999995,
+        "l_drive_mu": -505.75199999999995,
+        "l_sensor": 223.0079999999998,
+        "l_sensor_mu": 223.0079999999998,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 376.9920000000002,
+        "mean_rewind_deg": 376.9920000000002,
+        "sample_count": 16,
+        "clock_time_ms": 613019.2,
+        "timestamp_ms": 613019.2,
+        "noise_clock_start_ms": 613019.2,
+        "noise_clock_end_ms": 613659.2,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -252.87611019615312,
+        "l_drive": -252.87599999999995,
+        "l_drive_mu": -252.87599999999995,
+        "l_sensor": -788.4960000000001,
+        "l_sensor_mu": -788.4960000000001,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 1388.496,
+        "mean_rewind_deg": 1388.496,
+        "sample_count": 16,
+        "clock_time_ms": 625596.7428571428,
+        "timestamp_ms": 625596.7428571428,
+        "noise_clock_start_ms": 625596.7428571428,
+        "noise_clock_end_ms": 626236.7428571428,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": 0,
+        "l_drive": 5.684341886080802e-14,
+        "l_drive_mu": 5.684341886080802e-14,
+        "l_sensor": -1800,
+        "l_sensor_mu": -1800,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 2400,
+        "mean_rewind_deg": 2400,
+        "sample_count": 16,
+        "clock_time_ms": 638174.2857142857,
+        "timestamp_ms": 638174.2857142857,
+        "noise_clock_start_ms": 638174.2857142857,
+        "noise_clock_end_ms": 638814.2857142857,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      }
+    ],
+    "relative_moves_mm": [
+      47.124,
+      47.124,
+      252.876,
+      252.876
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 611019.2,
+        "drive_mm": -505.75199999999995
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 612019.2,
+        "drive_mm": -505.75199999999995
+      }
+    ]
+  },
+  "changedPreload": {
+    "error": "Insufficient coupled measurement points in the observed sweep interval",
+    "points": [
+      {
+        "drive_setpoint_mm": -480,
+        "l_drive": -480,
+        "l_drive_mu": -480,
+        "l_sensor": 120,
+        "l_sensor_mu": 120,
+        "sensor_force_n": 1.4,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 480,
+        "mean_rewind_deg": 480,
+        "sample_count": 16,
+        "clock_time_ms": 609742.8571428572,
+        "timestamp_ms": 609742.8571428572,
+        "noise_clock_start_ms": 609742.8571428572,
+        "noise_clock_end_ms": 610382.8571428572,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -360,
+        "l_drive": -360,
+        "l_drive_mu": -360,
+        "l_sensor": -360,
+        "l_sensor_mu": -360,
+        "sensor_force_n": 1.8,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 960,
+        "mean_rewind_deg": 960,
+        "sample_count": 16,
+        "clock_time_ms": 617625.7142857143,
+        "timestamp_ms": 617625.7142857143,
+        "noise_clock_start_ms": 617625.7142857143,
+        "noise_clock_end_ms": 618265.7142857143,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -240,
+        "l_drive": -240,
+        "l_drive_mu": -240,
+        "l_sensor": -840,
+        "l_sensor_mu": -840,
+        "sensor_force_n": 2.2,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 1440,
+        "mean_rewind_deg": 1440,
+        "sample_count": 16,
+        "clock_time_ms": 625508.5714285715,
+        "timestamp_ms": 625508.5714285715,
+        "noise_clock_start_ms": 625508.5714285715,
+        "noise_clock_end_ms": 626148.5714285715,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      }
+    ],
+    "relative_moves_mm": [
+      120,
+      120,
+      120,
+      120,
+      23.562,
+      -23.562
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.4:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 610382.8571428572,
+        "drive_mm": -480
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.8:0.0",
+        "now": 611382.8571428572,
+        "drive_mm": -480
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 618265.7142857143,
+        "drive_mm": -360
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.2:0.0",
+        "now": 619265.7142857143,
+        "drive_mm": -360
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 626148.5714285715,
+        "drive_mm": -240
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.6:0.0",
+        "now": 627148.5714285715,
+        "drive_mm": -240
+      }
+    ]
+  },
+  "changedPreloadWithoutProbe": {
+    "error": "Sensor left the reserved half-turn interval before measurement",
+    "points": [
+      {
+        "drive_setpoint_mm": -552.8761101961531,
+        "l_drive": -552.876,
+        "l_drive_mu": -552.876,
+        "l_sensor": 411.5039999999999,
+        "l_sensor_mu": 411.5039999999999,
+        "sensor_force_n": 1.1570796326794894,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 188.4960000000001,
+        "mean_rewind_deg": 188.4960000000001,
+        "sample_count": 16,
+        "clock_time_ms": 609259.6,
+        "timestamp_ms": 609259.6,
+        "noise_clock_start_ms": 609259.6,
+        "noise_clock_end_ms": 609899.6,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -368.58407346410206,
+        "l_drive": -368.58399999999995,
+        "l_drive_mu": -368.58399999999995,
+        "l_sensor": -325.6640000000002,
+        "l_sensor_mu": -325.6640000000002,
+        "sensor_force_n": 1.7713864217863264,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 925.6640000000002,
+        "mean_rewind_deg": 925.6640000000002,
+        "sample_count": 16,
+        "clock_time_ms": 619897.8285714285,
+        "timestamp_ms": 619897.8285714285,
+        "noise_clock_start_ms": 619897.8285714285,
+        "noise_clock_end_ms": 620537.8285714285,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -184.29203673205103,
+        "l_drive": -184.29199999999994,
+        "l_drive_mu": -184.29199999999994,
+        "l_sensor": -1062.8320000000003,
+        "l_sensor_mu": -1062.8320000000003,
+        "sensor_force_n": 2.385693210893163,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 1662.8320000000003,
+        "mean_rewind_deg": 1662.8320000000003,
+        "sample_count": 16,
+        "clock_time_ms": 630536.0571428571,
+        "timestamp_ms": 630536.0571428571,
+        "noise_clock_start_ms": 630536.0571428571,
+        "noise_clock_end_ms": 631176.0571428571,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      }
+    ],
+    "relative_moves_mm": [
+      47.124,
+      184.292,
+      184.292,
+      184.292
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1570796326794894:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 607259.6,
+        "drive_mm": -552.876
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1570796326794894:0.0",
+        "now": 608259.6,
+        "drive_mm": -552.876
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.7713864217863264:0.0",
+        "now": 618897.8285714285,
+        "drive_mm": -368.58399999999995
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.385693210893163:0.0",
+        "now": 629536.0571428571,
+        "drive_mm": -184.29199999999994
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:3:0.0",
+        "now": 640174.2857142857,
+        "drive_mm": 5.684341886080802e-14
+      }
+    ]
+  },
+  "laterShortArc": {
+    "error": null,
+    "driveRange": {
+      "start": -20,
+      "end": 0
+    },
+    "spoolReserve": {
+      "sensor_payout_mm": 20,
+      "required_sensor_rewind_mm": 180,
+      "guarded_sensor_rewind_mm": null,
+      "guarded_start_drive_mm": null,
+      "first_drive_mm": -16.666666666666668,
+      "initial_half_turn_required": false,
+      "coupling_probes": [
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -16.666666666666668,
+            -18.333333333333336
+          ],
+          "sensor_response_deg": 16.660000000000004,
+          "sensor_force_n": 1.1500000000000001
+        },
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -13.333333333333332,
+            -16.666666666666664
+          ],
+          "sensor_response_deg": 33.34,
+          "sensor_force_n": 1.1500000000000001
+        },
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -10,
+            -15
+          ],
+          "sensor_response_deg": 50,
+          "sensor_force_n": 1.1500000000000001
+        },
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -6.666666666666666,
+            -10
+          ],
+          "sensor_response_deg": 33.33,
+          "sensor_force_n": 1.1500000000000001
+        },
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -3.333333333333332,
+            -4.999999999999998
+          ],
+          "sensor_response_deg": 16.670000000000016,
+          "sensor_force_n": 1.1500000000000001
+        }
+      ]
+    },
+    "points": [
+      {
+        "drive_setpoint_mm": -16.666666666666668,
+        "l_drive": -16.667,
+        "l_drive_mu": -16.667,
+        "l_sensor": -13.329999999999984,
+        "l_sensor_mu": -13.329999999999984,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 33.329999999999984,
+        "mean_rewind_deg": 33.329999999999984,
+        "sample_count": 16,
+        "clock_time_ms": 34228.52857142858,
+        "timestamp_ms": 34228.52857142858,
+        "noise_clock_start_ms": 34228.52857142858,
+        "noise_clock_end_ms": 34868.52857142858,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -13.333333333333332,
+        "l_drive": -13.333000000000002,
+        "l_drive_mu": -13.333000000000002,
+        "l_sensor": -46.66999999999999,
+        "l_sensor_mu": -46.66999999999999,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 66.66999999999999,
+        "mean_rewind_deg": 66.66999999999999,
+        "sample_count": 16,
+        "clock_time_ms": 45382.871428571445,
+        "timestamp_ms": 45382.871428571445,
+        "noise_clock_start_ms": 45382.871428571445,
+        "noise_clock_end_ms": 46022.871428571445,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -10,
+        "l_drive": -10.000000000000002,
+        "l_drive_mu": -10.000000000000002,
+        "l_sensor": -79.99999999999999,
+        "l_sensor_mu": -79.99999999999999,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 99.99999999999999,
+        "mean_rewind_deg": 99.99999999999999,
+        "sample_count": 16,
+        "clock_time_ms": 56722.857142857174,
+        "timestamp_ms": 56722.857142857174,
+        "noise_clock_start_ms": 56722.857142857174,
+        "noise_clock_end_ms": 57362.857142857174,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -6.666666666666666,
+        "l_drive": -6.667000000000002,
+        "l_drive_mu": -6.667000000000002,
+        "l_sensor": -113.32999999999998,
+        "l_sensor_mu": -113.32999999999998,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 133.32999999999998,
+        "mean_rewind_deg": 133.32999999999998,
+        "sample_count": 16,
+        "clock_time_ms": 67877.15714285718,
+        "timestamp_ms": 67877.15714285718,
+        "noise_clock_start_ms": 67877.15714285718,
+        "noise_clock_end_ms": 68517.15714285718,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -3.333333333333332,
+        "l_drive": -3.333000000000002,
+        "l_drive_mu": -3.333000000000002,
+        "l_sensor": -146.67,
+        "l_sensor_mu": -146.67,
+        "sensor_force_n": 1.1500000000000001,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 166.67,
+        "mean_rewind_deg": 166.67,
+        "sample_count": 16,
+        "clock_time_ms": 78745.7285714286,
+        "timestamp_ms": 78745.7285714286,
+        "noise_clock_start_ms": 78745.7285714286,
+        "noise_clock_end_ms": 79385.7285714286,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      }
+    ],
+    "relative_moves_mm": [
+      3.333,
+      0,
+      1.667,
+      -1.667,
+      -1.666,
+      1.666,
+      3.334,
+      0,
+      3.333,
+      -3.333,
+      -3.334,
+      3.334,
+      3.333,
+      5,
+      -5,
+      -5,
+      5,
+      3.333,
+      0,
+      3.334,
+      -3.334,
+      -3.333,
+      3.333,
+      3.334,
+      0,
+      1.666,
+      -1.666,
+      -1.667,
+      1.667
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 22000,
+        "drive_mm": -20
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 23000,
+        "drive_mm": -20
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 24000,
+        "drive_mm": -20
+      }
+    ]
+  },
+  "unresponsiveFrontier": {
+    "error": "Insufficient coupled measurement points in the observed sweep interval",
+    "points": [],
+    "relative_moves_mm": [
+      100,
+      23.562,
+      -23.562,
+      100,
+      23.562,
+      -23.562,
+      100,
+      23.562,
+      -23.562,
+      100,
+      23.562,
+      -23.562,
+      100,
+      23.562,
+      -23.562
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1500000000000001:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      }
+    ]
+  },
+  "tableSupport": [
+    -200,
+    -100
+  ],
+  "outsideProfileSupport": {
+    "error": null,
+    "driveRange": {
+      "start": -600,
+      "end": 0
+    },
+    "spoolReserve": {
+      "sensor_payout_mm": 600,
+      "required_sensor_rewind_mm": 180,
+      "guarded_sensor_rewind_mm": null,
+      "guarded_start_drive_mm": null,
+      "first_drive_mm": -500,
+      "initial_half_turn_required": false,
+      "coupling_probes": [
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -500,
+            -523.5619449019234
+          ],
+          "sensor_response_deg": 23.562000000000012,
+          "sensor_force_n": 1
+        }
+      ]
+    },
+    "points": [
+      {
+        "drive_setpoint_mm": -500,
+        "l_drive": -500,
+        "l_drive_mu": -500,
+        "l_sensor": 500,
+        "l_sensor_mu": 500,
+        "sensor_force_n": 1,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 100,
+        "mean_rewind_deg": 100,
+        "sample_count": 16,
+        "clock_time_ms": 621524.9142857145,
+        "timestamp_ms": 621524.9142857145,
+        "noise_clock_start_ms": 621524.9142857145,
+        "noise_clock_end_ms": 622164.9142857145,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -400,
+        "l_drive": -400,
+        "l_drive_mu": -400,
+        "l_sensor": 400,
+        "l_sensor_mu": 400,
+        "sensor_force_n": 1,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 200,
+        "mean_rewind_deg": 200,
+        "sample_count": 16,
+        "clock_time_ms": 627550.6285714288,
+        "timestamp_ms": 627550.6285714288,
+        "noise_clock_start_ms": 627550.6285714288,
+        "noise_clock_end_ms": 628190.6285714288,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -300,
+        "l_drive": -300,
+        "l_drive_mu": -300,
+        "l_sensor": 300,
+        "l_sensor_mu": 300,
+        "sensor_force_n": 1,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 300,
+        "mean_rewind_deg": 300,
+        "sample_count": 16,
+        "clock_time_ms": 633576.3428571431,
+        "timestamp_ms": 633576.3428571431,
+        "noise_clock_start_ms": 633576.3428571431,
+        "noise_clock_end_ms": 634216.3428571431,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -200,
+        "l_drive": -200,
+        "l_drive_mu": -200,
+        "l_sensor": 200,
+        "l_sensor_mu": 200,
+        "sensor_force_n": 1,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 400,
+        "mean_rewind_deg": 400,
+        "sample_count": 16,
+        "clock_time_ms": 639602.0571428575,
+        "timestamp_ms": 639602.0571428575,
+        "noise_clock_start_ms": 639602.0571428575,
+        "noise_clock_end_ms": 640242.0571428575,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -100,
+        "l_drive": -100,
+        "l_drive_mu": -100,
+        "l_sensor": 100,
+        "l_sensor_mu": 100,
+        "sensor_force_n": 3,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 500,
+        "mean_rewind_deg": 500,
+        "sample_count": 16,
+        "clock_time_ms": 646627.7714285718,
+        "timestamp_ms": 646627.7714285718,
+        "noise_clock_start_ms": 646627.7714285718,
+        "noise_clock_end_ms": 647267.7714285718,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      }
+    ],
+    "relative_moves_mm": [
+      100,
+      23.562,
+      -23.562,
+      -23.562,
+      23.562,
+      100,
+      100,
+      100,
+      100
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 640242.0571428575,
+        "drive_mm": -200
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:3:0.0",
+        "now": 641242.0571428575,
+        "drive_mm": -200
+      }
+    ]
+  },
+  "preloadAndReuse": {
+    "error": null,
+    "driveRange": {
+      "start": -600,
+      "end": 0
+    },
+    "spoolReserve": {
+      "sensor_payout_mm": 600,
+      "required_sensor_rewind_mm": 180,
+      "guarded_sensor_rewind_mm": null,
+      "guarded_start_drive_mm": null,
+      "first_drive_mm": -545.4545454545455,
+      "initial_half_turn_required": false,
+      "coupling_probes": [
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -545.4545454545455,
+            -569.0164903564689
+          ],
+          "sensor_response_deg": 23.561000000000035,
+          "sensor_force_n": 1.1818181818181817
+        },
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -490.9090909090909,
+            -514.4710358110143
+          ],
+          "sensor_response_deg": 23.562000000000012,
+          "sensor_force_n": 1.3636363636363638
+        },
+        {
+          "accepted": true,
+          "reason": "reversible encoder coupling",
+          "tested_drive_mm": [
+            -436.3636363636364,
+            -459.9255812655598
+          ],
+          "sensor_response_deg": 23.562000000000012,
+          "sensor_force_n": 1.5454545454545454
+        }
+      ]
+    },
+    "points": [
+      {
+        "drive_setpoint_mm": -545.4545454545455,
+        "l_drive": -545.455,
+        "l_drive_mu": -545.455,
+        "l_sensor": 549.0004545454545,
+        "l_sensor_mu": 549.0004545454545,
+        "sensor_force_n": 1.1818181818181817,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 50.999545454545455,
+        "mean_rewind_deg": 50.999545454545455,
+        "sample_count": 16,
+        "clock_time_ms": 619676.7571428573,
+        "timestamp_ms": 619676.7571428573,
+        "noise_clock_start_ms": 619676.7571428573,
+        "noise_clock_end_ms": 620316.7571428573,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -490.9090909090909,
+        "l_drive": -490.909,
+        "l_drive_mu": -490.909,
+        "l_sensor": 494.99990909090906,
+        "l_sensor_mu": 494.99990909090906,
+        "sensor_force_n": 1.3636363636363638,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 105.00009090909094,
+        "mean_rewind_deg": 105.00009090909094,
+        "sample_count": 16,
+        "clock_time_ms": 637493.6428571432,
+        "timestamp_ms": 637493.6428571432,
+        "noise_clock_start_ms": 637493.6428571432,
+        "noise_clock_end_ms": 638133.6428571432,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -436.3636363636364,
+        "l_drive": -436.364,
+        "l_drive_mu": -436.364,
+        "l_sensor": 441.0003636363636,
+        "l_sensor_mu": 441.0003636363636,
+        "sensor_force_n": 1.5454545454545454,
+        "spool_reserve_method": "local_encoder_coupling",
+        "raw_rewind_deg": 158.9996363636364,
+        "mean_rewind_deg": 158.9996363636364,
+        "sample_count": 16,
+        "clock_time_ms": 655310.4857142862,
+        "timestamp_ms": 655310.4857142862,
+        "noise_clock_start_ms": 655310.4857142862,
+        "noise_clock_end_ms": 655950.4857142862,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -381.8181818181818,
+        "l_drive": -381.818,
+        "l_drive_mu": -381.818,
+        "l_sensor": 386.99981818181817,
+        "l_sensor_mu": 386.99981818181817,
+        "sensor_force_n": 1.7272727272727273,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 213.00018181818183,
+        "mean_rewind_deg": 213.00018181818183,
+        "sample_count": 16,
+        "clock_time_ms": 660388.1714285719,
+        "timestamp_ms": 660388.1714285719,
+        "noise_clock_start_ms": 660388.1714285719,
+        "noise_clock_end_ms": 661028.1714285719,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -327.27272727272725,
+        "l_drive": -327.27299999999997,
+        "l_drive_mu": -327.27299999999997,
+        "l_sensor": 333.0002727272727,
+        "l_sensor_mu": 333.0002727272727,
+        "sensor_force_n": 1.9090909090909092,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 266.9997272727273,
+        "mean_rewind_deg": 266.9997272727273,
+        "sample_count": 16,
+        "clock_time_ms": 665465.8142857148,
+        "timestamp_ms": 665465.8142857148,
+        "noise_clock_start_ms": 665465.8142857148,
+        "noise_clock_end_ms": 666105.8142857148,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -272.72727272727275,
+        "l_drive": -272.727,
+        "l_drive_mu": -272.727,
+        "l_sensor": 278.9997272727272,
+        "l_sensor_mu": 278.9997272727272,
+        "sensor_force_n": 2.090909090909091,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 321.0002727272728,
+        "mean_rewind_deg": 321.0002727272728,
+        "sample_count": 16,
+        "clock_time_ms": 670543.5000000005,
+        "timestamp_ms": 670543.5000000005,
+        "noise_clock_start_ms": 670543.5000000005,
+        "noise_clock_end_ms": 671183.5000000005,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -218.1818181818182,
+        "l_drive": -218.18199999999996,
+        "l_drive_mu": -218.18199999999996,
+        "l_sensor": 225.00018181818177,
+        "l_sensor_mu": 225.00018181818177,
+        "sensor_force_n": 2.2727272727272725,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 374.9998181818182,
+        "mean_rewind_deg": 374.9998181818182,
+        "sample_count": 16,
+        "clock_time_ms": 675621.1428571433,
+        "timestamp_ms": 675621.1428571433,
+        "noise_clock_start_ms": 675621.1428571433,
+        "noise_clock_end_ms": 676261.1428571433,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -163.63636363636363,
+        "l_drive": -163.63599999999997,
+        "l_drive_mu": -163.63599999999997,
+        "l_sensor": 170.99963636363634,
+        "l_sensor_mu": 170.99963636363634,
+        "sensor_force_n": 2.4545454545454546,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 429.00036363636366,
+        "mean_rewind_deg": 429.00036363636366,
+        "sample_count": 16,
+        "clock_time_ms": 680698.828571429,
+        "timestamp_ms": 680698.828571429,
+        "noise_clock_start_ms": 680698.828571429,
+        "noise_clock_end_ms": 681338.828571429,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -109.09090909090907,
+        "l_drive": -109.09099999999997,
+        "l_drive_mu": -109.09099999999997,
+        "l_sensor": 117.00009090909086,
+        "l_sensor_mu": 117.00009090909086,
+        "sensor_force_n": 2.6363636363636367,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 482.9999090909091,
+        "mean_rewind_deg": 482.9999090909091,
+        "sample_count": 16,
+        "clock_time_ms": 685776.4714285719,
+        "timestamp_ms": 685776.4714285719,
+        "noise_clock_start_ms": 685776.4714285719,
+        "noise_clock_end_ms": 686416.4714285719,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      },
+      {
+        "drive_setpoint_mm": -54.545454545454504,
+        "l_drive": -54.544999999999966,
+        "l_drive_mu": -54.544999999999966,
+        "l_sensor": 62.99954545454541,
+        "l_sensor_mu": 62.99954545454541,
+        "sensor_force_n": 2.8181818181818183,
+        "spool_reserve_method": "half_turn",
+        "raw_rewind_deg": 537.0004545454545,
+        "mean_rewind_deg": 537.0004545454545,
+        "sample_count": 16,
+        "clock_time_ms": 690854.1571428576,
+        "timestamp_ms": 690854.1571428576,
+        "noise_clock_start_ms": 690854.1571428576,
+        "noise_clock_end_ms": 691494.1571428576,
+        "quiet_clock_matches_encoder_read": true,
+        "mode_changes_after_raw": 0
+      }
+    ],
+    "relative_moves_mm": [
+      54.545,
+      0,
+      23.562,
+      -23.562,
+      -23.561,
+      23.561,
+      54.546,
+      0,
+      23.562,
+      -23.562,
+      -23.562,
+      23.562,
+      54.545,
+      0,
+      23.562,
+      -23.562,
+      -23.562,
+      23.562,
+      54.546,
+      54.545,
+      54.546,
+      54.545,
+      54.546,
+      54.545,
+      54.546
+    ],
+    "measurement_mode_changes": [
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:4:0.01:0.0",
+        "now": 1000,
+        "drive_mm": 0
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 601500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 602500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.1818181818181817:0.0",
+        "now": 603500,
+        "drive_mm": -600
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 620316.7571428573,
+        "drive_mm": -545.455
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.3636363636363638:0.0",
+        "now": 621316.7571428573,
+        "drive_mm": -545.455
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 638133.6428571432,
+        "drive_mm": -490.909
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.5454545454545454:0.0",
+        "now": 639133.6428571432,
+        "drive_mm": -490.909
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 655950.4857142862,
+        "drive_mm": -436.364
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.7272727272727273:0.0",
+        "now": 656950.4857142862,
+        "drive_mm": -436.364
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 661028.1714285719,
+        "drive_mm": -381.818
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:1.9090909090909092:0.0",
+        "now": 662028.1714285719,
+        "drive_mm": -381.818
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 666105.8142857148,
+        "drive_mm": -327.27299999999997
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.090909090909091:0.0",
+        "now": 667105.8142857148,
+        "drive_mm": -327.27299999999997
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 671183.5000000005,
+        "drive_mm": -272.727
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.2727272727272725:0.0",
+        "now": 672183.5000000005,
+        "drive_mm": -272.727
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 676261.1428571433,
+        "drive_mm": -218.18199999999996
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.4545454545454546:0.0",
+        "now": 677261.1428571433,
+        "drive_mm": -218.18199999999996
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 681338.828571429,
+        "drive_mm": -163.63599999999997
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.6363636363636367:0.0",
+        "now": 682338.828571429,
+        "drive_mm": -163.63599999999997
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0",
+        "now": 686416.4714285719,
+        "drive_mm": -109.09099999999997
+      },
+      {
+        "line": "M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:2.8181818181818183:0.0",
+        "now": 687416.4714285719,
+        "drive_mm": -109.09099999999997
+      }
+    ]
+  },
+  "probeCases": {
+    "coupled": {
+      "result": {
+        "accepted": true,
+        "reason": "reversible encoder coupling",
+        "sample": {
+          "muByMotorDeg": [
+            100,
+            -400
+          ],
+          "sigmaByMotorDeg": [
+            0.01,
+            0.01
+          ]
+        },
+        "tested_drive_mm": [
+          100,
+          80
+        ],
+        "sensor_response_deg": 80
+      },
+      "error": null,
+      "visited": [
+        100,
+        120,
+        100,
+        80,
+        100
+      ]
+    },
+    "flat": {
+      "result": {
+        "accepted": false,
+        "reason": "unresolved coupling or return mismatch"
+      },
+      "error": null,
+      "visited": [
+        100,
+        120,
+        100
+      ]
+    },
+    "unresolved": {
+      "result": {
+        "accepted": false,
+        "reason": "unresolved coupling or return mismatch"
+      },
+      "error": null,
+      "visited": [
+        100,
+        120,
+        100
+      ]
+    },
+    "drift": {
+      "error": "Spool probe did not return to the reserved encoder state",
+      "visited": [
+        100,
+        120,
+        100
+      ]
+    },
+    "transport": {
+      "error": "Disconnected",
+      "visited": [
+        100,
+        120
+      ]
+    }
+  }
+}

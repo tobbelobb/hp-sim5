@@ -1,0 +1,11 @@
+Writing additional info to log: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/immediate-transport-failure/dataset.full_auto_1.log
+; --sim: collection waits for a browser connected to ws://localhost:8790
+;        open http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790 and keep the simulator page open
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/immediate-transport-failure/dataset.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/4 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/immediate-transport-failure/dataset.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 1 more attempts.
+; collection failed with exit 1; stopping without applying calibration

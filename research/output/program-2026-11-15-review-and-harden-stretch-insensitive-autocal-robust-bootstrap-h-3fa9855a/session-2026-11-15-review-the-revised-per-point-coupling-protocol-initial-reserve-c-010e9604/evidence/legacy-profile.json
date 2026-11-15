@@ -1,0 +1,58 @@
+{
+  "version": "2.0",
+  "machine_type": "hangprinter_4",
+  "num_anchors": 4,
+  "dimensions": 3,
+  "config": {
+    "m666_before_data_collection": {
+      "W": 0.081,
+      "N": [
+        2.0,
+        2.0,
+        2.0,
+        3.0
+      ],
+      "Y": [
+        528.3,
+        528.3,
+        528.3,
+        398.9
+      ],
+      "U": [
+        2.0,
+        2.0,
+        2.0,
+        4.0
+      ]
+    },
+    "force_tuning": {
+      "force_low_n": 0.01,
+      "force_mid_n": 0.23,
+      "force_max_n": 4.0
+    }
+  },
+  "sweeps": [
+    {
+      "id": "sweep_001",
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_lengths": [
+        390.0,
+        -100.0
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2,
+      "data_points": [
+        {
+          "l_drive": -100.0,
+          "l_sensor": -100.0
+        }
+      ],
+      "metadata": {
+        "sensor_force_profile": true
+      }
+    }
+  ]
+}

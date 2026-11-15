@@ -1,0 +1,13 @@
+{
+  "version": "2.0",
+  "machine_type": "slideprinter",
+  "num_anchors": 3,
+  "dimensions": 2,
+  "config": {
+    "max_travel_mm": 100.0,
+    "force_tuning": {
+      "force_mid_n": 0.2
+    }
+  },
+  "sweeps": []
+}

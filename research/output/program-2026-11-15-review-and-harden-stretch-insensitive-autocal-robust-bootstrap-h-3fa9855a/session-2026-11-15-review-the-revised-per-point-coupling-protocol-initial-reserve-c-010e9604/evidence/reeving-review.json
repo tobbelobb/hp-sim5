@@ -1,0 +1,409 @@
+{
+  "candidate_revision": "8338be8f",
+  "source_sha256": {
+    "autocal/equal_strain.py": "da7066a4b7ba7a45e7c4b505667508a3449b4150d7e9ad63f2dc91467511fa03",
+    "autocal/workspace.py": "a038f8e3cd7a9a11600b6717e6c54d749a6851f6d07897892449a7b1b09de0dc",
+    "autocal/autocal.py": "aaa87a39f91922a5febba846c95d1eb16f9a412a6a6c56c405856682b0038d0e"
+  },
+  "evidence_type": "analytical firmware-equation calculation and mocked application boundary; no physics or hardware",
+  "inputs": {
+    "anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      [
+        1645.44826719,
+        950.0,
+        -280.0
+      ],
+      [
+        -1645.44826719,
+        950.0,
+        -280.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ],
+    "strands": [
+      2.0,
+      2.0,
+      2.0,
+      3.0
+    ],
+    "extra_mm": [
+      528.3,
+      528.3,
+      528.3,
+      398.9
+    ],
+    "mechanical_advantage": [
+      2.0,
+      2.0,
+      2.0,
+      4.0
+    ],
+    "weight_n": 0.79461,
+    "force_mid_n": 0.23,
+    "default_strand_target_n": 0.28750000000000003,
+    "ea_n_for_illustrative_residual_mm": 20000.0
+  },
+  "uncapped_invariant": {
+    "position_mm": [
+      250.0,
+      -150.0,
+      800.0
+    ],
+    "common_target_n": 1.0,
+    "corrected_tensions_n": [
+      5.071154806472366,
+      5.018083867624773,
+      1.5769268499532054,
+      6.974647718946701
+    ],
+    "corrected": {
+      "force_balance_residual_n": [
+        -8.881784197001252e-16,
+        -2.220446049250313e-16,
+        -4.440892098500626e-16
+      ],
+      "projected_strain_residual_ea_mm_n": -1.7053025658242404e-13,
+      "projected_strain_residual_mm_at_ea": -8.526512829121201e-18,
+      "achieved_weighted_target_n": 1.0
+    },
+    "old_u1_tensions_n": [
+      2.1967486520707182,
+      2.171826517858431,
+      0.5650658240934636,
+      3.4322442542464726
+    ],
+    "old_u1_rule_evaluated_with_hp4_reeving": {
+      "force_balance_residual_n": [
+        -8.881784197001252e-16,
+        -1.1102230246251565e-15,
+        -8.881784197001252e-16
+      ],
+      "projected_strain_residual_ea_mm_n": -2112.4688218609413,
+      "projected_strain_residual_mm_at_ea": -0.10562344109304707,
+      "achieved_weighted_target_n": 0.43640735344284665
+    }
+  },
+  "clamping": [
+    {
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_mm": [
+        390.0,
+        -100.0
+      ],
+      "drive": 1,
+      "sensor": 2,
+      "table_rows": 54,
+      "clamped_rows": 2,
+      "intended_target_n": 0.28750000000000003,
+      "worst_case": {
+        "position_mm": [
+          761.868458060866,
+          207.53844411526325,
+          282.4449787329727
+        ],
+        "intended_sensor_n": 0.12792197588520576,
+        "commanded_sensor_n": 0.23,
+        "actual_tensions_n": [
+          1.3449782566187856,
+          2.528518276041254,
+          2.511142031039631,
+          0.23
+        ],
+        "force_balance_residual_n": [
+          -2.220446049250313e-16,
+          6.661338147750939e-16,
+          -6.661338147750939e-16
+        ],
+        "projected_strain_residual_ea_mm_n": 266.1702443607874,
+        "projected_strain_residual_mm_at_ea": 0.013308512218039371,
+        "achieved_weighted_target_n": 0.3605397845469917
+      }
+    },
+    {
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_mm": [
+        390.0,
+        -100.0
+      ],
+      "drive": 2,
+      "sensor": 1,
+      "table_rows": 54,
+      "clamped_rows": 2,
+      "intended_target_n": 0.28750000000000003,
+      "worst_case": {
+        "position_mm": [
+          -761.868458060866,
+          207.53844411526325,
+          282.4449787329727
+        ],
+        "intended_sensor_n": 0.1279219758852057,
+        "commanded_sensor_n": 0.23,
+        "actual_tensions_n": [
+          1.3449782566187862,
+          2.528518276041254,
+          0.23,
+          2.511142031039631
+        ],
+        "force_balance_residual_n": [
+          4.440892098500626e-16,
+          0.0,
+          -8.881784197001252e-16
+        ],
+        "projected_strain_residual_ea_mm_n": 266.17024436078765,
+        "projected_strain_residual_mm_at_ea": 0.013308512218039383,
+        "achieved_weighted_target_n": 0.36053978454699176
+      }
+    },
+    {
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_mm": [
+        390.0,
+        -1170.0
+      ],
+      "drive": 1,
+      "sensor": 2,
+      "table_rows": 50,
+      "clamped_rows": 6,
+      "intended_target_n": 0.28750000000000003,
+      "worst_case": {
+        "position_mm": [
+          178.5607090695785,
+          -139.87835630939412,
+          1206.1339332315272
+        ],
+        "intended_sensor_n": 0.023222769742115235,
+        "commanded_sensor_n": 0.23,
+        "actual_tensions_n": [
+          2.480234144062051,
+          4.098308173094743,
+          2.1772896988455743,
+          0.22999999999999998
+        ],
+        "force_balance_residual_n": [
+          6.661338147750939e-16,
+          2.220446049250313e-16,
+          -1.3322676295501878e-15
+        ],
+        "projected_strain_residual_ea_mm_n": 716.169858990792,
+        "projected_strain_residual_mm_at_ea": 0.035808492949539604,
+        "achieved_weighted_target_n": 0.49707572854378107
+      }
+    },
+    {
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_mm": [
+        390.0,
+        -1170.0
+      ],
+      "drive": 2,
+      "sensor": 1,
+      "table_rows": 50,
+      "clamped_rows": 6,
+      "intended_target_n": 0.28750000000000003,
+      "worst_case": {
+        "position_mm": [
+          -178.5607090695785,
+          -139.87835630939412,
+          1206.1339332315272
+        ],
+        "intended_sensor_n": 0.023222769742115235,
+        "commanded_sensor_n": 0.23,
+        "actual_tensions_n": [
+          2.4802341440620514,
+          4.098308173094745,
+          0.23,
+          2.1772896988455748
+        ],
+        "force_balance_residual_n": [
+          -4.440892098500626e-16,
+          4.440892098500626e-16,
+          -6.661338147750939e-16
+        ],
+        "projected_strain_residual_ea_mm_n": 716.1698589907924,
+        "projected_strain_residual_mm_at_ea": 0.03580849294953962,
+        "achieved_weighted_target_n": 0.49707572854378124
+      }
+    },
+    {
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_mm": [
+        780.0,
+        -1560.0
+      ],
+      "drive": 1,
+      "sensor": 2,
+      "table_rows": 52,
+      "clamped_rows": 5,
+      "intended_target_n": 0.28750000000000003,
+      "worst_case": {
+        "position_mm": [
+          131.5312566605203,
+          44.2408121601799,
+          1589.6094733070724
+        ],
+        "intended_sensor_n": 0.01022016223759764,
+        "commanded_sensor_n": 0.23,
+        "actual_tensions_n": [
+          0.8345754564048277,
+          4.054829819844162,
+          2.986342398097338,
+          0.23
+        ],
+        "force_balance_residual_n": [
+          0.0,
+          1.1102230246251565e-15,
+          4.440892098500626e-16
+        ],
+        "projected_strain_residual_ea_mm_n": 703.0935209095368,
+        "projected_strain_residual_mm_at_ea": 0.03515467604547684,
+        "achieved_weighted_target_n": 0.5169961249310175
+      }
+    },
+    {
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_mm": [
+        780.0,
+        -1560.0
+      ],
+      "drive": 2,
+      "sensor": 1,
+      "table_rows": 52,
+      "clamped_rows": 5,
+      "intended_target_n": 0.28750000000000003,
+      "worst_case": {
+        "position_mm": [
+          -131.5312566605203,
+          44.2408121601799,
+          1589.6094733070724
+        ],
+        "intended_sensor_n": 0.010220162237597252,
+        "commanded_sensor_n": 0.23,
+        "actual_tensions_n": [
+          0.8345754564048299,
+          4.054829819844167,
+          0.23,
+          2.9863423980973414
+        ],
+        "force_balance_residual_n": [
+          0.0,
+          0.0,
+          4.440892098500626e-16
+        ],
+        "projected_strain_residual_ea_mm_n": 703.0935209095387,
+        "projected_strain_residual_mm_at_ea": 0.03515467604547694,
+        "achieved_weighted_target_n": 0.5169961249310181
+      }
+    }
+  ],
+  "retuning": {
+    "original_strand_target_n": 0.28750000000000003,
+    "new_force_mid_n": 0.4,
+    "recorded_new_targets_n": [
+      0.28750000000000003,
+      0.28750000000000003
+    ]
+  },
+  "policy": {
+    "legacy_all_profiled": {
+      "policy_error": "Legacy profiled reeving data requires a fresh dataset for corrected equal-strain collection; offline replay remains available",
+      "system_exit": 2,
+      "last_console_line": [
+        "reeving-review.py: error: Legacy profiled reeving data requires a fresh dataset for corrected equal-strain collection; offline replay remains available"
+      ]
+    },
+    "legacy_offline": {
+      "policy_error": "Legacy profiled reeving data requires a fresh dataset for corrected equal-strain collection; offline replay remains available",
+      "main_return": 73,
+      "last_console_line": []
+    },
+    "mixed_legacy_and_constant": {
+      "policy_error": null,
+      "mock_simulator_boundary_reached": "mocked simulator boundary; no service or physics started",
+      "last_console_line": []
+    },
+    "inconsistent_targets_error": "Cannot combine different equal-strain targets in one refinement dataset"
+  },
+  "frontier": {
+    "initial_bounds": {
+      "0": [
+        -390.0,
+        390.0
+      ],
+      "1": [
+        -390.0,
+        390.0
+      ],
+      "2": [
+        -390.0,
+        390.0
+      ],
+      "3": [
+        -390.0,
+        390.0
+      ]
+    },
+    "empty_failed_bounds": {
+      "0": [
+        -390.0,
+        390.0
+      ],
+      "1": [
+        -390.0,
+        390.0
+      ],
+      "2": [
+        -390.0,
+        390.0
+      ],
+      "3": [
+        -390.0,
+        390.0
+      ]
+    },
+    "nonempty_bounds": {
+      "0": [
+        -390.0,
+        1170.0
+      ],
+      "1": [
+        -390.0,
+        390.0
+      ],
+      "2": [
+        -390.0,
+        390.0
+      ],
+      "3": [
+        -1950.0,
+        390.0
+      ]
+    }
+  }
+}

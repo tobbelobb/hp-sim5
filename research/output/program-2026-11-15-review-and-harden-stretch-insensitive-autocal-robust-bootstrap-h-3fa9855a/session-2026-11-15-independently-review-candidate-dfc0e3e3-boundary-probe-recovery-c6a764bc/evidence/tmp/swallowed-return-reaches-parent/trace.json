@@ -1,0 +1,60 @@
+{
+  "code": 0,
+  "fit_sweep_counts": [
+    3,
+    4,
+    4,
+    5,
+    5,
+    6,
+    6
+  ],
+  "stopping_updates": [
+    {
+      "iteration": 1,
+      "history_size": 1
+    },
+    {
+      "iteration": 2,
+      "history_size": 2
+    },
+    {
+      "iteration": 3,
+      "history_size": 3
+    },
+    {
+      "iteration": 4,
+      "history_size": 4
+    }
+  ],
+  "replans": [],
+  "collections": [
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/swallowed-return-reaches-parent/dataset.new_001.json"
+    ],
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/swallowed-return-reaches-parent/dataset.new_002.json"
+    ],
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/swallowed-return-reaches-parent/dataset.new_003.json"
+    ],
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/swallowed-return-reaches-parent/dataset.new_004.json"
+    ]
+  ],
+  "applications": [
+    "M669 A0.00:-1900.00:-280.00 B1645.40:950.00:-280.00 C-1645.40:950.00:-280.00 D0.00:0.00:1900.00"
+  ]
+}

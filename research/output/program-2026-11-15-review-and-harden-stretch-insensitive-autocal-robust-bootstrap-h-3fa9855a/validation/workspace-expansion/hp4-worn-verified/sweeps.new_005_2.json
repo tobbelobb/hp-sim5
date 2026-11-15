@@ -1,0 +1,234 @@
+{
+  "version": "2.0",
+  "machine_type": "hangprinter_4",
+  "num_anchors": 4,
+  "dimensions": 3,
+  "timestamp": "2026-11-15T17:01:05.528Z",
+  "config": {
+    "angles_unit": "deg",
+    "lengths_unit": "mm",
+    "m666_before_data_collection": {
+      "M": 666,
+      "A": 1,
+      "Q": 0,
+      "R": [
+        30,
+        30,
+        30,
+        30
+      ],
+      "U": [
+        2,
+        2,
+        2,
+        4
+      ],
+      "O": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "N": [
+        2,
+        2,
+        2,
+        3
+      ],
+      "L": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "H": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "J": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "W": 0.08,
+      "S": 20000,
+      "I": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "X": [
+        40,
+        40,
+        40,
+        40
+      ],
+      "Y": [
+        528.3,
+        528.3,
+        528.3,
+        398.9
+      ],
+      "C": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "E": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "F": 0,
+      "B": 0,
+      "P": 0
+    },
+    "m669": {
+      "A": [
+        0,
+        -1900,
+        -280
+      ],
+      "B": [
+        1645.45,
+        950,
+        -280
+      ],
+      "C": [
+        -1645.45,
+        950,
+        -280
+      ],
+      "D": [
+        0,
+        0,
+        1900
+      ],
+      "P": []
+    },
+    "m92": {
+      "X": [],
+      "Y": [],
+      "Z": [],
+      "U": [],
+      "E": []
+    },
+    "mm_per_degree": [
+      0.2617993877991494,
+      0.2617993877991494,
+      0.2617993877991494,
+      0.1308996938995747
+    ],
+    "noise_model": {
+      "project_zero_tension": false
+    },
+    "notes": {},
+    "force_tuning": {
+      "auto_tuned": false,
+      "method": "manual",
+      "force_low_n": 0.05556003412779003,
+      "force_mid_n": 1.1112006825558005,
+      "force_max_n": 4.268788542106362,
+      "pullout_force_n": 4.268788542106362
+    },
+    "encoder_noise": {
+      "method": "mad",
+      "units": "deg",
+      "sigma_floor_deg": 0.02,
+      "min_samples": 8,
+      "sample_count": 16,
+      "sample_interval_ms": 25,
+      "sample_rate_hz": 40
+    }
+  },
+  "sweeps": [],
+  "acquisition_rejections": [
+    {
+      "fixed_anchors": [
+        2,
+        3
+      ],
+      "fixed_lengths": [
+        723.4048014048956,
+        -1614.6780929802387
+      ],
+      "drive_anchor": 0,
+      "sensor_anchor": 1,
+      "direction": 1,
+      "reason": "Insufficient coupled measurement points in the observed sweep interval",
+      "evidence": {
+        "rawDriveInterval": [
+          769.0671175865373,
+          795.1920784950144
+        ],
+        "retained_points": 0,
+        "coupling_probes": [
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 1.6367952919579625
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 1.9746361181597596
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 2.270319442168451
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 2.5331649690142735
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 2.7705638724946744
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 2.9855707511795426
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 3.182676059018855
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 3.3624897893071903
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 3.5274428711365045
+          },
+          {
+            "accepted": false,
+            "reason": "hysteretic sensor return",
+            "sensor_force_n": 3.679113091328758
+          }
+        ]
+      }
+    }
+  ]
+}

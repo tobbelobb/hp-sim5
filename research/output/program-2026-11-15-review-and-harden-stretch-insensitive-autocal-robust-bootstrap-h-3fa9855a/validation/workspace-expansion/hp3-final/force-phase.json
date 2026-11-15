@@ -1,0 +1,42 @@
+{
+  "scope": "Recorded-physics diagnostic with simulator-specified pole count 50; force proxies and fitted phase are not production inputs. Entire odd sweeps are held out. This tests the force discrepancy, not the causal share of anchor error.",
+  "model_source": "src/wasm/cable_solver/src/engine.rs:1617 and hp-sim-3d/app/torqueModeSystem.js:36",
+  "rows": [
+    {
+      "sensor_anchor": 0,
+      "train_points": 30,
+      "test_points": 40,
+      "force_sine_coefficient_n": 0.3262076004897833,
+      "force_cosine_coefficient_n": 0.004353995085015595,
+      "force_offset_n": -0.008652201054217382,
+      "amplitude_n": 0.3262366562642868,
+      "heldout_raw_rms_n": 0.23618131263835226,
+      "heldout_phase_residual_rms_n": 0.025683057528723154,
+      "heldout_explained_variance": 0.9886418508606867
+    },
+    {
+      "sensor_anchor": 1,
+      "train_points": 48,
+      "test_points": 20,
+      "force_sine_coefficient_n": 0.3354971163046201,
+      "force_cosine_coefficient_n": -0.007005744302566275,
+      "force_offset_n": 0.004834395352837707,
+      "amplitude_n": 0.3355702541971632,
+      "heldout_raw_rms_n": 0.23558429737965564,
+      "heldout_phase_residual_rms_n": 0.026803024493201204,
+      "heldout_explained_variance": 0.9928210073689153
+    },
+    {
+      "sensor_anchor": 2,
+      "train_points": 19,
+      "test_points": 40,
+      "force_sine_coefficient_n": 0.33489389100246447,
+      "force_cosine_coefficient_n": 0.0026177387129502783,
+      "force_offset_n": 0.011029888085407792,
+      "amplitude_n": 0.33490412178224954,
+      "heldout_raw_rms_n": 0.2175569322370371,
+      "heldout_phase_residual_rms_n": 0.02948128944115418,
+      "heldout_explained_variance": 0.9835622184541201
+    }
+  ]
+}

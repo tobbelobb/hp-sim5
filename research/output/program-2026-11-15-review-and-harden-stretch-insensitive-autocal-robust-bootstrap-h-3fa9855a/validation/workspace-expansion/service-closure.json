@@ -1,0 +1,77 @@
+{
+  "scope": "Owned PIDs from all workspace-expansion manifests; no unrelated services inspected or changed.",
+  "owned_pids_checked": 130,
+  "live_owned_services": [],
+  "cases": [
+    {
+      "case": "hp4",
+      "status": "interrupted",
+      "normal_completion": false,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp4-worn-verified",
+      "status": "complete",
+      "normal_completion": true,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp4-local",
+      "status": "failed",
+      "normal_completion": false,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp3",
+      "status": "interrupted",
+      "normal_completion": false,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp3-soft-verified",
+      "status": "complete",
+      "normal_completion": true,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp3-local",
+      "status": "failed",
+      "normal_completion": false,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp3-final",
+      "status": "complete",
+      "normal_completion": true,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp3-fixed",
+      "status": "failed",
+      "normal_completion": false,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp4-final",
+      "status": "complete",
+      "normal_completion": true,
+      "kept_alive": false,
+      "physics_returncode": 0
+    },
+    {
+      "case": "hp4-fixed",
+      "status": "failed",
+      "normal_completion": false,
+      "kept_alive": false,
+      "physics_returncode": 0
+    }
+  ]
+}

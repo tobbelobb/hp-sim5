@@ -1,0 +1,11 @@
+{
+  "exit_code": 1,
+  "status": "failed",
+  "stop_reason": null,
+  "normal_completion": false,
+  "wall_s": 325.72410024800047,
+  "git_revision": "8338be8f585f4552bca4af74155bd87132daa9a9",
+  "anchor_error": "'firmware_final'",
+  "max_error_mm": 1.0,
+  "passed": false
+}

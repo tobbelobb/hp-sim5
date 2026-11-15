@@ -1,0 +1,70 @@
+{
+  "scope": "Sampled physics diagnostic; reference geometry is never a calibration/planning input. Geometric lengths use a point-effector model, so discrepancies include stretch, reference and routing/model errors.",
+  "points": 197,
+  "recording": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/hangprinter-20261115T162331.849584Z-adb78b79.rrd",
+  "reference_origin_world_m": [
+    0.0,
+    0.0,
+    0.10000000149011612
+  ],
+  "height_range_mm": [
+    39.97684270143509,
+    1729.2069420218468
+  ],
+  "height_percentiles_mm": [
+    39.97684270143509,
+    102.89522260427475,
+    234.2698499560356,
+    1093.048833310604,
+    1729.2069420218468
+  ],
+  "max_pose_latest_at_lag_s": 0.19999999973333615,
+  "max_force_latest_at_lag_s": 0.19999999973333615,
+  "declared_strand_target_n": 1.0123912924159992,
+  "command_implied_weighted_strand_target_percentiles_n": [
+    0.8922502714856785,
+    0.9702457350818009,
+    1.0112507957933634,
+    1.0136226086715399,
+    1.0175648666004273
+  ],
+  "realized_weighted_strand_target_percentiles_n": [
+    0.6727406978468131,
+    0.7942703392403219,
+    0.9961121827737821,
+    1.17254978348688,
+    1.2997176953182903
+  ],
+  "force_balance_proxy_rms_n": 0.013909968562102193,
+  "sensor_actual_minus_command_percentiles_n": [
+    -0.35896817530060376,
+    -0.35228502652924,
+    -0.029510944869908684,
+    0.3075341288062264,
+    0.35499807283223084
+  ],
+  "force_error_by_observed_sensor_motion": {
+    "rewinding": {
+      "points": 197,
+      "sensor_actual_minus_command_percentiles_n": [
+        -0.35896817530060376,
+        -0.35228502652924,
+        -0.029510944869908684,
+        0.3075341288062264,
+        0.35499807283223084
+      ]
+    }
+  },
+  "encoder_minus_point_geometry_max_abs_by_axis_mm": [
+    0.21319161310191248,
+    0.24357452689321235,
+    0.24866259371225397,
+    0.1316652426923426
+  ],
+  "encoder_minus_point_geometry_rms_by_axis_mm": [
+    0.12248513785299632,
+    0.12594302206842628,
+    0.12046550030097211,
+    0.0837696905630798
+  ]
+}

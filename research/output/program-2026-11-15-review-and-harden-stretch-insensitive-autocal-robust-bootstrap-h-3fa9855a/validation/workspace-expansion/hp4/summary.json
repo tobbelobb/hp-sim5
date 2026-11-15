@@ -1,0 +1,11 @@
+{
+  "exit_code": 2,
+  "status": "interrupted",
+  "stop_reason": "Ctrl-C",
+  "normal_completion": false,
+  "wall_s": 359.6431061109979,
+  "git_revision": "6ab979c367c286451d05a06b839ca770c51eeab3",
+  "anchor_error": "'firmware_final'",
+  "max_error_mm": 1.0,
+  "passed": false
+}

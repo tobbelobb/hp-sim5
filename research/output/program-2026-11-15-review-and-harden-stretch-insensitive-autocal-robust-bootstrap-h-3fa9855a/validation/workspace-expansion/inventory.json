@@ -1,0 +1,803 @@
+{
+  "scope": "Completed and informative partial production simulations. Nominal dfc0e3e3 trials precede the 5251f749 return-enforcement fix; variants exercise that fix.",
+  "storage": "Selected replay stages, gzip history archives, datasets, logs and summaries are committed. Listed raw RRD/event journals and redundant stages are retained only at these local workspace paths; there is no off-host backup or portable URI. Do not delete the only copies.",
+  "cases": [
+    {
+      "case": "hp3",
+      "git_revision": "6ab979c367c286451d05a06b839ca770c51eeab3",
+      "source_sha256": "e556e09148941bac7eb9fe16930163bf8f0e6e2ee2cb08bee9107608139118bb",
+      "autocal_source_sha256": "481a6a8c536e5e86e36f046fb9fbad4b1749fb472df2bb10eac4547ec2292dd3",
+      "status": "interrupted",
+      "normal_completion": false,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/input.json",
+        "bytes": 797,
+        "sha256": "8a576f1e0b014f922d25a7d57ea1a193159422ca513867dee52af07b0ab38f7f"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/input-scene.usda",
+        "bytes": 23118,
+        "sha256": "421ff4a7e23cda86c3d89964a29399675f7ee9736e8063baee2bd2b7b3c13e14"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.headless/manifest.json",
+        "bytes": 8020,
+        "sha256": "8e9bdd13f30d4ffce595f14077adfa3c5ca7dfd3fc8dbc662b525733bbd66270"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/summary.json",
+        "bytes": 2171,
+        "sha256": "99cc4372fd964d7f581a9892c497cc5b4646be498d9b35ce6bc8b74419aadb85"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.json",
+        "bytes": 212585,
+        "sha256": "5f4f3c511820bf95b3d78842baac1ff1e1564b6df261cc14064158977e517163"
+      }
+    },
+    {
+      "case": "hp3-final",
+      "git_revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+      "source_sha256": "84a538831f1d6d4c555816e2ab3cdb70ef265e3e28e5dea9aaec760732b9748c",
+      "autocal_source_sha256": "c7a83294de16359d8a3db098fb1c7204d45497b9ee424478c918c4812b8dcef4",
+      "status": "complete",
+      "normal_completion": true,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/input.json",
+        "bytes": 809,
+        "sha256": "cd7a1de4e97335cd36a83dc0eafc0dc384884ab2b207b06922197d7a073de1a2"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/input-scene.usda",
+        "bytes": 23118,
+        "sha256": "421ff4a7e23cda86c3d89964a29399675f7ee9736e8063baee2bd2b7b3c13e14"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/manifest.json",
+        "bytes": 8160,
+        "sha256": "71348b03007ed81f48833dcb30fcc112d355e4457b3eaa9d58c2e0acb8be985b"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/summary.json",
+        "bytes": 2173,
+        "sha256": "57d55c635756008e4cac0424144115a0c58f65ea1752935378fc37031a2aa802"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.json",
+        "bytes": 364597,
+        "sha256": "e60c5641e074c8951a255059fb57a7d7a6911c4e0dc6dfcff3bccf188f28647a"
+      }
+    },
+    {
+      "case": "hp3-fixed",
+      "git_revision": "ecf052eba17b575a28a9722e16a82c6ce28bb8b3",
+      "source_sha256": "345b3f92dccadb4597d26abab2f51f8fad47c87e421b77e09894d0635bc6efc4",
+      "autocal_source_sha256": "a6734e439e79334e739815c082024cd5ae7cbf9697b42494413afe2b94d22a2e",
+      "status": "failed",
+      "normal_completion": false,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/input.json",
+        "bytes": 809,
+        "sha256": "596916e48fc47bc7d09391d53aed9a5e99b1f38c303b099724e98b514ccfa41f"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/input-scene.usda",
+        "bytes": 23118,
+        "sha256": "421ff4a7e23cda86c3d89964a29399675f7ee9736e8063baee2bd2b7b3c13e14"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.headless/manifest.json",
+        "bytes": 8643,
+        "sha256": "db79b7c6b5cb566764207a25dce7c30d96a34f9999c8db05050d1fdcf8848cef"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/summary.json",
+        "bytes": 270,
+        "sha256": "9c258ca6266a0190d1f9d4a859c03a4f8826ed8b8bae3647d67777c3f7137ae3"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.json",
+        "bytes": 259158,
+        "sha256": "c6159a8c0332937ea78190e88baebfd7cd3a74fc5d3743a69f1f2250d8a4cebe"
+      }
+    },
+    {
+      "case": "hp3-local",
+      "git_revision": "8338be8f585f4552bca4af74155bd87132daa9a9",
+      "source_sha256": "b743cbb60f3f48486fb9940bffb29c9456cb8a6b063e81ed7d13cc84a9739c7f",
+      "autocal_source_sha256": "37e2c097c8635d0937f37fe8eea2e1ee6f377ba736ce603a660b550246a9925f",
+      "status": "failed",
+      "normal_completion": false,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/input.json",
+        "bytes": 809,
+        "sha256": "f340e476155ad397d1c938a57e430178bdd890a5be63c5384c07d9f5c9c20ae6"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/input-scene.usda",
+        "bytes": 23118,
+        "sha256": "421ff4a7e23cda86c3d89964a29399675f7ee9736e8063baee2bd2b7b3c13e14"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.headless/manifest.json",
+        "bytes": 8522,
+        "sha256": "bf17c98bd68d7e71064e30c756a81ec26d16a499835f2ae5e050714ad41caedb"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/summary.json",
+        "bytes": 270,
+        "sha256": "bd2d258334a05ca062478cf017498a106829f4398de2453465816552f46ff28d"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.json",
+        "bytes": 212145,
+        "sha256": "9d674f89f3457d9a96439e50eb1626a1062ed179b3c20fee8449425880914f3e"
+      }
+    },
+    {
+      "case": "hp3-soft-verified",
+      "git_revision": "5251f749b24eaf0db851a8a3174ed6023f511e83",
+      "source_sha256": "aa50735f7f93f29bfa2b436f864e94bb81de34d3ce8d16456d60cbac1a250583",
+      "autocal_source_sha256": "c7a83294de16359d8a3db098fb1c7204d45497b9ee424478c918c4812b8dcef4",
+      "status": "complete",
+      "normal_completion": true,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/input.json",
+        "bytes": 828,
+        "sha256": "0b12d585c1b839ff7f235862eeac0c3682f886accbbc58a20299b87ade9bbe9d"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/input-scene.usda",
+        "bytes": 23118,
+        "sha256": "4348577579e80016c230fa77d23ab5a77106eb7a394e7485e6f76e139ca10c08"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.headless/manifest.json",
+        "bytes": 8007,
+        "sha256": "654b196c1a9670d80d0d2ee7829468188e8f9dd39ac9c3d6c2b2f4677f867875"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/summary.json",
+        "bytes": 2154,
+        "sha256": "e8a0f7db3beccf2e299af278c488d88b6d33eee7d9241b85852f01114446f732"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.json",
+        "bytes": 249074,
+        "sha256": "9afd1514269766eee26059ea23755e85e0a19055925b15f8455767eadadf9786"
+      }
+    },
+    {
+      "case": "hp4",
+      "git_revision": "6ab979c367c286451d05a06b839ca770c51eeab3",
+      "source_sha256": "e556e09148941bac7eb9fe16930163bf8f0e6e2ee2cb08bee9107608139118bb",
+      "autocal_source_sha256": "481a6a8c536e5e86e36f046fb9fbad4b1749fb472df2bb10eac4547ec2292dd3",
+      "status": "interrupted",
+      "normal_completion": false,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/input.json",
+        "bytes": 797,
+        "sha256": "f648ccb786d9b7edeafc5ddfd7c9e0f38ef3a98ff94737aa40625146ac1fd7c1"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/input-scene.usda",
+        "bytes": 64069,
+        "sha256": "748d97eccbf5aec63013325caf9224661c958e4cf14033093873cda8c515005f"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/sweeps.headless/manifest.json",
+        "bytes": 7085,
+        "sha256": "8a88f04c1d6e29e9796c0394142ebbce869c0d3054edb2632563ad6450d7ec9b"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/summary.json",
+        "bytes": 278,
+        "sha256": "4ac684fd864d010933e1c14d4a7cc59be86d6d6adc9ec51298b1086b69c1a310"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/sweeps.json",
+        "bytes": 119484,
+        "sha256": "68170301ab823cb2c3c01e387fdedd6b74f662b489df4272ef5ea3ad00386ed1"
+      }
+    },
+    {
+      "case": "hp4-final",
+      "git_revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+      "source_sha256": "84a538831f1d6d4c555816e2ab3cdb70ef265e3e28e5dea9aaec760732b9748c",
+      "autocal_source_sha256": "c7a83294de16359d8a3db098fb1c7204d45497b9ee424478c918c4812b8dcef4",
+      "status": "complete",
+      "normal_completion": true,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/input.json",
+        "bytes": 809,
+        "sha256": "0e3995b11be35dbda88845942dd4c1ae30f077861a204505b995e1bb0d792e58"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/input-scene.usda",
+        "bytes": 64069,
+        "sha256": "748d97eccbf5aec63013325caf9224661c958e4cf14033093873cda8c515005f"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/manifest.json",
+        "bytes": 8097,
+        "sha256": "23136092aa4669aace5d353a626433d9c6177645a73142ae98f7ad601b0daf27"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/summary.json",
+        "bytes": 2144,
+        "sha256": "15c17b5da850a862593becffe9a8ba285a5f1e37c5d67edafd450fa778299232"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json",
+        "bytes": 327606,
+        "sha256": "41c6cc74148118e565261d4d5799b7c8f35f4ff609bd12398e7734277e1b12f1"
+      }
+    },
+    {
+      "case": "hp4-fixed",
+      "git_revision": "ecf052eba17b575a28a9722e16a82c6ce28bb8b3",
+      "source_sha256": "345b3f92dccadb4597d26abab2f51f8fad47c87e421b77e09894d0635bc6efc4",
+      "autocal_source_sha256": "a6734e439e79334e739815c082024cd5ae7cbf9697b42494413afe2b94d22a2e",
+      "status": "failed",
+      "normal_completion": false,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/input.json",
+        "bytes": 809,
+        "sha256": "892d1ef385e6712c566386a078cf56be6d44425b069aab96f03f8974620eebc0"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/input-scene.usda",
+        "bytes": 64069,
+        "sha256": "748d97eccbf5aec63013325caf9224661c958e4cf14033093873cda8c515005f"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.headless/manifest.json",
+        "bytes": 8519,
+        "sha256": "b03725b320e1e9aebc03e4644f37aa86356897958dc10ba3f2583ff3febb2ab5"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/summary.json",
+        "bytes": 269,
+        "sha256": "4408f70cd28c7291bcdbc49743ba40f77cb18173b021cb020b2fc52a577c0c43"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.json",
+        "bytes": 193866,
+        "sha256": "78e0843228bee3aef8d824efb1acbff0561d0807f9928c47850a12c77803e098"
+      }
+    },
+    {
+      "case": "hp4-local",
+      "git_revision": "8338be8f585f4552bca4af74155bd87132daa9a9",
+      "source_sha256": "b743cbb60f3f48486fb9940bffb29c9456cb8a6b063e81ed7d13cc84a9739c7f",
+      "autocal_source_sha256": "37e2c097c8635d0937f37fe8eea2e1ee6f377ba736ce603a660b550246a9925f",
+      "status": "failed",
+      "normal_completion": false,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/input.json",
+        "bytes": 809,
+        "sha256": "a564e335a96ef3d5e73a5e93b12807b1922723ae96a1f6ebdbbcd7ad7f7aa856"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/input-scene.usda",
+        "bytes": 64069,
+        "sha256": "748d97eccbf5aec63013325caf9224661c958e4cf14033093873cda8c515005f"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/sweeps.headless/manifest.json",
+        "bytes": 8460,
+        "sha256": "1563cb0043e79cc42b39908883dc89fd25a413541ee3f0a0becff3649ae6d68b"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/summary.json",
+        "bytes": 269,
+        "sha256": "4bd07954852250c380674008740a042750ecaaafbc474f097c5b6d77879a9544"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/sweeps.json",
+        "bytes": 175043,
+        "sha256": "b5db48cacd69db44cc90d62db1b0ac7a145f5c3c2326b40ddf91dd4e2371b618"
+      }
+    },
+    {
+      "case": "hp4-worn-verified",
+      "git_revision": "5251f749b24eaf0db851a8a3174ed6023f511e83",
+      "source_sha256": "aa50735f7f93f29bfa2b436f864e94bb81de34d3ce8d16456d60cbac1a250583",
+      "autocal_source_sha256": "c7a83294de16359d8a3db098fb1c7204d45497b9ee424478c918c4812b8dcef4",
+      "status": "complete",
+      "normal_completion": true,
+      "input": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/input.json",
+        "bytes": 839,
+        "sha256": "8a0d99f2b7ee2d06cde5a1c2856ab7811234cd6c25b59f15cc2bf1ae7e95e031"
+      },
+      "scene": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/input-scene.usda",
+        "bytes": 65811,
+        "sha256": "22905fca64111e9932bfe062cb11fee059cbf98c716b01c5603726ee12a36e24"
+      },
+      "manifest": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.headless/manifest.json",
+        "bytes": 8380,
+        "sha256": "587def202c9a54c859533aac286aae63505418bee23426135fa09fd1cc60ca0a"
+      },
+      "summary": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/summary.json",
+        "bytes": 2162,
+        "sha256": "c6cea93eb29b7c0d7e9a3a4c5f875666a2e4041dd09619ff88b6fae9fb77fc1d"
+      },
+      "dataset": {
+        "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.json",
+        "bytes": 354298,
+        "sha256": "05f179788115150d45ac57221dc37b3214c828d860112151d4ed7e59d9bd8e4b"
+      }
+    }
+  ],
+  "retained_local_only": [
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/sweeps.headless/hangprinter-20261115T151629.183118Z-711bed1b.rrd",
+      "bytes": 301789344,
+      "sha256": "42cec989db118a820883b10df7be663abad09ea3a3d58402913fda042f31bd1b"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/sweeps.headless/events.jsonl",
+      "bytes": 144455635,
+      "sha256": "6589f6a95d495e179ac583bce9ac16cd09910c7d70d760e1540b04a916be20a2"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-005-default.json",
+      "bytes": 345159,
+      "sha256": "1baa21b55e5d4994826d4ec02ade4e16578d80b15e7ec2cc63a592f6adb3be67"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-005-default.warm.json",
+      "bytes": 345390,
+      "sha256": "1feb27f4bf0c8fed723c2dc2c082a735379ec179d0483349796c63f82a5784fc"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-003-default.json",
+      "bytes": 260949,
+      "sha256": "3b39a633e1c8ec57bc6ab4457476cee55dca73a91240b0e27bc5d067bc087465"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-006-default.json",
+      "bytes": 385712,
+      "sha256": "cb1e6254be4fb63217af7cfdc9eaf182ed04e222e6836b73a5d2416c2426b831"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-004-default.warm.json",
+      "bytes": 302474,
+      "sha256": "f30158ad03063acfe6407839bd9f6b239f19fbf30b7b050e3da4508e16893124"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 261212,
+      "sha256": "2e83eefcdb653a2bdab732915128a2926711375da69471d75f6c69b66f02f9b0"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-001-default.json",
+      "bytes": 178083,
+      "sha256": "5001fe90b4835911783ad7d2bf4341d95bc1d3da4b8330920c17f36a0b382427"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/history-007.json",
+      "bytes": 4244295,
+      "sha256": "73f307bdba4c196ddc283368d1c41fdeb90232ad14180d8ae0df9be29884d968"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-006-default.warm.json",
+      "bytes": 386007,
+      "sha256": "1afacffaa6c344007a5bd3a063f1393ba4d492aa5f19ee788b62a551af4e45e2"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-007-default.warm.json",
+      "bytes": 428798,
+      "sha256": "4b79fb8df8c1222a6c1e0ea12621d8989abc1191264ec43f7c2c5c131f6d6dbc"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-002-default.json",
+      "bytes": 220448,
+      "sha256": "c2cfaf88230806b3892b678fbfcb4b2872acecee9135495e9dcf625bcb59b581"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-004-default.json",
+      "bytes": 302299,
+      "sha256": "b46765a3efabc617fa08f1a750ed94e346af8ff81371896c274a9ad8aa1ba741"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 220699,
+      "sha256": "4c590eae1d0c0451c79a71cbdfc8a2493614ab24c387afc0e22b77cff0b0362a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.headless/events.jsonl",
+      "bytes": 320685509,
+      "sha256": "a468d4092f59d4ce6046481b15e1d737c24a6f42504e7f9380d49787ff97ebdd"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.headless/hangprinter-20261115T163658.503044Z-b59f4233.rrd",
+      "bytes": 730264318,
+      "sha256": "c97b78acea3977a377cdee4ada61fb54ad07fa260e76680ffd33035ae6fa7669"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/sweeps.stages/fit-001-default.json",
+      "bytes": 177012,
+      "sha256": "1f91dafb686a213fa45e1f1152adc390e27e1fc8ac8dfc9980f3a1c90e2c8338"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 219120,
+      "sha256": "ed97262cfcd9565b18b1ea89446052fdf6811007ae7a828480ace085d92a8e22"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/sweeps.headless/events.jsonl",
+      "bytes": 168775161,
+      "sha256": "8f1a4ec889bee69d644128d93244d31fc46371d85d4bed50e63c918b174c9c2b"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/sweeps.headless/hangprinter-20261115T155433.376926Z-69b1fd88.rrd",
+      "bytes": 347208054,
+      "sha256": "b827e671de3b866c621a3ce1ec37dd9894863a376b48e0e515d20c711ef1ff0d"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages/fit-003-default.json",
+      "bytes": 214606,
+      "sha256": "2469bc46b1188b56e74a23a56d1748b2efad5bf9e180a5cb4764277481377619"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages/fit-004-default.warm.json",
+      "bytes": 249684,
+      "sha256": "b396afd7693628ddb74ac88a3d07629e988fc168b5ece7dba843aa2090afdf89"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 214842,
+      "sha256": "d094cee405c7e95d3f924be5d61d926c86b5cc0845d52a7abd77c73b1b074313"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages/fit-001-default.json",
+      "bytes": 144444,
+      "sha256": "88723d6d0d9e2fa104492ea363b75987d77d8b7a19f2638c1fccb03206416490"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages/fit-002-default.json",
+      "bytes": 179264,
+      "sha256": "b20181c5e2c7a0f94dcc6b4ddcb17c4937bd697dd7785a01e1c903e49668c3d2"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 179533,
+      "sha256": "5b15d90a2434d4a2de6ffe0c5f58355cc9e432e28f4dd51aaab999c06dc7a7f1"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages/history-004.json",
+      "bytes": 1578523,
+      "sha256": "9810b5c84b32098f7fe657198bee615463d63b5a9bb895e2a4eca892e1f63929"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.headless/events.jsonl",
+      "bytes": 193017279,
+      "sha256": "0c2306cec5f3ce348416d2e3e3f27c6eb5c0e8f096f69f1d5fd3684dc772b1a8"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.headless/hangprinter-20261115T151627.951685Z-9079ed4c.rrd",
+      "bytes": 307227194,
+      "sha256": "cef5dda5f6aa38a7b50283be40be978bd72fd474a38f1a157244ffa00144c20b"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.stages/fit-003-default.json",
+      "bytes": 261930,
+      "sha256": "532015d5e6cd944fa3ee8c0e30ab407d8ad31ceb68e7f88f189392dc6cf3afad"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.stages/fit-004-default.warm.json",
+      "bytes": 304820,
+      "sha256": "e01f46a579a35ffa11864dfa20cda0989fa6b5f8c05bee4cf1e9dd87f9b13905"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 262167,
+      "sha256": "4cb8d37e1b5f8170074044e7a2c3c7ffbb1690df970a33a041a05fdf306a8c53"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.stages/fit-001-default.json",
+      "bytes": 178105,
+      "sha256": "53ec53c59d9e3a57a9197e039d1d8367e358645242de13a46abc62a94c6733aa"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.stages/fit-002-default.json",
+      "bytes": 218561,
+      "sha256": "43cbe18958d5e1584d8624b1ebe35a8558aebd34e2096f4ddd7168b7baf9367f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 218823,
+      "sha256": "e23e8780703d4b301c6b5d6848614fe040ed2f8d2a2c580af90149850140ff9a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.stages/history-004.json",
+      "bytes": 1929377,
+      "sha256": "5135384c94e6ff6578f438ebccf1156494b3566068f591c493ffc729bf0170de"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.headless/events.jsonl",
+      "bytes": 164227634,
+      "sha256": "1d2d54965303d4a7c53708558c881a9113da6689caf3b3221e9aa66240a561e1"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.headless/hangprinter-20261115T163658.519579Z-4e345659.rrd",
+      "bytes": 281224691,
+      "sha256": "92968c5cb16f6da525fc7a773c0871c44e8981b7a2442434cd0e19c111a51e57"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 261063,
+      "sha256": "0c67aa6afa4334ea4b94f6c21265151d533698d3b02ae523966299e6fa8ec134"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.stages/fit-001-default.json",
+      "bytes": 174253,
+      "sha256": "b72fde6694c666e8e53d276b5851b1652323c757b07dfce1d84fadc0331a3596"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.stages/fit-002-default.json",
+      "bytes": 216934,
+      "sha256": "3266605b3374ade031c3b2fc2be1ca4c0e18514779c7b036988ec0f14d5c616f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 217117,
+      "sha256": "254d64c3bb9cb8ea75320fbfd931f1ad41980c51b15281457c39367239bb9510"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.headless/events.jsonl",
+      "bytes": 176350105,
+      "sha256": "d75558d3149adf7e89da555490ea5dc8dea11536d201dc9e755d4901be78b16b"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.headless/hangprinter-20261115T155432.163765Z-6c661bed.rrd",
+      "bytes": 288475087,
+      "sha256": "706c165fa7ebbaf5692a81b06ae0ad4facee23d72fe7174458f8460ec450d720"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-005-default.json",
+      "bytes": 346962,
+      "sha256": "cb0b7e664b13dfdceb49d6dac30fd8cf741a18d2c51a76b39ec984b5385cc859"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-005-default.warm.json",
+      "bytes": 347225,
+      "sha256": "84d9d8b2c6d72c8bbcad93b6a4cb09752cbb9ee718a60685075b981f7c6f21f5"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-003-default.json",
+      "bytes": 262609,
+      "sha256": "c1fbc83b15993e53e898736a10af357090961c1b55383aff0c175fd84b912fcb"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-006-default.json",
+      "bytes": 395519,
+      "sha256": "f5392877336f6314b7376241f05be1b7096568d50c2b776e1df910e0536e1ced"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-004-default.warm.json",
+      "bytes": 304469,
+      "sha256": "b33e672cfed5fa70bbe1c886e1c941d385d6a64dd4dffd3e1ab35ad4bee33456"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 262877,
+      "sha256": "ac5a656e0cf1466e1d659a123a7d14db38b3ca23d050ae94aa17f7284751cd8d"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-001-default.json",
+      "bytes": 175485,
+      "sha256": "1eba0e97fde8dc91a978b2da201abb53d4910fb3834a048bfaa14a590352300a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/history-007.json",
+      "bytes": 4283668,
+      "sha256": "6000b8ad010b6233178c80f73169d4720a5ac7442316b32f0fefebca363fa5ac"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-006-default.warm.json",
+      "bytes": 395760,
+      "sha256": "5dd33b3e8d285bee2ea3decd5d75de17ca6a4b8aff28f6f3ae073bf1cc70ef92"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-007-default.warm.json",
+      "bytes": 438004,
+      "sha256": "43f7842e5bb091eee6f791b163bb4ad0e6492383dc6dfdfb9620fc97fa3c22d8"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-002-default.json",
+      "bytes": 218457,
+      "sha256": "f0f2c1eb3d43b6d9da39584181c8538680aa296c0d22465ebf1007b35ce31272"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-004-default.json",
+      "bytes": 304186,
+      "sha256": "3f1986d44a97131c05063be6eaca9b8111c0f35884aae3865ebfc47da5c9c60c"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 218642,
+      "sha256": "f1c111d7130ce995ef748c81107598df8ee3b6baca651a7142fda24a9ecb3872"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/events.jsonl",
+      "bytes": 243656650,
+      "sha256": "2c8354393efd9b97b27ec785b15e754f6b9cc2563fd862eb36f6e7a66da1b388"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/hangprinter-20261115T162331.849584Z-adb78b79.rrd",
+      "bytes": 405149872,
+      "sha256": "dc0343840caaa0901fa296d896acdfc6406880fde0b8618f7fddb80f94fcbfa3"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/same-data-fitters/fit-0.json",
+      "bytes": 437990,
+      "sha256": "6ded7760c52a05ca5a83c02dc89959a6941e3985c71c806a8e086f0a3e5a6b50"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/same-data-fitters/fit-1.json",
+      "bytes": 437748,
+      "sha256": "9e31062ed29c303ced75d8ff399569d98c273b62339ab2f1491169ff65e03c88"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-005-default.warm.json",
+      "bytes": 306428,
+      "sha256": "7bca9290b4ac0769f5ee580b95cb9ea0b67f7dcfd6a8111f5d5dbbff5efedce9"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-003-default.json",
+      "bytes": 230716,
+      "sha256": "3d2ebefa891d6856b6a461ed4cf909dce6267b580777d86b25e667f2e810d772"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-004-default.warm.json",
+      "bytes": 268452,
+      "sha256": "e54935d513ec73859f989394236f941ceda15fb09754f667ffd66ddd14ff4bda"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 230985,
+      "sha256": "6e2bf999b69fbbfd7303ae8ab9fa3ca62089e00364fe8b5d125a79806e20c905"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-001-default.json",
+      "bytes": 155160,
+      "sha256": "3f5124372d9e733c84d1c911302dde42a874de1c81a3fffb61e44bbbfc84a8ec"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-002-default.json",
+      "bytes": 192728,
+      "sha256": "db59eea00914a28af54a7c77218364499325887b6492eded4eb6824b7c0c78d0"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-004-default.json",
+      "bytes": 268195,
+      "sha256": "b9ffc04be8744c49f9250cbbc70a520b9b69ae4e26162ca526999b543a8e4686"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 192968,
+      "sha256": "deea43b9a382f53e1b9db50c9eba4f4a89d8f3800cf059bb8bffd9c3b1ef2bb1"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.headless/events.jsonl",
+      "bytes": 215335620,
+      "sha256": "30c6bb1e679ae1835110408ed6100bed045741e887a66f04dab96e5a1c538a13"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.headless/hangprinter-20261115T152629.355664Z-c4621f82.rrd",
+      "bytes": 334245857,
+      "sha256": "79e884ab2530fa3501b173aa8873492fc2a2b02eac4732a1ccbdf24e461c0d6a"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-005-default.json",
+      "bytes": 353603,
+      "sha256": "15dcd28bbdd62cf40eee115641b03920a5d795c22cbb81406f79e9c868594549"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/history-006.json",
+      "bytes": 3443721,
+      "sha256": "c2529c38b4c1583b0cce9c5b20ed6a76c71af1581bc0e2d418a16219876caabf"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-005-default.warm.json",
+      "bytes": 353881,
+      "sha256": "31b8fd232adf7d061ad9db0c03aae9c78a8f1b1836f69717c343a0b0e58b88f8"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-003-default.json",
+      "bytes": 261406,
+      "sha256": "72039c6b6c75e4d8d7dc6cbe3495bfacd44c4b6ad3d80cd22a414b1499f104bc"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-004-default.warm.json",
+      "bytes": 311325,
+      "sha256": "d9a2871c1b3b7bb4eb5b606eaf952d8994ad46772c5ac98c4d1fd143a089454e"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 261600,
+      "sha256": "8543e7004c3be801c97b023e627fcecf6a19ec4316d2b5bbc697f7718ce7f703"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-001-default.json",
+      "bytes": 178252,
+      "sha256": "d8328edc835067a96aff266b0a59145bf8e4f53dd94b1398fe5a631e941f6047"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-006-default.warm.json",
+      "bytes": 396405,
+      "sha256": "4645b2b9a96166800a13bdbe5cab3d43ef8deebfc04752f456eba930ab20d136"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-002-default.json",
+      "bytes": 220360,
+      "sha256": "a4df4653aef4bd8e43139e0640dca9873ab96eb05ea166a21015c67e8768bc1f"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-004-default.json",
+      "bytes": 311160,
+      "sha256": "3c0f3320f184000e11d8ead8229ad5818bf090a57d9508c86a6a8fd1314eed30"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 220649,
+      "sha256": "915b36332a766f4a866e10332f5c38b699c83d4c52c819da43cd08c73e0d97e1"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/events.jsonl",
+      "bytes": 231877973,
+      "sha256": "081577022a23c72270f51072828bca79abe37c2f2b356f9db972625aec098f72"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/hangprinter-20261115T162331.876939Z-293b3438.rrd",
+      "bytes": 476078345,
+      "sha256": "de9d636e0a7ea5015e10ec0a1fd8243c4fc9f894da224274bb2182aaef7684ad"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/same-data-fitters/fit-0.json",
+      "bytes": 396301,
+      "sha256": "e332cccfa7f5242029c90d2baa3facfc3fc0c3a98a0a442d007ec3f077a55050"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/same-data-fitters/fit-1.json",
+      "bytes": 396261,
+      "sha256": "b6a295002d64d10de142efe4da57be994f45e5a0dc1c221db7535f3017ce07c2"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.stages/fit-003-default.warm.json",
+      "bytes": 234024,
+      "sha256": "15bb6ccec8ea96472e6add6c77c1897320838bcb432550110306e574a619c785"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.stages/fit-001-default.json",
+      "bytes": 158015,
+      "sha256": "39b07fc74158489443ea881af3d3b21f10446158174d6c3bd4a84444d0dae132"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.stages/fit-002-default.json",
+      "bytes": 196035,
+      "sha256": "fc636c2f74fefe4c727a916b783011f3c9b6d5d6721ba7f8b961b4fe60fd3e55"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.stages/fit-002-default.warm.json",
+      "bytes": 196329,
+      "sha256": "2f738e77d48b9513c7c43bac9b63d73cd826d3eee219e0c5fb2974bb44b0636d"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.headless/events.jsonl",
+      "bytes": 193174041,
+      "sha256": "63264aea24c7f021b5d693b3da4e3d31b4c6e4ebde9a3dcdf4efdbbc8024ecb1"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.headless/hangprinter-20261115T152630.555225Z-503bc317.rrd",
+      "bytes": 380156193,
+      "sha256": "e3bc578ea290bb39f133b3deeb61da3631536f69410db434631598843e33f2b9"
+    }
+  ]
+}

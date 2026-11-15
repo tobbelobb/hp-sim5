@@ -1,0 +1,51 @@
+{
+  "scope": "Offline local point-fit diagnostic with a fixed near-truth seed. Geometry uses latest-at point-effector poses. It checks measurement/model bias and local identifiability, not blind or hardware accuracy.",
+  "source_revision": "5251f749b24eaf0db851a8a3174ed6023f511e83",
+  "inputs": [
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json",
+      "sha256": "41c6cc74148118e565261d4d5799b7c8f35f4ff609bd12398e7734277e1b12f1"
+    },
+    {
+      "path": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/physics-samples.npz",
+      "sha256": "f3b8e30589c795e5c134862d59aaba67b66df7a8edf823a6e9b86fe2bdf40802"
+    }
+  ],
+  "points": 179,
+  "results": {
+    "recorded_encoders": {
+      "absolute_mm": 5.165105578325438,
+      "aligned_mm": 3.3730700664324615,
+      "mean_translation_mm": [
+        -0.2435713696909923,
+        0.011238092791419274,
+        -1.7920355118929763
+      ],
+      "rms_mm": 0.03997789762645763,
+      "home_offsets_mm": [
+        0.0,
+        0.0,
+        0.0,
+        1.1015308083544766
+      ],
+      "success": true
+    },
+    "point_geometry": {
+      "absolute_mm": 9.094947017729282e-13,
+      "aligned_mm": 7.452245569226322e-13,
+      "mean_translation_mm": [
+        -2.441094765579266e-13,
+        -1.686110237622668e-14,
+        -2.984279490192421e-13
+      ],
+      "rms_mm": 3.0489250496519364e-13,
+      "home_offsets_mm": [
+        0.0,
+        0.0,
+        0.0,
+        1.6530026119176566e-13
+      ],
+      "success": true
+    }
+  }
+}

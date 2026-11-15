@@ -1,0 +1,39 @@
+; headless simulator manifest: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.headless/manifest.json
+Writing stage artifacts to: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.stages
+Writing additional info to log: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.full_auto.log
+; rough bootstrap: {'ready': False, 'sweeps': 3, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 76.18008908281172, 'restart_difference_mm': 0.00015054509913170477, 'inlier_fraction': 1.0, 'rms_mm': 0.020717965527492915, 'converged': True}
+; rough bootstrap: {'ready': True, 'sweeps': 4, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 14.271953081630757, 'restart_difference_mm': 0.00024143901578099758, 'inlier_fraction': 1.0, 'rms_mm': 0.03549310803401619, 'converged': True}
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 5
+
+; === full-auto iteration 2/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 6
+
+; === full-auto iteration 3/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 7
+
+; === full-auto iteration 4/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.json ===
+The 3rd best try so far.
+Collecting new sweep to try and beat it.
+Still has patience for 2 more attempts.
+Collected sweep nr 8
+
+; === full-auto iteration 5/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.json ===
+The 4th best try so far.
+Collecting new sweep to try and beat it.
+Still has patience for 1 more attempts.
+; autocal failed: Command '['node', 'autocal/control/cli/collect_sweep_data.mjs', '--machineType', 'hangprinter_3', '--sweep-config-file', '/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.active_sweep_cfg.default.txt', '--fixed-targets', '779.4312317507299,-1584.7102312181353', '--output-file', '/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.new_005.json', '--completed-sweeps', '8', '--solver-iterations', '20', '--server', 'http://127.0.0.1:43935', '--headless-url', 'http://127.0.0.1:45897', '--no-spawn-rrf-simulator', '--firmware', 'rrf', '--sim', '--force-low', '0.020247825848319984', '--force-mid', '0.40495651696639967', '--force-max', '2.1779533378093685', '--no-auto-tune-force', '--return-to-origin', '--sensor-force-profile', '/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.active_sweep_cfg.default.sensor_force_profile.json']' returned non-zero exit status 1.

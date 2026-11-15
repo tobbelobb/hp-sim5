@@ -1,0 +1,22 @@
+{
+  "code": 2,
+  "fit_sweep_counts": [
+    3
+  ],
+  "stopping_updates": [
+    {
+      "iteration": 1,
+      "history_size": 1
+    }
+  ],
+  "replans": [],
+  "collections": [
+    [
+      "node",
+      "offline-collector",
+      "--output-file",
+      "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/empty-collector/dataset.new_001.json"
+    ]
+  ],
+  "applications": []
+}

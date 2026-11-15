@@ -1,0 +1,299 @@
+{
+  "evidence_type": "synthetic ideal rigid geometry; no simulator or hardware",
+  "candidate_revision": "6ab979c367c286451d05a06b839ca770c51eeab3",
+  "anchors_mm": [
+    [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    [
+      1645.4,
+      950.0,
+      -280.0
+    ],
+    [
+      -1645.4,
+      950.0,
+      -280.0
+    ],
+    [
+      0.0,
+      0.0,
+      1900.0
+    ]
+  ],
+  "candidate_grid_count": 9,
+  "source_sha256": {
+    "autocal/workspace.py": "50e4d75c814167117dc1b941432024f054d467e7c7bd08f375ca6080596ec0cd",
+    "autocal/active_learning.py": "fa52218328d95765a61c5715f99681870dc8ffba0088b8eaaf369ab5759f0d0c",
+    "autocal/pose_planning.py": "212d46f28ad9f2021bef765c7a400cd6ef8d129382c8aaaca9504088955448a0",
+    "autocal/equal_strain.py": "7267ee26ff84e6e771905bd0c01513224ecb16b34c31ee8042c78bfd0580e4c4",
+    "autocal/_autocal_common.py": "191c7479aa09b03c5e4a9a087844c65f9e376a715d337eb6922d859dba0986fd"
+  },
+  "frontend_owned_fields_control": {
+    "attempted_completed_sweeps": 90,
+    "planned_completed_sweeps": 3,
+    "effective_command": [
+      "node",
+      "autocal/control/cli/collect_sweep_data.mjs",
+      "--machineType",
+      "hangprinter_3",
+      "--sweep-config-file",
+      "review-planned.txt",
+      "--fixed-targets",
+      "780.0,-1560.0",
+      "--output-file",
+      "review-output.json",
+      "--completed-sweeps",
+      "3",
+      "--server",
+      "http://example.invalid"
+    ]
+  },
+  "levels": [
+    {
+      "completed_d_mm": 0.0,
+      "grid": [
+        -390.0,
+        -243.75,
+        -97.5,
+        0.0,
+        48.75,
+        195.0,
+        341.25,
+        390.0,
+        487.5,
+        633.75,
+        780.0
+      ],
+      "bounds_mm": {
+        "0": [
+          -390.0,
+          780.0
+        ],
+        "1": [
+          -390.0,
+          780.0
+        ],
+        "2": [
+          -390.0,
+          780.0
+        ],
+        "3": [
+          -390.0,
+          390.0
+        ]
+      },
+      "generated_candidates": 132,
+      "sampling": [
+        {
+          "minimum_pretension_share": 0.25,
+          "accepted_candidates": 108,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 550.2670082055669
+        },
+        {
+          "minimum_pretension_share": 0.05,
+          "accepted_candidates": 120,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 651.1388201090452
+        },
+        {
+          "minimum_pretension_share": 0.0,
+          "accepted_candidates": 126,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 664.4950578259674
+        }
+      ]
+    },
+    {
+      "completed_d_mm": -390.0,
+      "grid": [
+        -780.0,
+        -585.0,
+        -390.0,
+        -195.0,
+        0.0,
+        195.0,
+        390.0,
+        585.0,
+        780.0
+      ],
+      "bounds_mm": {
+        "0": [
+          -390.0,
+          780.0
+        ],
+        "1": [
+          -390.0,
+          780.0
+        ],
+        "2": [
+          -390.0,
+          780.0
+        ],
+        "3": [
+          -780.0,
+          390.0
+        ]
+      },
+      "generated_candidates": 105,
+      "sampling": [
+        {
+          "minimum_pretension_share": 0.25,
+          "accepted_candidates": 69,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 847.9545932075298
+        },
+        {
+          "minimum_pretension_share": 0.05,
+          "accepted_candidates": 81,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 951.5330487444351
+        },
+        {
+          "minimum_pretension_share": 0.0,
+          "accepted_candidates": 84,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 961.1605634265306
+        }
+      ]
+    },
+    {
+      "completed_d_mm": -780.0,
+      "grid": [
+        -1170.0,
+        -926.25,
+        -682.5,
+        -438.75,
+        -390.0,
+        -195.0,
+        0.0,
+        48.75,
+        292.5,
+        390.0,
+        536.25,
+        780.0
+      ],
+      "bounds_mm": {
+        "0": [
+          -390.0,
+          780.0
+        ],
+        "1": [
+          -390.0,
+          780.0
+        ],
+        "2": [
+          -390.0,
+          780.0
+        ],
+        "3": [
+          -1170.0,
+          390.0
+        ]
+      },
+      "generated_candidates": 168,
+      "sampling": [
+        {
+          "minimum_pretension_share": 0.25,
+          "accepted_candidates": 114,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 1203.7159492377982
+        },
+        {
+          "minimum_pretension_share": 0.05,
+          "accepted_candidates": 123,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 1246.7187117979438
+        },
+        {
+          "minimum_pretension_share": 0.0,
+          "accepted_candidates": 129,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 1255.7447462720488
+        }
+      ]
+    },
+    {
+      "completed_d_mm": -1170.0,
+      "grid": [
+        -1560.0,
+        -1267.5,
+        -975.0,
+        -682.5,
+        -390.0,
+        -97.5,
+        0.0,
+        195.0,
+        390.0,
+        487.5,
+        780.0
+      ],
+      "bounds_mm": {
+        "0": [
+          -390.0,
+          780.0
+        ],
+        "1": [
+          -390.0,
+          780.0
+        ],
+        "2": [
+          -390.0,
+          780.0
+        ],
+        "3": [
+          -1560.0,
+          390.0
+        ]
+      },
+      "generated_candidates": 147,
+      "sampling": [
+        {
+          "minimum_pretension_share": 0.25,
+          "accepted_candidates": 81,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 1283.36559473494
+        },
+        {
+          "minimum_pretension_share": 0.05,
+          "accepted_candidates": 87,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 1598.5682700734117
+        },
+        {
+          "minimum_pretension_share": 0.0,
+          "accepted_candidates": 93,
+          "predicted_min_z_mm": 0.2730650962259915,
+          "predicted_max_z_mm": 1603.1541658525023
+        }
+      ]
+    }
+  ],
+  "conservative_sampling_counterexample": {
+    "fixed_anchors": [
+      0,
+      3
+    ],
+    "fixed_deltas_mm": [
+      780.0,
+      -1560.0
+    ],
+    "ranking_pose_count": 0,
+    "profile_input_pose_count": 60,
+    "positive_tension_profile_pose_count": 44,
+    "positive_tension_pose_z_range_mm": [
+      1567.2867448887282,
+      1583.9608606219497
+    ],
+    "positive_tension_range_n": [
+      0.03131680160864492,
+      2.591087826921108
+    ],
+    "assumed_mover_weight_n": 1.0,
+    "assumed_target_strand_tension_n": 1.0,
+    "max_force_balance_error_n": 1.5543122344752192e-15
+  }
+}

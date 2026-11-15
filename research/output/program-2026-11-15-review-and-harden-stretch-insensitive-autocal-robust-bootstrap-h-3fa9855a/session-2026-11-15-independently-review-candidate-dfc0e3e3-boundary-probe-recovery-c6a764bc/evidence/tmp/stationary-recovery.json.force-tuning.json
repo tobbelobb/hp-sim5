@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "stage": "manual_force_selection_before_sweeps",
+  "timestamp": "2026-11-15T16:28:10.840Z",
+  "machine_type": "hangprinter_3",
+  "firmware": "rrf",
+  "m666": {
+    "M": 666,
+    "R": [
+      57.29577951308232,
+      57.29577951308232,
+      57.29577951308232,
+      57.29577951308232
+    ],
+    "U": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "O": [
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "mm_per_degree": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "requested_sensor_collection_force_n": 1,
+  "sensor_collection_force_n": 1,
+  "force_tuning": {
+    "auto_tuned": false,
+    "method": "manual",
+    "force_low_n": 0.01,
+    "force_mid_n": 0.2,
+    "force_max_n": 2,
+    "pullout_force_n": 2
+  }
+}

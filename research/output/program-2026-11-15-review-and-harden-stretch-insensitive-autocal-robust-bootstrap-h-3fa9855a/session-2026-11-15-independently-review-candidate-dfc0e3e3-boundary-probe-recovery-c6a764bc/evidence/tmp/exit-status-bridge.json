@@ -1,0 +1,125 @@
+{
+  "version": "2.0",
+  "machine_type": "slideprinter",
+  "num_anchors": 3,
+  "dimensions": 2,
+  "timestamp": "2026-11-15T16:28:10.843Z",
+  "config": {
+    "angles_unit": "deg",
+    "lengths_unit": "mm",
+    "m666_before_data_collection": {
+      "M": 666,
+      "R": [
+        57.29577951308232,
+        57.29577951308232,
+        57.29577951308232,
+        57.29577951308232
+      ],
+      "U": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "O": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "m669": {},
+    "m92": {},
+    "mm_per_degree": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "noise_model": {
+      "project_zero_tension": false
+    },
+    "notes": {},
+    "force_tuning": {
+      "auto_tuned": false,
+      "method": "manual",
+      "force_low_n": 0.01,
+      "force_mid_n": 0.2,
+      "force_max_n": 2,
+      "pullout_force_n": 2
+    },
+    "encoder_noise": {
+      "method": "mad",
+      "units": "deg",
+      "sigma_floor_deg": 0.02,
+      "min_samples": 8,
+      "sample_count": 16,
+      "sample_interval_ms": 25,
+      "sample_rate_hz": 40
+    }
+  },
+  "sweeps": [
+    {
+      "id": "sweep_001",
+      "fixed_anchors": [
+        0,
+        3
+      ],
+      "fixed_lengths": [
+        100,
+        400
+      ],
+      "drive_anchor": 1,
+      "sensor_anchor": 2,
+      "drive_range": {
+        "start": 1,
+        "end": 2,
+        "unit": "mm"
+      },
+      "data_points": [
+        {
+          "l_drive": 1,
+          "l_sensor": 2
+        },
+        {
+          "l_drive": 2,
+          "l_sensor": 1,
+          "source_drive_anchor": 2,
+          "source_sensor_anchor": 1
+        }
+      ],
+      "metadata": {
+        "sweep_method": "position",
+        "feed_rate": 1400,
+        "sensor_force_n": 1,
+        "sensor_force_profile": false,
+        "sensor_force_profile_model": null,
+        "direction_forces": [
+          {
+            "drive_anchor": 1,
+            "sensor_anchor": 2,
+            "sensor_force_n": 1,
+            "pullout_force_n": 2
+          },
+          {
+            "drive_anchor": 2,
+            "sensor_anchor": 1,
+            "sensor_force_n": 1,
+            "pullout_force_n": 2
+          }
+        ],
+        "slip_recoveries": [],
+        "spool_reserves": [
+          {
+            "direction": 0
+          },
+          {
+            "direction": 1
+          }
+        ],
+        "settle_ms": 200
+      }
+    }
+  ],
+  "acquisition_rejections": []
+}

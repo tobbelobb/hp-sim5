@@ -1,0 +1,314 @@
+jest-haste-map: Haste module naming collision: cable_joints
+  The following files share their name; please adjust your hasteImpl:
+    * <rootDir>/package.json
+    * <rootDir>/output/research/sessions/2026-10-13-headless-js-profiling/source/package.json
+
+PASS autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+  ● Console
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+PASS autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs
+  ● Console
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/probe-rejection-axXz0s/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/probe-rejection-ZmEMFS/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; rejected unmeasurable sweep after returning to origin: No coupled interval
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1868:17)
+
+    console.log
+      
+      Saved 0 sweeps to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/probe-rejection-ZmEMFS/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/probe-return-TmlQJR/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/probe-transport-5oehDO/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/force-checkpoint-NnumSR/nested/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/force-checkpoint-0wspls/nested/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/force-checkpoint-sBoe34/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/force-checkpoint-uDwqn4/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Sub-sweep 2/2: drive 2, sensor 1
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Collected 2 points from 2 sub-sweeps
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1929:13)
+
+    console.log
+      
+      Saved 1 sweeps to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/force-checkpoint-uDwqn4/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/projection-mode-UKSpW7/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Sub-sweep 2/2: drive 2, sensor 1
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Collected 2 points from 2 sub-sweeps
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1929:13)
+
+    console.log
+      
+      Saved 1 sweeps to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/projection-mode-UKSpW7/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/relative-moves-ZOoodN/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Sub-sweep 2/2: drive 2, sensor 1
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Collected 2 points from 2 sub-sweeps
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1929:13)
+
+    console.log
+      
+      Saved 1 sweeps to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/relative-moves-ZOoodN/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+PASS autocal/control/tests/behaviors/spool_reserve.test.mjs
+
+Test Suites: 3 passed, 3 total
+Tests:       38 passed, 38 total
+Snapshots:   0 total
+Time:        0.825 s
+Ran all test suites within paths "autocal/control/tests/behaviors/force_sweep_settling.test.mjs", "autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs", "autocal/control/tests/behaviors/spool_reserve.test.mjs".

@@ -1,0 +1,31 @@
+{
+  "backend": "headless-js",
+  "scene_generation": 0,
+  "recording_id": "930aa23090a64b47ae1acad3003090a8",
+  "rrd": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.headless/hangprinter-20261115T152629.355664Z-c4621f82.rrd",
+  "status": "finalized",
+  "start_step": 0,
+  "format_version": 1,
+  "extended_reference": true,
+  "autocal_complete": false,
+  "rejected_messages": [],
+  "sample_stride": 100,
+  "geometry_detail": "compact",
+  "headless_segments": [
+    {
+      "session": "40783074-afdd-4cba-beee-7209ef7a2253",
+      "generation": 0,
+      "start_step": 0,
+      "start_time_s": 0,
+      "start_wall_time_ms": 1794756389876,
+      "end_step": 2477100,
+      "end_time_s": 4954.200000091804,
+      "end_wall_time_ms": 1794756786589
+    }
+  ],
+  "headless_session": "40783074-afdd-4cba-beee-7209ef7a2253",
+  "end_step": 2477100,
+  "end_time_s": 4954.200000091804,
+  "physics_samples": 24772,
+  "event_count": 908743
+}

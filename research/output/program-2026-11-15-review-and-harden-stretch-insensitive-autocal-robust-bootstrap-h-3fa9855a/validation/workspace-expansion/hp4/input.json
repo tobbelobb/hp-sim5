@@ -1,0 +1,21 @@
+{
+  "command": [
+    "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+    "-m",
+    "autocal.autocal",
+    "--headless-sim",
+    "--machine-type",
+    "hangprinter_4",
+    "--dataset",
+    "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/sweeps.json",
+    "--recording-mode",
+    "none",
+    "--max-steps",
+    "20",
+    "--recording-mode",
+    "sampled"
+  ],
+  "source_scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp4.usda",
+  "scene_override": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4/input-scene.usda",
+  "stiffness": null
+}

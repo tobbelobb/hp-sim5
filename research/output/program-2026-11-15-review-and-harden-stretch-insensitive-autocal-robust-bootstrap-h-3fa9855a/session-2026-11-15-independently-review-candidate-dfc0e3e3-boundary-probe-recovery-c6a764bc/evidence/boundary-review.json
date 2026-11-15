@@ -1,0 +1,1030 @@
+{
+  "revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+  "evidence_kind": "deterministic offline command/encoder mocks",
+  "limits": "No static/mechanical simulation or hardware validation. The slip wrapper alone is stubbed for collector-boundary tests; recovery primitives are real.",
+  "returnPrimitive": {
+    "returned_lengths_mm": [
+      100,
+      200,
+      300,
+      400
+    ],
+    "movements": [
+      "G1 H2 U-400.000 F1400",
+      "G1 H2 Z-300.000 F1400",
+      "G1 H2 Y-200.000 F1400",
+      "G1 H2 X-100.000 F1400"
+    ]
+  },
+  "stationaryRecovery": {
+    "error": null,
+    "dataset": {
+      "version": "2.0",
+      "machine_type": "hangprinter_3",
+      "num_anchors": 4,
+      "dimensions": 3,
+      "timestamp": "2026-11-15T16:28:10.841Z",
+      "config": {
+        "angles_unit": "deg",
+        "lengths_unit": "mm",
+        "m666_before_data_collection": {
+          "M": 666,
+          "R": [
+            57.29577951308232,
+            57.29577951308232,
+            57.29577951308232,
+            57.29577951308232
+          ],
+          "U": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "O": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "m669": {},
+        "m92": {},
+        "mm_per_degree": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "noise_model": {
+          "project_zero_tension": false
+        },
+        "notes": {},
+        "force_tuning": {
+          "auto_tuned": false,
+          "method": "manual",
+          "force_low_n": 0.01,
+          "force_mid_n": 0.2,
+          "force_max_n": 2,
+          "pullout_force_n": 2
+        },
+        "encoder_noise": {
+          "method": "mad",
+          "units": "deg",
+          "sigma_floor_deg": 0.02,
+          "min_samples": 8,
+          "sample_count": 16,
+          "sample_interval_ms": 25,
+          "sample_rate_hz": 40
+        }
+      },
+      "sweeps": [],
+      "acquisition_rejections": [
+        {
+          "fixed_anchors": [
+            0,
+            3
+          ],
+          "fixed_lengths": [
+            0,
+            0
+          ],
+          "drive_anchor": 1,
+          "sensor_anchor": 2,
+          "direction": 0,
+          "reason": "Review locally unresolved coupling",
+          "evidence": {
+            "retained_points": 0
+          }
+        }
+      ]
+    },
+    "unchanged_encoder_lengths_mm": [
+      100,
+      200,
+      300,
+      400
+    ],
+    "movements": [
+      "G1 H2 U-400.000 F1400",
+      "G1 H2 Z-300.000 F1400",
+      "G1 H2 Y-200.000 F1400",
+      "G1 H2 X-100.000 F1400"
+    ]
+  },
+  "explicitRecoveryFailure": {
+    "error": "Review injected movement failure",
+    "dataset": null,
+    "unchanged_encoder_lengths_mm": [
+      100,
+      200,
+      300,
+      400
+    ],
+    "movements": [
+      "G1 H2 U-400.000 F1400"
+    ]
+  },
+  "earlyRejection": {
+    "error": "Review locally unresolved coupling",
+    "dataset": null,
+    "unchanged_encoder_lengths_mm": [
+      100,
+      200,
+      300,
+      400
+    ],
+    "movements": []
+  },
+  "genericFailure": {
+    "error": "Review injected transport failure",
+    "dataset": null,
+    "unchanged_encoder_lengths_mm": [
+      100,
+      200,
+      300,
+      400
+    ],
+    "movements": []
+  },
+  "finalReturnFailure": {
+    "error": null,
+    "dataset": {
+      "version": "2.0",
+      "machine_type": "hangprinter_3",
+      "num_anchors": 4,
+      "dimensions": 3,
+      "timestamp": "2026-11-15T16:28:10.843Z",
+      "config": {
+        "angles_unit": "deg",
+        "lengths_unit": "mm",
+        "m666_before_data_collection": {
+          "M": 666,
+          "R": [
+            57.29577951308232,
+            57.29577951308232,
+            57.29577951308232,
+            57.29577951308232
+          ],
+          "U": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "O": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "m669": {},
+        "m92": {},
+        "mm_per_degree": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "noise_model": {
+          "project_zero_tension": false
+        },
+        "notes": {},
+        "force_tuning": {
+          "auto_tuned": false,
+          "method": "manual",
+          "force_low_n": 0.01,
+          "force_mid_n": 0.2,
+          "force_max_n": 2,
+          "pullout_force_n": 2
+        },
+        "encoder_noise": {
+          "method": "mad",
+          "units": "deg",
+          "sigma_floor_deg": 0.02,
+          "min_samples": 8,
+          "sample_count": 16,
+          "sample_interval_ms": 25,
+          "sample_rate_hz": 40
+        }
+      },
+      "sweeps": [
+        {
+          "id": "sweep_001",
+          "fixed_anchors": [
+            0,
+            3
+          ],
+          "fixed_lengths": [
+            100,
+            400
+          ],
+          "drive_anchor": 1,
+          "sensor_anchor": 2,
+          "drive_range": {
+            "start": 1,
+            "end": 2,
+            "unit": "mm"
+          },
+          "data_points": [
+            {
+              "l_drive": 1,
+              "l_sensor": 2
+            },
+            {
+              "l_drive": 2,
+              "l_sensor": 1,
+              "source_drive_anchor": 2,
+              "source_sensor_anchor": 1
+            }
+          ],
+          "metadata": {
+            "sweep_method": "position",
+            "feed_rate": 1400,
+            "sensor_force_n": 1,
+            "sensor_force_profile": false,
+            "sensor_force_profile_model": null,
+            "direction_forces": [
+              {
+                "drive_anchor": 1,
+                "sensor_anchor": 2,
+                "sensor_force_n": 1,
+                "pullout_force_n": 2
+              },
+              {
+                "drive_anchor": 2,
+                "sensor_anchor": 1,
+                "sensor_force_n": 1,
+                "pullout_force_n": 2
+              }
+            ],
+            "slip_recoveries": [],
+            "spool_reserves": [
+              {
+                "direction": 0
+              },
+              {
+                "direction": 1
+              }
+            ],
+            "settle_ms": 200
+          }
+        }
+      ],
+      "acquisition_rejections": []
+    },
+    "unchanged_encoder_lengths_mm": [
+      100,
+      200,
+      300,
+      400
+    ],
+    "movements": [
+      "G1 H2 U-400.000 F1400"
+    ]
+  },
+  "localProbes": [
+    {
+      "mode": "coupled",
+      "visited": [
+        100,
+        120,
+        100,
+        80,
+        100
+      ],
+      "result": {
+        "accepted": true,
+        "reason": "reversible encoder coupling",
+        "sample": {
+          "muByMotorDeg": [
+            100,
+            -300
+          ],
+          "sigmaByMotorDeg": [
+            0.01,
+            0.01
+          ]
+        },
+        "tested_drive_mm": [
+          100,
+          80
+        ],
+        "sensor_response_deg": 60
+      },
+      "error": null
+    },
+    {
+      "mode": "flat",
+      "visited": [
+        100,
+        120,
+        100
+      ],
+      "result": {
+        "accepted": false,
+        "reason": "unresolved coupling or return mismatch"
+      },
+      "error": null
+    },
+    {
+      "mode": "sensor-return",
+      "visited": [
+        100,
+        120,
+        100
+      ],
+      "result": {
+        "accepted": false,
+        "reason": "hysteretic sensor return"
+      },
+      "error": null
+    },
+    {
+      "mode": "drive-return",
+      "visited": [
+        100,
+        120,
+        100
+      ],
+      "error": "Spool probe did not restore the held drive"
+    },
+    {
+      "mode": "transport",
+      "visited": [
+        100,
+        120
+      ],
+      "error": "Review transport"
+    }
+  ],
+  "supported": {
+    "error": null,
+    "result": {
+      "dataPoints": [
+        {
+          "l_drive": -183.33300000000003,
+          "l_sensor": -1066.668,
+          "timestamp_ms": 622457.1571428571,
+          "clock_time_ms": 622457.1571428571,
+          "clock_source": "simulation",
+          "raw_angles_deg": [
+            0,
+            -183.33300000000003,
+            -1066.668,
+            0
+          ],
+          "drive_setpoint_mm": -183.33333333333334,
+          "step_index": 0,
+          "step_count": 5,
+          "collection_attempt": 0,
+          "fixed_target_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "fixed_error_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "sensor_force_n": 1.333333333333333,
+          "spool_reserve_method": "half_turn",
+          "mu": [
+            0,
+            -183.33300000000003,
+            -1066.668,
+            0
+          ],
+          "sigma": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "sample_count": 16,
+          "sampling_hz": 25,
+          "sample_duration_ms": 640,
+          "noise_clock_end_ms": 623097.1571428571,
+          "noise_clock_start_ms": 622457.1571428571,
+          "fixed_error_angles_mu_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "l_drive_mu": -183.33300000000003,
+          "l_sensor_mu": -1066.668,
+          "noise_warnings": [
+            "sigma_below_floor"
+          ]
+        },
+        {
+          "l_drive": -166.66700000000003,
+          "l_sensor": -1133.3319999999999,
+          "timestamp_ms": 625911.4142857143,
+          "clock_time_ms": 625911.4142857143,
+          "clock_source": "simulation",
+          "raw_angles_deg": [
+            0,
+            -166.66700000000003,
+            -1133.3319999999999,
+            0
+          ],
+          "drive_setpoint_mm": -166.66666666666666,
+          "step_index": 1,
+          "step_count": 5,
+          "collection_attempt": 0,
+          "fixed_target_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "fixed_error_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "sensor_force_n": 1.666666666666667,
+          "spool_reserve_method": "half_turn",
+          "mu": [
+            0,
+            -166.66700000000003,
+            -1133.3319999999999,
+            0
+          ],
+          "sigma": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "sample_count": 16,
+          "sampling_hz": 25,
+          "sample_duration_ms": 640,
+          "noise_clock_end_ms": 626551.4142857143,
+          "noise_clock_start_ms": 625911.4142857143,
+          "fixed_error_angles_mu_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "l_drive_mu": -166.66700000000003,
+          "l_sensor_mu": -1133.3319999999999,
+          "noise_warnings": [
+            "sigma_below_floor"
+          ]
+        },
+        {
+          "l_drive": -150.00000000000003,
+          "l_sensor": -1200,
+          "timestamp_ms": 629365.7142857143,
+          "clock_time_ms": 629365.7142857143,
+          "clock_source": "simulation",
+          "raw_angles_deg": [
+            0,
+            -150.00000000000003,
+            -1200,
+            0
+          ],
+          "drive_setpoint_mm": -150,
+          "step_index": 2,
+          "step_count": 5,
+          "collection_attempt": 0,
+          "fixed_target_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "fixed_error_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "sensor_force_n": 2,
+          "spool_reserve_method": "half_turn",
+          "mu": [
+            0,
+            -150.00000000000003,
+            -1200,
+            0
+          ],
+          "sigma": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "sample_count": 16,
+          "sampling_hz": 25,
+          "sample_duration_ms": 640,
+          "noise_clock_end_ms": 630005.7142857143,
+          "noise_clock_start_ms": 629365.7142857143,
+          "fixed_error_angles_mu_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "l_drive_mu": -150.00000000000003,
+          "l_sensor_mu": -1200,
+          "noise_warnings": [
+            "sigma_below_floor"
+          ]
+        },
+        {
+          "l_drive": -133.33300000000003,
+          "l_sensor": -1266.6680000000001,
+          "timestamp_ms": 632820.0142857144,
+          "clock_time_ms": 632820.0142857144,
+          "clock_source": "simulation",
+          "raw_angles_deg": [
+            0,
+            -133.33300000000003,
+            -1266.6680000000001,
+            0
+          ],
+          "drive_setpoint_mm": -133.33333333333331,
+          "step_index": 3,
+          "step_count": 5,
+          "collection_attempt": 0,
+          "fixed_target_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "fixed_error_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "sensor_force_n": 2.333333333333334,
+          "spool_reserve_method": "half_turn",
+          "mu": [
+            0,
+            -133.33300000000003,
+            -1266.6680000000001,
+            0
+          ],
+          "sigma": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "sample_count": 16,
+          "sampling_hz": 25,
+          "sample_duration_ms": 640,
+          "noise_clock_end_ms": 633460.0142857144,
+          "noise_clock_start_ms": 632820.0142857144,
+          "fixed_error_angles_mu_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "l_drive_mu": -133.33300000000003,
+          "l_sensor_mu": -1266.6680000000001,
+          "noise_warnings": [
+            "sigma_below_floor"
+          ]
+        },
+        {
+          "l_drive": -116.66700000000003,
+          "l_sensor": -1333.332,
+          "timestamp_ms": 636274.2714285715,
+          "clock_time_ms": 636274.2714285715,
+          "clock_source": "simulation",
+          "raw_angles_deg": [
+            0,
+            -116.66700000000003,
+            -1333.332,
+            0
+          ],
+          "drive_setpoint_mm": -116.66666666666667,
+          "step_index": 4,
+          "step_count": 5,
+          "collection_attempt": 0,
+          "fixed_target_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "fixed_error_angles_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "sensor_force_n": 2.6666666666666665,
+          "spool_reserve_method": "half_turn",
+          "mu": [
+            0,
+            -116.66700000000003,
+            -1333.332,
+            0
+          ],
+          "sigma": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "sample_count": 16,
+          "sampling_hz": 25,
+          "sample_duration_ms": 640,
+          "noise_clock_end_ms": 636914.2714285715,
+          "noise_clock_start_ms": 636274.2714285715,
+          "fixed_error_angles_mu_deg": [
+            0,
+            null,
+            null,
+            0
+          ],
+          "l_drive_mu": -116.66700000000003,
+          "l_sensor_mu": -1333.332,
+          "noise_warnings": [
+            "sigma_below_floor"
+          ]
+        }
+      ],
+      "driveRange": {
+        "start": -200,
+        "end": -100
+      },
+      "spoolReserve": {
+        "sensor_payout_mm": 600,
+        "required_sensor_rewind_mm": 180,
+        "raw_measured_drive_interval_mm": [
+          -600,
+          0
+        ],
+        "guarded_sensor_rewind_mm": null,
+        "guarded_start_drive_mm": null,
+        "first_drive_mm": -183.33333333333334,
+        "initial_half_turn_required": false,
+        "coupling_probes": []
+      }
+    },
+    "published": [
+      {
+        "l_drive": -183.33300000000003,
+        "l_sensor": -1066.668,
+        "timestamp_ms": 622457.1571428571,
+        "clock_time_ms": 622457.1571428571,
+        "clock_source": "simulation",
+        "raw_angles_deg": [
+          0,
+          -183.33300000000003,
+          -1066.668,
+          0
+        ],
+        "drive_setpoint_mm": -183.33333333333334,
+        "step_index": 0,
+        "step_count": 5,
+        "collection_attempt": 0,
+        "fixed_target_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "fixed_error_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "sensor_force_n": 1.333333333333333,
+        "spool_reserve_method": "half_turn",
+        "mu": [
+          0,
+          -183.33300000000003,
+          -1066.668,
+          0
+        ],
+        "sigma": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "sample_count": 16,
+        "sampling_hz": 25,
+        "sample_duration_ms": 640,
+        "noise_clock_end_ms": 623097.1571428571,
+        "noise_clock_start_ms": 622457.1571428571,
+        "fixed_error_angles_mu_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "l_drive_mu": -183.33300000000003,
+        "l_sensor_mu": -1066.668,
+        "noise_warnings": [
+          "sigma_below_floor"
+        ]
+      },
+      {
+        "l_drive": -166.66700000000003,
+        "l_sensor": -1133.3319999999999,
+        "timestamp_ms": 625911.4142857143,
+        "clock_time_ms": 625911.4142857143,
+        "clock_source": "simulation",
+        "raw_angles_deg": [
+          0,
+          -166.66700000000003,
+          -1133.3319999999999,
+          0
+        ],
+        "drive_setpoint_mm": -166.66666666666666,
+        "step_index": 1,
+        "step_count": 5,
+        "collection_attempt": 0,
+        "fixed_target_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "fixed_error_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "sensor_force_n": 1.666666666666667,
+        "spool_reserve_method": "half_turn",
+        "mu": [
+          0,
+          -166.66700000000003,
+          -1133.3319999999999,
+          0
+        ],
+        "sigma": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "sample_count": 16,
+        "sampling_hz": 25,
+        "sample_duration_ms": 640,
+        "noise_clock_end_ms": 626551.4142857143,
+        "noise_clock_start_ms": 625911.4142857143,
+        "fixed_error_angles_mu_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "l_drive_mu": -166.66700000000003,
+        "l_sensor_mu": -1133.3319999999999,
+        "noise_warnings": [
+          "sigma_below_floor"
+        ]
+      },
+      {
+        "l_drive": -150.00000000000003,
+        "l_sensor": -1200,
+        "timestamp_ms": 629365.7142857143,
+        "clock_time_ms": 629365.7142857143,
+        "clock_source": "simulation",
+        "raw_angles_deg": [
+          0,
+          -150.00000000000003,
+          -1200,
+          0
+        ],
+        "drive_setpoint_mm": -150,
+        "step_index": 2,
+        "step_count": 5,
+        "collection_attempt": 0,
+        "fixed_target_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "fixed_error_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "sensor_force_n": 2,
+        "spool_reserve_method": "half_turn",
+        "mu": [
+          0,
+          -150.00000000000003,
+          -1200,
+          0
+        ],
+        "sigma": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "sample_count": 16,
+        "sampling_hz": 25,
+        "sample_duration_ms": 640,
+        "noise_clock_end_ms": 630005.7142857143,
+        "noise_clock_start_ms": 629365.7142857143,
+        "fixed_error_angles_mu_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "l_drive_mu": -150.00000000000003,
+        "l_sensor_mu": -1200,
+        "noise_warnings": [
+          "sigma_below_floor"
+        ]
+      },
+      {
+        "l_drive": -133.33300000000003,
+        "l_sensor": -1266.6680000000001,
+        "timestamp_ms": 632820.0142857144,
+        "clock_time_ms": 632820.0142857144,
+        "clock_source": "simulation",
+        "raw_angles_deg": [
+          0,
+          -133.33300000000003,
+          -1266.6680000000001,
+          0
+        ],
+        "drive_setpoint_mm": -133.33333333333331,
+        "step_index": 3,
+        "step_count": 5,
+        "collection_attempt": 0,
+        "fixed_target_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "fixed_error_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "sensor_force_n": 2.333333333333334,
+        "spool_reserve_method": "half_turn",
+        "mu": [
+          0,
+          -133.33300000000003,
+          -1266.6680000000001,
+          0
+        ],
+        "sigma": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "sample_count": 16,
+        "sampling_hz": 25,
+        "sample_duration_ms": 640,
+        "noise_clock_end_ms": 633460.0142857144,
+        "noise_clock_start_ms": 632820.0142857144,
+        "fixed_error_angles_mu_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "l_drive_mu": -133.33300000000003,
+        "l_sensor_mu": -1266.6680000000001,
+        "noise_warnings": [
+          "sigma_below_floor"
+        ]
+      },
+      {
+        "l_drive": -116.66700000000003,
+        "l_sensor": -1333.332,
+        "timestamp_ms": 636274.2714285715,
+        "clock_time_ms": 636274.2714285715,
+        "clock_source": "simulation",
+        "raw_angles_deg": [
+          0,
+          -116.66700000000003,
+          -1333.332,
+          0
+        ],
+        "drive_setpoint_mm": -116.66666666666667,
+        "step_index": 4,
+        "step_count": 5,
+        "collection_attempt": 0,
+        "fixed_target_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "fixed_error_angles_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "sensor_force_n": 2.6666666666666665,
+        "spool_reserve_method": "half_turn",
+        "mu": [
+          0,
+          -116.66700000000003,
+          -1333.332,
+          0
+        ],
+        "sigma": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "sample_count": 16,
+        "sampling_hz": 25,
+        "sample_duration_ms": 640,
+        "noise_clock_end_ms": 636914.2714285715,
+        "noise_clock_start_ms": 636274.2714285715,
+        "fixed_error_angles_mu_deg": [
+          0,
+          null,
+          null,
+          0
+        ],
+        "l_drive_mu": -116.66700000000003,
+        "l_sensor_mu": -1333.332,
+        "noise_warnings": [
+          "sigma_below_floor"
+        ]
+      }
+    ],
+    "command_count": 1347
+  },
+  "unsupported": {
+    "error": {
+      "type": "UnmeasurableSweepError",
+      "message": "No measured interval lies inside the force profile support"
+    },
+    "published": [],
+    "command_count": 1212
+  },
+  "unresponsive": {
+    "error": {
+      "type": "UnmeasurableSweepError",
+      "message": "Insufficient coupled measurement points in the observed sweep interval"
+    },
+    "published": [],
+    "command_count": 1672
+  },
+  "lostDrive": {
+    "error": {
+      "type": "Error",
+      "message": "Drive did not track the spool-reserve probe target"
+    },
+    "published": [],
+    "command_count": 1239
+  },
+  "logs": [
+    "; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/stationary-recovery.json.force-tuning.json",
+    "\nSweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]",
+    "  Sub-sweep 1/2: drive 1, sensor 2",
+    "; rejected unmeasurable sweep after returning to origin: Review locally unresolved coupling",
+    "\nSaved 0 sweeps to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/stationary-recovery.json",
+    "; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/explicit-recovery-failure.json.force-tuning.json",
+    "\nSweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]",
+    "  Sub-sweep 1/2: drive 1, sensor 2",
+    "; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/initial-unmeasurable.json.force-tuning.json",
+    "\nSweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]",
+    "  Sub-sweep 1/2: drive 1, sensor 2",
+    "; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/generic-failure.json.force-tuning.json",
+    "\nSweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]",
+    "  Sub-sweep 1/2: drive 1, sensor 2",
+    "; force-tuning checkpoint saved to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/final-return-failure.json.force-tuning.json",
+    "\nSweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]",
+    "  Sub-sweep 1/2: drive 1, sensor 2",
+    "  Sub-sweep 2/2: drive 2, sensor 1",
+    "  Collected 2 points from 2 sub-sweeps",
+    "\nSaved 1 sweeps to /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/final-return-failure.json",
+    "Warning: failed to return to encoder origin: Review injected movement failure",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling",
+    "; sweep pullout reached travel time limit; holding drive before settling"
+  ]
+}

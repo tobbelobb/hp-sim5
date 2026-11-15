@@ -1,0 +1,357 @@
+PASS autocal/control/tests/behaviors/run_force_trial.test.mjs
+PASS autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs
+  ● Console
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/probe-rejection-tW0VgR/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/probe-rejection-UdsCId/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; rejected unmeasurable sweep after returning to origin: No coupled interval
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1868:17)
+
+    console.log
+      
+      Saved 0 sweeps to /tmp/probe-rejection-UdsCId/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/probe-return-TPiOVM/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/probe-transport-neaAvu/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/force-checkpoint-lTA6G2/nested/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/force-checkpoint-B4yBfi/nested/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/force-checkpoint-lXYxK6/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/force-checkpoint-K1bRSS/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Sub-sweep 2/2: drive 2, sensor 1
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Collected 2 points from 2 sub-sweeps
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1929:13)
+
+    console.log
+      
+      Saved 1 sweeps to /tmp/force-checkpoint-K1bRSS/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/projection-mode-NJxpgz/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Sub-sweep 2/2: drive 2, sensor 1
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Collected 2 points from 2 sub-sweeps
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1929:13)
+
+    console.log
+      
+      Saved 1 sweeps to /tmp/projection-mode-NJxpgz/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+    console.log
+      ; auto-tune force start
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1642:15)
+
+    console.log
+      ; force-tuning checkpoint saved to /tmp/relative-moves-Joqfyx/sweeps.json.force-tuning.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1691:11)
+
+    console.log
+      
+      Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [0.000, 0.000]
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1781:13)
+
+    console.log
+        Sub-sweep 1/2: drive 1, sensor 2
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Sub-sweep 2/2: drive 2, sensor 1
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1797:15)
+
+    console.log
+        Collected 2 points from 2 sub-sweeps
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1929:13)
+
+    console.log
+      
+      Saved 1 sweeps to /tmp/relative-moves-Joqfyx/sweeps.json
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:2011:11)
+
+PASS autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+  ● Console
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+    console.log
+      ; sweep pullout reached travel time limit; holding drive before settling
+
+      at log (autocal/control/behaviors/sweep_data_collection.mjs:1202:13)
+
+PASS autocal/control/tests/cli/collect_sweep_data.cli.test.mjs
+PASS autocal/control/tests/behaviors/measure_max_travel.test.mjs
+PASS autocal/control/tests/primitives/wait_for_stable_encoders.test.mjs
+PASS autocal/control/tests/primitives/rrf_http_bridge_cli_config.test.mjs
+PASS autocal/control/tests/primitives/uncalibrated_actions.test.mjs
+PASS autocal/control/tests/primitives/simulation_clock.test.mjs
+PASS autocal/control/tests/primitives/fixed_anchor_guard.test.mjs
+PASS autocal/control/tests/primitives/encoder_utils.test.mjs
+PASS autocal/control/tests/behaviors/slip_recovery.test.mjs
+  ● Console
+
+    console.log
+      ; slip recovery 1/3: Fixed anchor 1 drifted 7.200deg from its target (limit 1.5deg); lowering forces and restarting direction
+
+      at log (autocal/control/behaviors/slip_recovery.mjs:40:15)
+
+    console.log
+      ; slip recovery 1/3: Fixed anchor 0 drifted 2.000deg from its target (limit 1.5deg); lowering forces and restarting direction
+
+      at log (autocal/control/behaviors/slip_recovery.mjs:40:15)
+
+    console.log
+      ; slip recovery 2/3: Fixed anchor 0 drifted 2.000deg from its target (limit 1.5deg); lowering forces and restarting direction
+
+      at log (autocal/control/behaviors/slip_recovery.mjs:40:15)
+
+    console.log
+      ; slip recovery 3/3: Fixed anchor 0 drifted 2.000deg from its target (limit 1.5deg); lowering forces and restarting direction
+
+      at log (autocal/control/behaviors/slip_recovery.mjs:40:15)
+
+    console.log
+      ; slip recovery 1/3: Fixed anchor 1 drifted 2.000deg from its target (limit 1.5deg); lowering forces and restarting direction
+
+      at log (autocal/control/behaviors/slip_recovery.mjs:40:15)
+
+PASS autocal/control/tests/primitives/extended_reference.test.mjs
+PASS autocal/control/tests/primitives/browser_clock.test.mjs
+PASS autocal/control/tests/behaviors/spool_reserve.test.mjs
+PASS tests/js/sweep_data_collection.test.js
+PASS autocal/control/tests/primitives/return_to_origin_one_at_a_time.test.mjs
+PASS autocal/control/tests/primitives/return_to_origin_all_at_once.test.mjs
+PASS autocal/control/tests/primitives/headless_bridge.test.mjs
+PASS autocal/control/tests/behaviors/find_edge_force.test.mjs
+PASS autocal/control/tests/primitives/encoder_noise.test.mjs
+PASS autocal/control/tests/primitives/apply_force_state.test.mjs
+PASS autocal/control/tests/behaviors/find_minimum_moving_force.test.mjs
+PASS autocal/control/tests/primitives/prime_encoders.test.mjs
+
+Test Suites: 24 passed, 24 total
+Tests:       157 passed, 157 total
+Snapshots:   0 total
+Time:        1.724 s, estimated 2 s
+Ran all test suites matching /autocal\/control\/tests\/behaviors|autocal\/control\/tests\/primitives|autocal\/control\/tests\/cli|tests\/js\/sweep_data_collection.test.js/i.

@@ -1,0 +1,32 @@
+; command: research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/offline-review.py
+Wrote to console: Writing additional info to log: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.full_auto_1.log
+Wrote to console: ; --sim: collection waits for a browser connected to ws://localhost:8790
+Wrote to console: ;        open http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790 and keep the simulator page open
+; full-auto log: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.full_auto_log_1.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/4 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 1/4 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=n/a cost_noise_normalized=1 J=n/a chi2_red=n/a raw_fit_score_ui=1 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=n/a filtered_ratio=n/a
+; selected run=default fit_score_ui=1 raw_fit_score_ui=1 score_basis=standard-noise cost=1 rel_std=n/a max_std=1mm rank_score=1 iteration_adjust=0 coverage_adjust=0 history_rank_score=1
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 1 more attempts.
+; collecting next sweep (default)
+; running: node offline-collector --output-file /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.new_001.json
+Wrote to console: ; boundary probe rejected; retaining evidence and planning another sweep without refitting
+; history_select: reason=workspace-exhausted candidates=1 total_iterations=1
+; history_select: iter=1 run=default rank=1 anchor_comparison=n/a heldout_prediction=0.1 heldout_sweeps=1 iteration_adjust=0 coverage_adjust=0 selection_score=1
+; history_select: consensus reason=workspace-exhausted selected_iter=1 selected_run=default members=[1] spread_mm=0 max_spread_mm=5 applied=best-ranked
+Wrote to console: ; full-auto: stop requested (workspace-exhausted); accepting best-so-far.
+Wrote to console: 
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of ideal quality
+Wrote to console: Fit quality score (lower is better): 1
+Wrote to console: ; Fit quality measures agreement with the length model. Absolute anchor accuracy needs independent validation.
+Wrote to console: Anchors (M669): M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00
+Wrote to console: Interpretation: A Quality score below 2 indicates a near-perfect fit.
+Wrote to console: Sending M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00 to http://127.0.0.1:12345

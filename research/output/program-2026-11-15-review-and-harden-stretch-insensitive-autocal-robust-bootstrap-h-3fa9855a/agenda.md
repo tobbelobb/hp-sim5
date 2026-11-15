@@ -10,7 +10,7 @@ Home correction is implemented only for independently justified extension eviden
 
 ## Findings that change the next decision
 
-Accuracy remains uneven: the hardened cases range from 1.68 to 4.82 mm worst coordinate error, all above the 1 mm gate. Half-stiffness HP3 improves relative to the earlier trial, while nominal HP3 and worn HP4 worsen. Different collection costs prevent attribution to one intervention. Offsets clearly help one common multi-height recording but harmed old single-height data. Filtering can lower cost while worsening geometry.
+Accuracy remains uneven. The expanded collector reaches actual heights near 1.73 m and passes the nominal HP3 coordinate gate at 0.91 mm (0.63 mm aligned), while nominal HP4 remains 4.65/2.99 mm. Half-stiffness HP3 and worn HP4 give 1.63/0.895 mm and 2.33/0.818 mm with final return checks. Worn HP4 exercises real rejected-boundary recovery and finishes normally. Different collection costs prevent attribution to one intervention. Offsets strongly help the new HP3 recording, but point/joint fits on new HP4 can improve when offsets are removed. Filtering can lower cost while worsening geometry.
 
 The rough gate can accept estimates about 25 mm from truth. It checks local observability and convergence for planning, not systematic physical bias. Independent joint least squares retains substantial errors on problematic recordings; solver replacement alone has not removed them.
 
@@ -18,7 +18,7 @@ A bounded terminal-validation pilot collected one fresh sweep without refitting.
 
 ## Priority after the Fable crossover
 
-The offline reference replay and cross-fitting are complete; the [next experiment plan](next_steps.md) prioritizes reproducing the passing fixed plan in current physics, then passing exactly that plan through firmware. The current point fitter passes the best saved observations, while the original Fable fitter misses 1 mm on current full-autocal observations. A ~390 mm planning budget and reconstructed 40–423 mm height coverage differ materially from the 0–1200 mm direct reference. Resolve that collection/protocol gap before running another broad unchanged battery. Shape and absolute-home requirements remain separate.
+The offline reference replay and cross-fitting remain useful controls. The user's subsequent steering led to [production progressive exploration](validation/workspace-expansion/report.md), removing the permanent ~390 mm ceiling while retaining initial half-turn reserve and verifying later transmission locally. Point-geometric substitution on new recordings removes the local fitting error. A fresh review confirms that the 50-pole motor cogging term explains almost all recorded nominal force-error variance, without establishing its causal share of anchor bias. The [next experiment plan](next_steps.md) now prioritizes matched phase averaging/dither and same-axis opposite-motion observations using learned targets, followed by an identifiable physical-home protocol. Physical truth and actual forces remain evaluation inputs only.
 
 ## Open research beyond this delivery
 
@@ -26,4 +26,6 @@ The offline reference replay and cross-fitting are complete; the [next experimen
 - Measure an independent compatible home reference without double-counting existing firmware flex compensation.
 - Before new-method four-high support, solve affine gravity equilibrium with nonnegative tensions and branch/gauge tests. Before cube support, enforce all fixed-length constraints with active/slack sets and bounded multidimensional tension allocation.
 
-No live investigation or simulator job remains pending. The canonical report and topic synthesis distinguish implemented checks, observed benefits, counterexamples and unvalidated physical behavior.
+The canonical report and topic synthesis distinguish implemented checks, observed benefits, counterexamples and unvalidated physical behavior.
+
+This delivery is closed: all four final simulations and independent reviews completed, no owned service remains running, and selected replay stages plus local-only raw-file hashes are preserved. The next agenda items are research work, not unfinished background jobs.

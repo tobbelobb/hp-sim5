@@ -1,0 +1,46 @@
+{
+  "source_revision": "5251f749b24eaf0db851a8a3174ed6023f511e83",
+  "scope": "Offline failure-injection verification derived from the independent review. No physics or hardware.",
+  "sources": {
+    "autocal/control/behaviors/sweep_data_collection.mjs": "b4c6f0bc36fd35d387f0b30d19acd504ff01cd5baf5c334e994978e48be80ad5",
+    "autocal/control/primitives/uncalibrated_actions.mjs": "f4d0f6ca7377c92fc5f47452f5270afe315b2487a5fadd3febe590088f08cc30"
+  },
+  "primitive_failed_after_first_move": true,
+  "results": {
+    "boundary_unmoved": {
+      "error": "Return on axis U did not reach its encoder origin (400deg; limit 1.5deg)",
+      "partial_measurement_file": false,
+      "movements": [
+        "G1 H2 U-400.000 F1400"
+      ]
+    },
+    "boundary_exception": {
+      "error": "Injected return movement failure",
+      "partial_measurement_file": false,
+      "movements": [
+        "G1 H2 U-400.000 F1400"
+      ]
+    },
+    "final_unmoved": {
+      "error": "Return on axis U did not reach its encoder origin (400deg; limit 1.5deg)",
+      "partial_measurement_file": true,
+      "movements": [
+        "G1 H2 U-400.000 F1400"
+      ]
+    },
+    "final_exception": {
+      "error": "Injected return movement failure",
+      "partial_measurement_file": true,
+      "movements": [
+        "G1 H2 U-400.000 F1400"
+      ]
+    },
+    "between_exception": {
+      "error": "Injected return movement failure",
+      "partial_measurement_file": false,
+      "movements": [
+        "G1 H2 U-400.000 F1400"
+      ]
+    }
+  }
+}

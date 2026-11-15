@@ -1,0 +1,3381 @@
+{
+  "revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+  "evidence_kind": "analytical fixtures and mocked control flow",
+  "inputs": {
+    "anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      [
+        1645.4,
+        950.0,
+        -280.0
+      ],
+      [
+        -1645.4,
+        950.0,
+        -280.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ],
+    "strands": [
+      2.0,
+      2.0,
+      2.0,
+      3.0
+    ],
+    "extra_line_length_mm": [
+      528.3,
+      528.3,
+      528.3,
+      398.9
+    ],
+    "mechanical_advantage": [
+      2.0,
+      2.0,
+      2.0,
+      4.0
+    ],
+    "mover_weight_n": 0.79461,
+    "minimum_force_n": 0.23,
+    "target_strand_tension_n": 0.2875
+  },
+  "force_profile_comparisons": [
+    {
+      "fixed_lengths_mm": [
+        390.0,
+        -1170.0
+      ],
+      "predicted_pose_count": 60,
+      "comparisons": {
+        "v1": [
+          {
+            "drive": 1,
+            "sensor": 2,
+            "row_count": 50,
+            "max_abs_target_error_n": 0.20961325742678533,
+            "support_mm": [
+              434.94972492721945,
+              672.4458825990596
+            ],
+            "rows": [
+              {
+                "position_index": 5,
+                "drive_mm": 434.94972492721945,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.4971132574267853,
+                "target_error_n": 0.20961325742678533,
+                "minimum_tension_n": 0.23000000000000004
+              },
+              {
+                "position_index": 6,
+                "drive_mm": 436.44683725466757,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.44532050685255875,
+                "target_error_n": 0.15782050685255877,
+                "minimum_tension_n": 0.23000000000000004
+              },
+              {
+                "position_index": 7,
+                "drive_mm": 438.0777343610275,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.4020832884442605,
+                "target_error_n": 0.11458328844426052,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 8,
+                "drive_mm": 439.84164268082077,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.36548794397729617,
+                "target_error_n": 0.07798794397729619,
+                "minimum_tension_n": 0.23000000000000004
+              },
+              {
+                "position_index": 9,
+                "drive_mm": 441.73772757720917,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.33415092898133647,
+                "target_error_n": 0.04665092898133649,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 10,
+                "drive_mm": 443.76509420113416,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.30704721465715423,
+                "target_error_n": 0.019547214657154255,
+                "minimum_tension_n": 0.23000000000000004
+              },
+              {
+                "position_index": 11,
+                "drive_mm": 445.92278840610834,
+                "sensor_force_n": 0.23652522301316964,
+                "achieved_target_n": 0.2874999999999993,
+                "target_error_n": -6.661338147750939e-16,
+                "minimum_tension_n": 0.23652522301316964
+              },
+              {
+                "position_index": 12,
+                "drive_mm": 448.2097977164417,
+                "sensor_force_n": 0.27212882305870445,
+                "achieved_target_n": 0.2874999999999992,
+                "target_error_n": -7.771561172376096e-16,
+                "minimum_tension_n": 0.27212882305870445
+              },
+              {
+                "position_index": 13,
+                "drive_mm": 453.1674262691208,
+                "sensor_force_n": 0.3429642916658634,
+                "achieved_target_n": 0.28749999999999953,
+                "target_error_n": -4.440892098500626e-16,
+                "minimum_tension_n": 0.3429642916658634
+              },
+              {
+                "position_index": 14,
+                "drive_mm": 455.83573832903676,
+                "sensor_force_n": 0.378107918998664,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.378107918998664
+              },
+              {
+                "position_index": 15,
+                "drive_mm": 458.62875340148867,
+                "sensor_force_n": 0.4130115611534289,
+                "achieved_target_n": 0.2874999999999996,
+                "target_error_n": -3.885780586188048e-16,
+                "minimum_tension_n": 0.41301156115342885
+              },
+              {
+                "position_index": 16,
+                "drive_mm": 461.5451835906392,
+                "sensor_force_n": 0.4476335531806832,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.4476335531806832
+              },
+              {
+                "position_index": 17,
+                "drive_mm": 464.5836894667473,
+                "sensor_force_n": 0.48193329604120577,
+                "achieved_target_n": 0.2874999999999996,
+                "target_error_n": -3.885780586188048e-16,
+                "minimum_tension_n": 0.48193329604120577
+              },
+              {
+                "position_index": 18,
+                "drive_mm": 467.7428813388401,
+                "sensor_force_n": 0.5158712832174233,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.5158712832174233
+              },
+              {
+                "position_index": 19,
+                "drive_mm": 471.0213205601958,
+                "sensor_force_n": 0.5494091156607406,
+                "achieved_target_n": 0.28749999999999953,
+                "target_error_n": -4.440892098500626e-16,
+                "minimum_tension_n": 0.5494091156607406
+              },
+              {
+                "position_index": 20,
+                "drive_mm": 474.4175208638708,
+                "sensor_force_n": 0.5825095060243831,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.5825095060243831
+              },
+              {
+                "position_index": 21,
+                "drive_mm": 477.92994972548695,
+                "sensor_force_n": 0.6151362732373815,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.6151362732373815
+              },
+              {
+                "position_index": 22,
+                "drive_mm": 485.2971400831898,
+                "sensor_force_n": 0.6788296543359521,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.678829654335952
+              },
+              {
+                "position_index": 23,
+                "drive_mm": 489.1486178345822,
+                "sensor_force_n": 0.7098292766727761,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7098292766727762
+              },
+              {
+                "position_index": 24,
+                "drive_mm": 493.1097595266583,
+                "sensor_force_n": 0.740221233372755,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.7402212333727551
+              },
+              {
+                "position_index": 25,
+                "drive_mm": 497.1788225500941,
+                "sensor_force_n": 0.7699745383714522,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7699745383714522
+              },
+              {
+                "position_index": 26,
+                "drive_mm": 501.35402663293144,
+                "sensor_force_n": 0.7990591439991251,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7990591439991251
+              },
+              {
+                "position_index": 27,
+                "drive_mm": 505.6335553175977,
+                "sensor_force_n": 0.8274459023309172,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8274459023309172
+              },
+              {
+                "position_index": 28,
+                "drive_mm": 510.0155574437331,
+                "sensor_force_n": 0.8551065268688482,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.8551065268688482
+              },
+              {
+                "position_index": 29,
+                "drive_mm": 514.4981486343831,
+                "sensor_force_n": 0.8820135557533219,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8820135557533217
+              },
+              {
+                "position_index": 30,
+                "drive_mm": 523.7574035400899,
+                "sensor_force_n": 0.9334609013624151,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8820135557533206
+              },
+              {
+                "position_index": 31,
+                "drive_mm": 528.5301457938499,
+                "sensor_force_n": 0.9579501302485218,
+                "achieved_target_n": 0.2875000000000003,
+                "target_error_n": 3.3306690738754696e-16,
+                "minimum_tension_n": 0.85510652686885
+              },
+              {
+                "position_index": 32,
+                "drive_mm": 533.3956371483719,
+                "sensor_force_n": 0.9815835422275221,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8274459023309174
+              },
+              {
+                "position_index": 33,
+                "drive_mm": 538.3518493916417,
+                "sensor_force_n": 1.0043373763291579,
+                "achieved_target_n": 0.2875000000000002,
+                "target_error_n": 2.220446049250313e-16,
+                "minimum_tension_n": 0.799059143999125
+              },
+              {
+                "position_index": 34,
+                "drive_mm": 543.3967299548199,
+                "sensor_force_n": 1.026188566429247,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7699745383714525
+              },
+              {
+                "position_index": 35,
+                "drive_mm": 548.5282033597769,
+                "sensor_force_n": 1.047114742810067,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7402212333727531
+              },
+              {
+                "position_index": 36,
+                "drive_mm": 553.7441726533034,
+                "sensor_force_n": 1.0670942420385963,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7098292766727763
+              },
+              {
+                "position_index": 37,
+                "drive_mm": 559.0425208263155,
+                "sensor_force_n": 1.0861061255364777,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6788296543359509
+              },
+              {
+                "position_index": 38,
+                "drive_mm": 569.8777938928788,
+                "sensor_force_n": 1.121147089383753,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6151362732373802
+              },
+              {
+                "position_index": 39,
+                "drive_mm": 575.4103970211036,
+                "sensor_force_n": 1.1371382096046085,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5825095060243843
+              },
+              {
+                "position_index": 40,
+                "drive_mm": 581.0167382079071,
+                "sensor_force_n": 1.152085893811155,
+                "achieved_target_n": 0.28749999999999976,
+                "target_error_n": -2.220446049250313e-16,
+                "minimum_tension_n": 0.5494091156607404
+              },
+              {
+                "position_index": 41,
+                "drive_mm": 586.694620823861,
+                "sensor_force_n": 1.1659734198740437,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.515871283217423
+              },
+              {
+                "position_index": 42,
+                "drive_mm": 592.4418363031764,
+                "sensor_force_n": 1.1787850884356588,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.48193329604120694
+              },
+              {
+                "position_index": 43,
+                "drive_mm": 598.2561654196452,
+                "sensor_force_n": 1.1905063012901143,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.44763355318068454
+              },
+              {
+                "position_index": 44,
+                "drive_mm": 604.1353795378277,
+                "sensor_force_n": 1.2011236464053405,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.41301156115342974
+              },
+              {
+                "position_index": 45,
+                "drive_mm": 610.0772418387146,
+                "sensor_force_n": 1.210624988666437,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.37810791899866386
+              },
+              {
+                "position_index": 46,
+                "drive_mm": 616.0795085191548,
+                "sensor_force_n": 1.2189995652786003,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.3429642916658643
+              },
+              {
+                "position_index": 47,
+                "drive_mm": 628.256251893632,
+                "sensor_force_n": 1.2323328273360952,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.2721288230587049
+              },
+              {
+                "position_index": 48,
+                "drive_mm": 634.4262164768547,
+                "sensor_force_n": 1.2372777479285997,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.23652522301316903
+              },
+              {
+                "position_index": 49,
+                "drive_mm": 640.6475634247631,
+                "sensor_force_n": 1.2410685758614333,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.20085797436596303
+              },
+              {
+                "position_index": 50,
+                "drive_mm": 646.9180310493339,
+                "sensor_force_n": 1.2437029140585492,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.1651732152957876
+              },
+              {
+                "position_index": 51,
+                "drive_mm": 653.2353572961124,
+                "sensor_force_n": 1.2451803334794747,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.12951771045007732
+              },
+              {
+                "position_index": 52,
+                "drive_mm": 659.5972807476601,
+                "sensor_force_n": 1.245502462003512,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.09393872908069156
+              },
+              {
+                "position_index": 53,
+                "drive_mm": 666.0015415981452,
+                "sensor_force_n": 1.2446730659788212,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.058483909976363824
+              },
+              {
+                "position_index": 54,
+                "drive_mm": 672.4458825990596,
+                "sensor_force_n": 1.2426981228083402,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.023201113962459052
+              }
+            ]
+          },
+          {
+            "drive": 2,
+            "sensor": 1,
+            "row_count": 50,
+            "max_abs_target_error_n": 0.20961325742678633,
+            "support_mm": [
+              434.94972492721945,
+              672.4458825990596
+            ],
+            "rows": [
+              {
+                "position_index": 54,
+                "drive_mm": 434.94972492721945,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.4971132574267863,
+                "target_error_n": 0.20961325742678633,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 53,
+                "drive_mm": 436.4468372546671,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.4453205068525602,
+                "target_error_n": 0.15782050685256022,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 52,
+                "drive_mm": 438.0777343610275,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.4020832884442615,
+                "target_error_n": 0.11458328844426152,
+                "minimum_tension_n": 0.23000000000000004
+              },
+              {
+                "position_index": 51,
+                "drive_mm": 439.84164268082077,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.36548794397729606,
+                "target_error_n": 0.07798794397729608,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 50,
+                "drive_mm": 441.73772757720917,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.3341509289813364,
+                "target_error_n": 0.04665092898133644,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 49,
+                "drive_mm": 443.76509420113416,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.3070472146571543,
+                "target_error_n": 0.01954721465715431,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 48,
+                "drive_mm": 445.92278840610834,
+                "sensor_force_n": 0.23652522301316908,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.23652522301316914
+              },
+              {
+                "position_index": 47,
+                "drive_mm": 448.2097977164417,
+                "sensor_force_n": 0.2721288230587049,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.2721288230587049
+              },
+              {
+                "position_index": 46,
+                "drive_mm": 453.1674262691208,
+                "sensor_force_n": 0.34296429166586395,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.34296429166586395
+              },
+              {
+                "position_index": 45,
+                "drive_mm": 455.83573832903676,
+                "sensor_force_n": 0.3781079189986638,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.37810791899866375
+              },
+              {
+                "position_index": 44,
+                "drive_mm": 458.62875340148867,
+                "sensor_force_n": 0.41301156115342985,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.41301156115342985
+              },
+              {
+                "position_index": 43,
+                "drive_mm": 461.5451835906392,
+                "sensor_force_n": 0.44763355318068476,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.44763355318068476
+              },
+              {
+                "position_index": 42,
+                "drive_mm": 464.5836894667473,
+                "sensor_force_n": 0.4819332960412064,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.48193329604120627
+              },
+              {
+                "position_index": 41,
+                "drive_mm": 467.7428813388401,
+                "sensor_force_n": 0.5158712832174233,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.5158712832174233
+              },
+              {
+                "position_index": 40,
+                "drive_mm": 471.02132056019536,
+                "sensor_force_n": 0.5494091156607405,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.5494091156607405
+              },
+              {
+                "position_index": 39,
+                "drive_mm": 474.4175208638708,
+                "sensor_force_n": 0.5825095060243843,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5825095060243843
+              },
+              {
+                "position_index": 38,
+                "drive_mm": 477.92994972548695,
+                "sensor_force_n": 0.6151362732373801,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6151362732373802
+              },
+              {
+                "position_index": 37,
+                "drive_mm": 485.2971400831898,
+                "sensor_force_n": 0.6788296543359514,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6788296543359514
+              },
+              {
+                "position_index": 36,
+                "drive_mm": 489.1486178345822,
+                "sensor_force_n": 0.7098292766727763,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7098292766727763
+              },
+              {
+                "position_index": 35,
+                "drive_mm": 493.1097595266583,
+                "sensor_force_n": 0.7402212333727538,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.7402212333727538
+              },
+              {
+                "position_index": 34,
+                "drive_mm": 497.1788225500941,
+                "sensor_force_n": 0.7699745383714522,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7699745383714522
+              },
+              {
+                "position_index": 33,
+                "drive_mm": 501.35402663293144,
+                "sensor_force_n": 0.7990591439991253,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.7990591439991253
+              },
+              {
+                "position_index": 32,
+                "drive_mm": 505.6335553175977,
+                "sensor_force_n": 0.8274459023309174,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.8274459023309174
+              },
+              {
+                "position_index": 31,
+                "drive_mm": 510.0155574437331,
+                "sensor_force_n": 0.8551065268688495,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8551065268688494
+              },
+              {
+                "position_index": 30,
+                "drive_mm": 514.4981486343831,
+                "sensor_force_n": 0.8820135557533204,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8820135557533204
+              },
+              {
+                "position_index": 29,
+                "drive_mm": 523.7574035400899,
+                "sensor_force_n": 0.9334609013624138,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.8820135557533213
+              },
+              {
+                "position_index": 28,
+                "drive_mm": 528.5301457938499,
+                "sensor_force_n": 0.9579501302485204,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.8551065268688485
+              },
+              {
+                "position_index": 27,
+                "drive_mm": 533.3956371483719,
+                "sensor_force_n": 0.9815835422275219,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8274459023309174
+              },
+              {
+                "position_index": 26,
+                "drive_mm": 538.3518493916417,
+                "sensor_force_n": 1.0043373763291579,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7990591439991249
+              },
+              {
+                "position_index": 25,
+                "drive_mm": 543.3967299548199,
+                "sensor_force_n": 1.0261885664292467,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7699745383714525
+              },
+              {
+                "position_index": 24,
+                "drive_mm": 548.5282033597769,
+                "sensor_force_n": 1.0471147428100682,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7402212333727544
+              },
+              {
+                "position_index": 23,
+                "drive_mm": 553.7441726533034,
+                "sensor_force_n": 1.0670942420385963,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7098292766727764
+              },
+              {
+                "position_index": 22,
+                "drive_mm": 559.042520826315,
+                "sensor_force_n": 1.0861061255364777,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6788296543359515
+              },
+              {
+                "position_index": 21,
+                "drive_mm": 569.8777938928788,
+                "sensor_force_n": 1.1211470893837532,
+                "achieved_target_n": 0.2875000000000002,
+                "target_error_n": 2.220446049250313e-16,
+                "minimum_tension_n": 0.6151362732373817
+              },
+              {
+                "position_index": 20,
+                "drive_mm": 575.4103970211036,
+                "sensor_force_n": 1.1371382096046074,
+                "achieved_target_n": 0.28749999999999976,
+                "target_error_n": -2.220446049250313e-16,
+                "minimum_tension_n": 0.5825095060243834
+              },
+              {
+                "position_index": 19,
+                "drive_mm": 581.0167382079071,
+                "sensor_force_n": 1.1520858938111544,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.549409115660741
+              },
+              {
+                "position_index": 18,
+                "drive_mm": 586.694620823861,
+                "sensor_force_n": 1.1659734198740437,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.515871283217423
+              },
+              {
+                "position_index": 17,
+                "drive_mm": 592.4418363031764,
+                "sensor_force_n": 1.178785088435658,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.4819332960412063
+              },
+              {
+                "position_index": 16,
+                "drive_mm": 598.2561654196452,
+                "sensor_force_n": 1.1905063012901127,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.44763355318068343
+              },
+              {
+                "position_index": 15,
+                "drive_mm": 604.1353795378277,
+                "sensor_force_n": 1.2011236464053399,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.4130115611534293
+              },
+              {
+                "position_index": 14,
+                "drive_mm": 610.0772418387146,
+                "sensor_force_n": 1.2106249886664362,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.378107918998664
+              },
+              {
+                "position_index": 13,
+                "drive_mm": 616.0795085191548,
+                "sensor_force_n": 1.2189995652785997,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.34296429166586384
+              },
+              {
+                "position_index": 12,
+                "drive_mm": 628.256251893632,
+                "sensor_force_n": 1.2323328273360947,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.27212882305870534
+              },
+              {
+                "position_index": 11,
+                "drive_mm": 634.4262164768547,
+                "sensor_force_n": 1.2372777479285992,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.23652522301317042
+              },
+              {
+                "position_index": 10,
+                "drive_mm": 640.6475634247631,
+                "sensor_force_n": 1.2410685758614337,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.20085797436596342
+              },
+              {
+                "position_index": 9,
+                "drive_mm": 646.9180310493339,
+                "sensor_force_n": 1.2437029140585494,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.1651732152957875
+              },
+              {
+                "position_index": 8,
+                "drive_mm": 653.2353572961124,
+                "sensor_force_n": 1.2451803334794747,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.1295177104500772
+              },
+              {
+                "position_index": 7,
+                "drive_mm": 659.5972807476601,
+                "sensor_force_n": 1.2455024620035122,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.09393872908069234
+              },
+              {
+                "position_index": 6,
+                "drive_mm": 666.0015415981447,
+                "sensor_force_n": 1.2446730659788212,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.058483909976364656
+              },
+              {
+                "position_index": 5,
+                "drive_mm": 672.4458825990596,
+                "sensor_force_n": 1.2426981228083402,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.023201113962459552
+              }
+            ]
+          }
+        ],
+        "v2": [
+          {
+            "drive": 1,
+            "sensor": 2,
+            "row_count": 38,
+            "max_abs_target_error_n": 7.771561172376096e-16,
+            "support_mm": [
+              445.92278840610834,
+              634.4262164768547
+            ],
+            "rows": [
+              {
+                "position_index": 11,
+                "drive_mm": 445.92278840610834,
+                "sensor_force_n": 0.23652522301316964,
+                "achieved_target_n": 0.2874999999999993,
+                "target_error_n": -6.661338147750939e-16,
+                "minimum_tension_n": 0.23652522301316964
+              },
+              {
+                "position_index": 12,
+                "drive_mm": 448.2097977164417,
+                "sensor_force_n": 0.27212882305870445,
+                "achieved_target_n": 0.2874999999999992,
+                "target_error_n": -7.771561172376096e-16,
+                "minimum_tension_n": 0.27212882305870445
+              },
+              {
+                "position_index": 13,
+                "drive_mm": 453.1674262691208,
+                "sensor_force_n": 0.3429642916658634,
+                "achieved_target_n": 0.28749999999999953,
+                "target_error_n": -4.440892098500626e-16,
+                "minimum_tension_n": 0.3429642916658634
+              },
+              {
+                "position_index": 14,
+                "drive_mm": 455.83573832903676,
+                "sensor_force_n": 0.378107918998664,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.378107918998664
+              },
+              {
+                "position_index": 15,
+                "drive_mm": 458.62875340148867,
+                "sensor_force_n": 0.4130115611534289,
+                "achieved_target_n": 0.2874999999999996,
+                "target_error_n": -3.885780586188048e-16,
+                "minimum_tension_n": 0.41301156115342885
+              },
+              {
+                "position_index": 16,
+                "drive_mm": 461.5451835906392,
+                "sensor_force_n": 0.4476335531806832,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.4476335531806832
+              },
+              {
+                "position_index": 17,
+                "drive_mm": 464.5836894667473,
+                "sensor_force_n": 0.48193329604120577,
+                "achieved_target_n": 0.2874999999999996,
+                "target_error_n": -3.885780586188048e-16,
+                "minimum_tension_n": 0.48193329604120577
+              },
+              {
+                "position_index": 18,
+                "drive_mm": 467.7428813388401,
+                "sensor_force_n": 0.5158712832174233,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.5158712832174233
+              },
+              {
+                "position_index": 19,
+                "drive_mm": 471.0213205601958,
+                "sensor_force_n": 0.5494091156607406,
+                "achieved_target_n": 0.28749999999999953,
+                "target_error_n": -4.440892098500626e-16,
+                "minimum_tension_n": 0.5494091156607406
+              },
+              {
+                "position_index": 20,
+                "drive_mm": 474.4175208638708,
+                "sensor_force_n": 0.5825095060243831,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.5825095060243831
+              },
+              {
+                "position_index": 21,
+                "drive_mm": 477.92994972548695,
+                "sensor_force_n": 0.6151362732373815,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.6151362732373815
+              },
+              {
+                "position_index": 22,
+                "drive_mm": 485.2971400831898,
+                "sensor_force_n": 0.6788296543359521,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.678829654335952
+              },
+              {
+                "position_index": 23,
+                "drive_mm": 489.1486178345822,
+                "sensor_force_n": 0.7098292766727761,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7098292766727762
+              },
+              {
+                "position_index": 24,
+                "drive_mm": 493.1097595266583,
+                "sensor_force_n": 0.740221233372755,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.7402212333727551
+              },
+              {
+                "position_index": 25,
+                "drive_mm": 497.1788225500941,
+                "sensor_force_n": 0.7699745383714522,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7699745383714522
+              },
+              {
+                "position_index": 26,
+                "drive_mm": 501.35402663293144,
+                "sensor_force_n": 0.7990591439991251,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7990591439991251
+              },
+              {
+                "position_index": 27,
+                "drive_mm": 505.6335553175977,
+                "sensor_force_n": 0.8274459023309172,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8274459023309172
+              },
+              {
+                "position_index": 28,
+                "drive_mm": 510.0155574437331,
+                "sensor_force_n": 0.8551065268688482,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.8551065268688482
+              },
+              {
+                "position_index": 29,
+                "drive_mm": 514.4981486343831,
+                "sensor_force_n": 0.8820135557533219,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8820135557533217
+              },
+              {
+                "position_index": 30,
+                "drive_mm": 523.7574035400899,
+                "sensor_force_n": 0.9334609013624151,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8820135557533206
+              },
+              {
+                "position_index": 31,
+                "drive_mm": 528.5301457938499,
+                "sensor_force_n": 0.9579501302485218,
+                "achieved_target_n": 0.2875000000000003,
+                "target_error_n": 3.3306690738754696e-16,
+                "minimum_tension_n": 0.85510652686885
+              },
+              {
+                "position_index": 32,
+                "drive_mm": 533.3956371483719,
+                "sensor_force_n": 0.9815835422275221,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8274459023309174
+              },
+              {
+                "position_index": 33,
+                "drive_mm": 538.3518493916417,
+                "sensor_force_n": 1.0043373763291579,
+                "achieved_target_n": 0.2875000000000002,
+                "target_error_n": 2.220446049250313e-16,
+                "minimum_tension_n": 0.799059143999125
+              },
+              {
+                "position_index": 34,
+                "drive_mm": 543.3967299548199,
+                "sensor_force_n": 1.026188566429247,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7699745383714525
+              },
+              {
+                "position_index": 35,
+                "drive_mm": 548.5282033597769,
+                "sensor_force_n": 1.047114742810067,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7402212333727531
+              },
+              {
+                "position_index": 36,
+                "drive_mm": 553.7441726533034,
+                "sensor_force_n": 1.0670942420385963,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7098292766727763
+              },
+              {
+                "position_index": 37,
+                "drive_mm": 559.0425208263155,
+                "sensor_force_n": 1.0861061255364777,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6788296543359509
+              },
+              {
+                "position_index": 38,
+                "drive_mm": 569.8777938928788,
+                "sensor_force_n": 1.121147089383753,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6151362732373802
+              },
+              {
+                "position_index": 39,
+                "drive_mm": 575.4103970211036,
+                "sensor_force_n": 1.1371382096046085,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5825095060243843
+              },
+              {
+                "position_index": 40,
+                "drive_mm": 581.0167382079071,
+                "sensor_force_n": 1.152085893811155,
+                "achieved_target_n": 0.28749999999999976,
+                "target_error_n": -2.220446049250313e-16,
+                "minimum_tension_n": 0.5494091156607404
+              },
+              {
+                "position_index": 41,
+                "drive_mm": 586.694620823861,
+                "sensor_force_n": 1.1659734198740437,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.515871283217423
+              },
+              {
+                "position_index": 42,
+                "drive_mm": 592.4418363031764,
+                "sensor_force_n": 1.1787850884356588,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.48193329604120694
+              },
+              {
+                "position_index": 43,
+                "drive_mm": 598.2561654196452,
+                "sensor_force_n": 1.1905063012901143,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.44763355318068454
+              },
+              {
+                "position_index": 44,
+                "drive_mm": 604.1353795378277,
+                "sensor_force_n": 1.2011236464053405,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.41301156115342974
+              },
+              {
+                "position_index": 45,
+                "drive_mm": 610.0772418387146,
+                "sensor_force_n": 1.210624988666437,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.37810791899866386
+              },
+              {
+                "position_index": 46,
+                "drive_mm": 616.0795085191548,
+                "sensor_force_n": 1.2189995652786003,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.3429642916658643
+              },
+              {
+                "position_index": 47,
+                "drive_mm": 628.256251893632,
+                "sensor_force_n": 1.2323328273360952,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.2721288230587049
+              },
+              {
+                "position_index": 48,
+                "drive_mm": 634.4262164768547,
+                "sensor_force_n": 1.2372777479285997,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.23652522301316903
+              }
+            ]
+          },
+          {
+            "drive": 2,
+            "sensor": 1,
+            "row_count": 38,
+            "max_abs_target_error_n": 3.3306690738754696e-16,
+            "support_mm": [
+              445.92278840610834,
+              634.4262164768547
+            ],
+            "rows": [
+              {
+                "position_index": 48,
+                "drive_mm": 445.92278840610834,
+                "sensor_force_n": 0.23652522301316908,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.23652522301316914
+              },
+              {
+                "position_index": 47,
+                "drive_mm": 448.2097977164417,
+                "sensor_force_n": 0.2721288230587049,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.2721288230587049
+              },
+              {
+                "position_index": 46,
+                "drive_mm": 453.1674262691208,
+                "sensor_force_n": 0.34296429166586395,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.34296429166586395
+              },
+              {
+                "position_index": 45,
+                "drive_mm": 455.83573832903676,
+                "sensor_force_n": 0.3781079189986638,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.37810791899866375
+              },
+              {
+                "position_index": 44,
+                "drive_mm": 458.62875340148867,
+                "sensor_force_n": 0.41301156115342985,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.41301156115342985
+              },
+              {
+                "position_index": 43,
+                "drive_mm": 461.5451835906392,
+                "sensor_force_n": 0.44763355318068476,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.44763355318068476
+              },
+              {
+                "position_index": 42,
+                "drive_mm": 464.5836894667473,
+                "sensor_force_n": 0.4819332960412064,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.48193329604120627
+              },
+              {
+                "position_index": 41,
+                "drive_mm": 467.7428813388401,
+                "sensor_force_n": 0.5158712832174233,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.5158712832174233
+              },
+              {
+                "position_index": 40,
+                "drive_mm": 471.02132056019536,
+                "sensor_force_n": 0.5494091156607405,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.5494091156607405
+              },
+              {
+                "position_index": 39,
+                "drive_mm": 474.4175208638708,
+                "sensor_force_n": 0.5825095060243843,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5825095060243843
+              },
+              {
+                "position_index": 38,
+                "drive_mm": 477.92994972548695,
+                "sensor_force_n": 0.6151362732373801,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6151362732373802
+              },
+              {
+                "position_index": 37,
+                "drive_mm": 485.2971400831898,
+                "sensor_force_n": 0.6788296543359514,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6788296543359514
+              },
+              {
+                "position_index": 36,
+                "drive_mm": 489.1486178345822,
+                "sensor_force_n": 0.7098292766727763,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7098292766727763
+              },
+              {
+                "position_index": 35,
+                "drive_mm": 493.1097595266583,
+                "sensor_force_n": 0.7402212333727538,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.7402212333727538
+              },
+              {
+                "position_index": 34,
+                "drive_mm": 497.1788225500941,
+                "sensor_force_n": 0.7699745383714522,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7699745383714522
+              },
+              {
+                "position_index": 33,
+                "drive_mm": 501.35402663293144,
+                "sensor_force_n": 0.7990591439991253,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.7990591439991253
+              },
+              {
+                "position_index": 32,
+                "drive_mm": 505.6335553175977,
+                "sensor_force_n": 0.8274459023309174,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.8274459023309174
+              },
+              {
+                "position_index": 31,
+                "drive_mm": 510.0155574437331,
+                "sensor_force_n": 0.8551065268688495,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8551065268688494
+              },
+              {
+                "position_index": 30,
+                "drive_mm": 514.4981486343831,
+                "sensor_force_n": 0.8820135557533204,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8820135557533204
+              },
+              {
+                "position_index": 29,
+                "drive_mm": 523.7574035400899,
+                "sensor_force_n": 0.9334609013624138,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.8820135557533213
+              },
+              {
+                "position_index": 28,
+                "drive_mm": 528.5301457938499,
+                "sensor_force_n": 0.9579501302485204,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.8551065268688485
+              },
+              {
+                "position_index": 27,
+                "drive_mm": 533.3956371483719,
+                "sensor_force_n": 0.9815835422275219,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8274459023309174
+              },
+              {
+                "position_index": 26,
+                "drive_mm": 538.3518493916417,
+                "sensor_force_n": 1.0043373763291579,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7990591439991249
+              },
+              {
+                "position_index": 25,
+                "drive_mm": 543.3967299548199,
+                "sensor_force_n": 1.0261885664292467,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7699745383714525
+              },
+              {
+                "position_index": 24,
+                "drive_mm": 548.5282033597769,
+                "sensor_force_n": 1.0471147428100682,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7402212333727544
+              },
+              {
+                "position_index": 23,
+                "drive_mm": 553.7441726533034,
+                "sensor_force_n": 1.0670942420385963,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7098292766727764
+              },
+              {
+                "position_index": 22,
+                "drive_mm": 559.042520826315,
+                "sensor_force_n": 1.0861061255364777,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6788296543359515
+              },
+              {
+                "position_index": 21,
+                "drive_mm": 569.8777938928788,
+                "sensor_force_n": 1.1211470893837532,
+                "achieved_target_n": 0.2875000000000002,
+                "target_error_n": 2.220446049250313e-16,
+                "minimum_tension_n": 0.6151362732373817
+              },
+              {
+                "position_index": 20,
+                "drive_mm": 575.4103970211036,
+                "sensor_force_n": 1.1371382096046074,
+                "achieved_target_n": 0.28749999999999976,
+                "target_error_n": -2.220446049250313e-16,
+                "minimum_tension_n": 0.5825095060243834
+              },
+              {
+                "position_index": 19,
+                "drive_mm": 581.0167382079071,
+                "sensor_force_n": 1.1520858938111544,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.549409115660741
+              },
+              {
+                "position_index": 18,
+                "drive_mm": 586.694620823861,
+                "sensor_force_n": 1.1659734198740437,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.515871283217423
+              },
+              {
+                "position_index": 17,
+                "drive_mm": 592.4418363031764,
+                "sensor_force_n": 1.178785088435658,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.4819332960412063
+              },
+              {
+                "position_index": 16,
+                "drive_mm": 598.2561654196452,
+                "sensor_force_n": 1.1905063012901127,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.44763355318068343
+              },
+              {
+                "position_index": 15,
+                "drive_mm": 604.1353795378277,
+                "sensor_force_n": 1.2011236464053399,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.4130115611534293
+              },
+              {
+                "position_index": 14,
+                "drive_mm": 610.0772418387146,
+                "sensor_force_n": 1.2106249886664362,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.378107918998664
+              },
+              {
+                "position_index": 13,
+                "drive_mm": 616.0795085191548,
+                "sensor_force_n": 1.2189995652785997,
+                "achieved_target_n": 0.2874999999999997,
+                "target_error_n": -2.7755575615628914e-16,
+                "minimum_tension_n": 0.34296429166586384
+              },
+              {
+                "position_index": 12,
+                "drive_mm": 628.256251893632,
+                "sensor_force_n": 1.2323328273360947,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.27212882305870534
+              },
+              {
+                "position_index": 11,
+                "drive_mm": 634.4262164768547,
+                "sensor_force_n": 1.2372777479285992,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.23652522301317042
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fixed_lengths_mm": [
+        390.0,
+        -100.0
+      ],
+      "predicted_pose_count": 60,
+      "comparisons": {
+        "v1": [
+          {
+            "drive": 1,
+            "sensor": 2,
+            "row_count": 54,
+            "max_abs_target_error_n": 0.07309168220923845,
+            "support_mm": [
+              -636.6486172159841,
+              660.7092601545137
+            ],
+            "rows": [
+              {
+                "position_index": 3,
+                "drive_mm": -636.6486172159841,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.36059168220923843,
+                "target_error_n": 0.07309168220923845,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 4,
+                "drive_mm": -631.1809417863274,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.29796916568289583,
+                "target_error_n": 0.010469165682895853,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 5,
+                "drive_mm": -624.8271129267519,
+                "sensor_force_n": 0.29564102134875514,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.2956410213487551
+              },
+              {
+                "position_index": 6,
+                "drive_mm": -617.6020152279082,
+                "sensor_force_n": 0.3759945293557919,
+                "achieved_target_n": 0.2875000000000004,
+                "target_error_n": 4.440892098500626e-16,
+                "minimum_tension_n": 0.3759945293557919
+              },
+              {
+                "position_index": 7,
+                "drive_mm": -600.6059061918738,
+                "sensor_force_n": 0.5270752295993267,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.5270752295993268
+              },
+              {
+                "position_index": 8,
+                "drive_mm": -590.87254443699,
+                "sensor_force_n": 0.5971693583609567,
+                "achieved_target_n": 0.2875000000000002,
+                "target_error_n": 2.220446049250313e-16,
+                "minimum_tension_n": 0.5971693583609566
+              },
+              {
+                "position_index": 9,
+                "drive_mm": -580.3428829231691,
+                "sensor_force_n": 0.6634045192049662,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.6634045192049662
+              },
+              {
+                "position_index": 10,
+                "drive_mm": -569.0387025396249,
+                "sensor_force_n": 0.7257335996189024,
+                "achieved_target_n": 0.28749999999999953,
+                "target_error_n": -4.440892098500626e-16,
+                "minimum_tension_n": 0.7257335996189025
+              },
+              {
+                "position_index": 11,
+                "drive_mm": -556.9826653755254,
+                "sensor_force_n": 0.7841896046996801,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7841896046996802
+              },
+              {
+                "position_index": 12,
+                "drive_mm": -530.7091043004148,
+                "sensor_force_n": 0.8899209689664589,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.8803108701437076
+              },
+              {
+                "position_index": 13,
+                "drive_mm": -516.5398775089052,
+                "sensor_force_n": 0.9375260746231155,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8591656352677677
+              },
+              {
+                "position_index": 14,
+                "drive_mm": -501.7150996422299,
+                "sensor_force_n": 0.9818929617263183,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.8383491556371361
+              },
+              {
+                "position_index": 15,
+                "drive_mm": -486.2595425176139,
+                "sensor_force_n": 1.023244782633404,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.8180524337615996
+              },
+              {
+                "position_index": 16,
+                "drive_mm": -453.55519642302556,
+                "sensor_force_n": 1.0978278328038158,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7796183874260851
+              },
+              {
+                "position_index": 17,
+                "drive_mm": -436.35565937605384,
+                "sensor_force_n": 1.1315206515044498,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7617112701986086
+              },
+              {
+                "position_index": 18,
+                "drive_mm": -418.6236664302919,
+                "sensor_force_n": 1.1631136074942212,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.7447920807077989
+              },
+              {
+                "position_index": 19,
+                "drive_mm": -400.3831557848016,
+                "sensor_force_n": 1.1928207793535228,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7289230642082745
+              },
+              {
+                "position_index": 20,
+                "drive_mm": -381.6576661829622,
+                "sensor_force_n": 1.22084594011215,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7141512993451631
+              },
+              {
+                "position_index": 21,
+                "drive_mm": -342.8435969899879,
+                "sensor_force_n": 1.2726089599826729,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6880283359448829
+              },
+              {
+                "position_index": 22,
+                "drive_mm": -322.79966291183223,
+                "sensor_force_n": 1.2966971921835362,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798305
+              },
+              {
+                "position_index": 23,
+                "drive_mm": -302.35997739147433,
+                "sensor_force_n": 1.3198043729368838,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6665935124492826
+              },
+              {
+                "position_index": 24,
+                "drive_mm": -281.54545516562825,
+                "sensor_force_n": 1.3420775553438065,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6576588758799023
+              },
+              {
+                "position_index": 25,
+                "drive_mm": -238.87257074196168,
+                "sensor_force_n": 1.3846586311966165,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6433709167944838
+              },
+              {
+                "position_index": 26,
+                "drive_mm": -217.0530268090879,
+                "sensor_force_n": 1.4052109292330013,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6380175672190793
+              },
+              {
+                "position_index": 27,
+                "drive_mm": -194.93627845745868,
+                "sensor_force_n": 1.4254192555475043,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6338562897285516
+              },
+              {
+                "position_index": 28,
+                "drive_mm": -172.54021525006533,
+                "sensor_force_n": 1.4453845558783736,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6308854445058384
+              },
+              {
+                "position_index": 29,
+                "drive_mm": -149.88212776954947,
+                "sensor_force_n": 1.4652002381661657,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6291035890390613
+              },
+              {
+                "position_index": 30,
+                "drive_mm": -103.84610512430504,
+                "sensor_force_n": 1.504721176205221,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6291035890390618
+              },
+              {
+                "position_index": 31,
+                "drive_mm": -80.49984983479658,
+                "sensor_force_n": 1.5245789509374599,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6308854445058389
+              },
+              {
+                "position_index": 32,
+                "drive_mm": -56.9549576359459,
+                "sensor_force_n": 1.5445924883987863,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6338562897285522
+              },
+              {
+                "position_index": 33,
+                "drive_mm": -33.225899990413154,
+                "sensor_force_n": 1.5648218982550406,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6380175672190797
+              },
+              {
+                "position_index": 34,
+                "drive_mm": -9.326629535104985,
+                "sensor_force_n": 1.5853206601288548,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6433709167944834
+              },
+              {
+                "position_index": 35,
+                "drive_mm": 38.92923175871351,
+                "sensor_force_n": 1.6273047217360748,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6576588758799005
+              },
+              {
+                "position_index": 36,
+                "drive_mm": 63.26035799281408,
+                "sensor_force_n": 1.6488597024478457,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6665935124492841
+              },
+              {
+                "position_index": 37,
+                "drive_mm": 87.71073303422827,
+                "sensor_force_n": 1.6708216375623572,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798314
+              },
+              {
+                "position_index": 38,
+                "drive_mm": 112.26874080714788,
+                "sensor_force_n": 1.6932013943283466,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6880283359448832
+              },
+              {
+                "position_index": 39,
+                "drive_mm": 161.66325115438713,
+                "sensor_force_n": 1.7391952859103077,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7141512993451633
+              },
+              {
+                "position_index": 40,
+                "drive_mm": 186.47853246594696,
+                "sensor_force_n": 1.7627625089450936,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7289230642082751
+              },
+              {
+                "position_index": 41,
+                "drive_mm": 211.35897153633823,
+                "sensor_force_n": 1.7866487989595647,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7447920807077993
+              },
+              {
+                "position_index": 42,
+                "drive_mm": 236.29486593302317,
+                "sensor_force_n": 1.8107815435860932,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7617112701986088
+              },
+              {
+                "position_index": 43,
+                "drive_mm": 261.27684889916736,
+                "sensor_force_n": 1.8350626339591736,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7796183874260852
+              },
+              {
+                "position_index": 44,
+                "drive_mm": 311.34320508897736,
+                "sensor_force_n": 1.8835265388024955,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8180524337615993
+              },
+              {
+                "position_index": 45,
+                "drive_mm": 336.41039482559336,
+                "sensor_force_n": 1.9073495280767425,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.8383491556371381
+              },
+              {
+                "position_index": 46,
+                "drive_mm": 361.4892797079451,
+                "sensor_force_n": 1.930592371068757,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.859165635267767
+              },
+              {
+                "position_index": 47,
+                "drive_mm": 386.57196365780055,
+                "sensor_force_n": 1.952967228989754,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8803108701437086
+              },
+              {
+                "position_index": 48,
+                "drive_mm": 436.7184147378598,
+                "sensor_force_n": 1.9937069315591005,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7841896046996794
+              },
+              {
+                "position_index": 49,
+                "drive_mm": 461.76762640574043,
+                "sensor_force_n": 2.011234481299049,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7257335996189029
+              },
+              {
+                "position_index": 50,
+                "drive_mm": 486.7915049972189,
+                "sensor_force_n": 2.026219008730302,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6634045192049665
+              },
+              {
+                "position_index": 51,
+                "drive_mm": 511.78332744333466,
+                "sensor_force_n": 2.038111110171345,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.5971693583609536
+              },
+              {
+                "position_index": 52,
+                "drive_mm": 536.7365751322823,
+                "sensor_force_n": 2.0463189181673798,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5270752295993271
+              },
+              {
+                "position_index": 53,
+                "drive_mm": 586.5022407691945,
+                "sensor_force_n": 2.0491774966407688,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.37599452935579175
+              },
+              {
+                "position_index": 54,
+                "drive_mm": 611.3025653240065,
+                "sensor_force_n": 2.0425630258328296,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.29564102134875325
+              },
+              {
+                "position_index": 55,
+                "drive_mm": 636.0401125297831,
+                "sensor_force_n": 2.029782189369577,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.21271566066390113
+              },
+              {
+                "position_index": 56,
+                "drive_mm": 660.7092601545137,
+                "sensor_force_n": 2.0103056170087577,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.12786370129755192
+              }
+            ]
+          },
+          {
+            "drive": 2,
+            "sensor": 1,
+            "row_count": 54,
+            "max_abs_target_error_n": 0.07309168220923845,
+            "support_mm": [
+              -636.6486172159841,
+              660.7092601545137
+            ],
+            "rows": [
+              {
+                "position_index": 56,
+                "drive_mm": -636.6486172159841,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.36059168220923843,
+                "target_error_n": 0.07309168220923845,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 55,
+                "drive_mm": -631.1809417863274,
+                "sensor_force_n": 0.23,
+                "achieved_target_n": 0.2979691656828957,
+                "target_error_n": 0.010469165682895742,
+                "minimum_tension_n": 0.22999999999999998
+              },
+              {
+                "position_index": 54,
+                "drive_mm": -624.8271129267521,
+                "sensor_force_n": 0.29564102134875336,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.29564102134875336
+              },
+              {
+                "position_index": 53,
+                "drive_mm": -617.6020152279082,
+                "sensor_force_n": 0.3759945293557916,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.37599452935579164
+              },
+              {
+                "position_index": 52,
+                "drive_mm": -600.6059061918738,
+                "sensor_force_n": 0.5270752295993266,
+                "achieved_target_n": 0.28749999999999976,
+                "target_error_n": -2.220446049250313e-16,
+                "minimum_tension_n": 0.5270752295993266
+              },
+              {
+                "position_index": 51,
+                "drive_mm": -590.8725444369902,
+                "sensor_force_n": 0.5971693583609538,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5971693583609538
+              },
+              {
+                "position_index": 50,
+                "drive_mm": -580.3428829231691,
+                "sensor_force_n": 0.6634045192049666,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6634045192049667
+              },
+              {
+                "position_index": 49,
+                "drive_mm": -569.0387025396249,
+                "sensor_force_n": 0.7257335996189029,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7257335996189029
+              },
+              {
+                "position_index": 48,
+                "drive_mm": -556.9826653755254,
+                "sensor_force_n": 0.78418960469968,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.78418960469968
+              },
+              {
+                "position_index": 47,
+                "drive_mm": -530.709104300415,
+                "sensor_force_n": 0.8899209689664577,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8803108701437086
+              },
+              {
+                "position_index": 46,
+                "drive_mm": -516.5398775089052,
+                "sensor_force_n": 0.9375260746231153,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8591656352677668
+              },
+              {
+                "position_index": 45,
+                "drive_mm": -501.7150996422306,
+                "sensor_force_n": 0.9818929617263177,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.8383491556371383
+              },
+              {
+                "position_index": 44,
+                "drive_mm": -486.2595425176139,
+                "sensor_force_n": 1.023244782633404,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.8180524337615995
+              },
+              {
+                "position_index": 43,
+                "drive_mm": -453.55519642302556,
+                "sensor_force_n": 1.0978278328038156,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7796183874260852
+              },
+              {
+                "position_index": 42,
+                "drive_mm": -436.35565937605384,
+                "sensor_force_n": 1.13152065150445,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7617112701986093
+              },
+              {
+                "position_index": 41,
+                "drive_mm": -418.6236664302919,
+                "sensor_force_n": 1.1631136074942217,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7447920807077992
+              },
+              {
+                "position_index": 40,
+                "drive_mm": -400.3831557848016,
+                "sensor_force_n": 1.1928207793535224,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.7289230642082748
+              },
+              {
+                "position_index": 39,
+                "drive_mm": -381.6576661829629,
+                "sensor_force_n": 1.2208459401121494,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7141512993451631
+              },
+              {
+                "position_index": 38,
+                "drive_mm": -342.8435969899879,
+                "sensor_force_n": 1.2726089599826726,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6880283359448834
+              },
+              {
+                "position_index": 37,
+                "drive_mm": -322.79966291183223,
+                "sensor_force_n": 1.2966971921835357,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798312
+              },
+              {
+                "position_index": 36,
+                "drive_mm": -302.35997739147456,
+                "sensor_force_n": 1.3198043729368831,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6665935124492838
+              },
+              {
+                "position_index": 35,
+                "drive_mm": -281.54545516562825,
+                "sensor_force_n": 1.3420775553438067,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6576588758799005
+              },
+              {
+                "position_index": 34,
+                "drive_mm": -238.87257074196168,
+                "sensor_force_n": 1.3846586311966167,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6433709167944835
+              },
+              {
+                "position_index": 33,
+                "drive_mm": -217.0530268090879,
+                "sensor_force_n": 1.4052109292330013,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6380175672190798
+              },
+              {
+                "position_index": 32,
+                "drive_mm": -194.93627845745868,
+                "sensor_force_n": 1.4254192555475043,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6338562897285521
+              },
+              {
+                "position_index": 31,
+                "drive_mm": -172.54021525006533,
+                "sensor_force_n": 1.4453845558783733,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.630885444505839
+              },
+              {
+                "position_index": 30,
+                "drive_mm": -149.88212776954992,
+                "sensor_force_n": 1.4652002381661648,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6291035890390616
+              },
+              {
+                "position_index": 29,
+                "drive_mm": -103.84610512430572,
+                "sensor_force_n": 1.5047211762052202,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6291035890390609
+              },
+              {
+                "position_index": 28,
+                "drive_mm": -80.49984983479658,
+                "sensor_force_n": 1.52457895093746,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6308854445058382
+              },
+              {
+                "position_index": 27,
+                "drive_mm": -56.9549576359459,
+                "sensor_force_n": 1.5445924883987863,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6338562897285516
+              },
+              {
+                "position_index": 26,
+                "drive_mm": -33.225899990413154,
+                "sensor_force_n": 1.5648218982550404,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.638017567219079
+              },
+              {
+                "position_index": 25,
+                "drive_mm": -9.326629535104985,
+                "sensor_force_n": 1.585320660128855,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6433709167944839
+              },
+              {
+                "position_index": 24,
+                "drive_mm": 38.92923175871351,
+                "sensor_force_n": 1.6273047217360745,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6576588758799025
+              },
+              {
+                "position_index": 23,
+                "drive_mm": 63.26035799281317,
+                "sensor_force_n": 1.648859702447844,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6665935124492828
+              },
+              {
+                "position_index": 22,
+                "drive_mm": 87.71073303422827,
+                "sensor_force_n": 1.6708216375623572,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798308
+              },
+              {
+                "position_index": 21,
+                "drive_mm": 112.2687408071472,
+                "sensor_force_n": 1.6932013943283466,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6880283359448834
+              },
+              {
+                "position_index": 20,
+                "drive_mm": 161.66325115438622,
+                "sensor_force_n": 1.7391952859103075,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7141512993451634
+              },
+              {
+                "position_index": 19,
+                "drive_mm": 186.47853246594696,
+                "sensor_force_n": 1.7627625089450936,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7289230642082749
+              },
+              {
+                "position_index": 18,
+                "drive_mm": 211.35897153633823,
+                "sensor_force_n": 1.7866487989595645,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7447920807077992
+              },
+              {
+                "position_index": 17,
+                "drive_mm": 236.29486593302317,
+                "sensor_force_n": 1.8107815435860932,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7617112701986084
+              },
+              {
+                "position_index": 16,
+                "drive_mm": 261.27684889916736,
+                "sensor_force_n": 1.8350626339591736,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7796183874260851
+              },
+              {
+                "position_index": 15,
+                "drive_mm": 311.34320508897736,
+                "sensor_force_n": 1.8835265388024953,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8180524337615994
+              },
+              {
+                "position_index": 14,
+                "drive_mm": 336.41039482559245,
+                "sensor_force_n": 1.9073495280767423,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8383491556371367
+              },
+              {
+                "position_index": 13,
+                "drive_mm": 361.4892797079451,
+                "sensor_force_n": 1.9305923710687565,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.8591656352677672
+              },
+              {
+                "position_index": 12,
+                "drive_mm": 386.5719636578001,
+                "sensor_force_n": 1.9529672289897526,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8803108701437082
+              },
+              {
+                "position_index": 11,
+                "drive_mm": 436.7184147378598,
+                "sensor_force_n": 1.9937069315591012,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7841896046996805
+              },
+              {
+                "position_index": 10,
+                "drive_mm": 461.76762640574043,
+                "sensor_force_n": 2.0112344812990477,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.7257335996189034
+              },
+              {
+                "position_index": 9,
+                "drive_mm": 486.7915049972189,
+                "sensor_force_n": 2.026219008730302,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6634045192049668
+              },
+              {
+                "position_index": 8,
+                "drive_mm": 511.78332744333466,
+                "sensor_force_n": 2.0381111101713456,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.5971693583609562
+              },
+              {
+                "position_index": 7,
+                "drive_mm": 536.7365751322823,
+                "sensor_force_n": 2.04631891816738,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.5270752295993273
+              },
+              {
+                "position_index": 6,
+                "drive_mm": 586.5022407691945,
+                "sensor_force_n": 2.04917749664077,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.37599452935579136
+              },
+              {
+                "position_index": 5,
+                "drive_mm": 611.3025653240061,
+                "sensor_force_n": 2.04256302583283,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.29564102134875486
+              },
+              {
+                "position_index": 4,
+                "drive_mm": 636.0401125297831,
+                "sensor_force_n": 2.0297821893695773,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.21271566066390113
+              },
+              {
+                "position_index": 3,
+                "drive_mm": 660.7092601545137,
+                "sensor_force_n": 2.0103056170087577,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.12786370129755203
+              }
+            ]
+          }
+        ],
+        "v2": [
+          {
+            "drive": 1,
+            "sensor": 2,
+            "row_count": 50,
+            "max_abs_target_error_n": 4.440892098500626e-16,
+            "support_mm": [
+              -624.8271129267519,
+              611.3025653240065
+            ],
+            "rows": [
+              {
+                "position_index": 5,
+                "drive_mm": -624.8271129267519,
+                "sensor_force_n": 0.29564102134875514,
+                "achieved_target_n": 0.28750000000000026,
+                "target_error_n": 2.7755575615628914e-16,
+                "minimum_tension_n": 0.2956410213487551
+              },
+              {
+                "position_index": 6,
+                "drive_mm": -617.6020152279082,
+                "sensor_force_n": 0.3759945293557919,
+                "achieved_target_n": 0.2875000000000004,
+                "target_error_n": 4.440892098500626e-16,
+                "minimum_tension_n": 0.3759945293557919
+              },
+              {
+                "position_index": 7,
+                "drive_mm": -600.6059061918738,
+                "sensor_force_n": 0.5270752295993267,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.5270752295993268
+              },
+              {
+                "position_index": 8,
+                "drive_mm": -590.87254443699,
+                "sensor_force_n": 0.5971693583609567,
+                "achieved_target_n": 0.2875000000000002,
+                "target_error_n": 2.220446049250313e-16,
+                "minimum_tension_n": 0.5971693583609566
+              },
+              {
+                "position_index": 9,
+                "drive_mm": -580.3428829231691,
+                "sensor_force_n": 0.6634045192049662,
+                "achieved_target_n": 0.28749999999999964,
+                "target_error_n": -3.3306690738754696e-16,
+                "minimum_tension_n": 0.6634045192049662
+              },
+              {
+                "position_index": 10,
+                "drive_mm": -569.0387025396249,
+                "sensor_force_n": 0.7257335996189024,
+                "achieved_target_n": 0.28749999999999953,
+                "target_error_n": -4.440892098500626e-16,
+                "minimum_tension_n": 0.7257335996189025
+              },
+              {
+                "position_index": 11,
+                "drive_mm": -556.9826653755254,
+                "sensor_force_n": 0.7841896046996801,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7841896046996802
+              },
+              {
+                "position_index": 12,
+                "drive_mm": -530.7091043004148,
+                "sensor_force_n": 0.8899209689664589,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.8803108701437076
+              },
+              {
+                "position_index": 13,
+                "drive_mm": -516.5398775089052,
+                "sensor_force_n": 0.9375260746231155,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.8591656352677677
+              },
+              {
+                "position_index": 14,
+                "drive_mm": -501.7150996422299,
+                "sensor_force_n": 0.9818929617263183,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.8383491556371361
+              },
+              {
+                "position_index": 15,
+                "drive_mm": -486.2595425176139,
+                "sensor_force_n": 1.023244782633404,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.8180524337615996
+              },
+              {
+                "position_index": 16,
+                "drive_mm": -453.55519642302556,
+                "sensor_force_n": 1.0978278328038158,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7796183874260851
+              },
+              {
+                "position_index": 17,
+                "drive_mm": -436.35565937605384,
+                "sensor_force_n": 1.1315206515044498,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7617112701986086
+              },
+              {
+                "position_index": 18,
+                "drive_mm": -418.6236664302919,
+                "sensor_force_n": 1.1631136074942212,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.7447920807077989
+              },
+              {
+                "position_index": 19,
+                "drive_mm": -400.3831557848016,
+                "sensor_force_n": 1.1928207793535228,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7289230642082745
+              },
+              {
+                "position_index": 20,
+                "drive_mm": -381.6576661829622,
+                "sensor_force_n": 1.22084594011215,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7141512993451631
+              },
+              {
+                "position_index": 21,
+                "drive_mm": -342.8435969899879,
+                "sensor_force_n": 1.2726089599826729,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6880283359448829
+              },
+              {
+                "position_index": 22,
+                "drive_mm": -322.79966291183223,
+                "sensor_force_n": 1.2966971921835362,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798305
+              },
+              {
+                "position_index": 23,
+                "drive_mm": -302.35997739147433,
+                "sensor_force_n": 1.3198043729368838,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6665935124492826
+              },
+              {
+                "position_index": 24,
+                "drive_mm": -281.54545516562825,
+                "sensor_force_n": 1.3420775553438065,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6576588758799023
+              },
+              {
+                "position_index": 25,
+                "drive_mm": -238.87257074196168,
+                "sensor_force_n": 1.3846586311966165,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6433709167944838
+              },
+              {
+                "position_index": 26,
+                "drive_mm": -217.0530268090879,
+                "sensor_force_n": 1.4052109292330013,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6380175672190793
+              },
+              {
+                "position_index": 27,
+                "drive_mm": -194.93627845745868,
+                "sensor_force_n": 1.4254192555475043,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6338562897285516
+              },
+              {
+                "position_index": 28,
+                "drive_mm": -172.54021525006533,
+                "sensor_force_n": 1.4453845558783736,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6308854445058384
+              },
+              {
+                "position_index": 29,
+                "drive_mm": -149.88212776954947,
+                "sensor_force_n": 1.4652002381661657,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6291035890390613
+              },
+              {
+                "position_index": 30,
+                "drive_mm": -103.84610512430504,
+                "sensor_force_n": 1.504721176205221,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6291035890390618
+              },
+              {
+                "position_index": 31,
+                "drive_mm": -80.49984983479658,
+                "sensor_force_n": 1.5245789509374599,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6308854445058389
+              },
+              {
+                "position_index": 32,
+                "drive_mm": -56.9549576359459,
+                "sensor_force_n": 1.5445924883987863,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6338562897285522
+              },
+              {
+                "position_index": 33,
+                "drive_mm": -33.225899990413154,
+                "sensor_force_n": 1.5648218982550406,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6380175672190797
+              },
+              {
+                "position_index": 34,
+                "drive_mm": -9.326629535104985,
+                "sensor_force_n": 1.5853206601288548,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6433709167944834
+              },
+              {
+                "position_index": 35,
+                "drive_mm": 38.92923175871351,
+                "sensor_force_n": 1.6273047217360748,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6576588758799005
+              },
+              {
+                "position_index": 36,
+                "drive_mm": 63.26035799281408,
+                "sensor_force_n": 1.6488597024478457,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6665935124492841
+              },
+              {
+                "position_index": 37,
+                "drive_mm": 87.71073303422827,
+                "sensor_force_n": 1.6708216375623572,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798314
+              },
+              {
+                "position_index": 38,
+                "drive_mm": 112.26874080714788,
+                "sensor_force_n": 1.6932013943283466,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6880283359448832
+              },
+              {
+                "position_index": 39,
+                "drive_mm": 161.66325115438713,
+                "sensor_force_n": 1.7391952859103077,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7141512993451633
+              },
+              {
+                "position_index": 40,
+                "drive_mm": 186.47853246594696,
+                "sensor_force_n": 1.7627625089450936,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7289230642082751
+              },
+              {
+                "position_index": 41,
+                "drive_mm": 211.35897153633823,
+                "sensor_force_n": 1.7866487989595647,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7447920807077993
+              },
+              {
+                "position_index": 42,
+                "drive_mm": 236.29486593302317,
+                "sensor_force_n": 1.8107815435860932,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7617112701986088
+              },
+              {
+                "position_index": 43,
+                "drive_mm": 261.27684889916736,
+                "sensor_force_n": 1.8350626339591736,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7796183874260852
+              },
+              {
+                "position_index": 44,
+                "drive_mm": 311.34320508897736,
+                "sensor_force_n": 1.8835265388024955,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8180524337615993
+              },
+              {
+                "position_index": 45,
+                "drive_mm": 336.41039482559336,
+                "sensor_force_n": 1.9073495280767425,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.8383491556371381
+              },
+              {
+                "position_index": 46,
+                "drive_mm": 361.4892797079451,
+                "sensor_force_n": 1.930592371068757,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.859165635267767
+              },
+              {
+                "position_index": 47,
+                "drive_mm": 386.57196365780055,
+                "sensor_force_n": 1.952967228989754,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8803108701437086
+              },
+              {
+                "position_index": 48,
+                "drive_mm": 436.7184147378598,
+                "sensor_force_n": 1.9937069315591005,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7841896046996794
+              },
+              {
+                "position_index": 49,
+                "drive_mm": 461.76762640574043,
+                "sensor_force_n": 2.011234481299049,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7257335996189029
+              },
+              {
+                "position_index": 50,
+                "drive_mm": 486.7915049972189,
+                "sensor_force_n": 2.026219008730302,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6634045192049665
+              },
+              {
+                "position_index": 51,
+                "drive_mm": 511.78332744333466,
+                "sensor_force_n": 2.038111110171345,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.5971693583609536
+              },
+              {
+                "position_index": 52,
+                "drive_mm": 536.7365751322823,
+                "sensor_force_n": 2.0463189181673798,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5270752295993271
+              },
+              {
+                "position_index": 53,
+                "drive_mm": 586.5022407691945,
+                "sensor_force_n": 2.0491774966407688,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.37599452935579175
+              },
+              {
+                "position_index": 54,
+                "drive_mm": 611.3025653240065,
+                "sensor_force_n": 2.0425630258328296,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.29564102134875325
+              }
+            ]
+          },
+          {
+            "drive": 2,
+            "sensor": 1,
+            "row_count": 50,
+            "max_abs_target_error_n": 2.220446049250313e-16,
+            "support_mm": [
+              -624.8271129267521,
+              611.3025653240061
+            ],
+            "rows": [
+              {
+                "position_index": 54,
+                "drive_mm": -624.8271129267521,
+                "sensor_force_n": 0.29564102134875336,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.29564102134875336
+              },
+              {
+                "position_index": 53,
+                "drive_mm": -617.6020152279082,
+                "sensor_force_n": 0.3759945293557916,
+                "achieved_target_n": 0.2874999999999998,
+                "target_error_n": -1.6653345369377348e-16,
+                "minimum_tension_n": 0.37599452935579164
+              },
+              {
+                "position_index": 52,
+                "drive_mm": -600.6059061918738,
+                "sensor_force_n": 0.5270752295993266,
+                "achieved_target_n": 0.28749999999999976,
+                "target_error_n": -2.220446049250313e-16,
+                "minimum_tension_n": 0.5270752295993266
+              },
+              {
+                "position_index": 51,
+                "drive_mm": -590.8725444369902,
+                "sensor_force_n": 0.5971693583609538,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.5971693583609538
+              },
+              {
+                "position_index": 50,
+                "drive_mm": -580.3428829231691,
+                "sensor_force_n": 0.6634045192049666,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6634045192049667
+              },
+              {
+                "position_index": 49,
+                "drive_mm": -569.0387025396249,
+                "sensor_force_n": 0.7257335996189029,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7257335996189029
+              },
+              {
+                "position_index": 48,
+                "drive_mm": -556.9826653755254,
+                "sensor_force_n": 0.78418960469968,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.78418960469968
+              },
+              {
+                "position_index": 47,
+                "drive_mm": -530.709104300415,
+                "sensor_force_n": 0.8899209689664577,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8803108701437086
+              },
+              {
+                "position_index": 46,
+                "drive_mm": -516.5398775089052,
+                "sensor_force_n": 0.9375260746231153,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8591656352677668
+              },
+              {
+                "position_index": 45,
+                "drive_mm": -501.7150996422306,
+                "sensor_force_n": 0.9818929617263177,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.8383491556371383
+              },
+              {
+                "position_index": 44,
+                "drive_mm": -486.2595425176139,
+                "sensor_force_n": 1.023244782633404,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.8180524337615995
+              },
+              {
+                "position_index": 43,
+                "drive_mm": -453.55519642302556,
+                "sensor_force_n": 1.0978278328038156,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7796183874260852
+              },
+              {
+                "position_index": 42,
+                "drive_mm": -436.35565937605384,
+                "sensor_force_n": 1.13152065150445,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.7617112701986093
+              },
+              {
+                "position_index": 41,
+                "drive_mm": -418.6236664302919,
+                "sensor_force_n": 1.1631136074942217,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7447920807077992
+              },
+              {
+                "position_index": 40,
+                "drive_mm": -400.3831557848016,
+                "sensor_force_n": 1.1928207793535224,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.7289230642082748
+              },
+              {
+                "position_index": 39,
+                "drive_mm": -381.6576661829629,
+                "sensor_force_n": 1.2208459401121494,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.7141512993451631
+              },
+              {
+                "position_index": 38,
+                "drive_mm": -342.8435969899879,
+                "sensor_force_n": 1.2726089599826726,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6880283359448834
+              },
+              {
+                "position_index": 37,
+                "drive_mm": -322.79966291183223,
+                "sensor_force_n": 1.2966971921835357,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798312
+              },
+              {
+                "position_index": 36,
+                "drive_mm": -302.35997739147456,
+                "sensor_force_n": 1.3198043729368831,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6665935124492838
+              },
+              {
+                "position_index": 35,
+                "drive_mm": -281.54545516562825,
+                "sensor_force_n": 1.3420775553438067,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6576588758799005
+              },
+              {
+                "position_index": 34,
+                "drive_mm": -238.87257074196168,
+                "sensor_force_n": 1.3846586311966167,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6433709167944835
+              },
+              {
+                "position_index": 33,
+                "drive_mm": -217.0530268090879,
+                "sensor_force_n": 1.4052109292330013,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6380175672190798
+              },
+              {
+                "position_index": 32,
+                "drive_mm": -194.93627845745868,
+                "sensor_force_n": 1.4254192555475043,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6338562897285521
+              },
+              {
+                "position_index": 31,
+                "drive_mm": -172.54021525006533,
+                "sensor_force_n": 1.4453845558783733,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.630885444505839
+              },
+              {
+                "position_index": 30,
+                "drive_mm": -149.88212776954992,
+                "sensor_force_n": 1.4652002381661648,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6291035890390616
+              },
+              {
+                "position_index": 29,
+                "drive_mm": -103.84610512430572,
+                "sensor_force_n": 1.5047211762052202,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.6291035890390609
+              },
+              {
+                "position_index": 28,
+                "drive_mm": -80.49984983479658,
+                "sensor_force_n": 1.52457895093746,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6308854445058382
+              },
+              {
+                "position_index": 27,
+                "drive_mm": -56.9549576359459,
+                "sensor_force_n": 1.5445924883987863,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.6338562897285516
+              },
+              {
+                "position_index": 26,
+                "drive_mm": -33.225899990413154,
+                "sensor_force_n": 1.5648218982550404,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.638017567219079
+              },
+              {
+                "position_index": 25,
+                "drive_mm": -9.326629535104985,
+                "sensor_force_n": 1.585320660128855,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.6433709167944839
+              },
+              {
+                "position_index": 24,
+                "drive_mm": 38.92923175871351,
+                "sensor_force_n": 1.6273047217360745,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6576588758799025
+              },
+              {
+                "position_index": 23,
+                "drive_mm": 63.26035799281317,
+                "sensor_force_n": 1.648859702447844,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6665935124492828
+              },
+              {
+                "position_index": 22,
+                "drive_mm": 87.71073303422827,
+                "sensor_force_n": 1.6708216375623572,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6767187464798308
+              },
+              {
+                "position_index": 21,
+                "drive_mm": 112.2687408071472,
+                "sensor_force_n": 1.6932013943283466,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.6880283359448834
+              },
+              {
+                "position_index": 20,
+                "drive_mm": 161.66325115438622,
+                "sensor_force_n": 1.7391952859103075,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7141512993451634
+              },
+              {
+                "position_index": 19,
+                "drive_mm": 186.47853246594696,
+                "sensor_force_n": 1.7627625089450936,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7289230642082749
+              },
+              {
+                "position_index": 18,
+                "drive_mm": 211.35897153633823,
+                "sensor_force_n": 1.7866487989595645,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7447920807077992
+              },
+              {
+                "position_index": 17,
+                "drive_mm": 236.29486593302317,
+                "sensor_force_n": 1.8107815435860932,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7617112701986084
+              },
+              {
+                "position_index": 16,
+                "drive_mm": 261.27684889916736,
+                "sensor_force_n": 1.8350626339591736,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.7796183874260851
+              },
+              {
+                "position_index": 15,
+                "drive_mm": 311.34320508897736,
+                "sensor_force_n": 1.8835265388024953,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8180524337615994
+              },
+              {
+                "position_index": 14,
+                "drive_mm": 336.41039482559245,
+                "sensor_force_n": 1.9073495280767423,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8383491556371367
+              },
+              {
+                "position_index": 13,
+                "drive_mm": 361.4892797079451,
+                "sensor_force_n": 1.9305923710687565,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.8591656352677672
+              },
+              {
+                "position_index": 12,
+                "drive_mm": 386.5719636578001,
+                "sensor_force_n": 1.9529672289897526,
+                "achieved_target_n": 0.2875,
+                "target_error_n": 0.0,
+                "minimum_tension_n": 0.8803108701437082
+              },
+              {
+                "position_index": 11,
+                "drive_mm": 436.7184147378598,
+                "sensor_force_n": 1.9937069315591012,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.7841896046996805
+              },
+              {
+                "position_index": 10,
+                "drive_mm": 461.76762640574043,
+                "sensor_force_n": 2.0112344812990477,
+                "achieved_target_n": 0.28749999999999987,
+                "target_error_n": -1.1102230246251565e-16,
+                "minimum_tension_n": 0.7257335996189034
+              },
+              {
+                "position_index": 9,
+                "drive_mm": 486.7915049972189,
+                "sensor_force_n": 2.026219008730302,
+                "achieved_target_n": 0.2874999999999999,
+                "target_error_n": -5.551115123125783e-17,
+                "minimum_tension_n": 0.6634045192049668
+              },
+              {
+                "position_index": 8,
+                "drive_mm": 511.78332744333466,
+                "sensor_force_n": 2.0381111101713456,
+                "achieved_target_n": 0.2875000000000001,
+                "target_error_n": 1.1102230246251565e-16,
+                "minimum_tension_n": 0.5971693583609562
+              },
+              {
+                "position_index": 7,
+                "drive_mm": 536.7365751322823,
+                "sensor_force_n": 2.04631891816738,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.5270752295993273
+              },
+              {
+                "position_index": 6,
+                "drive_mm": 586.5022407691945,
+                "sensor_force_n": 2.04917749664077,
+                "achieved_target_n": 0.28750000000000003,
+                "target_error_n": 5.551115123125783e-17,
+                "minimum_tension_n": 0.37599452935579136
+              },
+              {
+                "position_index": 5,
+                "drive_mm": 611.3025653240061,
+                "sensor_force_n": 2.04256302583283,
+                "achieved_target_n": 0.28750000000000014,
+                "target_error_n": 1.6653345369377348e-16,
+                "minimum_tension_n": 0.29564102134875486
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "artificial_gap": {
+    "artificial_infeasible_indices": [
+      2,
+      6
+    ],
+    "selected_pose_indices": [
+      3,
+      4,
+      5
+    ],
+    "rows_per_direction": [
+      3,
+      3
+    ]
+  },
+  "rejection_merge": {
+    "before_bounds": {
+      "0": [
+        -100.0,
+        110.0
+      ],
+      "1": [
+        -100.0,
+        100.0
+      ],
+      "2": [
+        -100.0,
+        100.0
+      ]
+    },
+    "after_bounds": {
+      "0": [
+        -100.0,
+        110.0
+      ],
+      "1": [
+        -100.0,
+        100.0
+      ],
+      "2": [
+        -100.0,
+        100.0
+      ]
+    },
+    "retained_measurements": 3,
+    "retained_force_reference": {
+      "force_mid_n": 0.2
+    }
+  },
+  "loops": {
+    "repeated_rejections": {
+      "code": 0,
+      "fit_sweep_counts": [
+        3
+      ],
+      "stopping_update_count": 1,
+      "replan_count": 2,
+      "collection_count": 3,
+      "application_count": 1,
+      "max_steps_stop": true,
+      "workspace_stop": false,
+      "artifact_directory": "tmp/repeated-rejections"
+    },
+    "rejection_then_failure": {
+      "code": 2,
+      "fit_sweep_counts": [
+        3
+      ],
+      "stopping_update_count": 1,
+      "replan_count": 1,
+      "collection_count": 2,
+      "application_count": 0,
+      "max_steps_stop": false,
+      "workspace_stop": false,
+      "artifact_directory": "tmp/rejection-then-transport-failure"
+    },
+    "immediate_failure": {
+      "code": 2,
+      "fit_sweep_counts": [
+        3
+      ],
+      "stopping_update_count": 1,
+      "replan_count": 0,
+      "collection_count": 1,
+      "application_count": 0,
+      "max_steps_stop": false,
+      "workspace_stop": false,
+      "artifact_directory": "tmp/immediate-transport-failure"
+    },
+    "empty_collection": {
+      "code": 2,
+      "fit_sweep_counts": [
+        3
+      ],
+      "stopping_update_count": 1,
+      "replan_count": 0,
+      "collection_count": 1,
+      "application_count": 0,
+      "max_steps_stop": false,
+      "workspace_stop": false,
+      "artifact_directory": "tmp/empty-collector"
+    },
+    "resolved_exhaustion": {
+      "code": 0,
+      "fit_sweep_counts": [
+        3
+      ],
+      "stopping_update_count": 1,
+      "replan_count": 1,
+      "collection_count": 1,
+      "application_count": 1,
+      "max_steps_stop": false,
+      "workspace_stop": true,
+      "artifact_directory": "tmp/resolved-workspace-exhaustion"
+    },
+    "swallowed_cleanup_failure": {
+      "code": 0,
+      "fit_sweep_counts": [
+        3,
+        4,
+        4,
+        5,
+        5,
+        6,
+        6
+      ],
+      "stopping_update_count": 4,
+      "replan_count": 0,
+      "collection_count": 4,
+      "application_count": 1,
+      "max_steps_stop": false,
+      "workspace_stop": false,
+      "artifact_directory": "tmp/swallowed-return-reaches-parent"
+    }
+  },
+  "limits": "No simulation/hardware accuracy or actual motion/force claim. Model rows are static ideal equilibrium; loop fit/application are stubs."
+}

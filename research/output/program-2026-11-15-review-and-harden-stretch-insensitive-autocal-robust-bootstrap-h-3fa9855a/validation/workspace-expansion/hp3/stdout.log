@@ -1,0 +1,41 @@
+; headless simulator manifest: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.headless/manifest.json
+Writing stage artifacts to: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.stages
+Writing additional info to log: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.full_auto.log
+; rough bootstrap: {'ready': False, 'sweeps': 3, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 76.18008908281172, 'restart_difference_mm': 0.00015054509913170477, 'inlier_fraction': 1.0, 'rms_mm': 0.020717965527492915, 'converged': True}
+; rough bootstrap: {'ready': True, 'sweeps': 4, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 14.271953081630757, 'restart_difference_mm': 0.00024143901578099758, 'inlier_fraction': 1.0, 'rms_mm': 0.03549310803401619, 'converged': True}
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 5
+
+; === full-auto iteration 2/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 6
+
+; === full-auto iteration 3/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 7
+
+; === full-auto iteration 4/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.json ===
+The 3rd best try so far.
+Collecting new sweep to try and beat it.
+Still has patience for 2 more attempts.
+; full-auto: stop requested (Ctrl-C); accepting best-so-far.
+; physical home compensation unavailable: independent home and measurement extension evidence is missing
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 0.4002
+; Fit quality measures agreement with the length model. Absolute anchor accuracy needs independent validation.
+Anchors (M669): M669 A0.00:-1900.34:-280.90 B1645.26:949.88:-280.90 C-1645.58:950.02:-280.90 D0.03:0.12:1899.84
+Interpretation: A Quality score below 2 indicates a near-perfect fit.

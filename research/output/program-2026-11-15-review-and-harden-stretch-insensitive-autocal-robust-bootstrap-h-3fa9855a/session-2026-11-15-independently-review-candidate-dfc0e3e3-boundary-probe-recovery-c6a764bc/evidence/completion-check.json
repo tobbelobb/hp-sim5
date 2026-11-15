@@ -1,0 +1,8 @@
+{
+  "candidate_unchanged": true,
+  "revision": "dfc0e3e3f47be4e7ae915211a42645d40e5e8746",
+  "helper_assertions": "passed",
+  "pytest": "69 passed in 3.80s",
+  "jest": "38 passed, 3 suites",
+  "report_sha256": "3fc60aa29412bc99f07aff6e1bb467cbe60de5b66b7704125b5485eac00f02fc"
+}

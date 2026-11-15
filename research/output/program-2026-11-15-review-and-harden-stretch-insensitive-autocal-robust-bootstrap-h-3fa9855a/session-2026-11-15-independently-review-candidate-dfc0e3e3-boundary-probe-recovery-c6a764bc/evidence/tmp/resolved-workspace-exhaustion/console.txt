@@ -1,0 +1,20 @@
+Writing additional info to log: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.full_auto_1.log
+; --sim: collection waits for a browser connected to ws://localhost:8790
+;        open http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790 and keep the simulator page open
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/4 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-candidate-dfc0e3e3-boundary-probe-recovery-c6a764bc/evidence/tmp/resolved-workspace-exhaustion/dataset.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 1 more attempts.
+; boundary probe rejected; retaining evidence and planning another sweep without refitting
+; full-auto: stop requested (workspace-exhausted); accepting best-so-far.
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 1
+; Fit quality measures agreement with the length model. Absolute anchor accuracy needs independent validation.
+Anchors (M669): M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00
+Interpretation: A Quality score below 2 indicates a near-perfect fit.
+Sending M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00 to http://127.0.0.1:12345

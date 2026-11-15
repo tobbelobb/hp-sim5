@@ -1,0 +1,14 @@
+**/events.jsonl
+**/*.rrd
+**/sweeps.stages/*.json
+**/same-data-fitters/fit-*.json
+!hp3/sweeps.stages/fit-004-default.json
+!hp3-final/sweeps.stages/fit-007-default.json
+!hp3-fixed/sweeps.stages/fit-005-default.json
+!hp3-local/sweeps.stages/fit-003-default.json
+!hp3-soft-verified/sweeps.stages/fit-004-default.json
+!hp4/sweeps.stages/fit-001-default.json
+!hp4-final/sweeps.stages/fit-006-default.json
+!hp4-fixed/sweeps.stages/fit-003-default.json
+!hp4-local/sweeps.stages/fit-002-default.json
+!hp4-worn-verified/sweeps.stages/fit-007-default.json

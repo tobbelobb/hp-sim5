@@ -1,0 +1,50 @@
+; headless simulator manifest: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/manifest.json
+Writing stage artifacts to: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.stages
+Writing additional info to log: /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.full_auto.log
+; rough bootstrap: {'ready': False, 'sweeps': 3, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 61.56385086746151, 'restart_difference_mm': 7.582656348859018e-05, 'inlier_fraction': 1.0, 'rms_mm': 0.026268778353451525, 'converged': True}
+; rough bootstrap: {'ready': True, 'sweeps': 4, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 11.49484175838079, 'restart_difference_mm': 8.619029063083872e-05, 'inlier_fraction': 1.0, 'rms_mm': 0.039844721834315214, 'converged': True}
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 5
+
+; === full-auto iteration 2/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 6
+
+; === full-auto iteration 3/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json ===
+The best try so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 7
+
+; === full-auto iteration 4/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json ===
+The 2nd best try so far.
+Collecting new sweep to try and beat it.
+Still has patience for 2 more attempts.
+Collected sweep nr 8
+
+; === full-auto iteration 5/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json ===
+The 4th best try so far.
+Collecting new sweep to try and beat it.
+Still has patience for 1 more attempts.
+Collected sweep nr 9
+
+; === full-auto iteration 6/20 dataset=/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json ===
+The 5th best try so far.
+; physical home compensation unavailable: independent home and measurement extension evidence is missing
+
+== Calibration summary ==
+Found parameters of ideal quality
+Fit quality score (lower is better): 0.6474
+; Fit quality measures agreement with the length model. Absolute anchor accuracy needs independent validation.
+Anchors (M669): M669 A0.00:-1899.22:-280.67 B1644.17:949.34:-280.67 C-1644.76:949.42:-280.67 D0.18:0.08:1895.35
+Interpretation: A Quality score below 2 indicates a near-perfect fit.

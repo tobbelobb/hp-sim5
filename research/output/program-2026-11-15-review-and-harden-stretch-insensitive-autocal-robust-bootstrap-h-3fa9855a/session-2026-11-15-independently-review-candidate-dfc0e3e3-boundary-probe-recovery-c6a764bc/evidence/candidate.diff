@@ -1,0 +1,824 @@
+diff --git a/autocal/_autocal_common.py b/autocal/_autocal_common.py
+index 822fabc0..5dc0c420 100644
+--- a/autocal/_autocal_common.py
++++ b/autocal/_autocal_common.py
+@@ -44,7 +44,7 @@ DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
+ # cannot drift apart on the spelling.
+ FULL_AUTO_STOP_REASON_PATIENCE = "patience"
+ SPREAD_STOP_REASON = "spread-consensus"
+-NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON)
++NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON, "workspace-exhausted")
+ _MIN_RADIUS_SCALE = 0.2
+ _MAX_RADIUS_SCALE = 5.0
+ _DEFAULT_B_BOUNDS = (0.0, 1.0)
+@@ -1596,6 +1596,9 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
+     new_sweeps = new.get("sweeps")
+     if not isinstance(base_sweeps, list) or not isinstance(new_sweeps, list):
+         raise ValueError("Invalid sweep datasets (missing sweeps list)")
++    rejections = [*base.get("acquisition_rejections", []), *new.get("acquisition_rejections", [])]
++    if not new_sweeps and new.get("acquisition_rejections"):
++        return {**base, "acquisition_rejections": rejections}
+ 
+     base_projection = resolve_projection_mode(base)
+     new_projection = resolve_projection_mode(new)
+@@ -1617,6 +1620,8 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
+     merged = dict(base)
+     merged["timestamp"] = datetime.now().isoformat()
+     merged["sweeps"] = merged_sweeps
++    if rejections:
++        merged["acquisition_rejections"] = rejections
+ 
+     base_config = merged.get("config")
+     new_config = new.get("config")
+diff --git a/autocal/autocal.py b/autocal/autocal.py
+index aaf31a55..a95cca19 100644
+--- a/autocal/autocal.py
++++ b/autocal/autocal.py
+@@ -11,7 +11,7 @@ if str(REPO_ROOT) not in sys.path:
+     sys.path.insert(0, str(REPO_ROOT))
+ 
+ from autocal._autocal_common import *  # noqa: F401,F403
+-from autocal.planning_pass import plan_next_ellipse_sweep
++from autocal.planning_pass import plan_next_ellipse_sweep, plan_ellipse_sweep
+ from autocal.equal_strain import is_equal_strain, write_sensor_force_profile, profile_policy_error
+ from autocal.home_compensation import compensate_home
+ from autocal.rough_bootstrap import (
+@@ -90,6 +90,7 @@ def full_auto_loop(
+     headless_sim=None,
+     stage_artifacts: Optional[Path] = None,
+ ) -> int:
++    max_steps = max(1, int(max_steps))
+     if work_dataset is not None:
+         dataset_path = Path(work_dataset)
+     else:
+@@ -937,8 +938,11 @@ def full_auto_loop(
+             "optimizer_runs": (plan.get("calibration") or {}).get("optimizer_runs", []),
+         }
+ 
++    rejected_probe_count = 0
+     try:
+-        for step in range(1, max(1, int(max_steps)) + 1):
++        for step in range(1, max_steps + 1):
++            if step + rejected_probe_count > max_steps:
++                break
+             if stopping.stop_requested():
+                 return _accept_best(f"stop-file {stop_file}")
+             _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+@@ -1397,42 +1401,64 @@ def full_auto_loop(
+                     return _finalize(2)
+                 return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
+ 
+-            cmd = plan.get("collect_command")
+-            if not isinstance(cmd, list) or not cmd:
+-                if plan.get("collection_error"):
+-                    _log_console("; " + str(plan["collection_error"]))
+-                _log_line("; No valid candidate to collect; stopping.")
+-                _log_console("; No valid candidate to collect; stopping.")
+-                _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
+-                return _finalize(2)
++            while True:
++                if stopping.stop_requested():
++                    return _accept_best("stop-file")
++                cmd = plan.get("collect_command")
++                if not isinstance(cmd, list) or not cmd:
++                    if plan.get("collection_error"):
++                        _log_console("; " + str(plan["collection_error"]))
++                        return _finalize(2)
++                    if _load_json(work_path).get("acquisition_rejections"):
++                        return _accept_best("workspace-exhausted")
++                    _log_console("; No valid candidate to collect; stopping.")
++                    return _finalize(2)
+ 
+-            _log_console("Collecting new sweep to try and beat it.")
+-            _log_console(f"Still has patience for {remaining} more attempts.")
+-            _log_line(f"; collecting next sweep ({selected_id})")
+-            _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
+-            with _log_context():
+-                _run_collection_command(cmd)
+-            reset_pending = False
+-
+-            base_dataset = _load_json(work_path)
+-            new_dataset = _load_json(collector_output)
+-            if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
+-                cfg = new_dataset.get("config")
+-                if isinstance(cfg, dict):
+-                    cfg["force_tuning"] = dict(plan["force_tuning"])
+-                    _write_json(collector_output, new_dataset)
+-
+-            merged = _merge_sweep_datasets(base_dataset, new_dataset)
+-            _write_json(work_path, merged)
+-            sweeps = merged.get("sweeps", [])
+-            count = len(sweeps) if isinstance(sweeps, list) else "?"
+-            _log_line(f"; merged {collector_output} -> {work_path} sweeps={count}")
+-            _log_console(f"Collected sweep nr {count}")
+-            try:
+-                if collector_output != work_path:
+-                    collector_output.unlink()
+-            except OSError:
+-                pass
++                _log_console("Collecting new sweep to try and beat it.")
++                _log_console(f"Still has patience for {remaining} more attempts.")
++                _log_line(f"; collecting next sweep ({selected_id})")
++                _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
++                try:
++                    with _log_context():
++                        _run_collection_command(cmd)
++                except subprocess.CalledProcessError as error:
++                    _log_console(f"; collection failed with exit {error.returncode}; stopping without applying calibration")
++                    return _finalize(2)
++                reset_pending = False
++
++                base_dataset = _load_json(work_path)
++                new_dataset = _load_json(collector_output)
++                if plan.get("force_args_applied") and isinstance(plan.get("force_tuning"), dict):
++                    cfg = new_dataset.get("config")
++                    if isinstance(cfg, dict):
++                        cfg["force_tuning"] = dict(plan["force_tuning"])
++                        _write_json(collector_output, new_dataset)
++
++                merged = _merge_sweep_datasets(base_dataset, new_dataset)
++                _write_json(work_path, merged)
++                if stopping.stop_requested():
++                    return _accept_best("stop-file")
++                if new_dataset.get("sweeps"):
++                    _log_console(f"Collected sweep nr {len(merged['sweeps'])}")
++                    if collector_output != work_path:
++                        collector_output.unlink(missing_ok=True)
++                    break
++                if not new_dataset.get("acquisition_rejections"):
++                    _log_console("; Collector returned neither measurements nor boundary evidence; stopping")
++                    return _finalize(2)
++                rejected_probe_count += 1
++                _log_console("; boundary probe rejected; retaining evidence and planning another sweep without refitting")
++                if step + rejected_probe_count >= max_steps:
++                    return _accept_best("max-steps")
++                collector_output = _unique_path(work_path.with_name(f"{work_path.stem}.new_{step:03d}.json"))
++                frozen = {**plan, "dataset": merged}
++                plan = plan_ellipse_sweep(
++                    frozen, work_path, candidate_count=candidate_count, delta_min=delta_min,
++                    delta_max=delta_max, regularization=regularization,
++                    min_fixed_delta_spacing_mm=min_fixed_delta_spacing_mm,
++                    write_cfg=plan.get("cfg_path"), collector_output=collector_output,
++                    collector_args=collector_args_eff, equal_strain=equal_strain,
++                )
+     except KeyboardInterrupt:
+         if applying_solution:
+             _log_console("; application interrupted; firmware outcome is unknown, stopping without retry")
+diff --git a/autocal/control/behaviors/spool_reserve.mjs b/autocal/control/behaviors/spool_reserve.mjs
+index 5752f8c3..19e0775a 100644
+--- a/autocal/control/behaviors/spool_reserve.mjs
++++ b/autocal/control/behaviors/spool_reserve.mjs
+@@ -1,5 +1,9 @@
+ // Verify only the local interval just probed, under one sensor preload. Encoder
+ // coupling is evidence of a tensioned transmission, not an empty-spool sensor.
++export class UnmeasurableSweepError extends Error {
++  constructor(message, evidence = {}) { super(message); this.evidence = evidence; }
++}
++
+ export async function probeSpoolInterval(moveAndSample, {
+   start, away, toward, driveAnchor, sensorAnchor, mmPerDeg, sigmaFloorDeg,
+ }) {
+@@ -13,18 +17,20 @@ export async function probeSpoolInterval(moveAndSample, {
+   const tracks = (sample, target) => Number.isFinite(sample.muByMotorDeg[driveAnchor])
+     && Math.abs(sample.muByMotorDeg[driveAnchor] - target / mmPerDeg[driveAnchor])
+        <= 5 * Math.max(sigmaFloorDeg, sample.sigmaByMotorDeg[driveAnchor]);
+-  const recovers = (a, b) => [driveAnchor, sensorAnchor].every(axis =>
++  const recovers = (a, b, axes = [driveAnchor, sensorAnchor]) => axes.every(axis =>
+     Number.isFinite(a.muByMotorDeg[axis]) && Number.isFinite(b.muByMotorDeg[axis])
+     && Math.abs(a.muByMotorDeg[axis] - b.muByMotorDeg[axis]) <= threshold(a, b, axis));
+   const outward = farther.muByMotorDeg[sensorAnchor] - base.muByMotorDeg[sensorAnchor];
+-  if (!recovers(base, returned)) throw new Error('Spool probe did not return to the reserved encoder state');
++  if (!recovers(base, returned, [driveAnchor])) throw new Error('Spool probe did not restore the held drive');
++  if (!recovers(base, returned)) return { accepted: false, reason: 'hysteretic sensor return' };
+   if (!tracks(base, start) || !tracks(farther, away)
+       || Math.abs(outward) <= threshold(base, farther, sensorAnchor)) {
+     return { accepted: false, reason: 'unresolved coupling or return mismatch' };
+   }
+   const nearer = await moveAndSample(toward);
+   const restored = await moveAndSample(start);
+-  if (!recovers(base, restored)) throw new Error('Spool probe did not return to the reserved encoder state');
++  if (!recovers(base, restored, [driveAnchor])) throw new Error('Spool probe did not restore the held drive');
++  if (!recovers(base, restored)) return { accepted: false, reason: 'hysteretic sensor return' };
+   const inward = nearer.muByMotorDeg[sensorAnchor] - base.muByMotorDeg[sensorAnchor];
+   const accepted = tracks(nearer, toward)
+     && Math.abs(inward) > threshold(base, nearer, sensorAnchor) && outward * inward < 0;
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 29831e5c..3a9bce49 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -15,7 +15,7 @@ import {
+ import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
+ import { ENCODER_NOISE_DEFAULTS, sampleEncoderNoise } from '../primitives/encoder_noise.mjs';
+ import { collectWithSlipRecovery } from './slip_recovery.mjs';
+-import { probeSpoolInterval } from './spool_reserve.mjs';
++import { probeSpoolInterval, UnmeasurableSweepError } from './spool_reserve.mjs';
+ import {
+   angleToLength,
+   assertFixedAnchorAngles,
+@@ -1176,7 +1176,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+     onProgress: message => console.log(`; sweep preparation: ${message.replace(/^; /, '')}`),
+   });
+   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+-  const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
++  let driveStartPointMm = initialLengths[driveAnchor] ?? 0;
+ 
+   const modesPullout = motorIds.map((_, idx) => {
+     if (idx === driveAnchor) {
+@@ -1224,10 +1224,21 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+   const endAngles = forceStable.anglesDeg;
+   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+ 
+-  const driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
++  let driveEndPointMm = endLengths[driveAnchor] ?? driveStartPointMm;
++  const rawDriveInterval = [driveEndPointMm, driveStartPointMm];
++  const rawDirection = Math.sign(driveStartPointMm - driveEndPointMm);
++  if (sensorForceProfile) {
++    const lo = Math.max(Math.min(...rawDriveInterval), sensorForceProfile.drive_mm[0]);
++    const hi = Math.min(Math.max(...rawDriveInterval), sensorForceProfile.drive_mm.at(-1));
++    if (hi - lo <= DEFAULT_FIXED_TOLERANCE_MM) {
++      throw new UnmeasurableSweepError('No measured interval lies inside the force profile support', { rawDriveInterval });
++    }
++    driveEndPointMm = rawDirection >= 0 ? lo : hi;
++    driveStartPointMm = rawDirection >= 0 ? hi : lo;
++  }
+   const totalDelta = driveStartPointMm - driveEndPointMm;
+   if (!Number.isFinite(totalDelta) || Math.abs(totalDelta) <= DEFAULT_FIXED_TOLERANCE_MM) {
+-    throw new Error('No measured drive interval remains for this sweep');
++    throw new UnmeasurableSweepError('No measured drive interval remains for this sweep', { rawDriveInterval });
+   }
+   const stepDirection = Math.sign(totalDelta);
+   const initialStepMm = Math.min(Math.abs(totalDelta), computeInitialForceSweepStepMm(baseRadiusMm));
+@@ -1302,6 +1313,10 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+     const force = resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce });
+     const tested = reserveProbe.tested_drive_mm;
+     const driveMm = angles[driveAnchor] * mmPerDeg[driveAnchor];
++    if (sensorForceProfile && (driveMm < sensorForceProfile.drive_mm[0] - DEFAULT_FIXED_TOLERANCE_MM
++        || driveMm > sensorForceProfile.drive_mm.at(-1) + DEFAULT_FIXED_TOLERANCE_MM)) {
++      throw new Error('Measurement is outside the force profile support');
++    }
+     const locallyProbed = reserveProbe.accepted && Math.abs(force - reserveProbe.sensor_force_n) < 1e-9
+       && driveMm >= Math.min(...tested) - DEFAULT_FIXED_TOLERANCE_MM
+       && driveMm <= Math.max(...tested) + DEFAULT_FIXED_TOLERANCE_MM;
+@@ -1487,10 +1502,12 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+     }
+   }
+   if (dataPoints.length < Math.min(5, sweepPoints)) {
+-    throw new Error('Insufficient coupled measurement points in the observed sweep interval');
++    throw new UnmeasurableSweepError('Insufficient coupled measurement points in the observed sweep interval',
++      { rawDriveInterval, retained_points: dataPoints.length, coupling_probes: couplingProbes });
+   }
+   return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
+     spoolReserve: { sensor_payout_mm: sensorPayoutMm, required_sensor_rewind_mm: sensorReserveMm,
++      raw_measured_drive_interval_mm: rawDriveInterval,
+       guarded_sensor_rewind_mm: reserved ? sensorPayoutMm - reserved.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor] : null,
+       guarded_start_drive_mm: reserved ? guardedStartMm : null,
+       first_drive_mm: dataPoints[0].drive_setpoint_mm, initial_half_turn_required: !probeSpoolReserve,
+@@ -1558,6 +1575,7 @@ export async function collectSweepData(send, context) {
+   }
+ 
+   const sweeps = [];
++  const rejectedSweeps = [];
+   const datasetStartMs = send.simulationClock?.now() ?? Date.now();
+ 
+   const m666BeforeReply = await send('M666');
+@@ -1773,6 +1791,7 @@ export async function collectSweepData(send, context) {
+     const recoveryEvents = [];
+     const directionForces = [];
+     const spoolReserves = [];
++    let rejected = false;
+     for (let i = 0; i < subSweeps.length; i += 1) {
+       const subCfg = subSweeps[i];
+       console.log(
+@@ -1782,58 +1801,74 @@ export async function collectSweepData(send, context) {
+       // Re-apply positioning for each sub-sweep to cover the full circle arc in both directions.
+       // This ensures fixed anchors are retightened before changing drive/sensor roles.
+       // eslint-disable-next-line no-await-in-loop
+-      const sweepResult = await collectWithSlipRecovery(send, async (forces, attempt) => {
+-        if (attempt > 0) {
+-          await returnMotorsToOriginOneAtATime(send, {
+-            motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
+-            midForce: forces.forceLow,
++      let sweepResult;
++      try {
++        sweepResult = await collectWithSlipRecovery(send, async (forces, attempt) => {
++          if (attempt > 0) {
++            await returnMotorsToOriginOneAtATime(send, {
++              motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
++              midForce: forces.forceLow,
++              forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
++            });
++          }
++          await prepareSweepPositioning(send, subCfg, {
++            motorIds,
++            axes: machineConfig.axes,
++            mmPerDeg,
++            ...forces,
+             forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
++            fixedTargets,
++            feed,
++            speedup,
+           });
+-        }
+-        await prepareSweepPositioning(send, subCfg, {
+-          motorIds,
+-          axes: machineConfig.axes,
+-          mmPerDeg,
+-          ...forces,
+-          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+-          fixedTargets,
+-          feed,
+-          speedup,
+-        });
+ 
+-        return performForceSweep(send, subCfg, {
+-          axes: machineConfig.axes,
+-          motorIds,
+-          sweepPoints,
+-          feed,
+-          speedup,
+-          mmPerDeg,
+-          datasetStartMs,
+-          ...forces,
+-          sensorForceProfile: sensorForceProfiles
+-            ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor,
+-              sweepConfig.fixedAnchors, fixedTargets)
+-            : null,
+-          collectionAttempt: attempt,
+-          noiseSampleCount,
+-          noiseSampleIntervalMs,
+-          noiseMinSamples,
+-          noiseSigmaFloorDeg,
+-          fixedAnchors: sweepConfig.fixedAnchors,
+-          fixedTargets,
++          return performForceSweep(send, subCfg, {
++            axes: machineConfig.axes,
++            motorIds,
++            sweepPoints,
++            feed,
++            speedup,
++            mmPerDeg,
++            datasetStartMs,
++            ...forces,
++            sensorForceProfile: sensorForceProfiles
++              ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor,
++                sweepConfig.fixedAnchors, fixedTargets)
++              : null,
++            collectionAttempt: attempt,
++            noiseSampleCount,
++            noiseSampleIntervalMs,
++            noiseMinSamples,
++            noiseSigmaFloorDeg,
++            fixedAnchors: sweepConfig.fixedAnchors,
++            fixedTargets,
++            forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
++            onPoint: context.onPoint,
++            baseRadiusMm: Array.isArray(m666ForCollection?.R)
++              ? m666ForCollection.R[subCfg.driveAnchor]
++              : m666ForCollection?.R,
++            sensorSpoolGearRatio: (Array.isArray(m666ForCollection?.H) ? m666ForCollection.H[subCfg.sensorAnchor] : m666ForCollection?.H ?? 1)
++              / (Array.isArray(m666ForCollection?.L) ? m666ForCollection.L[subCfg.sensorAnchor] : m666ForCollection?.L ?? 1),
++            probeSpoolReserve: options.completedSweeps >= 3,
++          });
++        }, {
++          motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
++          onRecovery: recovery => context.onRecovery?.({ ...recovery, sweep: subCfg, direction: i }),
++        });
++      } catch (error) {
++        if (!(error instanceof UnmeasurableSweepError) || options.completedSweeps < 3) throw error;
++        await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
++        await returnMotorsToOriginOneAtATime(send, {
++          motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup, midForce: forceLow,
+           forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+-          onPoint: context.onPoint,
+-          baseRadiusMm: Array.isArray(m666ForCollection?.R)
+-            ? m666ForCollection.R[subCfg.driveAnchor]
+-            : m666ForCollection?.R,
+-          sensorSpoolGearRatio: (Array.isArray(m666ForCollection?.H) ? m666ForCollection.H[subCfg.sensorAnchor] : m666ForCollection?.H ?? 1)
+-            / (Array.isArray(m666ForCollection?.L) ? m666ForCollection.L[subCfg.sensorAnchor] : m666ForCollection?.L ?? 1),
+-          probeSpoolReserve: options.completedSweeps >= 3,
+         });
+-      }, {
+-        motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
+-        onRecovery: recovery => context.onRecovery?.({ ...recovery, sweep: subCfg, direction: i }),
+-      });
++        rejectedSweeps.push({ fixed_anchors: sweepConfig.fixedAnchors, fixed_lengths: fixedTargets,
++          drive_anchor: sweepConfig.driveAnchor, sensor_anchor: sweepConfig.sensorAnchor,
++          direction: i, reason: error.message, evidence: error.evidence });
++        console.log(`; rejected unmeasurable sweep after returning to origin: ${error.message}`);
++        rejected = true;
++        break;
++      }
+       ({ forceMid, forceMax } = sweepResult.forces);
+       sensorCollectionForce = sweepResult.forces.sensorCollectionForce;
+       recoveryEvents.push(...sweepResult.recoveries.map(event => ({ ...event, direction: i })));
+@@ -1849,6 +1884,8 @@ export async function collectSweepData(send, context) {
+       aggregatedPoints.push(...remapped);
+     }
+ 
++    if (rejected) continue;
++
+     const lengths = await getCurrentLengths(send, motorIds, mmPerDeg);
+     const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
+       if (Number.isFinite(lengths[idx])) {
+@@ -1963,6 +2000,7 @@ export async function collectSweepData(send, context) {
+       },
+     },
+     sweeps,
++    acquisition_rejections: rejectedSweeps,
+   };
+ 
+   const outputDir = path.dirname(outputFile);
+diff --git a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+index a3bf80f5..5200b328 100644
+--- a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
++++ b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+@@ -192,6 +192,13 @@ test('sensor force follows the profile at every point of the sweep', async () =>
+   }
+ });
+ 
++test('only the intersection of observed travel and force-profile support is measured', async () => {
++  const result = await movingPullout({ probeSpoolReserve: true, sweepPoints: 5,
++    sensorForceProfile: { drive_mm: [-200,-100], force_n: [1,2] } }).run();
++  expect(result.dataPoints).toHaveLength(5);
++  expect(result.dataPoints.every(point => point.l_drive >= -200 && point.l_drive <= -100)).toBe(true);
++});
++
+ test('sensor force profile interpolates, holds its end values and must match the sweep direction', () => {
+   const profile = { drive_anchor: 1, sensor_anchor: 2, fixed_anchors: [0, 3], fixed_lengths: [390, -100],
+     drive_mm: [-100, 0, 200], force_n: [1, 2, 4] };
+diff --git a/autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs b/autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs
+index 2b9b0ec2..67a3dcef 100644
+--- a/autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs
++++ b/autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs
+@@ -4,6 +4,8 @@ import path from 'node:path';
+ import { collectSweepData, MACHINE_CONFIGS } from '../../behaviors/sweep_data_collection.mjs';
+ import { tuneForce } from '../../behaviors/force_tuning.mjs';
+ import { collectWithSlipRecovery } from '../../behaviors/slip_recovery.mjs';
++import { UnmeasurableSweepError } from '../../behaviors/spool_reserve.mjs';
++import { returnMotorsToOriginOneAtATime } from '../../primitives/uncalibrated_actions.mjs';
+ 
+ jest.mock('../../behaviors/force_tuning.mjs', () => ({
+   ...jest.requireActual('../../behaviors/force_tuning.mjs'),
+@@ -17,6 +19,7 @@ jest.mock('../../primitives/uncalibrated_actions.mjs', () => ({
+   ...jest.requireActual('../../primitives/uncalibrated_actions.mjs'),
+   waitForStableEncoders: jest.fn().mockResolvedValue(undefined),
+   getCurrentLengths: jest.fn().mockResolvedValue([1, 2, 3, 0]),
++  returnMotorsToOriginOneAtATime: jest.fn().mockResolvedValue(undefined),
+ }));
+ 
+ function interruptedCollection(outputFile, args = {}, interrupt = true) {
+@@ -35,6 +38,51 @@ function interruptedCollection(outputFile, args = {}, interrupt = true) {
+ beforeEach(() => {
+   tuneForce.mockReset();
+   collectWithSlipRecovery.mockReset();
++  returnMotorsToOriginOneAtATime.mockClear();
++});
++
++test.each([false, true])('only resolved later boundary failures become rejected-probe evidence, later=%s', async later => {
++  const directory = mkdtempSync(path.join(os.tmpdir(), 'probe-rejection-'));
++  const outputFile = path.join(directory, 'sweeps.json');
++  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
++  collectWithSlipRecovery.mockRejectedValue(new UnmeasurableSweepError('No coupled interval', { retained_points: 0 }));
++  try {
++    const pending = interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: later ? 3 : 0 }, false);
++    if (later) {
++      await pending;
++      const dataset = JSON.parse(readFileSync(outputFile, 'utf8'));
++      expect(dataset.sweeps).toEqual([]);
++      expect(dataset.acquisition_rejections).toHaveLength(1);
++      expect(dataset.acquisition_rejections[0]).toMatchObject({ fixed_anchors: [0,3], fixed_lengths: [0,0], reason: 'No coupled interval' });
++      expect(returnMotorsToOriginOneAtATime).toHaveBeenCalledTimes(1);
++    } else {
++      await expect(pending).rejects.toThrow('No coupled interval');
++      expect(existsSync(outputFile)).toBe(false);
++    }
++  } finally { rmSync(directory, {recursive: true, force: true}); }
++});
++
++test('failed return to origin aborts without publishing a boundary', async () => {
++  const directory = mkdtempSync(path.join(os.tmpdir(), 'probe-return-'));
++  const outputFile = path.join(directory, 'sweeps.json');
++  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
++  collectWithSlipRecovery.mockRejectedValue(new UnmeasurableSweepError('No coupled interval'));
++  returnMotorsToOriginOneAtATime.mockRejectedValueOnce(new Error('Return failed'));
++  try {
++    await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: 3 }, false)).rejects.toThrow('Return failed');
++    expect(existsSync(outputFile)).toBe(false);
++  } finally { rmSync(directory, {recursive: true, force: true}); }
++});
++
++test('ordinary collector errors never masquerade as learned reach boundaries', async () => {
++  const directory = mkdtempSync(path.join(os.tmpdir(), 'probe-transport-'));
++  const outputFile = path.join(directory, 'sweeps.json');
++  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
++  collectWithSlipRecovery.mockRejectedValue(new Error('Transport disconnected'));
++  try {
++    await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: 3 }, false)).rejects.toThrow('Transport disconnected');
++    expect(existsSync(outputFile)).toBe(false);
++  } finally { rmSync(directory, {recursive: true, force: true}); }
+ });
+ 
+ test.each([false, true])('preserves completed tuning before a later failure, tuning_failed=%s', async tuningFailed => {
+diff --git a/autocal/control/tests/behaviors/spool_reserve.test.mjs b/autocal/control/tests/behaviors/spool_reserve.test.mjs
+index d4f54d29..a3e2cf6c 100644
+--- a/autocal/control/tests/behaviors/spool_reserve.test.mjs
++++ b/autocal/control/tests/behaviors/spool_reserve.test.mjs
+@@ -32,9 +32,9 @@ test.each(['flat', 'noise', 'reversed', 'lost motion'])(
+   },
+ );
+ 
+-test('stops when reversal cannot restore the previously reserved state', async () => {
++test('hysteretic sensor return rejects relaxation after restoring the held drive', async () => {
+   const t = trial('hysteresis');
+-  await expect(t.run()).rejects.toThrow('did not return');
++  expect((await t.run()).accepted).toBe(false);
+   expect(t.visited.at(-1)).toBe(100);
+ });
+ 
+diff --git a/autocal/equal_strain.py b/autocal/equal_strain.py
+index 34b0e953..8d5cb85e 100644
+--- a/autocal/equal_strain.py
++++ b/autocal/equal_strain.py
+@@ -20,12 +20,12 @@ from autocal.pose_planning import predict_sweep_positions
+ from autocal.projection_mode import resolve_projection_mode
+ 
+ GRAVITY_M_PER_S2 = 9.81
+-# The table reaches past where sweeps turn, so the collector rarely has to extrapolate.
++# Predict a broad arc; collection is restricted to the resulting feasible table.
+ _PROFILE_PRETENSION_SHARE = 0.05
+ _PROFILE_POINTS = 60
+ # The collector's constant measurement force is this multiple of the tuned start force.
+ _COLLECTION_FORCE_MULTIPLE = 5.0
+-PROFILE_STRAIN_MODEL = "reeving-aware-v1"
++PROFILE_STRAIN_MODEL = "reeving-aware-v2"
+ 
+ 
+ def equal_strain_tensions(
+@@ -85,14 +85,19 @@ def sensor_force_profiles(
+     # Gravity can make a line go slack at the tails of the self-stress curve.
+     # Never tabulate those poses as realizable equal-strain measurements.
+     feasible = np.all(np.isfinite(tensions) & (tensions > 0.0), axis=1)
+-    positions, tensions = positions[feasible], tensions[feasible]
++    sensors = [lines.index(cfg.drive_anchor), lines.index(cfg.sensor_anchor)]
++    feasible &= np.all(tensions[:, sensors] >= minimum_force_n, axis=1)
++    # Never interpolate across an infeasible gap in the predicted arc.
++    runs = np.split(np.flatnonzero(feasible), np.flatnonzero(np.diff(np.flatnonzero(feasible)) > 1) + 1)
++    keep = max(runs, key=len)
++    positions, tensions = positions[keep], tensions[keep]
+     if len(positions) < 2:
+         raise ValueError("Equal-strain profile needs reachable positions with positive finite line tensions")
+     profiles = []
+     for drive, sensor in ((cfg.drive_anchor, cfg.sensor_anchor), (cfg.sensor_anchor, cfg.drive_anchor)):
+         drive_mm = np.linalg.norm(anchors[drive] - positions, axis=1) - np.linalg.norm(anchors[drive])
+         order = np.argsort(drive_mm)
+-        force = np.maximum(tensions[:, lines.index(sensor)], minimum_force_n)
++        force = tensions[:, lines.index(sensor)]
+         profiles.append({
+             "strain_model": PROFILE_STRAIN_MODEL,
+             "strand_tension_n": float(strand_tension_n),
+@@ -153,9 +158,12 @@ def is_equal_strain(dataset: dict) -> bool:
+ 
+ 
+ def profile_policy_error(dataset: dict):
+-    """Legacy 1:1 force tables cannot be mixed with corrected reeving tables."""
+-    if not is_equal_strain(dataset):
++    """Refuse continuation across incompatible force-table policies."""
++    flags = [(sweep.get("metadata") or {}).get("sensor_force_profile", False) for sweep in dataset.get("sweeps", [])]
++    if not any(flags) or resolve_projection_mode(dataset) is True:
+         return None
++    if not all(flags):
++        return "Cannot continue mixed profiled and constant-force measurement data"
+     advantage = ((dataset.get("config") or {}).get("m666_before_data_collection") or {}).get("U")
+     if advantage is None:
+         return "Profiled collection requires M666 U for mechanical-advantage-aware forces"
+@@ -170,8 +178,7 @@ def profile_policy_error(dataset: dict):
+     if targets and (not np.all(np.isfinite(targets)) or min(targets) <= 0
+                     or not np.allclose(targets, targets[0], rtol=1e-9, atol=0)):
+         return "Cannot combine different equal-strain targets in one refinement dataset"
+-    if np.any(advantage != 1):
+-        if any((sweep.get("metadata") or {}).get("sensor_force_profile_model") != PROFILE_STRAIN_MODEL
+-               for sweep in dataset["sweeps"]):
+-            return "Legacy profiled reeving data requires a fresh dataset for corrected equal-strain collection; offline replay remains available"
++    if any((sweep.get("metadata") or {}).get("sensor_force_profile_model") != PROFILE_STRAIN_MODEL
++           for sweep in dataset["sweeps"]):
++        return "Legacy profiled data requires a fresh dataset for corrected equal-strain collection; offline replay remains available"
+     return None
+diff --git a/autocal/planning_pass.py b/autocal/planning_pass.py
+index 5ad41a20..f2d6985d 100644
+--- a/autocal/planning_pass.py
++++ b/autocal/planning_pass.py
+@@ -85,6 +85,9 @@ def plan_ellipse_sweep(
+         fixed_delta_bounds_by_anchor=exploration_bounds,
+     )
+     if exclude_existing:
++        rejected = dataset_sweep_configs({"sweeps": dataset.get("acquisition_rejections", [])})
++        rejected_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in rejected}
++        candidates = [cfg for cfg in candidates if cfg.normalized_key(tol_mm=existing_tol_mm) not in rejected_keys]
+         existing_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in sweeps_obs}
+         candidates = [cfg for cfg in candidates
+                       if cfg.normalized_key(tol_mm=existing_tol_mm) not in existing_keys]
+@@ -149,7 +152,7 @@ def plan_ellipse_sweep(
+ 
+     collection_fallback = False
+     best_cfg = ranked[0][1] if ranked else None
+-    if best_cfg is None and candidates:
++    if best_cfg is None and candidates and machine_type not in ("hangprinter_3", "hangprinter_4"):
+         # The fit can be too degenerate to score any candidate. The generated
+         # candidates still satisfy machine constraints, so keep collection
+         # moving with a moderate novel candidate from the current dataset.
+diff --git a/autocal/tests/test_autocal_no_collect.py b/autocal/tests/test_autocal_no_collect.py
+index b8cc9d9a..f545e334 100644
+--- a/autocal/tests/test_autocal_no_collect.py
++++ b/autocal/tests/test_autocal_no_collect.py
+@@ -1,4 +1,5 @@
+ import copy
++import subprocess
+ 
+ import numpy as np
+ import pytest
+@@ -72,6 +73,60 @@ def test_build_semi_auto_parser_accepts_no_collect():
+     assert args.no_collect is True
+ 
+ 
++@pytest.mark.parametrize('transport_failure', [False, True])
++def test_resolved_boundary_replans_without_refitting_but_transport_failure_aborts(tmp_path, monkeypatch, transport_failure):
++    import autocal.history_selection as selection
++    path = tmp_path / 'sweeps.json'
++    _write_dataset(path, sweeps=3)
++    fits, collects, replans, sent = [], [], [], []
++    def fitted(data_path, **kwargs):
++        data = ac._load_json(data_path)
++        fits.append(len(data['sweeps']))
++        plan = _fake_plan()
++        plan.update(dataset=data, cfg_path=tmp_path/'cfg.txt', collect_command=['node', 'collector', '--output-file', str(kwargs['collector_output'])])
++        return plan
++    def replan(frozen, data_path, **kwargs):
++        assert fits == [3]
++        assert len(frozen['dataset']['sweeps']) == 3
++        assert len(frozen['dataset']['acquisition_rejections']) == 1
++        replans.append(frozen)
++        return {**frozen, 'collect_command': ['node', 'collector', '--output-file', str(kwargs['collector_output'])]}
++    real_run = ac.subprocess.run
++    def collect(command, **kwargs):
++        if command[0] != 'node':
++            return real_run(command, **kwargs)
++        collects.append(command)
++        if transport_failure:
++            raise subprocess.CalledProcessError(1, command)
++        output = ac.Path(command[command.index('--output-file')+1])
++        if len(collects) == 1:
++            rejected = ac._load_json(path)
++            rejected['sweeps'] = []
++            rejected['acquisition_rejections'] = [{**_valid_sweep(1), 'reason': 'No coupled interval'}]
++            ac._write_json(output, rejected)
++        else:
++            _write_dataset(output, sweeps=1)
++    monkeypatch.setattr(ac, 'plan_next_ellipse_sweep', fitted)
++    monkeypatch.setattr(ac, 'plan_ellipse_sweep', replan)
++    monkeypatch.setattr(ac, '_print_ellipse_plan', lambda *a, **kw: None)
++    monkeypatch.setattr(ac, '_plan_hits_underconstrained_penalty', lambda *a: False)
++    monkeypatch.setattr(ac.StoppingPolicy, 'update', lambda *a, **kw: StopDecision(1, True, False, None, None, 'accept' if 4 in fits else 'collect'))
++    monkeypatch.setattr(selection, 'score_future_sweeps', lambda *a, **kw: (.1, 1))
++    monkeypatch.setattr(ac.subprocess, 'run', collect)
++    monkeypatch.setattr(ac.RRFFirmwareProvider, 'send_gcode', lambda *a: sent.append(a) or '')
++    code = ac.main(['--sim', '--machine-type', 'slideprinter', '--dataset', str(path), '--max-steps', '4',
++                    '--collector-args', '--server', 'http://127.0.0.1:12345'])
++    data = ac._load_json(path)
++    if transport_failure:
++        assert code == 2 and not sent and not replans
++        assert len(data['sweeps']) == 3
++    else:
++        assert code == 0 and len(sent) == 1 and len(collects) == 2 and len(replans) == 1
++        assert fits[0] == 3 and all(count == 4 for count in fits[1:])
++        assert len(data['sweeps']) == 4 and len(data['acquisition_rejections']) == 1
++        assert path.with_name('sweeps.new_001.json').exists()
++
++
+ @pytest.mark.parametrize("mode", ["apply_interrupt", "stop_during_fit"])
+ def test_final_application_does_not_retry_and_preserves_stop_reason(tmp_path, monkeypatch, capsys, mode):
+     dataset = tmp_path / "sweeps.json"
+diff --git a/autocal/tests/test_equal_strain.py b/autocal/tests/test_equal_strain.py
+index a0d00e5e..659bb07c 100644
+--- a/autocal/tests/test_equal_strain.py
++++ b/autocal/tests/test_equal_strain.py
+@@ -4,6 +4,7 @@ import numpy as np
+ import pytest
+ 
+ from autocal.active_learning import SweepConfig
++from autocal.pose_planning import predict_sweep_positions
+ from autocal.equal_strain import (
+     GRAVITY_M_PER_S2,
+     equal_strain_tensions,
+@@ -59,6 +60,28 @@ def test_profile_file_needs_the_line_description_and_tuned_forces(tmp_path):
+     assert profiles[0]["force_n"] == pytest.approx(expected[0]["force_n"])
+ 
+ 
++def test_tabulated_sensor_forces_preserve_the_firmware_strain_invariant():
++    advantage = np.array([2., 2., 2., 4.])
++    profiles = sensor_force_profiles(ANCHORS, CFG, minimum_force_n=.4,
++                                      mechanical_advantage=advantage, **OPTIONS)
++    positions = predict_sweep_positions(ANCHORS, CFG, 60, .05)
++    for profile in profiles:
++        drive, sensor = profile['drive_anchor'], profile['sensor_anchor']
++        predicted_drive = np.linalg.norm(ANCHORS[drive] - positions, axis=1) - np.linalg.norm(ANCHORS[drive])
++        assert len(profile['drive_mm']) < len(positions)  # infeasible tails are removed, never clamped
++        for drive_mm, force in zip(profile['drive_mm'], profile['force_n']):
++            index = np.argmin(np.abs(predicted_drive - drive_mm))
++            assert predicted_drive[index] == pytest.approx(drive_mm)
++            vectors = ANCHORS - positions[index]
++            lengths = np.linalg.norm(vectors, axis=1)
++            directions = (vectors / lengths[:, None]).T
++            carrying = np.linalg.lstsq(directions, [0., 0., WEIGHT], rcond=None)[0]
++            null = np.linalg.svd(directions)[2][-1]
++            tensions = carrying + null * (force - carrying[sensor]) / null[sensor]
++            flex_times_ea = tensions * (advantage * lengths + EXTRA) / (advantage**2 * STRANDS)
++            assert null @ (flex_times_ea - (lengths + EXTRA / advantage)) == pytest.approx(0., abs=1e-8)
++
++
+ def test_hp4_invariant_matches_the_firmware_flex_equation_with_unequal_reeving():
+     position = np.array([250., -150., 800.])
+     advantage = np.array([2., 2., 2., 4.])
+@@ -91,7 +114,7 @@ def test_corrected_reeving_profiles_cannot_continue_legacy_data():
+     assert profile_policy_error(dataset) is None
+     sweep["metadata"].pop("sensor_force_profile_model")
+     dataset["config"]["m666_before_data_collection"]["U"] = [1]*4
+-    assert profile_policy_error(dataset) is None
++    assert "fresh dataset" in profile_policy_error(dataset)
+ 
+ 
+ def test_force_retuning_does_not_change_the_existing_datasets_strain_target(tmp_path):
+diff --git a/autocal/tests/test_rough_bootstrap.py b/autocal/tests/test_rough_bootstrap.py
+index 121cfd41..7d5c68b7 100644
+--- a/autocal/tests/test_rough_bootstrap.py
++++ b/autocal/tests/test_rough_bootstrap.py
+@@ -123,7 +123,8 @@ def test_corrupt_complete_dataset_is_rejected_before_headless_context_entry(tmp_
+     assert error.value.code == 2
+ 
+ 
+-def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path, monkeypatch):
++@pytest.mark.parametrize('mixed', [False, True])
++def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path, monkeypatch, mixed):
+     from autocal.headless_sim import HeadlessSimulation
+     path = tmp_path / "legacy.json"
+     data = _dataset()
+@@ -132,6 +133,8 @@ def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path
+     for i, sweep in enumerate(data['sweeps']):
+         sweep['id'] = f'sweep_{i:03d}'
+         sweep['metadata'] = {'sensor_force_profile': True}
++    if mixed:
++        data['sweeps'][0]['metadata']['sensor_force_profile'] = False
+     path.write_text(json.dumps(data))
+     def forbidden(*args):
+         raise AssertionError('Headless context must not start')
+diff --git a/autocal/tests/test_stage_replay.py b/autocal/tests/test_stage_replay.py
+index 98b293da..80293a53 100644
+--- a/autocal/tests/test_stage_replay.py
++++ b/autocal/tests/test_stage_replay.py
+@@ -246,6 +246,19 @@ def test_exhausted_candidates_do_not_recollect_existing_sweeps(tmp_path):
+     assert not plan["cfg_path"].exists()
+ 
+ 
++def test_boundary_rejection_is_excluded_when_spacing_is_relaxed(tmp_path):
++    fit = _frozen_fit(False)
++    first = plan_ellipse_sweep(fit, tmp_path / 'sweeps.json', candidate_deltas=[0., 15.],
++                               min_fixed_delta_spacing_mm=100.)
++    cfg = first['best_cfg']
++    fit['dataset']['acquisition_rejections'] = [{'fixed_anchors': list(cfg.fixed_anchors),
++        'fixed_lengths': list(cfg.fixed_deltas_mm), 'drive_anchor': cfg.drive_anchor,
++        'sensor_anchor': cfg.sensor_anchor}]
++    rejected = plan_ellipse_sweep(fit, tmp_path / 'sweeps.json', candidate_deltas=[0., 15.],
++                                  min_fixed_delta_spacing_mm=100.)
++    assert rejected['best_cfg'].normalized_key(tol_mm=10.) != cfg.normalized_key(tol_mm=10.)
++
++
+ def test_spacing_exhaustion_relaxes_spacing_without_recollecting_existing(tmp_path):
+     fit = _frozen_fit(False)
+     plan = plan_ellipse_sweep(fit, tmp_path / "sweeps.json", candidate_deltas=[0.0, 15.0],
+diff --git a/autocal/tests/test_workspace.py b/autocal/tests/test_workspace.py
+index b6a7d076..f2b15f9c 100644
+--- a/autocal/tests/test_workspace.py
++++ b/autocal/tests/test_workspace.py
+@@ -2,6 +2,7 @@ import copy
+ 
+ from autocal.active_learning import generate_candidate_sweeps
+ from autocal.workspace import exploration_grid
++from autocal._autocal_common import _merge_sweep_datasets
+ 
+ 
+ def _data():
+@@ -43,3 +44,15 @@ def test_recorded_free_line_motion_can_seed_a_legacy_zero_fixed_target_dataset()
+     data["sweeps"][0]["fixed_lengths"] = [0., 0.]
+     data["sweeps"][0]["data_points"][0]["l_drive"] = 100.
+     assert exploration_grid(data, 9)[1][3][0] == -100.
++
++
++def test_failed_probe_records_boundary_without_changing_measurements_or_force_reference():
++    base = {**_data(), 'machine_type': 'hangprinter_3', 'dimensions': 3}
++    rejected = {**copy.deepcopy(base), 'sweeps': [], 'config': {'force_tuning': {'force_mid_n': 99.}},
++                'acquisition_rejections': [{'fixed_anchors': [0,3], 'fixed_lengths': [0.,-780.],
++                                            'drive_anchor': 1, 'sensor_anchor': 2, 'reason': 'uncoupled'}]}
++    merged = _merge_sweep_datasets(base, rejected)
++    assert merged['sweeps'] == base['sweeps']
++    assert merged['config'] == base['config']
++    assert len(merged['acquisition_rejections']) == 1
++    assert exploration_grid(merged, 9)[1] == exploration_grid(base, 9)[1]

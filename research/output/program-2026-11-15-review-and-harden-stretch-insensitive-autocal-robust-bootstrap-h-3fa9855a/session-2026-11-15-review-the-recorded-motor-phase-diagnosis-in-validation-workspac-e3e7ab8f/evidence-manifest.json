@@ -1,0 +1,133 @@
+{
+  "review_source_revision": "5251f749b24eaf0db851a8a3174ed6023f511e83",
+  "files": {
+    "src/wasm/cable_solver/src/engine.rs": {
+      "sha256": "4150b7fd18ce7e5efa5cedc5c738ca263b9f292140fb3410be612dde25698b77",
+      "size_bytes": 98869
+    },
+    "src/wasm/cable_solver/src/lib.rs": {
+      "sha256": "dbe7dd86752a971ea403b8dae7183f9aee7e3a3b8b6396fcc7f9fb44d8c5a7c4",
+      "size_bytes": 33103
+    },
+    "src/js/cable_joints_3d/rust_physics_engine.js": {
+      "sha256": "79dfff40be1da2ada410e55bc41fb55c696b67f3d991985d753c937232a7fb4a",
+      "size_bytes": 20537
+    },
+    "hp-sim-3d/app/torqueModeSystem.js": {
+      "sha256": "601ccf3bcdd9d1a84ee406d2e26364cf264b6e5a3722c87020d4375fa2e2519d",
+      "size_bytes": 6366
+    },
+    "hp-sim-3d/app/externalCommandSocket.js": {
+      "sha256": "6c8f6c8c49a10ea3c408652e00118802e3243f6d34a77f8ad7cb3c7479fcd519",
+      "size_bytes": 13638
+    },
+    "hp-sim-3d/app/flightRecorderSnapshot.js": {
+      "sha256": "c8e45dca4b927c3a7da9d11d48bc65c244fb8877da84188281ef6240168f6627",
+      "size_bytes": 8327
+    },
+    "hp-sim-3d/app/scene/machineEntityBuilders.js": {
+      "sha256": "c42ffc0ebc3246ea3bd288a34085031fca8f9aff91f44b2703519e0d770297be",
+      "size_bytes": 12292
+    },
+    "scripts/hangprinter_flight_recorder.py": {
+      "sha256": "ace671fe13f216b37ac1cc865d4b9135b875d62c6875103c05b33894de904842",
+      "size_bytes": 29180
+    },
+    "RRF/ReprapFirmware/src/Movement/Kinematics/HangprinterKinematics.cpp": {
+      "sha256": "c2cb0ef3c03869a4acd9d122c606fbdad0a1eecc059f6cc604df730c13cdb2fa",
+      "size_bytes": 66749
+    },
+    "RRF/host/can/CanInterfaceHost.cpp": {
+      "sha256": "5a0ce62e21ceca62c88590bb0853a9a489fb6e4aedb63bbccf3a68bb47e50ebe",
+      "size_bytes": 12300
+    },
+    "autocal/control/behaviors/sweep_data_collection.mjs": {
+      "sha256": "b4c6f0bc36fd35d387f0b30d19acd504ff01cd5baf5c334e994978e48be80ad5",
+      "size_bytes": 77762
+    },
+    "autocal/control/primitives/encoder_noise.mjs": {
+      "sha256": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f",
+      "size_bytes": 4349
+    },
+    "autocal/control/primitives/encoder_utils.mjs": {
+      "sha256": "83c76ee1efd668945dba156d06579071ebfadf3bb7a0b4817b2199427f922b8c",
+      "size_bytes": 12961
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/report.md": {
+      "sha256": "43597028727c2a5ca266928a309713e5270dbb405d2281ef0ee764f3ae2f03b3",
+      "size_bytes": 15539
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/force_phase.py": {
+      "sha256": "709e3fd3ebcda0dc04fd2fd65227f0b79840a71531d476f5eb900e86791f6a60",
+      "size_bytes": 2744
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/analyze_recording.py": {
+      "sha256": "1349f74c2aee6a22ceea340f2a30b34f05bbb54b7e5df6edb4599f2787bee755",
+      "size_bytes": 8449
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.json": {
+      "sha256": "e60c5641e074c8951a255059fb57a7d7a6911c4e0dc6dfcff3bccf188f28647a",
+      "size_bytes": 364597
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/physics-samples.npz": {
+      "sha256": "b2e822a527f7823060a7e6e8d69b6b7c5a3a37d5e84fe00edd6a7a8f3f027622",
+      "size_bytes": 16688
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/physics-diagnostics.json": {
+      "sha256": "e90be3bfea350a2142f13432f4981757d7d1598970f90e7d629c337b207b8eb5",
+      "size_bytes": 2128
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/force-phase.json": {
+      "sha256": "fcaf23687beaa3b4a6832de9392248c5708e73cb5287fb71c76b9fcb150bc4ab",
+      "size_bytes": 1725
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/input-scene.usda": {
+      "sha256": "421ff4a7e23cda86c3d89964a29399675f7ee9736e8063baee2bd2b7b3c13e14",
+      "size_bytes": 23118
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/manifest.json": {
+      "sha256": "71348b03007ed81f48833dcb30fcc112d355e4457b3eaa9d58c2e0acb8be985b",
+      "size_bytes": 8160
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/baked-scene.usda": {
+      "sha256": "b7a21b0b56b8b765d8069cff2dd2b53127717504cb2472a9d017412a9fccee74",
+      "size_bytes": 24039
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.headless/hangprinter-20261115T162331.849584Z-adb78b79.rrd": {
+      "sha256": "dc0343840caaa0901fa296d896acdfc6406880fde0b8618f7fddb80f94fcbfa3",
+      "size_bytes": 405149872
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.json": {
+      "sha256": "41c6cc74148118e565261d4d5799b7c8f35f4ff609bd12398e7734277e1b12f1",
+      "size_bytes": 327606
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/physics-samples.npz": {
+      "sha256": "f3b8e30589c795e5c134862d59aaba67b66df7a8edf823a6e9b86fe2bdf40802",
+      "size_bytes": 15638
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/physics-diagnostics.json": {
+      "sha256": "ca895ffb279f1bda967d808c6059dbd316f2a045c744fe6d000d963020e5318f",
+      "size_bytes": 2160
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/force-phase.json": {
+      "sha256": "d531453305be2a8ba5dd591bb9de13a6895f5fcedabc7005884906dfd47cca69",
+      "size_bytes": 1724
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/input-scene.usda": {
+      "sha256": "748d97eccbf5aec63013325caf9224661c958e4cf14033093873cda8c515005f",
+      "size_bytes": 64069
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/manifest.json": {
+      "sha256": "23136092aa4669aace5d353a626433d9c6177645a73142ae98f7ad601b0daf27",
+      "size_bytes": 8097
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/baked-scene.usda": {
+      "sha256": "9c4e266289e4440cf0602b1dab42f214065b33e9c3ff3755f821c755a2cf4573",
+      "size_bytes": 71853
+    },
+    "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.headless/hangprinter-20261115T162331.876939Z-293b3438.rrd": {
+      "sha256": "de9d636e0a7ea5015e10ec0a1fd8243c4fc9f894da224274bb2182aaef7684ad",
+      "size_bytes": 476078345
+    }
+  }
+}
