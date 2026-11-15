@@ -156,6 +156,8 @@ One result sentence per session; follow the report for evidence.
 
 - [Hangprinter simulator UI and rendering review](session-2026-11-12-you-are-a-reviewer-do-not-modify-any-files-in-the-repository-exc-f163f8ce/report.md) — The review found toolbar overflow, floor occlusion risk and a rendering-resource leak, while all 102 UI-related JavaScript tests passed; see the report.
 
+- [Production pose, planning and force integration review](program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-production-integration-of-pose-fit-information-planning-a-84abd4be/report.md) — A synthetic independent review found a force-profile lookup collision and showed that direct reuse of the HP3 reachability and fixed-circle models fails for representative four-high and cube layouts; see the report for scope, other integration concerns and rollout plan.
+
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
 - [Saved HP4 recording Viewer inspection](session-338606b11fde452bb3886bb861a7e96c/report.md) — Retrospective summary of saved evidence, written 2026-10-08.

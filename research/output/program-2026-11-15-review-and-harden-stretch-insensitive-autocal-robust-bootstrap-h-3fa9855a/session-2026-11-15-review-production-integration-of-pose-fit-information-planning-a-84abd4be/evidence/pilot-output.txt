@@ -1,0 +1,4 @@
+same pair, different fixed target: {"overlap_mm": [-611.1865499915161, 748.4868686281052], "max_force_difference_N": 1.1152468387650776, "at_drive_mm": -594.8541365546438}
+synthetic skycam: {"predicted_positions": 0, "home_tensions_N": [0.34359213546813816, 0.34359213546813827, 0.3435921354681384, 0.3435921354681385]}
+synthetic cube fixed lengths: {"circle_points": 360, "max_abs_error_per_fixed_line_mm": [4.547473508864641e-13, 4.547473508864641e-13, 1825.5964837589713, 1825.5964837589713, 1825.5964837589713, 1825.5964837589713]}
+skycam achieved mean strand tension N: 0.3435921354681384
