@@ -1,0 +1,11 @@
+Review target: a2f47d14fa183337bd0b9242dd1fc91e76d3f25b
+Environment: Python 3.12.3; numpy 2.4.3; scipy 1.17.1; pytest 9.0.2; Node v24.14.1.
+This review worktree initially had no .venv; .venv was linked locally to /home/torbjorn/repos/hp-sim5/.venv. No packages were installed.
+Command, from repository root:
+.venv/bin/python -m pytest -q research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-independently-review-the-default-off-terminal-validation-pilot-f-8b45b54e/evidence/test_review.py autocal/tests/test_terminal_validation.py autocal/tests/test_predictive_validation.py autocal/tests/test_stage_replay.py autocal/tests/test_stopping.py autocal/tests/test_autocal_no_collect.py autocal/tests/test_headless_sim.py -m 'not slow and not heavy'
+Result:
+........................................................................ [ 70%]
+..............................                                           [100%]
+102 passed, 15 deselected in 1.83s
+
+The review tests are regression counterexamples that pass when they observe the reviewed behavior, including bugs; a passing test is not an endorsement. Mocked collector and sender tests do not communicate with a service. Node tests extract/evaluate small parser and helper fragments from source, without loading the collector or starting physics. Headless lifecycle tests instantiate no simulator process. pytest temporary files are outside the parent pilots.
