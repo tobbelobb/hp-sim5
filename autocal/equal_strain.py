@@ -17,6 +17,7 @@ import numpy as np
 
 from autocal.active_learning import SweepConfig
 from autocal.pose_planning import predict_sweep_positions
+from autocal.projection_mode import resolve_projection_mode
 
 GRAVITY_M_PER_S2 = 9.81
 # The table reaches past where sweeps turn, so the collector rarely has to extrapolate.
@@ -123,4 +124,5 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
 def is_equal_strain(dataset: dict) -> bool:
     """Whether every sweep of the dataset was measured with a sensor force profile."""
     sweeps = dataset.get("sweeps", [])
-    return bool(sweeps) and all((sweep.get("metadata") or {}).get("sensor_force_profile") for sweep in sweeps)
+    return (resolve_projection_mode(dataset) is not True and bool(sweeps)
+            and all((sweep.get("metadata") or {}).get("sensor_force_profile") for sweep in sweeps))

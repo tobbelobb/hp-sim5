@@ -7,6 +7,8 @@ to bound arbitrary systematic friction or stretch errors.
 from __future__ import annotations
 
 import numpy as np
+import json
+from pathlib import Path
 
 from autocal.active_learning import dataset_sweep_configs, generate_candidate_sweeps
 from autocal.calibrate import build_anchor_initial_guess
@@ -20,6 +22,38 @@ from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix
 MAX_EXTRA_ROUGH_SWEEPS = 9
 MAX_ROUGH_ANCHOR_STD_MM = 25.0
 ROUGH_LINE_SIGMA_MM = 0.5
+
+
+def write_bootstrap_state(dataset_path, stage, **details):
+    path = Path(dataset_path).with_suffix(".bootstrap_state.json")
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps({"stage": stage, **details}, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def bootstrap_state_error(dataset_path):
+    """Refuse an incomplete physical pass; a restart cannot establish its encoder origin."""
+    path = Path(dataset_path)
+    state_path = path.with_suffix(".bootstrap_state.json")
+    if state_path.exists():
+        try:
+            state = json.loads(state_path.read_text())
+        except (OSError, ValueError):
+            return f"Unreadable bootstrap state: {state_path}"
+        if not isinstance(state, dict) or state.get("stage") != "complete":
+            return f"Incomplete bootstrap ({state_path}); use a fresh dataset path after reestablishing the encoder origin. Partial and rough data are retained."
+        if not path.exists():
+            return f"Completed bootstrap dataset is missing: {path}"
+    elif path.exists() and path.with_suffix(".rough_bootstrap.json").exists():
+        # Recognize interrupted passes from before the explicit state marker.
+        try:
+            dataset = json.loads(path.read_text())
+            from autocal.equal_strain import is_equal_strain
+            if not is_equal_strain(dataset):
+                return f"Unfinished legacy bootstrap: {path}; use a fresh dataset path. Rough data are retained."
+        except (OSError, ValueError, TypeError):
+            return f"Unreadable legacy bootstrap dataset: {path}"
+    return None
 
 
 def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):

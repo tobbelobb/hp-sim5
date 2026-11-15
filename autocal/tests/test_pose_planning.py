@@ -1,4 +1,6 @@
 import numpy as np
+import pytest
+import autocal.planning_pass as planning
 
 from autocal.active_learning import SweepConfig, generate_candidate_sweeps
 from autocal.pose_planning import SWEEP_PRETENSION_SHARE, predict_sweep_positions, rank_candidates_pose_information
@@ -40,3 +42,24 @@ def test_data_on_one_d_sphere_makes_a_shortened_d_line_the_best_next_sweep():
     assert len(ranked) == 3
     assert ranked[0][0] >= ranked[1][0] >= ranked[2][0]
     assert all(cfg.fixed_deltas_mm[cfg.fixed_anchors.index(3)] < 0.0 for _, cfg in ranked)
+
+
+@pytest.mark.parametrize("equal_strain", [False, True])
+def test_profiled_data_cannot_silently_collect_a_constant_force_sweep(tmp_path, monkeypatch, equal_strain):
+    cfg = SweepConfig((0, 3), (390.0, -150.0), 1, 2)
+    dataset = {"machine_type": "hangprinter_4", "num_anchors": 4, "dimensions": 3,
+               "config": {}, "sweeps": [{"fixed_anchors": [0, 3], "fixed_lengths": [390., 0.],
+                   "drive_anchor": 1, "sensor_anchor": 2, "data_points": [{"l_drive": 0., "l_sensor": 0.}],
+                   "metadata": {"sensor_force_profile": True}}]}
+    fit = {"dataset": dataset, "dataset_for_estimation": dataset, "anchors": ANCHORS,
+           "machine_type": "hangprinter_4", "num_anchors": 4, "dimensions": 3,
+           "spool_model_params": None, "sweep_configs_for_info": [], "info": np.eye(9),
+           "pose_fit": {"robust_scale_mm": .02},
+           "information_settings": {"fd_eps_mm": 1., "regularization": 1e-6},
+           "collection_settings": {"find_radii_mode": "off", "find_buildup_mode": "off",
+                                   "base_radii": None, "buildup_factor": None}}
+    monkeypatch.setattr(planning, "generate_candidate_sweeps", lambda **kw: [cfg])
+    monkeypatch.setattr(planning, "rank_candidates_pose_information", lambda *a, **kw: [(1., cfg)])
+    plan = planning.plan_ellipse_sweep(fit, tmp_path / "sweeps.json", equal_strain=equal_strain)
+    assert plan["collect_command"] is None
+    assert plan["collection_error"]

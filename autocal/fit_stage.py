@@ -73,6 +73,12 @@ def fit_ellipse_dataset(
     warnings: List[str] = []
     if remapped_points > 0:
         warnings.append(f"point_role_remap_applied:{int(remapped_points)}")
+    prefer_zero_tension_angles = _uses_projected_angles(dataset, collector_args)
+    if prefer_zero_tension_angles:
+        use_noise_mean = False
+        if fit_home_offsets:
+            warnings.append("home_offsets_skipped_for_projected_data")
+        fit_home_offsets = False
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
     fit_structure_levels = _parse_fit_structure_levels(fit_structure)
@@ -80,7 +86,7 @@ def fit_ellipse_dataset(
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
     profiles = [bool((sweep.get("metadata") or {}).get("sensor_force_profile")) for sweep in dataset["sweeps"]]
-    if any(profiles) and not all(profiles):
+    if not prefer_zero_tension_angles and any(profiles) and not all(profiles):
         raise ValueError("Dataset mixes constant-force and profiled sweeps; fit each measurement model separately")
     if is_equal_strain(dataset) and (search_radii or search_buildup):
         raise ValueError("Spool fitting on profiled sweeps is not supported; use a constant-force dataset")
@@ -143,12 +149,6 @@ def fit_ellipse_dataset(
     home_offsets_mm = np.zeros(int(num_anchors))
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
-    prefer_zero_tension_angles = _uses_projected_angles(dataset, collector_args)
-    if prefer_zero_tension_angles:
-        use_noise_mean = False
-        if fit_home_offsets:
-            warnings.append("home_offsets_skipped_for_projected_data")
-        fit_home_offsets = False
     _annotate_dataset_noise_model(
         dataset,
         line_width_mm=float(line_width),

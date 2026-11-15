@@ -62,3 +62,10 @@ def test_dataset_is_equal_strain_only_when_every_sweep_used_a_profile():
     assert is_equal_strain({"sweeps": [profiled, profiled]})
     assert not is_equal_strain({"sweeps": [profiled, {"metadata": {"sensor_force_profile": False}}]})
     assert not is_equal_strain({"sweeps": [profiled, {}]})
+    assert not is_equal_strain({"sweeps": []})
+
+
+def test_historical_projected_profile_markers_do_not_describe_tensioned_measurements():
+    sweep = {"metadata": {"sensor_force_profile": True},
+             "data_points": [{"raw_angles_zero_tension_deg": [0.0]*4}]}
+    assert not is_equal_strain({"num_anchors": 4, "sweeps": [sweep]})

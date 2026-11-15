@@ -197,22 +197,26 @@ def plan_ellipse_sweep(
         collector_args_eff.append("--return-to-origin")
 
     cmd = None
+    collection_error = None
     if best_cfg is not None:
-        if equal_strain and is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4"):
+        if is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4"):
             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
-            if write_sensor_force_profile(profile_path, dataset, anchors, [best_cfg]):
+            if not equal_strain:
+                collection_error = "Cannot append constant-force measurements to profiled data; use a fresh dataset for --no-equal-strain"
+            elif write_sensor_force_profile(profile_path, dataset, anchors, [best_cfg]):
                 collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
-        cmd = _suggested_collect_command(
-            cfg_path,
-            best_cfg,
-            machine_type=machine_type,
-            output_file=collector_output,
-            extra_args=collector_args_eff,
-        )
+            else:
+                collection_error = "Cannot continue profiled collection without M666 W/N/Y and tuned forces"
+        if collection_error is None:
+            cmd = _suggested_collect_command(
+                cfg_path, best_cfg, machine_type=machine_type,
+                output_file=collector_output, extra_args=collector_args_eff,
+            )
 
     return {**fit, "ranked": ranked, "best_cfg": best_cfg, "cfg_path": cfg_path,
             "collection_fallback": collection_fallback,
             "collect_command": cmd, "force_tuning": force_tuning,
+            "collection_error": collection_error,
             "force_args_applied": force_args_applied}
 
 
