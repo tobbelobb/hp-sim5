@@ -32,6 +32,11 @@
       "id": "session-2026-11-15-review-fixes-to-bootstrap-restart-refusal-measurement-model-puri-8dda2804",
       "question": "Review fixes to bootstrap restart refusal, measurement-model purity and historical projection handling, and the independent joint range benchmark against the prior review findings.",
       "directory": "session-2026-11-15-review-fixes-to-bootstrap-restart-refusal-measurement-model-puri-8dda2804"
+    },
+    {
+      "id": "session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3",
+      "question": "Test one bounded terminal-validation sweep that compares frozen final autocal candidates on common fresh data, without refitting the held-out sweep; determine whether it reduces observed final-selection regret.",
+      "directory": "session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3"
     }
   ]
 }

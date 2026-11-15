@@ -9,7 +9,7 @@ The historical single-height offset failure and the soft-line battery failure sh
 ## Implemented behavior
 
 - `--fit-home-offsets` defaults on in the CLI and library composition. `--no-fit-home-offsets` genuinely disables it, including on profiled data, and can be set per full-auto variant. Joint spool/offset fitting is unsupported and rejected explicitly; historical spool regressions use their original no-offset model.
-- The rough pass checks convergence, two scaled starts, full local rank, at least 80% inliers, and <=25 mm estimated parameter standard deviation with a minimum 0.5 mm line-error assumption. It collects another informative constant-force sweep when needed, up to nine extras, then stops if unreliable. On the saved nominal run the three-sweep estimate fails at 76.15 mm; one added sweep with D shortened passes at 18.19 mm. All four rough sweeps are remeasured with matching profiles, and only that second set enters refinement. This costs two more collected sweeps than the previous nominal design, rather than a complete first autocal run.
+- The rough pass checks convergence, two scaled starts, full local rank, at least 80% inliers, and <=25 mm estimated parameter standard deviation with a minimum 0.5 mm line-error assumption. It collects another informative constant-force sweep when needed, up to nine extras, then stops if unreliable. On the saved nominal run the three-sweep estimate fails at 76.15 mm; one added sweep with D shortened passes at 18.19 mm. All rough sweeps are remeasured with matching profiles, and only that second set enters refinement. This costs two more collected sweeps than the previous nominal design, rather than a complete first autocal run.
 - Atomic progress markers prevent interrupted/rejected rough data from being consumed on restart. Incomplete passes require a fresh dataset path after reestablishing encoder origin, with partial evidence retained. A complete marker validates the dataset and authenticates its bootstrap prefix; later adaptive sweeps may extend it. Corrupt, replaced or mixed-model data are rejected before simulator startup. This is application-level consistency, not a power-loss durability guarantee.
 - Force profiles are selected by direction **and fixed anchors/targets**, with missing or ambiguous matches rejected. Nonpositive predicted-tension tails are omitted. A profile marker means forces were commanded, not that actual strain was equal. Profiled runs refuse constant-force continuation or missing W/N/Y/tuning inputs before collection. Existing constant-force datasets stay constant-force.
 - Candidate-specific home offsets are applied once to frozen held-out predictions. The common-length anchor comparison remains a separate history-ranking heuristic and can favor the latest length model; it is not an unbiased estimator comparison.
@@ -33,6 +33,22 @@ All stopped normally with favorable fit scores. Wear did not establish an accura
 
 Two frozen nominal HP3 hardening runs returned the same rounded 1.68/1.58 mm errors. [First frozen run](validation/hp3-final/summary.json) used revision `95d4ca4d`; [stateful run](validation/hp3-stateful/summary.json) used `cbc80581` and completed its explicit state transition. Their manifests retain source hashes. These deterministic repeats establish reproducibility under this configuration, not a scatter distribution. The earlier integration run changed source during collection and is retained as such, not counted as final validation. The first attempt stopped on a diagnostics-schema error, which was fixed; its partial evidence is retained.
 
+
+The [hardened variant evaluation](session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/report.md) adds four full runs on frozen `921ced3c`. Every run stopped normally, collected eight sweeps / 160 fitted points and failed the 1 mm accuracy gate.
+
+| Hardened scene | Worst coordinate error, mm | Translation-aligned error, mm |
+| --- | ---: | ---: |
+| HP3 nominal (parent run) | 1.68 | 1.58 |
+| HP3, stiffness 10000 | 4.60 | 2.16 |
+| HP3, stiffness 12000 | 2.21 | 1.22 |
+| HP4 nominal | 4.82 | 2.83 |
+| HP4 worn bearings | 2.50 | 1.055 |
+
+The half-stiffness case improves substantially relative to the earlier run, nominal HP4 barely changes, and nominal HP3 and worn HP4 worsen. These runs change the collection design and count, so this is not a matched-budget ablation of any single change. The rough gate accepted fits with actual errors up to 24.77 mm; it is a coarse planning check, not final accuracy certification.
+
+Final selection also has a concrete limitation: on soft HP3 it applied an older 4.60 mm candidate while the subsequently printed fit was 2.44 mm off. That last fit had no future sweep for held-out comparison and failed to join a tight consensus. This is selection regret on one recording, not a rule that latest is best. A bounded follow-up will test a fresh common terminal validation sweep for frozen candidates.
+
+
 ## Same-data fit comparisons
 
 The [CLI comparison](validation/joint-cli-comparison/results/summary.json) fits the exact final eight-sweep HP3 recording using a common archived stage's solver settings and explicit offset overrides. Both arms see the same observations. Errors below are worst absolute anchor coordinate errors in mm.
@@ -50,6 +66,10 @@ This supports the extra offset parameter on multi-height data. The baseline batt
 The production point fit remains alongside the ellipse fit in every stage, with RMS, anchors and differences logged. It supplies the ellipse's offsets, so that comparison has shared nuisance estimates. The optional offline `--joint` baseline separately optimizes gauge-constrained anchors, its own offsets and every point position on the unshifted observations; it does not use ellipse masks or offsets. Analytic derivatives matched finite differences in the targeted review. It shares extraction and gauge conventions, has a local robust two-pass objective with Gaussian offset priors, and makes no global-optimality claim. Projected and fitted-spool comparisons are explicitly refused until their length models are validated.
 
 [Joint fits on four earlier full recordings](validation/joint-baseline-on-recordings.json) also retain the problematic soft-line and HP4 errors. [Stricter-budget attempts](validation/joint-baseline-strict-tolerance.json) failed to converge in two cases; the later 1000-evaluation/1e-8 settings terminated locally. Solver termination is not an accuracy pass.
+
+The hardened evaluator also tested explicit offset/filtering combinations on earlier and current full recordings. Offsets helped all four multi-height examples, but filtering effects were mixed: on earlier soft HP3 without offsets it increased ellipse error from 23.01 to 48.45 mm while lowering normalized cost. On candidate soft data, filtering with offsets reduced absolute error but worsened translation-aligned error. The production point fit has no sweep-filtering switch.
+
+A seeded stress test adds 0.03 mm Gaussian noise to raw **and mean** drive/sensor lengths and +1 mm at three sensor observations (seed 9212026). On the earlier soft dataset with offsets, filtering lowered ellipse error from 8.45 to 7.74 mm; point error remained 8.17 mm. This is synthetic corruption of recorded lengths, not full simulated encoder noise. The initial invalid raw-only perturbation, which left the used means unchanged, is retained and excluded from evidence of robustness. See the evaluator's report and reusable preparation recipe for exact controls.
 
 ## Physical home and broader layouts
 

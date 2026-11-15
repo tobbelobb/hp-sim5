@@ -1,0 +1,27 @@
+[
+  {
+    "case": "HP3 nominal",
+    "earlier_mm": 1.37,
+    "checked_mm": 1.68
+  },
+  {
+    "case": "HP3, stiffness 10000",
+    "earlier_mm": 9.98,
+    "checked_mm": 4.6
+  },
+  {
+    "case": "HP3, stiffness 12000",
+    "earlier_mm": null,
+    "checked_mm": 2.21
+  },
+  {
+    "case": "HP4 nominal",
+    "earlier_mm": 4.83,
+    "checked_mm": 4.82
+  },
+  {
+    "case": "HP4 worn bearings",
+    "earlier_mm": 1.88,
+    "checked_mm": 2.5
+  }
+]
