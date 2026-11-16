@@ -403,19 +403,27 @@ export function runGame(world, internalSetupScene, options = {}) {
       }
     };
 
+    // A failed step pauses playback, so Resume starts a fresh loop.
+    const fail = (error) => {
+      if (token !== loopToken) return;
+      console.error('hp-sim-3d: simulation step failed.', error);
+      pauseSimulation();
+    };
+
     stopClock = startClock((time) => {
       if (token === loopToken && document.hidden) tick(time);
-    }, (error) => {
-      if (token !== loopToken) return;
-      console.error('hp-sim-3d: simulation clock failed.', error);
-      pauseSimulation();
-    });
+    }, fail);
 
     const step = (time) => {
       if (token !== loopToken) {
         return;
       }
-      tick(time);
+      try {
+        tick(time);
+      } catch (error) {
+        fail(error);
+        return;
+      }
       if (token !== loopToken) {
         return;
       }

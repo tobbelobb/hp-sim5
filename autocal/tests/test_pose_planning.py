@@ -76,3 +76,15 @@ def test_profiled_data_cannot_silently_collect_a_constant_force_sweep(tmp_path, 
     plan = planning.plan_ellipse_sweep(fit, tmp_path / "sweeps.json", equal_strain=equal_strain)
     assert plan["collect_command"] is None
     assert plan["collection_error"]
+
+
+def test_no_candidate_position_violates_any_anchors_clearance():
+    candidates = generate_candidate_sweeps(
+        num_anchors=4, dimensions=3, machine_type="hangprinter_3",
+        fixed_delta_values_mm=np.arange(-1850.0, 1601.0, 50.0).tolist(),
+    )
+    planned = [predict_sweep_positions(ANCHORS, cfg, 20, SWEEP_PRETENSION_SHARE) for cfg in candidates]
+    positions = np.concatenate([p for p in planned if p.shape[0]])
+    distances = np.linalg.norm(ANCHORS[None, :, :] - positions[:, None, :], axis=2)
+    assert positions.shape[0] > 1000
+    assert np.all(distances >= ANCHOR_CLEARANCE_SHARE * HOME - 1e-9)

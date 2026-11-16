@@ -89,3 +89,23 @@ def test_stop_file_requests_acceptance_and_io_errors_do_not(tmp_path, monkeypatc
 
     monkeypatch.setattr(Path, "exists", denied)
     assert not policy.stop_requested()
+
+
+def test_one_coordinate_beyond_the_limit_resets_stability(tmp_path):
+    # Uniform shifts would hide a mean- or norm-based step; the rule is per coordinate.
+    policy = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop")
+    base = _fit(1, 0.0)["plan"]["anchors"]
+    history = []
+
+    def fit_with_d_z(iteration, d_z):
+        anchors = base.copy()
+        anchors[3, 2] += d_z
+        history.append({**_candidate(iteration, 1.0 + iteration), "plan": {"anchors": anchors}})
+        return policy.update(history, iteration=iteration, admissible=True,
+                             underconstrained=False, log_line=lambda _: None)
+
+    fit_with_d_z(1, 0.0)
+    assert fit_with_d_z(2, 0.5).decision == "collect" and policy.stable_streak == 1  # exactly at the limit
+    assert fit_with_d_z(3, 1.01).decision == "collect" and policy.stable_streak == 0  # 0.51 mm in one coordinate
+    assert fit_with_d_z(4, 1.3).decision == "collect" and policy.stable_streak == 1
+    assert fit_with_d_z(5, 1.1).decision == "accept"

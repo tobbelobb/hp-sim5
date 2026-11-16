@@ -297,3 +297,17 @@ def test_planning_ridge_requires_a_finite_positive_value(value):
         _parse_spool_args("--regularization", value)
 
 
+
+
+@pytest.mark.parametrize("args, expected", [([], 0.5), (["--stable-step-mm", "0.2"], 0.2), (["--stable-step-mm", "0"], 0.0)])
+def test_stable_step_reaches_the_loop(monkeypatch, tmp_path, args, expected):
+    captured = {}
+    monkeypatch.setattr(ac, "full_auto_loop", lambda **kwargs: captured.update(kwargs) or 0)
+    assert ac.main(["--machine-type", "hp3", "--dataset", str(tmp_path / "d.json"), *args]) == 0
+    assert captured["stable_step_mm"] == expected
+
+
+@pytest.mark.parametrize("value", ["-0.1", "nan", "inf"])
+def test_stable_step_must_be_a_finite_nonnegative_distance(tmp_path, value):
+    with pytest.raises(SystemExit):
+        ac.main(["--machine-type", "hp3", "--dataset", str(tmp_path / "d.json"), "--stable-step-mm", value])

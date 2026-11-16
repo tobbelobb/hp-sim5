@@ -224,3 +224,26 @@ test('selects relative coordinates before RRF motion starts', async () => {
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('the dataset records RRF steps per mm, which sets the step tolerance of drive tracking', async () => {
+  // M92 was once parsed like M666, which turned "X: 16.977" into an empty list and
+  // left drive tracking stricter than one 0.059 mm motor step.
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'probe-m92-'));
+  const outputFile = path.join(directory, 'sweeps.json');
+  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
+  collectWithSlipRecovery.mockRejectedValue(new UnmeasurableSweepError('No coupled interval', { retained_points: 0 }));
+  const send = async line => {
+    if (line === 'M666') return { reply: 'M666 R30:30:30:30 Q0 U1:1:1:1 O1:1:1:1' };
+    if (line === 'M92') return { reply: 'Steps/mm: X: 16.977, Y: 16.977, Z: 33.954, U: 16.977, E: 95.922' };
+    return { reply: '' };
+  };
+  try {
+    await collectSweepData(send, {
+      args: { outputFile, maxSweeps: 1, sensorCollectionForce: 1, fixedTargets: '0,0', completedSweeps: 3 },
+      machineType: 'hangprinter_3', machineConfig: MACHINE_CONFIGS.hangprinter_3,
+      motorIds: ['40.0', '41.0', '42.0', '43.0'], speedup: 1,
+    });
+    const { config } = JSON.parse(readFileSync(outputFile, 'utf8'));
+    expect(config.m92).toEqual({ X: 16.977, Y: 16.977, Z: 33.954, U: 16.977, E: 95.922 });
+  } finally { rmSync(directory, {recursive: true, force: true}); }
+});
