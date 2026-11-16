@@ -5,12 +5,12 @@
 [submodule "RRF/ReprapFirmware"]
 	path = RRF/ReprapFirmware
 	url = git@github.com:tobbelobb/RepRapFirmware.git
-  branch = 3.7-x64
+  branch = 3.7-x64-rebase-3
   ignore = untracked
 [submodule "RRF/CANlib"]
 	path = RRF/CANlib
 	url = git@github.com:tobbelobb/CANlib.git
-	branch = 3.7-dev
+	branch = 3.7-dev-rebase-2
   ignore = untracked
 [submodule "RRF/CoreN2G"]
 	path = RRF/CoreN2G
