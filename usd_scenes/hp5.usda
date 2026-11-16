@@ -657,11 +657,11 @@ def Xform "World"
 
         def RigidBody "Effector"
         {
-            custom rel rigidBody:frameCorners = [
-                </World/HangprinterScene/CornerSW>,
-                </World/HangprinterScene/CornerSE>,
-                </World/HangprinterScene/CornerNE>,
-                </World/HangprinterScene/CornerNW>,
+            custom string[] rigidBody:renderPolyline = [
+                "</World/HangprinterScene/CornerSW>",
+                "</World/HangprinterScene/CornerSE>",
+                "</World/HangprinterScene/CornerNE>",
+                "</World/HangprinterScene/CornerNW>",
             ]
             custom rel rigidBody:members = [
                 </World/HangprinterScene/CornerSW>,

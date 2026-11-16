@@ -389,7 +389,7 @@ def Xform "World"
                 </World/HangprinterScene/AttachO>
             ]
 
-            custom string rigidBody:renderIndices = "[[0,1], [0,3], [0,4], [1,2], [1,5], [2,3], [2,6], [3,7], [4,5], [4,7], [5,6], [6,7]]"
+            custom string rigidBody:renderPolyline = "[[0,1], [0,3], [0,4], [1,2], [1,5], [2,3], [2,6], [3,7], [4,5], [4,7], [5,6], [6,7]]"
         }
 
         def CableJoint "JointA_0"

@@ -148,7 +148,7 @@ def Xform "World"
                 </World/SlideprinterScene/PinholeB>,
                 </World/SlideprinterScene/PinholeC>
             ]
-            custom string rigidBody:renderIndices = "[3,4,5,3]"
+            custom string rigidBody:renderPolyline = "[3,4,5,3]"
         }
 
         def CableJoint "JointA_0"
