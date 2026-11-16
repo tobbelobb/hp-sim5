@@ -1,63 +1,63 @@
 [submodule "klipper"]
 	path = klipper
-	url = git@github.com:tobbelobb/klipper.git
+	url = https://github.com/tobbelobb/klipper.git
   ignore = untracked
 [submodule "RRF/ReprapFirmware"]
 	path = RRF/ReprapFirmware
-	url = git@github.com:tobbelobb/RepRapFirmware.git
+	url = https://github.com/tobbelobb/RepRapFirmware.git
   branch = 3.7-x64-rebase-3
   ignore = untracked
 [submodule "RRF/CANlib"]
 	path = RRF/CANlib
-	url = git@github.com:tobbelobb/CANlib.git
+	url = https://github.com/tobbelobb/CANlib.git
 	branch = 3.7-dev-rebase-2
   ignore = untracked
 [submodule "RRF/CoreN2G"]
 	path = RRF/CoreN2G
-	url = git@github.com:Duet3d/CoreN2G.git
+	url = https://github.com/Duet3d/CoreN2G.git
 	branch = 3.7-dev
   ignore = untracked
 [submodule "RRF/FreeRTOS"]
 	path = RRF/FreeRTOS
-	url = git@github.com:Duet3d/FreeRTOS.git
+	url = https://github.com/Duet3d/FreeRTOS.git
 	branch = 3.7-dev
   ignore = untracked
 [submodule "RRF/RRFLibraries"]
 	path = RRF/RRFLibraries
-	url = git@github.com:tobbelobb/RRFLibraries.git
+	url = https://github.com/tobbelobb/RRFLibraries.git
 	branch = 3.7-dev
   ignore = untracked
 [submodule "RRF/LibTinyusb"]
 	path = RRF/LibTinyusb
-	url = git@github.com:Duet3d/LibTinyusb.git
+	url = https://github.com/Duet3d/LibTinyusb.git
 	branch = master
   ignore = untracked
 [submodule "RRF/RepRapFirmware.wiki"]
 	path = RRF/RepRapFirmware.wiki
-	url = git@github.com:Duet3D/RepRapFirmware.wiki.git
+	url = https://github.com/Duet3D/RepRapFirmware.wiki.git
   ignore = untracked
 [submodule "RRF/DuetSoftwareFramework"]
 	path = RRF/DuetSoftwareFramework
-	url = git@github.com:Duet3D/DuetSoftwareFramework
+	url = https://github.com/Duet3D/DuetSoftwareFramework
 	branch = v3.7-dev
   ignore = untracked
 [submodule "RRF/DuetWebControl"]
 	path = RRF/DuetWebControl
-	url = git@github.com:Duet3D/DuetWebControl
+	url = https://github.com/Duet3D/DuetWebControl
 	branch = v3.7-dev
   ignore = untracked
 [submodule "RRF/Duet3Expansion"]
 	path = RRF/Duet3Expansion
-	url = git@github.com:Duet3D/Duet3Expansion
+	url = https://github.com/Duet3D/Duet3Expansion
 	branch = 3.7-dev
 [submodule "autocal/auto-calibration-simulation-for-hangprinter"]
 	path = autocal/auto-calibration-simulation-for-hangprinter
-	url = git@gitlab.com:tobben/auto-calibration-simulation-for-hangprinter
+	url = https://gitlab.com/tobben/auto-calibration-simulation-for-hangprinter
 	branch = five_anchors
   ignore = untracked
 [submodule "forward-transform-dev/hangprinter-forward-transform"]
 	path = forward-transform-dev/hangprinter-forward-transform
-	url = git@gitlab.com:tobben/hangprinter-forward-transform.git
+	url = https://gitlab.com/tobben/hangprinter-forward-transform.git
 [submodule "flex-compensation-dev/hangprinter-flex-compensation"]
 	path = flex-compensation-dev/hangprinter-flex-compensation
-	url = git@gitlab.com:tobben/hangprinter-flex-compensation.git
+	url = https://gitlab.com/tobben/hangprinter-flex-compensation.git
