@@ -419,3 +419,19 @@ async def test_attachment_reconnect_isolation_reset_and_dead_supervisor(tmp_path
     stale = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=5)
     assert stale.returncode != 0 and 'restart --serve' in stale.stderr
     assert service.token not in stale.stdout + stale.stderr
+
+@pytest.mark.parametrize('machine', ['hp5', 'hp5_pulley_reduced'])
+def test_hp5_world_collection_preserves_all_five_firmware_anchors(tmp_path, machine):
+    service = RuntimeService(ROOT, tmp_path, record=False).start()
+    try:
+        world = service.call('configure', machine=machine)
+        assert len(world['accepted_settings']['base_radii_mm']) == 5
+        collected = service.call('collect', options={'sweepPoints': 3, 'noiseSamples': 16})
+        assert collected['status'] == 'complete'
+        data = json.loads(Path(collected['artifacts']['dataset']).read_text())
+        assert data['num_anchors'] == 5
+        assert len(data['config']['mm_per_degree']) == 5
+        assert data['config']['m669']['I'] == [0., 0., 1900.]
+        assert collected['validation']['autocal_residual_count'] == collected['point_count']
+    finally:
+        service.close()

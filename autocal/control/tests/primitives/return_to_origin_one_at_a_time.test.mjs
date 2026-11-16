@@ -131,3 +131,27 @@ describe('returnMotorsToOriginOneAtATime', () => {
     expect(postMoveReads).toBeGreaterThan(1);
   });
 });
+
+// A shortened carrying line must reach home before low axes are held at home.
+test('returns carrying anchors first while keeping them held for the remaining returns', async () => {
+  const angles = [-10, 20, -30, 40, -5], moves = [], modes = [];
+  let now = 0;
+  const send = async line => {
+    const move = line.match(/G1 H2 ([XYZUV])([-\d.]+)/);
+    if (move) {
+      const index = 'XYZUV'.indexOf(move[1]);
+      angles[index] += Number(move[2]);
+      moves.push(index);
+    }
+    if (line.startsWith('M569.4')) modes.push(line);
+    return { reply: angles.join(' ') };
+  };
+  send.simulationClock = { now: () => now, sleep: async ms => { now += ms; } };
+  await returnMotorsToOriginOneAtATime(send, {
+    motorIds: ['40.0','41.0','42.0','43.0','44.0'], axes: [...'XYZUV'],
+    mmPerDeg: [1,1,1,1,1], feed: 1000, midForce: .02,
+    forbiddenForceAnchors: [4], returnFirstAnchors: [4],
+  });
+  expect(moves).toEqual([4,3,2,1,0]);
+  expect(modes.every(line => line.endsWith(':0.0'))).toBe(true);
+});

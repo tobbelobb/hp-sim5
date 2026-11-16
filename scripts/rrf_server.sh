@@ -13,7 +13,7 @@ Options:
       RRF config file. Accepts either config_name.g or sys/config_name.g.
   -m, --machineType MACHINE
       Machine type used when --config is omitted.
-      Supported: hp3, hp4, hp5, slideprinter, skycam, cubecorners.
+      Supported: hp3, hp4, hp5, hp5_pulley_reduced, slideprinter, skycam, cubecorners.
       hp3/hp4/hp5 also accept hangprinter aliases such as hangprinter_3.
   --buildup, --line-layers
       Use config_<machine>_w_line_layers.g when --config is omitted.
@@ -56,6 +56,9 @@ normalize_machine_type() {
       ;;
     hp5|hangprinter5|hangprinter_5|hangprinter-v5|hangprinter_v5)
       printf 'hp5\n'
+      ;;
+    hp5_pulley_reduced|hangprinter_5_pulley_reduced)
+      printf 'hp5_pulley_reduced\n'
       ;;
     slideprinter|skycam|cubecorners)
       printf '%s\n' "$value"

@@ -31,7 +31,9 @@ def settings(args):
               'find_radii': 'off', 'find_buildup_factor': 'off', 'recording_mode': 'events', **{k: v for k, v in args.items()
               if k not in ('optimizer', 'budgets', 'collection', 'artifact_dir')},
               'machine': machine['name'], 'layering': machine['line_layering']}
-    validate_spools(result['layering'], result['base_radii_mm'], result['buildup_factor'])
+    config_text = (machines.CATALOG_PATH.parents[1] / machine['rrf_config']).read_text()
+    validate_spools(result['layering'], result['base_radii_mm'], result['buildup_factor'],
+                    len(machines.anchor_axes(config_text)))
     if result['recording_mode'] not in ('none', 'events', 'sampled', 'full'):
         raise ValueError('recording_mode must be none, events, sampled or full')
     for key in ('find_radii', 'find_buildup_factor'):

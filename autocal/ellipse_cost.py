@@ -41,6 +41,7 @@ _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE = {
     "hangprinter_3": 3,
     "hangprinter_4": 3,
     "hangprinter_5": 3,
+    "hangprinter_5_pulley_reduced": 3,
     "cubecorners": 3,
     "skycam": 3,
 }

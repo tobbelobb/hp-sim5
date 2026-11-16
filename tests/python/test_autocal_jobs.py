@@ -18,21 +18,21 @@ def test_autocal_does_not_choose_an_omitted_machine():
         settings({})
 
 
-@pytest.mark.parametrize('machine', ['hp3', 'hp3_w_line_layers', 'hp4', 'hp4_w_line_layers'])
+@pytest.mark.parametrize('machine', ['hp3', 'hp3_w_line_layers', 'hp4', 'hp4_w_line_layers', 'hp5', 'hp5_pulley_reduced'])
 def test_autocal_and_world_share_catalogued_spool_defaults(tmp_path, machine):
     world = world_configuration(ROOT, {'machine': machine}, backend='headless-js')
     config = settings({'machine': machine})
     assert config['machine'] == world.machine
     assert config['layering'] == world.layering
     assert config['buildup_factor'] == world.buildup_factor
-    assert config['base_radii_mm'] * 4 == list(world.base_radii_mm)
+    assert config['base_radii_mm'] * len(world.base_radii_mm) == list(world.base_radii_mm)
     argv = command(ROOT, tmp_path, config)
     assert argv[argv.index('--machine-type') + 1] == world.machine_type
     assert float(argv[argv.index('--buildup-factor') + 1]) == world.buildup_factor
 
 
 @pytest.mark.parametrize('args', [
-    {'machine': 'hp5'}, {'machine': 'slideprinter_hexagon'}, {'layering': 1}, {'buildup_factor': .6},
+    {'machine': 'unknown'}, {'machine': 'slideprinter_hexagon'}, {'layering': 1}, {'buildup_factor': .6},
     {'base_radii_mm': [float('nan')]}, {'base_radii_mm': [30, 30]},
     {'optimizer': {'mode': 'shell'}}, {'optimizer': {'spool_inner_iters': 30}}, {'optimizer': {'r0_bounds_mm': [40, 30]}},
     {'budgets': {'max_steps': True}}, {'budgets': {'wall_timeout_s': 14401}},
@@ -274,3 +274,9 @@ async def test_supervised_live_stop_finalizes_rrd_without_mutating_hp4(tmp_path,
             assert before['step'] == after['step'] == 0 and after['machine_design'] == 'Hangprinter version 4 with line layering'
     finally:
         await asyncio.to_thread(service.close)
+
+
+def test_autocal_accepts_one_radius_per_firmware_anchor():
+    assert settings({'machine': 'hp5', 'base_radii_mm': [30.,31.,32.,33.,34.]})['base_radii_mm'] == [30.,31.,32.,33.,34.]
+    with pytest.raises(ValueError):
+        settings({'machine': 'hp5', 'base_radii_mm': [30.]*4})

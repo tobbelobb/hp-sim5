@@ -22,9 +22,9 @@ def number(name, value, low, high, *, integer=False):
     return value
 
 
-def validate_spools(layering, radii, buildup):
-    if not isinstance(radii, list) or len(radii) not in (1, 4):
-        raise ValueError('base_radii_mm must contain one or four radii')
+def validate_spools(layering, radii, buildup, axis_count=4):
+    if not isinstance(radii, list) or len(radii) not in (1, axis_count):
+        raise ValueError(f'base_radii_mm must contain one or {axis_count} radii')
     for radius in radii:
         number('base_radii_mm', radius, 1, 200)
     number('buildup_factor', buildup, 0, 2)
@@ -63,15 +63,16 @@ def world_configuration(root, args, *, backend):
         raise ValueError('Unknown physics backend')
     machine = machines.machine(args['machine'])
     machine_type = machines.scene(machine).get('machine_type')
-    if machine_type not in ('hangprinter_3', 'hangprinter_4', 'skycam'):
-        raise ValueError('Research worlds require a four-anchor Hangprinter scene and firmware configuration')
+    if not (machine_type and (machine_type.startswith('hangprinter_') or machine_type == 'skycam')):
+        raise ValueError('Research worlds require Hangprinter kinematics')
+    axes = machines.anchor_axes((root / machine['rrf_config']).read_text())
     layering = machine['line_layering']
     radii = args.get('base_radii_mm', [30.0])
     buildup = args.get('buildup_factor', LAYERED_BUILDUP if layering else 0.)
-    validate_spools(layering, radii, buildup)
-    radii = tuple(float(r) for r in (radii * 4 if len(radii) == 1 else radii))
+    validate_spools(layering, radii, buildup, len(axes))
+    radii = tuple(float(r) for r in (radii * len(axes) if len(radii) == 1 else radii))
     # The layer/ramp solver is a discrete winding model, not an arbitrary Q model.
-    if layering and (radii != (30.,) * 4 or not math.isclose(buildup, LAYERED_BUILDUP, abs_tol=1e-12)):
+    if layering and (radii != (30.,) * len(axes) or not math.isclose(buildup, LAYERED_BUILDUP, abs_tol=1e-12)):
         raise ValueError('Layered worlds support stock 30 mm base radii and buildup_factor=2/pi only')
     if not (root / machine['scene']).is_file() or not (root / machine['rrf_config']).is_file():
         raise ValueError('Scene and matching RRF configuration must exist')
@@ -90,8 +91,10 @@ def prepare_world(root, directory, config):
     layer = Sdf.Layer.CreateAnonymous('.usda')
     layer.ImportFromString(authored)
     stage = Usd.Stage.Open(layer)
+    firmware = repo_path(root / 'RRF/run/vsd', config.firmware_config).read_text()
+    axes = machines.anchor_axes(firmware)
     source_radii = []
-    for axis in 'ABCD':
+    for axis in axes:
         prim = stage.GetPrimAtPath(f'/World/HangprinterScene/Spool{axis}')
         if not prim or not prim.GetAttribute('radius'):
             raise ValueError(f'Missing spool {axis} in scene')
@@ -101,7 +104,7 @@ def prepare_world(root, directory, config):
     if tuple(source_radii) != config.base_radii_mm:
         if config.layering:
             raise ValueError('Layered source spool radii must match the stock 30 mm design')
-        for axis, radius in zip('ABCD', config.base_radii_mm):
+        for axis, radius in zip(axes, config.base_radii_mm):
             prim = stage.GetPrimAtPath(f'/World/HangprinterScene/Spool{axis}')
             if not prim or not prim.GetAttribute('radius'):
                 raise ValueError(f'Missing spool {axis} in scene')
@@ -116,13 +119,12 @@ def prepare_world(root, directory, config):
                             cwd=root, capture_output=True, text=True, timeout=30)
     if result.returncode:
         raise ValueError(f'Scene bake failed: {result.stderr.strip()}')
-    firmware = repo_path(root / 'RRF/run/vsd', config.firmware_config).read_text()
-    if not re.search(r'^M669 K6\b', firmware, re.MULTILINE) or not re.search(r'^M669 N4\b', firmware, re.MULTILINE):
-        raise ValueError('Matching RRF configuration must use four-anchor Hangprinter kinematics')
+    if not re.search(r'^M669 K6\b', firmware, re.MULTILINE) or not re.search(rf'^M669 N{len(axes)}\b', firmware, re.MULTILINE):
+        raise ValueError('Matching RRF configuration must declare its Hangprinter anchor count')
     q = re.search(r'^M666 Q([^\s]+) R([^\s;]+)', firmware, re.MULTILINE)
     firmware_source_hash = hashlib.sha256(firmware.encode()).hexdigest()
     if not q or not math.isclose(float(q[1]), config.buildup_factor, abs_tol=1e-12) or (
-            not config.layering and list(map(float, q[2].split(':'))) != [30.] * 4):
+            not config.layering and list(map(float, q[2].split(':'))) != [30.] * len(axes)):
         raise ValueError('Matching RRF configuration has incompatible Q/R settings')
     firmware_radii = list(map(float, q[2].split(':')))
     if not config.layering:

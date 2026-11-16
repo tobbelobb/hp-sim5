@@ -17,15 +17,17 @@ from autocal.theoretical_ellipse import (
 
 def fit_joint_ranges(dataset, initial_anchors, *, fit_home_offsets=True, use_noise_mean=True):
     machine = dataset["machine_type"]
-    if machine not in ("hangprinter_3", "hangprinter_4"):
+    if machine not in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
         raise ValueError("Joint baseline currently supports Hangprinter only")
     if resolve_projection_mode(dataset) is True:
         raise ValueError("Joint baseline comparison of projected data is not validated")
     n, d = int(dataset["num_anchors"]), int(dataset["dimensions"])
     low_z = dataset.get("_low_anchor_z")
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
-    if not lengths.size or not np.all(np.isfinite(lengths)):
+    if not lengths.size or np.any(np.sum(np.isfinite(lengths), axis=1) < d+1):
         raise ValueError("Joint baseline needs finite point measurements")
+    measured = np.isfinite(lengths)
+    lengths = np.where(measured, lengths, 0.0)
     count = len(lengths)
     lb, ub = get_anchor_opt_bounds(machine, n, d, low_z)
     vector = np.clip(anchors_matrix_to_opt_vec(initial_anchors, machine, low_z), lb, ub)
@@ -38,8 +40,11 @@ def fit_joint_ranges(dataset, initial_anchors, *, fit_home_offsets=True, use_noi
     mapping = np.stack([anchors_of(vector + step) - anchors for step in np.eye(m)], axis=-1)
     absolute = np.linalg.norm(anchors, axis=1) + lengths
     squared = absolute**2 - np.sum(anchors**2, axis=1)
-    positions = np.linalg.lstsq(-2 * (anchors[1:] - anchors[0]),
-                               (squared[:, 1:] - squared[:, :1]).T, rcond=None)[0].T
+    positions = np.zeros((count, d))
+    for index in range(count):
+        active = np.flatnonzero(measured[index])
+        positions[index] = np.linalg.lstsq(-2 * (anchors[active[1:]] - anchors[active[0]]),
+            squared[index, active[1:]] - squared[index, active[0]], rcond=None)[0]
     start = np.concatenate([vector, positions.ravel(), np.zeros(o)])
     bounds = (np.r_[lb, np.full(count*d + o, -np.inf)],
               np.r_[ub, np.full(count*d + o, np.inf)])
@@ -56,15 +61,15 @@ def fit_joint_ranges(dataset, initial_anchors, *, fit_home_offsets=True, use_noi
         p = x[m:m+count*d].reshape(count, d)
         k = np.r_[np.zeros(n-o), x[m+count*d:]]
         misfit = np.linalg.norm(a[None] - p[:, None], axis=2) - np.linalg.norm(a, axis=1) - k - lengths
-        return np.r_[misfit.ravel(), x[m+count*d:] * prior_weight]
+        return np.r_[np.where(measured, misfit, 0.0).ravel(), x[m+count*d:] * prior_weight]
 
     def jacobian(x, prior_weight):
         a = anchors_of(x)
         p = x[m:m+count*d].reshape(count, d)
         delta = a[None] - p[:, None]
         direction = delta / np.maximum(np.linalg.norm(delta, axis=2)[:, :, None], 1e-12)
-        anchor_part = np.einsum("pnd,ndk->pnk", direction - a / np.linalg.norm(a, axis=1)[:, None], mapping)
-        return coo_matrix((np.r_[anchor_part.ravel(), -direction.ravel(), -np.ones(count*o), np.full(o, prior_weight)],
+        anchor_part = np.einsum("pnd,ndk->pnk", (direction - a / np.linalg.norm(a, axis=1)[:, None]) * measured[:, :, None], mapping)
+        return coo_matrix((np.r_[anchor_part.ravel(), -(direction * measured[:, :, None]).ravel(), -measured[:, n-o:].ravel().astype(float), np.full(o, prior_weight)],
                            (np.r_[a_rows, p_rows, o_rows, np.arange(count*n, count*n+o)],
                             np.r_[a_cols, p_cols, o_cols, np.arange(m+count*d, len(x))])),
                           shape=(count*n+o, len(x))).tocsr()

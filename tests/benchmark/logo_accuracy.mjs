@@ -8,10 +8,14 @@ import { parseGcodeText } from '../../hp-sim-3d/app/inspectionToolsController.js
 import { QualityMonitor } from '../../hp-sim-3d/app/quality-monitor.js';
 import { getMachineMotorDiagnostics } from '../../hp-sim-3d/app/motor-diagnostics.js';
 import { parseRrfMotorAxisMapFromConfigText } from '../../integrations/rrf/rrfFirmwareModel.js';
-import { FileFormat } from '../../integrations/shared/fileFormatUtils.js';
+import { detectFileFormat } from '../../integrations/shared/fileFormatUtils.js';
+import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 import { PositionComponent, VelocityComponent, AngularVelocityComponent, RigidBodyComponent } from '../../src/js/cable_joints_3d/ecs.js';
 
 const { values: args } = parseArgs({ options: {
+  solver: { type: 'string', default: 'native' },
+  firmware: { type: 'string', default: 'rrf' }, gcode: { type: 'string', default: 'Hangprinter_logo6' },
+  commands: { type: 'string' }, 'max-steps': { type: 'string' },
   machine: { type: 'string', default: 'hp4' }, substeps: { type: 'string' }, iterations: { type: 'string' },
   'open-loop': { type: 'boolean', default: false },
 } });
@@ -20,18 +24,24 @@ if (!machine) throw new Error(`Unknown machine: ${args.machine}`);
 const root = new URL('../../', import.meta.url);
 const read = path => fs.readFileSync(new URL(path, root), 'utf8');
 const scene = read(machine.scene);
-const gcode = 'public/gcode/Hangprinter_logo6.gcode';
+const gcode = `public/gcode/${args.gcode}.gcode`;
 globalThis.self = { addEventListener() {} };
 globalThis.postMessage = message => { if (message.type === 'error') throw new Error(message.message); };
 const { RrfCanPlayer } = await import('../../integrations/rrf/rrfCanPlayer.js');
-const player = new RrfCanPlayer();
+const { KlipperMcuCommandPlayer } = await import('../../integrations/klipper/klipperMcuCommandPlayer.js');
+const player = args.firmware === 'klipper' ? new KlipperMcuCommandPlayer() : new RrfCanPlayer();
 player.setDt(.002);
 player.setAsapMode(true);
-player.setDriverToAxis(parseRrfMotorAxisMapFromConfigText(read(machine.rrf_config)));
+player.setDriverToAxis?.(parseRrfMotorAxisMapFromConfigText(read(machine.rrf_config)));
 const commands = [];
 player.sendCommand = async command => { commands.push(command); };
-await player.run(Readable.toWeb(fs.createReadStream(new URL(machine.compiled_commands[gcode].rrf, root))), FileFormat.RRF_CAN_BINARY);
+const commandPath = args.commands ?? machine.compiled_commands[gcode][args.firmware];
+const commandUrl = commandPath.startsWith('/') ? new URL(`file://${commandPath}`) : new URL(commandPath, root);
+await player.run(Readable.toWeb(fs.createReadStream(commandUrl)), detectFileFormat(commandPath));
+if (args['max-steps']) commands.length = Math.min(commands.length, Number(args['max-steps']));
 const { world, remote, dt } = createHeadlessWorld(scene, {
+  cableSolverBackend: args.solver === 'wasm'
+    ? new WasmPhysicsEngine(new WebAssembly.Module(fs.readFileSync(new URL('public/wasm/cable_solver.wasm', root)))) : undefined,
   lineLayeringEnabled: machine.line_layering, closedLoopMotorsEnabled: !args['open-loop'],
   solverIterations: args.iterations === undefined ? undefined : Number(args.iterations),
   physicsSubsteps: args.substeps === undefined ? undefined : Number(args.substeps),
@@ -66,7 +76,7 @@ try {
   const wallSeconds = (performance.now() - started) / 1000;
   monitor.setEnabled(true);
   monitor.runFinalCheck();
-  console.log(JSON.stringify({ machine: args.machine, substeps: world.getResource('physicsSubsteps'),
+  console.log(JSON.stringify({ machine: args.machine, firmware: args.firmware, solver: args.solver, gcode, substeps: world.getResource('physicsSubsteps'),
     iterations: world.getResource('solverIterations'), closedLoop: !args['open-loop'], steps, wallSeconds, peaks, metrics: monitor.getMetrics(),
     motors: getMachineMotorDiagnostics(world) }));
 } finally {

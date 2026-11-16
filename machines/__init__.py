@@ -3,6 +3,7 @@
 machines/catalog.json is the single source of truth. Paths are relative to the repository root.
 """
 import json
+import re
 from pathlib import Path
 
 CATALOG_PATH = Path(__file__).with_name('catalog.json')
@@ -29,3 +30,12 @@ def line_layering_variant(entry, line_layering):
 def scene(entry):
     """Return the catalogue's description of entry's scene."""
     return CATALOG['scenes'][entry['scene']]
+
+
+def anchor_axes(config_text):
+    """Anchor labels in a Hangprinter M669 configuration, in firmware order."""
+    labels = set()
+    for line in config_text.splitlines():
+        if re.match(r'^M669\b', line):
+            labels.update(re.findall(r'\b([ABCDIJKLO])[-+\d.]+:[-+\d.]+:[-+\d.]+', line.split(';')[0]))
+    return tuple(axis for axis in 'ABCDIJKLO' if axis in labels)

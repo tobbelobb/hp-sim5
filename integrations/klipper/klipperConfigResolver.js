@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { findMachine, machineForScene } from '../../machines/catalog.js';
 
 export function normalizeMachineType(value) {
   switch (String(value || '').trim()) {
@@ -20,6 +21,9 @@ export function normalizeMachineType(value) {
     case 'hangprinter-v5':
     case 'hangprinter_v5':
       return 'hp5';
+    case 'hp5_pulley_reduced':
+    case 'hangprinter_5_pulley_reduced':
+      return 'hp5_pulley_reduced';
     case 'slideprinter':
     case 'skycam':
     case 'cubecorners':
@@ -53,10 +57,13 @@ export function normalizeRrfConfigName(value) {
   };
 }
 
-export function resolveKlipperConfigFromMachine(machineType, { buildup = true } = {}) {
-  const machine = normalizeMachineType(machineType);
-  const suffix = buildup ? '-with-buildup' : '';
-  return `./public/klipper/${machine}/printer-${machine}-linux-mcu${suffix}.cfg`;
+export function resolveKlipperConfigFromMachine(machineType, { buildup } = {}) {
+  const machine = findMachine(normalizeMachineType(machineType));
+  const selected = buildup === undefined
+    ? machineForScene(machine.scene, true) ?? machine
+    : machineForScene(machine.scene, buildup);
+  if (!selected) throw new Error(`${machine.name} has no variant with buildup=${buildup}`);
+  return `./${selected.klipper_config}`;
 }
 
 export function resolveKlipperConfigFromRrfConfig(value) {

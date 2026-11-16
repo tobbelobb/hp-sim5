@@ -1,11 +1,11 @@
 export const MACHINE_TYPE_ALIASES = Object.freeze({
-  hp3: 'hangprinter_3', hp4: 'hangprinter_4', v3: 'hangprinter_3', v4: 'hangprinter_4',
+  hp3: 'hangprinter_3', hp4: 'hangprinter_4', hp5: 'hangprinter_5', hp5_pulley_reduced: 'hangprinter_5_pulley_reduced', v3: 'hangprinter_3', v4: 'hangprinter_4',
   four_high_anchors: 'skycam', cube_corners: 'cubecorners',
 });
 
 export const RRF_SIM_CONFIGS = Object.freeze(Object.fromEntries(
-  Object.entries({ hangprinter_3: 'hp3', hangprinter_4: 'hp4', skycam: 'skycam', cubecorners: 'cubecorners', slideprinter: 'slideprinter' })
-    .map(([type, name]) => [type, Object.freeze({ default: `sys/config_${name}.g`, lineLayer: `sys/config_${name}_w_line_layers.g` })])
+  Object.entries({ hangprinter_3: 'hp3', hangprinter_4: 'hp4', hangprinter_5: 'hp5', hangprinter_5_pulley_reduced: 'hp5_pulley_reduced', skycam: 'skycam', cubecorners: 'cubecorners', slideprinter: 'slideprinter' })
+    .map(([type, name]) => [type, Object.freeze({ default: `sys/config_${name}.g`, lineLayer: name.startsWith('hp5') ? null : `sys/config_${name}_w_line_layers.g` })])
 ));
 
 export function normalizeMachineType(machineType, fallback = 'slideprinter') {

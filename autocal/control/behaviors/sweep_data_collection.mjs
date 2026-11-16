@@ -47,11 +47,16 @@ export const MACHINE_CONFIGS = {
     },
     measuredMaxTravelScale: 0.8,
   },
-  hangprinter_5: { numAnchors: 5, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V'], mustBeInFixedSet: [4] },
+  hangprinter_5: {
+    numAnchors: 5, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V'], mustBeInFixedSet: [4],
+    fixedTargetBoundsByAnchor: Object.fromEntries(range(5).map(axis => [axis, { maxFixed: 0 }])),
+    defaultFixedTargetScale: -1, measuredMaxTravelScale: 0.8,
+  },
   cubecorners: { numAnchors: 8, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V', 'W', 'A', 'B'], mustBeInFixedSet: [] },
   skycam: { numAnchors: 4, dimensions: 3, axes: ['X', 'Y', 'Z', 'U'], mustBeInFixedSet: [] },
 };
 
+MACHINE_CONFIGS.hangprinter_5_pulley_reduced = MACHINE_CONFIGS.hangprinter_5;
 MACHINE_CONFIGS.hangprinter_3 = MACHINE_CONFIGS.hangprinter_4;
 
 export const MOTOR_IDS_BY_MACHINE = {
@@ -59,6 +64,7 @@ export const MOTOR_IDS_BY_MACHINE = {
   hangprinter_3: ['40.0', '41.0', '42.0', '43.0'],
   hangprinter_4: ['40.0', '41.0', '42.0', '43.0'],
   hangprinter_5: ['40.0', '41.0', '42.0', '43.0', '44.0'],
+  hangprinter_5_pulley_reduced: ['40.0', '41.0', '42.0', '43.0', '44.0'],
   cubecorners: ['40.0', '41.0', '42.0', '43.0', '44.0', '45.0', '46.0', '47.0'],
   skycam: ['40.0', '41.0', '42.0', '43.0'],
 };
@@ -263,6 +269,8 @@ export function buildSymmetricPulloutModes({
   fixedAnchors = [],
   forbiddenForceAnchors = [],
   forceMid,
+  forceLow,
+  activeAnchors = null,
   forceMax,
 } = {}) {
   const fixedSet = new Set((fixedAnchors ?? []).filter((idx) => Number.isFinite(idx)));
@@ -272,9 +280,10 @@ export function buildSymmetricPulloutModes({
   const forbidden = new Set((forbiddenForceAnchors ?? []).filter((idx) => Number.isFinite(idx)));
   // Pullout needs more preload than measurement to traverse the workspace.
   const pullForce = resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 });
-  return motorIds.map((_, idx) => (
-    (movingSet.has(idx) || fixedSet.has(idx) || forbidden.has(idx)) ? 'position' : pullForce
-  ));
+  return motorIds.map((_, idx) => {
+    if (movingSet.has(idx) || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
+    return activeAnchors && !activeAnchors.includes(idx) ? forceLow : pullForce;
+  });
 }
 
 function getFixedTargetBounds(machineConfig, anchorIdx) {
@@ -493,7 +502,8 @@ export function resolveFixedTargets(fixedAnchors, explicitTargets, maxTravelMm, 
     targets = normalizeFixedTargets(explicitTargets, fixedCount);
   } else {
     const value = Number.isFinite(maxTravelMm) ? maxTravelMm : 0;
-    targets = Array.from({ length: fixedCount }, () => value);
+    targets = fixedAnchors.map(axis => getMustBeInFixedSet(machineConfig).includes(axis) ? 0
+      : value * (machineConfig?.defaultFixedTargetScale ?? 1));
   }
   return targets.map((target, idx) => constrainFixedTarget(machineConfig, fixedAnchors[idx], target));
 }
@@ -717,6 +727,14 @@ export function sensorForceAt(profile, driveMm) {
   return forces[hi - 1] + t * (forces[hi] - forces[hi - 1]);
 }
 
+function sweepPairAllowed(config, fixed, drive, sensor) {
+  const top = getMustBeInFixedSet(config);
+  const lowCount = config.numAnchors - top.length;
+  if (top.length !== 1 || top[0] !== config.numAnchors - 1 || lowCount < 4 || lowCount % 2) return true;
+  const oppositeFixed = fixed.filter(axis => axis < lowCount).map(axis => (axis + lowCount / 2) % lowCount);
+  return !oppositeFixed.includes(drive) && !oppositeFixed.includes(sensor);
+}
+
 export function generateSweepConfigs(machineType) {
   const machineConfig = MACHINE_CONFIGS[machineType];
   if (!machineConfig) {
@@ -735,14 +753,21 @@ export function generateSweepConfigs(machineType) {
     const freeAnchors = allAnchors.filter((idx) => !fixedAnchors.includes(idx));
     for (const pair of combinations(freeAnchors, 2)) {
       const [driveAnchor, sensorAnchor] = canonicalDriveSensorPair(pair[0], pair[1]);
-      configs.push({ fixedAnchors, driveAnchor, sensorAnchor });
+      if (sweepPairAllowed(machineConfig, fixedAnchors, driveAnchor, sensorAnchor)) {
+        configs.push({ fixedAnchors, driveAnchor, sensorAnchor });
+      }
     }
   }
 
   return configs;
 }
 
-function selectSizeTunePair(sweepConfigs, fixedOnlyAnchors = []) {
+function selectSizeTunePair(sweepConfigs, fixedOnlyAnchors = [], numAnchors = 0) {
+  if (fixedOnlyAnchors.length === 1 && numAnchors > 4) {
+    // Size tuning pulls both lines at once: use neighbours, since opposing
+    // winches only stretch their lines and report a near-zero workspace.
+    return range(numAnchors).filter(axis => !fixedOnlyAnchors.includes(axis)).slice(0, 2);
+  }
   if (!Array.isArray(sweepConfigs) || sweepConfigs.length === 0) {
     return null;
   }
@@ -874,6 +899,7 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
     axes,
     mmPerDeg,
     forceMid,
+    forceLow,
     forceMax,
     forbiddenForceAnchors = [],
     fixedTargets = [],
@@ -908,6 +934,8 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
       forbiddenForceAnchors,
       forceMid,
       forceMax,
+      forceLow,
+      activeAnchors: [sweepConfig.driveAnchor, sweepConfig.sensorAnchor],
     });
     await applyForceModeState(sendFn, { motorIds, modes: preMoveModes });
     await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
@@ -1214,7 +1242,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     if (fixedSet.has(idx) || forbidden.has(idx)) {
       return 'position';
     }
-    return forceMid*2.0;
+    return idx === sensorAnchor ? forceMid * 2.0 : forceLow;
   });
   await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
   const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, {
@@ -1255,11 +1283,11 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     if (reserveForceActive !== sensorForce) {
       await applyDataPointPreloadModes(sendFn, {
         motorIds, driveAnchor, sensorAnchors: [sensorAnchor], fixedAnchors, forbiddenForceAnchors,
-        forceMax, forceMin: forceMid, forceMid, sensorCollectionForce: sensorForce, speedup, settleOptions,
+        forceMax, forceMin: forceMid, forceMid, compliantForce: forceLow, sensorCollectionForce: sensorForce, speedup, settleOptions,
       });
       await applyForceModeState(sendFn, { motorIds, modes: motorIds.map((_, idx) => {
         if (idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
-        return idx === sensorAnchor ? sensorForce : forceMid;
+        return idx === sensorAnchor ? sensorForce : forceLow;
       }) });
       reserveForceActive = sensorForce;
     }
@@ -1409,6 +1437,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
           forbiddenForceAnchors,
           forceMax,
           forceMin: forceMid,
+          compliantForce: forceLow,
           forceMid,
           sensorCollectionForce,
           speedup,
@@ -1449,6 +1478,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       forbiddenForceAnchors,
       forceMax,
       forceMin: forceMid,
+      compliantForce: forceLow,
       forceMid,
       sensorCollectionForce,
       speedup,
@@ -1725,7 +1755,7 @@ export async function collectSweepData(send, context) {
   let maxTravelMm = Number.isFinite(maxTravelOverride) ? maxTravelOverride : null;
   let sizeTunePair = null;
   if (!useFixedTargets && maxTravelOverride === null) {
-    sizeTunePair = selectSizeTunePair(sweepConfigs, getForceForbiddenAnchors(machineConfig));
+    sizeTunePair = selectSizeTunePair(sweepConfigs, getForceForbiddenAnchors(machineConfig), machineConfig.numAnchors);
     if (!sizeTunePair) {
       console.log('; size-tune skipped (no force-capable anchor pair)');
     } else {
@@ -1761,6 +1791,7 @@ export async function collectSweepData(send, context) {
         speedup,
         midForce: forceLow,
         forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+        returnFirstAnchors: machineConfig.numAnchors > machineConfig.dimensions + 1 ? getForceForbiddenAnchors(machineConfig) : [],
       });
     }
   }
@@ -1816,6 +1847,7 @@ export async function collectSweepData(send, context) {
               motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
               midForce: forces.forceLow,
               forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+              returnFirstAnchors: machineConfig.numAnchors > machineConfig.dimensions + 1 ? getForceForbiddenAnchors(machineConfig) : [],
             });
           }
           await prepareSweepPositioning(send, subCfg, {
@@ -1869,6 +1901,7 @@ export async function collectSweepData(send, context) {
         await returnMotorsToOriginOneAtATime(send, {
           motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup, midForce: forceLow,
           forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+          returnFirstAnchors: machineConfig.numAnchors > machineConfig.dimensions + 1 ? getForceForbiddenAnchors(machineConfig) : [],
         });
         rejectedSweeps.push({ fixed_anchors: sweepConfig.fixedAnchors, fixed_lengths: fixedTargets,
           drive_anchor: sweepConfig.driveAnchor, sensor_anchor: sweepConfig.sensorAnchor,
@@ -1944,6 +1977,10 @@ export async function collectSweepData(send, context) {
         mmPerDeg,
         feed,
         speedup,
+        ...(machineConfig.numAnchors > machineConfig.dimensions + 1 ? {
+          midForce: forceLow, forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+          returnFirstAnchors: getForceForbiddenAnchors(machineConfig),
+        } : {}),
       });
       console.log('Returned all motors to encoder origin (between sweeps).');
     }
@@ -2021,6 +2058,10 @@ export async function collectSweepData(send, context) {
       mmPerDeg,
       feed,
       speedup,
+      ...(machineConfig.numAnchors > machineConfig.dimensions + 1 ? {
+        midForce: forceLow, forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+        returnFirstAnchors: getForceForbiddenAnchors(machineConfig),
+      } : {}),
     });
     console.log('Returned all motors to encoder origin.');
   }

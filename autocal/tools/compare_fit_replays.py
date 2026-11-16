@@ -56,14 +56,14 @@ def main():
             if args.reference_m669:
                 anchors = fit['anchors']
                 m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
-                                for name, anchor in zip('ABCD', anchors))
+                                for name, anchor in zip('ABCDIJKLO', anchors))
                 row['errors'] = anchor_errors(args.reference_m669.read_text(), m669)
                 pose_m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
-                                    for name, anchor in zip('ABCD', fit['pose_fit']['anchors']))
+                                    for name, anchor in zip('ABCDIJKLO', fit['pose_fit']['anchors']))
                 row['pose_fit_errors'] = anchor_errors(args.reference_m669.read_text(), pose_m669)
                 if 'joint_fit' in row:
                     joint_m669 = ' '.join(name + ':'.join(str(v) for v in anchor)
-                                         for name, anchor in zip('ABCD', joint['anchors']))
+                                         for name, anchor in zip('ABCDIJKLO', joint['anchors']))
                     row['joint_fit_errors'] = anchor_errors(args.reference_m669.read_text(), joint_m669)
         summary.append(row)
     (args.output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')

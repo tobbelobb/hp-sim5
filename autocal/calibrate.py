@@ -328,26 +328,17 @@ def build_anchor_initial_guess(
         out = np.vstack([_rotate_about_z(base, step * idx) for idx in range(num_anchors)])
         return out
 
-    if machine in ("hangprinter_3", "hangprinter_4"):
-        if dimensions not in (0, 3) or num_anchors != 4:
+    if machine in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
+        if dimensions not in (0, 3) or num_anchors not in (4, 5):
             return None
         low_z = low_anchor_z
         if low_z is None or not np.isfinite(float(low_z)):
             low_z = -a * np.sin(np.pi / 10.0)
-            low_xy = a * np.cos(np.pi / 10.0)
-        else:
-            low_z = float(low_z)
-            low_xy = float(np.sqrt(max(a * a - low_z * low_z, 0.0)))
-        low_base = np.asarray([0.0, -low_xy, float(low_z)], dtype=float)
-        low = [_rotate_about_z(low_base, (2.0 * np.pi / 3.0) * idx) for idx in range(3)]
-        top = np.asarray([0.0, 0.0, a], dtype=float)
-        return np.vstack(low + [top])
-
-    if machine == "hangprinter_5":
-        if dimensions not in (0, 3) or num_anchors != 5:
-            return None
-        low_base = np.asarray([0.0, -a * np.cos(np.pi / 10.0), -a * np.sin(np.pi / 10.0)], dtype=float)
-        low = [_rotate_about_z(low_base, (2.0 * np.pi / 4.0) * idx) for idx in range(4)]
+        low_z = float(low_z)
+        low_xy = float(np.sqrt(max(a * a - low_z * low_z, 0.0)))
+        low_base = np.asarray([0.0, -low_xy, low_z], dtype=float)
+        low_count = num_anchors - 1
+        low = [_rotate_about_z(low_base, (2.0 * np.pi / low_count) * idx) for idx in range(low_count)]
         top = np.asarray([0.0, 0.0, a], dtype=float)
         return np.vstack(low + [top])
 

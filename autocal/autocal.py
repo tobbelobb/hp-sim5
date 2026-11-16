@@ -427,7 +427,7 @@ def full_auto_loop(
     collected_bootstrap = not dataset_path.exists()
     if collected_bootstrap:
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
-        checked_bootstrap = (equal_strain and str(machine_type) in ("hangprinter_3", "hangprinter_4")
+        checked_bootstrap = (equal_strain and str(machine_type) in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced")
                              and not (_spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)))
         if checked_bootstrap:
             write_bootstrap_state(dataset_path, "collecting_rough")

@@ -44,6 +44,18 @@
     },
     "public/usd_scenes/slideprinter_single_pinholes.usda": {
       "name": "Slideprinter Single Pinholes"
+    },
+    "public/usd_scenes/hp5.usda": {
+      "name": "Hangprinter version 5",
+      "machine_type": "hangprinter_5",
+      "autocal_solver_iterations": 20
+    },
+    "public/usd_scenes/hp5_pulley_reduced.usda": {
+      "name": "Hangprinter version 5 pulley reduced",
+      "machine_type": "hangprinter_5_pulley_reduced",
+      "autocal_solver_iterations": 20,
+      "physics_substeps": 1,
+      "solver_iterations": 10
     }
   },
   "machines": [
@@ -380,6 +392,48 @@
         },
         "public/gcode/draw_squares_bigger.gcode": {
           "rrf": "public/RRF_CAN_commands/draw_squares_bigger_slideprinter_w_line_layers.can"
+        }
+      }
+    },
+    {
+      "name": "Hangprinter version 5 without line layering",
+      "nicknames": [
+        "hp5",
+        "hangprinter_5"
+      ],
+      "scene": "public/usd_scenes/hp5.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_hp5.g",
+      "klipper_config": "public/klipper/hp5/printer-hp5-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "klipper": "public/mcu_commands/hp5/Hangprinter_logo6_no_buildup.serial",
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp5_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "klipper": "public/mcu_commands/hp5/draw_squares_bigger_no_buildup.serial",
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp5_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "Hangprinter version 5 pulley reduced without line layering",
+      "nicknames": [
+        "hp5_pulley_reduced",
+        "hangprinter_5_pulley_reduced"
+      ],
+      "scene": "public/usd_scenes/hp5_pulley_reduced.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_hp5_pulley_reduced.g",
+      "klipper_config": "public/klipper/hp5_pulley_reduced/printer-hp5_pulley_reduced-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "klipper": "public/mcu_commands/hp5_pulley_reduced/Hangprinter_logo6_no_buildup.serial",
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_hp5_pulley_reduced_no_buildup.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "klipper": "public/mcu_commands/hp5_pulley_reduced/draw_squares_bigger_no_buildup.serial",
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp5_pulley_reduced_no_buildup.can"
         }
       }
     }

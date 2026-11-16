@@ -43,7 +43,8 @@ def test_scene_identity_resolves_to_its_catalogue_defaults():
 def test_simulated_autocal_uses_the_catalogued_solver_iterations():
     from autocal._autocal_common import autocal_solver_iterations
     assert autocal_solver_iterations('hangprinter_3') == 20
-    assert autocal_solver_iterations('hangprinter_5') is None
+    assert autocal_solver_iterations('hangprinter_5') == 20
+    assert autocal_solver_iterations('hangprinter_5_pulley_reduced') == 20
 
 
 def test_catalogued_collector_types_are_accepted_by_the_dataset_schema():
@@ -56,7 +57,7 @@ def test_catalogued_collector_types_are_accepted_by_the_dataset_schema():
 def test_each_scene_has_one_machine_per_line_layering_choice():
     for scene in machines.CATALOG['scenes']:
         variants = sorted(entry['line_layering'] for entry in machines.CATALOG['machines'] if entry['scene'] == scene)
-        assert variants == [False, True], scene
+        assert variants == ([False] if scene in ('public/usd_scenes/hp5.usda', 'public/usd_scenes/hp5_pulley_reduced.usda') else [False, True]), scene
     assert {entry['scene'] for entry in machines.CATALOG['machines']} == set(machines.CATALOG['scenes'])
 
 

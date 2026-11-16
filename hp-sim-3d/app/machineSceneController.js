@@ -1,6 +1,7 @@
 import { OpenText as UsdOpenText, getAttribute } from '../../src/js/usd/stage.js';
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
 import { setupScene } from './setupScene.js';
+import { machineForScene } from '../../machines/catalog.js';
 
 async function fetchUsdaText(url) {
   const response = await fetch(url, { cache: 'no-cache' });
@@ -573,6 +574,10 @@ export function createMachineSceneController({
     let stage = null;
     try {
       sourceText = await loadCatalogUsdaSource(sourceKey);
+      if (!machineForScene(`public/usd_scenes/${sourceKey}`, featureFlags.lineLayeringEnabled)
+          && machineForScene(`public/usd_scenes/${sourceKey}`, false)) {
+        featureFlags.setLineLayeringEnabledState(false);
+      }
       stage = openBakedUsdaStage(sourceText, featureFlags.lineLayeringEnabled);
     } catch (error) {
       console.error(`hp-sim-3d: unable to bake/load USDA preset ${sourceKey}.`, error);

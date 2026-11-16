@@ -24,6 +24,7 @@ class MachineType(Enum):
     HANGPRINTER_3 = "hangprinter_3"  # v3: 4 anchors, 3D
     HANGPRINTER_4 = "hangprinter_4"  # 4 anchors, 3D
     HANGPRINTER_5 = "hangprinter_5"  # 5 anchors, 3D
+    HANGPRINTER_5_PULLEY_REDUCED = "hangprinter_5_pulley_reduced"  # 5 anchors, 3D
     CUBECORNERS = "cubecorners"  # 8 anchors, 3D
     SKYCAM = "skycam"  # 4 anchors, 3D (underactuated)
 
@@ -44,6 +45,15 @@ class MachineConfig:
         """Number of fixed cables needed for 1-DOF motion."""
         return self.dimensions - 1
 
+    def sweep_pair_allowed(self, fixed, drive, sensor):
+        # On an even low-anchor ring, an anchor opposite a held low line is
+        # compliant. Use the transverse pair for a measurable arc in both directions.
+        low_count = self.num_anchors - len(self.carrying_anchors)
+        if self.carrying_anchors != [self.num_anchors - 1] or low_count < 4 or low_count % 2:
+            return True
+        opposite_fixed = {(axis + low_count // 2) % low_count for axis in fixed if axis < low_count}
+        return drive not in opposite_fixed and sensor not in opposite_fixed
+
     @classmethod
     def from_type(cls, machine_type: MachineType) -> "MachineConfig":
         configs = {
@@ -60,10 +70,11 @@ class MachineConfig:
                     3: (None, 0.0),
                 },
             ),
-            MachineType.HANGPRINTER_5: (5, 3, [4], [], {}),
+            MachineType.HANGPRINTER_5: (5, 3, [4], [4], {i: (None, 0.0) for i in range(5)}),
             MachineType.CUBECORNERS: (8, 3, [], [], {}),
             MachineType.SKYCAM: (4, 3, [], [], {}),
         }
+        configs[MachineType.HANGPRINTER_5_PULLEY_REDUCED] = configs[MachineType.HANGPRINTER_5]
         configs[MachineType.HANGPRINTER_3] = configs[MachineType.HANGPRINTER_4]
         if machine_type not in configs:
             raise ValueError(f"Unsupported machine type: {machine_type}")

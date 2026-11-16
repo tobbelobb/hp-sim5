@@ -13,8 +13,8 @@ import numpy as np
 from autocal.ellipse_cost import EllipseCostFunction
 from autocal.theoretical_ellipse import (
     _ANCHOR_OPT_MODE_FULL,
-    _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z,
-    _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z,
+    _ANCHOR_OPT_MODE_HANGPRINTER_AX0_FIXED_LOW_Z,
+    _ANCHOR_OPT_MODE_HANGPRINTER_AX0_SHARED_LOW_Z,
     _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0,
     anchor_opt_constraint_mode,
     anchor_opt_vector_size,
@@ -111,7 +111,7 @@ def _can_use_jax_objective(cost_fn: EllipseCostFunction) -> bool:
         if machine_type != "slideprinter":
             return False
     elif dims == 3:
-        if machine_type not in ("hangprinter_3", "hangprinter_4"):
+        if machine_type not in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
             return False
     else:
         return False
@@ -378,30 +378,14 @@ def _anchors_from_opt_vec(
     if constraint_mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
         x = jnp.concatenate([jnp.zeros((1,), dtype=x.dtype), x], axis=0)
         return x.reshape((num_anchors, dimensions))
-    if constraint_mode == _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z:
-        low_z = x[1]
-        zero = jnp.zeros((), dtype=x.dtype)
-        return jnp.stack(
-            [
-                jnp.stack([zero, x[0], low_z]),
-                jnp.stack([x[2], x[3], low_z]),
-                jnp.stack([x[4], x[5], low_z]),
-                jnp.stack([x[6], x[7], x[8]]),
-            ],
-            axis=0,
-        )
-    if constraint_mode == _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z:
-        low_z = jnp.asarray(low_anchor_z, dtype=x.dtype)
-        zero = jnp.zeros((), dtype=x.dtype)
-        return jnp.stack(
-            [
-                jnp.stack([zero, x[0], low_z]),
-                jnp.stack([x[1], x[2], low_z]),
-                jnp.stack([x[3], x[4], low_z]),
-                jnp.stack([x[5], x[6], x[7]]),
-            ],
-            axis=0,
-        )
+    if constraint_mode in (_ANCHOR_OPT_MODE_HANGPRINTER_AX0_SHARED_LOW_Z, _ANCHOR_OPT_MODE_HANGPRINTER_AX0_FIXED_LOW_Z):
+        shared = constraint_mode == _ANCHOR_OPT_MODE_HANGPRINTER_AX0_SHARED_LOW_Z
+        low_z = x[1] if shared else jnp.asarray(low_anchor_z, dtype=x.dtype)
+        start = 2 if shared else 1
+        low_xy = x[start:-3].reshape((num_anchors - 2, 2))
+        first = jnp.stack([jnp.zeros((), dtype=x.dtype), x[0], low_z])[None, :]
+        lows = jnp.concatenate([low_xy, jnp.full((num_anchors - 2, 1), low_z)], axis=1)
+        return jnp.concatenate([first, lows, x[-3:][None, :]], axis=0)
     return x.reshape((num_anchors, dimensions))
 
 
@@ -852,7 +836,7 @@ def _jax_constraint_mode(
             )
         )
         low_anchor_z = float(cost_fn.low_anchor_z) if cost_fn.low_anchor_z is not None else float("nan")
-        if mode == _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z and not np.isfinite(low_anchor_z):
+        if mode == _ANCHOR_OPT_MODE_HANGPRINTER_AX0_FIXED_LOW_Z and not np.isfinite(low_anchor_z):
             return None
         return mode, low_anchor_z
     return None

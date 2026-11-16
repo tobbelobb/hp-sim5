@@ -55,7 +55,7 @@ def generate_sweep_configs(
             if canonical is None:
                 continue
             drive, sensor = canonical
-            if sensor in sensor_block:
+            if sensor in sensor_block or not config.sweep_pair_allowed(fixed, drive, sensor):
                 continue
             all_configs.append(
                 {
@@ -90,7 +90,17 @@ def select_representative_configs(
     used_fixed = set()
     sensor_block = set(config.carrying_anchors or [])
 
+    # Cover distinct constraint circles before spending the bootstrap budget on
+    # different pairs on the same circle (five-anchor machines have both).
+    ordered = []
+    seen_fixed = set()
     for cfg in all_configs:
+        key = tuple(cfg['fixed_anchors'])
+        if key not in seen_fixed:
+            ordered.append(cfg)
+            seen_fixed.add(key)
+    ordered += [cfg for cfg in all_configs if cfg not in ordered]
+    for cfg in ordered:
         drive = cfg["drive_anchor"]
         sensor = cfg["sensor_anchor"]
         fixed_combo = tuple(cfg["fixed_anchors"])

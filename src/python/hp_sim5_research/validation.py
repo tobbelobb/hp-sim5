@@ -16,6 +16,7 @@ def validate_collection(path, anchors=None):
     _validate_sweep_roles(dataset)
     # Check orientation against measured encoders below. A commanded setpoint
     # can differ from the physical drive position and cannot establish roles.
+    axis_count = int(dataset['num_anchors'])
     scale = np.asarray(dataset['config']['mm_per_degree'])
     spans = []
     sensor_spans = []
@@ -27,7 +28,7 @@ def validate_collection(path, anchors=None):
             lengths = np.asarray(point['raw_angles_deg']) * scale
             np.testing.assert_allclose([point['l_drive'], point['l_sensor']],
                                        lengths[[sweep['drive_anchor'], sweep['sensor_anchor']]], rtol=1e-10, atol=1e-8)
-            if not point.get('sample_count') or len(point.get('sigma', [])) != 4:
+            if not point.get('sample_count') or len(point.get('sigma', [])) != axis_count:
                 raise ValueError('Missing collector noise statistics')
         spans.append(float(np.ptp([point['l_drive'] for point in points])))
         directions = {}
@@ -41,9 +42,9 @@ def validate_collection(path, anchors=None):
     if not sensor_spans or min(sensor_spans) < .01:
         raise ValueError('A physical sub-sweep sensor did not respond (0.01 mm minimum); increase sensorCollectionForce')
     config = dataset['config']['m669']
-    anchors = np.asarray([config[axis] for axis in 'ABCD'] if anchors is None else anchors, dtype=float)
-    if anchors.shape != (4, 3) or not np.isfinite(anchors).all():
-        raise ValueError('Collection must preserve all three firmware coordinates for each of four anchors')
+    anchors = np.asarray([config[axis] for axis in 'ABCDIJKLO' if axis in config] if anchors is None else anchors, dtype=float)
+    if anchors.shape != (axis_count, 3) or not np.isfinite(anchors).all():
+        raise ValueError('Collection must preserve all three firmware coordinates for each anchor')
     objective = EllipseCostFunction(dataset, min_points=5,
                                    pointwise_filtering=False, sweep_wise_filtering=False)
     vector = anchors_matrix_to_opt_vec(anchors, dataset['machine_type'])

@@ -144,6 +144,8 @@ def rank_candidates_pose_information(
         if positions.shape[0] == 0:
             continue
         lengths = np.linalg.norm(anchors[None, :, :] - positions[:, None, :], axis=2) - home_lengths
+        active = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
+        lengths[:, [axis for axis in range(num_anchors) if axis not in active]] = np.nan
         gain = np.linalg.slogdet(base + pose_information(anchors, lengths, **options))[1] - base_logdet
         if np.isfinite(gain):
             scored.append((float(gain), cfg))

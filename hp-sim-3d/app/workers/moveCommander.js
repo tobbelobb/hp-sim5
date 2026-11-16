@@ -24,13 +24,14 @@ async function* makeLineIterator(stream) {
 }
 
 
-class MoveCommander {
+export class MoveCommander {
     constructor({uri = null} = {}) {
         this.uri = uri;
+        this.motorAxes = 'ABCDIJKLO'.slice(0, guessed_anchors.length).split('');
         this.websocket = null;
         this.last_speed_mm_per_min = 1000.0;
         this.dt = 1.0 / 200.0; // Fallback from Python version
-        this.current_angles_rad = [0.0, 0.0, 0.0];
+        this.current_angles_rad = guessed_anchors.map(() => 0);
         this.anchors_mm = guessed_anchors;
         this.current_pos_mm = { 'X': 0.0, 'Y': 0.0, 'Z': 0.0 };
         this.spool_radius_mm = spool_r_in_origin_first_guess;
@@ -49,6 +50,31 @@ class MoveCommander {
         this.asapYieldInterval = 512;
         this.asapYieldBudgetMs = 24;
         this.lastYieldTime = 0;
+    }
+
+    configure(configText) {
+        const anchors = new Map();
+        const params = {};
+        for (const raw of configText.split(/\r?\n/)) {
+            const line = raw.split(';')[0];
+            if (/^M669\b/.test(line)) {
+                for (const match of line.matchAll(/\b([ABCDIJKLO])([-+\d.]+:[-+\d.]+:[-+\d.]+)/g)) {
+                    anchors.set(match[1], match[2].split(':').map(Number));
+                }
+            }
+            if (/^M666\b/.test(line)) {
+                for (const match of line.matchAll(/\b([QRULHO])([-+\d.:]+)/g)) {
+                    params[match[1]] = match[2].split(':').map(Number);
+                }
+            }
+        }
+        this.motorAxes = [...'ABCDIJKLO'].filter(axis => anchors.has(axis));
+        if (!this.motorAxes.length) throw new Error('Firmware configuration has no anchor coordinates');
+        this.anchors_mm = this.motorAxes.map(axis => anchors.get(axis));
+        this.current_angles_rad = this.motorAxes.map(() => 0);
+        this.spool_radius_mm = params.R;
+        this.spool_buildup_factor = params.Q?.[0] ?? 0;
+        this.spoolParams = params;
     }
 
     async connect() {
@@ -118,7 +144,7 @@ class MoveCommander {
         for (const part of parts) {
             const code = part.charAt(0).toUpperCase();
             const value = parseFloat(part.substring(1));
-            if (code === 'A' || code === 'B' || code === 'C') {
+            if (this.motorAxes.includes(code)) {
                 command[code] = value;
             } else if (code === 'F') {
                 command['speed'] = value;
@@ -163,9 +189,8 @@ class MoveCommander {
     async run(stream) {
         try {
             await this.connect();
-            // TODO: These two lists and their usage seem specialized for a Slideprinter (three anchor) setup?
-            const axesABC = ['A', 'B', 'C']; // The real set of Hangprinter axis names from ReprapFirmware: ABCDIJKLO
-            const axesXYZ = ['X', 'Y', 'Z']; // The real set of XYZ axis names from ReprapFirmware: XYZUVWABC
+            const motorAxes = this.motorAxes;
+            const axesXYZ = ['X', 'Y', 'Z'];
 
             const lineIterator = makeLineIterator(stream);
             for await (const line of lineIterator) {
@@ -232,12 +257,12 @@ class MoveCommander {
                             const loop_start_time = performance.now();
                             const t = i / num_steps;
                             const interp_pos_mm_arr = add(start_pos_mm_arr, scale(subtract(target_pos_mm_arr, start_pos_mm_arr), t));
-                            const motor_positions_deg = pos_to_motor_pos_samples_deg(this.anchors_mm, [interp_pos_mm_arr], this.low_axis_max_force, this.use_flex, this.spool_buildup_factor);
+                            const motor_positions_deg = pos_to_motor_pos_samples_deg(this.anchors_mm, [interp_pos_mm_arr], this.low_axis_max_force, this.use_flex, this.spool_buildup_factor, this.spool_radius_mm, this.spoolParams);
                             const interp_angles_rad = scale(motor_positions_deg[0], Math.PI / 180.0);
                             final_angles_rad = interp_angles_rad;
 
                             const interpolated_cmd = { type: 'Move' };
-                            axesABC.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles_rad[idx]);
+                            motorAxes.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles_rad[idx]);
 
                             if (extrusion_per_step > 0.0) {
                                 interpolated_cmd['E'] = extrusion_per_step;
@@ -282,7 +307,7 @@ class MoveCommander {
                         let target_angles_rad;
                         if (has_move) {
                             const pos_mm = [axesXYZ.map(ax => target_pos_mm[ax])];
-                            const motor_positions_deg = pos_to_motor_pos_samples_deg(this.anchors_mm, pos_mm, this.low_axis_max_force, this.use_flex, this.spool_buildup_factor);
+                            const motor_positions_deg = pos_to_motor_pos_samples_deg(this.anchors_mm, pos_mm, this.low_axis_max_force, this.use_flex, this.spool_buildup_factor, this.spool_radius_mm, this.spoolParams);
                             target_angles_rad = scale(motor_positions_deg[0], Math.PI / 180.0);
                             this.current_angles_rad = target_angles_rad;
                         } else {
@@ -290,7 +315,7 @@ class MoveCommander {
                         }
 
                         const cmd = { type: 'Move' };
-                        axesABC.forEach((axis, idx) => cmd[axis] = target_angles_rad[idx]);
+                        motorAxes.forEach((axis, idx) => cmd[axis] = target_angles_rad[idx]);
 
                         if (extrusion_delta_mm > 0.0) {
                             cmd['E'] = extrusion_delta_mm;
@@ -308,20 +333,20 @@ class MoveCommander {
                         if (axis in command) target_pos_mm[axis] = command[axis];
                     });
                     const pos_mm = [axesXYZ.map(ax => target_pos_mm[ax])];
-                    const target_angles_rad = scale(pos_to_motor_pos_samples_deg(this.anchors_mm, pos_mm, this.low_axis_max_force, this.use_flex, this.spool_buildup_factor)[0], Math.PI / 180.0);
+                    const target_angles_rad = scale(pos_to_motor_pos_samples_deg(this.anchors_mm, pos_mm, this.low_axis_max_force, this.use_flex, this.spool_buildup_factor, this.spool_radius_mm, this.spoolParams)[0], Math.PI / 180.0);
                     const deltas_rad = subtract(target_angles_rad, this.current_angles_rad);
                     this.current_angles_rad = target_angles_rad;
                     this.current_pos_mm = target_pos_mm;
 
                     const cmd = { type: 'Add to reference' };
-                    axesABC.forEach((axis, idx) => cmd[axis] = deltas_rad[idx]);
+                    motorAxes.forEach((axis, idx) => cmd[axis] = deltas_rad[idx]);
                     await this.sendCommand(cmd);
 
                 } else if (command.type === 'G6') {
-                    const line_deltas_mm = [command.A || 0, command.B || 0, command.C || 0];
-                    // In python, spool_radius_mm is an array, so this is element-wise division.
-                    // Here, spool_radius_mm is an array, so we need to do it element-wise.
-                    const delta_angles_rad = line_deltas_mm.map((delta, i) => delta / this.spool_radius_mm[i]);
+                    const line_deltas_mm = motorAxes.map(axis => command[axis] || 0);
+                    const delta_angles_rad = line_deltas_mm.map((delta, i) => delta / this.spool_radius_mm[i]
+                        * (this.spoolParams?.U?.[i] ?? 1) * (this.spoolParams?.H?.[i] ?? 1)
+                        / (this.spoolParams?.L?.[i] ?? 1));
                     const target_angles_rad = add(this.current_angles_rad, delta_angles_rad);
                     const line_distance_mm = norm(line_deltas_mm);
                     const speed_mm_per_s = (command.speed || 1000.0) / 60.0;
@@ -337,7 +362,7 @@ class MoveCommander {
                             const t = i / num_steps;
                             const interpolated_cmd = { type: 'Move' };
                             const interp_angles = add(this.current_angles_rad, scale(deltas_rad, t));
-                            axesABC.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles[idx]);
+                            motorAxes.forEach((axis, idx) => interpolated_cmd[axis] = interp_angles[idx]);
                             await this.sendCommand(interpolated_cmd);
 
                             const elapsed_ms = performance.now() - loop_start_time;
@@ -374,7 +399,7 @@ class MoveCommander {
                     this.current_angles_rad = target_angles_rad;
 
                     const cmd = { type: 'Add to reference' };
-                    axesABC.forEach((axis, idx) => cmd[axis] = deltas_rad[idx]);
+                    motorAxes.forEach((axis, idx) => cmd[axis] = deltas_rad[idx]);
                     await this.sendCommand(cmd);
                 }
             }
@@ -399,6 +424,9 @@ console.log("worker: MoveCommander is up");
 
 self.addEventListener('message', async (e) => {
   switch (e.data.type) {
+    case 'set_kinematics_config':
+      commander.configure(e.data.configText);
+      break;
     case 'filename_upload':
       if (e.data.filename) {
         console.log("worker: got filename_upload", e.data.filename);

@@ -43,7 +43,9 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
         fixed = [int(anchor) for anchor in sweep["fixed_anchors"]]
         drive, sensor = int(sweep["drive_anchor"]), int(sweep["sensor_anchor"])
         for point in sweep.get("data_points", []):
-            row = [0.0] * num_anchors
+            # Unused winches are compliant and can be slack. Their encoders
+            # cannot constrain the effector pose; NaN marks an absent range.
+            row = [float("nan")] * num_anchors
             errors = point.get("fixed_error_angles_mu_deg") if use_noise_mean else None
             if errors is None:
                 errors = point.get("fixed_error_angles_deg")
@@ -65,18 +67,20 @@ def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offs
     """Per-point, per-line length misfit at each point's best effector position, in mm."""
     anchors = np.asarray(anchors, dtype=float)
     dimensions = anchors.shape[1]
-    absolute = np.linalg.norm(anchors, axis=1) + np.asarray(home_offsets_mm, dtype=float) + lengths_mm
+    measured = np.isfinite(lengths_mm)
+    absolute = (np.linalg.norm(anchors, axis=1) + np.asarray(home_offsets_mm, dtype=float)
+                + np.where(measured, lengths_mm, 0.0))
     positions = np.zeros((lengths_mm.shape[0], dimensions))
     damping = 1e-9 * np.eye(dimensions)
     for _ in range(_POSITION_ITERATIONS):
         to_effector = positions[:, None, :] - anchors[None, :, :]
         distance = np.linalg.norm(to_effector, axis=2)
-        direction = to_effector / distance[:, :, None]
-        misfit = distance - absolute
+        direction = to_effector / distance[:, :, None] * measured[:, :, None]
+        misfit = np.where(measured, distance - absolute, 0.0)
         normal = np.einsum("pni,pnj->pij", direction, direction) + damping
         gradient = np.einsum("pni,pn->pi", direction, misfit)
         positions = positions - np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
-    return np.linalg.norm(positions[:, None, :] - anchors[None, :, :], axis=2) - absolute
+    return np.where(measured, np.linalg.norm(positions[:, None, :] - anchors[None, :, :], axis=2) - absolute, 0.0)
 
 
 def fit_pose_least_squares(
@@ -99,7 +103,7 @@ def fit_pose_least_squares(
     machine_type = str(dataset["machine_type"])
     num_anchors, dimensions = int(dataset["num_anchors"]), int(dataset["dimensions"])
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
-    if not lengths.size or not np.all(np.isfinite(lengths)):
+    if not lengths.size or not np.all(np.sum(np.isfinite(lengths), axis=1) >= dimensions + 1):
         raise ValueError("Point fit requires finite measurements on at least one point")
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
@@ -134,7 +138,7 @@ def fit_pose_least_squares(
         x_scale = np.concatenate([np.full(start.size - num_offsets, 100.0), np.ones(num_offsets)])
         first = least_squares(residuals, start, args=(_MIN_SCALE_MM / home_offset_prior_sigma_mm,),
                               bounds=bounds, x_scale=x_scale, loss="soft_l1", f_scale=1.0)
-        point_residuals = first.fun[: lengths.size]
+        point_residuals = first.fun[: lengths.size].reshape(lengths.shape)[np.isfinite(lengths)]
         scale = max(1.4826 * float(np.median(np.abs(point_residuals - np.median(point_residuals)))), _MIN_SCALE_MM)
         return least_squares(residuals, first.x, args=(scale / home_offset_prior_sigma_mm,),
                              bounds=bounds, x_scale=x_scale, loss="cauchy", f_scale=3.0 * scale, xtol=1e-12, ftol=1e-12), scale

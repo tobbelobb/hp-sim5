@@ -44,22 +44,23 @@ export function pos_to_motor_pos_samples_deg(
     low_axis_max_force, // unused because use_flex is false
     use_flex, // unused because use_flex is false
     spool_buildup_factor = constant_spool_buildup_factor,
-    spool_r_in_origin = spool_r_in_origin_first_guess
+    spool_r_in_origin = spool_r_in_origin_first_guess,
+    spoolParams = {}
 ) {
-    const spool_to_motor_gearing_factor = spool_gear_teeth / motor_gear_teeth;
-    const mech_adv_ = mechanical_advantage;
-    const lines_per_spool_ = lines_per_spool;
+    const value = (key, index, fallback) => spoolParams[key]?.[index] ?? fallback;
+    const mech_adv_ = anchors.map((_, i) => value('U', i, mechanical_advantage[i] ?? 1));
+    const lines_per_spool_ = anchors.map((_, i) => value('O', i, lines_per_spool[i] ?? 1));
 
     // Buildup per line times lines. Minus sign because more line in air means less line on spool
     const k2 = mech_adv_.map((ma, i) => -1.0 * ma * lines_per_spool_[i] * spool_buildup_factor);
 
     // we now want to use degrees instead of steps as unit of rotation
-    const degrees_per_unit_times_r = mech_adv_.map(ma => (spool_to_motor_gearing_factor * ma * 360.0) / (2.0 * Math.PI));
+    const degrees_per_unit_times_r = mech_adv_.map((ma, i) => (value('H', i, spool_gear_teeth) / value('L', i, motor_gear_teeth) * ma * 360.0) / (2.0 * Math.PI));
 
     const relative_line_lengths = distance_samples_relative_to_origin(anchors, pos);
     // flex_distance is not implemented as use_flex is false in MoveCommander
 
-    if (k2.every(val => val > 1e-9)) {
+    if (k2.some(val => Math.abs(val) > 1e-9)) {
         const spool_r_in_origin_sq = spool_r_in_origin.map(r => r * r);
         const k0 = degrees_per_unit_times_r.map((d, i) => 2.0 * d / k2[i]);
         return relative_line_lengths.map(lengths => {

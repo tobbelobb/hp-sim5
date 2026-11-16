@@ -345,6 +345,7 @@ function buildDataPointModes({
   forceMin,
   forceMid,
   sensorCollectionForce,
+  compliantForce,
 } = {}) {
   const fixedSet = new Set((fixedAnchors ?? []).filter((idx) => Number.isFinite(idx)));
   const sensorSet = new Set(
@@ -366,7 +367,7 @@ function buildDataPointModes({
     if (sensorSet.has(idx)) {
       return sensorForce;
     }
-    return fallbackForce;
+    return Number.isFinite(compliantForce) ? compliantForce : fallbackForce;
   });
 
   const preloadModes = buildModes(
@@ -409,6 +410,7 @@ export async function collectDataPoint(sendFn, options = {}) {
     forceMin,
     forceMid,
     sensorCollectionForce,
+    compliantForce,
     speedup,
     settleOptions = {},
     recordPoint,
@@ -451,6 +453,7 @@ export async function collectDataPoint(sendFn, options = {}) {
     forceMin,
     forceMid,
     sensorCollectionForce,
+    compliantForce,
   });
 
   // The sweep caller can supply its just-completed quiet check when no motor
@@ -552,6 +555,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     midForce = DEFAULT_MID_FORCE_N,
     fixedAnchors = [],
     forbiddenForceAnchors = [],
+    returnFirstAnchors = [],
     settleOptions = {},
   } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -571,7 +575,11 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
   const stableBefore = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   let stableAfter = stableBefore;
   const lengths = anglesToLengths(stableBefore.anglesDeg, mmPerDeg);
-  const order = calculateReturnOrder({ fixedAnchors, currentLengths: lengths });
+  const byDistance = calculateReturnOrder({ fixedAnchors, currentLengths: lengths });
+  // Restore carrying lengths before holding them during the remaining returns.
+  // A shortened top line and home lengths on multiple low axes are incompatible.
+  const first = new Set(returnFirstAnchors);
+  const order = [...byDistance.filter(i => first.has(i)), ...byDistance.filter(i => !first.has(i))];
   const forbidden = new Set(forbiddenForceAnchors ?? []);
 
   for (const anchorIdx of order) {

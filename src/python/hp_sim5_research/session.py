@@ -68,8 +68,8 @@ class NativeSession:
         mirror.apply_state(self.world, state)
         self.remote.axis_to_entity = {axis: list(ids) for axis, ids in state.get('axes', {}).items()}
         self.remote.set_queue_length(state.get('queue_length', 0))
-        if set(self.remote.axis_to_entity) != set('ABCD'):
-            raise ValueError('Collection requires one Hangprinter with axes A/B/C/D')
+        if len(self.remote.axis_to_entity) < 4 or set(self.remote.axis_to_entity) - set('ABCDIJKLO'):
+            raise ValueError('Collection requires Hangprinter spool axes')
 
     def start_recording(self, path):
         if self.recording is not None:

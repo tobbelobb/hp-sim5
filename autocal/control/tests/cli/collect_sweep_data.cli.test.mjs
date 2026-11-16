@@ -257,3 +257,24 @@ m569_address: 43.0
     expect(args.sensorCollectionForce).toBe('7');
   });
 });
+
+for (const type of ['hangprinter_5', 'hangprinter_5_pulley_reduced']) {
+  test(`${type} bootstrap reels in its held low line and frees the opposing line`, () => {
+    const config = MACHINE_CONFIGS[type];
+    const sweeps = generateSweepConfigs(type);
+    expect(sweeps).toHaveLength(4);
+    for (const sweep of sweeps) {
+      const low = sweep.fixedAnchors.find(axis => axis !== 4);
+      expect(new Set([sweep.driveAnchor, sweep.sensorAnchor])).toEqual(new Set([(low+1)%4, (low+3)%4]));
+      expect(resolveFixedTargets(sweep.fixedAnchors, null, 400, config)).toEqual([-400, 0]);
+    }
+    expect(resolveRrfSimulatorConfig(type)).toContain(type === 'hangprinter_5' ? 'config_hp5.g' : 'config_hp5_pulley_reduced.g');
+  });
+}
+
+test('redundant pullout keeps the opposing unused winch compliant while reeling a fixed line', () => {
+  expect(buildSymmetricPulloutModes({ motorIds: ['40','41','42','43','44'],
+    movingAnchors: new Set([0]), fixedAnchors: [0,4], activeAnchors: [1,3],
+    forbiddenForceAnchors: [4], forceLow: .02, forceMid: .5, forceMax: 2 }))
+    .toEqual(['position', 2, .02, 2, 'position']);
+});

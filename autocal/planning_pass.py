@@ -66,7 +66,7 @@ def plan_ellipse_sweep(
             max_travel_mm = float(raw_max_travel)
     exploration_bounds = None
     if candidate_deltas is None:
-        if machine_type in ("hangprinter_3", "hangprinter_4") and delta_min is None and delta_max is None:
+        if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and delta_min is None and delta_max is None:
             candidate_deltas, exploration_bounds = exploration_grid(dataset, candidate_count)
         else:
             default_range = _default_delta_range(max_travel_mm=max_travel_mm, observed_deltas=observed_deltas)
@@ -99,7 +99,7 @@ def plan_ellipse_sweep(
         # Relax novelty spacing if needed, but never re-admit excluded repeats.
         candidates = novel_candidates
 
-    if machine_type in ("hangprinter_3", "hangprinter_4") and spool_params is None:
+    if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and spool_params is None:
         # Position-based ranking: it values sweeps with a shortened D line, which the
         # ellipse-geometry ranking below never picks.
         estimation_dataset = fit["dataset_for_estimation"]
@@ -152,7 +152,7 @@ def plan_ellipse_sweep(
 
     collection_fallback = False
     best_cfg = ranked[0][1] if ranked else None
-    if best_cfg is None and candidates and machine_type not in ("hangprinter_3", "hangprinter_4"):
+    if best_cfg is None and candidates and machine_type not in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
         # The fit can be too degenerate to score any candidate. The generated
         # candidates still satisfy machine constraints, so keep collection
         # moving with a moderate novel candidate from the current dataset.
@@ -192,7 +192,7 @@ def plan_ellipse_sweep(
     cmd = None
     collection_error = None
     if best_cfg is not None:
-        if is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4"):
+        if is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
             if error := profile_policy_error(dataset):
                 collection_error = error

@@ -18,14 +18,16 @@ from autocal._autocal_common import REPO_ROOT, catalogued_machine
 
 def anchor_errors(initial, final):
     def parse(text):
-        anchors = []
-        for name in 'ABCD':
+        anchors = {}
+        for name in 'ABCDIJKLO':
             match = re.search(rf'\b{name}\s*:?\s*([-+\d.eE]+)[,:]\s*([-+\d.eE]+)[,:]\s*([-+\d.eE]+)', text)
-            if not match:
-                raise ValueError(f'missing anchor {name}')
-            anchors.append([float(v) for v in match.groups()])
+            if match:
+                anchors[name] = [float(v) for v in match.groups()]
         return anchors
     truth, fitted = parse(initial), parse(final)
+    if len(truth) < 4 or truth.keys() != fitted.keys():
+        raise ValueError("missing anchor: initial and final firmware must contain the same complete anchor set")
+    truth, fitted = list(truth.values()), list(fitted.values())
     diff = [[v - t for v, t in zip(a, b)] for a, b in zip(fitted, truth)]
     shift = [sum(row[i] for row in diff) / len(diff) for i in range(3)]
     aligned = [[v - shift[i] for i, v in enumerate(row)] for row in diff]
@@ -40,7 +42,7 @@ def anchor_errors(initial, final):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
-    parser.add_argument('--machine', choices=['hangprinter_3', 'hangprinter_4'], required=True)
+    parser.add_argument('--machine', choices=['hangprinter_3', 'hangprinter_4', 'hangprinter_5', 'hangprinter_5_pulley_reduced'], required=True)
     parser.add_argument('--scene', type=Path)
     parser.add_argument('--stiffness', type=float, help='Set all cable stiffness-per-unit-length values')
     parser.add_argument('--max-steps', type=int, default=20)

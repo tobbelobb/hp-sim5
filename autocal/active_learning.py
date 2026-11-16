@@ -332,6 +332,7 @@ def generate_candidate_sweeps(
     if fixed_count <= 0:
         return []
 
+    cfg = None
     forbidden = set(int(x) for x in (forbidden_sensors or []))
     must_be_fixed = set(int(x) for x in (must_be_fixed_anchors or []))
     fixed_delta_bounds = _normalize_fixed_delta_bounds(fixed_delta_bounds_by_anchor)
@@ -370,7 +371,7 @@ def generate_candidate_sweeps(
             if canonical is None:
                 continue
             drive, sensor = canonical
-            if sensor in forbidden:
+            if sensor in forbidden or (cfg is not None and not cfg.sweep_pair_allowed(fixed, drive, sensor)):
                 continue
             for fixed_deltas in product(deltas, repeat=fixed_count):
                 if not all(

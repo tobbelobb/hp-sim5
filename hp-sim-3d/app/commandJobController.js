@@ -224,7 +224,7 @@ export function createCommandJobController({
     return null;
   }
 
-  async function configureRrfWorkerForActiveMachine(worker) {
+  async function configureWorkerForActiveMachine(worker, format) {
     if (!worker || typeof worker.postMessage !== 'function') {
       return;
     }
@@ -237,7 +237,12 @@ export function createCommandJobController({
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      const driverToAxis = parseRrfMotorAxisMapFromConfigText(await response.text());
+      const configText = await response.text();
+      if (format === FileFormat.GCODE) {
+        worker.postMessage({ type: 'set_kinematics_config', configText });
+        return;
+      }
+      const driverToAxis = parseRrfMotorAxisMapFromConfigText(configText);
       if (driverToAxis.size === 0) {
         return;
       }
@@ -290,8 +295,8 @@ export function createCommandJobController({
     if (state.simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
     }
-    if (isRrfFormat(format)) {
-      await configureRrfWorkerForActiveMachine(worker);
+    if (isRrfFormat(format) || format === FileFormat.GCODE) {
+      await configureWorkerForActiveMachine(worker, format);
     }
     worker.postMessage({ type: 'filename_fetch', filename: presetUrl });
   }
@@ -336,8 +341,8 @@ export function createCommandJobController({
     if (state.simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
     }
-    if (isRrfFormat(format)) {
-      await configureRrfWorkerForActiveMachine(worker);
+    if (isRrfFormat(format) || format === FileFormat.GCODE) {
+      await configureWorkerForActiveMachine(worker, format);
     }
     worker.postMessage({ type: 'filename_upload', filename: file, format });
   }

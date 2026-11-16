@@ -204,13 +204,24 @@ class Runtime:
                               {'world_manifest': str(self.session_dir / 'manifest.json')} if self.session_dir else {}}
 
     async def collect(self, args, job=None):
-        configs = args.get('configs', [{'fixed': [2, 3], 'drive': 0, 'sensor': 1}])
+        from autocal.sweep_types import MachineConfig, MachineType
+        from autocal.sweep_config_generator import generate_sweep_configs
+        machine = MachineConfig.from_type(MachineType(self.configuration.machine_type))
+        default = generate_sweep_configs(machine)[-1]
+        configs = args.get('configs', [{'fixed': default['fixed_anchors'],
+                                      'drive': default['drive_anchor'], 'sensor': default['sensor_anchor']}])
         if not isinstance(configs, list) or not 1 <= len(configs) <= 12:
             raise ValueError('Supply 1–12 Hangprinter sweep configurations')
         for cfg in configs:
-            roles = cfg.get('fixed', []) + [cfg.get('drive'), cfg.get('sensor')]
-            if len(roles) != 4 or any(type(i) is not int for i in roles) or set(roles) != set(range(4)) or 3 not in cfg['fixed']:
-                raise ValueError('Hangprinter requires two distinct fixed anchors including 3, plus distinct drive and sensor')
+            if not isinstance(cfg, dict) or not isinstance(cfg.get('fixed'), list):
+                raise ValueError('A sweep needs fixed, drive and sensor anchors')
+            roles = cfg['fixed'] + [cfg.get('drive'), cfg.get('sensor')]
+            if (len(cfg['fixed']) != machine.constraints_for_1dof
+                    or any(type(i) is not int or not 0 <= i < machine.num_anchors for i in roles)
+                    or len(set(roles)) != len(roles)
+                    or not set(machine.must_be_fixed_anchors).issubset(cfg['fixed'])
+                    or not machine.sweep_pair_allowed(cfg['fixed'], cfg['drive'], cfg['sensor'])):
+                raise ValueError('Sweep requires distinct fixed, drive and sensor anchors with carrying anchors fixed')
         options = args.get('options', {})
         allowed = {'sweepPoints', 'fixedTargets', 'feed', 'forceLow', 'forceMid', 'forceMax',
                    'sensorCollectionForce', 'noiseSamples', 'returnToOrigin', 'projectZeroTension', 'preserveBuildupFactor'}

@@ -1598,7 +1598,7 @@ def format_anchors_gcode(anchors: np.ndarray, machine_type: Union[str, MachineTy
     machine_type_str = machine_type.value if isinstance(machine_type, MachineType) else str(machine_type)
     plain_anchors = format_anchor_matrix_plain(anchors)
 
-    if machine_type_str in ("hangprinter_3", "hangprinter_4", "hangprinter_5"):
+    if machine_type_str in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
         labels = ["A", "B", "C", "D", "I"]
         parts = []
         for idx, anchor in enumerate(anchors):

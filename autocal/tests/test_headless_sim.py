@@ -33,7 +33,7 @@ def test_headless_implies_sim_and_keeps_fitting_options(tmp_path, monkeypatch):
                             no_collect=True, headless=None)
 
 
-@pytest.mark.parametrize('flags', [ ['--firmware', 'klipper'], ['--machine-type', 'hangprinter_5'] ])
+@pytest.mark.parametrize('flags', [ ['--firmware', 'klipper'], ['--machine-type', 'unknown'] ])
 def test_headless_rejects_unavailable_backends(flags):
     with pytest.raises(SystemExit):
         ac.main(['--headless-sim', *flags])

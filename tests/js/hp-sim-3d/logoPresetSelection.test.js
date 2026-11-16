@@ -80,3 +80,14 @@ describe('hp-sim-3d preset selection', () => {
     expect(plainSquarePreset.referencePresetKey).toBe('straightMovesBigger');
   });
 });
+
+for (const name of ['hp5', 'hp5_pulley_reduced']) {
+  test(`${name} selects its own five-axis compilations`, () => {
+    for (const layering of [false, true]) {
+      expect(resolvePresetCommand('hangprinterLogo', layering, [`${name}.usda`]).path)
+        .toContain(`Hangprinter_logo6_${name}_no_buildup.can`);
+      expect(resolvePresetCommand('straightMoves', layering, [`${name}.usda`]).path)
+        .toContain(`draw_squares_bigger_${name}_no_buildup.can`);
+    }
+  });
+}

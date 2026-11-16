@@ -93,6 +93,15 @@ def metrics(samples):
     }
 
 
+def scene_motor_axes(source):
+    from pxr import Sdf, Usd
+    layer = Sdf.Layer.CreateAnonymous('.usda')
+    layer.ImportFromString(source)
+    stage = Usd.Stage.Open(layer)
+    return {prim.GetName().removeprefix('Spool') for prim in stage.Traverse()
+            if 'Spool' in (prim.GetAttribute('ecs:tags').Get() or [])}
+
+
 def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=None, label='', record=True):
     root = Path(root).resolve()
     if isinstance(steps, bool) or not isinstance(steps, int) or not 1 <= steps <= MAX_STEPS:
@@ -101,8 +110,8 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
         raise ValueError('dt must be positive and finite')
     scene_path = repo_path(root, scene)
     commands = [] if commands is None else commands
-    validate_commands(commands, set('ABCD'), steps)
     frozen_scene = scene_path.read_text()
+    validate_commands(commands, scene_motor_axes(frozen_scene), steps)
     started = time.perf_counter()
     run_id = uuid.uuid4().hex
     directory = run_directory(root, run_id)
@@ -131,6 +140,7 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
         native_started = time.perf_counter()
         physics = JSPhysics(root, directory, scene_path, dt=dt)
         state = physics.request(dt=dt)
+        validate_commands(commands, set(state['axes']), steps)
         dt = state['dt_s'] if dt is None else dt
         manifest.update(dt_s=dt, scene_generation=state.get('scene_generation', 0),
                         physics_engine=physics.physics_engine, physics_artifact=physics.physics_artifact,

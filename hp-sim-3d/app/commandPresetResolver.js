@@ -11,7 +11,8 @@ const COMMAND_PRESETS = Object.freeze({
 const UPLOADED_SCENE_SOURCE_KEY = 'slideprinter.usda';
 
 export function machineForSourceKey(sourceKey, lineLayering) {
-  return machineForScene(`public/usd_scenes/${sourceKey}`, lineLayering);
+  return machineForScene(`public/usd_scenes/${sourceKey}`, lineLayering)
+    ?? machineForScene(`public/usd_scenes/${sourceKey}`, false);
 }
 
 export const PRESET_GCODE_MAP = Object.freeze({

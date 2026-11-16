@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize('args', [
-    {}, {'machine': 'hp5'}, {'machine': 'slideprinter'}, {'machine': 'cubecorners'},
+    {}, {'machine': 'unknown'}, {'machine': 'slideprinter'}, {'machine': 'cubecorners'},
     {'machine': 'hp3', 'layering': False},
     {'machine': 'hp3', 'scene': 'public/usd_scenes/hp4.usda'},
     {'machine': 'hp3', 'firmware_config': 'sys/config_hp4.g'},
@@ -33,6 +33,8 @@ def test_invalid_world_settings(args):
 
 @pytest.mark.parametrize('nickname,machine_type,scene,firmware,layering', [
     ('hp3', 'hangprinter_3', 'hp3', 'hp3', False),
+    ('hp5', 'hangprinter_5', 'hp5', 'hp5', False),
+    ('hp5_pulley_reduced', 'hangprinter_5_pulley_reduced', 'hp5_pulley_reduced', 'hp5_pulley_reduced', False),
     ('HP4_w_line_layers', 'hangprinter_4', 'hp4', 'hp4_w_line_layers', True),
     ('skycam', 'skycam', 'four_high_anchors', 'skycam', False),
 ])
@@ -53,7 +55,7 @@ def test_mcp_defers_autocal_defaults_to_the_selected_machine(monkeypatch):
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-@pytest.mark.parametrize('machine', ['hp3', 'hp4'])
+@pytest.mark.parametrize('machine', ['hp3', 'hp4', 'hp5', 'hp5_pulley_reduced'])
 async def test_disabled_layering_bakes_zero_width_and_matches_production(tmp_path, machine):
     config = world_configuration(ROOT, {'machine': machine}, backend='headless-js')
     metadata = prepare_world(ROOT, tmp_path, config)

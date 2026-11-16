@@ -3,6 +3,7 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import { createGcodeBridge } from '../integrations/rrf/rrfSimulatorBridge.mjs';
 import { collectSweepData, MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE } from '../autocal/control/behaviors/sweep_data_collection.mjs';
+import { findMachine, SCENES } from '../machines/catalog.js';
 import { waitForRrfSimulator } from '../autocal/control/primitives/encoder_utils.mjs';
 
 const [rrfUrl, wsPort, apiPort, runtimeUrl] = process.argv.slice(2);
@@ -13,6 +14,7 @@ const firmware = await bridge.sendGcodeLine('M115');
 if (!/RepRapFirmware/i.test(firmware.reply ?? '')) throw new Error('RRF did not identify its firmware after readiness');
 const firmwareInitial = { M115: firmware.reply };
 for (const line of ['M669', 'M666']) firmwareInitial[line] = (await bridge.sendGcodeLine(line)).reply;
+const encoderAxes = [...firmwareInitial.M669.matchAll(/^([ABCDIJKLO]):/gm)].map(match => match[1]);
 let simTimeMs = 0;
 let busy = false;
 let cancellation = new AbortController();
@@ -46,7 +48,7 @@ async function runtime(operation, args = {}) {
 const send = async (line) => {
   checkCancellation();
   if (/^M569\.3\b/i.test(line)) {
-    await cancellable(() => bridge.sendEncoderRequest(['A', 'B', 'C', 'D'], 120000));
+    await cancellable(() => bridge.sendEncoderRequest(encoderAxes, 120000));
   }
   const result = await cancellable(() => bridge.sendGcodeLine(line, { timeout: 120000 }));
   if (/^Error:/im.test(result?.reply ?? '')) throw new Error(result.reply);
@@ -94,16 +96,28 @@ const server = http.createServer(async (request, response) => {
       cancellation = new AbortController();
       await fs.writeFile(args.sweepConfigFile, args.configs.map((cfg) => `[${cfg.fixed.join(',')}] ${cfg.drive} ${cfg.sensor}\n`).join(''));
       const machineType = args.machine_type;
+      const machine = findMachine(machineType);
+      const redundant = MACHINE_CONFIGS[machineType].numAnchors > MACHINE_CONFIGS[machineType].dimensions + 1;
       const collectorArgs = {
         sim: true, firmware: 'rrf',
         noAutoTuneForce: true, fixedTargets: '0,0', forceLow: .01, forceMid: .05, forceMax: .5,
         sensorCollectionForce: 1,
+        ...(redundant ? { noAutoTuneForce: false, fixedTargets: null } : {}),
+        solverIterations: SCENES[machine.scene].autocal_solver_iterations,
         ...args.options,
         machineType,
         lineLayering: args.layering,
         preserveBuildupFactor: args.layering,
         outputFile: args.outputFile, sweepConfigFile: args.sweepConfigFile,
       };
+      if (redundant) {
+        for (const key of ['forceLow', 'forceMid', 'forceMax', 'sensorCollectionForce']) {
+          if (!(key in (args.options ?? {}))) delete collectorArgs[key];
+        }
+        if (['forceLow', 'forceMid', 'forceMax'].every(key => key in (args.options ?? {}))) {
+          collectorArgs.noAutoTuneForce = true;
+        }
+      }
       send.simulationClock.settlingTimeoutMs = args.settlingTimeoutMs;
       const result = await collectSweepData(send, {
         args: collectorArgs, machineType, machineConfig: MACHINE_CONFIGS[machineType],

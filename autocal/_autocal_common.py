@@ -121,6 +121,8 @@ GeometryWeights = Tuple[float, float, float]
 _MACHINE_TYPE_ALIASES = {
     "hp3": "hangprinter_3",
     "hp4": "hangprinter_4",
+    "hp5": "hangprinter_5",
+    "hp5_pulley_reduced": "hangprinter_5_pulley_reduced",
     "v3": "hangprinter_3",
     "v4": "hangprinter_4",
     "four_high_anchors": "skycam",
@@ -681,7 +683,7 @@ def _format_m669_command(anchors: np.ndarray, machine_type: str) -> Optional[str
         pad[:, : anchors.shape[1]] = anchors
         anchors = pad
     machine_type = _normalize_machine_type(machine_type) or ""
-    if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5"):
+    if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
         labels = ["A", "B", "C", "D", "I"]
     else:
         labels = ["A", "B", "C", "D", "I", "J", "K", "L", "O"]

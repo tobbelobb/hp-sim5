@@ -4,8 +4,9 @@ from __future__ import annotations
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.filter_pass import estimate_effective_radii_with_spool_model
 from autocal.equal_strain import is_equal_strain
-from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets
+from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths
 from autocal.projection_mode import resolve_projection_mode
+from autocal.pose_planning import pose_information
 
 
 def _uses_projected_angles(dataset: dict, collector_args: Sequence[str]) -> bool:
@@ -361,41 +362,59 @@ def fit_ellipse_dataset(
             home_offsets_mm = offset_fit["home_offsets_mm"]
             dataset_for_estimation = shift_dataset_home_offsets(dataset, home_offsets_mm)
         sweep_configs_for_info = dataset_sweep_configs(dataset_for_estimation)
-        cal = calibrate_elliptical(
-            dataset_for_estimation,
-            output_path=None,
-            num_restarts=int(solve_restarts),
-            max_iterations=int(solve_iterations),
-            method=str(solve_optimizer),
-            verbose=False,
-            use_parallel=False,
-            pointwise_residual_mode=str(pointwise_residual_mode),
-            robust_debug=bool(robust_debug),
-            pointwise_filtering=bool(pointwise_filtering),
-            pointwise_global_mad=bool(pointwise_global_mad),
-            sweep_wise_filtering=bool(sweep_wise_filtering),
-            sweep_metric=str(sweep_metric),
-            use_noise_mean=bool(use_noise_mean),
-            sigma_source=str(sigma_source),
-            generate_report=bool(generate_report),
-            residuals_csv=residuals_csv,
-            initial_guess=anchor_initial_guess,
-            low_anchor_z=low_anchor_z,
-        )
+        # An opposing low pair can trace a degenerate squared-length ellipse.
+        # With redundant winches, fit the actual ranges rather than ellipse shape.
+        range_fit = machine_type.startswith("hangprinter_") and num_anchors > dimensions + 1
+        if range_fit:
+            primary_pose_fit = fit_pose_least_squares(
+                dataset_for_estimation,
+                offset_fit["anchors"] if fit_home_offsets else anchor_initial_guess,
+                fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+                low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+            )
+            if not primary_pose_fit["success"]:
+                raise ValueError("Range fit did not converge: " + primary_pose_fit["message"])
+            cal = {"anchors": primary_pose_fit["anchors"], "cost": 0., "details": {}}
+        else:
+            cal = calibrate_elliptical(
+                dataset_for_estimation,
+                output_path=None,
+                num_restarts=int(solve_restarts),
+                max_iterations=int(solve_iterations),
+                method=str(solve_optimizer),
+                verbose=False,
+                use_parallel=False,
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                robust_debug=bool(robust_debug),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                sigma_source=str(sigma_source),
+                generate_report=bool(generate_report),
+                residuals_csv=residuals_csv,
+                initial_guess=anchor_initial_guess,
+                low_anchor_z=low_anchor_z,
+            )
 
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
     # The point-based fit sees the same lengths as the ellipse fit, starting from both
     # the shared seed and the ellipse result, so the two answers can always be compared.
-    pose_fit = fit_pose_least_squares(
-        dataset_for_estimation,
-        _resolve_anchor_seed(None),
-        fit_home_offsets=False,
-        home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
-        low_anchor_z=low_anchor_z,
-        use_noise_mean=bool(use_noise_mean),
-        extra_initial_anchors=[anchors],
-    )
+    range_fit = not (search_radii or search_buildup) and machine_type.startswith("hangprinter_") and num_anchors > dimensions + 1
+    if range_fit:
+        pose_fit = primary_pose_fit
+    else:
+        pose_fit = fit_pose_least_squares(
+            dataset_for_estimation,
+            _resolve_anchor_seed(None),
+            fit_home_offsets=False,
+            home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+            low_anchor_z=low_anchor_z,
+            use_noise_mean=bool(use_noise_mean),
+            extra_initial_anchors=[anchors],
+        )
     cost_raw = float(
         _evaluate_cost_at_anchors(
             dataset_for_estimation,
@@ -421,6 +440,25 @@ def fit_ellipse_dataset(
         l2_scale=l2_scale,
         fd_eps_mm=float(fd_eps_mm),
     )
+    if range_fit:
+        lengths = dataset_line_lengths(dataset_for_estimation, use_noise_mean=bool(use_noise_mean))["lengths_mm"]
+        sigma = float(pose_fit["robust_scale_mm"])
+        info_obs = pose_information(anchors, lengths, machine_type=machine_type,
+                                   low_anchor_z=low_anchor_z, sigma_mm=sigma)
+        offsets = num_anchors - dimensions
+        if fit_home_offsets:
+            info_obs[-offsets:, -offsets:] += np.eye(offsets) / HOME_OFFSET_PRIOR_SIGMA_MM**2
+        else:
+            info_obs = info_obs[:-offsets, :-offsets]
+        observations = int(np.isfinite(lengths).sum())
+        cost_raw = float(pose_fit["rms_mm"]**2 / (dimensions + 1))
+        cost = cost_raw / sigma**2
+        cal["cost"] = cost
+        cal["details"]["noise_metrics"] = {
+            "J": cost, "chi2_red": cost * observations / max(1, observations-info_obs.shape[0]),
+            "n_obs": observations, "params": info_obs.shape[0],
+            "norm_mode": "sigma", "noise_normalized": True, "sigma_model_mm": sigma,
+        }
     cov = _estimate_anchor_covariance(info_obs, regularization=float(regularization))
     noise_metrics = None
     if isinstance(cal, dict):

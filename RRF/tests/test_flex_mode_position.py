@@ -48,6 +48,23 @@ class FlexModePositionTest(unittest.TestCase):
             # Motor-step quantisation and the Hangprinter FK tolerance remain.
             self.assertAlmostEqual(start, end, delta=0.05, msg=f'axis {axis}: {before} -> {after}')
 
+    def test_five_anchor_motion_and_flex_modes(self):
+        for machine in ('hp5', 'hp5_pulley_reduced'):
+            with self.subTest(machine=machine):
+                positions, counts, motion, output = self.run_gcode(
+                    'G28\nM669\nM666 F1\nG1 X300 Y-200 Z50 F1200\nM400\nM114\n'
+                    'M666 F2\nM114\nG1 X-200 Y300 Z100\nM400\nM114\n', f'config_{machine}.g')
+                self.assertEqual(len(positions), 3, output)
+                self.assert_same_pose(positions[0], positions[1])
+                self.assertEqual(counts[0], counts[1])
+                # Direct-spool motor steps are 0.059 mm; FK also sees the
+                # independent rounding of five lengths. Allow two steps.
+                for actual, wanted in zip(positions[0][:3], (300., -200., 50.)):
+                    self.assertAlmostEqual(actual, wanted, delta=.1)
+                for actual, wanted in zip(positions[2][:3], (-200., 300., 100.)):
+                    self.assertAlmostEqual(actual, wanted, delta=.1)
+                self.assertTrue(any(row[1] == '44' and abs(float(row[6])) > 0 for row in motion))
+
     def test_enable_at_home_does_not_move_or_shift_position(self):
         for machine in ('hp3', 'hp4', 'slideprinter', 'skycam', 'cubecorners'):
             for layers in ('', '_w_line_layers'):

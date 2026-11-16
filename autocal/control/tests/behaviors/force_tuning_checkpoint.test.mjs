@@ -247,3 +247,23 @@ test('the dataset records RRF steps per mm, which sets the step tolerance of dri
     expect(config.m92).toEqual({ X: 16.977, Y: 16.977, Z: 33.954, U: 16.977, E: 95.922 });
   } finally { rmSync(directory, {recursive: true, force: true}); }
 });
+
+test.each([1, 2])('redundant-machine returns keep the top held and other low winches compliant, maxSweeps=%s', async maxSweeps => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'hp5-return-'));
+  collectWithSlipRecovery.mockResolvedValue({ forces: { forceLow: .01, forceMid: .2, forceMax: 2 },
+    dataPoints: [{ l_drive: 1, l_sensor: 2 }], recoveries: [] });
+  const send = async line => ({ reply: line === 'M666'
+    ? 'M666 R30:30:30:30:30 Q0 U2:2:2:2:4 O1:1:1:1:1' : '' });
+  try {
+    await collectSweepData(send, {
+      args: { outputFile: path.join(directory, 'sweeps.json'), maxSweeps, fixedTargets: '0,0',
+        forceLow: .01, forceMid: .2, forceMax: 2, returnToOrigin: true },
+      machineType: 'hangprinter_5_pulley_reduced', machineConfig: MACHINE_CONFIGS.hangprinter_5_pulley_reduced,
+      motorIds: ['40.0', '41.0', '42.0', '43.0', '44.0'], speedup: 1,
+    });
+    expect(returnMotorsToOriginOneAtATime).toHaveBeenCalledTimes(maxSweeps);
+    for (const [, options] of returnMotorsToOriginOneAtATime.mock.calls) {
+      expect(options).toMatchObject({ midForce: .01, forbiddenForceAnchors: [4], returnFirstAnchors: [4] });
+    }
+  } finally { rmSync(directory, {recursive: true, force: true}); }
+});

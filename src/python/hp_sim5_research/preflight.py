@@ -124,14 +124,14 @@ async def preflight(runtime, root, expected_configuration=None):
                            'Inspect live firmware settings; explicitly recover the matched world before collection')
         initial = checks.get('collector', {}).get('firmware_initial')
         if initial is not None:
-            expected = re.findall(r'^[ABCD]:\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\s*$',
+            expected = re.findall(r'^[ABCDIJKLO]:\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\s*$',
                                   initial['M669'], re.MULTILINE)
             anchors = current.get('anchors')
-            if (len(expected) != 4 or not isinstance(anchors, list) or len(anchors) < 4 or any(
+            if (len(expected) != len(runtime.configuration.base_radii_mm) or not isinstance(anchors, list) or len(anchors) < len(expected) or any(
                     not isinstance(actual, list) or len(actual) != 3 or any(
                         type(value) not in (int, float) or not math.isfinite(value) or abs(float(wanted) - value) > .1
                         for wanted, value in zip(target, actual))
-                    for target, actual in zip(expected, anchors[:4]))):
+                    for target, actual in zip(expected, anchors[:len(expected)]))):
                 return blocked('Live firmware anchors differ from the attached world configuration',
                                'Inspect live M669/settings; explicitly recover matching anchors before collection')
         return {'outcome': 'passed', 'http_reachable': True, 'kinematics': current}
