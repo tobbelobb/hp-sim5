@@ -3,7 +3,8 @@ import pytest
 import autocal.planning_pass as planning
 
 from autocal.active_learning import SweepConfig, generate_candidate_sweeps
-from autocal.pose_planning import SWEEP_PRETENSION_SHARE, predict_sweep_positions, rank_candidates_pose_information
+from autocal.pose_planning import (ANCHOR_CLEARANCE_SHARE, SWEEP_PRETENSION_SHARE, predict_sweep_positions,
+                                   rank_candidates_pose_information)
 
 ANCHORS = np.array([[0.0, -1900.0, -280.0], [1645.4, 950.0, -280.0], [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]])
 HOME = np.linalg.norm(ANCHORS, axis=1)
@@ -27,6 +28,18 @@ def test_predicted_positions_keep_the_fixed_lengths_and_stay_between_the_anchors
 
 def test_unreachable_fixed_lengths_give_no_positions():
     assert predict_sweep_positions(ANCHORS, SweepConfig((0, 3), (-1500.0, -1500.0), 1, 2), 20, SWEEP_PRETENSION_SHARE).shape[0] == 0
+
+
+def test_sweeps_are_not_planned_within_a_tenth_of_an_anchors_home_distance(monkeypatch):
+    # D held 150 mm from its anchor (limit: 190 mm) is otherwise a reachable sweep.
+    near_d = SweepConfig((0, 3), (850.0, -1750.0), 1, 2)
+    assert predict_sweep_positions(ANCHORS, near_d, 20, SWEEP_PRETENSION_SHARE).shape[0] == 0
+    monkeypatch.setattr("autocal.pose_planning.ANCHOR_CLEARANCE_SHARE", 0.0)
+    assert predict_sweep_positions(ANCHORS, near_d, 20, SWEEP_PRETENSION_SHARE).shape[0] == 20
+    monkeypatch.undo()
+    allowed = predict_sweep_positions(ANCHORS, SweepConfig((0, 3), (781.9, -1623.5), 1, 2), 20, SWEEP_PRETENSION_SHARE)
+    distances = np.linalg.norm(ANCHORS[None, :, :] - allowed[:, None, :], axis=2)
+    assert allowed.shape[0] == 20 and np.all(distances >= ANCHOR_CLEARANCE_SHARE * HOME)
 
 
 def test_data_on_one_d_sphere_makes_a_shortened_d_line_the_best_next_sweep():

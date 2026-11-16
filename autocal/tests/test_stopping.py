@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import numpy as np
+
 import autocal.stopping as stopping
 
 
@@ -8,7 +10,7 @@ def _candidate(iteration, score):
 
 
 def test_patience_only_advances_for_admissible_history_and_resets_on_improvement(tmp_path):
-    policy = stopping.StoppingPolicy(patience=2, stop_file=tmp_path / "stop", spread_fraction=0)
+    policy = stopping.StoppingPolicy(patience=2, stop_file=tmp_path / "stop")
     history = [_candidate(1, 1.0)]
     first = policy.update(history, iteration=1, admissible=True,
                           underconstrained=False, log_line=lambda _: None)
@@ -37,25 +39,46 @@ def test_patience_only_advances_for_admissible_history_and_resets_on_improvement
     assert policy.remaining == 2
 
 
-def test_spread_requires_consecutive_hits_and_underconstraint_overrides_acceptance(tmp_path, monkeypatch):
-    policy = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop", spread_fraction=.0015)
-    monkeypatch.setattr(stopping, "consensus_anchor_estimate", lambda _: ([], (1, 2), 1.0))
-    hits = iter([True, False, True, True, True])
-    monkeypatch.setattr(stopping, "consensus_spread_hit", lambda *_, **__: (next(hits), 1.0, 5.0))
-    history = [_candidate(i, i) for i in range(1, 5)]
-    decisions = [policy.update(history, iteration=4, admissible=False,
-                               underconstrained=False, log_line=lambda _: None)
-                 for _ in range(4)]
-    assert [d.decision for d in decisions] == ["collect", "collect", "collect", "accept"]
-    assert decisions[-1].reason == "spread-consensus"
-    invalid = policy.update(history, iteration=5, admissible=False,
-                            underconstrained=True, log_line=lambda _: None)
-    assert invalid.spread_hit and invalid.decision == "collect" and invalid.reason is None
+def _fit(iteration, offset_mm):
+    anchors = np.array([[0.0, -1900.0, -280.0], [1645.4, 950.0, -280.0],
+                        [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]]) + offset_mm
+    return {**_candidate(iteration, 1.0 + iteration), "plan": {"anchors": anchors}}
+
+
+def test_two_consecutive_small_steps_stop_and_a_large_step_resets(tmp_path):
+    # Learning curve of a recorded HP3 run: 2.16 mm, then sub-0.3 mm steps.
+    policy = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop")
+    history, decisions = [], []
+    for iteration, offset in enumerate([0.0, 2.16, 2.33, 2.05, 2.29], start=1):
+        history.append(_fit(iteration, offset))
+        decisions.append(policy.update(history, iteration=iteration, admissible=True,
+                                       underconstrained=False, log_line=lambda _: None))
+    assert [d.decision for d in decisions] == ["collect", "collect", "collect", "accept", "accept"]
+    assert decisions[3].reason == "stable-estimate" and np.isclose(decisions[3].step_mm, 0.28)
+    history.append(_fit(6, 5.0))
+    reset = policy.update(history, iteration=6, admissible=True, underconstrained=False, log_line=lambda _: None)
+    assert reset.decision == "collect" and policy.stable_streak == 0
+
+
+def test_stability_ignores_inadmissible_fits_and_underconstraint_and_can_be_disabled(tmp_path):
+    policy = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop")
+    history = [_fit(1, 0.0), _fit(2, 0.1), _fit(3, 0.2)]
+    for iteration in (1, 2):
+        policy.update(history, iteration=iteration, admissible=True, underconstrained=False, log_line=lambda _: None)
+    skipped = policy.update(history, iteration=9, admissible=False, underconstrained=False, log_line=lambda _: None)
+    assert skipped.step_mm is None and policy.stable_streak == 1
+    held = policy.update(history, iteration=3, admissible=True, underconstrained=True, log_line=lambda _: None)
+    assert held.stable_hit and held.decision == "collect"
+    disabled = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop", stable_step_mm=0.0)
+    for iteration in (1, 2, 3):
+        result = disabled.update(history, iteration=iteration, admissible=True,
+                                 underconstrained=False, log_line=lambda _: None)
+    assert result.decision == "collect" and not result.stable_hit
 
 
 def test_stop_file_requests_acceptance_and_io_errors_do_not(tmp_path, monkeypatch):
     path = tmp_path / "stop"
-    policy = stopping.StoppingPolicy(patience=0, stop_file=path, spread_fraction=0)
+    policy = stopping.StoppingPolicy(patience=0, stop_file=path)
     assert policy.patience == 1
     assert not policy.stop_requested()
     path.touch()

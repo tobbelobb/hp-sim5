@@ -20,6 +20,8 @@ _CIRCLE_SAMPLES = 360
 # A position counts as reachable while each of the sweep's lines carries at least
 # this share of the largest pretension. 0.25 reproduces where recorded HP3 sweeps turn.
 SWEEP_PRETENSION_SHARE = 0.25
+# A position is planned only this share of each anchor's home distance away from it, or further.
+ANCHOR_CLEARANCE_SHARE = 0.10
 _FD_STEP_MM = 0.5
 
 
@@ -62,6 +64,8 @@ def predict_sweep_positions(
     pretension = np.linalg.svd(np.transpose(directions, (0, 2, 1)))[2][:, -1, :]
     pretension *= np.sign(np.sum(pretension, axis=1))[:, None]
     reachable = np.min(pretension, axis=1) > min_pretension_share * np.max(pretension, axis=1)
+    clearance = np.linalg.norm(anchors[None, :, :] - curve[:, None, :], axis=2)
+    reachable &= np.all(clearance >= ANCHOR_CLEARANCE_SHARE * np.linalg.norm(anchors, axis=1), axis=1)
     # Start in the reachable stretch nearest home and stay on it.
     order = np.roll(np.arange(curve.shape[0]), -int(np.argmin(np.where(reachable, np.inf, 0.0))))
     reachable_ordered = reachable[order]

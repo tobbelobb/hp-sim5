@@ -110,7 +110,7 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
     monkeypatch.setattr(ac, 'plan_ellipse_sweep', replan)
     monkeypatch.setattr(ac, '_print_ellipse_plan', lambda *a, **kw: None)
     monkeypatch.setattr(ac, '_plan_hits_underconstrained_penalty', lambda *a: False)
-    monkeypatch.setattr(ac.StoppingPolicy, 'update', lambda *a, **kw: StopDecision(1, True, False, None, None, 'accept' if 4 in fits else 'collect'))
+    monkeypatch.setattr(ac.StoppingPolicy, 'update', lambda *a, **kw: StopDecision(1, True, False, None, 'accept' if 4 in fits else 'collect'))
     monkeypatch.setattr(selection, 'score_future_sweeps', lambda *a, **kw: (.1, 1))
     monkeypatch.setattr(ac.subprocess, 'run', collect)
     monkeypatch.setattr(ac.RRFFirmwareProvider, 'send_gcode', lambda *a: sent.append(a) or '')
@@ -149,7 +149,7 @@ def test_final_application_does_not_retry_and_preserves_stop_reason(tmp_path, mo
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fit)
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *a, **kw: None)
     monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *a: False)
-    monkeypatch.setattr(ac.StoppingPolicy, "update", lambda *a, **kw: StopDecision(1, True, False, None, None, "accept"))
+    monkeypatch.setattr(ac.StoppingPolicy, "update", lambda *a, **kw: StopDecision(1, True, False, None, "accept"))
     monkeypatch.setattr(ac.RRFFirmwareProvider, "send_gcode", send)
     code = ac.main([
         "--sim", "--no-collect", "--machine-type", "slideprinter", "--dataset", str(dataset),

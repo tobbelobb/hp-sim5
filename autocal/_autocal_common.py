@@ -43,8 +43,8 @@ DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 # parameters it settled on.  Kept here so the loop and the headless manifest
 # cannot drift apart on the spelling.
 FULL_AUTO_STOP_REASON_PATIENCE = "patience"
-SPREAD_STOP_REASON = "spread-consensus"
-NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON, "workspace-exhausted")
+STABLE_STOP_REASON = "stable-estimate"
+NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, STABLE_STOP_REASON, "workspace-exhausted")
 _MIN_RADIUS_SCALE = 0.2
 _MAX_RADIUS_SCALE = 5.0
 _DEFAULT_B_BOUNDS = (0.0, 1.0)
@@ -3854,6 +3854,12 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         type=int,
         default=3,
         help="Number of non-improving full-auto iterations to allow (default: 3).",
+    )
+    parser.add_argument(
+        "--stable-step-mm",
+        type=float,
+        default=0.5,
+        help="Stop once two consecutive sweeps each move every anchor coordinate by at most this (default: 0.5; 0 disables).",
     )
     _add_solver_args(parser)
     _add_candidate_args(parser)

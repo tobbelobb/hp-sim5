@@ -60,8 +60,8 @@ by one size-tuned excursion. The initial `max_travel_mm` no longer imposes a
 permanent travel ceiling or a sum-of-fixed-deltas budget. Planning uses measured
 sweeps and fitted geometry. Carrying D remains fixed, and force feasibility,
 position tracking, slip and stability checks still apply. Explicit delta bounds
-remain available. Historic-fit spread alone no longer stops collection by default;
-`HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` can enable that heuristic for comparisons.
+remain available. Planning keeps every predicted position at least 10% of each
+anchor's home distance away from that anchor.
 
 The first three nonempty sweeps require measured sensor rewind of half a spindle
 turn before taking data. Later points may use a smaller reserve only after a
@@ -86,10 +86,8 @@ Joint spool/offset fitting is not implemented: spool searches require
 `--no-fit-home-offsets` and retain constant-force collection. Historical projected
 datasets remain replayable, but `--project-zero-tension` collection is retired.
 
-Fitted home-length offsets and physical-home translation are separate. The guarded
-home-shift helper needs independently measured compatible extension evidence.
-Ordinary collection does not supply that evidence, so it does not automatically
-apply a physical-home shift.
+Fitted home-length offsets do not identify a physical-home translation; that
+needs independently measured line extensions, which collection does not provide.
 
 For full simulation sanity checks, run `python -m autocal.tools.sanity_battery
 OUTPUT --machine hangprinter_3` with `.venv/bin/python`. Use `--stiffness 12000`
@@ -424,12 +422,13 @@ Remove `--sim` and `--speedup` to use a real machine:
   --machine-type slideprinter
 ```
 
-The loop stops after three non-improving iterations by default. It also stops as
-soon as its own applied geometry has converged: once at least four candidates
-exist, the two most consistent distinct fits must lie no further apart than 0.15%
-of the machine's anchor extent for two consecutive iterations. Further sweeps
-then only cost move and settle time. Set `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off`,
-or to another positive fraction, to disable or retune it.
+The loop stops once the estimate stops moving: two consecutive sweeps, each the
+planner's most informative candidate, must each move every anchor coordinate by
+at most `--stable-step-mm` (0.5 mm; 0 disables). Fit cost is not a progress
+measure here, because it rises as sweeps reach harder poses, and expected
+information gain shrinks like 1/n without ever reaching a plateau. Stability is
+not accuracy: a systematic bias moves no estimate. Three non-improving
+iterations (`--patience`) remain a fallback.
 Ctrl-C during the loop requests best-so-far acceptance.
 Final selection favors successful held-out predictions when available.
 These scores measure fit and prediction quality. They do not prove anchor accuracy.
@@ -560,7 +559,6 @@ and `--top-k` are removed from the CLI. Independent fit/plan stage APIs retain
 research overrides. `--regularization` keeps its 1e-6 default and requires a
 finite positive value; the resulting covariance is not calibrated uncertainty.
 
-`--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3; the
-`HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` early-stop heuristic is documented in
-[the flag audit](../autocal-flags.md). Final history-selection logs identify the
+`--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3 as a fallback
+to the `--stable-step-mm` stop. Final history-selection logs identify the
 held-out-selected iteration/run separately from the running training-rank best.

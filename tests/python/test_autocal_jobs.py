@@ -100,7 +100,7 @@ async def finished(manager, job):
 @pytest.mark.asyncio
 @pytest.mark.parametrize('normal,reason,code,expected', [
     (True, 'patience', 0, 'accepted'),
-    (True, 'spread-consensus', 0, 'accepted'),
+    (True, 'stable-estimate', 0, 'accepted'),
     (False, 'max-steps', 0, 'budget_exhausted'),
     (False, 'max-steps', 1, 'failed'),
     (False, None, 0, 'failed'),

@@ -3,7 +3,6 @@ import os
 import pytest
 
 import autocal.autocal as ac
-from autocal.stopping import SPREAD_STOP_FRAC, spread_stop_fraction
 from autocal._autocal_common import (
     _apply_optimizer_mode_env,
     _parse_filter_schedule,
@@ -296,15 +295,5 @@ def test_filter_variants_preserve_inheritance_and_explicit_reenable(positive, ne
 def test_planning_ridge_requires_a_finite_positive_value(value):
     with pytest.raises(SystemExit):
         _parse_spool_args("--regularization", value)
-
-
-@pytest.mark.parametrize("value,expected", [
-    ("off", 0.0), ("0", 0.0), ("-1", 0.0), ("0.002", 0.002),
-    ("nan", 0.), ("inf", 0.),
-    ("typo", 0.),
-])
-def test_spread_stop_override_requires_a_finite_fraction(monkeypatch, value, expected):
-    monkeypatch.setenv("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", value)
-    assert spread_stop_fraction() == expected
 
 

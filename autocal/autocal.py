@@ -12,8 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep, plan_ellipse_sweep
-from autocal.equal_strain import is_equal_strain, write_sensor_force_profile, profile_policy_error
-from autocal.home_compensation import compensate_home
+from autocal.equal_strain import write_sensor_force_profile, profile_policy_error
 from autocal.rough_bootstrap import (
     MAX_EXTRA_ROUGH_SWEEPS, assess_rough_geometry, next_rough_sweep,
     bootstrap_state_error, write_bootstrap_state,
@@ -74,6 +73,7 @@ def full_auto_loop(
     full_auto_runs: Optional[Sequence[str]],
     full_auto_log: Optional[Path],
     patience: int,
+    stable_step_mm: float = 0.5,
     verbose: bool,
     low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
@@ -155,26 +155,6 @@ def full_auto_loop(
         m669 = _m669_from_plan(best_plan)
         m666 = _m666_from_plan(best_plan)
         anchors = best_plan.get("anchors")
-        home_compensation = {"applied": False}
-        fit_dataset = best_plan.get("dataset") or {}
-        home_evidence = (fit_dataset.get("config") or {}).get("home_extension_evidence")
-        if home_evidence is not None:
-            try:
-                if not fit_dataset.get("sweeps") or not is_equal_strain(fit_dataset):
-                    raise ValueError("home compensation requires an equal-strain fit")
-                if not best_plan.get("home_offsets_fitted", False):
-                    raise ValueError("home compensation requires fitted home offsets")
-                if isinstance(summary_meta, dict) and len(summary_meta.get("history_consensus_members", [])) > 1:
-                    raise ValueError("home extension evidence is not tied to an averaged consensus fit")
-                anchors, shift = compensate_home(anchors, best_plan.get("home_offsets_mm"), home_evidence)
-                m669 = _format_m669_command(anchors, machine_type)
-                home_compensation = {"applied": True, "shift_mm": shift.tolist()}
-                _log_console("; physical home shift applied (mm): " + np.array2string(shift, precision=3))
-            except (TypeError, ValueError) as exc:
-                home_compensation["reason"] = str(exc)
-                _log_console(f"; physical home compensation skipped: {exc}")
-        elif fit_dataset.get("sweeps") and is_equal_strain(fit_dataset):
-            _log_console("; physical home compensation unavailable: independent home and measurement extension evidence is missing")
         anchor_str = ""
         if isinstance(anchors, np.ndarray):
             anchor_str = np.array2string(anchors, precision=2, separator=", ")
@@ -198,7 +178,6 @@ def full_auto_loop(
             "event": "summary", "m669": m669, "m666": m666,
             "anchors": np.asarray(anchors, dtype=float).tolist(),
             "fitted_anchors": np.asarray(best_plan["anchors"], dtype=float).tolist(),
-            "home_compensation": home_compensation,
             "selection": meta_for_summary,
         })
         _log_console("")
@@ -676,7 +655,7 @@ def full_auto_loop(
     best_meta: Dict[str, object] = {}
     history_candidates: List[Dict[str, object]] = []
     history_total_iterations = 0
-    stopping = StoppingPolicy(patience=patience, stop_file=stop_file)
+    stopping = StoppingPolicy(patience=patience, stop_file=stop_file, stable_step_mm=float(stable_step_mm))
     stopping.announce(_log_console)
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     has_variants = bool(full_auto_runs)
@@ -1283,11 +1262,11 @@ def full_auto_loop(
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
-            if stop.decision == "accept" and stop.spread_hit:
+            if stop.decision == "accept" and stop.stable_hit:
                 _log_console(
-                    "; full-auto: stopping early; the two closest distinct fits "
-                    f"agree to {_fmt_float(stop.spread_mm, suffix='mm')} "
-                    f"(limit {_fmt_float(stop.spread_limit_mm, suffix='mm')})."
+                    "; full-auto: stopping; the estimate has stopped moving "
+                    f"(last step {_fmt_float(stop.step_mm, suffix='mm')}, "
+                    f"limit {_fmt_float(stopping.stable_step_mm, suffix='mm')})."
                 )
 
             _append_jsonl(
@@ -1328,9 +1307,9 @@ def full_auto_loop(
                     "no_improve_count": stopping.no_improve,
                     "patience": stopping.patience,
                     "min_delta": min_delta,
-                    "stop_spread_hit": stop.spread_hit,
-                    "consensus_spread_mm": stop.spread_mm,
-                    "consensus_spread_limit_mm": stop.spread_limit_mm,
+                    "stable_hit": stop.stable_hit,
+                    "anchor_step_mm": stop.step_mm,
+                    "stable_streak": stopping.stable_streak,
                     "warnings": selected_warnings,
                     "recovery": recovery_info,
                 },
@@ -1491,6 +1470,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--headless-sim", action="store_true",
                         help='Collect in the headless production simulator; implies --sim')
     args = parser.parse_args(argv)
+    if not np.isfinite(args.stable_step_mm) or args.stable_step_mm < 0:
+        parser.error("--stable-step-mm must be a finite nonnegative distance")
     if args.project_zero_tension and not args.no_collect:
         parser.error("--project-zero-tension collection was retired; use equal-strain collection with home-offset fitting. Historical projected datasets can still be replayed with --no-collect.")
     if args.extended_recording:
@@ -1623,6 +1604,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         full_auto_runs=full_auto_runs,
         full_auto_log=args.full_auto_log,
         patience=int(args.patience),
+        stable_step_mm=float(args.stable_step_mm),
         verbose=bool(args.verbose),
         filter_schedule=spool_opts.get("filter_schedule"),
         objective_schedule=spool_opts.get("objective_schedule"),

@@ -186,7 +186,7 @@ def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_pa
     assert all('wall_time' in chunk.timeline_names for chunk in clocks)
 
 
-@pytest.mark.parametrize('stop_reason', ['patience', 'spread-consensus'])
+@pytest.mark.parametrize('stop_reason', ['patience', 'stable-estimate'])
 def test_every_automatic_stop_reason_is_a_normal_completion(tmp_path, stop_reason):
     """The loop's early consensus stop is as normal a completion as patience."""
     from argparse import Namespace
@@ -206,7 +206,7 @@ def test_unapplied_run_is_not_a_normal_completion(tmp_path):
                      rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
                      keep_sim_alive=False)
     service = HeadlessSimulation(args, [])
-    service.manifest.update(stop_reason='spread-consensus')
+    service.manifest.update(stop_reason='stable-estimate')
     service.__exit__(None, None, None)
     assert not service.manifest['normal_completion']
 
@@ -361,7 +361,7 @@ def test_fresh_hp3_full_auto_global_radii_and_matched_browser_collection(tmp_pat
     assert result.returncode == 0, log.read_text()[-4000:]
     manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
     assert manifest['normal_completion'] and manifest['status'] == 'complete'
-    assert manifest['stop_reason'] in ('patience', 'spread-consensus')
+    assert manifest['stop_reason'] in ('patience', 'stable-estimate')
     assert manifest['epoch'] == 1  # reset once before bootstrap, same world for later sweeps
     assert manifest['simulated_s'] > 0 and manifest['wall_s'] > 0
     assert manifest['firmware_config'] == 'sys/config_hp3_w_line_layers.g'

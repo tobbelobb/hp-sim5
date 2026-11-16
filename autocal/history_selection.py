@@ -268,38 +268,3 @@ def select_history_plan(scored):
     })
     return plan, meta, ranked
 
-
-SPREAD_STOP_FRAC = 1.5e-3
-SPREAD_STOP_MIN_CANDIDATES = 4
-SPREAD_STOP_CONSECUTIVE = 2
-
-
-def consensus_spread_hit(consensus_anchors, consensus_spread, *, frac=SPREAD_STOP_FRAC):
-    """Test geometric agreement, not calibrated uncertainty or accuracy.
-
-    Compare the closest distinct pair's separation with a fraction of the
-    geometry's extent. The same pair can persist while later fits disagree;
-    passing this test does not establish that additional sweeps are unnecessary.
-    The caller also requires a minimum candidate count and consecutive hits.
-
-    Return `(hit, spread_mm, limit_mm)`; unevaluable geometry never passes.
-    """
-    if consensus_anchors is None or consensus_spread is None:
-        return False, None, None
-    array = np.asarray(consensus_anchors, dtype=float)
-    if array.ndim != 2 or len(array) < 2 or array.shape[1] < 1:
-        return False, None, None
-    if not np.all(np.isfinite(array)):
-        return False, None, None
-    pairwise = np.sqrt(
-        np.maximum(((array[:, None, :] - array[None, :, :]) ** 2).sum(-1), 0.0)
-    )
-    extent = float(pairwise.max())
-    spread = float(consensus_spread)
-    if not np.isfinite(spread) or not np.isfinite(extent) or extent <= 0.0:
-        return False, (spread if np.isfinite(spread) else None), None
-    limit = float(frac) * extent
-    # `consensus_anchor_estimate` reports zero spread when all candidates merge
-    # into one hypothesis. That is not agreement between distinct fits.
-    has_distinct_fits = spread > HISTORY_CONSENSUS_MERGE_MM
-    return bool(has_distinct_fits and spread <= limit), spread, limit

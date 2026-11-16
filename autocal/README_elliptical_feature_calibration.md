@@ -146,10 +146,9 @@ If recovery fails, the loop continues toward more data.
 `history_rank_score` controls "The best try so far" and patience.
 It combines the plan's `rank_score` with iteration and retained-data adjustments.
 The default patience is three non-improving iterations.
-The geometric-agreement heuristic can also stop early. Set
-`HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off` to disable it; its default fraction is
-0.0015, with at least four candidates and two consecutive hits. Agreement does
-not establish accuracy. Cost/std stopping thresholds have been removed because
+Collection also stops once two consecutive sweeps each move every anchor
+coordinate by at most `--stable-step-mm` (0.5 mm). Stability does not establish
+accuracy. Cost/std stopping thresholds have been removed because
 their scales were not calibrated to physical error. The manifest reason for
 patience acceptance is `patience`.
 Ctrl-C during the loop or a `<dataset-stem>.full_auto.stop` file requests acceptance.

@@ -1,6 +1,6 @@
 usage: autocal.py [-h] --machine-type {slideprinter,hangprinter_3,hangprinter_4,hangprinter_5,cubecorners,skycam,hp3,hp4,v3,v4,four_high_anchors,cube_corners} [--no-collect] [--sparse-recovery] [--dataset DATASET] [--sweep-points SWEEP_POINTS]
                   [--plot-residual-histogram] [--max-steps MAX_STEPS] [--stop-cost STOP_COST] [--stop-std-mm STOP_STD_MM] [--full-auto-run FULL_AUTO_RUN] [--shotgun] [--stage-artifacts STAGE_ARTIFACTS] [--full-auto-log FULL_AUTO_LOG] [--verbose]
-                  [--patience PATIENCE] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
+                  [--patience PATIENCE] [--stable-step-mm STABLE_STEP_MM] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
                   [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
                   [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
                   [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--theta0-mode {infer,zero}] [--fit-structure FIT_STRUCTURE] [--filter-schedule FILTER_SCHEDULE]
@@ -40,6 +40,8 @@ KEEP  --dataset DATASET     Dataset file updated each iteration (default: autoca
                         Write full-auto JSONL logs to this path (default: <dataset>.full_auto_log.jsonl).
   --verbose             Enable verbose iteration output, including anchors, M666, and rank scoring.
   --patience PATIENCE   Number of non-improving full-auto iterations to allow (default: 3).
+  --stable-step-mm STABLE_STEP_MM
+                        Stop once two consecutive sweeps each move every anchor coordinate by at most this (default: 0.5; 0 disables).
   --solve-restarts SOLVE_RESTARTS
   --solve-iterations SOLVE_ITERATIONS
   --solve-optimizer {lbfgsb,lm,trf}
@@ -227,15 +229,12 @@ but cannot re-admit excluded duplicate sweeps. `--regularization` retains 1e-6
 and now requires a finite positive CLI value; it is not calibrated uncertainty.
 Patience remains 3, and sparse recovery remains opt-in.
 
-### Environment-controlled stopping option
+### Stable-estimate stop
 
-`HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` was absent from the initial CLI inventory.
-It controls the geometric-agreement early stop: default 0.0015 times machine
-extent, with at least four candidate fits and two consecutive hits. `off` or a
-non-positive number disables it; invalid/non-finite text falls back to default.
-The closest-pair consensus is also capped by the existing 5 mm gate.
-Agreement does not establish physical accuracy. The default is retained pending
-broader evidence; see [integration findings](research/autocal-planning-lane06-integration.md).
+`--stable-step-mm` (default 0.5, 0 disables) stops collection once two
+consecutive sweeps each move every anchor coordinate by at most that distance.
+It replaced the `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` agreement heuristic.
+Stability does not establish physical accuracy.
 
 ## Everyday and research help
 

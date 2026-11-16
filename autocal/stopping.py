@@ -1,7 +1,6 @@
-"""Patience, geometric-agreement and stop-file policy for the calibration loop."""
+"""Stable-estimate, patience and stop-file policy for the calibration loop."""
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
@@ -9,35 +8,17 @@ from typing import Callable, Optional
 import numpy as np
 
 from autocal._autocal_common import (
-    FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON,
+    FULL_AUTO_STOP_REASON_PATIENCE, STABLE_STOP_REASON,
     _float_or_none, _fmt_float, _full_auto_history_selection_score,
 )
-from autocal.history_selection import (
-    SPREAD_STOP_CONSECUTIVE, SPREAD_STOP_MIN_CANDIDATES,
-    consensus_anchor_estimate, consensus_spread_hit,
-)
 
-
-def spread_stop_fraction() -> float:
-    """Optional early-stop heuristic based on geometric fit agreement.
-
-    Agreement is not calibrated uncertainty or proof of accuracy. This is opt-in:
-    the old default stopped collection before the workspace had been explored.
-    `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off` disables this heuristic; invalid or
-    non-finite values leave it disabled.
-    """
-    raw = os.environ.get("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", "").strip()
-    if not raw:
-        return 0.0
-    if raw.lower() in {"off", "false", "no", "none", "disabled"}:
-        return 0.0
-    try:
-        value = float(raw)
-    except ValueError:
-        return 0.0
-    if not np.isfinite(value):
-        return 0.0
-    return 0.0 if value <= 0.0 else float(value)
+# Stop once this many consecutive sweeps each moved every anchor coordinate by
+# at most the stable step. Each sweep is the planner's most informative
+# candidate, so an estimate that new information no longer moves has converged
+# to what the data can resolve ("stabilizing predictions" stopping). Agreement
+# is not accuracy: systematic bias moves no estimate.
+STABLE_SWEEPS = 2
+STABLE_STEP_MM = 0.5
 
 
 def history_rank_position(history_candidates, *, iteration: int) -> Optional[int]:
@@ -73,25 +54,25 @@ def history_rank_position(history_candidates, *, iteration: int) -> Optional[int
 class StopDecision:
     rank: Optional[int]
     history_improved: bool
-    spread_hit: bool
-    spread_mm: Optional[float]
-    spread_limit_mm: Optional[float]
+    stable_hit: bool
+    step_mm: Optional[float]
     decision: str
 
     @property
     def reason(self) -> Optional[str]:
         if self.decision != "accept":
             return None
-        return SPREAD_STOP_REASON if self.spread_hit else FULL_AUTO_STOP_REASON_PATIENCE
+        return STABLE_STOP_REASON if self.stable_hit else FULL_AUTO_STOP_REASON_PATIENCE
 
 
 @dataclass
 class StoppingPolicy:
     patience: int
     stop_file: Path
-    spread_fraction: float = field(default_factory=spread_stop_fraction)
+    stable_step_mm: float = STABLE_STEP_MM
     no_improve: int = field(default=0, init=False)
-    spread_streak: int = field(default=0, init=False)
+    stable_streak: int = field(default=0, init=False)
+    previous_anchors: Optional[np.ndarray] = field(default=None, init=False)
 
     def __post_init__(self):
         self.patience = max(1, int(self.patience))
@@ -107,36 +88,38 @@ class StoppingPolicy:
             return False
 
     def announce(self, log_console: Callable[[str], None]) -> None:
-        if self.spread_fraction > 0.0:
+        if self.stable_step_mm > 0.0:
             log_console(
-                f"; full-auto: early stop when the two closest distinct fits agree to "
-                f"{self.spread_fraction:g} of the machine size, sustained "
-                f"{SPREAD_STOP_CONSECUTIVE} iterations, from "
-                f"{SPREAD_STOP_MIN_CANDIDATES} candidates "
-                f"(disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)"
+                f"; full-auto: stops when {STABLE_SWEEPS} consecutive sweeps each move every anchor "
+                f"coordinate by at most {self.stable_step_mm:g} mm (--stable-step-mm 0 disables)"
             )
+
+    def _step(self, history, iteration: int) -> Optional[float]:
+        current = next((c for c in reversed(history) if int(c.get("iteration", -1)) == int(iteration)), None)
+        anchors = (current or {}).get("plan", {}).get("anchors")
+        if anchors is None:
+            return None
+        anchors = np.asarray(anchors, dtype=float)
+        previous, self.previous_anchors = self.previous_anchors, anchors
+        if previous is None or previous.shape != anchors.shape or not np.all(np.isfinite(anchors)):
+            return None
+        return float(np.max(np.abs(anchors - previous)))
 
     def update(self, history, *, iteration: int, admissible: bool,
                underconstrained: bool, log_line: Callable[[str], None]) -> StopDecision:
         rank = history_rank_position(history, iteration=iteration) if admissible else None
         improved = admissible and rank == 1
+        step_mm = None
         if admissible:
             self.no_improve = 0 if improved else self.no_improve + 1
-
-        spread_hit = False
-        spread_mm = limit_mm = None
-        if self.spread_fraction > 0.0 and len(history) >= SPREAD_STOP_MIN_CANDIDATES:
-            anchors, _members, spread = consensus_anchor_estimate(history)
-            hit, spread_mm, limit_mm = consensus_spread_hit(
-                anchors, spread, frac=self.spread_fraction,
-            )
-            self.spread_streak = self.spread_streak + 1 if hit else 0
-            spread_hit = self.spread_streak >= SPREAD_STOP_CONSECUTIVE
-            log_line(
-                f"; history_select: spread_stop spread_mm={_fmt_float(spread_mm)} "
-                f"limit_mm={_fmt_float(limit_mm)} "
-                f"streak={self.spread_streak}/{SPREAD_STOP_CONSECUTIVE}"
-            )
-        accept = not underconstrained and (spread_hit or self.no_improve >= self.patience)
-        return StopDecision(rank, bool(improved), spread_hit, spread_mm, limit_mm,
+            step_mm = self._step(history, iteration)
+            stable = step_mm is not None and step_mm <= self.stable_step_mm
+            self.stable_streak = self.stable_streak + 1 if stable else 0
+        stable_hit = self.stable_step_mm > 0.0 and self.stable_streak >= STABLE_SWEEPS
+        log_line(
+            f"; stable_stop step_mm={_fmt_float(step_mm)} limit_mm={self.stable_step_mm:g} "
+            f"streak={self.stable_streak}/{STABLE_SWEEPS}"
+        )
+        accept = not underconstrained and (stable_hit or self.no_improve >= self.patience)
+        return StopDecision(rank, bool(improved), stable_hit, step_mm,
                             "accept" if accept else "collect")
