@@ -18,7 +18,7 @@ import {
     VelocityComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import { initializeRigidBodySyncState } from '../../../src/js/cable_joints_3d/rigid_bodies.js';
-import { parseRigidGroupRenderSegments } from './usdValueReaders.js';
+import { parseRenderPolyline, resolveRenderPolylineMembers } from './usdValueReaders.js';
 import { scopedKeyFromPath } from './sceneNaming.js';
 import {
     addMatrix3,
@@ -26,26 +26,6 @@ import {
     parallelAxisTensor,
     transformInertiaTensorToWorld,
 } from '../../../src/js/cable_joints_3d/inertia_tensor.js';
-
-// A frame lists its perimeter corners. Other members (bearings and pinholes)
-// attach only to the nearest corner, without changing their visible geometry.
-export function cornerFrameSegments(positions, cornerIndices) {
-    if (cornerIndices.length < 3 || cornerIndices.some(index => index < 0)) return null;
-    const corners = new Set(cornerIndices);
-    const segments = [[...cornerIndices]];
-    for (let i = 0; i < positions.length; i++) {
-        if (corners.has(i)) continue;
-        const p = positions[i];
-        let nearest = cornerIndices[0], distance = Infinity;
-        for (const index of cornerIndices) {
-            const q = positions[index];
-            const squared = (p.x-q.x)**2 + (p.y-q.y)**2 + (p.z-q.z)**2;
-            if (squared < distance) { distance = squared; nearest = index; }
-        }
-        segments.push([nearest, i]);
-    }
-    return segments;
-}
 
 export function buildRigidBodies(context, registry) {
     if (context.options.remote) {
@@ -72,11 +52,11 @@ function applyRigidBodies(world, context, registry) {
 
         const bodyState = computeRigidBodyAggregateState(world, memberEntities);
         const bodyEnt = world.createEntity();
-        const renderIndicesAttr = getAttribute(prim, 'rigidBody:renderIndices') ?? getAttribute(prim, 'rigidGroup:renderIndices');
-        const frameCorners = getRelationship(prim, 'rigidBody:frameCorners');
-        const renderSegments = parseRigidGroupRenderSegments(renderIndicesAttr)
-            ?? cornerFrameSegments(memberEntities.map(id => world.getComponent(id, PositionComponent).pos),
-                frameCorners.map(path => memberPaths.indexOf(path)));
+        const renderPolylineAttr = getAttribute(prim, 'rigidBody:renderPolyline') ?? getAttribute(prim, 'rigidGroup:renderPolyline');
+        const renderSegments = resolveRenderPolylineMembers(
+            parseRenderPolyline(renderPolylineAttr),
+            memberPaths,
+        );
 
         world.addComponent(bodyEnt, new MachineTagComponent(machineId));
         world.addComponent(bodyEnt, new SceneEntityInfoComponent(prim.name, ['RigidBody']));

@@ -63,7 +63,7 @@ def Xform "World" {
         }
         def RigidBody "Effector" {
             rel rigidBody:members = [</World/Scene/Wheel>, </World/Scene/Pinhole>, </World/Scene/Corner>]
-            string rigidBody:renderIndices = "[[0,1,2,0]]"
+            string rigidBody:renderPolyline = "[[0,1,2,0]]"
         }
         def DistancePhysicsJoint "Internal" {
             rel physics:body0 = </World/Scene/Wheel>

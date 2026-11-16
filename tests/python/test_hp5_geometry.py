@@ -29,7 +29,7 @@ def test_all_pivots_parallel_lines_and_reeving_match_firmware(name, reduced):
     np.testing.assert_allclose([pos(c) for c in corners], expected)
     members = prim('Effector').GetRelationship('rigidBody:members').GetTargets()
     assert len(members) == (44 if reduced else 4)
-    assert list(prim('Effector').GetRelationship('rigidBody:frameCorners').GetTargets()) == [prim(c).GetPath() for c in corners]
+    assert list(prim('Effector').GetAttribute('rigidBody:renderPolyline').Get()) == [f'<{base}{c}>' for c in corners]
     for i, axis in enumerate('ABCD'):
         for side in 'LR':
             if reduced:

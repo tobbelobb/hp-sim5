@@ -134,22 +134,21 @@ export function readSpoolAxisLocal(primNode) {
     return normalizeSpoolAxisLocal(axis);
 }
 
-export function parseRigidGroupRenderSegments(rawValue) {
+// Accepts a JSON-like list of rigid body members, by index or prim path, e.g.
+//   "[0,1,2,0]", "[</World/Scene/CornerSW>, </World/Scene/CornerSE>, ...]"
+// or nested runs of either. Runs of two or more form one polyline; numbers
+// are member positions, paths are resolved by the caller.
+export function parseRenderPolyline(rawValue) {
     if (rawValue === null || rawValue === undefined) {
         return null;
     }
-    let parsed = rawValue;
+    let parsed = normalizeToPlainArray(rawValue);
     if (typeof parsed === 'string') {
         const trimmed = parsed.trim();
         if (!trimmed) {
             return null;
         }
-        try {
-            parsed = JSON.parse(trimmed);
-        } catch (err) {
-            console.warn('setupScene: failed to parse rigidGroup:renderIndices JSON', err);
-            return null;
-        }
+        parsed = scanRenderReferenceList(trimmed);
     }
     parsed = normalizeToPlainArray(parsed);
     if (!Array.isArray(parsed)) {
@@ -162,15 +161,15 @@ export function parseRigidGroupRenderSegments(rawValue) {
         if (!Array.isArray(flattened)) {
             return;
         }
-        const indices = [];
+        const entries = [];
         for (const value of flattened) {
-            const asNumber = Number(value);
-            if (Number.isInteger(asNumber)) {
-                indices.push(asNumber);
+            const entry = normalizeRenderReference(value);
+            if (entry !== null) {
+                entries.push(entry);
             }
         }
-        if (indices.length >= 2) {
-            segments.push(indices);
+        if (entries.length >= 2) {
+            segments.push(entries);
         }
     };
 
@@ -184,4 +183,100 @@ export function parseRigidGroupRenderSegments(rawValue) {
     }
 
     return segments.length > 0 ? segments : null;
+}
+
+// Prim paths in a render polyline are positions in the rigid body's member list.
+export function resolveRenderPolylineMembers(segments, memberPaths) {
+    if (!Array.isArray(segments)) {
+        return null;
+    }
+    const paths = Array.isArray(memberPaths) ? memberPaths : [];
+    const resolved = [];
+    for (const segment of segments) {
+        const indices = [];
+        let unresolved = null;
+        for (const entry of segment) {
+            if (typeof entry === 'number') {
+                indices.push(entry);
+                continue;
+            }
+            const index = paths.indexOf(entry);
+            if (index < 0) {
+                unresolved = entry;
+                break;
+            }
+            indices.push(index);
+        }
+        if (unresolved !== null) {
+            console.warn(`setupScene: rigidBody:renderPolyline references ${unresolved}, which is not a rigid body member; skipping that segment.`);
+            continue;
+        }
+        if (indices.length >= 2) {
+            resolved.push(indices);
+        }
+    }
+    return resolved.length > 0 ? resolved : null;
+}
+
+function scanRenderReferenceList(text) {
+    let cursor = 0;
+    const skipWhitespace = () => {
+        while (cursor < text.length && /\s/.test(text[cursor])) cursor += 1;
+    };
+    const readScalar = () => {
+        skipWhitespace();
+        const start = cursor;
+        const first = text[cursor];
+        if (first === '<') {
+            const end = text.indexOf('>', cursor);
+            cursor = end < 0 ? text.length : end + 1;
+        } else if (first === '"' || first === "'") {
+            const end = text.indexOf(first, cursor + 1);
+            cursor = end < 0 ? text.length : end + 1;
+        } else {
+            while (cursor < text.length && !/[,[\]\s]/.test(text[cursor])) cursor += 1;
+        }
+        return text.slice(start, cursor);
+    };
+    const readValue = () => {
+        skipWhitespace();
+        if (text[cursor] !== '[') {
+            return readScalar();
+        }
+        cursor += 1;
+        const values = [];
+        skipWhitespace();
+        while (cursor < text.length && text[cursor] !== ']') {
+            values.push(readValue());
+            skipWhitespace();
+            if (text[cursor] === ',') {
+                cursor += 1;
+                skipWhitespace();
+            }
+        }
+        if (text[cursor] === ']') cursor += 1;
+        return values;
+    };
+    return readValue();
+}
+
+function normalizeRenderReference(value) {
+    if (typeof value === 'number') {
+        return Number.isInteger(value) ? value : null;
+    }
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return null;
+    }
+    if (/^-?\d+$/.test(trimmed)) {
+        return Number.parseInt(trimmed, 10);
+    }
+    const unwrapped = (trimmed.startsWith('<') && trimmed.endsWith('>'))
+        || (trimmed.length > 1 && (trimmed[0] === '"' || trimmed[0] === "'"))
+        ? trimmed.slice(1, -1).trim()
+        : trimmed;
+    return unwrapped.length > 0 ? unwrapped : null;
 }

@@ -103,7 +103,8 @@ def build(reduced):
             members.append(str(prim.GetPath()))
     effector=stage.DefinePrim(BASE+'Effector','RigidBody')
     effector.CreateRelationship('rigidBody:members',custom=True).SetTargets(members)
-    effector.CreateRelationship('rigidBody:frameCorners',custom=True).SetTargets([BASE+name for name in NAMES])
+    effector.CreateAttribute('rigidBody:renderPolyline',Sdf.ValueTypeNames.StringArray,custom=True).Set(
+        [f'<{BASE}{name}>' for name in NAMES])
     (ROOT/f'public/usd_scenes/{machine}.usda').write_text(layer.ExportToString().rstrip()+'\n')
     print(machine, 'corners', len(NAMES), 'mover members',len(members),
           'mass',sum(stage.GetPrimAtPath(p).GetAttribute('physics:mass').Get() for p in members))

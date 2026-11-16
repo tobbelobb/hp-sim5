@@ -954,7 +954,7 @@ def Xform "World"
                 </World/HangprinterScene/WheelD2_right_bottom>,
             ]
 
-            custom string rigidBody:renderIndices = "[0,1,2,0]"
+            custom string rigidBody:renderPolyline = "[0,1,2,0]"
         }
 
         def CableJoint "JointAL_0"
