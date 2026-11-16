@@ -157,11 +157,13 @@ same world. The first machine supplies global physics resources such as gravity
 and the fixed timestep derived from USDA `timeCodesPerSecond`.
 
 The renderer is stored as the `renderSystem` world resource rather than as a
-simulation system. `app/runner.js` advances physics independently of animation
-frames: normal playback uses a dedicated worker clock, and ASAP playback uses
-time-budgeted message batches. Switching tabs or covering/minimizing the window
-can stop drawing without stopping physics, command playback or recording.
-Hidden tabs skip drawing, and returning to the tab shows the current state.
+simulation system. In a visible tab, normal playback steps physics inside each
+animation frame, so every drawn frame shows an even amount of motion. Hidden
+tabs get no animation frames, so a dedicated worker clock steps physics there
+instead; ASAP playback uses time-budgeted message batches in both cases.
+Switching tabs or covering/minimizing the window stops drawing without stopping
+physics, command playback, recording or the position trace, and returning to the
+tab shows the current state.
 On cross-origin-isolated hosts, the worker sleeps with `Atomics.wait` to avoid
 timer throttling; other hosts fall back to browser-dependent worker timers.
 

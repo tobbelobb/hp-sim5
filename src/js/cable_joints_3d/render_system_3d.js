@@ -1712,14 +1712,9 @@ export class RenderSystem3D {
     this.drawnExtrusionCount = extrusions.length;
   }
 
-  _syncPositionTrace(world) {
-    if (!this.positionTraceEnabled) {
-      if (this.positionTracePointsObject.visible) {
-        this._updatePointObject(this.positionTracePointsObject, [], null, DEFAULT_TRACE_Z);
-      }
-      return;
-    }
-
+  // Called without drawing while the tab is hidden, so the trace has no gaps.
+  samplePositionTrace(world) {
+    if (!this.positionTraceEnabled) return;
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length > 0) {
       const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
@@ -1737,6 +1732,16 @@ export class RenderSystem3D {
         }
       }
     }
+  }
+
+  _syncPositionTrace(world) {
+    if (!this.positionTraceEnabled) {
+      if (this.positionTracePointsObject.visible) {
+        this._updatePointObject(this.positionTracePointsObject, [], null, DEFAULT_TRACE_Z);
+      }
+      return;
+    }
+    this.samplePositionTrace(world);
 
     if (
       this.positionTracePoints.length !== this.drawnPositionTraceCount

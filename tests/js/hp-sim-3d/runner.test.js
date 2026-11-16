@@ -51,28 +51,30 @@ function setup() {
   return { world, resources, render, clocks, stepButton, listeners };
 }
 
-test('physics advances at the selected speed without animation frames; drawing never advances physics', () => {
+test('hidden tabs step on the worker clock and keep tracing; visible tabs step and draw in frames', () => {
   const { world, resources, render, clocks } = setup();
+  render.samplePositionTrace = jest.fn();
   clocks[0].tick(1100);
   expect(world.update.mock.calls.length).toBeGreaterThanOrEqual(49);
   expect(world.update.mock.calls.every(([dt]) => dt === 0.002)).toBe(true);
   expect(resources.get('researchClock').time).toBeCloseTo(0.1, 2);
+  expect(render.samplePositionTrace).toHaveBeenCalledTimes(1);
   expect(render.update).not.toHaveBeenCalled();
-
-  const draw = requestAnimationFrame.mock.calls[0][0];
-  draw();
-  expect(render.update).not.toHaveBeenCalled();
-  document.hidden = false;
-  const beforeDraw = world.update.mock.calls.length;
-  draw();
-  expect(render.update).toHaveBeenCalledTimes(1);
-  expect(world.update).toHaveBeenCalledTimes(beforeDraw);
 
   controls.setTimeScale(2);
   clocks[0].tick(1200);
   const beforeTick = world.update.mock.calls.length;
   clocks[0].tick(1300);
   expect(world.update.mock.calls.length - beforeTick).toBeGreaterThanOrEqual(99);
+
+  document.hidden = false;
+  const beforeVisible = world.update.mock.calls.length;
+  clocks[0].tick(1400);
+  expect(world.update).toHaveBeenCalledTimes(beforeVisible);
+  const frame = requestAnimationFrame.mock.calls[0][0];
+  frame(1400);
+  expect(world.update.mock.calls.length - beforeVisible).toBeGreaterThanOrEqual(99);
+  expect(render.update).toHaveBeenCalledTimes(1);
 });
 
 test('pause and reset cancel the clock and ignore stale ticks; single stepping works while hidden', () => {

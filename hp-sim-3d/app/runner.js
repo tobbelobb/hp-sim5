@@ -167,7 +167,11 @@ export function runGame(world, internalSetupScene, options = {}) {
 
   const maybeRender = () => {
     const renderSystem = getRenderSystem();
-    if (document.hidden || !renderSystem || renderSystem.drawingSuspended) {
+    if (document.hidden) {
+      renderSystem?.samplePositionTrace?.(world);
+      return;
+    }
+    if (!renderSystem || renderSystem.drawingSuspended) {
       return;
     }
     if (renderStride === Number.POSITIVE_INFINITY) {
@@ -370,28 +374,36 @@ export function runGame(world, internalSetupScene, options = {}) {
     return 0;
   };
 
+  // Visible tabs step physics inside animation frames, so every drawn frame
+  // shows the same amount of motion. Hidden tabs get no frames; the worker
+  // clock steps physics there instead.
   const startLinearLoop = (token) => {
-    stopClock = startClock((time) => {
-      if (token !== loopToken) {
-        return;
-      }
+    const tick = (time) => {
       runLinearTick(time);
       if (token !== loopToken) return;
+      maybeRender();
       if (!shouldRunContinuously()) {
         stopLoops();
         enterIdleMode();
       }
+    };
+
+    stopClock = startClock((time) => {
+      if (token === loopToken && document.hidden) tick(time);
     }, (error) => {
       if (token !== loopToken) return;
       console.error('hp-sim-3d: simulation clock failed.', error);
       pauseSimulation();
     });
 
-    const step = () => {
+    const step = (time) => {
       if (token !== loopToken) {
         return;
       }
-      maybeRender();
+      tick(time);
+      if (token !== loopToken) {
+        return;
+      }
       const renderSystem = getRenderSystem();
       if (!renderSystem || typeof renderSystem.setAnimationLoop === 'function') {
         return;
