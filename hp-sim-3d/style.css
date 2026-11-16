@@ -722,6 +722,14 @@ body {
   display: none;
 }
 
+.sim-speed-achieved {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
 .sim-speed-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;

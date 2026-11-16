@@ -195,10 +195,13 @@ export function runGame(world, internalSetupScene, options = {}) {
       speedEl.textContent = 'N/A';
       return;
     }
-    const elapsed = (performance.now() - startTime) / 1000;
-    if (elapsed > 0) {
-      const avgSpeed = totalSim / elapsed;
-      speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
+    // Achieved speed over roughly the last second, so it follows speed changes.
+    const now = performance.now();
+    const elapsed = (now - startTime) / 1000;
+    if (elapsed >= 1) {
+      speedEl.textContent = `${(totalSim / elapsed).toFixed(1)}x`;
+      startTime = now;
+      totalSim = 0;
     }
   };
 
@@ -567,11 +570,9 @@ export function runGame(world, internalSetupScene, options = {}) {
       return;
     }
     pauseState.paused = false;
-    if (!hasStarted) {
-      startTime = performance.now();
-      totalSim = 0;
-      hasStarted = true;
-    }
+    startTime = performance.now();
+    totalSim = 0;
+    hasStarted = true;
     lastTime = performance.now();
     updatePauseButtonLabel();
     stopLoops();

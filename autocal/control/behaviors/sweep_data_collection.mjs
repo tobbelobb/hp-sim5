@@ -1276,8 +1276,10 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         || !sample.muByMotorDeg.every(Number.isFinite)) {
       throw new Error('Insufficient encoder evidence for the spool reserve');
     }
-    if (Math.abs(sample.muByMotorDeg[driveAnchor] * mmPerDeg[driveAnchor] - target) > DEFAULT_FIXED_TOLERANCE_MM) {
-      throw new Error('Drive did not track the spool-reserve probe target');
+    const reachedMm = sample.muByMotorDeg[driveAnchor] * mmPerDeg[driveAnchor];
+    if (Math.abs(reachedMm - target) > DEFAULT_FIXED_TOLERANCE_MM) {
+      throw new Error(`Drive did not track the spool-reserve probe target: target ${target.toFixed(3)} mm, `
+        + `reached ${reachedMm.toFixed(3)} mm, move ${delta.toFixed(3)} mm, tolerance ${DEFAULT_FIXED_TOLERANCE_MM} mm`);
     }
     return { ...sample, stableData: stable, measuredClockMs };
   };
