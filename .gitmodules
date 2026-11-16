@@ -25,7 +25,7 @@
 [submodule "RRF/RRFLibraries"]
 	path = RRF/RRFLibraries
 	url = https://github.com/tobbelobb/RRFLibraries.git
-	branch = 3.7-dev
+	branch = 3.7-dev-rebase
   ignore = untracked
 [submodule "RRF/LibTinyusb"]
 	path = RRF/LibTinyusb
