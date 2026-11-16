@@ -773,7 +773,7 @@ export function createViewController({
     if (!dom.speedStatusEl) {
       return;
     }
-    dom.speedStatusEl.textContent = `current speed: ${formatTimeScale(scale)}x realtime`;
+    dom.speedStatusEl.textContent = `target speed: ${formatTimeScale(scale)}x realtime`;
     dom.speedStatusEl.classList.remove('sim-hidden');
   }
 

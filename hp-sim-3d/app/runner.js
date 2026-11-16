@@ -3,6 +3,8 @@ import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { InputSystem } from './hangprinter_input.js';
 import { startSimulationClock } from './workerController.js';
 
+const LINEAR_TICK_BUDGET_MS = 30;
+const LINEAR_MAX_LAG_S = 0.25;
 const ASAP_RENDER_STRIDE = 10;
 const ASAP_SLICE_BUDGET_MS = 28;
 const ASAP_MIN_STEPS_PER_SLICE = 64;
@@ -187,19 +189,24 @@ export function runGame(world, internalSetupScene, options = {}) {
     });
   };
 
+  // Achieved speed next to the target speed it is trying to reach.
+  const showSpeed = (achieved) => {
+    if (speedEl) speedEl.textContent = `${achieved} / ${+targetTimeScale.toPrecision(3)}x`;
+  };
+
   const updateSpeedMeter = () => {
     if (!speedEl) {
       return;
     }
     if (!hasStarted || startTime <= 0) {
-      speedEl.textContent = 'N/A';
+      showSpeed('–');
       return;
     }
     // Achieved speed over roughly the last second, so it follows speed changes.
     const now = performance.now();
     const elapsed = (now - startTime) / 1000;
     if (elapsed >= 1) {
-      speedEl.textContent = `${(totalSim / elapsed).toFixed(1)}x`;
+      showSpeed(`${(totalSim / elapsed).toFixed(1)}x`);
       startTime = now;
       totalSim = 0;
     }
@@ -278,11 +285,16 @@ export function runGame(world, internalSetupScene, options = {}) {
 
     if (frameSec >= dt) {
       lastTime = currentTime;
-      const maxSteps = 500;
-      const maxAccum = dt * maxSteps;
-      accumulator = Math.min(accumulator + frameSec, maxAccum);
+      // Catch up on at most LINEAR_MAX_LAG_S of wall time, and stop stepping
+      // when the tick's time budget is spent so frames keep coming.
+      accumulator = Math.min(accumulator + frameSec, Math.max(dt, speedScale * LINEAR_MAX_LAG_S));
+      const deadline = performance.now() + LINEAR_TICK_BUDGET_MS;
+      let steps = 0;
       while (accumulator >= dt) {
         if (!recorderReady()) {
+          break;
+        }
+        if ((++steps & 0x1f) === 0 && performance.now() >= deadline) {
           break;
         }
         if (!pauseState.paused || doStep) {
@@ -487,9 +499,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     accumulator = 0;
     frameCounter = 0;
     renderCounter = 0;
-    if (speedEl) {
-      speedEl.textContent = 'N/A';
-    }
+    showSpeed('–');
     totalSim = 0;
     const pauseState = getPauseState();
     if (autoPause) {
@@ -538,9 +548,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     frameCounter = 0;
     renderCounter = 0;
     totalSim = 0;
-    if (speedEl) {
-      speedEl.textContent = 'N/A';
-    }
+    showSpeed('–');
     const pauseState = getPauseState();
     startTime = pauseState && !pauseState.paused ? performance.now() : 0;
     if (typeof onTimeScaleChange === 'function') {
