@@ -484,7 +484,6 @@ def Xform "World"
         {
             custom rel physics:body0 = </World/HangprinterScene/SpoolI>
             custom rel physics:body1 = </World/HangprinterScene/AnchorI0>
-            custom double restLength = 0.3989
         }
 
         def CableJoint "JointI0_1"
@@ -523,7 +522,6 @@ def Xform "World"
         {
             custom rel physics:body0 = </World/HangprinterScene/SpoolI>
             custom rel physics:body1 = </World/HangprinterScene/AnchorI1>
-            custom double restLength = 0.3989
         }
 
         def CableJoint "JointI1_1"
@@ -562,7 +560,6 @@ def Xform "World"
         {
             custom rel physics:body0 = </World/HangprinterScene/SpoolI>
             custom rel physics:body1 = </World/HangprinterScene/AnchorI2>
-            custom double restLength = 0.3989
         }
 
         def CableJoint "JointI2_1"
@@ -601,7 +598,6 @@ def Xform "World"
         {
             custom rel physics:body0 = </World/HangprinterScene/SpoolI>
             custom rel physics:body1 = </World/HangprinterScene/AnchorI3>
-            custom double restLength = 0.3989
         }
 
         def CableJoint "JointI3_1"

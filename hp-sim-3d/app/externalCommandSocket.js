@@ -256,7 +256,10 @@ export function createExternalCommandController({
         if (typeof payload.lineLayeringEnabled === 'boolean') {
           if (featureFlags) {
             const changed = featureFlags.lineLayeringEnabled !== payload.lineLayeringEnabled;
-            featureFlags.setLineLayeringEnabledState(payload.lineLayeringEnabled);
+            if (featureFlags.setLineLayeringEnabledState(payload.lineLayeringEnabled) === false) {
+              settingsError = 'Line Layering cannot change while Finish ASAP is active.';
+              return;
+            }
             // Layering changes the baked initial cable lengths, as with the UI toggle.
             if (changed) commands?.handleUserReset?.();
           } else setLineLayeringFeatureFlags(world, payload.lineLayeringEnabled);

@@ -29,25 +29,32 @@ fn wrap(mut a: f64) -> f64 {
     if !a.is_finite() {
         return a;
     }
-    while a > PI {
-        a -= TAU;
-    }
-    while a < -PI {
-        a += TAU;
+    if a > PI || a < -PI {
+        a %= TAU;
+        if a > PI {
+            a -= TAU;
+        } else if a < -PI {
+            a += TAU;
+        }
     }
     a
 }
-fn unwrap(reference: f64, mut a: f64) -> f64 {
+fn unwrap(reference: f64, a: f64) -> f64 {
     if !reference.is_finite() || !a.is_finite() {
         return a;
     }
-    while a - reference > PI {
-        a -= TAU;
+    let delta = a - reference;
+    if (-PI..=PI).contains(&delta) {
+        return a;
     }
-    while a - reference < -PI {
-        a += TAU;
-    }
-    a
+    // Reduce in constant time, even when adding TAU cannot change the angle.
+    // Separate remainders also avoid overflow for opposite finite extremes.
+    let delta = if delta.is_finite() {
+        delta
+    } else {
+        a % TAU - reference % TAU
+    };
+    reference + wrap(delta)
 }
 fn twist(a: Q, axis: V, eps: f64) -> f64 {
     let axis = norm(axis);

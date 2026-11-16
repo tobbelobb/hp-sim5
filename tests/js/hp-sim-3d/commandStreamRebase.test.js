@@ -49,3 +49,20 @@ test('each bridge connection maps its first motor angles onto the current target
     jest.useRealTimers();
   }
 });
+
+test.each(['resetAxisMapping', 'clearPlaybackState'])('%s clears an unconsumed stream origin', method => {
+  const { world, remote, dt } = createHeadlessWorld(readFileSync('public/usd_scenes/hp4.usda', 'utf8'));
+  try {
+    remote.addCommand({ type: 'Rebase reference' });
+    world.update(dt);
+    remote[method]();
+    for (const angle of [0.02, 0.03]) {
+      remote.addCommand({ type: 'Move', B: angle });
+      world.update(dt);
+      const stepper = world.getComponent(remote.axisToEntity.B[0], StepperMotorComponent);
+      expect(stepper.commandedAngle - stepper.deltaAngle).toBeCloseTo(angle, 12);
+    }
+  } finally {
+    world.getResource('cableSolverBackend')?.dispose();
+  }
+});

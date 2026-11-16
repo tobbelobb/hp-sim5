@@ -69,6 +69,7 @@ export class RemoteSpoolSystem {
   }
 
   resetAxisMapping() {
+    this.rebaseAxes = null;
     this.axisToEntity = {};
   }
 
@@ -94,6 +95,7 @@ export class RemoteSpoolSystem {
   }
 
   clearPlaybackState() {
+    this.rebaseAxes = null;
     this.history = [];
     this._commands.length = 0;
     this.commandHead = 0;
