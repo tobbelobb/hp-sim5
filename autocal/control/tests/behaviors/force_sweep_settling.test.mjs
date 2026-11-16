@@ -3,7 +3,7 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2 } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2, driveStepMm = 0, stepMmByAnchor = [] } = {}) {
   let now = 0;
   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
   let preparing = preparationDrift;
@@ -24,7 +24,8 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     }
     const move = line.match(/^G1 H2 Y([-\d.]+)/);
     if (move) {
-      angles[1] += Number(move[1]);
+      // Firmware moves whole steps; truncation can leave almost one step short.
+      angles[1] += driveStepMm ? Math.trunc(Number(move[1]) / driveStepMm) * driveStepMm : Number(move[1]);
       if (!(forceLosesCoupling && modes[2] > 2.5)) angles[2] -= sensorGain * Number(move[1]);
     }
     return { reply: '' };
@@ -55,6 +56,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
     onPoint: point => points.push(point), sensorForceProfile, sensorSpoolGearRatio, probeSpoolReserve,
+    stepMmByAnchor,
   });
   return { run, commands, points };
 }
@@ -69,6 +71,12 @@ test('bounds moving endpoint search, then holds and settles before recording all
   expect(result.dataPoints[0].raw_angles_deg[2]).toBeLessThanOrEqual(600.5 - 180);
   expect(trial.points[0].timestamp_ms).toBeGreaterThanOrEqual(hold.now + 1500);
   expect(result.dataPoints.every(point => point.sample_count === 16)).toBe(true);
+});
+
+test('drive tracking allows the one motor step that firmware moves cannot resolve', async () => {
+  await expect(movingPullout({ driveStepMm: 0.2 }).run()).rejects.toThrow(/did not track.*tolerance 0\.050 mm/);
+  const result = await movingPullout({ driveStepMm: 0.2, stepMmByAnchor: [0, 0.2, 0, 0] }).run();
+  expect(result.dataPoints.length).toBeGreaterThan(0);
 });
 
 test('continues to reject measurement drift after a bounded pullout', async () => {

@@ -48,6 +48,15 @@ export function parseM666(reply) {
   return values;
 }
 
+// RRF reports "Steps/mm: X: 16.977, Y: 16.977, ...".
+export function parseM92(reply) {
+  const values = {};
+  for (const match of (typeof reply === 'string' ? reply : '').matchAll(/\b([A-Z]):\s*([-+]?\d+(?:\.\d+)?)/g)) {
+    values[match[1]] = Number(match[2]);
+  }
+  return values;
+}
+
 export function parseM669(reply) {
   const values = parseM666(reply);
   // RRF reports anchors as "A:0.00, -1900.00, -280.00", unlike M666 colon lists.

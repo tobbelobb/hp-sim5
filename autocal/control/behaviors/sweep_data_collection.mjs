@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   computeMmPerDegree,
   parseM666,
+  parseM92,
   parseM669,
   runMoveWithWait,
   sleep as baseSleep,
@@ -1141,6 +1142,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     feed,
     speedup,
     mmPerDeg,
+    stepMmByAnchor = [],
     datasetStartMs,
     forceLow,
     forceMid,
@@ -1277,9 +1279,10 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       throw new Error('Insufficient encoder evidence for the spool reserve');
     }
     const reachedMm = sample.muByMotorDeg[driveAnchor] * mmPerDeg[driveAnchor];
-    if (Math.abs(reachedMm - target) > DEFAULT_FIXED_TOLERANCE_MM) {
+    const trackingToleranceMm = DEFAULT_FIXED_TOLERANCE_MM + (stepMmByAnchor[driveAnchor] ?? 0);
+    if (Math.abs(reachedMm - target) > trackingToleranceMm) {
       throw new Error(`Drive did not track the spool-reserve probe target: target ${target.toFixed(3)} mm, `
-        + `reached ${reachedMm.toFixed(3)} mm, move ${delta.toFixed(3)} mm, tolerance ${DEFAULT_FIXED_TOLERANCE_MM} mm`);
+        + `reached ${reachedMm.toFixed(3)} mm, move ${delta.toFixed(3)} mm, tolerance ${trackingToleranceMm.toFixed(3)} mm`);
     }
     return { ...sample, stableData: stable, measuredClockMs };
   };
@@ -1585,7 +1588,9 @@ export async function collectSweepData(send, context) {
   const m669Reply = await send('M669');
   const m669Values = parseM669(m669Reply?.reply);
   const m92Reply = await send('M92');
-  const m92Values = parseM666(m92Reply?.reply);
+  const m92Values = parseM92(m92Reply?.reply);
+  // Moves land on whole motor steps, so position checks must allow one step.
+  const stepMmByAnchor = machineConfig.axes.map(axis => (m92Values[axis] > 0 ? 1 / m92Values[axis] : 0));
   // RRF applies G90 to H2 moves as absolute motor coordinates; every H2 move here is a delta.
   if (firmware === 'rrf') await send('G91');
 
@@ -1831,6 +1836,7 @@ export async function collectSweepData(send, context) {
             feed,
             speedup,
             mmPerDeg,
+            stepMmByAnchor,
             datasetStartMs,
             ...forces,
             sensorForceProfile: sensorForceProfiles

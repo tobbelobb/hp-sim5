@@ -1,4 +1,9 @@
-import { parseEncoderReply, runMoveWithWait, sendHpSimSettings } from '../../primitives/encoder_utils.mjs';
+import { parseEncoderReply, parseM92, runMoveWithWait, sendHpSimSettings } from '../../primitives/encoder_utils.mjs';
+
+test('parses RRF steps per mm for every axis', () => {
+  expect(parseM92('Steps/mm: X: 16.977, Y: 16.977, Z: 16.977, U: 16.977, E: 95.922'))
+    .toEqual({ X: 16.977, Y: 16.977, Z: 16.977, U: 16.977, E: 95.922 });
+});
 
 test('scientific encoder values near zero remain one value per motor', () => {
   expect(parseEncoderReply('0 -5.684341886080802e-14 3.1E+2 +.25')).toEqual([0, -5.684341886080802e-14, 310, .25]);
