@@ -4,7 +4,7 @@ import autocal.planning_pass as planning
 
 from autocal.active_learning import SweepConfig, generate_candidate_sweeps
 from autocal.pose_planning import (ANCHOR_CLEARANCE_SHARE, SWEEP_PRETENSION_SHARE, predict_sweep_positions,
-                                   rank_candidates_pose_information)
+                                   rank_candidates_pose_information, pose_information)
 
 ANCHORS = np.array([[0.0, -1900.0, -280.0], [1645.4, 950.0, -280.0], [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]])
 HOME = np.linalg.norm(ANCHORS, axis=1)
@@ -24,6 +24,22 @@ def test_predicted_positions_keep_the_fixed_lengths_and_stay_between_the_anchors
     assert np.all(np.abs(positions[:, 0]) < 900.0) and np.all(positions[:, 2] > -280.0)
     # The stretch is symmetric about the plane through A and D, like the recorded sweeps.
     assert np.allclose(positions[0] * [-1.0, 1.0, 1.0], positions[-1], atol=30.0)
+
+
+@pytest.mark.parametrize('count', [4, 5])
+def test_analytic_candidate_information_matches_range_residual_differences(count):
+    anchors = (ANCHORS if count == 4 else np.array([[0.,-1900.,-280.], [1900.,0.,-280.],
+        [0.,1900.,-280.], [-1900.,0.,-280.], [0.,0.,1900.]]))
+    cfg = SweepConfig((0, count-1), (100. if count == 4 else -200., -100.), 1, 2 if count == 4 else 3)
+    positions = predict_sweep_positions(anchors, cfg, 20, SWEEP_PRETENSION_SHARE)
+    assert len(positions) == 20
+    lengths = np.linalg.norm(anchors[None,:,:] - positions[:,None,:], axis=2) - np.linalg.norm(anchors, axis=1)
+    if count == 5:
+        lengths[:,2] = np.nan
+    options = dict(machine_type=f'hangprinter_{count}', low_anchor_z=None, sigma_mm=.02)
+    finite_difference = pose_information(anchors, lengths, **options)
+    analytic = pose_information(anchors, lengths, positions=positions, **options)
+    np.testing.assert_allclose(analytic, finite_difference, rtol=1e-3, atol=1e-3)
 
 
 def test_unreachable_fixed_lengths_give_no_positions():

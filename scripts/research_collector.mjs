@@ -97,12 +97,8 @@ const server = http.createServer(async (request, response) => {
       await fs.writeFile(args.sweepConfigFile, args.configs.map((cfg) => `[${cfg.fixed.join(',')}] ${cfg.drive} ${cfg.sensor}\n`).join(''));
       const machineType = args.machine_type;
       const machine = findMachine(machineType);
-      const redundant = MACHINE_CONFIGS[machineType].numAnchors > MACHINE_CONFIGS[machineType].dimensions + 1;
       const collectorArgs = {
         sim: true, firmware: 'rrf',
-        noAutoTuneForce: true, fixedTargets: '0,0', forceLow: .01, forceMid: .05, forceMax: .5,
-        sensorCollectionForce: 1,
-        ...(redundant ? { noAutoTuneForce: false, fixedTargets: null } : {}),
         solverIterations: SCENES[machine.scene].autocal_solver_iterations,
         ...args.options,
         machineType,
@@ -110,14 +106,6 @@ const server = http.createServer(async (request, response) => {
         preserveBuildupFactor: args.layering,
         outputFile: args.outputFile, sweepConfigFile: args.sweepConfigFile,
       };
-      if (redundant) {
-        for (const key of ['forceLow', 'forceMid', 'forceMax', 'sensorCollectionForce']) {
-          if (!(key in (args.options ?? {}))) delete collectorArgs[key];
-        }
-        if (['forceLow', 'forceMid', 'forceMax'].every(key => key in (args.options ?? {}))) {
-          collectorArgs.noAutoTuneForce = true;
-        }
-      }
       send.simulationClock.settlingTimeoutMs = args.settlingTimeoutMs;
       const result = await collectSweepData(send, {
         args: collectorArgs, machineType, machineConfig: MACHINE_CONFIGS[machineType],

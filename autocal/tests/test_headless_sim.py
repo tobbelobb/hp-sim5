@@ -77,6 +77,29 @@ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
 
 
 @pytest.mark.slow
+def test_application_waits_for_a_disconnected_collectors_advance(tmp_path):
+    from argparse import Namespace
+    import socket
+    from urllib.parse import urlsplit
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json', keep_sim_alive=False)
+    with HeadlessSimulation(args, []) as service:
+        url = urlsplit(service.url)
+        with socket.create_connection((url.hostname, url.port)) as client:
+            body = json.dumps({'seconds': 60}).encode()
+            client.sendall(f'POST /advance HTTP/1.1\r\nHost: localhost\r\nContent-Length: {len(body)}\r\n\r\n'.encode() + body)
+            # The clock proves the advance is running before disconnecting.
+            deadline = time.monotonic() + 15
+            clock = service.directory / 'clock.json'
+            while not clock.exists() or json.loads(clock.read_text()).get('total_steps', 0) < 1000:
+                assert time.monotonic() < deadline
+                time.sleep(.01)
+        service.apply_parameters(['M669 A0:-1900:-280'])
+        assert service.request('status')['total_steps'] == 30000
+        assert service.manifest['applied_parameters'] == ['M669 A0:-1900:-280']
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize('layering', [False, True])
 @pytest.mark.parametrize('machine, iterations', [('hangprinter_3', 1), ('hangprinter_4', 10)])
 def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering, machine, iterations):

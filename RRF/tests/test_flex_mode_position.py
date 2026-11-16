@@ -65,6 +65,10 @@ class FlexModePositionTest(unittest.TestCase):
                     self.assertAlmostEqual(actual, wanted, delta=.1)
                 self.assertTrue(any(row[1] == '44' and abs(float(row[6])) > 0 for row in motion))
 
+    def test_reported_weight_preserves_light_mover_precision(self):
+        _, _, _, output = self.run_gcode('M666 W0.081\nM666\n')
+        self.assertRegex(output, r'\bW0\.08100\b')
+
     def test_enable_at_home_does_not_move_or_shift_position(self):
         for machine in ('hp3', 'hp4', 'slideprinter', 'skycam', 'cubecorners'):
             for layers in ('', '_w_line_layers'):

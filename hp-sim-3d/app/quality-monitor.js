@@ -536,6 +536,14 @@ export class QualityMonitor {
     const upcoming = this.extrusionCursor + 0.5 * length;
     let index = this.entryIndex;
     while (index + 1 < entries.length && entries[index + 1].extrusionStart <= upcoming) {
+      const next = entries[index + 1];
+      // A rounded extrusion step can straddle the boundary before a travel.
+      // Its position still belongs to the old line until the tip travels.
+      if (!next.contiguous && this.extrusionCursor - next.extrusionStart <= this.travelSyncExtrusion) {
+        const end = entries[index].end;
+        if (Math.hypot(x - end[0], y - end[1], z - end[2])
+            < Math.hypot(x - next.start[0], y - next.start[1], z - next.start[2])) break;
+      }
       index += 1;
     }
     // Firmware rounds E to whole steps, so the reference can still hold a few

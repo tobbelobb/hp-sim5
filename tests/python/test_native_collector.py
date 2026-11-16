@@ -184,7 +184,7 @@ def test_real_rrf_native_collection_autocal_and_process_cleanup(tmp_path):
         service.start()
         before = service.call('configure', machine='hp4_w_line_layers')
         import time
-        job = service.call('start_collection', options={'sweepPoints': 3, 'noiseSamples': 4})
+        job = service.call('start_collection', options={'sweepPoints': 3, 'noiseSamples': 8})
         deadline = time.monotonic() + 920
         while True:
             status = service.call('job_status', job_id=job['job_id'])

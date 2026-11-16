@@ -60,20 +60,12 @@ export function pos_to_motor_pos_samples_deg(
     const relative_line_lengths = distance_samples_relative_to_origin(anchors, pos);
     // flex_distance is not implemented as use_flex is false in MoveCommander
 
-    if (k2.some(val => Math.abs(val) > 1e-9)) {
-        const spool_r_in_origin_sq = spool_r_in_origin.map(r => r * r);
-        const k0 = degrees_per_unit_times_r.map((d, i) => 2.0 * d / k2[i]);
-        return relative_line_lengths.map(lengths => {
-            return lengths.map((len, i) => {
-                return k0[i] * (Math.sqrt(Math.abs(spool_r_in_origin_sq[i] + len * k2[i])) - spool_r_in_origin[i]);
-            });
-        });
-    } else {
-        // Simplified kinematics without spool buildup (linear relationship)
-        return relative_line_lengths.map(lengths => {
-            return lengths.map((len, i) => {
-                return (degrees_per_unit_times_r[i] / spool_r_in_origin[i]) * len;
-            });
-        });
-    }
+    return relative_line_lengths.map(lengths => lengths.map((len, i) => {
+        const radius = spool_r_in_origin[i];
+        const radiusSquared = radius * radius + len * k2[i];
+        if (radiusSquared < 0) throw new Error(`Spool ${i} has insufficient line for this move`);
+        // Rationalized form also covers zero buildup on an individual axis
+        // and avoids subtracting nearly equal radii for small moves.
+        return 2 * degrees_per_unit_times_r[i] * len / (Math.sqrt(radiusSquared) + radius);
+    }));
 }

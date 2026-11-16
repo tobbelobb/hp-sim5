@@ -1,7 +1,8 @@
 """Sensor force targeting a constant weighted mean tension per strand.
 
-At a position the line tensions are fixed by the mover weight up to one free
-amount of pretension, and the torque-controlled sensor line sets that amount.
+At a position the active d+1 line tensions are fixed by gravity and the
+compliant lines' loads up to one free amount of pretension. The torque-controlled
+sensor line sets that amount.
 Stretch biases the fit through the pretension-weighted mean strain of the lines.
 The target makes shared compliance resemble a common scale plus a home length
 offset in the first-order model, without using nominal stiffness. Actual strain
@@ -38,14 +39,24 @@ def equal_strain_tensions(
     strands: np.ndarray,
     extra_line_length_mm: np.ndarray,
     mechanical_advantage: np.ndarray | None = None,
+    compliant_force_n: float = 0.0,
 ) -> np.ndarray:
     """Tensions of the given lines at a position whose weighted mean tension per strand is `strand_tension_n`."""
     lines = list(lines)
+    if len(lines) != np.asarray(anchors).shape[1] + 1:
+        raise ValueError("Equal-strain sweeps require d+1 active lines; keep redundant lines compliant")
     to_anchor = np.asarray(anchors, dtype=float)[lines] - np.asarray(position, dtype=float)
     distance = np.linalg.norm(to_anchor, axis=1)
     directions = (to_anchor / distance[:, None]).T
     load = np.zeros(directions.shape[0])
     load[-1] = mover_weight_n
+    # Redundant lines stay in low-force mode, not at zero tension. Their
+    # known load removes the extra pretension freedoms before solving the
+    # active d+1 lines' single self-stress mode.
+    unused = [axis for axis in range(len(anchors)) if axis not in lines]
+    if unused:
+        passive = np.asarray(anchors, dtype=float)[unused] - np.asarray(position, dtype=float)
+        load -= compliant_force_n * np.sum(passive / np.linalg.norm(passive, axis=1)[:, None], axis=0)
     carrying = np.linalg.lstsq(directions, load, rcond=None)[0]
     pretension = np.linalg.svd(directions)[2][-1]
     pretension = pretension * np.sign(np.sum(pretension))
@@ -70,6 +81,7 @@ def sensor_force_profiles(
     extra_line_length_mm: np.ndarray,
     minimum_force_n: float,
     mechanical_advantage: np.ndarray | None = None,
+    compliant_force_n: float = 0.0,
 ) -> List[Dict[str, object]]:
     """Sensor force against drive length change, for both directions of a sweep."""
     anchors = np.asarray(anchors, dtype=float)
@@ -79,7 +91,8 @@ def sensor_force_profiles(
         equal_strain_tensions(anchors, position, lines, strand_tension_n=strand_tension_n,
                               mover_weight_n=mover_weight_n, strands=strands,
                               extra_line_length_mm=extra_line_length_mm,
-                              mechanical_advantage=mechanical_advantage)
+                              mechanical_advantage=mechanical_advantage,
+                              compliant_force_n=compliant_force_n)
         for position in positions
     ]).reshape(-1, len(lines))
     # Gravity can make a line go slack at the tails of the self-stress curve.
@@ -143,6 +156,7 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
             strands=strands,
             extra_line_length_mm=np.asarray(line_description["Y"], dtype=float),
             mechanical_advantage=advantage,
+            compliant_force_n=float(tuning.get("force_low_n", 0.0)),
             minimum_force_n=start_force_n,
         )
     ]

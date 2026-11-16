@@ -93,6 +93,19 @@ describe('QualityMonitor 3D extrusion scoring', () => {
     expect(metrics.cornerCount).toBe(1);
   });
 
+  test.each([.996, 1.004])('a rounded extrusion step before a travel stays on the old line (cursor %s)', cursor => {
+    const monitor = createMonitor([
+      { start: [0, 0, 0], end: [.01, 0, 0], extrusion: 1 },
+      { start: [.6, 0, 0], end: [.6, 0, 0], extrusion: 2 },
+    ]);
+    monitor.recordExtrusion({ pos: [0, 0, 0], length: cursor });
+    monitor.recordExtrusion({ pos: [.01, 0, 0], length: .01 });
+    expect(monitor.entryIndex).toBe(0);
+    expect(monitor.trackingHistogram.max).toBeLessThan(.001);
+    monitor.recordExtrusion({ pos: [.6, 0, 0], length: .01 });
+    expect(monitor.entryIndex).toBe(1);
+  });
+
   test('a vertical offset is reported as vertical path deviation and mean Z offset', () => {
     const reference = [segment([0, 0, 0], [0.1, 0, 0])];
     const metrics = print(createMonitor(reference), reference, () => [0, 0, 0.002]);

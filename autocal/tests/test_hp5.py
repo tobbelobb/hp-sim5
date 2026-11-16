@@ -5,6 +5,7 @@ import pytest
 from autocal.active_learning import generate_candidate_sweeps
 from autocal.calibrate import build_anchor_initial_guess
 from autocal.pose_fit import dataset_line_lengths, fit_pose_least_squares, shift_dataset_home_offsets
+from autocal.pose_planning import ANCHOR_CLEARANCE_SHARE, predict_sweep_positions, SWEEP_PRETENSION_SHARE
 from autocal.sweep_config_generator import generate_sweep_configs, select_representative_configs
 from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import (
@@ -13,6 +14,16 @@ from autocal.theoretical_ellipse import (
 
 ANCHORS = np.array([[0., -1900., -280.], [1900., 0., -280.], [0., 1900., -280.],
                     [-1900., 0., -280.], [0., 0., 1900.]])
+
+
+def test_five_anchor_plans_avoid_the_forward_solvers_collision_regime():
+    candidates = generate_candidate_sweeps(num_anchors=5, dimensions=3, machine_type='hangprinter_5',
+        fixed_delta_values_mm=[-1600., -1200., -800., -400., 0.])
+    positions = [predict_sweep_positions(ANCHORS, cfg, 20, SWEEP_PRETENSION_SHARE) for cfg in candidates]
+    positions = np.concatenate([points for points in positions if len(points)])
+    assert len(positions) > 0
+    distances = np.linalg.norm(ANCHORS[None,:,:] - positions[:,None,:], axis=2)
+    assert np.all(distances >= ANCHOR_CLEARANCE_SHARE*np.linalg.norm(ANCHORS, axis=1))
 
 
 @pytest.mark.parametrize('machine', ['hangprinter_5', 'hangprinter_5_pulley_reduced'])

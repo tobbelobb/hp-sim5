@@ -153,11 +153,17 @@ await new Promise((resolve, reject) => { socket.once('open', resolve); socket.on
 socket.on('message', data => {
   delivered = delivered.then(() => handle(JSON.parse(data))).catch(error => { failure = error.message; });
 });
-let busy = false;
+let pending = Promise.resolve();
 const server = http.createServer(async (request, reply) => {
   reply.setHeader('Content-Type', 'application/json');
-  if (busy) { reply.writeHead(409).end(JSON.stringify({ error: 'Simulation is busy' })); return; }
-  busy = true;
+  // A collector can disconnect on Ctrl-C while its last advance is still
+  // running. Serialize the following application behind that operation;
+  // rejecting it as busy loses the selected calibration, and retrying a
+  // mutating G-code request would leave its outcome ambiguous.
+  const previous = pending;
+  let release;
+  pending = new Promise(resolve => { release = resolve; });
+  await previous;
   try {
     let text = '';
     for await (const chunk of request) text += chunk;
@@ -188,7 +194,7 @@ const server = http.createServer(async (request, reply) => {
     reply.end(JSON.stringify({ ...state, result }));
   } catch (error) {
     reply.writeHead(500).end(JSON.stringify({ error: error.message }));
-  } finally { busy = false; }
+  } finally { release(); }
 });
 server.listen(Number(apiPort), '127.0.0.1');
 async function close() {

@@ -36,6 +36,23 @@ def test_tensions_balance_the_mover_weight_at_the_requested_mean_strand_tension(
     assert np.sum(weight * tensions / STRANDS[lines]) / np.sum(weight) == pytest.approx(1.0)
 
 
+def test_redundant_compliant_lines_contribute_to_the_load():
+    anchors = np.array([[0., -1900., -280.], [1900., 0., -280.], [0., 1900., -280.],
+                        [-1900., 0., -280.], [0., 0., 1900.]])
+    lines, passive = [0, 4, 1, 3], 2
+    position = np.array([100., -400., 200.])
+    tensions = equal_strain_tensions(anchors, position, lines, strand_tension_n=1.,
+        mover_weight_n=WEIGHT, strands=np.array([2,2,2,2,4]),
+        extra_line_length_mm=np.array([429.1]*4 + [352.3]),
+        mechanical_advantage=np.array([2,2,2,2,4]), compliant_force_n=.05)
+    vectors = anchors - position
+    directions = vectors / np.linalg.norm(vectors, axis=1)[:, None]
+    assert directions[lines].T @ tensions + .05*directions[passive] == pytest.approx([0.,0.,WEIGHT], abs=1e-9)
+    with pytest.raises(ValueError, match='d\\+1 active lines'):
+        equal_strain_tensions(anchors, position, range(5), strand_tension_n=1.,
+            mover_weight_n=WEIGHT, strands=np.ones(5), extra_line_length_mm=np.zeros(5))
+
+
 def test_profiles_cover_both_sweep_directions_with_ascending_drive_lengths():
     forward, backward = sensor_force_profiles(ANCHORS, CFG, minimum_force_n=0.4, **OPTIONS)
     assert (forward["drive_anchor"], forward["sensor_anchor"]) == (1, 2)

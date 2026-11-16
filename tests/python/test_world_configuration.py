@@ -166,7 +166,7 @@ def test_real_reconfiguration_reset_active_job_and_evidence(tmp_path):
         assert service.call('status')['world_id'] == reset['world_id']
         service.call('cancel_job', job_id=job['job_id'])
         assert service.call('reset')['accepted_settings'] == hp3['accepted_settings']
-        collected = service.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
+        collected = service.call('collect', options={'sweepPoints': 3, 'noiseSamples': 8})
         assert collected['status'] == 'complete' and collected['point_count'] == 6
         assert collected['machine_design'] == 'Hangprinter version 3 without line layering'
         dataset = json.loads(Path(collected['artifacts']['dataset']).read_text())

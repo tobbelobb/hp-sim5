@@ -1,4 +1,19 @@
 import fs from 'node:fs';
+import { pos_to_motor_pos_samples_deg } from '../../../hp-sim-3d/app/workers/kinematics.js';
+
+test('positive buildup matches the spool equation and its zero-buildup limit', () => {
+  const anchors = [[100, 0, 0], [200, 0, 0]];
+  const params = { U: [1, 4], O: [1, 1], H: [20, 20], L: [20, 20] };
+  const angles = pos_to_motor_pos_samples_deg(anchors, [[-10, 0, 0]], 0, false, .5, [30, 30], params)[0];
+  for (const [i, ma] of [1, 4].entries()) {
+    const expected = 2 * (ma*360/(2*Math.PI)) / (-ma*.5) * (Math.sqrt(900-10*ma*.5)-30);
+    expect(angles[i]).toBeCloseTo(expected, 10);
+  }
+  const linear = pos_to_motor_pos_samples_deg(anchors, [[-10, 0, 0]], 0, false, 0, [30, 30], params)[0];
+  expect(linear[1]).toBeCloseTo(4*10/30*180/Math.PI);
+  expect(() => pos_to_motor_pos_samples_deg(anchors, [[-1000, 0, 0]], 0, false, 1, [30, 30], params))
+    .toThrow('insufficient line');
+});
 
 let MoveCommander;
 beforeAll(async () => {

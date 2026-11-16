@@ -415,31 +415,6 @@ def fit_ellipse_dataset(
             use_noise_mean=bool(use_noise_mean),
             extra_initial_anchors=[anchors],
         )
-    cost_raw = float(
-        _evaluate_cost_at_anchors(
-            dataset_for_estimation,
-            anchors,
-            pointwise_residual_mode=str(pointwise_residual_mode),
-            pointwise_filtering=bool(pointwise_filtering),
-            pointwise_global_mad=bool(pointwise_global_mad),
-            sweep_wise_filtering=bool(sweep_wise_filtering),
-            sweep_metric=str(sweep_metric),
-            use_noise_mean=bool(use_noise_mean),
-            noise_normalized=False,
-            sigma_source=str(sigma_source),
-        )
-    )
-
-    l2_scale = l2_scale_for_machine(machine_type, num_anchors, dimensions)
-    info_obs = total_information_matrix(
-        anchors,
-        sweep_configs_for_info,
-        machine_type=machine_type,
-        num_anchors=num_anchors,
-        dimensions=dimensions,
-        l2_scale=l2_scale,
-        fd_eps_mm=float(fd_eps_mm),
-    )
     if range_fit:
         lengths = dataset_line_lengths(dataset_for_estimation, use_noise_mean=bool(use_noise_mean))["lengths_mm"]
         sigma = float(pose_fit["robust_scale_mm"])
@@ -459,6 +434,32 @@ def fit_ellipse_dataset(
             "n_obs": observations, "params": info_obs.shape[0],
             "norm_mode": "sigma", "noise_normalized": True, "sigma_model_mm": sigma,
         }
+    else:
+        cost_raw = float(
+            _evaluate_cost_at_anchors(
+                dataset_for_estimation,
+                anchors,
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=False,
+                sigma_source=str(sigma_source),
+            )
+        )
+
+        l2_scale = l2_scale_for_machine(machine_type, num_anchors, dimensions)
+        info_obs = total_information_matrix(
+            anchors,
+            sweep_configs_for_info,
+            machine_type=machine_type,
+            num_anchors=num_anchors,
+            dimensions=dimensions,
+            l2_scale=l2_scale,
+            fd_eps_mm=float(fd_eps_mm),
+        )
     cov = _estimate_anchor_covariance(info_obs, regularization=float(regularization))
     noise_metrics = None
     if isinstance(cal, dict):
