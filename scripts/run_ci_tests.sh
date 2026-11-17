@@ -32,7 +32,7 @@ echo "== Python research, service and integration tests =="
 
 echo ""
 echo "== Python slow integration tests (simulators, recorders, MCP, hosts) =="
-(cd "$ROOT" && .venv/bin/python -m pytest -m "slow and not heavy")
+(cd "$ROOT" && .venv/bin/python -m pytest -v --durations=10 -o faulthandler_timeout=60 -m "slow and not heavy")
 
 run_with_retries() {
   local label="$1"
