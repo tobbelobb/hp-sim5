@@ -1,0 +1,34 @@
+
+=== CubeCorners without line layering  [cubecorners.usda]
+worker: RrfCanPlayer ready
+  X: measured 4.9059 mm (firmware geometry 4.8863), cross 0.0220 mm, osc 0.1843 mm, body 5.046 mm, spool-angle err 1.8e-6 rad, steps {"40":-41,"41":-41,"42":42,"43":42,"44":-59,"45":-59,"46":59,"47":59}
+
+=== CubeCorners with line layering  [cubecorners.usda +layering]
+  X: measured 4.7348 mm (firmware geometry 4.8559), cross 0.0057 mm, osc 0.0629 mm, body 5.144 mm, spool-angle err 2.5e-5 rad, steps {"40":-32,"41":-32,"42":32,"43":32,"44":-45,"45":-45,"46":45,"47":45}
+
+================ SUMMARY ================
+CubeCorners without line layering                        X  measured  4.905908 mm  cross 0.021968 mm  fw   4.88625 mm
+CubeCorners with line layering                           X  measured  4.734819 mm  cross 0.005749 mm  fw   4.85595 mm
+
+FAIL: 1 failure(s)
+  FAIL {"machine":"CubeCorners with line layering","axis":"X","kind":"magnitude","got":4.734819,"want":5}
+
+CubeCorners +5 mm X: production path vs pure 6-DOF geometry
+CubeCorners without line layering
+  step totals {"40":-41,"41":-41,"42":42,"43":42,"44":-59,"45":-59,"46":59,"47":59}  (sim radius 30.000 mm)
+  measured tip   4.9059 mm  (-1.88 %)
+  measured body  5.0460 mm  (0.92 %)
+  body rotation  0.18893 deg
+  6-DOF predicted tip (quantised steps) 4.9045 mm
+  6-DOF predicted tip (ideal line lengths) 5.0000 mm
+CubeCorners with line layering
+  step totals {"40":-32,"41":-32,"42":32,"43":32,"44":-45,"45":-45,"46":45,"47":45}  (sim radius 39.000 mm)
+  measured tip   4.7348 mm  (-5.30 %)
+  measured body  5.1444 mm  (2.89 %)
+  body rotation  0.07832 deg
+  6-DOF predicted tip (quantised steps) 4.7346 mm
+  6-DOF predicted tip (ideal line lengths) 5.0000 mm
+
+FAIL: CubeCorners command is not Cartesian-accurate at the tool tip:
+  CubeCorners without line layering: tool tip moved 4.9059 mm for a 5 mm +X command (-1.88 %, tolerance +/-0.05 mm)
+  CubeCorners with line layering: tool tip moved 4.7348 mm for a 5 mm +X command (-5.30 %, tolerance +/-0.05 mm)

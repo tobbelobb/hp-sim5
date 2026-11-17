@@ -1,0 +1,7 @@
+hp3 cableHalfWidth (layered plan): [0.001]
+ok   production order (flag set before apply): exactly equal after 500 steps, max position difference 0 m
+info stale flag at apply time: first difference {"index":27,"key":"e0.HybridKnotAngleComponent.pathAngles.35","left":-2.933692419514937,"right":-1.1299124550083235,"kind":"number","abs":1.8037799645066137}
+info stale flag at apply time: max body position difference 7.199e-2 m
+info knot angle that differs: e0.HybridKnotAngleComponent.pathAngles.35
+info after 2000 steps: max body position difference 7.044e-2 m
+PASS layering order: production toggle order is exact; stale-flag ordering is a measurable API hazard only

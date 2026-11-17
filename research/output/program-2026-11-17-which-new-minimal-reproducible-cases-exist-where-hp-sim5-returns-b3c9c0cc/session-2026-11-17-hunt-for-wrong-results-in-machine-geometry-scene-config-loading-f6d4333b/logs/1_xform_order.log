@@ -1,0 +1,127 @@
+Warning: in GetLocalTransformation at line 969 of /opt/USD/pxr/usd/usdGeom/xformable.cpp -- Unable to get attribute associated with the xformOp 'xformOp:orient', on the prim at path </World/HangprinterScene/AttachI0>. Skipping xformOp in the computation of the local transformation at prim.
+Warning: in GetLocalTransformation at line 969 of /opt/USD/pxr/usd/usdGeom/xformable.cpp -- Unable to get attribute associated with the xformOp 'xformOp:orient', on the prim at path </World/HangprinterScene/AttachI1>. Skipping xformOp in the computation of the local transformation at prim.
+Warning: in GetLocalTransformation at line 969 of /opt/USD/pxr/usd/usdGeom/xformable.cpp -- Unable to get attribute associated with the xformOp 'xformOp:orient', on the prim at path </World/HangprinterScene/AttachI2>. Skipping xformOp in the computation of the local transformation at prim.
+Warning: in GetLocalTransformation at line 969 of /opt/USD/pxr/usd/usdGeom/xformable.cpp -- Unable to get attribute associated with the xformOp 'xformOp:orient', on the prim at path </World/HangprinterScene/AttachI3>. Skipping xformOp in the computation of the local transformation at prim.
+checked 3 scenes; worst placement disagreement 3090.240 mm
+public/usd_scenes/hp4.usda WheelAL_top [Wheel] error=507.2 mm
+   translate=[-0.34641, -0.22, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34641, -0.22, 0.09275] usd=[0.09275, -0.22, 0.34641]
+public/usd_scenes/hp4.usda WheelAL_bottom [Wheel] error=494.5 mm
+   translate=[-0.34641, -0.22, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34641, -0.22, 0.04775] usd=[0.04775, -0.22, 0.34641]
+public/usd_scenes/hp4.usda WheelAR_top [Wheel] error=507.2 mm
+   translate=[0.34641, -0.22, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34641, -0.22, 0.09275] usd=[0.09275, -0.22, -0.34641]
+public/usd_scenes/hp4.usda WheelAR_bottom [Wheel] error=494.5 mm
+   translate=[0.34641, -0.22, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34641, -0.22, 0.04775] usd=[0.04775, -0.22, -0.34641]
+public/usd_scenes/hp4.usda WheelBL_top [Wheel] error=634.1 mm
+   translate=[0.363731, -0.19, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.363731, -0.19, 0.09275] usd=[0.11817, 0.175324, -0.363731]
+public/usd_scenes/hp4.usda WheelBL_bottom [Wheel] error=570.6 mm
+   translate=[0.363731, -0.19, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.363731, -0.19, 0.04775] usd=[0.14067, 0.136353, -0.363731]
+public/usd_scenes/hp4.usda WheelBR_top [Wheel] error=688.0 mm
+   translate=[0.017321, 0.41, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.017321, 0.41, 0.09275] usd=[-0.401445, -0.124676, -0.017321]
+public/usd_scenes/hp4.usda WheelBR_bottom [Wheel] error=700.2 mm
+   translate=[0.017321, 0.41, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.017321, 0.41, 0.04775] usd=[-0.378945, -0.163647, -0.017321]
+public/usd_scenes/hp4.usda WheelCL_top [Wheel] error=771.7 mm
+   translate=[-0.017321, 0.41, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.017321, 0.41, 0.09275] usd=[0.308695, -0.285324, 0.017321]
+public/usd_scenes/hp4.usda WheelCL_bottom [Wheel] error=743.8 mm
+   translate=[-0.017321, 0.41, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.017321, 0.41, 0.04775] usd=[0.331195, -0.246353, 0.017321]
+public/usd_scenes/hp4.usda WheelCR_top [Wheel] error=372.4 mm
+   translate=[-0.363731, -0.19, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.363731, -0.19, 0.09275] usd=[-0.21092, 0.014676, 0.363731]
+public/usd_scenes/hp4.usda WheelCR_bottom [Wheel] error=435.8 mm
+   translate=[-0.363731, -0.19, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.363731, -0.19, 0.04775] usd=[-0.18842, 0.053647, 0.363731]
+public/usd_scenes/hp4.usda WheelD0_left_top [Wheel] error=2604.3 mm
+   translate=[-0.34791, -0.197402, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34791, -0.197402, 2.0] usd=[0.829045, -1.830752, 0.34791]
+public/usd_scenes/hp4.usda WheelD0_right_top [Wheel] error=2601.2 mm
+   translate=[-0.34491, -0.202598, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34491, -0.202598, 2.0] usd=[0.824545, -1.83335, 0.34491]
+public/usd_scenes/hp4.usda WheelD0_left_bottom [Wheel] error=336.3 mm
+   translate=[-0.34791, -0.197402, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34791, -0.197402, 0.1] usd=[-0.120955, -0.185304, 0.34791]
+public/usd_scenes/hp4.usda WheelD0_right_bottom [Wheel] error=329.2 mm
+   translate=[-0.34491, -0.202598, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34491, -0.202598, 0.1] usd=[-0.125455, -0.187902, 0.34491]
+public/usd_scenes/hp4.usda WheelD1_left_top [Wheel] error=3090.2 mm
+   translate=[0.34491, -0.202598, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34491, -0.202598, 2.0] usd=[1.175455, 1.630752, -0.34491]
+public/usd_scenes/hp4.usda WheelD1_right_top [Wheel] error=3089.0 mm
+   translate=[0.34791, -0.197402, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34791, -0.197402, 2.0] usd=[1.170955, 1.63335, -0.34791]
+public/usd_scenes/hp4.usda WheelD1_left_bottom [Wheel] error=497.5 mm
+   translate=[0.34491, -0.202598, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34491, -0.202598, 0.1] usd=[0.225455, -0.014696, -0.34491]
+public/usd_scenes/hp4.usda WheelD1_right_bottom [Wheel] error=501.1 mm
+   translate=[0.34791, -0.197402, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34791, -0.197402, 0.1] usd=[0.220955, -0.012098, -0.34791]
+public/usd_scenes/hp4.usda WheelD2_left_top [Wheel] error=2943.5 mm
+   translate=[0.003, 0.4, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.003, 0.4, 2.0] usd=[-2.0, -0.4, -0.003]
+public/usd_scenes/hp4.usda WheelD2_right_top [Wheel] error=2935.3 mm
+   translate=[-0.003, 0.4, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.003, 0.4, 2.0] usd=[-2.0, -0.4, 0.003]
+public/usd_scenes/hp4.usda WheelD2_left_bottom [Wheel] error=813.2 mm
+   translate=[0.003, 0.4, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.003, 0.4, 0.1] usd=[-0.1, -0.4, -0.003]
+public/usd_scenes/hp4.usda WheelD2_right_bottom [Wheel] error=811.7 mm
+   translate=[-0.003, 0.4, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.003, 0.4, 0.1] usd=[-0.1, -0.4, 0.003]
+public/usd_scenes/hp4_worn_bearings.usda WheelAL_top [Wheel] error=507.2 mm
+   translate=[-0.34641, -0.22, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34641, -0.22, 0.09275] usd=[0.09275, -0.22, 0.34641]
+public/usd_scenes/hp4_worn_bearings.usda WheelAL_bottom [Wheel] error=494.5 mm
+   translate=[-0.34641, -0.22, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34641, -0.22, 0.04775] usd=[0.04775, -0.22, 0.34641]
+public/usd_scenes/hp4_worn_bearings.usda WheelAR_top [Wheel] error=507.2 mm
+   translate=[0.34641, -0.22, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34641, -0.22, 0.09275] usd=[0.09275, -0.22, -0.34641]
+public/usd_scenes/hp4_worn_bearings.usda WheelAR_bottom [Wheel] error=494.5 mm
+   translate=[0.34641, -0.22, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.34641, -0.22, 0.04775] usd=[0.04775, -0.22, -0.34641]
+public/usd_scenes/hp4_worn_bearings.usda WheelBL_top [Wheel] error=634.1 mm
+   translate=[0.363731, -0.19, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.363731, -0.19, 0.09275] usd=[0.11817, 0.175324, -0.363731]
+public/usd_scenes/hp4_worn_bearings.usda WheelBL_bottom [Wheel] error=570.6 mm
+   translate=[0.363731, -0.19, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.363731, -0.19, 0.04775] usd=[0.14067, 0.136353, -0.363731]
+public/usd_scenes/hp4_worn_bearings.usda WheelBR_top [Wheel] error=688.0 mm
+   translate=[0.017321, 0.41, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.017321, 0.41, 0.09275] usd=[-0.401445, -0.124676, -0.017321]
+public/usd_scenes/hp4_worn_bearings.usda WheelBR_bottom [Wheel] error=700.2 mm
+   translate=[0.017321, 0.41, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[0.017321, 0.41, 0.04775] usd=[-0.378945, -0.163647, -0.017321]
+public/usd_scenes/hp4_worn_bearings.usda WheelCL_top [Wheel] error=771.7 mm
+   translate=[-0.017321, 0.41, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.017321, 0.41, 0.09275] usd=[0.308695, -0.285324, 0.017321]
+public/usd_scenes/hp4_worn_bearings.usda WheelCL_bottom [Wheel] error=743.8 mm
+   translate=[-0.017321, 0.41, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.017321, 0.41, 0.04775] usd=[0.331195, -0.246353, 0.017321]
+public/usd_scenes/hp4_worn_bearings.usda WheelCR_top [Wheel] error=372.4 mm
+   translate=[-0.363731, -0.19, 0.09275] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.363731, -0.19, 0.09275] usd=[-0.21092, 0.014676, 0.363731]
+public/usd_scenes/hp4_worn_bearings.usda WheelCR_bottom [Wheel] error=435.8 mm
+   translate=[-0.363731, -0.19, 0.04775] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.363731, -0.19, 0.04775] usd=[-0.18842, 0.053647, 0.363731]
+public/usd_scenes/hp4_worn_bearings.usda WheelD0_left_top [Wheel] error=2604.3 mm
+   translate=[-0.34791, -0.197402, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34791, -0.197402, 2.0] usd=[0.829045, -1.830752, 0.34791]
+public/usd_scenes/hp4_worn_bearings.usda WheelD0_right_top [Wheel] error=2601.2 mm
+   translate=[-0.34491, -0.202598, 2.0] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34491, -0.202598, 2.0] usd=[0.824545, -1.83335, 0.34491]
+public/usd_scenes/hp4_worn_bearings.usda WheelD0_left_bottom [Wheel] error=336.3 mm
+   translate=[-0.34791, -0.197402, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34791, -0.197402, 0.1] usd=[-0.120955, -0.185304, 0.34791]
+public/usd_scenes/hp4_worn_bearings.usda WheelD0_right_bottom [Wheel] error=329.2 mm
+   translate=[-0.34491, -0.202598, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34491, -0.202598, 0.1] usd=[-0.125455, -0.187902, 0.34491]
+80 prims disagree with USD by > 1.0 mm
+FAIL: authored xformOpOrder and simulator placement disagree

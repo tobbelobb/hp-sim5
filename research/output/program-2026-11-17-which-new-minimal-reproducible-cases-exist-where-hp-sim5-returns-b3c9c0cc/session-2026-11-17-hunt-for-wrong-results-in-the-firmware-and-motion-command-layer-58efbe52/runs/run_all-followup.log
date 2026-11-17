@@ -1,0 +1,411 @@
+=== F1_rrf_standstill_offbyone (expect fail)
+
+BUG REPRODUCED: RRF host-build standstill bookkeeping is off by one microstep
+  - A: after an exact return to the commanded start point with a standstill, the motors end at -1/+1 steps instead of 0/0 (1 step = 0.0589 mm of line); M114 reports X:0.102 Y:-0.020 Z:-8.641 E:0.000 Eu:0.0 Count 0 -1 2 Machine 0.102 -0.020 -8.641 Bed comp 0.000
+  - B: the 1 mm move commanded after a standstill emitted +79 steps instead of +80 (0.9875 mm instead of 1.0000 mm; error 0.0125 mm = 1 step)
+  - C: a 0.05 mm move = exactly 4 steps, the CAN stream says 4 steps but the firmware's own live motor counter says 3 steps
+{
+  "A_slideprinter_roundtrip_net_steps": {
+    "motor_a_addr40": 0.0,
+    "motor_b_addr41": -1.0,
+    "motor_c_addr42": 1.0,
+    "m114": "X:0.102 Y:-0.020 Z:-8.641 E:0.000 Eu:0.0 Count 0 -1 2 Machine 0.102 -0.020 -8.641 Bed comp 0.000"
+  },
+  "B_cartesian_1mm_after_standstill": {
+    "segment_steps": [
+      800.0,
+      -800.0,
+      79.0
+    ],
+    "last_move_steps": 79.0,
+    "expected_last_move_steps": 80,
+    "reported_final_x_mm": 0.9875,
+    "expected_final_x_mm": 1.0,
+    "m114": "X:0.988 Y:0.000 Z:0.000 E:0.000 Eu:0.0 Count 79 0 0 Machine 0.988 0.000 0.000 Bed comp 0.000"
+  },
+  "B_control_without_M400": {
+    "segment_steps": [
+      800.0,
+      -800.0,
+      80.0
+    ],
+    "last_move_steps": 80.0,
+    "reported_final_x_mm": 1.0
+  },
+  "C_cartesian_0p05mm": {
+    "captured_steps": [
+      4.0
+    ],
+    "m114_count": [
+      3,
+      0,
+      0
+    ],
+    "expected_count": 4
+  },
+  "determinism": {
+    "repeated_run_net_steps": {
+      "motor_b_addr41": -1.0,
+      "motor_c_addr42": 1.0
+    }
+  }
+}
+--- reproduced (exit 1)
+=== F2_rrf_multidriver_csv (expect fail)
+worker: RrfCanPlayer ready
+{
+  "config_m584": "X40.0 Y40.1 Z40.2 E40.3",
+  "driverToAxisAfterParse": [
+    [
+      40,
+      "E"
+    ]
+  ],
+  "firmwareRowColumns": 10,
+  "parsedStepsPerAxis": {
+    "A": 0,
+    "B": 0,
+    "C": 0,
+    "D": 0,
+    "I": 0,
+    "J": 0,
+    "L": 0,
+    "O": 0
+  },
+  "parsedExtrusionMm": 8.3401,
+  "accelerationReadAs": 400,
+  "accelerationInFirmware": 4.77027862e-10,
+  "moveCommands": 2
+}
+
+BUG REPRODUCED: multi-driver RRF CAN capture is misparsed:
+  - CAN address 40 maps to 'E' instead of 'A' (X); the .driver suffix is ignored, so the last axis on the board wins
+  - 8.340 mm of extrusion was synthesised from axis steps (should be 0 mm)
+  - X travel is 0 steps; expected 800 steps = 10.000 mm at 80 steps/mm
+  - Y travel is 0 steps; expected 400 steps = 5.000 mm at 80 steps/mm (the second drive in the CAN message is dropped)
+  - acceleration 400 instead of 4.77027862e-10 (8.39e+11x too large)
+--- reproduced (exit 1)
+=== F3_klipper_player_step_loss (expect fail)
+worker: KlipperMcuCommandPlayer ready
+{
+  "incrementalFlush": {
+    "A": 1,
+    "B": 0,
+    "moveCommands": 10
+  },
+  "deferredFlush": {
+    "A": 1,
+    "B": 1
+  }
+}
+
+BUG REPRODUCED: KlipperMcuCommandPlayer lost a whole microstep from axis B
+  - A ends at 1 steps (expected 1), B ends at 0 steps (expected 1)
+  - with a single deferred flush both axes end at 1/1 steps
+--- reproduced (exit 1)
+=== F3b_klipper_player_step_loss_real (expect fail)
+worker: KlipperMcuCommandPlayer ready
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open 'public/mcu_commands/slideprinter/draw_squares.txt'
+    at Object.readFileSync (node:fs:440:20)
+    at file:///home/torbjorn/repos/hp-sim5/research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52/repro/js_mcu_player_step_loss.mjs:16:17 {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'public/mcu_commands/slideprinter/draw_squares.txt'
+}
+
+Node.js v24.14.1
+--- reproduced (exit 1)
+=== F4_klipper_oid_axis_mapping (expect fail)
+worker: KlipperMcuCommandPlayer ready
+{
+  "firmware_stream": "slideprinter: G1 X10 E5 F600 -> oid3 extruder 478 steps",
+  "via_pacer_worker_applyBucketedParsedLine": {
+    "A": 0,
+    "B": -147,
+    "C": 147,
+    "D": 478,
+    "I": 0,
+    "E_mm": 0
+  },
+  "via_mcu_command_player": {
+    "A": 0,
+    "B": -147,
+    "C": 146,
+    "D": 0,
+    "I": 0,
+    "E_mm": 4.9936
+  },
+  "expected": {
+    "B": -147,
+    "C": 147,
+    "D": 0,
+    "E_mm": 5.0041
+  }
+}
+
+BUG REPRODUCED: Klipper oid->axis mapping disagrees between the two shipped parsers:
+  - pacer-worker path extruded 0 mm, expected 5.0041 mm
+  - pacer-worker path turned spool axis D by 478 steps (28.16 mm of line) instead of extruding
+--- reproduced (exit 1)
+=== F1b_f1_wait_drift (expect fail)
+
+F1 DRIFT/EFFECT PRESENT
+  - E n=1: final X 0.988 instead of 1.0 mm
+  - E n=2: final X 0.988 instead of 1.0 mm
+  - E n=5: final X 0.988 instead of 1.0 mm
+  - E n=20: final X 0.988 instead of 1.0 mm
+  - E n=100: final X 0.988 instead of 1.0 mm
+== A: alternating X0/X1, M400 after every move (exact 1 mm moves)
+   n= 10 moves=10 net=   0.0 expected=  0.0 final_X=0.0 per-move=[-80.0, 80.0]
+   n=100 moves=100 net=   0.0 expected=  0.0 final_X=0.0 per-move=[-80.0, 80.0]
+== B/C: monotone 1 mm staircase with a wait after every move
+   B n= 10 wait=M400  net= 800.0 expected=  800 final_X=10.0 per-move=[80.0]
+   B n=100 wait=M400  net=8000.0 expected= 8000 final_X=100.0 per-move=[80.0]
+   C n= 10 wait=G4 P1 net= 800.0 expected=  800 final_X=10.0 per-move=[80.0]
+   C n=100 wait=G4 P1 net=8000.0 expected= 8000 final_X=100.0 per-move=[80.0]
+== D: alternating 10 mm round trips with M400 after every move
+   n= 10 moves=20 net=   0.0 expected=0 final_X=0.0 per-move=[-800.0, 800.0]
+   n=100 moves=200 net=   0.0 expected=0 final_X=0.0 per-move=[-800.0, 800.0]
+== E: the failing unit repeated (G1 X10 / G1 X0 / M400 / G1 X1 / M400)
+   n=  1 moves=3 net=  79.0 final_X=0.988 per-move=[-800.0, 79.0, 800.0]
+   n=  2 moves=6 net=  79.0 final_X=0.988 per-move=[-800.0, 79.0, 721.0, 800.0]
+   n=  5 moves=15 net=  79.0 final_X=0.988 per-move=[-800.0, 79.0, 721.0, 800.0]
+   n= 20 moves=60 net=  79.0 final_X=0.988 per-move=[-800.0, 79.0, 721.0, 800.0]
+   n=100 moves=300 net=  79.0 final_X=0.988 per-move=[-800.0, 79.0, 721.0, 800.0]
+== F: slideprinter G1 X10 / M400 / G1 X0 / M400 repeated n times
+   n=  1 net_steps=41:-1, 42:+1  X=0.1020
+   n=  2 net_steps=41:+0, 42:+1  X=0.1020
+   n=  5 net_steps=41:+1, 42:+1  X=0.0681
+   n= 20 net_steps=41:+1, 42:+1  X=0.0681
+   n=100 net_steps=41:+1, 42:+1  X=0.0681
+--- reproduced (exit 1)
+=== F2b_f2_binary_path (expect fail)
+worker: RrfCanPlayer ready
+{
+  "fixture_row": "seq=0, addr=40, when=0, accel=2500, steady=836026, decel=2500, X=800, Y=400, a, d",
+  "converted_blocks": [
+    {
+      "mask": 63,
+      "count": 1,
+      "items": [
+        {
+          "id": 40,
+          "type": 1,
+          "value": 800
+        }
+      ]
+    }
+  ],
+  "ideal_blocks": [
+    {
+      "mask": 0,
+      "count": 2,
+      "items": [
+        {
+          "id": 40,
+          "type": 1,
+          "value": 800
+        },
+        {
+          "id": 40,
+          "type": 1,
+          "value": 400
+        }
+      ]
+    }
+  ],
+  "ideal_result": {
+    "steps": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "I": 0,
+      "J": 0,
+      "L": 0,
+      "O": 0
+    },
+    "extrusionMm": 12.5102
+  },
+  "converted_result": {
+    "steps": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "I": 0,
+      "J": 0,
+      "L": 0,
+      "O": 0
+    },
+    "extrusionMm": 8.3401
+  },
+  "expected_for_two_drivers": {
+    "X_steps": 800,
+    "Y_steps": 400,
+    "extrusion_mm": 0
+  }
+}
+
+F2 BINARY-PATH RESULT: multi-driver boards are not representable in the .can schema either:
+  - a correct two-record .can puts 0 steps on one axis; the two drives cannot be separated
+  - the two drives were merged onto one axis instead of X and Y
+--- reproduced (exit 1)
+=== F3c_f3_impact_sim (expect fail)
+{
+  "stream": "public/mcu_commands/slideprinter/draw_squares_bigger_no_buildup.txt",
+  "exact_steps": {
+    "A": -5,
+    "B": -5,
+    "C": -5,
+    "E": 118448
+  },
+  "player_steps": {
+    "A": -5,
+    "B": -4.0521,
+    "C": -4.208
+  },
+  "exact_effector_m": {
+    "x": -0.000033,
+    "y": 0.000058,
+    "z": 0
+  },
+  "player_effector_m": {
+    "x": -0.000035,
+    "y": 0.000017,
+    "z": 0
+  },
+  "effector_delta_mm": [
+    -0.0014,
+    -0.0409,
+    0
+  ],
+  "effector_delta_norm_mm": 0.0409,
+  "effector_delta_direction": {
+    "along_x": "-X",
+    "along_y": "-Y"
+  }
+}
+
+F3 END-TO-END: effector moves 0.0409 mm (dx=-0.0014, dy=-0.0409, dz=0.0000 mm) purely because two motors lost their first queue_step batch
+--- reproduced (exit 1)
+=== F3d_f3_impact_kinematics (expect fail)
+{
+  "algebraic_linearisation": {
+    "dx_mm": -0.0053,
+    "dy_mm": -0.0342,
+    "dz_mm": 11.394
+  },
+  "stream": "public/mcu_commands/slideprinter/draw_squares_bigger_no_buildup.txt",
+  "klipper_config": "public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg",
+  "forward_transform": "klippy/chelper winch_forward_solve (M114 / calc_position)",
+  "exact_steps": {
+    "A": -5,
+    "B": -5,
+    "C": -5
+  },
+  "player_steps": {
+    "A": -5.0,
+    "B": -4.0521,
+    "C": -4.208
+  },
+  "deficit_steps": {
+    "A": -0.0,
+    "B": -0.9479,
+    "C": -0.792
+  },
+  "deficit_line_mm": {
+    "A": -0.0,
+    "B": -0.0558,
+    "C": -0.0467
+  },
+  "solver_ok": {
+    "exact": false,
+    "player": false
+  },
+  "exact_effector_mm": [
+    -0.0,
+    -0.0,
+    0.0
+  ],
+  "player_effector_mm": [
+    -0.0898,
+    -0.5787,
+    0.0
+  ],
+  "effector_delta_mm": [
+    -0.0898,
+    -0.5787,
+    0.0
+  ],
+  "effector_delta_norm_mm": 0.5857,
+  "deficit_at_25pct_of_stream": {
+    "A": 0,
+    "B": -0.9479,
+    "C": -0.792
+  },
+  "loss_is_constant": true,
+  "solver_cost": {
+    "exact": 33.08514002,
+    "player": 25.41878776
+  },
+  "solver_iters": {
+    "exact": 1,
+    "player": 1
+  },
+  "flex_solver_converged": false,
+  "note": "this pose (home point in the plane of the three anchors) has no first-order z sensitivity, so the flex forward solver does not converge in z; use the planar physics measurement in repro/f3_impact_sim.mjs as the physical number"
+}
+
+F3 IMPACT on the shipped slideprinter (forward transform, flex model on):
+  B: player is -0.948 steps (-0.0558 mm of line) from the firmware's step stream
+  C: player is -0.792 steps (-0.0467 mm of line) from the firmware's step stream
+  algebraic in-plane offset: dx=-0.0053 dy=-0.0342 mm (z not first-order determined at this pose; rigid second-order |dz| would be 11.394 mm)
+  flex forward solver did not converge at this singular pose (see note)
+  deficit at 25% of the stream == deficit at 100%: True
+--- reproduced (exit 1)
+=== N1_klipper_limits_vs_analytic (expect pass)
+case                                          steps  first->last (s)  closed form (s)
+F600 (10 mm/s)                                 6400          7.99925          8.00333
+F60000 (capped at max_velocity 300 mm/s)       6400          0.36258          0.36667
+F30 (0.5 mm/s)                                 6400        159.97500        160.00017
+M204 P300 then F600                            6400          8.02042          8.03333
+M203 X6000 then F6000                          6400          0.82925          0.83333
+
+OK: Klipper's feedrate/acceleration limits and step counts match the closed form
+--- clean (exit 0)
+=== N2_rrf_queue_stress (expect pass)
+moves=20000 captured_steps=20000.0 final_X=250.0 segments=20000
+OK: no steps lost or duplicated across 20000 queued moves
+--- clean (exit 0)
+=== N3_bucket_profile_vs_analytic (expect pass)
+{
+  "movingAxis": "C",
+  "moveCommands": 4126,
+  "totalSteps": 6399.999999999673,
+  "expectedSteps": 6400,
+  "stepError": -3.2741809263825417e-10,
+  "emulatedMoveStartSec": 0.2494,
+  "emulatedMoveEndSec": 8.252,
+  "expectedMoveEndSec": 8.2527,
+  "worstPositionErrorMmAfterRamp": 0.0008,
+  "worstAt": {
+    "t": 8.252,
+    "actualMm": 80,
+    "expectedMm": 79.9992
+  },
+  "maxStepsPerBucket": 1.6000000000003638,
+  "analyticMaxStepsPerBucket": 1.6
+}
+OK: bucketed emulation matches the analytic trapezoid within one bucket of travel
+--- clean (exit 0)
+=== N4_rrf_midmotion_limits (expect pass)
+per-segment durations (s): [1.0016666666666667, 1.0, 1.0166666666666666]
+final position: {'X': 30.0, 'Y': 0.0, 'Z': 0.0}
+OK: mid-queue M204 change applies to the following move only, queued moves keep their plan
+--- clean (exit 0)

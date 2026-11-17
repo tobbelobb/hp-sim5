@@ -1,0 +1,16 @@
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 2.717s
+
+OK
+50 flex/noisy/bias solves: max distance to independent nonlinear optimum 0.000524741 mm
+400 motor->Cartesian roundtrips, 1:1 / 255:20 gears and zero/nonzero buildup: max 0.00487653 mm
+800 inconsistent 5-cable solves (sigma .1/1/3/5 mm): max distance to SciPy optimum 0.000383338 mm, max truth error 18.01 mm, firmware cost gate rejects 217/800
+hp3/flex: 221 solves, workspace max 0.013752 mm, mean 2.53 iterations / 11 us, max cost 0.01554; within .02 mm of anchor: 4 probes, 3 nonconverged, max 0.0341806 mm
+hp3/rigid: 221 solves, workspace max 0.000438282 mm, mean 1 iterations / 0.512 us, max cost 1.893e-07; within .02 mm of anchor: 4 probes, 0 nonconverged, max 8.95871e-05 mm
+hp4/flex: 221 solves, workspace max 0.000482431 mm, mean 2.35 iterations / 11 us, max cost 0.1505; within .02 mm of anchor: 4 probes, 2 nonconverged, max 0.422794 mm
+hp4/rigid: 221 solves, workspace max 0.000312938 mm, mean 1 iterations / 0.38 us, max cost 1.109e-07; within .02 mm of anchor: 4 probes, 0 nonconverged, max 8.95871e-05 mm
+hp5/flex: 226 solves, workspace max 0.000452463 mm, mean 2.21 iterations / 20 us, max cost 0.0001121; within .02 mm of anchor: 5 probes, 0 nonconverged, max 0.00495875 mm
+hp5/rigid: 226 solves, workspace max 0.000301165 mm, mean 1 iterations / 0.88 us, max cost 1.339e-07; within .02 mm of anchor: 5 probes, 0 nonconverged, max 3.78317e-05 mm
+hp5_reduced/flex: 226 solves, workspace max 0.0131883 mm, mean 2.54 iterations / 15 us, max cost 0.1813; within .02 mm of anchor: 5 probes, 3 nonconverged, max 0.153136 mm
+hp5_reduced/rigid: 226 solves, workspace max 0.000298506 mm, mean 1 iterations / 0.445 us, max cost 1.416e-07; within .02 mm of anchor: 5 probes, 0 nonconverged, max 3.78317e-05 mm

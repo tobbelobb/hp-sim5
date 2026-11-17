@@ -1,0 +1,26 @@
+allocate_oids count=15
+config_endstop oid=0 pin=gpiochip2/gpio12 pull_up=1
+config_trsync oid=1
+config_stepper oid=2 step_pin=gpiochip2/gpio0 dir_pin=gpiochip2/gpio1 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=10 pin=gpiochip2/gpio2 value=0 default_value=0 max_duration=0
+config_endstop oid=3 pin=gpiochip2/gpio13 pull_up=1
+config_trsync oid=4
+config_stepper oid=5 step_pin=gpiochip2/gpio3 dir_pin=gpiochip2/gpio4 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=11 pin=gpiochip2/gpio5 value=0 default_value=0 max_duration=0
+config_endstop oid=6 pin=gpiochip2/gpio14 pull_up=1
+config_trsync oid=7
+config_stepper oid=8 step_pin=gpiochip2/gpio6 dir_pin=gpiochip2/gpio7 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=12 pin=gpiochip2/gpio8 value=0 default_value=0 max_duration=0
+config_digital_out oid=13 pin=gpiochip1/gpio27 value=0 default_value=0 max_duration=150000000
+set_digital_out_pwm_cycle oid=13 cycle_ticks=5000000
+config_stepper oid=9 step_pin=gpiochip1/gpio24 dir_pin=gpiochip1/gpio25 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=14 pin=gpiochip1/gpio26 value=0 default_value=0 max_duration=0
+finalize_config crc=1782365402
+queue_digital_out oid=13 clock=10000000 on_ticks=0
+queue_digital_out oid=10 clock=12500000 on_ticks=1
+set_next_step_dir oid=2 dir=1
+queue_step oid=2 interval=12602062 count=1 add=0
+queue_step oid=2 interval=74239 count=2 add=-10958
+queue_step oid=2 interval=62500 count=6396 add=0
+queue_step oid=2 interval=75023 count=1 add=0
+queue_digital_out oid=10 clock=417766666 on_ticks=0

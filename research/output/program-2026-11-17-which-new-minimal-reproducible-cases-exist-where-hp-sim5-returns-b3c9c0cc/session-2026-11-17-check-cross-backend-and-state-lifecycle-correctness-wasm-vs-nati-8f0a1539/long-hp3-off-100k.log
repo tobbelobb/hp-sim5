@@ -1,0 +1,2 @@
+worker: RrfCanPlayer ready
+wrote long-hp3-off-100k.json: 100000 steps, peak encoder 5.760e-13 rad, peak position 2.626e-13 m, events {"topologyFirstDifference":null,"topologyChanges":{"native":1,"wasm":1},"missedStepDifference":null,"quaternionSignFlips":0,"lengthMismatch":null,"nonFinite":null}

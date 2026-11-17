@@ -1,0 +1,53 @@
+pass  quaternion: |q1*q2|^2 = 1 for unit inputs            worst=1.110e-15 tol=1.0e-14
+pass  quaternion: q * q^-1 = identity                      worst=6.661e-16 tol=1.0e-15
+pass  quaternion: rotate then unrotate recovers v          worst=1.599e-14 tol=1.0e-13
+pass  quaternion: rotation preserves |v|                   worst=8.882e-15 tol=1.0e-13
+pass  quaternion: composition order matches sequential rotate worst=2.289e-15 tol=1.0e-14
+pass  quaternion: transformVector = q (0,v) q^-1           worst=0.000e+0 tol=1.0e-14
+pass  quaternion: transformVectorInto aliasing (v == result) worst=0.000e+0 tol=1.0e-15
+pass  quaternion: normalize then |q|^2 = 1                 worst=5.551e-16 tol=1.0e-14
+pass  vector3: cross is perpendicular to both inputs       worst=4.441e-16 tol=1.0e-14
+pass  vector3: rotateAroundAxis = quaternion rotation      worst=1.024e-15 tol=1.0e-13
+pass  vector3: angleTo = atan2(|axb|, a.b)                 worst=1.258e-14 tol=1.0e-8
+pass  planar: point-circle tangent point on circle         worst=3.708e-14 tol=1.0e-12
+pass  planar: point-circle tangent is perpendicular to radius worst=8.076e-13 tol=1.0e-12
+pass  planar: point-circle travel = wrap direction         worst=3.730e-14 tol=1.0e-12
+pass  planar: circle-circle common tangent (10552 cases)   worst=8.990e-15 tol=1.0e-12
+pass  planar: circle-circle tangent points on circles      worst=8.500e-15 tol=1.0e-14
+pass  planar: signed arc matches wrapped atan2 difference  worst=2.665e-15 tol=1.0e-13
+pass  planar: force_positive arc >= 0                      worst=0.000e+0 tol=1.0e-15
+pass  planar: cw + ccw arcs sum to 2*pi*r                  worst=0.000e+0 tol=1.0e-13
+pass  planar: rightOfLine = (2D cross < 0)                 worst=0.000e+0 tol=0.0e+0
+pass  planar: rightOfPlane = (n.(p1-p0)x(x-p0) < 0)        worst=0.000e+0 tol=0.0e+0
+pass  geometry3: closestPointOnSegment = closed form       worst=0.000e+0 tol=1.0e-13
+pass  geometry3: lineSegmentSphereIntersection = closed form worst=0.000e+0 tol=0.0e+0
+pass  geometry3: point-sphere tangent point radius         worst=5.696e-15 tol=1.0e-13
+pass  geometry3: point-sphere tangent point in wrap plane  worst=5.082e-15 tol=1.0e-13
+pass  geometry3: point-sphere tangent direction (skipped 343) worst=1.518e-14 tol=1.0e-12
+pass  geometry3: sphere-sphere tangent point on sphere A   worst=6.754e-15 tol=1.0e-13
+pass  geometry3: sphere-sphere tangent point on sphere B   worst=3.446e-14 tol=1.0e-13
+pass  geometry3: sphere-sphere span is tangent at both ends worst=5.285e-14 tol=1.0e-12
+pass  geometry3: 3D arc length = projected 2D arc          worst=1.776e-15 tol=1.0e-10
+pass  inertia: R^T R = I for quaternion rotation           worst=2.442e-15 tol=1.0e-14
+pass  inertia: det(R) = +1                                 worst=2.220e-15 tol=1.0e-14
+pass  inertia: world tensor symmetric                      worst=8.882e-16 tol=1.0e-13
+pass  inertia: world tensor positive definite              worst=0.000e+0 tol=1.0e-14
+pass  inertia: invertMatrix3(W) * W = I                    worst=5.329e-15 tol=1.0e-11
+pass  inertia: parallel axis = direct point-mass sum       worst=7.105e-15 tol=1.0e-14
+pass  inertia: triangle inequality on principal moments    worst=3.553e-15 tol=1.0e-14
+pass  inertia: effectiveInertiaAboutWorldAxis = u^T R I R^T u worst=2.539e-15 tol=1.0e-12
+pass  inertia: applyWorldInverseInertia = R I^-1 R^T v     worst=3.819e-15 tol=1.0e-11
+pass  inertia: inverseInertiaQuadraticForm = v^T I^-1 v    worst=1.605e-15 tol=1.0e-12
+pass  inertia: singular pseudo-inverse W P W = W           worst=7.772e-16 tol=1.0e-13  (max|P|=1.00)
+pass  inertia: normalizeInertiaTensor row-major layouts    worst=0.000e+0 tol=0.0e+0
+pass  inertia: zero mass / zero tensor stay zero and finite worst=0.000e+0 tol=0.0e+0
+pass  cable_shape: endpoints are exact                     worst=0.000e+0 tol=1.0e-15
+pass  cable_shape: polyline length = rest length           worst=3.735e-6 tol=2.0e-3  (256 segments, chord error)
+pass  cable_shape: taut cable is the straight chord        worst=0.000e+0 tol=1.0e-15
+pass  cable_shape: no NaN/Inf                              worst=0.000e+0 tol=0.0e+0
+pass  spool: swing/twist recompose recovers the orientation worst=7.216e-16 tol=1.0e-13
+pass  spool: decomposed angle is stable                    worst=0.000e+0 tol=1.0e-12
+pass  spool: constrained orientation is a pure twist       worst=6.592e-16 tol=1.0e-13
+pass  spool: angular velocity projected onto the world axis worst=3.553e-15 tol=1.0e-13
+
+51/51 invariant checks passed.

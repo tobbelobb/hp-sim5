@@ -1,0 +1,32 @@
+PASS  hairpin r=0.05 acceleration: a=3.270000000 exact=3.270000000 err=-2.07e-10 tol=1e-6
+PASS  hairpin r=0.05 tension: T=13.080000 exact=13.080000 err=-2.69e-10 tol=1.31e-2
+PASS  hairpin r=0.02 acceleration: a=3.270000000 exact=3.270000000 err=-2.07e-10 tol=1e-6
+PASS  hairpin r=0.02 tension: T=13.080000 exact=13.080000 err=-3.73e-10 tol=1.31e-2
+PASS  hairpin r=0.001 acceleration: a=3.270000000 exact=3.270000000 err=-2.11e-10 tol=1e-6
+PASS  hairpin r=0.001 tension: T=13.080000 exact=13.080000 err=-6.16e-11 tol=1.31e-2
+PASS  hairpin r=1e-9 acceleration: a=3.270000000 exact=3.270000000 err=-2.42e-10 tol=1e-6
+PASS  hairpin r=1e-9 tension: T=13.080000 exact=13.080000 err=-3.87e-10 tol=1.31e-2
+PASS  hairpin r=0 acceleration: a=3.270000000 exact=3.270000000 err=-2.42e-10 tol=1e-6
+PASS  hairpin r=0 tension: T=13.080000 exact=13.080000 err=-3.87e-10 tol=1.31e-2
+PASS  hairpin mirror symmetry: y_left=-1.065572220135 y_right=-1.065572220135 err=1.10e-13 tol=1e-12
+PASS  hanging stretch: stretch=4.929224e-3 exact=4.905000e-3 err=0.49% tol=2%
+PASS  hanging tension: T=98.099975 mg=98.100000 err=-2.51e-5 tol=9.81e-2
+PASS  slack tension is exactly zero: max T over 20 steps = 0
+PASS  spool payout r=0.05 dtheta=0.01: dy=5.002454e-4 exact=5.000000e-4 err=0.05% tol=1%
+PASS  spool stored r=0.05 dtheta=0.01: dstored=5.000000e-4 exact=5.000000e-4
+PASS  spool payout r=0.05 dtheta=-0.01: dy=-5.002454e-4 exact=-5.000000e-4 err=0.05% tol=1%
+PASS  spool stored r=0.05 dtheta=-0.01: dstored=-5.000000e-4 exact=-5.000000e-4
+PASS  spool payout r=0.02 dtheta=0.01: dy=2.000981e-4 exact=2.000000e-4 err=0.05% tol=1%
+PASS  spool stored r=0.02 dtheta=0.01: dstored=2.000000e-4 exact=2.000000e-4
+PASS  spool payout r=0.02 dtheta=-0.01: dy=-2.000981e-4 exact=-2.000000e-4 err=0.05% tol=1%
+PASS  spool stored r=0.02 dtheta=-0.01: dstored=-2.000000e-4 exact=-2.000000e-4
+PASS  coincident anchors, rest 0.5: T=0 rest=0.5 stored=0,0
+PASS  coincident anchors, rest 0: T=0 rest=1.000e-6
+PASS  zero-length tether: max |mass anchor offset|=1.006e-6 m (tol 5e-6), max T=10.812 N (tol 20)
+PASS  duplicate path points: T=9.810000,9.810000 exact seg1=9.810000
+NOTE  duplicate-path force reporting: zero-length seg T=9.810 N but force vector=[0.000,0.000,0.000]
+PASS  two worlds do not share state: other world bit-identical while the first ran 100 more steps: true
+PASS  two worlds are deterministic: identical records: true
+PASS  dispose+rebuild first step is fresh: path records identical after 56 fields
+
+all degenerate/closed-form checks pass

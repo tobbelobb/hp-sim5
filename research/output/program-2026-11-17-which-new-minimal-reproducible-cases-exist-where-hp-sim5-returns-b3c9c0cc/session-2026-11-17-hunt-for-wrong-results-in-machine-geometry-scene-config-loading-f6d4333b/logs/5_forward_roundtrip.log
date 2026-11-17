@@ -1,0 +1,8 @@
+1200 probes: converged 849, non-converged 351 (351 outside hp_reachable, 0 inside)
+converged error: max 0.000339776 mm, median 0.00013 mm (tolerance 0.02 mm)
+  worst hp3 mode1 ok=1 err=0.000339776 mm truth=[-770.36291119  222.06245826 -192.28743086] got=[-770.3630981  222.0622406 -192.2876129]
+  worst hp5 mode1 ok=0 err=0.00032114 mm truth=[ 548.58942468 -753.70788082  839.40361453] got=[ 548.5892944 -753.7077026  839.4033813]
+  worst hp3 mode1 ok=0 err=0.000314204 mm truth=[-741.01589211  370.85279126 1121.48568521] got=[-741.0160522  370.8525696 1121.48584  ]
+  worst hp3 mode1 ok=0 err=0.000301309 mm truth=[ 695.5096516  -729.6908264  -255.87939799] got=[ 695.5095215 -729.6907349 -255.8796539]
+  worst hp3 mode1 ok=0 err=0.00029885 mm truth=[-870.90173603 -899.10198069 1374.67565789] got=[-870.9017334 -899.1018066 1374.675415 ]
+PASS: all converged probes within 0.02 mm and all non-converged probes are outside hp_reachable

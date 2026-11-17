@@ -1,0 +1,4 @@
+split off (control): n = 1 stored [ 0, 0 ] rests [ 1 ] poses finite [ true, true, true ] y2 -0.0005395499944007192
+split on (repro)   : n = 2 stored [ NaN, NaN, NaN ] rests [ NaN, NaN ] poses finite [ false, true, false ] y2 NaN
+
+BUG: layeringSplitJoints wrote non-finite state into the path records (n = 2, rests NaN,NaN, stored NaN,NaN,NaN) and 2/3 entities are non-finite. A rolling link without a finite radius is tolerated by geometry() but not by split(), and the NaN then reaches the always-on constraint solve.

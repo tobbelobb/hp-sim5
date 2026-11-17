@@ -1,0 +1,15 @@
+settled y1 = -1.000009810 tension = 9.810000
+
+after injecting NaN in entity 1 position.x and one step:
+  entities with non-finite pose: [{"entity":0,"slots":[3,4,5,6,72,73,74],"first":[[3,null],[4,null],[5,null]]},{"entity":1,"slots":[0,1,2,7,69,70,71],"first":[[0,null],[1,null],[2,null]]}]
+  path rests  : [ NaN, NaN ]
+  path stored : [ 0, NaN, 0 ]
+  path lambda : [ 0, 0 ]
+  path tension: [ 0, 0 ]
+
+after repairing the input and stepping again:
+  entities with non-finite pose: [ 0, 1, 2 ]
+  path rests  : [ NaN, NaN ]
+  path stored : [ 0, NaN, 0 ]
+
+BUG: a non-finite value in one input coordinate poisoned state outside that entity: entities [0] and 3 path fields are non-finite; repaired input still leaves 3 non-finite entities.

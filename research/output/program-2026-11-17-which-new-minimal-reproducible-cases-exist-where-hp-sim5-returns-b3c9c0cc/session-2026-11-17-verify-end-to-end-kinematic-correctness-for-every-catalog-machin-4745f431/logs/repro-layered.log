@@ -1,0 +1,60 @@
+Hangprinter version 4 with line layering
+  A: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+  B: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+  C: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+  D: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+Hangprinter version 4 with worn bearings with line layering
+  A: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+  B: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+  C: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+  D: sim radius 47 mm (winding sign 1), RRF M666 R 46.6045 mm, scale 0.849 %
+Hangprinter version 3 with line layering
+  A: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  B: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  C: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  D: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+Four High Anchors with line layering
+  A: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  B: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  C: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  D: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+CubeCorners with line layering
+  A: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  B: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  C: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  D: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  I: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  J: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  L: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  O: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+Slideprinter Multi Unit with line layering
+  A: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  B: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+  C: sim radius 39 mm (winding sign 1), RRF M666 R 39.1845 mm, scale -0.471 %
+Slideprinter with line layering
+  A: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+  B: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+  C: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+Slideprinter Hexagon with line layering
+  A: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+  B: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+  C: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+Slideprinter Single Pinholes with line layering
+  A: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+  B: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+  C: sim radius 39 mm (winding sign -1), RRF M666 R 39.1845 mm, scale -0.471 %
+
+Production 20 mm +X move through RRF -> RrfCanPlayer -> headless world:
+  tip 20.1498 mm for a 20 mm command (0.749 %)
+
+FAIL: layered spool-radius conversion is not the authored geometry:
+  Hangprinter version 4 with line layering: sim spool radius differs from RRF M666 R by 0.849 % (tolerance 0.25 %)
+  Hangprinter version 4 with worn bearings with line layering: sim spool radius differs from RRF M666 R by 0.849 % (tolerance 0.25 %)
+  Hangprinter version 3 with line layering: sim spool radius differs from RRF M666 R by 0.471 % (tolerance 0.25 %)
+  Four High Anchors with line layering: sim spool radius differs from RRF M666 R by 0.471 % (tolerance 0.25 %)
+  CubeCorners with line layering: sim spool radius differs from RRF M666 R by 0.471 % (tolerance 0.25 %)
+  Slideprinter Multi Unit with line layering: sim spool radius differs from RRF M666 R by 0.471 % (tolerance 0.25 %)
+  Slideprinter with line layering: sim spool radius differs from RRF M666 R by 0.471 % (tolerance 0.25 %)
+  Slideprinter Hexagon with line layering: sim spool radius differs from RRF M666 R by 0.471 % (tolerance 0.25 %)
+  Slideprinter Single Pinholes with line layering: sim spool radius differs from RRF M666 R by 0.471 % (tolerance 0.25 %)
+  HP4 layered 20 mm +X tip error 0.749 % (tolerance 0.5 %)

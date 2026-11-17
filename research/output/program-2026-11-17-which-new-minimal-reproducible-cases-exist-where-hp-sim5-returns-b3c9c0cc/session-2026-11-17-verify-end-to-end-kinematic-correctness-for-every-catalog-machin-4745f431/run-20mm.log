@@ -1,0 +1,54 @@
+
+=== Hangprinter version 4 with line layering  [hp4.usda +layering]
+worker: RrfCanPlayer ready
+  X: measured 20.1498 mm (firmware geometry 19.9457), cross 0.0158 mm, osc 0.0085 mm, body 20.151 mm, spool-angle err 1.7e-15 rad, steps {"40":2,"41":-373,"42":376,"43":5}
+  Y: measured 20.2063 mm (firmware geometry 19.9710), cross 0.0115 mm, osc 0.0240 mm, body 20.208 mm, spool-angle err 6.7e-16 rad, steps {"40":434,"41":-214,"42":-214,"43":5}
+  Z: measured 20.0990 mm (firmware geometry 19.9550), cross 0.0171 mm, osc 0.0150 mm, body 20.099 mm, spool-angle err 6.7e-16 rad, steps {"40":66,"41":66,"42":66,"43":-869}
+
+=== Hangprinter version 3 with line layering  [hp3.usda +layering]
+  X: measured 19.8862 mm (firmware geometry 19.8907), cross 0.0355 mm, osc 0.0000 mm, body 19.886 mm, spool-angle err 3.9e-5 rad, steps {"40":1,"41":-222,"42":223,"43":1}
+  Y: measured 19.9474 mm (firmware geometry 19.8884), cross 0.2629 mm, osc 0.0438 mm, body 19.926 mm, spool-angle err 1.2e-15 rad, steps {"40":258,"41":-127,"42":-127,"43":1}
+  Z: measured 19.8320 mm (firmware geometry 19.8906), cross 0.0014 mm, osc 0.0000 mm, body 19.832 mm, spool-angle err 3.6e-5 rad, steps {"40":39,"41":39,"42":39,"43":-259}
+
+=== Four High Anchors without line layering  [four_high_anchors.usda]
+  X: measured 20.0580 mm (firmware geometry 19.9224), cross 0.0027 mm, osc 0.0000 mm, body 20.058 mm, spool-angle err 2.2e-4 rad, steps {"40":-145,"41":-145,"42":147,"43":147}
+  Y: measured 20.0580 mm (firmware geometry 19.9224), cross 0.0027 mm, osc 0.0000 mm, body 20.058 mm, spool-angle err 2.2e-4 rad, steps {"40":147,"41":-145,"42":-145,"43":147}
+  Z: measured 20.0319 mm (firmware geometry 19.9576), cross 0.0002 mm, osc 0.0000 mm, body 20.032 mm, spool-angle err 2.2e-4 rad, steps {"40":-270,"41":-270,"42":-270,"43":-270}
+
+=== CubeCorners without line layering  [cubecorners.usda]
+  X: measured 19.9113 mm (firmware geometry 19.8908), cross 0.0215 mm, osc 0.1928 mm, body 20.048 mm, spool-angle err 1.9e-6 rad, steps {"40":-165,"41":-165,"42":167,"43":167,"44":-236,"45":-236,"46":238,"47":238}
+  Y: measured 19.9110 mm (firmware geometry 19.8907), cross 0.0192 mm, osc 0.1896 mm, body 20.048 mm, spool-angle err 1.7e-6 rad, steps {"40":167,"41":-165,"42":-165,"43":167,"44":238,"45":-236,"46":-236,"47":238}
+  Z: measured 20.1170 mm (firmware geometry 19.9499), cross 0.2059 mm, osc 0.4988 mm, body 20.117 mm, spool-angle err 6.7e-16 rad, steps {"40":-245,"41":-245,"42":-245,"43":-245,"44":54,"45":54,"46":54,"47":54}
+
+=== CubeCorners with line layering  [cubecorners.usda +layering]
+  X: measured 20.1590 mm (firmware geometry 19.8970), cross 0.1572 mm, osc 0.7962 mm, body 19.699 mm, spool-angle err 3.8e-9 rad, steps {"40":-126,"41":-126,"42":128,"43":128,"44":-181,"45":-181,"46":183,"47":183}
+  Y: measured 20.2046 mm (firmware geometry 19.8970), cross 0.1324 mm, osc 0.9112 mm, body 19.652 mm, spool-angle err 6.7e-16 rad, steps {"40":128,"41":-126,"42":-126,"43":128,"44":183,"45":-181,"46":-181,"47":183}
+  Z: measured 19.8914 mm (firmware geometry 19.8872), cross 0.0731 mm, osc 0.0692 mm, body 19.891 mm, spool-angle err 1.6e-9 rad, steps {"40":-187,"41":-187,"42":-187,"43":-187,"44":41,"45":41,"46":41,"47":41}
+
+=== Slideprinter with line layering  [slideprinter.usda +layering]
+  X: measured 19.9341 mm (firmware geometry 19.9006), cross 0.0850 mm, osc 0.1972 mm, body 19.934 mm, spool-angle err 4.4e-16 rad, steps {"40":1,"41":-224,"42":226}
+  Y: measured 19.8495 mm (firmware geometry 19.8817), cross 0.0648 mm, osc 0.1892 mm, body 19.849 mm, spool-angle err 2.2e-16 rad, steps {"40":260,"41":-129,"42":-129}
+  Z: measured 0.0000 mm (firmware geometry -17.0973), cross 0.0000 mm, osc 0.0000 mm, body 0.000 mm, spool-angle err 8.7e-19 rad, steps {"40":1,"41":1,"42":1}
+
+================ SUMMARY ================
+Hangprinter version 4 with line layering                 X  measured 20.149796 mm  cross 0.015794 mm  fw   19.9457 mm
+Hangprinter version 4 with line layering                 Y  measured  20.20626 mm  cross 0.011533 mm  fw    19.971 mm
+Hangprinter version 4 with line layering                 Z  measured 20.099028 mm  cross 0.017104 mm  fw    19.955 mm
+Hangprinter version 3 with line layering                 X  measured 19.886154 mm  cross  0.03549 mm  fw   19.8907 mm
+Hangprinter version 3 with line layering                 Y  measured 19.947394 mm  cross 0.262873 mm  fw   19.8884 mm
+Hangprinter version 3 with line layering                 Z  measured 19.832048 mm  cross 0.001352 mm  fw   19.8906 mm
+Four High Anchors without line layering                  X  measured 20.057977 mm  cross 0.002694 mm  fw   19.9224 mm
+Four High Anchors without line layering                  Y  measured 20.057951 mm  cross 0.002694 mm  fw   19.9224 mm
+Four High Anchors without line layering                  Z  measured 20.031887 mm  cross 0.000231 mm  fw   19.9576 mm
+CubeCorners without line layering                        X  measured 19.911294 mm  cross 0.021469 mm  fw   19.8908 mm
+CubeCorners without line layering                        Y  measured  19.91095 mm  cross 0.019228 mm  fw   19.8907 mm
+CubeCorners without line layering                        Z  measured 20.117031 mm  cross 0.205889 mm  fw   19.9499 mm
+CubeCorners with line layering                           X  measured 20.158966 mm  cross 0.157189 mm  fw    19.897 mm
+CubeCorners with line layering                           Y  measured 20.204614 mm  cross 0.132366 mm  fw    19.897 mm
+CubeCorners with line layering                           Z  measured 19.891356 mm  cross  0.07313 mm  fw   19.8872 mm
+Slideprinter with line layering                          X  measured 19.934088 mm  cross 0.085044 mm  fw   19.9006 mm
+Slideprinter with line layering                          Y  measured 19.849455 mm  cross 0.064818 mm  fw   19.8817 mm
+Slideprinter with line layering                          Z  measured         0 mm  cross        0 mm  fw  -17.0973 mm
+
+FAIL: 1 failure(s)
+  FAIL {"machine":"Slideprinter with line layering","axis":"Z","kind":"magnitude","got":0,"want":20}

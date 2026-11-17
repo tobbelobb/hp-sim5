@@ -1,0 +1,150 @@
+{
+  "question": "Does the Rust cable/physics core (src/wasm/cable_solver/src + native/addon binding) return genuinely wrong results for degenerate-but-in-domain cable geometry, non-finite propagation, tension sanity, constraint residuals, or world isolation/reset?",
+  "revision": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+  "date": "2026-11-17",
+  "environment": {
+    "node": "v24.14.1",
+    "physicsAddon": "src/wasm/cable_solver/target/native/physics.node",
+    "physicsAddonSha256": "1c137e603ae5190e7389863b5c2680200ae21b48162f26e85e71fb6fd1ed418b",
+    "abiVersion": 2,
+    "entryPoint": "Node -> addon.create(Float64Array entities, Float64Array paths, count) -> step(dt), i.e. the same ABI src/js/cable_joints_3d/rust_physics_engine.js prepares"
+  },
+  "scripts": {
+    "lib.mjs": "Entity/path record builders mirroring src/wasm/cable_solver/tests/common/mod.rs and the JS adapter; native addon loader.",
+    "repro_nan_poisoning.mjs": "Finding 1. Exits 1 when a non-finite input poisons state outside the bad entity.",
+    "repro_split_nan_radius.mjs": "Finding 2. Exits 1 when layeringSplitJoints writes NaN path records.",
+    "check_degenerate_ok.mjs": "Negative-result suite for degenerate geometry and closed-form cases. Exits 0 only if every check passes.",
+    "check_production_scenes.mjs": "Negative-result suite over hp3/hp4/hp4_worn_bearings/hp5/slideprinter_single_pinholes, layering on and off.",
+    "explorations/": "Supporting exploratory scripts (superseded by the four canonical scripts; kept for provenance).",
+    "evidence/": "Captured stdout/stderr of the canonical scripts plus the dumped fuzz configuration trial18.json."
+  },
+  "commands": {
+    "finding1": "node repro_nan_poisoning.mjs   # exit 1; add 'inf' as argv[2] for the Infinity variant",
+    "finding2": "node repro_split_nan_radius.mjs  # exit 1",
+    "negative_degenerate": "node check_degenerate_ok.mjs    # exit 0",
+    "negative_scenes": "node check_production_scenes.mjs 300   # exit 0",
+    "fuzz_valid": "node explorations/explore11.mjs           # 0/3000 failures",
+    "fuzz_malformed": "MALFORMED=1 node explorations/explore11.mjs  # 195/3000 NaN"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "title": "One non-finite input coordinate poisons the whole cable system, silently and permanently",
+      "classification": "genuine robustness bug (invalid input, default flags); not a documented simplification",
+      "repro": "repro_nan_poisoning.mjs",
+      "command": "node repro_nan_poisoning.mjs",
+      "exitCodeWhenBugPresent": 1,
+      "expected": "Either the bad coordinate is rejected/skipped (the core already refuses non-finite torque, rest length, radius, angle and dt in other places), or the damage stays local to the NaN body/row.",
+      "actual": {
+        "settledBaseline": { "mass1Y_m": -1.000009810, "cableTension_N": 9.810000 },
+        "afterInjectingNaN_in_entity1_position_x_oneStep": {
+          "entitiesWithNonFinitePose": { "0": [3, 4, 5, 6, 72, 73, 74], "1": [0, 1, 2, 7, 69, 70, 71], "2": [] },
+          "pathSegmentRestLengths_m": ["NaN", "NaN"],
+          "pathStoredWrapArcs_m": [0, "NaN", 0],
+          "reportedConstraintLambda": [0, 0],
+          "reportedTension_N": [0, 0]
+        },
+        "afterRepairingTheInputAndSteppingAgain": {
+          "entitiesWithNonFinitePose": [0, 1, 2],
+          "pathSegmentRestLengths_m": ["NaN", "NaN"]
+        },
+        "infinityInput": "identical outcome"
+      },
+      "errorMagnitude": "2 of 3 bodies non-finite after one step (3 of 3 after repairing the input); 3 of 3 persistent path fields non-finite; the affected rows' reported tension is 0 N, i.e. the corruption produces no visible error signal",
+      "tolerance": "any non-finite pose/quaternion/omega or path rest/stored value is unacceptable; expected 0",
+      "whyBugNotSimplification": "The core's own guards show the intent to contain non-finite state (load() refuses non-finite torque; update_attachments skips non-finite rest/radius; servo/encoders check is_finite; the Node bridge rejects non-finite dt). Here a NaN gradient reaches the correction pass: lambda() clamps its step with Rust f64::min, and 0.0.min(NaN) == 0.0, so constraintLambda/constraintForceMagnitude report exactly 0 N while correct() evaluates 0 * NaN = NaN. The NaN is then written into positions, quaternions, rest lengths and stored wrap arcs. Repairing the original input cannot heal the already-corrupted records, so a long-running session must be rebuilt.",
+      "strongestAlternative": "Garbage-in-garbage-out: a NaN position is an invalid input that the caller (JS adapter) should have prevented. Counter-evidence: the damage spreads to bodies that did not hold the bad value (including the fixed roller's orientation and the other segment's rest length), the reported force stays finite (0 N) so nothing flags the failure, and the input cannot be repaired without a rebuild. Also the same single NaN is accepted by the Node bridge, which validates dt but not entity/path values, so nothing in the pipeline rejects it."
+    },
+    {
+      "id": "F2",
+      "title": "layeringSplitJoints writes NaN path state when a rolling link has no finite radius, although the attachment kernel explicitly tolerates that input",
+      "classification": "genuine bug in an opt-in path (the app leaves layeringSplitJoints = false) with an input the geometry layer supports",
+      "repro": "repro_split_nan_radius.mjs",
+      "command": "node repro_split_nan_radius.mjs",
+      "exitCodeWhenBugPresent": 1,
+      "setup": "Straight span fixedPoint(0,0) -> mass(1,0) declared as two 'rolling' links on entities without a RadiusComponent (adapter writes radius = NaN); a bystander roller of radius 0.05 at (0.3,0) is crossed by that span. enableLayering = layeringSplitJoints = true, merge/hybrid off.",
+      "expected": "split() skips a link whose radius is not finite, exactly as geometry()/attachment_data() do (geometry sets the 'radius is finite' flag and degrades to a point attachment otherwise), leaving a finite world.",
+      "actual": {
+        "control_splitOff": { "segments": 1, "stored_m": [0, 0], "restLengths_m": [1], "posesFinite": [true, true, true], "mass2Y_m": -0.0005395499944007192 },
+        "repro_splitOn": { "segments": 2, "stored_m": ["NaN", "NaN", "NaN"], "restLengths_m": ["NaN", "NaN"], "posesFinite": [false, true, false], "mass2Y_m": "NaN" }
+      },
+      "errorMagnitude": "all 5 path fields (3 stored arcs + 2 rest lengths) and 2 of 3 bodies non-finite; every subsequent step stays NaN",
+      "tolerance": "any non-finite path/pose value is unacceptable; expected 0",
+      "whyBugNotSimplification": "The always-on attachment geometry deliberately supports a missing radius (engine.rs:487 packs radii[side].0.is_finite() as flags bit 4; rolling_attachment returns the centre when the radius is absent), so a rolling link without a radius is a representable, tolerated input. split() instead passes the NaN radius into sphere_tangents()/arc(), and the resulting NaN tangent points, wrap angle and rest lengths are written back to the persistent path records. capstan() guards the same case (radius > EPS else zero wrap) and update_attachments guards it with radius.is_finite(); split/merge do not.",
+      "strongestAlternative": "A 'rolling' link without a RadiusComponent is malformed: the scene baker computes rolling stored lengths via RadiusComponent and would throw, and the app never enables layeringSplitJoints (verified: the headless hp4 adapter sends options[6]=options[7]=0). So no shipped scene can reach this. I keep it as a finding because the input is accepted by the rest of the core and silently destroys the world instead of being ignored; this is a dormant path, not production behaviour.",
+      "supportingSweep": {
+        "validLinks": "0/3000 randomized layering+hybrid+split worlds failed (finite poses, non-negative tension, material conserved)",
+        "malformedLinks": "195/3000 randomized worlds with a rolling link on a radius-less entity produced non-finite pose/path state (MALFORMED=1 node explorations/explore11.mjs)"
+      }
+    },
+    {
+      "id": "F3",
+      "title": "Negative rest length is silently replaced by 1e-6 m and produces a 19.6 kN force, while totalRestLength keeps the negative value",
+      "classification": "documented/featured sanitization (layeringClampJointRestLength) applied to an invalid input; limitation, not counted as a bug",
+      "repro": "check_degenerate_ok.mjs (not asserted as a bug) and explorations/explore17.mjs",
+      "actual": {
+        "inputRestLength_m": -1,
+        "storedRestLengthAfterOneStep_m": 1.0e-6,
+        "reportedTension_N": 19607.827,
+        "massY_m": -0.9804019826988097,
+        "totalRestLengthField_m": -1,
+        "sumRestPlusStored_m": 9.999999999177334e-7
+      },
+      "whyNotBug": "The clamp exists to keep rest lengths non-negative for layer bookkeeping (options[5] = layeringClampJointRestLength, on by default) and the cable cannot have negative length. The result is a loud, physically absurd force rather than a validation error, but no valid scene can construct a negative rest length. The remaining inconsistency is that the reported totalRestLength (a bound view of path data[7]) is not updated when the clamp lifts a rest length, so telemetry shows -1 m while the segments sum to +1e-6 m."
+    },
+    {
+      "id": "F4",
+      "title": "A zero-length segment inside a taut merged row reports the row's tension magnitude with a zero force vector",
+      "classification": "reporting quirk on degenerate input; no dynamics error observed",
+      "repro": "check_degenerate_ok.mjs (prints NOTE)",
+      "actual": { "segment0_magnitude_N": 9.81, "segment0_forceVector_N": [0, 0, 0], "segment1_magnitude_N": 9.81 },
+      "whyNotBug": "A zero-length segment has no direction, so a zero force vector is the only meaningful value; the scalar magnitude is the row's shared tension. Positions and material stay finite and conserved. Users reading constraintForceMagnitude on a degenerate duplicate path point would over-estimate the load on that segment."
+    }
+  ],
+  "negativeResults": {
+    "closedForm": {
+      "hairpinAtwood": "a = g(m1-m2)/(m1+m2) = 3.270000000 m/s^2 measured within 2.4e-10 for roller radii 0.05, 0.02, 1e-3, 1e-9 and exactly 0; tension 13.080000 N within 4e-10; mirror (heavy side left vs right) differs by 1.1e-13 m",
+      "hangingStatics": "stretch 4.929224e-3 m vs mgL/EA = 4.905e-3 m (+0.49%, crate test tolerance 2%); reported tension 98.099975 N vs mg = 98.1 N (2.5e-5 N error)",
+      "slackLine": "rest 1.05 m over a 1.0 m span: max reported tension over 20 steps exactly 0",
+      "spoolPayout": "a spool rotated by dtheta moves the mass by r*dtheta with 0.05% error for r = 0.05 and 0.02 m, both directions; delta stored = r*dtheta to <1e-12 m (closed-form winding kinematics, including an attachment point that starts exactly on the spool surface)",
+      "rigidResidual": "stiffness = Infinity, one segment, one mass: residual |distance-rest| exactly 0.0 after 1 iteration already; two-segment chain: 6.54e-7 m after 8 iterations (Gauss-Seidel convergence, expected)",
+      "forceConvention": "a hanging mass reports constraintLambda = -9.81e-5 and constraintForce = (0, +98.099975, 0) N on the lower endpoint, i.e. lambda < 0 for tension and the vector is the force on entityB"
+    },
+    "degenerateGeometry": {
+      "coincidentAnchors_rest0.5": "tension 0, rest unchanged 0.5, no NaN",
+      "coincidentAnchors_rest0": "tension 0, rest lifted to exactly 1e-6 m, no NaN",
+      "zeroRestTether": "1 kg mass tied to an anchor with rest 0 stays within 1.006e-6 m of the anchor over 1000 steps (max tension 10.812 N)",
+      "duplicatePathPoints": "zero-length segment between coincident anchors merged with a taut span: all fields finite, stable for 4000 steps, taut-segment tension 9.81 N",
+      "zeroAndTinySpoolRadius": "hairpin with r = 0 gives exactly the analytic acceleration and tension; stored/steps stay finite",
+      "anchorOnSpoolSurface": "payout test above starts with the tangent point at distance r from the centre; the tangent branch at d^2 = r^2 is continuous in the measured cases"
+    },
+    "stateLifecycle": {
+      "isolation": "two identical worlds: stepping one 100 extra steps leaves the other bit-identical (Object.is over all entity and path fields)",
+      "determinism": "two worlds built the same way and stepped identically are bit-identical after 200 steps",
+      "reset": "dispose + rebuild reproduces the fresh first step exactly (all 56 path fields identical)"
+    },
+    "productionScenes": {
+      "command": "node check_production_scenes.mjs 300",
+      "scenes": ["hp3", "hp4", "hp4_worn_bearings", "hp5", "slideprinter_single_pinholes"],
+      "flagSets": ["lineLayeringEnabled = true", "lineLayeringEnabled = false"],
+      "result": "300 steps each (10 runs): 0 non-finite pose/encoder/path fields, 0 negative tensions, max relative material drift (sum rest + stored vs totalRestLength) 1.12e-14 against a 1e-9 tolerance",
+      "noCreep": "uncommanded hp3 and hp4 for 12 s: max displacement saturates at 9.314e-5 m (hp3) and 8.972e-6 m (hp4) after 2 s and stays constant for the remaining 10 s",
+      "fuzz": "3000 randomized minimal worlds with domain-valid links, layering/hybrid/split on: 0 failures (finite state, non-negative tension, material conserved to 1e-6 relative)"
+    }
+  },
+  "limitations": [
+    "All evidence is numerical evidence from the simulator's own Rust core on this revision; no hardware claim is made.",
+    "The ABI is exercised directly (addon.create/step) with records built to match src/wasm/cable_solver/tests/common/mod.rs. The ECS/JS adapter path is covered only by the production-scene runs, which use the real NativePhysicsEngine adapter.",
+    "Finding 2's input (a 'rolling' link on an entity without a RadiusComponent) is not produced by the scene baker and is unreachable with the app's flags (layeringSplitJoints = false is what the adapter sends; verified options[6]=options[7]=0 on hp4). It is a latent path bug, not a mis-simulation of any shipped scene.",
+    "Finding 1 needs an externally injected non-finite value. I did not find a finite input in the tested ranges that produces a non-finite output; a 3000-world fuzz over finite positions, radii, masses, rest lengths, stiffness, damping, iterations and hybrid/layering flags found none.",
+    "Constraint residuals were measured only for one- and two-segment rigid chains; long chains need more iterations, which is the documented XPBD behaviour, not a defect.",
+    "A slack segment inside a taut merged row is pulled with the row's tension in the same step that the material is redistributed (measured 773 N impulse on both ends for an initial 0.7 m stretch). This follows the documented row model ('material moves freely inside a row, so its constraint is the row's total length'), but it means a badly initialised slack span produces a one-step impulse rather than a gradual take-up. I did not count it as a bug.",
+    "Motor/spool torque control (servo, missed steps, worn bearings) was not audited beyond what the production-scene invariants exercise.",
+    "The same seed/revision produced 114/3000 malformed-world failures with one exploration variant and 195/3000 with the final generator; both are the same class of failure (radius-less rolling link + split) and neither is a sampled claim about probability."
+  ],
+  "openQuestions": [
+    "Would a non-finite value be caught earlier if the Node bridge or RustWorld::step validated entity/path records (a cheap is_finite scan), or is silent poisoning preferred for performance?",
+    "Should split()/merge()/capstan()/geometry() share one radius guard instead of three different treatments?",
+    "The JS adapter sends options[15] = world.getResource('dt') ?? -1; the Rust solver treats a non-NaN options[15] as the solve dt, so a missing 'dt' resource (-1) leaves positions constrained but reports every cable force as exactly 0 N (measured: 0 N vs 155.8 N, with the mass still held at y = -1). Not reachable in the app, but another silent-zero path."
+  ]
+}

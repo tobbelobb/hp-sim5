@@ -1,0 +1,5 @@
+same layered plan and same final enableLayering=true; only apply/flag order differs:
+  first entity difference: {"index":27,"key":"e0.HybridKnotAngleComponent.pathAngles.35","left":-2.933692419514937,"right":-1.1299124550083235,"kind":"number","abs":1.8037799645066137}
+  max body position difference after 500 steps: 7.199e-2 m
+FAIL scene application depends on the ambient enableLayering resource at apply time: e0.HybridKnotAngleComponent.pathAngles.35 differs by 1.804e+0, body position by 0.0720 m after 500 steps
+exit=1

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc",
+  "question": "Which new, minimal, reproducible cases exist where hp-sim5 returns wrong results or violates its own stated invariants? Deliver a smallest-possible reproducer plus quantitative evidence for each genuine incorrect behavior. Exclude encoder autocalibration entirely (a separate parallel program owns it).",
+  "agents": [
+    {
+      "id": "session-2026-11-17-probe-the-rust-cable-physics-core-for-wrong-results-degenerate-c-79c933d4",
+      "question": "Probe the Rust cable/physics core for wrong results: degenerate cable geometry, NaN/Inf propagation, tension/sign conventions, constraint residual, and world-isolation or reset-state leaks. Produce a smallest reproducer plus quantitative evidence.",
+      "directory": "session-2026-11-17-probe-the-rust-cable-physics-core-for-wrong-results-degenerate-c-79c933d4"
+    },
+    {
+      "id": "session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52",
+      "question": "Hunt for wrong results in the firmware and motion-command layer: Klipper/RRF emulation, G-code parsing, feedrate and step quantization, encoder bookkeeping, queue/limit edge cases. Compare emulator output against exact analytical motion where possible. Produce a smallest reproducer plus quantitative evidence.",
+      "directory": "session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52"
+    },
+    {
+      "id": "session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b",
+      "question": "Hunt for wrong results in machine geometry, scene/config loading, unit handling and the forward transform: inverse/forward round trips, anchor and spool geometry, catalog presets, malformed or boundary config values. Produce a smallest reproducer plus quantitative evidence.",
+      "directory": "session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b"
+    },
+    {
+      "id": "session-2026-11-17-check-cross-backend-and-state-lifecycle-correctness-wasm-vs-nati-8f0a1539",
+      "question": "Check cross-backend and state-lifecycle correctness: Wasm vs native vs Python physics parity for identical scenes, determinism across repeated runs, reset/reconfigure state leaks, and multi-world isolation. Produce a smallest reproducer plus quantitative evidence.",
+      "directory": "session-2026-11-17-check-cross-backend-and-state-lifecycle-correctness-wasm-vs-nati-8f0a1539"
+    },
+    {
+      "id": "session-2026-11-17-fuzz-the-pure-numerical-and-geometry-helpers-for-invariant-viola-23ae4ea3",
+      "question": "Fuzz the pure numerical and geometry helpers for invariant violations: quaternion, vector3, geometry3, planar_math, inertia_tensor, and any JS spool/cable wrap math. Check orthonormality, inverse consistency, positive-definite tensors, angle wrapping, degenerate inputs. Produce a smallest reproducer plus quantitative evidence.",
+      "directory": "session-2026-11-17-fuzz-the-pure-numerical-and-geometry-helpers-for-invariant-viola-23ae4ea3"
+    },
+    {
+      "id": "session-2026-11-17-verify-end-to-end-kinematic-correctness-for-every-catalog-machin-4745f431",
+      "question": "Verify end-to-end kinematic correctness for every catalog machine: command pure +X/+Y/+Z moves through the production command path and check effector displacement direction and magnitude against the authored geometry; check motor sign, spool winding direction, steps-per-mm and line-length monotonicity per axis. Produce a smallest reproducer plus quantitative evidence for any mirrored, scaled or dead axis.",
+      "directory": "session-2026-11-17-verify-end-to-end-kinematic-correctness-for-every-catalog-machin-4745f431"
+    }
+  ]
+}

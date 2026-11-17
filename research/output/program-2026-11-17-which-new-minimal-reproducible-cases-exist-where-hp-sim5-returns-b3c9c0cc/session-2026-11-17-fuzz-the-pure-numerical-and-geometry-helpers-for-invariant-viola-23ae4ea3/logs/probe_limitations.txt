@@ -1,0 +1,62 @@
+--- 1. _tangentPointCircle fallback when the attach point is inside the circle ---
+    (no tangent exists; the code returns the radial nearest point on the circle)
+    |p|=0.999: tangent point=(1.000000, 0.000000), |T-C|=1.000000, |cos(radius, span)|=1.000000 (0 = tangent, 1 = radial)
+    |p|=0.9: tangent point=(1.000000, 0.000000), |T-C|=1.000000, |cos(radius, span)|=1.000000 (0 = tangent, 1 = radial)
+    |p|=0.5: tangent point=(1.000000, 0.000000), |T-C|=1.000000, |cos(radius, span)|=1.000000 (0 = tangent, 1 = radial)
+    |p|=0: tangent point=(-1.000000, 0.000000), |T-C|=1.000000, |cos(radius, span)|=1.000000 (0 = tangent, 1 = radial)
+    3D variant: a point outside the sphere whose in-plane projection is inside the circle
+    |p-C|=3.041 (> r) but |proj(p-C)|=0.500 (< r); tangent point=(1.000000, 0.000000), |cos(radius, span)|=1.000000
+
+--- 2. symmetric pseudo-inverse near the singularity threshold ---
+    (M P M = M degrades in proportion to the smallest/largest eigenvalue ratio)
+    I_min/I_max=1e-18: worst rel |MPM-M|=9.75e-16  max|P|=1.00e+0
+    I_min/I_max=1e-16: worst rel |MPM-M|=8.89e-16  max|P|=1.00e+0
+    I_min/I_max=1e-15: worst rel |MPM-M|=1.18e-1  max|P|=9.98e+14
+    I_min/I_max=1e-14: worst rel |MPM-M|=9.34e-3  max|P|=9.98e+13
+    I_min/I_max=1e-13: worst rel |MPM-M|=1.07e-3  max|P|=1.00e+13
+    I_min/I_max=1e-12: worst rel |MPM-M|=8.10e-5  max|P|=1.00e+12
+    I_min/I_max=1e-10: worst rel |MPM-M|=8.62e-7  max|P|=1.00e+10
+    I_min/I_max=1e -8: worst rel |MPM-M|=8.51e-9  max|P|=9.98e+7
+    I_min/I_max=1e -6: worst rel |MPM-M|=8.14e-11  max|P|=1.00e+6
+
+--- 3. Vector3.angleTo resolution (acos conditioning) ---
+    angle between (1,0,0) and (1,0.0001,0): angleTo=1.000000e-4 atan2 ref=1.000000e-4
+    angle between (1,0,0) and (1,1e-8,0): angleTo=0.000000e+0 atan2 ref=1.000000e-8
+    angle between (1,0,0) and (1,1e-10,0): angleTo=0.000000e+0 atan2 ref=1.000000e-10
+    angle between (1,0,0) and (1,1e-14,0): angleTo=0.000000e+0 atan2 ref=1.000000e-14
+
+--- 4. writeSlackCablePositions: parabolic fallback for near-vertical spans ---
+    (fallback is used when horizontal span <= 1e-5 m; it sags along "up", so a
+     vertical slack cable renders as a straight line and the slack is lost)
+    h=0e+0 v=1 straight=1.0000 L=1.5000 -> polyline=1.000000 (-33.3% vs L)
+    h=1e-7 v=1 straight=1.0000 L=1.5000 -> polyline=1.000000 (-33.3% vs L)
+    h=1e-6 v=1 straight=1.0000 L=1.5000 -> polyline=1.000000 (-33.3% vs L)
+    h=1e-5 v=1 straight=1.0000 L=1.5000 -> polyline=1.000000 (-33.3% vs L)
+    h=1e-4 v=1 straight=1.0000 L=1.5000 -> polyline=1.500000 (-0.0% vs L)
+    h=1e-3 v=1 straight=1.0000 L=1.5000 -> polyline=1.499999 (-0.0% vs L)
+    h=2e-2 v=0 straight=0.0200 L=0.0210 -> polyline=0.021000 (-0.0% vs L)
+    realistic span 0.206 m, slack 0.000001: polyline/L-1 = -0.0000%
+    realistic span 0.206 m, slack 0.0001: polyline/L-1 = -0.0000%
+    realistic span 0.206 m, slack 0.01: polyline/L-1 = -0.0003%
+
+--- 5. signedArcLengthOnWheel cannot represent a wrap of 2*pi ---
+    (it returns the preferred-direction arc modulo 2*pi, always in [0, 2*pi))
+    sweep 0.0000 rad: signed=0.000000 force_positive=0.000000
+    sweep 1.5708 rad: signed=1.570796 force_positive=1.570796
+    sweep 3.1416 rad: signed=3.141593 force_positive=3.141593
+    sweep 4.7124 rad: signed=-1.570796 force_positive=4.712389
+    sweep 6.5832 rad: signed=0.300000 force_positive=0.300000
+    sweep 12.8664 rad: signed=0.300000 force_positive=0.300000
+
+--- 6. normalizeInertiaTensor does not validate physical admissibility ---
+    authored diag(1,1,10) -> used as [[1,0,0],[0,1,0],[0,0,10]]
+    component inertia about z = 10, inverse = 0.1
+    (all shipped scenes author isotropic diagonal tensors, so this is unexercised)
+
+--- 7. degenerate zero-length / zero-mass / duplicate-point inputs ---
+    closestPointOnSegment(p, a, a) = (1, 2, 3) (expected a)
+    parallelAxisTensor(0, offset) = [[0,0,0],[0,0,0],[0,0,0]]
+    MomentOfInertiaComponent(0).inertia = 0
+    slack cable with start == end, L=0.1: 1.000000, 2.000000, 3.000000, 1.000000, 2.000000, 2.950000, 1.000000, 2.000000, 3.000000
+    segments=0: 1,0,0 (only the end point survives, no NaN)
+

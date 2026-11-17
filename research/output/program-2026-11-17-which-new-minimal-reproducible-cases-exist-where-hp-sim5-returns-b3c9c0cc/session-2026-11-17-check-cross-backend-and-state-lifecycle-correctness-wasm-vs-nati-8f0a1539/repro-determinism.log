@@ -1,0 +1,18 @@
+ok   native/hp3 in-process run 1: 8ef96148cd0a9f40 (1389 entries, 100 ms)
+ok   native/hp3 in-process run 2: 8ef96148cd0a9f40 (1389 entries, 72 ms)
+ok   native/hp3 in-process run 3: 8ef96148cd0a9f40 (1389 entries, 66 ms)
+ok   native/hp3 cross-process runs agree: 8ef96148cd0a9f40
+ok   native/hp4 in-process run 1: 3e8ecce1d4576181 (5301 entries, 341 ms)
+ok   native/hp4 in-process run 2: 3e8ecce1d4576181 (5301 entries, 333 ms)
+ok   native/hp4 in-process run 3: 3e8ecce1d4576181 (5301 entries, 325 ms)
+ok   native/hp4 cross-process runs agree: 3e8ecce1d4576181
+ok   wasm/hp3 in-process run 1: f203cc790ad128ff (1389 entries, 95 ms)
+ok   wasm/hp3 in-process run 2: f203cc790ad128ff (1389 entries, 76 ms)
+ok   wasm/hp3 in-process run 3: f203cc790ad128ff (1389 entries, 73 ms)
+ok   wasm/hp3 cross-process runs agree: f203cc790ad128ff
+ok   wasm/hp4 in-process run 1: 8be5cce007cbfe18 (5301 entries, 389 ms)
+ok   wasm/hp4 in-process run 2: 8be5cce007cbfe18 (5301 entries, 372 ms)
+ok   wasm/hp4 in-process run 3: 8be5cce007cbfe18 (5301 entries, 370 ms)
+ok   wasm/hp4 cross-process runs agree: 8be5cce007cbfe18
+PASS determinism: 1500 commanded steps, 3 in-process repeats + 2 process restarts per backend/machine (5004 ms)
+5.05 s

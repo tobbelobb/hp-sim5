@@ -1,0 +1,488 @@
+{
+  "program": "2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc",
+  "session": "session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52",
+  "date": "2026-11-17",
+  "revisions": {
+    "hp_sim5": "c2450975",
+    "klipper_fork": "9ad05951e",
+    "rrf_fork": "82f356b45",
+    "rrf_simulator_binary": "RRF/build/rrf_simulator (prebuilt, not rebuilt)",
+    "node": "v24.14.1",
+    "python": ".venv/bin/python"
+  },
+  "how_to_run": "bash repro/run_all.sh   # each finding repro exits 1 while the bug is present",
+  "findings": [
+    {
+      "id": "F1",
+      "title": "RRF host build: standstill bookkeeping is off by one microstep and the next move inherits it",
+      "class": "emulator bug (RRF fork host-only code path)",
+      "repro": "repro/rrf_standstill_offbyone.py",
+      "command": ".venv/bin/python repro/rrf_standstill_offbyone.py",
+      "status": "reproduced",
+      "deterministic": true,
+      "measurements": {
+        "A_slideprinter_roundtrip_with_M400": {
+          "gcode": "G92 X0 Y0 Z0 / G1 X10 F600 / M400 / G1 X0 F600 / M400 / M114",
+          "expected_net_steps": {
+            "addr40": 0,
+            "addr41": 0,
+            "addr42": 0
+          },
+          "actual_net_steps": {
+            "addr40": 0,
+            "addr41": -1,
+            "addr42": 1
+          },
+          "line_mm_per_step": 0.058905,
+          "reported_m114": "X:0.102 Y:-0.020 Z:-8.641 Count 0 -1 2"
+        },
+        "B_cartesian_1mm_after_standstill": {
+          "gcode": "G92 X0 Y0 Z0 / G1 X10 F600 / G1 X0 F600 / M400 / G1 X1 F600 / M400",
+          "expected_last_move_steps": 80,
+          "actual_last_move_steps": 79,
+          "expected_final_x_mm": 1.0,
+          "actual_final_x_mm": 0.9875,
+          "error_mm": 0.0125
+        },
+        "B_control_without_M400": {
+          "actual_last_move_steps": 80,
+          "actual_final_x_mm": 1.0
+        },
+        "C_single_move_0p05mm": {
+          "gcode": "G92 X0 Y0 Z0 / G1 X0.05 F600 / M400 / M114",
+          "can_capture_steps": 4,
+          "firmware_live_motor_counter": 3
+        }
+      },
+      "root_cause_candidate": "RRF/ReprapFirmware/src/Movement/Move.cpp:2276 Move::FreeOldSegments (RRF_HOST_BUILD, fork commit 7eb7a97bf) truncates length+distanceCarriedForwards with (int32_t) while DriveMovement::TakeStepsAndCalcStepTimeRarely (DriveMovement.cpp:750) uses std::lrint",
+      "not_settled": "exact set of segments/sequences that trip the truncation; ISR/FreeOldSegments interleaving not observed directly"
+    },
+    {
+      "id": "F2",
+      "title": "RRF CAN CSV with more than one motor per CAN board is misparsed: all motion lost, phantom extrusion instead",
+      "class": "emulator bug (hp-sim5 integrations/rrf)",
+      "repro": "repro/rrf_multidriver_csv.mjs",
+      "command": "node repro/rrf_multidriver_csv.mjs",
+      "status": "reproduced",
+      "fixture": "repro/fixtures/rrf_two_drivers_one_board.csv (regenerate with repro/make_rrf_multidriver_fixture.py)",
+      "firmware_config": "M584 X40.0 Y40.1 Z40.2 E40.3",
+      "gcode": "G92 X0 Y0 Z0 / G1 X10 Y5 F600",
+      "firmware_capture_row": "0,40,0,2500,836026,2500,800,400,4.77027862e-10,4.77027862e-10",
+      "measurements": {
+        "driver_to_axis_after_parse": {
+          "40": "E"
+        },
+        "expected": {
+          "x_steps": 800,
+          "y_steps": 400,
+          "extrusion_mm": 0.0,
+          "acceleration": 4.77027862e-10
+        },
+        "actual": {
+          "x_steps": 0,
+          "y_steps": 0,
+          "extrusion_mm": 8.3401,
+          "acceleration": 400
+        },
+        "acceleration_error_factor": 839000000000.0,
+        "commanded_travel_lost_mm": 15.0
+      },
+      "root_cause_candidate": "rrfFirmwareModel.js:74 keys the map by CAN address and drops the .driver suffix; rrfCanPlayer.js:461-481 _parseCsvRow assumes a fixed 9-column row (parts[6]=steps, parts[7]=acceleration, parts[8]=deceleration) although CanCapture.cpp writes one steps column per drive",
+      "not_settled": "no bundled machine uses multi-driver CAN addresses, so no shipped preset is affected today"
+    },
+    {
+      "id": "F3",
+      "title": "Klipper MCU player drops the first queue_step batch of every stepper except the first",
+      "class": "emulator bug (hp-sim5 default Klipper upload path)",
+      "repro": "repro/js_mcu_player_step_loss_synthetic.mjs",
+      "command": "node repro/js_mcu_player_step_loss_synthetic.mjs",
+      "status": "reproduced",
+      "deterministic": true,
+      "measurements": {
+        "synthetic_two_steppers_one_step_each": {
+          "expected": {
+            "A": 1.0,
+            "B": 1.0
+          },
+          "actual_incremental_flush": {
+            "A": 1.0,
+            "B": 0.0
+          },
+          "actual_deferred_flush": {
+            "A": 1.0,
+            "B": 1.0
+          }
+        },
+        "shipped_preset": {
+          "file": "public/mcu_commands/slideprinter/draw_squares.txt",
+          "stream_steps": {
+            "A": -5,
+            "B": -5,
+            "C": -5,
+            "E": 38209
+          },
+          "player_steps": {
+            "A": -5.0,
+            "B": -4.0521,
+            "C": -4.208,
+            "E": 38209
+          },
+          "lost_steps": {
+            "B": 0.948,
+            "C": 0.792
+          },
+          "lost_line_mm": {
+            "B": 0.0558,
+            "C": 0.0467
+          },
+          "line_mm_per_step": 0.058905
+        },
+        "other_shipped_presets": {
+          "public/mcu_commands/hp4/draw_squares_bigger_no_buildup.txt": {
+            "stream_steps": {
+              "A": -19,
+              "B": -19,
+              "C": -19,
+              "D": -6
+            },
+            "lost_microsteps": {
+              "B": 0.973,
+              "C": 0.741,
+              "D": 0.6
+            }
+          },
+          "public/mcu_commands/cubecorners/draw_squares_bigger_no_buildup.txt": {
+            "stream_steps": {
+              "A": -7,
+              "B": -7,
+              "C": -7,
+              "D": -7,
+              "I": -18,
+              "J": -18,
+              "L": -18
+            },
+            "lost_microsteps": {
+              "B": 0.958,
+              "C": 0.768,
+              "D": 0.64,
+              "I": 0.549,
+              "J": 0.405,
+              "L": 0.32
+            }
+          },
+          "pattern": "first-parsed stepper exact, every later stepper loses 0.3-1.0 microsteps"
+        }
+      },
+      "root_cause_candidate": "klipperMcuCommandPlayer.js:226 _flushReadyBuckets advances one global nextBucketToEmit per parsed line, while each axis's first queue_step is smeared from MCU tick 0; _emitBucket deletes emitted buckets, so later writes into them are dropped",
+      "not_settled": "live Klipper streams where an axis first moves mid-print after reset_step_clock (player ignores reset_step_clock)"
+    },
+    {
+      "id": "F4",
+      "title": "Klipper parsed-line path maps extruder steps to spool axis D; extrusion silently lost",
+      "class": "emulator bug (hp-sim5 non-default raw/serial Klipper pipeline)",
+      "repro": "repro/js_klipper_oid_axis_mapping.mjs",
+      "command": "node repro/js_klipper_oid_axis_mapping.mjs",
+      "status": "reproduced",
+      "measurements": {
+        "firmware": {
+          "gcode": "G1 X10 E5 F600",
+          "extruder_oid": 3,
+          "extruder_steps": 478,
+          "expected_extrusion_mm": 5.0041
+        },
+        "pacer_worker_applyBucketedParsedLine": {
+          "spool_D_steps": 478,
+          "spool_D_line_mm": 28.16,
+          "extrusion_mm": 0.0
+        },
+        "mcu_command_player": {
+          "spool_D_steps": 0,
+          "extrusion_mm": 4.9936
+        },
+        "anchors_expected_and_observed": {
+          "B": -147,
+          "C": 147
+        }
+      },
+      "root_cause_candidate": "klipperMotionCore.js:42 mapOidToAxis uses DEFAULT_AXIS_ORDER[oid]; applyBucketedParsedLine (line 588) ignores config_stepper step_pin",
+      "not_settled": "scope: reached only by the opt-in 'raw' pipeline (KLIPPER_UPLOAD_PIPELINE='raw'), playKlipperRawFile and connectKlipperRaw; default 'player' uploads use the pin map and are correct here"
+    }
+  ],
+  "negative_results": [
+    {
+      "id": "N1",
+      "check": "Klipper feedrate/acceleration limits and step counts vs closed form",
+      "repro": "repro/kl_limits_vs_analytic.py",
+      "result": "PASS",
+      "details": {
+        "F600": {
+          "steps": 6400,
+          "span_s": 7.99925,
+          "closed_form_s": 8.00333
+        },
+        "F60000_capped_300mm_s": {
+          "steps": 6400,
+          "span_s": 0.36258,
+          "closed_form_s": 0.36667
+        },
+        "F30_0p5mm_s": {
+          "steps": 6400,
+          "span_s": 159.975,
+          "closed_form_s": 160.00017
+        },
+        "M204_P300": {
+          "steps": 6400,
+          "span_s": 8.02042,
+          "closed_form_s": 8.03333
+        },
+        "M203_X6000": {
+          "steps": 6400,
+          "span_s": 0.82925,
+          "closed_form_s": 0.83333
+        }
+      },
+      "note": "span is first-step to last-step, so it is short of the closed form by the half-step at each end; tolerance 20 ms in the script"
+    },
+    {
+      "id": "N2",
+      "check": "RRF move queue stress: 20000 one-microstep absolute moves",
+      "repro": "repro/rrf_queue_stress.py",
+      "result": "PASS",
+      "details": {
+        "captured_steps": 20000,
+        "final_x_mm": 250.0
+      }
+    },
+    {
+      "id": "N3",
+      "check": "Bucketed antialiasing vs exact trapezoid on a real 6400-step Klipper stream",
+      "repro": "repro/js_bucket_profile_vs_analytic.mjs",
+      "result": "PASS",
+      "details": {
+        "total_steps": 6399.999999999673,
+        "peak_steps_per_2ms_bucket": 1.6000000000003638,
+        "analytic_peak": 1.6,
+        "worst_position_error_mm_after_ramp": 0.0008,
+        "emulated_move_end_s": 8.252,
+        "expected_move_end_s": 8.2527
+      }
+    },
+    {
+      "id": "N4",
+      "check": "Klipper rejects zero/negative feedrate and G20",
+      "result": "PASS (loud errors)",
+      "details": {
+        "F0": "Invalid speed in 'G1 X10 F0' (exit 255)",
+        "F-600": "Invalid speed in 'G1 X10 F-600' (exit 255)",
+        "G20": "Machine does not support G20 (inches) command (exit 255)"
+      }
+    },
+    {
+      "id": "N5",
+      "check": "RRF G20 units, duplicate moves, zero-length moves",
+      "result": "PASS",
+      "details": {
+        "G20_G1_X1": "2032 steps = 25.4 mm",
+        "duplicate_G1_X10": "no extra steps",
+        "zero_length": "no steps"
+      }
+    },
+    {
+      "id": "N6",
+      "check": "RRF F0 / F-600 handling",
+      "result": "LIMITATION, not defect",
+      "details": "silently clamped to Config/Configuration.h DefaultMinFeedrate = 0.5 mm/s (10 mm takes 20.0 s); upstream RRF policy"
+    },
+    {
+      "id": "N7",
+      "check": "RRF M204 acceleration change queued between moves (command arriving while moves are pending)",
+      "repro": "repro/rrf_midmotion_limits.py",
+      "result": "PASS",
+      "details": {
+        "gcode": "G1 X10 F600 / G1 X20 F600 / M204 P300 T300 / G1 X30 F600",
+        "segment_durations_s": [
+          1.0016666666666667,
+          1.0,
+          1.0166666666666666
+        ],
+        "closed_form_s": {
+          "move1_ramp_from_rest_a3000": 1.0016667,
+          "move2_blended": 1.0,
+          "move3_ramp_down_a300": 1.0166667
+        },
+        "final_position": {
+          "X": 30.0
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "All evidence is simulation/emulation evidence; F1 is host-build-only and does not exist on real Duet hardware.",
+    "F1 trigger set characterised empirically, not derived from an ISR trace.",
+    "F2 requires a multi-driver CAN board; no bundled machine does this.",
+    "F3 magnitude is bounded by the first queue_step batch (about one microstep in batch dumps); reset_step_clock handling untested.",
+    "F4 is on the opt-in raw Klipper pipeline, not the default upload player.",
+    "Not tested: interactive HTTP mid-motion commands, arcs, pressure advance, input shaping."
+  ],
+  "follow_up": {
+    "date": "2026-11-17 (same session, follow-up pass)",
+    "revision": "hp-sim5 c2450975",
+    "reachability": {
+      "F3_presets": {
+        "path": "hp-sim-3d/app/commandPresetResolver.js resolvePresetCommand -> machine.compiled_commands[gcode].rrf, format FileFormat.RRF_CAN_BINARY; commandJobController.runPreset -> workers.ensureRrfWorker()",
+        "uses_mcu_player": false,
+        "example": "Print Squares -> public/RRF_CAN_commands/draw_squares_bigger_<machine>_no_buildup.can"
+      },
+      "F3_uploads": {
+        "path": "hp-sim-3d/index.html accept=.gcode,.txt,.serial,.usda,.csv,.can; handleUpload -> queueCommandFile -> isKlipperFormat -> KLIPPER_UPLOAD_PIPELINE='player' -> ensureKlipperMcuCommandPlayerWorker",
+        "uses_mcu_player": true,
+        "user_action": "upload a Klipper MCU dump (.txt/.serial/.log), e.g. public/mcu_commands/slideprinter/draw_squares_bigger_no_buildup.txt or your own klippy.py -o out.serial + parsedump.py output",
+        "live_api_path_unaffected": "api_motion_batch -> consumeStepperBatch"
+      },
+      "F2_feed": {
+        "user_action": "upload a .csv or .can capture from RRF/build/rrf_simulator --can-log out.csv (or RRF/csv2can.py / scripts/compile_machine_commands.py output) on a config with two motors on one CAN address, e.g. M584 X40.0 Y40.1",
+        "bundled_machines_affected": false,
+        "reason": "every shipped M584 maps exactly one motor per CAN address"
+      }
+    },
+    "F3_physical_impact": {
+      "repro_physics": "repro/f3_impact_sim.mjs",
+      "repro_kinematics": "repro/f3_impact_slideprinter.py",
+      "stream": "public/mcu_commands/slideprinter/draw_squares_bigger_no_buildup.txt",
+      "physics_path": "createHeadlessWorld(public/usd_scenes/slideprinter.usda), Wasm cable solver, zero gravity, 4000 settle + 400 averaged steps, commands {type:'Move', A,B,C} in radians",
+      "exact_steps": {
+        "A": -5,
+        "B": -5,
+        "C": -5
+      },
+      "player_steps": {
+        "A": -5.0,
+        "B": -4.0521,
+        "C": -4.208
+      },
+      "deficit_steps": {
+        "A": 0,
+        "B": -0.9479,
+        "C": -0.792
+      },
+      "deficit_line_mm": {
+        "A": 0,
+        "B": -0.0558,
+        "C": -0.0467
+      },
+      "exact_effector_m": [
+        -3.3e-05,
+        5.8e-05,
+        0.0
+      ],
+      "player_effector_m": [
+        -3.5e-05,
+        1.7e-05,
+        0.0
+      ],
+      "effector_delta_mm": [
+        -0.0014,
+        -0.0409,
+        0.0
+      ],
+      "effector_delta_norm_mm": 0.0409,
+      "direction": "almost entirely -Y (towards anchor A at y=-2.1 m)",
+      "algebraic_cross_check_mm": {
+        "dx": -0.0053,
+        "dy": -0.0342,
+        "dz_rigid_second_order_abs": 11.394,
+        "note": "home point lies in the anchor plane, so z is not first-order observable; the flex forward solver does not converge at this pose and the sim is planar (z=0)"
+      },
+      "loss_grows": false,
+      "evidence_constant": "deficits at 25% and 100% of the stream are identical (B -0.9479, C -0.7920)"
+    },
+    "F1_cumulative": {
+      "repro": "repro/f1_wait_drift.py",
+      "cartesian_80_steps_per_mm": {
+        "100_alternating_X0_X1_M400": {
+          "net_steps": 0,
+          "final_X": 0.0,
+          "status": "exact"
+        },
+        "100_monotone_1mm_M400": {
+          "net_steps": 8000,
+          "final_X": 100.0,
+          "status": "exact"
+        },
+        "100_monotone_1mm_G4": {
+          "net_steps": 8000,
+          "final_X": 100.0,
+          "status": "exact"
+        },
+        "100_10mm_roundtrips_M400": {
+          "net_steps": 0,
+          "final_X": 0.0,
+          "status": "exact"
+        }
+      },
+      "failing_unit_repeated": {
+        "gcode_unit": "G1 X10 / G1 X0 / M400 / G1 X1 / M400",
+        "final_X_mm": {
+          "n=1": 0.9875,
+          "n=2": 0.9875,
+          "n=5": 0.9875,
+          "n=20": 0.9875,
+          "n=100": 0.9875
+        },
+        "per_move_steps": [
+          800,
+          -800,
+          79,
+          721
+        ],
+        "conclusion": "bounded 1-step offset, self-cancelling on the next long move; does not accumulate"
+      },
+      "slideprinter_roundtrips": {
+        "n=1": {
+          "41": -1,
+          "42": 1
+        },
+        "n=2": {
+          "41": 0,
+          "42": 1
+        },
+        "n=5": {
+          "41": 1,
+          "42": 1
+        },
+        "n=20": {
+          "41": 1,
+          "42": 1
+        },
+        "n=100": {
+          "41": 1,
+          "42": 1
+        },
+        "conclusion": "always <= 1 microstep, sign depends on sequence, never grows with n"
+      },
+      "classification_change": "severity reduced from 'perturbs subsequent moves' to 'bounded 12.5 um (cartesian) / 0.059 mm-of-line (slideprinter) position error, not a drift'"
+    },
+    "F2_binary_path": {
+      "repro": "repro/f2_binary_path_probe.mjs",
+      "converted_with_shipped_converter": {
+        "converter": "RRF/csv2can.py",
+        "blocks": "one block, count 2 (800 and 400 as values), acceleration read from the Y column",
+        "player_result": {
+          "motion_steps": 0,
+          "extrusion_mm": 8.3401
+        }
+      },
+      "hand_built_correct_two_record_can": {
+        "records": "two int16 items, both CAN id 40, values 800 and 400",
+        "player_result": {
+          "motion_steps": 0,
+          "extrusion_mm": 12.5102
+        },
+        "reason": "the record id is the CAN destination address, not the local driver index"
+      },
+      "axis_map": "parseRrfMotorAxisMapFromConfigText keys by canAddress only",
+      "correction_to_first_pass": "the first report wrongly stated that the binary .can path carries a per-drive index; it does not. Multi-driver boards are unsupported end to end.",
+      "bundled_machines_produce_multi_driver_rows": false
+    }
+  }
+}

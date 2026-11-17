@@ -1,0 +1,10 @@
+Skipping Spool prim SpoolC due to missing attributes.
+SpoolC entity: undefined
+CablePathCL joints=2 linkTypes=3 stored=[2,0,0] totalRestLength=4.348061
+orphan JointCL_0: entityA=undefined attachmentA=(-0.0350, -0.0313, 0.0000) distance_from_spoolC_centre=2.5380 m
+orphan JointCR_0: entityA=undefined attachmentA=(-0.0410, 0.0230, 0.0000) distance_from_spoolC_centre=2.4839 m
+first physics step error: Missing cable endpoint for joint 29
+BUG: SpoolC was skipped by the loader
+BUG: cable joints reference a nonexistent body; max cable-end displacement 2.538 m
+BUG: scene loaded without error but the first step threw: Missing cable endpoint for joint 29
+FAIL: a missing non-geometric attribute silently removed a motor and left dangling joints

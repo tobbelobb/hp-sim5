@@ -1,0 +1,63 @@
+worker: RrfCanPlayer ready
+
+hp3-settle-layered: 2000 steps
+  prepared records: max diff 0 (lengths 2720/2720)
+  final entity-record max abs diff 7.371e-13 at e31.CableJointComponent.constraintForceMagnitude
+  final body position diff 4.455e-15 m, encoder 1.117e-17 rad, quaternion 0.000e+0 rad
+  peak body position 8.174e-15 m, peak encoder 2.521e-13 rad, peak quaternion 0.000e+0 rad
+  events: {"topologyFirstDifference":null,"topologyChanges":{"native":1,"wasm":1},"missedStepDifference":null,"quaternionSignFlips":0,"lengthMismatch":null,"nonFinite":null}
+  growth(position): {"lambdaPerStep":-0.000058272727355034255,"lambdaPerSecond":-0.029136363677517128,"doublingSteps":null,"samples":40,"fromStep":50,"toStep":2000}
+  growth(encoder):  {"lambdaPerStep":-0.0010983138042286293,"lambdaPerSecond":-0.5491569021143147,"doublingSteps":null,"samples":34,"fromStep":50,"toStep":1950}
+
+hp3-logo-off: 20000 steps
+  prepared records: max diff 0 (lengths 2720/2720)
+  final entity-record max abs diff 1.432e-10 at e17.CableJointComponent.constraintForceMagnitude
+  final body position diff 6.295e-14 m, encoder 1.510e-14 rad, quaternion 0.000e+0 rad
+  peak body position 8.540e-14 m, peak encoder 5.760e-13 rad, peak quaternion 4.215e-8 rad
+  events: {"topologyFirstDifference":null,"topologyChanges":{"native":1,"wasm":1},"missedStepDifference":null,"quaternionSignFlips":0,"lengthMismatch":null,"nonFinite":null}
+  growth(position): {"lambdaPerStep":0.000065401759722082,"lambdaPerSecond":0.032700879861041005,"doublingSteps":10598.295573473899,"samples":200,"fromStep":100,"toStep":20000}
+  growth(encoder):  {"lambdaPerStep":0.000032827719290254274,"lambdaPerSecond":0.016413859645127135,"doublingSteps":21114.691959904852,"samples":200,"fromStep":100,"toStep":20000}
+
+hp4-logo-on: 20000 steps
+  prepared records: max diff 0 (lengths 9440/9440)
+  final entity-record max abs diff 8.036e-4 at e119.ExtruderComponent.extrusions[15006].pos[1]
+  final body position diff 3.351e-9 m, encoder 6.720e-7 rad, quaternion 6.710e-7 rad
+  peak body position 6.899e-4 m, peak encoder 8.248e-2 rad, peak quaternion 8.248e-2 rad
+  events: {"topologyFirstDifference":null,"topologyChanges":{"native":1,"wasm":1},"missedStepDifference":null,"quaternionSignFlips":0,"lengthMismatch":null,"nonFinite":null}
+  growth(position): {"lambdaPerStep":0.0002170107032177976,"lambdaPerSecond":0.10850535160889879,"doublingSteps":3194.069095588731,"samples":200,"fromStep":100,"toStep":20000}
+  growth(encoder):  {"lambdaPerStep":0.00018395729786565676,"lambdaPerSecond":0.09197864893282838,"doublingSteps":3767.978702677769,"samples":191,"fromStep":100,"toStep":20000}
+
+hp4-logo-closedloop: 20000 steps
+  prepared records: max diff 0 (lengths 9440/9440)
+  final entity-record max abs diff 7.317e-4 at e119.ExtruderComponent.extrusions[14921].pos[1]
+  final body position diff 4.023e-8 m, encoder 1.061e-5 rad, quaternion 1.061e-5 rad
+  peak body position 4.178e-4 m, peak encoder 5.318e-2 rad, peak quaternion 5.315e-2 rad
+  events: {"topologyFirstDifference":null,"topologyChanges":{"native":1,"wasm":1},"missedStepDifference":null,"quaternionSignFlips":0,"lengthMismatch":null,"nonFinite":null}
+  growth(position): {"lambdaPerStep":0.0003797502901099884,"lambdaPerSecond":0.18987514505499417,"doublingSteps":1825.2709704558401,"samples":200,"fromStep":100,"toStep":20000}
+  growth(encoder):  {"lambdaPerStep":0.00036511653579252896,"lambdaPerSecond":0.18255826789626448,"doublingSteps":1898.4272488655895,"samples":193,"fromStep":100,"toStep":20000}
+
+fork hp4 layering=true: 500 one-step comparisons, max entity 1.634e-10, path 1.923e-12, encoder 3.771e-13
+  per-sample: [{"step":25,"entity":3.3326154336155156e-11,"path":8.012479568719755e-13,"encoder":6.665241275571887e-14},{"step":50,"entity":1.4810524334718522e-11,"path":3.4372504842394846e-13,"encoder":2.962127071404197e-14},{"step":75,"entity":2.969890999793279e-11,"path":6.018519016492974e-13,"encoder":5.928590951498336e-14},{"step":100,"entity":3.3367086871294305e-11,"path":2.865485626557529e-13,"encoder":7.72715225139109e-14},{"step":125,"entity":1.4775507206632454e-11,"path":3.254063685176334e-13,"encoder":3.1530333899354446e-14},{"step":150,"entity":2.5925039892626955e-11,"path":8.106848525812893e-13,"encoder":5.995204332975845e-14},{"step":175,"entity":1.4873435816298297e-11,"path":8.897327319346005e-13,"encoder":2.9753977059954195e-14},{"step":200,"entity":2.0035528791595425e-11,"path":5.107858580544189e-13,"encoder":4.618527782440651e-14},{"step":225,"entity":4.157690858264118e-11,"path":6.661338147750939e-16,"encoder":9.615919172034637e-14},{"step":250,"entity":8.353007174832783e-11,"path":8.103240300982861e-14,"encoder":1.9287349495300532e-13},{"step":275,"entity":4.591882429849647e-13,"path":1.3877787807814457e-17,"encoder":8.881784197001252e-16},{"step":300,"entity":8.402167850363185e-13,"path":1.0639059078165758e-14,"encoder":1.7763568394002505e-15},{"step":325,"entity":2.327027459614328e-13,"path":8.916478666520788e-16,"encoder":1.7763568394002505e-15},{"step":350,"entity":1.6697754290362354e-13,"path":6.522560269672795e-16,"encoder":8.881784197001252e-16},{"step":375,"entity":2.3003821070233244e-13,"path":6.800116025829084e-16,"encoder":1.7763568394002505e-15},{"step":400,"entity":6.737777002996381e-11,"path":3.986533325672781e-13,"encoder":1.5526468999382814e-13},{"step":425,"entity":2.504663143554353e-13,"path":4.225786387479502e-14,"encoder":2.220446049250313e-16},{"step":450,"entity":9.25370891025068e-11,"path":1.2490009027033011e-15,"encoder":1.8501866705378234e-13},{"step":475,"entity":2.5590196628400008e-11,"path":1.4539758286247206e-13,"encoder":5.917488721252084e-14},{"step":500,"entity":6.426859044950106e-12,"path":3.404221349256886e-14,"encoder":1.5987211554602254e-14}]
+
+fork hp3 layering=false: 500 one-step comparisons, max entity 1.037e-12, path 2.389e-12, encoder 1.332e-15
+  per-sample: [{"step":25,"entity":8.673617379884035e-19,"path":3.469446951953614e-18,"encoder":8.673617379884035e-19},{"step":50,"entity":2.7159264420761886e-17,"path":2.220446049250313e-16,"encoder":0},{"step":75,"entity":2.842170943040401e-14,"path":1.5543122344752192e-15,"encoder":5.551115123125783e-17},{"step":100,"entity":2.7533531010703882e-14,"path":1.7763568394002505e-15,"encoder":5.551115123125783e-17},{"step":125,"entity":2.7977620220553945e-14,"path":1.7763568394002505e-15,"encoder":5.551115123125783e-17},{"step":150,"entity":5.5067062021407764e-14,"path":3.552713678800501e-15,"encoder":1.1102230246251565e-16},{"step":175,"entity":7.105427357601002e-15,"path":1.9984014443252818e-15,"encoder":2.220446049250313e-16},{"step":200,"entity":8.326672684688674e-16,"path":3.469446951953614e-18,"encoder":1.734723475976807e-18},{"step":225,"entity":3.552713678800501e-14,"path":3.469446951953614e-18,"encoder":0},{"step":250,"entity":5.595524044110789e-14,"path":1.0880185641326534e-14,"encoder":2.220446049250313e-16},{"step":275,"entity":5.639932965095795e-14,"path":7.105427357601002e-15,"encoder":1.1102230246251565e-16},{"step":300,"entity":2.2248869413488137e-13,"path":1.7918999617450027e-13,"encoder":4.440892098500626e-16},{"step":325,"entity":2.220446049250313e-16,"path":3.469446951953614e-18,"encoder":0},{"step":350,"entity":1.1057821325266559e-13,"path":6.8833827526759706e-15,"encoder":2.220446049250313e-16},{"step":375,"entity":1.6653345369377348e-13,"path":1.0658141036401503e-14,"encoder":2.220446049250313e-16},{"step":400,"entity":2.220446049250313e-16,"path":3.469446951953614e-18,"encoder":0},{"step":425,"entity":2.220446049250313e-13,"path":1.3988810110276972e-14,"encoder":6.661338147750939e-16},{"step":450,"entity":1.6653345369377348e-13,"path":1.0880185641326534e-14,"encoder":4.440892098500626e-16},{"step":475,"entity":2.7755575615628914e-13,"path":1.7763568394002505e-14,"encoder":4.440892098500626e-16},{"step":500,"entity":8.881784197001252e-16,"path":3.469446951953614e-18,"encoder":0}]
+
+perturbation scaling (HP4 logo, native control vs native twins):
+  step 1: 1e-15 -> entity 1.00e-15, pos 6.94e-18, enc 6.11e-16 | 1e-12 -> entity 1.00e-12, pos 2.01e-15, enc 6.11e-16 | 1e-9 -> entity 1.00e-9, pos 2.00e-12, enc 2.91e-13
+  step 100: 1e-15 -> entity 5.75e-11, pos 7.56e-15, enc 1.36e-12 | 1e-12 -> entity 5.72e-11, pos 6.78e-15, enc 1.51e-12 | 1e-9 -> entity 8.71e-11, pos 5.77e-15, enc 1.39e-12
+  step 200: 1e-15 -> entity 7.01e-11, pos 8.21e-15, enc 1.84e-12 | 1e-12 -> entity 1.18e-10, pos 1.24e-14, enc 3.50e-12 | 1e-9 -> entity 5.58e-11, pos 7.65e-15, enc 2.10e-12
+  step 300: 1e-15 -> entity 8.30e-7, pos 2.18e-11, enc 2.20e-9 | 1e-12 -> entity 5.08e-7, pos 1.48e-11, enc 1.81e-9 | 1e-9 -> entity 6.83e-7, pos 2.12e-11, enc 2.56e-9
+  step 400: 1e-15 -> entity 1.47e-2, pos 2.07e-6, enc 2.52e-4 | 1e-12 -> entity 7.31e-3, pos 9.59e-7, enc 1.14e-4 | 1e-9 -> entity 1.09e-2, pos 1.28e-6, enc 1.53e-4
+  step 500: 1e-15 -> entity 1.00e+0, pos 9.65e-5, enc 1.18e-2 | 1e-12 -> entity 1.01e+0, pos 3.07e-5, enc 3.80e-3 | 1e-9 -> entity 1.00e+0, pos 4.67e-5, enc 6.00e-3
+  step 600: 1e-15 -> entity 1.05e+0, pos 1.22e-4, enc 1.43e-2 | 1e-12 -> entity 1.29e+0, pos 4.41e-5, enc 5.44e-3 | 1e-9 -> entity 1.00e+0, pos 1.04e-4, enc 1.27e-2
+  step 700: 1e-15 -> entity 9.20e-6, pos 2.49e-10, enc 6.91e-8 | 1e-12 -> entity 1.14e-5, pos 3.10e-10, enc 8.61e-8 | 1e-9 -> entity 5.04e-6, pos 1.58e-10, enc 4.11e-8
+  step 800: 1e-15 -> entity 8.49e-7, pos 2.47e-10, enc 4.79e-8 | 1e-12 -> entity 1.05e-6, pos 3.07e-10, enc 5.99e-8 | 1e-9 -> entity 4.65e-7, pos 1.57e-10, enc 2.95e-8
+  step 900: 1e-15 -> entity 4.18e-7, pos 2.21e-10, enc 9.48e-8 | 1e-12 -> entity 5.18e-7, pos 2.75e-10, enc 1.18e-7 | 1e-9 -> entity 2.29e-7, pos 1.40e-10, enc 5.53e-8
+  step 1000: 1e-15 -> entity 2.09e-4, pos 3.93e-8, enc 4.48e-6 | 1e-12 -> entity 2.57e-4, pos 4.82e-8, enc 5.49e-6 | 1e-9 -> entity 1.13e-4, pos 2.12e-8, enc 2.42e-6
+  step 1100: 1e-15 -> entity 1.23e+0, pos 7.04e-5, enc 8.15e-3 | 1e-12 -> entity 1.23e+0, pos 7.02e-5, enc 8.13e-3 | 1e-9 -> entity 1.19e+0, pos 5.24e-5, enc 6.13e-3
+  step 1200: 1e-15 -> entity 6.86e-2, pos 1.52e-6, enc 1.35e-4 | 1e-12 -> entity 1.56e-1, pos 2.85e-6, enc 2.92e-4 | 1e-9 -> entity 2.56e-2, pos 8.11e-7, enc 8.53e-5
+  step 1300: 1e-15 -> entity 1.32e-6, pos 2.23e-10, enc 9.22e-8 | 1e-12 -> entity 1.61e-6, pos 2.78e-10, enc 1.15e-7 | 1e-9 -> entity 6.60e-7, pos 1.44e-10, enc 5.31e-8
+  step 1400: 1e-15 -> entity 3.36e-5, pos 1.03e-8, enc 1.13e-6 | 1e-12 -> entity 4.22e-5, pos 1.29e-8, enc 1.41e-6 | 1e-9 -> entity 1.73e-5, pos 5.33e-9, enc 5.83e-7
+  step 1500: 1e-15 -> entity 1.11e-6, pos 2.42e-10, enc 4.58e-8 | 1e-12 -> entity 1.37e-6, pos 3.01e-10, enc 5.73e-8 | 1e-9 -> entity 5.70e-7, pos 1.53e-10, enc 2.92e-8
+
+PASS cross-backend: no topology, joint-count, missed-step or finite-state divergence; differences are quantitative only

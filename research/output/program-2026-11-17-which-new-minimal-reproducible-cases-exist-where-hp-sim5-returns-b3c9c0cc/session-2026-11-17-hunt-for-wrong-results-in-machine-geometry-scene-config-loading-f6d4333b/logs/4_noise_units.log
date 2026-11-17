@@ -1,0 +1,11 @@
+harness deg/mm = 0.763944
+correct deg/mm A-D = 19.480565 (ratio 25.50x)
+correct deg/mm I   = 38.961130 (ratio 51.00x)
+noise labelled 1 mm -> 0.764 deg -> 0.0392 mm of line (A-D)
+noise labelled 3 mm -> 2.292 deg -> 0.1176 mm of line (A-D)
+noise labelled 5 mm -> 3.820 deg -> 0.1961 mm of line (A-D)
+bias labelled +/-5 mm -> +/-3.820 deg -> +/-0.1961 mm of line (A-D)
+bias labelled +/-2.5 mm -> +/-1.910 deg -> +/-0.0980 mm of line (A-D)
+observed add_gaussian_noise(5 mm) motor-degree sigma: 3.969 deg = 0.2038 mm of line (label: 5 mm)
+observed add_bias(5/-5/2.5/-2.5/0 mm) motor-degree offsets: 3.820, -3.820, 1.910, -1.910, 0.000 deg = 0.1961, -0.1961, 0.0980, -0.0980, 0.0000 mm of line
+FAIL: noise/bias amplitudes are off by 25.50x for the shipped dataset config

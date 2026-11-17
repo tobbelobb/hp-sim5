@@ -1,0 +1,8 @@
+BUG  |rotateAroundAxis(0, pi/2) v|: expected 3.741657e+0 actual 2.291104e-16 |err| 3.742e+0 tol 3.7e-12
+BUG  rotateAroundAxis(0, pi/2) v .x: expected 1.000000e+0 actual 6.123234e-17 |err| 1.000e+0 tol 1.0e-12
+BUG  rotateAroundAxis(0, pi/2) v .y: expected 2.000000e+0 actual 1.224647e-16 |err| 2.000e+0 tol 1.0e-12
+BUG  rotateAroundAxis(0, pi/2) v .z: expected 3.000000e+0 actual 1.836970e-16 |err| 3.000e+0 tol 1.0e-12
+BUG  rotateAroundAxis(0, pi) v .x: expected 1.000000e+0 actual -1.000000e+0 |err| 2.000e+0 tol 1.0e-12
+BUG  rotateAroundAxis(subnormal axis) is finite: NaN, NaN, NaN
+
+FAILED: 6 assertion(s). rotateAroundAxis collapses a vector when the axis normalizes to zero, so it is not a rotation (not length preserving).

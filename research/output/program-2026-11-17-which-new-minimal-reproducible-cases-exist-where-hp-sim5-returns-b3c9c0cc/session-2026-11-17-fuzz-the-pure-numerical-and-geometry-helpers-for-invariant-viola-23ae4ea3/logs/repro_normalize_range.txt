@@ -1,0 +1,9 @@
+quaternion normalize((1e200,0,0,1)): (0, 0, 0, 0) |q|^2 = 0
+  rotating (1,2,3) with it gives (0, 0, 0) length 0
+setFromAxisAngle((1e200,0,0), 0.5).normalize(): (0, 0, 0, 0) |q|^2 = 0
+vector normalize((1e-310,0,0)): (Infinity, NaN, NaN) finite=false length=Infinity
+
+  - quaternion overflow: |q|^2 = 0, expected 1
+  - setFromAxisAngle with a large unnormalized axis normalizes to |q|^2 = 0
+  - vector underflow: normalize() returned (Infinity, NaN, NaN)
+FAILED: 3 normalize() assertion(s). normalize() must return a unit vector for finite nonzero input; overflow/underflow of the reciprocal silently escapes the l === 0 guard.

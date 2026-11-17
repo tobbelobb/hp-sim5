@@ -1,0 +1,9 @@
+Anchor: metres=2,1,0 millimetres=2000,1000,0 ratio=1000.0
+  BUG: same USD geometry differs by 2233831.9 mm
+Wheel: metres=0.5,0,0.2 millimetres=500,0,200 ratio=1000.0
+  BUG: same USD geometry differs by 537978.0 mm
+SpoolA: metres=-1,0,0 millimetres=-1000,0,0 ratio=1000.0
+  BUG: same USD geometry differs by 999000.0 mm
+Corner: metres=1,-1,0 millimetres=1000,-1000,0 ratio=1000.0
+  BUG: same USD geometry differs by 1412799.3 mm
+FAIL: metersPerUnit is ignored; a valid millimetre scene loads 1000x too large

@@ -1,0 +1,89 @@
+=== 1_xform_order ===
+exit=1  (logs/1_xform_order.log)
+   sim=[-0.34791, -0.197402, 0.1] usd=[-0.120955, -0.185304, 0.34791]
+public/usd_scenes/hp4_worn_bearings.usda WheelD0_right_bottom [Wheel] error=329.2 mm
+   translate=[-0.34491, -0.202598, 0.1] order=['xformOp:rotateXYZ', 'xformOp:translate']
+   sim=[-0.34491, -0.202598, 0.1] usd=[-0.125455, -0.187902, 0.34491]
+80 prims disagree with USD by > 1.0 mm
+FAIL: authored xformOpOrder and simulator placement disagree
+
+=== 1b_xform_minimal ===
+exit=1  (logs/1b_xform_minimal.log)
+loader position: (1, 0, 0)
+USD position:    (0, 0, -1)
+error: 1414.2 mm
+FAIL: xformOp:translate is not composed through the declared rotateXYZ
+
+=== 2_missing_attr ===
+exit=1  (logs/2_missing_attr.log)
+orphan JointCR_0: entityA=undefined attachmentA=(-0.0410, 0.0230, 0.0000) distance_from_spoolC_centre=2.4839 m
+first physics step error: Missing cable endpoint for joint 29
+BUG: SpoolC was skipped by the loader
+BUG: cable joints reference a nonexistent body; max cable-end displacement 2.538 m
+BUG: scene loaded without error but the first step threw: Missing cable endpoint for joint 29
+FAIL: a missing non-geometric attribute silently removed a motor and left dangling joints
+
+=== 3_meters_per_unit ===
+exit=1  (logs/3_meters_per_unit.log)
+  BUG: same USD geometry differs by 537978.0 mm
+SpoolA: metres=-1,0,0 millimetres=-1000,0,0 ratio=1000.0
+  BUG: same USD geometry differs by 999000.0 mm
+Corner: metres=1,-1,0 millimetres=1000,-1000,0 ratio=1000.0
+  BUG: same USD geometry differs by 1412799.3 mm
+FAIL: metersPerUnit is ignored; a valid millimetre scene loads 1000x too large
+
+=== 4_noise_units ===
+exit=1  (logs/4_noise_units.log)
+noise labelled 5 mm -> 3.820 deg -> 0.1961 mm of line (A-D)
+bias labelled +/-5 mm -> +/-3.820 deg -> +/-0.1961 mm of line (A-D)
+bias labelled +/-2.5 mm -> +/-1.910 deg -> +/-0.0980 mm of line (A-D)
+observed add_gaussian_noise(5 mm) motor-degree sigma: 3.969 deg = 0.2038 mm of line (label: 5 mm)
+observed add_bias(5/-5/2.5/-2.5/0 mm) motor-degree offsets: 3.820, -3.820, 1.910, -1.910, 0.000 deg = 0.1961, -0.1961, 0.0980, -0.0980, 0.0000 mm of line
+FAIL: noise/bias amplitudes are off by 25.50x for the shipped dataset config
+
+=== 5_forward_roundtrip ===
+exit=0  (logs/5_forward_roundtrip.log)
+  worst hp3 mode1 ok=1 err=0.000339776 mm truth=[-770.36291119  222.06245826 -192.28743086] got=[-770.3630981  222.0622406 -192.2876129]
+  worst hp5 mode1 ok=0 err=0.00032114 mm truth=[ 548.58942468 -753.70788082  839.40361453] got=[ 548.5892944 -753.7077026  839.4033813]
+  worst hp3 mode1 ok=0 err=0.000314204 mm truth=[-741.01589211  370.85279126 1121.48568521] got=[-741.0160522  370.8525696 1121.48584  ]
+  worst hp3 mode1 ok=0 err=0.000301309 mm truth=[ 695.5096516  -729.6908264  -255.87939799] got=[ 695.5095215 -729.6907349 -255.8796539]
+  worst hp3 mode1 ok=0 err=0.00029885 mm truth=[-870.90173603 -899.10198069 1374.67565789] got=[-870.9017334 -899.1018066 1374.675415 ]
+PASS: all converged probes within 0.02 mm and all non-converged probes are outside hp_reachable
+
+=== 6_catalog_checks ===
+exit=0  (logs/6_catalog_checks.log)
+checked 11 scenes, 72 anchor offsets, 46 spool radii
+PASS: catalogued scenes, anchors, spool radii and Klipper configs agree
+
+=== 7_scene_loads ===
+exit=0  (logs/7_scene_loads.log)
+{"scene":"public/usd_scenes/slideprinter_multi_unit.usda","authoredPaths":6,"worldPaths":6,"duplicatePrimNames":[],"issues":[]}
+{"scene":"public/usd_scenes/slideprinter.usda","authoredPaths":3,"worldPaths":3,"duplicatePrimNames":[],"issues":[]}
+{"scene":"public/usd_scenes/slideprinter_hexagon.usda","authoredPaths":6,"worldPaths":6,"duplicatePrimNames":[],"issues":[]}
+{"scene":"public/usd_scenes/slideprinter_single_pinholes.usda","authoredPaths":3,"worldPaths":3,"duplicatePrimNames":[],"issues":[]}
+{"scene":"public/usd_scenes/hp5.usda","authoredPaths":12,"worldPaths":12,"duplicatePrimNames":[],"issues":[]}
+{"scene":"public/usd_scenes/hp5_pulley_reduced.usda","authoredPaths":12,"worldPaths":12,"duplicatePrimNames":[],"issues":[]}
+
+=== 8_transform_audit ===
+exit=1  (logs/8_transform_audit.log)
+hp4.usda WheelD2_left_top ['Wheel']: pos_err=2943.5 mm ang_err=0.00 deg order=['xformOp:rotateXYZ', 'xformOp:translate']
+hp4.usda WheelD2_right_top ['Wheel']: pos_err=2935.3 mm ang_err=0.00 deg order=['xformOp:rotateXYZ', 'xformOp:translate']
+hp4.usda WheelD2_left_bottom ['Wheel']: pos_err=813.2 mm ang_err=0.00 deg order=['xformOp:rotateXYZ', 'xformOp:translate']
+hp4.usda WheelD2_right_bottom ['Wheel']: pos_err=811.7 mm ang_err=0.00 deg order=['xformOp:rotateXYZ', 'xformOp:translate']
+81 bodies disagree
+FAIL: loader transform differs from composed USD transform
+
+=== 9_forward_tests ===
+exit=0  (logs/9_forward_tests.log)
+hp4/flex: 221 solves, workspace max 0.000482431 mm, mean 2.35 iterations / 11 us, max cost 0.1505; within .02 mm of anchor: 4 probes, 2 nonconverged, max 0.422794 mm
+hp4/rigid: 221 solves, workspace max 0.000312938 mm, mean 1 iterations / 0.38 us, max cost 1.109e-07; within .02 mm of anchor: 4 probes, 0 nonconverged, max 8.95871e-05 mm
+hp5/flex: 226 solves, workspace max 0.000452463 mm, mean 2.21 iterations / 20 us, max cost 0.0001121; within .02 mm of anchor: 5 probes, 0 nonconverged, max 0.00495875 mm
+hp5/rigid: 226 solves, workspace max 0.000301165 mm, mean 1 iterations / 0.88 us, max cost 1.339e-07; within .02 mm of anchor: 5 probes, 0 nonconverged, max 3.78317e-05 mm
+hp5_reduced/flex: 226 solves, workspace max 0.0131883 mm, mean 2.54 iterations / 15 us, max cost 0.1813; within .02 mm of anchor: 5 probes, 3 nonconverged, max 0.153136 mm
+hp5_reduced/rigid: 226 solves, workspace max 0.000298506 mm, mean 1 iterations / 0.445 us, max cost 1.416e-07; within .02 mm of anchor: 5 probes, 0 nonconverged, max 3.78317e-05 mm
+
+=== 10_python_geometry ===
+exit=0  (logs/10_python_geometry.log)
+.........                                                                [100%]
+9 passed in 0.72s
+

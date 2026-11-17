@@ -1,0 +1,12 @@
+PASS  hp3 layering=true: steps=300 nonFinite=0 minTension=0.000 maxTension=0.355 maxRelativeMaterialDrift=1.03e-15 (tol 1e-9)
+PASS  hp3 layering=false: steps=300 nonFinite=0 minTension=0.000 maxTension=0.343 maxRelativeMaterialDrift=8.26e-16 (tol 1e-9)
+PASS  hp4 layering=true: steps=300 nonFinite=0 minTension=0.000 maxTension=0.071 maxRelativeMaterialDrift=7.48e-15 (tol 1e-9)
+PASS  hp4 layering=false: steps=300 nonFinite=0 minTension=0.000 maxTension=0.072 maxRelativeMaterialDrift=1.12e-14 (tol 1e-9)
+PASS  hp4_worn_bearings layering=true: steps=300 nonFinite=0 minTension=0.000 maxTension=0.086 maxRelativeMaterialDrift=2.97e-15 (tol 1e-9)
+PASS  hp4_worn_bearings layering=false: steps=300 nonFinite=0 minTension=0.000 maxTension=0.081 maxRelativeMaterialDrift=4.99e-15 (tol 1e-9)
+PASS  hp5 layering=true: steps=300 nonFinite=0 minTension=0.000 maxTension=0.331 maxRelativeMaterialDrift=1.18e-15 (tol 1e-9)
+PASS  hp5 layering=false: steps=300 nonFinite=0 minTension=0.000 maxTension=0.287 maxRelativeMaterialDrift=6.76e-16 (tol 1e-9)
+PASS  slideprinter_single_pinholes layering=true: steps=300 nonFinite=0 minTension=0.000 maxTension=17.794 maxRelativeMaterialDrift=7.79e-16 (tol 1e-9)
+PASS  slideprinter_single_pinholes layering=false: steps=300 nonFinite=0 minTension=0.000 maxTension=18.488 maxRelativeMaterialDrift=8.89e-16 (tol 1e-9)
+
+all scene invariants hold

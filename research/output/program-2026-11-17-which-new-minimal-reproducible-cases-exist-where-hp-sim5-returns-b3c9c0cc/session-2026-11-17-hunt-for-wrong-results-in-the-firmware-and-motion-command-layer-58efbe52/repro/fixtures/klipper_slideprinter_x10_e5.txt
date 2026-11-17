@@ -1,0 +1,36 @@
+allocate_oids count=10
+config_digital_out oid=4 pin=gpiochip1/gpio29 value=0 default_value=0 max_duration=150000000
+set_digital_out_pwm_cycle oid=4 cycle_ticks=5000000
+config_stepper oid=0 step_pin=gpiochip2/gpio0 dir_pin=gpiochip2/gpio1 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=5 pin=gpiochip2/gpio2 value=0 default_value=0 max_duration=0
+config_stepper oid=1 step_pin=gpiochip2/gpio3 dir_pin=gpiochip2/gpio4 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=6 pin=gpiochip2/gpio5 value=0 default_value=0 max_duration=0
+config_stepper oid=2 step_pin=gpiochip2/gpio6 dir_pin=gpiochip2/gpio7 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=7 pin=gpiochip2/gpio8 value=0 default_value=0 max_duration=0
+config_digital_out oid=8 pin=gpiochip1/gpio27 value=0 default_value=0 max_duration=150000000
+set_digital_out_pwm_cycle oid=8 cycle_ticks=5000000
+config_stepper oid=3 step_pin=gpiochip1/gpio24 dir_pin=gpiochip1/gpio25 invert_step=0 step_pulse_ticks=100
+config_digital_out oid=9 pin=gpiochip1/gpio26 value=0 default_value=0 max_duration=0
+finalize_config crc=2229144133
+queue_digital_out oid=4 clock=10000000 on_ticks=0
+queue_digital_out oid=8 clock=10000000 on_ticks=0
+queue_digital_out oid=5 clock=12500000 on_ticks=1
+queue_digital_out oid=6 clock=12500000 on_ticks=1
+queue_digital_out oid=7 clock=12500000 on_ticks=1
+queue_digital_out oid=9 clock=12500000 on_ticks=1
+set_next_step_dir oid=1 dir=0
+queue_step oid=1 interval=12753378 count=1 add=0
+set_next_step_dir oid=2 dir=1
+queue_step oid=2 interval=12753377 count=1 add=0
+set_next_step_dir oid=3 dir=1
+queue_step oid=3 interval=12632091 count=1 add=0
+queue_step oid=3 interval=107068 count=4 add=-1185
+queue_step oid=2 interval=340050 count=141 add=-3
+queue_step oid=1 interval=340058 count=146 add=4
+queue_step oid=3 interval=104689 count=472 add=0
+queue_step oid=2 interval=339589 count=5 add=0
+queue_step oid=3 interval=137706 count=1 add=0
+queue_digital_out oid=5 clock=67766666 on_ticks=0
+queue_digital_out oid=6 clock=67766666 on_ticks=0
+queue_digital_out oid=7 clock=67766666 on_ticks=0
+queue_digital_out oid=9 clock=67766666 on_ticks=0

@@ -1,0 +1,480 @@
+{
+  "program": "program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc",
+  "session": "session-2026-11-17-fuzz-the-pure-numerical-and-geometry-helpers-for-invariant-viola-23ae4ea3",
+  "repository": "/home/torbjorn/repos/hp-sim5",
+  "revision": "c2450975",
+  "date": "2026-11-17",
+  "environment": {
+    "node": "v24.14.1",
+    "python": ".venv/bin/python 3.12.3",
+    "python_packages": "numpy 2.4.3, scipy 1.17.1, pxr (OpenUSD) 26.3",
+    "source_files_modified": "none"
+  },
+  "commands": {
+    "all": "cd <session-dir> && ./run_all.sh   (finishes in < 1 s)",
+    "fuzz": "node fuzz_invariants.mjs",
+    "finding_1": "node repro_rotate_zero_axis.mjs",
+    "finding_2": "node repro_normalize_range.mjs",
+    "reference": "node emit_js_reference.mjs && ../../../../.venv/bin/python check_with_numpy_pxr.py",
+    "limitations": "node probe_limitations.mjs",
+    "logs": "logs/*.txt"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "title": "Vector3.rotateAroundAxis() is not an isometry when the axis normalizes to zero: it returns v*cos(angle)",
+      "status": "genuine, latent (no live call site)",
+      "class": "numerical helper / degenerate input",
+      "file": "src/js/cable_joints_3d/vector3.js:32-45",
+      "repro": "repro_rotate_zero_axis.mjs",
+      "command": "node repro_rotate_zero_axis.mjs",
+      "exit_nonzero_when_bug_present": true,
+      "expected": "A rotation of v by any axis the method can normalize is length preserving; for a zero axis the natural fallback (used by every other zero-normal guard in the repo) is the identity, i.e. the input vector.",
+      "actual": "axis.clone().normalize() leaves the zero axis at (0,0,0); the Rodrigues terms dot=0 and cross=0, so the result is v*cos(angle).",
+      "measurements": {
+        "v": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "zero_axis_pi_over_2": {
+          "result": [
+            6.123233995736766e-17,
+            1.2246467991473532e-16,
+            1.8369701987210297e-16
+          ],
+          "result_length": 2.291104371109379e-16,
+          "input_length": 3.7416573867739413,
+          "abs_error": 3.7416573867739413,
+          "relative_error": 1.0
+        },
+        "zero_axis_pi": {
+          "result_x": -1.0,
+          "error_x": 2.0
+        },
+        "subnormal_axis_1e-310": {
+          "result": [
+            "NaN",
+            "NaN",
+            "NaN"
+          ],
+          "cause": "1/|axis| overflows to Infinity inside Vector3.normalize()"
+        }
+      },
+      "tolerance": "1e-12 absolute per component, 1e-12 relative for the length",
+      "why_a_bug": "A rotation matrix must satisfy |R v| = |v|. The method performs its own axis normalization, so it advertises support for arbitrary nonzero axis vectors, yet the zero axis silently produces a scaled vector instead of a rotation, an exception, or a warning. The failure is 100% of the vector magnitude, not floating-point noise.",
+      "strongest_alternative_explanation": "No live call site in src/: cable_joints_core.js:485 _rotateAroundAxis is unused and its axis comes from a plane normal guarded against zero, so no current simulation result depends on this. The only callers anywhere are archived research prototypes under output/research/sessions/2026-10-20-interactive-research-62300644/*-core.mjs (also passing guarded plane normals). That makes F1 latent, but it remains a genuine defect of a public helper any new caller can hit.",
+      "reachability": "No live caller. `grep -rn rotateAroundAxis src hp-sim-3d tests` finds only the definition; cable_joints_core.js:485 _rotateAroundAxis is unused. Archived prototypes under output/research/sessions/ call it."
+    },
+    {
+      "id": "F2",
+      "title": "Quaternion.normalize() returns the zero quaternion and Vector3.normalize() returns NaN outside the representable length range",
+      "status": "genuine, latent (no plausible call site reaches the range)",
+      "class": "numerical helper / range overflow",
+      "files": [
+        "src/js/cable_joints_3d/quaternion.js:69-84",
+        "src/js/cable_joints_3d/vector3.js:46"
+      ],
+      "repro": "repro_normalize_range.mjs",
+      "command": "node repro_normalize_range.mjs",
+      "exit_nonzero_when_bug_present": true,
+      "expected": "normalize() returns a unit vector for every finite nonzero input (the only documented/implemented special case is length 0, which returns the identity quaternion).",
+      "actual": "lengthSq overflows to Infinity for any component >= ~1e154, so l = 1/Infinity = 0 and every component becomes 0. For vectors whose length is subnormal (<= ~2.2e-308), 1/l overflows to Infinity and the components become Infinity/NaN.",
+      "measurements": {
+        "quaternion_1e200": {
+          "input": [
+            1e+200,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalized": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "length_sq": 0.0,
+          "consequence": "Quaternion(0,0,0,0).transformVector((1,2,3)) = (0,0,0), length 0"
+        },
+        "setFromAxisAngle_large_axis": {
+          "input": "setFromAxisAngle((1e200,0,0), 0.5).normalize()",
+          "result": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "vector_1e-310": {
+          "input": [
+            1e-310,
+            0.0,
+            0.0
+          ],
+          "normalized": [
+            "Infinity",
+            "NaN",
+            "NaN"
+          ],
+          "length": "Infinity"
+        }
+      },
+      "tolerance": "|q|^2 = 1 within 1e-12; all components finite",
+      "why_a_bug": "normalize() silently returns a value that is not a rotation (the zero quaternion) or not a number, instead of a unit value or an error. The defect is fixable with a plain two-step rescale (divide by max|component| before squaring), so it is not an inherent limit of doubles.",
+      "strongest_alternative_explanation": "All quaternions in the simulation are built from products of unit quaternions and renormalized, so |q| stays within a few ulp of 1 and the failing band is unreachable in practice; the underflow case needs a vector of length 1e-310, which no position in the scene is. This is why the finding is reported as latent, and no simulation result is affected.",
+      "reachability": "No reachable path found: setFromAxisAngle's axis argument is documented as normalized and every call site passes a normalized axis; all quaternion products stay unit length."
+    }
+  ],
+  "negative_results": [
+    {
+      "invariant": "|q1*q2|^2 = 1 for unit quaternions",
+      "worst": 1.11e-15,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "q * q^-1 = identity",
+      "worst": 6.66e-16,
+      "tolerance": 1e-15
+    },
+    {
+      "invariant": "rotate then unrotate recovers the input",
+      "worst": 1.599e-14,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "quaternion rotation preserves |v|",
+      "worst": 8.882e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "(a*b) rotating v = a rotating (b rotating v)",
+      "worst": 2.289e-15,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "transformVector <=> explicit q (0,v) q^-1",
+      "worst": 0.0,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "transformVectorInto aliasing (v == result)",
+      "worst": 0.0,
+      "tolerance": 1e-15
+    },
+    {
+      "invariant": "rotationMatrixFromQuaternion orthonormal (R^T R = I)",
+      "worst": 2.442e-15,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "det(rotationMatrixFromQuaternion) = +1",
+      "worst": 2.22e-15,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "rotationMatrixFromQuaternion / transformVector vs numpy and pxr",
+      "worst": 1.33e-15,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "USD xformOp:rotate{XYZ,XZY,YXZ,YZX,ZXY,ZYX} reader vs pxr",
+      "worst": 8.88e-16,
+      "tolerance": "1e-5",
+      "note": "float32-authored angles; measured 1e-16"
+    },
+    {
+      "invariant": "Vector3.cross perpendicular to both inputs",
+      "worst": 4.44e-16,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "Vector3.rotateAroundAxis = equivalent quaternion rotation",
+      "worst": 1.024e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "Vector3.angleTo = atan2(|axb|, a.b)",
+      "worst": 1.258e-14,
+      "tolerance": 1e-08
+    },
+    {
+      "invariant": "_tangentPointCircle tangent point on the circle",
+      "worst": 3.708e-14,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "_tangentPointCircle tangent perpendicular to radius",
+      "worst": 8.076e-13,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "_tangentPointCircle travel direction = wrap velocity",
+      "worst": 3.73e-14,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "tangentFromCircleToCircle common tangent, both ends (10552 cases)",
+      "worst": 8.99e-15,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "signedArcLengthOnWheel = wrapped atan2 difference",
+      "worst": 2.665e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "signedArcLengthOnWheel force_positive >= 0",
+      "worst": 0.0,
+      "tolerance": 1e-15
+    },
+    {
+      "invariant": "cw + ccw arcs = 2*pi*r",
+      "worst": 0.0,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "rightOfLine = (2D cross < 0), including collinear",
+      "worst": 0,
+      "tolerance": 0
+    },
+    {
+      "invariant": "rightOfPlane = (n.(p1-p0)x(x-p0) < 0)",
+      "worst": 0,
+      "tolerance": 0
+    },
+    {
+      "invariant": "closestPointOnSegment = closed form",
+      "worst": 0.0,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "lineSegmentSphereIntersection = closed form (20000 cases)",
+      "worst": 0,
+      "tolerance": 0
+    },
+    {
+      "invariant": "point-sphere tangent point radius",
+      "worst": 5.7e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "point-sphere tangent point lies in the wrap plane",
+      "worst": 5.08e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "point-sphere travel direction = wrap velocity",
+      "worst": 1.52e-14,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "sphere-sphere tangent point on A / on B",
+      "worst": 6.75e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "sphere-sphere span tangent at both ends",
+      "worst": 5.285e-14,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "3D arc length = projected 2D arc length",
+      "worst": 1.776e-15,
+      "tolerance": 1e-10
+    },
+    {
+      "invariant": "world inertia tensor symmetric",
+      "worst": 8.88e-16,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "world inertia tensor positive definite",
+      "worst": 0.0,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "invertMatrix3(W) * W = I (SPD)",
+      "worst": 5.329e-15,
+      "tolerance": 1e-11
+    },
+    {
+      "invariant": "transformInertiaTensorToWorld = R I R^T (vs numpy)",
+      "worst": 3.553e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "parallelAxisTensor sum = direct point-mass inertia",
+      "worst": 7.105e-15,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "triangle inequality on principal moments",
+      "worst": 3.553e-15,
+      "tolerance": 1e-14
+    },
+    {
+      "invariant": "effectiveInertiaAboutWorldAxis = u^T R I R^T u",
+      "worst": 2.539e-15,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "applyWorldInverseInertia = R I^-1 R^T v",
+      "worst": 3.819e-15,
+      "tolerance": 1e-11
+    },
+    {
+      "invariant": "inverseInertiaQuadraticForm = v^T I^-1 v",
+      "worst": 1.605e-15,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "singular (rod) pseudo-inverse W P W = W over 3000 random rotations",
+      "worst": 7.772e-16,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "invertMatrix3(singular) vs numpy pinv(rcond=1e-15)",
+      "worst": 4.44e-16,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "normalizeInertiaTensor row-major 9-array and nested layouts",
+      "worst": 0,
+      "tolerance": 0
+    },
+    {
+      "invariant": "zero mass / zero tensor / NaN input stay zero and finite",
+      "worst": 0,
+      "tolerance": 0
+    },
+    {
+      "invariant": "cable_shape endpoints exact",
+      "worst": 0.0,
+      "tolerance": 1e-15
+    },
+    {
+      "invariant": "cable polyline length = rest length (256 segments)",
+      "worst": 3.735e-06,
+      "note": "relative; difference is chord discretisation of a 256-segment polyline",
+      "tolerance": 0.002
+    },
+    {
+      "invariant": "cable polyline lies on one catenary (scipy fit)",
+      "worst": 1.095e-14,
+      "tolerance": 1e-09
+    },
+    {
+      "invariant": "catenary arc length = rest length (numerical integration)",
+      "worst": 4.74e-14,
+      "tolerance": 1e-06
+    },
+    {
+      "invariant": "taut cable is the straight chord",
+      "worst": 0.0,
+      "tolerance": 1e-15
+    },
+    {
+      "invariant": "slack cable output contains no NaN/Inf",
+      "worst": 0,
+      "tolerance": 0
+    },
+    {
+      "invariant": "spool swing/twist recompose recovers the orientation",
+      "worst": 7.216e-16,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "spool decomposed angle stable across recompose",
+      "worst": 0.0,
+      "tolerance": 1e-12
+    },
+    {
+      "invariant": "constrainSpoolOrientation is a pure twist about the axis",
+      "worst": 6.592e-16,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "constrainSpoolAngularVelocity = projection on the world axis",
+      "worst": 3.553e-15,
+      "tolerance": 1e-13
+    },
+    {
+      "invariant": "estimateEffectorRotation recovers an applied rotation (2000 synthetic frames)",
+      "worst": 1.682e-14,
+      "note": "quaternion distance",
+      "tolerance": 1e-12
+    }
+  ],
+  "limitations": [
+    {
+      "id": "L1",
+      "title": "_tangentPointCircle silently returns a radial (non-tangent) point when the attach point projects inside the guide circle",
+      "evidence": "probe_limitations.mjs section 1",
+      "measurement": "For p at 0.999, 0.9, 0.5, 0.0 radii from the centre and r=1: |T-C| = 1, |cos(radius, span)| = 1.000000 in every case (0 would be a true tangent). In 3D, a point 3.041 m from the centre whose in-plane projection is 0.5 m gives |cos| = 1.000000.",
+      "classification": "Documented-by-code graceful fallback for geometrically impossible input (no tangent exists). It is the branch that makes the tangent fuzz skip ~343/4000 random cases.",
+      "not_a_defect_because": "No tangent line exists for an interior point; the branch returns the nearest circle point and keeps the result finite and on the circle. Callers that need a tangent must ensure the projection is outside the guide."
+    },
+    {
+      "id": "L2",
+      "title": "symmetric pseudo-inverse loses the M P M = M identity in a narrow band of near-singular tensors",
+      "evidence": "probe_limitations.mjs section 2",
+      "measurement": "I_min/I_max = 1e-16 or below: rel |MPM-M| ~ 9e-16, max|P| = 1 (direction correctly dropped). 1e-15: 1.18e-1, max|P| ~ 1e15. 1e-13: 1.07e-3. 1e-10: 8.6e-7. 1e-6: 8.1e-11.",
+      "classification": "Conditioning, not an implementation error. The threshold Number.EPSILON*3*max|diag| sits at the FP noise level of the eigendecomposition, so directions within ~1e-15 of the largest eigenvalue are numerically indistinguishable from zero and get inverted.",
+      "not_a_defect_because": "Exactly singular tensors (zero eigenvalue authored) round-trip to 7.8e-16, and ratios down to 1e-6 (a 1 m rod of 1 mm radius) keep the inverse accurate to 1e-10. No shipped body has a smaller principal-moment ratio (all shipped physics:inertiaTensor values are isotropic diagonals)."
+    },
+    {
+      "id": "L3",
+      "title": "Vector3.angleTo has an acos resolution floor near 1e-8 rad",
+      "evidence": "probe_limitations.mjs section 3",
+      "measurement": "eps=1e-4 -> 1.000000e-4; eps=1e-8, 1e-10, 1e-14 -> 0.0 (atan2 reference 1e-8, 1e-10, 1e-14).",
+      "classification": "Standard acos conditioning; 1e-8 rad = 2 nanodegrees. Not a defect for any scene tolerance (0.5 deg)."
+    },
+    {
+      "id": "L4",
+      "title": "cable_shape's parabolic fallback loses all slack for near-vertical spans (horizontal span <= 1e-5 m)",
+      "evidence": "probe_limitations.mjs section 4",
+      "measurement": "start (0,0,0), end (h,0,1), L=1.5: h=0, 1e-7, 1e-6, 1e-5 -> polyline 1.000000 (-33.3% vs L); h=1e-4, 1e-3 -> 1.500000 (-0.0%). Realistic 0.206 m span, slack 1e-6 / 1e-4 / 1e-2 -> -0.0000%, -0.0000%, -0.0003%.",
+      "classification": "Documented approximation in the module header ('a parabolic approximation when nearly vertical'); the fallback sags along upDirection, which is degenerate when the span is vertical.",
+      "not_a_defect_because": "The trigger needs a horizontal span <= 10 um. All shipped cable spans are >= ~20 mm, and the near-taut catenary branch (the realistic case) reproduces the rest length to 4.7e-14 by independent numerical integration."
+    },
+    {
+      "id": "L5",
+      "title": "signedArcLengthOnWheel cannot represent a wrap of 2*pi or more",
+      "evidence": "probe_limitations.mjs section 5",
+      "measurement": "sweep 2*pi+0.3 and 4*pi+0.3 both return 0.3 rad; a 3*pi/2 sweep returns -1.571 signed / 4.712 force-positive (the cw arc).",
+      "classification": "Model limitation: the wrap is inferred from two attachment points only, so it is defined modulo 2*pi. It returns the preferred-direction arc in [0, 2*pi), which is the only information available.",
+      "not_a_defect_because": "No pair of attachment points can determine a multi-turn wrap; callers that know the wrap keep it in the authored cablePath:stored."
+    },
+    {
+      "id": "L6",
+      "title": "normalizeInertiaTensor does not validate physical admissibility (triangle inequality, symmetry, positive definiteness)",
+      "evidence": "probe_limitations.mjs section 6",
+      "measurement": "An authored diag(1,1,10) (I3 > I1+I2, physically impossible for a real body) is passed through verbatim and used as the inverse inertia.",
+      "classification": "Deliberate coercion ('normalize' means shape/type coercion here, with finite fallbacks) rather than sanitisation.",
+      "not_a_defect_because": "All shipped physics:inertiaTensor values are isotropic diagonal tensors, and composites built from them by parallels-axis addition automatically satisfy the triangle inequality (verified over 3000 random point-mass bodies)."
+    },
+    {
+      "id": "L7",
+      "title": "Attempted audit of baked attachment points in shipped scenes was inconclusive",
+      "evidence": "not published (script discarded)",
+      "measurement": "Reconstructing each rolling body's centre from xformOp:translate gave |P-C|/r errors up to 13% on hp4/hp5_pulley_reduced, which we traced to pinhole_gate steps where link index i is not bounded by jointResults[i].body0Path.",
+      "classification": "Method limitation, so no numbers from that audit are used in this report."
+    },
+    {
+      "id": "L8",
+      "title": "Degenerate zero-length / zero-mass / duplicate-point inputs are handled without NaN",
+      "evidence": "probe_limitations.mjs section 7 and fuzz_invariants.mjs",
+      "measurement": "closestPointOnSegment(p,a,a) = a; parallelAxisTensor(0, offset) = 0; MomentOfInertiaComponent(0).inertia = 0; slack cable with start==end stays finite and starts/ends exactly on the endpoints; segments=0 returns only the end point (no NaN)."
+    }
+  ],
+  "unresolved": [
+    "Whether the degenerate (interior-projection) tangent branch is reachable in any shipped scene: our body-centre reconstruction was not reliable across pinhole_gate links.",
+    "The 2-5e-5 tangency residual we measured for layered (halfWidth > 0) baked attachments is consistent with the hybrid knot radius from storedToRadiusAndTheta, but we did not isolate it.",
+    "Multi-turn (> 2*pi) guide wraps: not representable by the two-attachment-point model; we did not check whether any real HP4/HP5 wrap needs it."
+  ],
+  "prior_work_not_duplicated": {
+    "session": "session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b",
+    "reused": "That session already reported the USD xformOpOrder/translation defect (F1), the metersPerUnit defect (F3), and the !invert!/xformOp:scale observation. This session does not re-report them; it only verifies that the rotate*ABC quaternion conversion itself matches pxr."
+  }
+}

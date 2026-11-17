@@ -1,0 +1,4 @@
+loader position: (1, 0, 0)
+USD position:    (0, 0, -1)
+error: 1414.2 mm
+FAIL: xformOp:translate is not composed through the declared rotateXYZ

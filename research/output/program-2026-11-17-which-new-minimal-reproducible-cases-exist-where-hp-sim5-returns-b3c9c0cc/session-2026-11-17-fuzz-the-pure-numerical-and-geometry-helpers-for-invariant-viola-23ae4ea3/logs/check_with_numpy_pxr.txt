@@ -1,0 +1,24 @@
+USD xformOp:rotate*ABC (JS readOrientationAttribute vs pxr)
+pass    rotateXYZ vs pxr                                 worst=6.661e-16 tol=1.0e-05  (float32 authored)
+pass    rotateXZY vs pxr                                 worst=4.996e-16 tol=1.0e-05  (float32 authored)
+pass    rotateYXZ vs pxr                                 worst=5.551e-16 tol=1.0e-05  (float32 authored)
+pass    rotateYZX vs pxr                                 worst=7.772e-16 tol=1.0e-05  (float32 authored)
+pass    rotateZXY vs pxr                                 worst=7.772e-16 tol=1.0e-05  (float32 authored)
+pass    rotateZYX vs pxr                                 worst=8.882e-16 tol=1.0e-05  (float32 authored)
+pass  rotationMatrixFromQuaternion vs numpy              worst=4.718e-16 tol=1.0e-14
+pass  Quaternion.transformVector vs numpy R@v            worst=1.332e-15 tol=1.0e-14
+pass  pxr Gf.Rotation(quat) vs numpy formula             worst=6.661e-16 tol=1.0e-14
+pass  transformInertiaTensorToWorld vs R I R^T           worst=3.553e-15 tol=1.0e-13
+pass  effectiveInertiaAboutWorldAxis vs u^T R I R^T u    worst=6.854e-16 tol=1.0e-12
+pass  invertMatrix3(W) * W = I (SPD)                     worst=1.110e-15 tol=1.0e-12
+pass  invertMatrix3(singular) vs numpy pinv              worst=4.441e-16 tol=1.0e-12
+
+Slack cable shape (JS polyline vs independent catenary fit and arc length)
+  span=0.400 vertical=+0.150 L=0.520: fit a=0.170792 max|residual|/L=2.67e-16 fitted arc/L-1=-2.11e-15
+  span=0.020 vertical=+0.300 L=0.360: fit a=0.002225 max|residual|/L=1.09e-14 fitted arc/L-1=-1.30e-14
+  span=0.500 vertical=-0.200 L=0.620: fit a=0.251019 max|residual|/L=1.79e-16 fitted arc/L-1=-1.22e-15
+  span=0.050 vertical=+0.000 L=0.130: fit a=0.009559 max|residual|/L=5.34e-17 fitted arc/L-1=-4.74e-14
+pass  cable polyline lies on one catenary                worst=1.095e-14 tol=1.0e-09
+pass  cable catenary arc length = rest length            worst=4.740e-14 tol=1.0e-06
+
+all independent-reference comparisons passed

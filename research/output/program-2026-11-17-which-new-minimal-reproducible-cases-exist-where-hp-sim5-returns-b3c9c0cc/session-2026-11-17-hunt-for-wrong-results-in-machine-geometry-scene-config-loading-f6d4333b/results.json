@@ -1,0 +1,211 @@
+{
+  "program": "program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc",
+  "session": "session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b",
+  "repository": "/home/torbjorn/repos/hp-sim5",
+  "revision": "c2450975",
+  "date": "2026-11-17",
+  "environment": {
+    "python": ".venv/bin/python",
+    "node": "v24",
+    "usd": "pxr (system USD 26.3 bindings)",
+    "solver_binaries": "forward-transform-dev/hangprinter-forward-transform/build/* (prebuilt, unchanged)"
+  },
+  "commands": {
+    "all": "cd <session-dir> && ./run_all.sh",
+    "finding_1_minimal": "node repro_xform_order_minimal.mjs",
+    "finding_1": ".venv/bin/python repro_xform_order.py",
+    "finding_1_audit": ".venv/bin/python audit_transforms.py",
+    "finding_2": "node repro_missing_attr.mjs",
+    "finding_3": "node repro_meters_per_unit.mjs",
+    "finding_4": ".venv/bin/python repro_noise_units.py",
+    "control_forward": ".venv/bin/python probe_forward_roundtrip.py",
+    "control_catalog": ".venv/bin/python check_catalog_consistency.py",
+    "control_scenes": "node probe_scenes.mjs",
+    "control_forward_tests": ".venv/bin/python forward-transform-dev/hangprinter-forward-transform/test_forward.py",
+    "control_python_tests": ".venv/bin/python -m pytest -q tests/python/test_hp5_geometry.py tests/python/test_machine_catalog.py"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "title": "USD xformOpOrder is ignored for translation: HP4 / HP4-worn-bearings / HP5-pulley-reduced wheel placements disagree with USD by 0.20-3.09 m",
+      "status": "genuine",
+      "class": "scene-asset / transform-loader",
+      "repro": "repro_xform_order_minimal.mjs; repro_xform_order.py; audit_transforms.py",
+      "exit_nonzero_when_bug_present": true,
+      "expected": "USD composes xformOpOrder [\"xformOp:rotateXYZ\", \"xformOp:translate\"] as R*T, so a wheel's world position is R*translate.",
+      "actual": "machineEntityBuilders.js and cable_scene_baker.js read xformOp:translate directly as the world position and apply the rotation only to the orientation.",
+      "tolerance": {"position_mm": 1.0, "orientation_deg": 0.5},
+      "measurements": {
+        "minimal_prim": {"translate": [1, 0, 0], "rotateXYZ": [0, 90, 0], "order": ["xformOp:rotateXYZ", "xformOp:translate"], "usd_position": [0, 0, -1], "simulator_position": [1, 0, 0], "error_mm": 1414.2},
+        "hp4_wheels": {"count": 24, "min_error_mm": 329.2, "max_error_mm": 3090.2, "mean_error_mm": 1144.7, "median_error_mm": 661.1},
+        "hp4_worn_bearings_wheels": {"count": 24, "min_error_mm": 329.2, "max_error_mm": 3090.2, "mean_error_mm": 1144.7, "median_error_mm": 661.1},
+        "hp5_pulley_reduced_wheels": {"count": 32, "min_error_mm": 203.9, "max_error_mm": 3073.4, "mean_error_mm": 1091.0, "median_error_mm": 635.5},
+        "worst_hp4": "WheelD1_left_top, 3090.2 mm",
+        "worst_hp5_reduced": "WheelI2_left_top, 3073.4 mm",
+        "example_cable_span": "PinholeAL_top -> WheelAL_top: simulator 21.27 mm, USD 372.71 mm, error 351.44 mm",
+        "mean_nearest_pinhole_gap_error_mm": 258.8,
+        "tagged_bodies_audited": 312,
+        "bodies_disagreeing": 81,
+        "shipped_scenes_affected": ["public/usd_scenes/hp4.usda", "public/usd_scenes/hp4_worn_bearings.usda", "public/usd_scenes/hp5_pulley_reduced.usda"],
+        "secondary": "cubecorners.usda SpoolA applies xformOp:rotateXYZ (0,0,20) that is absent from xformOpOrder [\"xformOp:translate\",\"xformOp:orient\"]; USD ignores it, the loader applies it (20 deg). Harmless because the rotation is about the spool axis."
+      },
+      "why_not_intended": "The scene explicitly declares the op order. The wheel translations and in-file comments (z = 0.1 - 0.0065 - 0.00075 = 0.09275) describe the simulator's positions; under USD the same prims land up to 3 m away and the bearing stack detaches from its corner. The generator scripts/generate_hp5_scenes.py copies this order. Either the asset or the loader is wrong; both cannot be right.",
+      "strongest_alternative": "The asset is wrong, not the simulator. Agreed: the simulator's self-consistent geometry is the design intent. The bug is that the asset is not valid USD and the loader masks the error for every USD-native consumer."
+    },
+    {
+      "id": "F2",
+      "title": "Missing non-geometric spool attribute silently deletes a motor and leaves dangling cable joints; first physics step throws",
+      "status": "genuine",
+      "class": "config-loading / validation",
+      "repro": "repro_missing_attr.mjs",
+      "exit_nonzero_when_bug_present": true,
+      "expected": "A missing physics:angularVelocity (a zero-valued, non-geometric attribute) is accepted with the default, or the scene is rejected at load with an error naming SpoolC.",
+      "actual": "Only console.warn('Skipping Spool prim SpoolC ...') is printed. SpoolC has no entity. JointCL_0 and JointCR_0 survive with entityA === undefined and their spool-end attachment is placed near the world origin, 2.538 m and 2.484 m from the spool centre. The first world.update(dt) throws 'Missing cable endpoint for joint 29'.",
+      "tolerance": {"attachment_mm": 1.0},
+      "measurements": {
+        "scene": "public/usd_scenes/hp5.usda with one line deleted from the SpoolC block",
+        "motors_before": 5,
+        "motors_after": 4,
+        "cable_joints_before": 24,
+        "dangling_joints": 2,
+        "dangling_joint_names": ["JointCL_0", "JointCR_0"],
+        "max_spool_end_displacement_m": 2.538,
+        "path_effect": "CablePathCL still reports 2 joints for 3 linkTypes, stored [2,0,0], totalRestLength 4.348061 m",
+        "first_step_error": "Missing cable endpoint for joint 29"
+      },
+      "why_not_intended": "angularVelocity is not a geometric attribute and zero is the natural default. Removing a motor is not a documented simplification, and the loader neither rejects nor preserves the body. The dangling joint is propagated because cableJointBuilder.js checks `entityA === null` while Map.get returns `undefined`; the world loads successfully and fails later with an unrelated message.",
+      "strongest_alternative": "The scene schema may treat physics:angularVelocity as required. Even then, the correct behaviour is a load-time validation error, not a warning plus a half-built world; no schema or test documents the requirement."
+    },
+    {
+      "id": "F3",
+      "title": "metersPerUnit is ignored: a valid millimetre-authored scene loads 1000x too large",
+      "status": "genuine",
+      "class": "unit handling / scene loading",
+      "repro": "repro_meters_per_unit.mjs",
+      "exit_nonzero_when_bug_present": true,
+      "expected": "Two USD scenes that describe the same machine (metres: metersPerUnit=1; millimetres: metersPerUnit=0.001 with every linear value x1000) load to the same world geometry.",
+      "actual": "The loader never reads metersPerUnit. The millimetre scene's Anchor loads at (2000,1000,0) instead of (2,1,0); every linear position and radius is 1000x.",
+      "tolerance": {"position_mm": 1.0},
+      "measurements": {
+        "anchor_expected_m": [2.0, 1.0, 0.0],
+        "anchor_actual_m": [2000.0, 1000.0, 0.0],
+        "anchor_error_mm": 2233831.9,
+        "wheel_expected_m": [0.5, 0.0, 0.2],
+        "wheel_actual_m": [500.0, 0.0, 200.0],
+        "wheel_error_mm": 537978.0,
+        "ratio": 1000.0,
+        "shipped_scenes": "all public/usd_scenes/*.usda declare metersPerUnit = 1, so the defect is latent for the shipped catalog"
+      },
+      "why_not_intended": "USD's linear unit is part of the scene contract; a compliant consumer scales by metersPerUnit. The simulator silently accepts a valid mm scene and runs in metres. If only metre scenes are supported, the loader should reject other values, which it does not.",
+      "strongest_alternative": "The simulator intentionally defines a metres-only scene format (research/More_on_hp-sim5_MCP.md documents metres). No validation enforces it, the app supports custom USDA uploads, and the failure is silent, so a user can still get a 1000x world without any error; a load-time rejection of metersPerUnit != 1 would be sufficient."
+    },
+    {
+      "id": "F4",
+      "title": "Forward-transform dataset noise/bias labels are 25.5x (A-D) and 51x (I) off because the mm->degree conversion ignores gearing and mechanical advantage",
+      "status": "genuine",
+      "class": "unit handling / benchmark harness",
+      "repro": "repro_noise_units.py",
+      "exit_nonzero_when_bug_present": true,
+      "expected": "For datasets with spool radius 75 mm, 255:20 gearing and mechanical advantage 2 (4 on I), one millimetre of line at the origin is 19.480565 motor degrees (A-D) or 38.961130 (I).",
+      "actual": "run_tests.py MM_TO_DEG = 360/(2*pi*75) = 0.763944 deg/mm, which assumes 1:1 gearing and mechanical advantage 1.",
+      "tolerance": {"relative_factor": 0.01},
+      "measurements": {
+        "harness_deg_per_mm": 0.763944,
+        "correct_deg_per_mm_a_d": 19.480565,
+        "correct_deg_per_mm_i": 38.961130,
+        "ratio_a_d": 25.5,
+        "ratio_i": 51.0,
+        "noise_labels_actual_mm": {"1_mm": 0.0392, "3_mm": 0.1176, "5_mm": 0.1961},
+        "bias_labels_actual_mm": {"5_mm": 0.1961, "2.5_mm": 0.0980},
+        "observed_gaussian_5mm_sigma_deg": 3.969,
+        "observed_gaussian_5mm_actual_mm": 0.2038,
+        "observed_bias_deg": [3.820, -3.820, 1.910, -1.910, 0.0],
+        "duplicate_script": "klipper/ai_docs/run_tests.py has the same constant and helpers"
+      },
+      "why_not_intended": "The comment calls it an approximation, but 25.5x is not an approximation of the configured drivetrain and the printed experiment labels claim sigma=1/3/5 mm and bias +/-5 mm. The independent regression corpus in test_forward.py injects length noise directly and is unaffected; the dataset sweep harness measures something 25x weaker than advertised.",
+      "strongest_alternative": "The labels may mean millimetres at the motor shaft rather than line millimetres. That is not what the sweep names say, and even then the conversion from motor degrees to shaft millimetres must use the gearing; the current number is not any consistent physical unit for the dataset config."
+    }
+  ],
+  "negative_results": [
+    {
+      "id": "N1",
+      "claim": "No inverse/forward round-trip error found for reachable poses.",
+      "measurement": "1200 random probes over HP5 (mode 1), HP3 (mode 1) and CubeCorners (mode 3): 849 converged, max error 3.398e-4 mm, median 1.29e-4 mm, tolerance 0.02 mm. The script compiles the firmware hp_reachable() and verified that all 351 non-converged probes are outside the documented pyramid/prism (0 reachable false negatives). test_forward.py: 5 tests pass; worst clean-case error 0.0132 mm; 400 motor->Cartesian round-trips max 0.0049 mm.",
+      "script": "probe_forward_roundtrip.py; forward-transform-dev/.../test_forward.py"
+    },
+    {
+      "id": "N2",
+      "claim": "Shipped catalog presets agree with their scenes and firmware configs.",
+      "measurement": "11 scenes, 72 frame-anchor offsets (anchor minus the attachment it feeds), 46 spool radii, and all Klipper anchor/rotation_distance values agree; max anchor error < 0.02 mm, max radius error < 0.01 mm. Mounted-motor slideprinter scenes were excluded from the anchor-offset check because their M669 vector is the idealised mover-origin-to-anchor vector, not anchor-minus-spool.",
+      "script": "check_catalog_consistency.py"
+    },
+    {
+      "id": "N3",
+      "claim": "All catalogued scenes load complete cable paths.",
+      "measurement": "Authored and world cable-path counts match for all 11 scenes (9,9,9,8,8,6,3,6,3,12,12); no duplicate sibling prim names; no path with a joint-count mismatch.",
+      "script": "probe_scenes.mjs"
+    },
+    {
+      "id": "N4",
+      "claim": "Negative spool radius is rejected, and zero radius is rejected in the non-layering path used for HP5.",
+      "measurement": "radius=-0.03 throws 'Cannot derive rolling tangent without radius on .../SpoolA'; radius=0 also throws when the bake disables layering (the app forces layering off for HP5). With layering on, radius=0 is silently replaced by a layering-derived effective radius, but that is not the shipped HP5 load path.",
+      "script": "ad-hoc node probe (recorded in logs/notes)"
+    },
+    {
+      "id": "N5",
+      "claim": "The forward-transform reachability modes behave as documented.",
+      "measurement": "LastOnTop accepts the lower prism and the pyramid below the top anchor, rejects above/outside it; AllOnTop has no height limit; CubeCorner encloses the cube and projects its lower face down. All 1200 random probe nonconvergences were outside these regions.",
+      "script": "probe_forward_roundtrip.py; forward-transform-dev/.../test_workspace.py"
+    }
+  ],
+  "additional_observations": [
+    {
+      "id": "O1",
+      "title": "Slideprinter scenes declare upAxis = \"Y\" but are authored in the XY plane with gravity (0,0,-1)",
+      "impact": "The loader ignores upAxis, so simulated results are unaffected; a USD viewer would orient the four slideprinter scenes 90 degrees differently from the simulator. Asset inconsistency, not counted as a simulator wrong result.",
+      "files": ["public/usd_scenes/slideprinter.usda", "public/usd_scenes/slideprinter_multi_unit.usda", "public/usd_scenes/slideprinter_hexagon.usda", "public/usd_scenes/slideprinter_single_pinholes.usda"]
+    },
+    {
+      "id": "O2",
+      "title": "machineSceneController.findScenePrimPath reads a defaultPrim field the parser does not populate",
+      "impact": "stage.ast.descriptor.defaultPrim is undefined because the parser stores defaultPrim in descriptor.assignments. The traversal fallback finds the correct root for all flat shipped scenes; a nested scene could resolve to a sub-group. Latent.",
+      "files": ["hp-sim-3d/app/machineSceneController.js:106"]
+    },
+    {
+      "id": "O3",
+      "title": "!invert! and xformOp:scale are not honored by the transform reader",
+      "impact": "readRotationOpAttribute strips !invert! without conjugating, and no scale op is applied. No shipped scene uses either. Latent.",
+      "files": ["src/js/usd/cable_scene_baker.js:285", "hp-sim-3d/app/scene/usdValueReaders.js:87"]
+    },
+    {
+      "id": "O4",
+      "title": "Slideprinter Multi Unit pairs a 6-path (2 lines per motor) scene with a 3-line firmware config",
+      "impact": "Anchor offsets match exactly, so this was not counted as a catalog mismatch. Whether the paired config/compiled commands are intended to approximate the paired lines is undocumented and was not settled.",
+      "files": ["public/usd_scenes/slideprinter_multi_unit.usda", "RRF/run/vsd/sys/config_slideprinter.g"]
+    }
+  ],
+  "limitations": [
+    "The transform comparison uses pxr's composed local matrices, not the three.js renderer. The three.js renderer follows the simulator's positions, so the 0.20-3.09 m disagreement is USD-vs-simulator, not renderer-vs-simulator. The local USD build lacks the UsdGeom.Circle schema, so ComputeLocalToWorldTransform returns identity for Circle prims; the audit composes GetLocalTransformation down the parent chain instead.",
+    "The millimetre scene in F3 is a synthetic but valid USDA fixture scaled from tests/fixtures/engine_parity/usd_scene_minimal.usda; no shipped catalog scene uses millimetres.",
+    "F1 is an asset/loader contract disagreement. Fixing the assets (swap the op order) preserves the simulator's current, intended geometry; fixing only the loader would move HP4/HP5-reduced wheels in the simulation.",
+    "F2 was reproduced by patching a scene in memory; no source file was modified. Native/WASM and default headless backends both throw on the first step.",
+    "F4 affects the dataset sweep harness in forward-transform-dev and its Klipper copy; the independent regression corpus in test_forward.py injects line-length noise directly and is not affected.",
+    "No hardware evidence. No full Jest/Python suite was run; targeted tests were run.",
+    "The xformOpOrder audit found no affected tagged bodies in hp3, hp5, cubecorners, skycam or the slideprinter scenes; the defect is limited to hp4 and hp5_pulley_reduced wheels plus the cubecorners SpoolA orientation note."
+  ],
+  "verification": {
+    "logs": {
+      "1_xform_order": "exit 1 (bug present)",
+      "1b_xform_minimal": "exit 1 (bug present)",
+      "2_missing_attr": "exit 1 (bug present)",
+      "3_meters_per_unit": "exit 1 (bug present)",
+      "4_noise_units": "exit 1 (bug present)",
+      "5_forward_roundtrip": "exit 0 (control)",
+      "6_catalog_checks": "exit 0 (control)",
+      "7_scene_loads": "exit 0 (control)",
+      "8_transform_audit": "exit 1 (bug present)",
+      "9_forward_tests": "exit 0 (control)",
+      "10_python_geometry": "exit 0 (control)"
+    }
+  }
+}

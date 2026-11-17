@@ -1,0 +1,1 @@
+wrote js_reference.json: 48 rotateABC, 25 quaternions, 15 inertia, 20 inverse, 4 catenary cases
