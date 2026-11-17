@@ -155,3 +155,23 @@ def test_historical_projected_profile_markers_do_not_describe_tensioned_measurem
     sweep = {"metadata": {"sensor_force_profile": True},
              "data_points": [{"raw_angles_zero_tension_deg": [0.0]*4}]}
     assert not is_equal_strain({"num_anchors": 4, "sweeps": [sweep]})
+
+
+def test_hp5_profile_plans_the_extra_measurement_load_without_changing_old_data(tmp_path):
+    anchors = np.array([[0., -1900., -280.], [1900., 0., -280.], [0., 1900., -280.],
+                        [-1900., 0., -280.], [0., 0., 1900.]])
+    cfg = SweepConfig((0, 4), (-340., 0.), 1, 3)
+    config = {'m666_before_data_collection': {'W': .081, 'N': [2,2,2,2,4],
+              'Y': [429.1]*4+[352.3], 'U': [2,2,2,2,4]},
+              'force_tuning': {'force_low_n': .05, 'force_mid_n': 1., 'force_max_n': 3.}}
+    dataset = {'num_anchors': 5, 'config': config}
+    path = tmp_path / 'profiles.json'
+    assert write_sensor_force_profile(path, dataset, anchors, [cfg])
+    legacy = json.loads(path.read_text())
+    assert all('extra_sensor_force_n' not in profile for profile in legacy)
+    config['extra_sensors_enabled'] = True
+    assert write_sensor_force_profile(path, dataset, anchors, [cfg])
+    profiles = json.loads(path.read_text())
+    assert all(profile['extra_sensor_force_n'] == 3. for profile in profiles)
+    # Changing the passive load must also change the primary force tables.
+    assert profiles[0]['force_n'] != legacy[0]['force_n']

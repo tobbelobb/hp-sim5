@@ -104,3 +104,38 @@ def test_no_candidate_position_violates_any_anchors_clearance():
     distances = np.linalg.norm(ANCHORS[None, :, :] - positions[:, None, :], axis=2)
     assert positions.shape[0] > 1000
     assert np.all(distances >= ANCHOR_CLEARANCE_SHARE * HOME - 1e-9)
+
+
+def test_force_infeasible_best_candidate_uses_the_next_ranked_sweep(tmp_path, monkeypatch):
+    from autocal.equal_strain import InfeasibleForceProfileError
+    first, second = [SweepConfig((0, 3), (390., z), 1, 2) for z in (-150., -300.)]
+    dataset = {'machine_type':'hangprinter_4', 'num_anchors':4, 'dimensions':3,
+        'config':{}, 'sweeps':[{'fixed_anchors':[0,3], 'fixed_lengths':[390.,0.],
+        'drive_anchor':1, 'sensor_anchor':2, 'data_points':[{'l_drive':0.,'l_sensor':0.}],
+        'metadata':{'sensor_force_profile':True}}]}
+    fit = {'dataset':dataset, 'dataset_for_estimation':dataset, 'anchors':ANCHORS,
+        'machine_type':'hangprinter_4', 'num_anchors':4, 'dimensions':3,
+        'spool_model_params':None, 'sweep_configs_for_info':[], 'info':np.eye(9),
+        'pose_fit':{'robust_scale_mm':.02},
+        'information_settings':{'fd_eps_mm':1.,'regularization':1e-6},
+        'collection_settings':{'find_radii_mode':'off','find_buildup_mode':'off','base_radii':None,'buildup_factor':None}}
+    monkeypatch.setattr(planning, 'generate_candidate_sweeps', lambda **kw:[first,second])
+    def rank(*args, **kwargs):
+        assert kwargs['top_k'] == 2
+        return [(2.,first),(1.,second)]
+    monkeypatch.setattr(planning, 'rank_candidates_pose_information', rank)
+    monkeypatch.setattr(planning, 'profile_policy_error', lambda dataset:None)
+    calls=[]
+    def write(path, dataset, anchors, cfgs):
+        calls.append(cfgs[0])
+        if cfgs[0] == first:raise InfeasibleForceProfileError('no positive tensions')
+        return True
+    monkeypatch.setattr(planning, 'write_sensor_force_profile', write)
+    plan=planning.plan_ellipse_sweep(fit,tmp_path/'sweeps.json',top_k=1)
+    assert plan['best_cfg'] == second and calls == [first,second]
+    assert plan['collect_command'] and plan['collection_error'] is None
+    assert '-300' in ' '.join(plan['collect_command'])
+    def bad_configuration(*args):raise ValueError('invalid mechanical advantage')
+    monkeypatch.setattr(planning, 'write_sensor_force_profile', bad_configuration)
+    with pytest.raises(ValueError,match='mechanical advantage'):
+        planning.plan_ellipse_sweep(fit,tmp_path/'sweeps.json')

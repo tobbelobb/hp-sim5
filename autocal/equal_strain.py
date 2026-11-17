@@ -29,6 +29,10 @@ _COLLECTION_FORCE_MULTIPLE = 5.0
 PROFILE_STRAIN_MODEL = "reeving-aware-v2"
 
 
+class InfeasibleForceProfileError(ValueError):
+    """A candidate has no usable interval under the requested line loads."""
+
+
 def equal_strain_tensions(
     anchors: np.ndarray,
     position: np.ndarray,
@@ -44,13 +48,13 @@ def equal_strain_tensions(
     """Tensions of the given lines at a position whose weighted mean tension per strand is `strand_tension_n`."""
     lines = list(lines)
     if len(lines) != np.asarray(anchors).shape[1] + 1:
-        raise ValueError("Equal-strain sweeps require d+1 active lines; keep redundant lines compliant")
+        raise ValueError("Equal-strain sweeps require d+1 active lines with known loads on the remaining lines")
     to_anchor = np.asarray(anchors, dtype=float)[lines] - np.asarray(position, dtype=float)
     distance = np.linalg.norm(to_anchor, axis=1)
     directions = (to_anchor / distance[:, None]).T
     load = np.zeros(directions.shape[0])
     load[-1] = mover_weight_n
-    # Redundant lines stay in low-force mode, not at zero tension. Their
+    # Redundant lines hold a known force during measurement. Their
     # known load removes the extra pretension freedoms before solving the
     # active d+1 lines' single self-stress mode.
     unused = [axis for axis in range(len(anchors)) if axis not in lines]
@@ -105,7 +109,7 @@ def sensor_force_profiles(
     keep = max(runs, key=len)
     positions, tensions = positions[keep], tensions[keep]
     if len(positions) < 2:
-        raise ValueError("Equal-strain profile needs reachable positions with positive finite line tensions")
+        raise InfeasibleForceProfileError("Equal-strain profile needs reachable positions with positive finite line tensions")
     profiles = []
     for drive, sensor in ((cfg.drive_anchor, cfg.sensor_anchor), (cfg.sensor_anchor, cfg.drive_anchor)):
         drive_mm = np.linalg.norm(anchors[drive] - positions, axis=1) - np.linalg.norm(anchors[drive])
@@ -146,6 +150,10 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
         raise ValueError("Cannot combine different equal-strain targets in one refinement dataset")
     strand_target = (recorded_targets[0] if recorded_targets else
                      _COLLECTION_FORCE_MULTIPLE * start_force_n / float(np.min(strands * advantage)))
+    extra_force = None
+    if config.get("extra_sensors_enabled") and int(dataset["num_anchors"]) == 5:
+        extra_force = min(float(tuning.get("force_max_n", np.inf)),
+                          _COLLECTION_FORCE_MULTIPLE * start_force_n)
     profiles = [
         profile
         for cfg in cfgs
@@ -156,10 +164,13 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
             strands=strands,
             extra_line_length_mm=np.asarray(line_description["Y"], dtype=float),
             mechanical_advantage=advantage,
-            compliant_force_n=float(tuning.get("force_low_n", 0.0)),
+            compliant_force_n=(extra_force if extra_force is not None else float(tuning.get("force_low_n", 0.0))),
             minimum_force_n=start_force_n,
         )
     ]
+    if extra_force is not None:
+        for profile in profiles:
+            profile["extra_sensor_force_n"] = extra_force
     Path(path).write_text(json.dumps(profiles), encoding="utf-8")
     return True
 

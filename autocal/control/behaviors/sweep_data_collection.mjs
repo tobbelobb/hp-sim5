@@ -697,6 +697,8 @@ export async function loadSensorForceProfiles(filePath) {
     const { drive_mm: driveMm, force_n: forceN } = profile;
     if (!Array.isArray(driveMm) || !Array.isArray(forceN) || driveMm.length < 2 || driveMm.length !== forceN.length
       || ![...driveMm, ...forceN].every(Number.isFinite) || forceN.some(v => v <= 0)
+      || (profile.extra_sensor_force_n !== undefined
+        && !(Number.isFinite(profile.extra_sensor_force_n) && profile.extra_sensor_force_n > 0))
       || driveMm.some((v, i) => i > 0 && v <= driveMm[i - 1])) {
       throw new Error(`Invalid sensor force profile in ${filePath}`);
     }
@@ -1192,6 +1194,13 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   const driveAxis = axes[driveAnchor];
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
+  // Profiles account for this known load. Historical profiles keep unused lines compliant.
+  const extraForce = sensorForceProfile?.extra_sensor_force_n;
+  const extraAnchors = Number.isFinite(extraForce) && extraForce > 0
+    ? motorIds.map((_, idx) => idx).filter(idx => idx !== driveAnchor && idx !== sensorAnchor
+      && !fixedSet.has(idx) && !forbidden.has(idx)) : [];
+  const measurementSensors = [sensorAnchor, ...extraAnchors];
+  const measurementSensorForces = Object.fromEntries(extraAnchors.map(idx => [idx, extraForce]));
   const fixedTargetByAnchor = buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorIds.length);
   const settleOptions = {
     validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
@@ -1242,7 +1251,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     if (fixedSet.has(idx) || forbidden.has(idx)) {
       return 'position';
     }
-    return idx === sensorAnchor ? forceMid * 2.0 : forceLow;
+    return measurementSensors.includes(idx) ? forceMid * 2.0 : forceLow;
   });
   await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
   const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, {
@@ -1282,12 +1291,12 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   const moveForReserve = async (target, sensorForce = forceAt(target)) => {
     if (reserveForceActive !== sensorForce) {
       await applyDataPointPreloadModes(sendFn, {
-        motorIds, driveAnchor, sensorAnchors: [sensorAnchor], fixedAnchors, forbiddenForceAnchors,
+        motorIds, driveAnchor, sensorAnchors: measurementSensors, fixedAnchors, forbiddenForceAnchors,
         forceMax, forceMin: forceMid, forceMid, compliantForce: forceLow, sensorCollectionForce: sensorForce, speedup, settleOptions,
       });
       await applyForceModeState(sendFn, { motorIds, modes: motorIds.map((_, idx) => {
         if (idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
-        return idx === sensorAnchor ? sensorForce : forceLow;
+        return idx === sensorAnchor ? sensorForce : (measurementSensorForces[idx] ?? forceLow);
       }) });
       reserveForceActive = sensorForce;
     }
@@ -1337,6 +1346,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   // With a profile the sensor force follows the drive setpoint; otherwise it stays constant.
   let sensorCollectionForce = constantSensorForce;
   let measurementClockMs = null;
+  let extraProbes = [];
   const dataPoints = [];
   const validateMeasurementAngles = angles => {
     if (angles.length !== motorIds.length || !angles.every(Number.isFinite)) {
@@ -1378,6 +1388,9 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         Number.isFinite(target) ? angles[idx] - target / mmPerDeg[idx] : null
       )),
       sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
+      ...(extraAnchors.length ? { extra_sensor_ranges: extraAnchors.map((anchor, index) => ({
+        anchor, force_n: extraForce, length_mm: lengths[anchor], ...extraProbes[index],
+      })) } : {}),
       spool_reserve_method: reserveProbe.accepted ? 'local_encoder_coupling' : 'half_turn',
     };
     if (extraFields && typeof extraFields === 'object') {
@@ -1432,7 +1445,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         await applyDataPointPreloadModes(sendFn, {
           motorIds,
           driveAnchor,
-          sensorAnchors: [sensorAnchor],
+          sensorAnchors: measurementSensors,
           fixedAnchors,
           forbiddenForceAnchors,
           forceMax,
@@ -1467,13 +1480,35 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       // Moving the drive leaves the sensor's measurement force unchanged.
       if (measurementPreloadActive && !sensorForceProfile) settledMeasurement = settled;
     }
+    extraProbes = [];
+    if (extraAnchors.length) {
+      const force = forceAt(target);
+      const radius = Math.min(initialStepMm, Math.abs(target - driveEndPointMm), Math.abs(target - driveStartPointMm)) / 2;
+      for (const anchor of extraAnchors) {
+        let evidence = { accepted: false, reason: 'no interior interval for extra sensor probe' };
+        if (radius > DEFAULT_FIXED_TOLERANCE_MM) {
+          const { sample, ...result } = await probeSpoolInterval(value => moveForReserve(value, force), {
+            start: target, away: target + stepDirection * radius, toward: target - stepDirection * radius,
+            driveAnchor, sensorAnchor: anchor, mmPerDeg, sigmaFloorDeg: noiseSigmaFloorDeg,
+            driveToleranceMm: DEFAULT_FIXED_TOLERANCE_MM + (stepMmByAnchor[driveAnchor] ?? 0),
+          });
+          evidence = result;
+        }
+        extraProbes.push(evidence);
+      }
+      // Reuse the settled reading at the restored target, without another preload.
+      const sample = await moveForReserve(target, force);
+      settledMeasurement = sample.stableData;
+      settledNoiseStats = sample;
+      measurementClockMs = sample.measuredClockMs;
+    }
     // eslint-disable-next-line no-await-in-loop
     const collected = await collectDataPoint(sendFn, {
       motorIds,
       axes,
       mmPerDeg,
       driveAnchor,
-      sensorAnchors: [sensorAnchor],
+      sensorAnchors: measurementSensors,
       fixedAnchors,
       forbiddenForceAnchors,
       forceMax,
@@ -1521,6 +1556,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         if (Number.isFinite(muLengths[sensorAnchor])) {
           point.l_sensor_mu = muLengths[sensorAnchor];
         }
+        for (const extra of point.extra_sensor_ranges ?? []) extra.length_mu_mm = muLengths[extra.anchor];
       }
       const warnings = summarizeNoiseWarnings(noiseStats, {
         minSamples: noiseMinSamples,
@@ -2021,6 +2057,7 @@ export async function collectSweepData(send, context) {
       m669: m669Values,
       m92: m92Values,
       mm_per_degree: mmPerDeg,
+      extra_sensors_enabled: machineConfig.numAnchors === 5 && machineConfig.dimensions === 3,
       noise_model: { project_zero_tension: false },
       notes: {
         buildup_factor_forced: Number.isFinite(forcedBuildupFactor) ? forcedBuildupFactor : undefined,

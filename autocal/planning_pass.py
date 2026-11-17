@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
-from autocal.equal_strain import is_equal_strain, write_sensor_force_profile, profile_policy_error
+from autocal.equal_strain import InfeasibleForceProfileError, is_equal_strain, write_sensor_force_profile, profile_policy_error
 from autocal.pose_fit import dataset_line_lengths
 from autocal.pose_planning import rank_candidates_pose_information
 from autocal.workspace import exploration_grid
@@ -99,6 +99,9 @@ def plan_ellipse_sweep(
         # Relax novelty spacing if needed, but never re-admit excluded repeats.
         candidates = novel_candidates
 
+    needs_profile = (is_equal_strain(dataset) and spool_params is None
+                     and machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"))
+
     if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and spool_params is None:
         # Position-based ranking: it values sweeps with a shortened D line, which the
         # ellipse-geometry ranking below never picks.
@@ -112,7 +115,9 @@ def plan_ellipse_sweep(
             points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
             sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
             regularization=float(regularization),
-            top_k=int(top_k),
+            # Keep the complete ordering until a force-feasible candidate is
+            # found; the highest-information band may all be infeasible.
+            top_k=len(candidates) if needs_profile else int(top_k),
         )
     elif spool_params is not None:
         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
@@ -172,8 +177,6 @@ def plan_ellipse_sweep(
             )
         collection_fallback = True
     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
-    if best_cfg is not None:
-        _write_sweep_config_file(cfg_path, best_cfg)
 
     collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
     collector_args_eff, _ = _inject_spool_collection_args(
@@ -191,18 +194,33 @@ def plan_ellipse_sweep(
 
     cmd = None
     collection_error = None
+    profile_path = None
     if best_cfg is not None:
-        if is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
+        if needs_profile:
             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
             if error := profile_policy_error(dataset):
                 collection_error = error
             elif not equal_strain:
                 collection_error = "Cannot append constant-force measurements to profiled data; use a fresh dataset for --no-equal-strain"
-            elif write_sensor_force_profile(profile_path, dataset, anchors, [best_cfg]):
-                collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
             else:
-                collection_error = "Cannot continue profiled collection without M666 W/N/Y/U and tuned forces"
-        if collection_error is None:
+                # Information gain alone does not establish force feasibility,
+                # especially with the redundant line now carrying a measured load.
+                best_cfg = None
+                for index, (score, cfg) in enumerate(ranked):
+                    try:
+                        written = write_sensor_force_profile(profile_path, dataset, anchors, [cfg])
+                    except InfeasibleForceProfileError:
+                        continue
+                    if not written:
+                        collection_error = "Cannot continue profiled collection without M666 W/N/Y/U and tuned forces"
+                        break
+                    best_cfg = cfg
+                    ranked = ranked[index:index + int(top_k)]
+                    break
+        if best_cfg is not None and collection_error is None:
+            if profile_path is not None:
+                collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
+            _write_sweep_config_file(cfg_path, best_cfg)
             cmd = _suggested_collect_command(
                 cfg_path, best_cfg, machine_type=machine_type,
                 output_file=collector_output,

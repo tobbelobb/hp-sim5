@@ -5,7 +5,7 @@ export class UnmeasurableSweepError extends Error {
 }
 
 export async function probeSpoolInterval(moveAndSample, {
-  start, away, toward, driveAnchor, sensorAnchor, mmPerDeg, sigmaFloorDeg,
+  start, away, toward, driveAnchor, sensorAnchor, mmPerDeg, sigmaFloorDeg, driveToleranceMm = 0,
 }) {
   const base = await moveAndSample(start);
   const farther = await moveAndSample(away);
@@ -16,10 +16,11 @@ export async function probeSpoolInterval(moveAndSample, {
   );
   const tracks = (sample, target) => Number.isFinite(sample.muByMotorDeg[driveAnchor])
     && Math.abs(sample.muByMotorDeg[driveAnchor] - target / mmPerDeg[driveAnchor])
-       <= 5 * Math.max(sigmaFloorDeg, sample.sigmaByMotorDeg[driveAnchor]);
+       <= Math.max(5 * Math.max(sigmaFloorDeg, sample.sigmaByMotorDeg[driveAnchor]), driveToleranceMm / mmPerDeg[driveAnchor]);
   const recovers = (a, b, axes = [driveAnchor, sensorAnchor]) => axes.every(axis =>
     Number.isFinite(a.muByMotorDeg[axis]) && Number.isFinite(b.muByMotorDeg[axis])
-    && Math.abs(a.muByMotorDeg[axis] - b.muByMotorDeg[axis]) <= threshold(a, b, axis));
+    && Math.abs(a.muByMotorDeg[axis] - b.muByMotorDeg[axis]) <= Math.max(threshold(a, b, axis),
+      axis === driveAnchor ? driveToleranceMm / mmPerDeg[axis] : 0));
   const outward = farther.muByMotorDeg[sensorAnchor] - base.muByMotorDeg[sensorAnchor];
   if (!recovers(base, returned, [driveAnchor])) throw new Error('Spool probe did not restore the held drive');
   if (!recovers(base, returned)) return { accepted: false, reason: 'hysteretic sensor return' };

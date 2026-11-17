@@ -57,6 +57,9 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
                     row[anchor] += float(errors[anchor]) * float(mm_per_degree[anchor])
             row[drive] = _point_value(point, "l_drive_mu", "l_drive", use_noise_mean)
             row[sensor] = _point_value(point, "l_sensor_mu", "l_sensor", use_noise_mean)
+            for extra in point.get("extra_sensor_ranges", []):
+                if extra.get("accepted") is True:
+                    row[int(extra["anchor"])] = _point_value(extra, "length_mu_mm", "length_mm", use_noise_mean)
             lengths.append(row)
             sweep_index.append(index)
     return {
@@ -68,8 +71,8 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
 def dataset_stretch(dataset: dict):
     """Recorded sensor loads plus firmware compliance for per-pose range correction.
 
-    Each sweep has d+1 active lines. Static equilibrium and the commanded sensor
-    force determine their individual loads; unused lines retain the low force.
+    Static equilibrium and every commanded torque determine the line loads.
+    A rejected extra range still contributes its commanded force.
     Rough bootstrap and historical force records retain the rigid fit.
     """
     from autocal.equal_strain import is_equal_strain
@@ -85,7 +88,14 @@ def dataset_stretch(dataset: dict):
                                               and np.isfinite(point["sensor_force_n"]) for _, point in points):
         return None
     sensors = np.array([int(point.get("source_sensor_anchor", sweep["sensor_anchor"])) for sweep, point in points])
-    return dict(model=model, sensors=sensors,
+    known = np.full((len(points), int(dataset["num_anchors"])), np.nan)
+    for index, (_, point) in enumerate(points):
+        for extra in point.get("extra_sensor_ranges", []):
+            force = float(extra["force_n"])
+            if not np.isfinite(force) or force <= 0:
+                raise ValueError("Extra sensor requires a positive finite recorded force")
+            known[index, int(extra["anchor"])] = force
+    return dict(model=model, sensors=sensors, known=known,
                 forces=np.array([point["sensor_force_n"] for _, point in points]),
                 weight=float(m666.get("W", 0.)) * 9.81,
                 passive=float((config.get("force_tuning") or {}).get("force_low_n", 0.)))
@@ -94,20 +104,19 @@ def dataset_stretch(dataset: dict):
 def stretch_corrected_lengths(anchors, positions, absolute, measured, stretch):
     directions = anchors[None, :, :] - positions[:, None, :]
     directions /= np.maximum(np.linalg.norm(directions, axis=2), 1e-9)[:, :, None]
-    active = np.nonzero(measured)[1].reshape(len(positions), -1)
-    local = np.take_along_axis(directions, active[:, :, None], axis=1)
-    sensor_row = (active == stretch["sensors"][:, None]).astype(float)
-    matrix = np.concatenate([local.transpose(0, 2, 1), sensor_row[:, None, :]], axis=1)
-    load = -stretch["passive"] * np.sum(directions * (~measured)[:, :, None], axis=1)
-    load[:, -1] += stretch["weight"]
+    known = np.where(measured, np.nan, stretch["passive"])
+    known = np.where(np.isfinite(stretch["known"]), stretch["known"], known)
+    known[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
+    selectors = np.eye(anchors.shape[0])[None, :, :] * np.isfinite(known)[:, :, None]
+    matrix = np.concatenate([directions.transpose(0, 2, 1), selectors], axis=1)
+    load = np.zeros((len(positions), anchors.shape[1]))
+    load[:, -1] = stretch["weight"]
     # Trial geometries can make the static system singular during fitting.
     # A tiny ridge keeps their residual finite without changing reachable loads.
     transpose = matrix.transpose(0, 2, 1)
     normal = transpose @ matrix + 1e-12 * np.eye(matrix.shape[-1])
-    rhs = transpose @ np.column_stack([load, stretch["forces"]])[:, :, None]
-    forces = np.linalg.solve(normal, rhs)[:, :, 0]
-    tensions = np.zeros_like(absolute)
-    np.put_along_axis(tensions, active, forces, axis=1)
+    rhs = transpose @ np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
+    tensions = np.linalg.solve(normal, rhs)[:, :, 0]
     return np.column_stack([stretch["model"].corrected_distance_mm(absolute[:, axis], tensions[:, axis], axis=axis)
                             for axis in range(anchors.shape[0])])
 
@@ -246,6 +255,12 @@ def shift_dataset_home_offsets(dataset: dict, home_offsets_mm: Sequence[float]) 
             for key, anchor in (("l_drive", drive), ("l_drive_mu", drive), ("l_sensor", sensor), ("l_sensor_mu", sensor)):
                 if new_point.get(key) is not None:
                     new_point[key] = float(new_point[key]) + offsets[anchor]
+            if "extra_sensor_ranges" in point:
+                new_point["extra_sensor_ranges"] = [dict(extra) for extra in point["extra_sensor_ranges"]]
+                for extra in new_point["extra_sensor_ranges"]:
+                    for key in ("length_mm", "length_mu_mm"):
+                        if extra.get(key) is not None:
+                            extra[key] = float(extra[key]) + offsets[int(extra["anchor"])]
             new_sweep["data_points"].append(new_point)
         shifted["sweeps"].append(new_sweep)
     return shifted

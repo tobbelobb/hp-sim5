@@ -3,11 +3,11 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2, driveStepMm = 0, stepMmByAnchor = [] } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2, driveStepMm = 0, stepMmByAnchor = [], extraGain = null } = {}) {
   let now = 0;
   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
   let preparing = preparationDrift;
-  let angles = [0, 0, 0, 0];
+  let angles = extraGain === null ? [0, 0, 0, 0] : [0, 0, 0, 0, 0];
   const commands = [];
   const points = [];
   let lastSleepMs = null, noiseBatch = 0;
@@ -27,6 +27,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
       // Firmware moves whole steps; truncation can leave almost one step short.
       angles[1] += driveStepMm ? Math.trunc(Number(move[1]) / driveStepMm) * driveStepMm : Number(move[1]);
       if (!(forceLosesCoupling && modes[2] > 2.5)) angles[2] -= sensorGain * Number(move[1]);
+      if (extraGain !== null && modes[4] > 0.1) angles[4] += extraGain * Number(move[1]);
     }
     return { reply: '' };
   };
@@ -50,8 +51,9 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     },
   };
   const run = () => performForceSweep(send, { driveAnchor: 1, sensorAnchor: 2 }, {
-    axes: ['X', 'Y', 'Z', 'U'], motorIds: ['40.0', '41.0', '42.0', '43.0'],
-    sweepPoints, feed: 1400, speedup: 1, mmPerDeg: [1, 1, 1, 1], datasetStartMs: 0,
+    axes: extraGain === null ? ['X', 'Y', 'Z', 'U'] : ['X', 'Y', 'Z', 'U', 'V'],
+    motorIds: angles.map((_, idx) => `${40 + idx}.0`),
+    sweepPoints, feed: 1400, speedup: 1, mmPerDeg: angles.map(() => 1), datasetStartMs: 0,
     forceLow: .01, forceMid: .23, forceMax: 2.4, fixedAnchors: [0, 3], fixedTargets: [0, 0],
     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
@@ -218,4 +220,19 @@ test('sensor force profile interpolates, holds its end values and must match the
   expect(sensorForceProfileFor([profile, otherHeight], 1, 2, [0, 3], [390, -200])).toBe(otherHeight);
   expect(() => sensorForceProfileFor([profile], 2, 1, [0, 3], [390, -100])).toThrow('found 0');
   expect(() => sensorForceProfileFor([profile, profile], 1, 2, [0, 3], [390, -100])).toThrow('found 2');
+});
+
+
+test.each([0, 2])('extra sensor with gain %s is tensioned only for measurement and must pass its own probe', async extraGain => {
+  const trial = movingPullout({ extraGain, sweepPoints: 5,
+    sensorForceProfile: { drive_mm: [-600, 0], force_n: [1, 3], extra_sensor_force_n: 2 } });
+  const result = await trial.run();
+  const extras = result.dataPoints.map(point => point.extra_sensor_ranges[0]);
+  expect(extras.every(extra => extra.anchor === 4 && extra.force_n === 2)).toBe(true);
+  expect(extras.some(extra => extra.accepted)).toBe(extraGain !== 0);
+  expect(extras.every(extra => Number.isFinite(extra.length_mu_mm))).toBe(true);
+  const modes = trial.commands.filter(({line}) => line.startsWith('M569.4'))
+    .map(({line}) => line.split(' T')[1].split(':').map(Number));
+  expect(modes.find(row => row[1] > 0)[4]).toBe(.01);
+  expect(modes.some(row => row[1] === 0 && row[2] > 0 && row[4] === 2)).toBe(true);
 });

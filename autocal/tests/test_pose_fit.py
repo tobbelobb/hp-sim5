@@ -172,3 +172,39 @@ def test_stretched_hp5_fit_recovers_geometry_from_a_distant_seed():
                                 home_offset_prior_sigma_mm=5.)
     assert fit['success'] and fit['stretch_corrected']
     assert np.max(np.linalg.norm(fit['anchors']-anchors,axis=1)) < .001
+
+
+@pytest.mark.parametrize('accepted', [True, False])
+def test_extra_range_force_survives_rejection_and_reversed_roles(accepted):
+    from autocal.pose_fit import consistency_residuals, dataset_stretch
+    anchors = np.array([[0.,-1900.,-280.], [1900.,0.,-280.], [0.,1900.,-280.],
+                        [-1900.,0.,-280.], [0.,0.,1900.]])
+    ma, strands, guy = np.array([2,2,2,2,4]), np.array([2,2,2,2,4]), np.array([429.1]*4+[352.3])
+    dataset = dict(num_anchors=5, dimensions=3, config={
+        'm666_before_data_collection': {'S':20000., 'W':.081, 'U':ma.tolist(), 'N':strands.tolist(), 'Y':guy.tolist()},
+        'force_tuning': {'force_low_n':.05}}, sweeps=[])
+    for sensor in (1, 3):
+        for position in ([0.,-100.,0.], [50.,-100.,100.]):
+            vector = anchors - position
+            distance = np.linalg.norm(vector, axis=1)
+            direction = (vector / distance[:,None]).T
+            tensions = np.linalg.solve(np.vstack([direction, np.eye(5)[sensor], np.eye(5)[2]]),
+                                       [0.,0.,.081*9.81,4.,3.])
+            assert np.all(tensions > 0)
+            delta = distance-tensions*(ma*distance+guy)/(20000*ma**2*strands)-np.linalg.norm(anchors,axis=1)
+            # Mix accepted/rejected points so the measured row count varies.
+            extra = dict(anchor=2, force_n=3., length_mm=delta[2], length_mu_mm=delta[2],
+                         accepted=accepted and sensor == 1)
+            point = dict(l_drive=delta[1], l_sensor=delta[3], sensor_force_n=4.,
+                         source_sensor_anchor=sensor, extra_sensor_ranges=[extra])
+            dataset['sweeps'].append(dict(fixed_anchors=[0,4], fixed_lengths=delta[[0,4]].tolist(),
+                drive_anchor=1, sensor_anchor=3, metadata={'sensor_force_profile':True}, data_points=[point]))
+    lengths = dataset_line_lengths(dataset)['lengths_mm']
+    corrected = consistency_residuals(anchors, lengths, np.zeros(5), stretch=dataset_stretch(dataset))
+    assert np.max(abs(corrected)) < 1e-8
+    shifted = shift_dataset_home_offsets(dataset, [0,0,1.25,0,0])
+    before = dataset['sweeps'][0]['data_points'][0]['extra_sensor_ranges'][0]
+    after = shifted['sweeps'][0]['data_points'][0]['extra_sensor_ranges'][0]
+    assert after['length_mm'] - before['length_mm'] == pytest.approx(1.25)
+    assert after['length_mu_mm'] - before['length_mu_mm'] == pytest.approx(1.25)
+    assert after['force_n'] == before['force_n']

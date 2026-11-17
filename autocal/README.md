@@ -78,6 +78,20 @@ a minimum force. Infeasible tails are removed, and measurements stay within the
 table's support. Commanded profiles do not guarantee actual equal strain: friction,
 force tracking and unequal compliance can still bias the observations.
 
+Fresh HP5 and HP5 pulley-reduced runs also measure the remaining free low line
+during profiled collection. Pullout and idle keep the low compliant force;
+measurements use five times the tuned start force, capped at the tuned maximum.
+The primary sensor's force table accounts for this extra load. Each extra range
+must pass a reversible local encoder-coupling probe at its measurement force.
+Unresolved, hysteretic and untestable ranges are excluded. The dataset records
+`extra_sensor_ranges` with physical anchor indices, commanded forces, lengths,
+acceptance and probe evidence. The point fitter uses accepted ranges and both
+sensor loads, including a rejected range's commanded load, for per-pose stretch
+correction. Home offsets apply to the extra range too. Rough bootstrap keeps the
+single-sensor policy until geometry is checked. Historical profiles preserve
+their original collection policy. Coupling establishes local transmission;
+force tracking and systematic length errors still limit calibration accuracy.
+
 `--fit-home-offsets` is enabled by default. It estimates the non-translational
 home-length offsets with the independent point fitter before the ellipse fit.
 Both fitters remain active, with their anchors and difference logged each pass.
