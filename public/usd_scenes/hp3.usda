@@ -367,7 +367,6 @@ def Xform "World"
         {
             custom rel physics:body0 = </World/HangprinterScene/SpoolD>
             custom rel physics:body1 = </World/HangprinterScene/AnchorD0>
-            custom double restLength = 0.3989
         }
 
         def CableJoint "JointD1_0"

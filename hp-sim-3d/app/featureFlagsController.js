@@ -24,7 +24,7 @@ function storeColorTheme(id) {
   }
 }
 
-export function createFeatureFlagsController({ world, state, toggles = {}, onLineLayeringChanged = null }) {
+export function createFeatureFlagsController({ world, state, toggles = {}, onLineLayeringChanged = null, canChangeLineLayering = () => true }) {
   if (state) {
     state.lineLayeringEnabled = toggles.lineLayeringToggle ? Boolean(toggles.lineLayeringToggle.checked) : true;
     state.closedLoopMotorsEnabled = toggles.closedLoopMotorsToggle ? Boolean(toggles.closedLoopMotorsToggle.checked) : false;
@@ -67,6 +67,12 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
   function setLineLayeringEnabledState(enabled, { fromToggle = false } = {}) {
     const next = Boolean(enabled);
     const changed = (state?.lineLayeringEnabled ?? true) !== next;
+    if (changed && !canChangeLineLayering()) {
+      if (toggles.lineLayeringToggle) {
+        toggles.lineLayeringToggle.checked = state?.lineLayeringEnabled ?? true;
+      }
+      return false;
+    }
     if (state) {
       state.lineLayeringEnabled = next;
     }
@@ -78,6 +84,7 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     if (changed && fromToggle && typeof onLineLayeringChanged === 'function') {
       onLineLayeringChanged();
     }
+    return true;
   }
 
   function setClosedLoopMotorsEnabledState(enabled, { fromToggle = false } = {}) {

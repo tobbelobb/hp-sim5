@@ -112,3 +112,38 @@ fn native_position_and_torque_motors_use_the_same_core() {
     independent.step(0.002);
     assert_eq!(independent.entities[0][66], 0.0);
 }
+
+#[test]
+fn encoder_steps_with_large_accumulated_angles() {
+    let mut e = entity(0.0, 0.0);
+    e[75] = 8.0; // spool
+    e[67] = 1.0; // encoder
+    let mut w = world(vec![e], vec![]);
+    for angle in [1e6, -1e6, 1e18, -1e18] {
+        w.entities[0][66] = angle;
+        w.step(0.002);
+        assert!(w.entities[0][66].is_finite());
+        assert!((w.entities[0][66] - angle).abs() <= std::f64::consts::PI);
+    }
+}
+
+#[test]
+fn encoder_unwrap_preserves_turns_across_phase_boundary() {
+    let mut e = entity(0.0, 0.0);
+    e[75] = 8.0;
+    e[67] = 1.0;
+    let mut w = world(vec![e], vec![]);
+    let pi = std::f64::consts::PI;
+    let tau = 2.0 * pi;
+    for reference in [-100.0, -tau, 0.0, tau, 100.0] {
+        for angle in [-pi + 0.01, -0.2, 0.0, 0.2, pi - 0.01] {
+            w.entities[0][66] = reference;
+            w.entities[0][3..7].copy_from_slice(&[0.0, 0.0, (angle / 2.0).sin(), (angle / 2.0).cos()]);
+            let mut expected = angle;
+            while expected - reference > pi { expected -= tau; }
+            while expected - reference < -pi { expected += tau; }
+            w.step(0.002);
+            assert!((w.entities[0][66] - expected).abs() < 1e-12);
+        }
+    }
+}

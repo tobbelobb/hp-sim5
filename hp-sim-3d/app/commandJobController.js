@@ -667,6 +667,7 @@ export function createCommandJobController({
     resetJobTracking,
     setPrintActive,
     isPrintActive,
+    isFinishAsapActive: () => asapState.active,
     handleUserReset,
     hidePrintStatus,
     showPrintStatus,

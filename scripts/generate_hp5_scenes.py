@@ -38,6 +38,9 @@ def build(reduced):
             # Leave unauthored relationships absent instead of inventing null values.
             if targets:
                 rel.SetTargets([Sdf.Path(mapping.get(str(path), str(path))) for path in targets])
+        # Copied spans move with the new routing. Derive their lengths at bake time.
+        if prim.GetTypeName() == 'CableJoint':
+            prim.RemoveProperty('restLength')
         if transform:
             attr = prim.GetAttribute('xformOp:translate')
             if attr:

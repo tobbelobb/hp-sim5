@@ -576,3 +576,15 @@ def Xform "World"
     expect(() => bakeCableSceneUsdaSource(source)).toThrow(/manual/);
   });
 });
+
+test.each(['hp3', 'hp5'])('%s derives tight spans with and without layering', name => {
+  const source = require('node:fs').readFileSync(`public/usd_scenes/${name}.usda`, 'utf8');
+  for (const options of [{}, { cablePathHalfWidthOverride: 0, deriveAll: true }]) {
+    const baked = bakeCableSceneUsdaSource(source, options);
+    for (const path of baked.resolvedPaths) {
+      for (const joint of path.jointResults) {
+        expect(joint.restLength).toBeCloseTo(joint.world0.distanceTo(joint.world1), 12);
+      }
+    }
+  }
+});

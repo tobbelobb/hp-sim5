@@ -252,3 +252,40 @@ test('a disconnected recorder cannot prevent the next collection from enabling c
     simulationSettings: { closedLoopMotorsEnabled: true, recording: true, recordingError: null } });
   recorder.disconnect();
 });
+
+test('layering edits during Finish ASAP leave flags and the UI unchanged', () => {
+  const world = new World();
+  let finishing = false;
+  const toggle = { checked: true, addEventListener: jest.fn() };
+  const rebake = jest.fn();
+  const flags = createFeatureFlagsController({
+    world, state: {}, toggles: { lineLayeringToggle: toggle },
+    canChangeLineLayering: () => !finishing,
+    onLineLayeringChanged: rebake,
+  });
+  const invalidate = jest.fn();
+  world.setResource('cableSolverBackend', { invalidate });
+  finishing = true;
+  toggle.checked = false;
+  expect(flags.setLineLayeringEnabledState(false, { fromToggle: true })).toBe(false);
+  expect(toggle.checked).toBe(true);
+  expect(flags.lineLayeringEnabled).toBe(true);
+  expect(world.getResource('enableLayering')).toBe(true);
+  expect(invalidate).not.toHaveBeenCalled();
+  expect(rebake).not.toHaveBeenCalled();
+
+  const commands = { handleUserReset: jest.fn() };
+  const controller = createExternalCommandController({ world, featureFlags: flags, commands, url: 'ws://test', WebSocketCtor: Socket });
+  controller.connect();
+  Socket.last.open();
+  controller.handlePayload({ type: 'simulation_settings', lineLayeringEnabled: false });
+  controller.handlePayload({ type: 'encoder_request', requestId: 42, axes: [] });
+  expect(Socket.last.samples.at(-1).simulationSettings.settingsError).toMatch('Finish ASAP');
+  expect(world.getResource('enableLayering')).toBe(true);
+  expect(commands.handleUserReset).not.toHaveBeenCalled();
+
+  finishing = false;
+  flags.setLineLayeringEnabledState(false, { fromToggle: true });
+  expect(world.getResource('enableLayering')).toBe(false);
+  expect(rebake).toHaveBeenCalledTimes(1);
+});

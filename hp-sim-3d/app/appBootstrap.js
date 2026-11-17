@@ -169,6 +169,7 @@ export function createHpSimApp({
     state,
     toggles: dom,
     onLineLayeringChanged: () => controllers.commands?.handleUserReset?.(),
+    canChangeLineLayering: () => !controllers.commands?.isFinishAsapActive(),
   });
   view = createViewController({
     document: ownerDocument,
