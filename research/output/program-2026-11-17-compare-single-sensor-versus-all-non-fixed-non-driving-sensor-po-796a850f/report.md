@@ -92,3 +92,16 @@ datasets, manifests, iteration logs, matched-refit code and the implementation
 patch. Raw simulator logs remain under `output/extra-sensor-production/`; they are
 not needed to recompute the archived matched fits. Recompute both matched fits from the archived data with
 `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. .venv/bin/python research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/production-validation/score.py`.
+
+## Follow-up: time to first good fit and incomplete pipeline integration
+
+The [prefix replay and pipeline audit](production-validation/prefix-audit/report.md)
+finds a stronger early benefit on direct HP5 than the final-data comparison alone
+suggests: ≤2 mm worst-coordinate error after four profiled sweeps with extra
+ranges, versus no prefix through twelve without them. Reduced reaches ≤2 mm
+after four either way and has more later prefixes above that threshold with
+extra ranges. Both first live refinement fits were already near 1 mm after five
+profiled sweeps. Candidate ranking omits the expected future fifth range, history
+validation still scores ellipses, and rough collection remains unchanged. The
+extra-range model is therefore not integrated throughout the optimization loop.
+These are offline fits on fixed recordings, not a new wall-time benchmark.

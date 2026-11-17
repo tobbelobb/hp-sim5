@@ -1,0 +1,225 @@
+{
+  "variant": "reduced",
+  "results": [
+    {
+      "sweeps": 3,
+      "points": 60,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.017138530214413653,
+      "abs_mm": 170.1461313253035,
+      "aligned_mm": 132.71372592366933,
+      "fit_wall_s": 4.777750446999562
+    },
+    {
+      "sweeps": 3,
+      "points": 60,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.02314766656500862,
+      "abs_mm": 9.305186299082834,
+      "aligned_mm": 8.928120363877179,
+      "fit_wall_s": 2.222365053003159
+    },
+    {
+      "sweeps": 4,
+      "points": 80,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.018150613303309197,
+      "abs_mm": 1.7234569408208245,
+      "aligned_mm": 1.4022529455303467,
+      "fit_wall_s": 2.5529110800016497
+    },
+    {
+      "sweeps": 4,
+      "points": 80,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.025663314944174148,
+      "abs_mm": 1.3163288831246973,
+      "aligned_mm": 1.1154443805272027,
+      "fit_wall_s": 2.2731233890008298
+    },
+    {
+      "sweeps": 5,
+      "points": 100,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.01829511431537729,
+      "abs_mm": 1.4757253552982093,
+      "aligned_mm": 1.2795978183986365,
+      "fit_wall_s": 2.737812600000325
+    },
+    {
+      "sweeps": 5,
+      "points": 100,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.027146575899315746,
+      "abs_mm": 1.0327395989882007,
+      "aligned_mm": 0.8605636723228293,
+      "fit_wall_s": 2.867670296000142
+    },
+    {
+      "sweeps": 6,
+      "points": 120,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.02358416649315912,
+      "abs_mm": 2.4654740932671757,
+      "aligned_mm": 1.8453872788526628,
+      "fit_wall_s": 3.3295322449994273
+    },
+    {
+      "sweeps": 6,
+      "points": 120,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.034325495152267155,
+      "abs_mm": 2.4613353504823863,
+      "aligned_mm": 1.965333785164768,
+      "fit_wall_s": 2.380839432000357
+    },
+    {
+      "sweeps": 7,
+      "points": 140,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.028115035279305686,
+      "abs_mm": 1.1283848836619654,
+      "aligned_mm": 0.9098863955930101,
+      "fit_wall_s": 2.8513382540004386
+    },
+    {
+      "sweeps": 7,
+      "points": 140,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.03976439170809552,
+      "abs_mm": 2.1053472669395887,
+      "aligned_mm": 1.809979446412922,
+      "fit_wall_s": 3.115543878000608
+    },
+    {
+      "sweeps": 8,
+      "points": 160,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.03120859856225262,
+      "abs_mm": 1.172840304185911,
+      "aligned_mm": 0.9962300353575756,
+      "fit_wall_s": 4.102858602000197
+    },
+    {
+      "sweeps": 8,
+      "points": 160,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.043810665866389785,
+      "abs_mm": 2.0228683960249327,
+      "aligned_mm": 1.7967870541919304,
+      "fit_wall_s": 3.7032335309995688
+    },
+    {
+      "sweeps": 9,
+      "points": 180,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.038693617008749764,
+      "abs_mm": 3.7474273004697807,
+      "aligned_mm": 3.190764367811104,
+      "fit_wall_s": 4.40469561899954
+    },
+    {
+      "sweeps": 9,
+      "points": 180,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.05301595862169571,
+      "abs_mm": 2.7203427028080114,
+      "aligned_mm": 2.219867489906484,
+      "fit_wall_s": 4.6431583329977
+    },
+    {
+      "sweeps": 10,
+      "points": 200,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.03883605467619227,
+      "abs_mm": 3.7845597282755534,
+      "aligned_mm": 3.0263701519315256,
+      "fit_wall_s": 4.6777403080013755
+    },
+    {
+      "sweeps": 10,
+      "points": 200,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.058143384173664096,
+      "abs_mm": 3.801290026392735,
+      "aligned_mm": 3.152599828577798,
+      "fit_wall_s": 4.020746414000314
+    },
+    {
+      "sweeps": 11,
+      "points": 220,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.040621733743188275,
+      "abs_mm": 4.031611664520142,
+      "aligned_mm": 3.1986449167822615,
+      "fit_wall_s": 4.11427781400198
+    },
+    {
+      "sweeps": 11,
+      "points": 220,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.07111261505378702,
+      "abs_mm": 3.863526140170279,
+      "aligned_mm": 3.3404848326394836,
+      "fit_wall_s": 5.224041435998515
+    },
+    {
+      "sweeps": 12,
+      "points": 240,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.04054293603328759,
+      "abs_mm": 3.043923251825163,
+      "aligned_mm": 2.4179389951805286,
+      "fit_wall_s": 4.642335052998533
+    },
+    {
+      "sweeps": 12,
+      "points": 240,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.07192811517136888,
+      "abs_mm": 4.541290307607596,
+      "aligned_mm": 3.6497526291776,
+      "fit_wall_s": 4.026737756001239
+    },
+    {
+      "sweeps": 13,
+      "points": 260,
+      "ranges": 4,
+      "success": true,
+      "rms_mm": 0.04589969753493603,
+      "abs_mm": 1.988909544240414,
+      "aligned_mm": 1.2667291412575197,
+      "fit_wall_s": 4.855078112999763
+    },
+    {
+      "sweeps": 13,
+      "points": 260,
+      "ranges": 5,
+      "success": true,
+      "rms_mm": 0.08786710657025439,
+      "abs_mm": 3.4269071758756127,
+      "aligned_mm": 2.882791397916337,
+      "fit_wall_s": 4.098965984001552
+    }
+  ]
+}

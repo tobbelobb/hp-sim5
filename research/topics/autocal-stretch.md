@@ -28,3 +28,12 @@ selected reduced estimate must not hide its worse final refit. Earlier reviewed
 short reduced recordings favor five ranges, while direct narrow physical sweeps
 did not establish a gain. Neither universal accuracy nor full-loop speed benefit
 is established. Rough bootstrap and historical datasets keep the old policy.
+
+The HP5 [prefix audit](../output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/production-validation/prefix-audit/report.md)
+clarifies time-to-quality: direct reaches ≤2 mm worst-coordinate error after four
+profiled sweeps using extra ranges versus none through twelve when they are
+withheld on the same recording; reduced reaches it after four either way. Later
+reduced fits worsen more often. The production fitter uses the extra data, but
+candidate forecasts omit the fifth range, history validation remains ellipse
+based, and rough bootstrap does not collect it. Speed benefits are therefore
+not fully exploited or measured as a controlled end-to-end wall-time result.
