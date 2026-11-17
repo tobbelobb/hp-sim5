@@ -1,0 +1,880 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index 3f894833..119bb4fe 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -78,19 +78,31 @@ a minimum force. Infeasible tails are removed, and measurements stay within the
+ table's support. Commanded profiles do not guarantee actual equal strain: friction,
+ force tracking and unequal compliance can still bias the observations.
+ 
+-Fresh HP5 and HP5 pulley-reduced runs also measure the remaining free low line
+-during profiled collection. Pullout and idle keep the low compliant force;
+-measurements use five times the tuned start force, capped at the tuned maximum.
+-The primary sensor's force table accounts for this extra load. Each extra range
+-must pass a reversible local encoder-coupling probe at its measurement force.
+-Unresolved, hysteretic and untestable ranges are excluded. The dataset records
+-`extra_sensor_ranges` with physical anchor indices, commanded forces, lengths,
+-acceptance and probe evidence. The point fitter uses accepted ranges and both
+-sensor loads, including a rejected range's commanded load, for per-pose stretch
+-correction. Home offsets apply to the extra range too. Rough bootstrap keeps the
+-single-sensor policy until geometry is checked. Historical profiles preserve
+-their original collection policy. Coupling establishes local transmission;
+-force tracking and systematic length errors still limit calibration accuracy.
++Fresh HP5 and HP5 pulley-reduced runs measure the remaining free low line from
++**the first sweep**. Pullout and travel keep the low compliant force, so a line
++can visibly sag during those phases. Before recording a measurement, both sensor
++lines are preloaded and held at the measurement force: by default five times the
++tuned start force, capped at the tuned maximum. Each extra range must resolve a
++reversible local encoder-coupling probe. Frozen, hysteretic and untestable ranges
++are excluded; their commanded forces remain part of the static load model.
++
++HP5 fits use every accepted range with its physical anchor identity, home offset,
++reeving and per-pose stretch correction. Checked bootstrap ranges are reused for
++refinement rather than collected again with equal-strain profiles. Candidate
++ranking includes future fifth ranges, uncertainty uses the force-aware residual,
++and history validation uses all accepted ranges with offsets frozen from each
++candidate's training data. HP5 applies the best validated anchor/offset model
++rather than averaging it with an unvalidated fit. Historical datasets retain
++their collection policy.
++`--no-extra-sensors` on the collector retains the legacy compliant-line policy.
++
++HP5 can stop after two successive well-constrained fits with range RMS at most
++0.05 mm, estimated maximum anchor standard deviation at most 1 mm, at least four
++sweeps and extra ranges accepted on at least half the points. The fits must use
++new measurements and agree within 2 mm in every anchor coordinate. The stop reason
++is `good-fit`. These checks measure local consistency and observability, not true
++anchor error. `--stable-step-mm 0` disables this early condition as well as ordinary
++stable-estimate stopping. HP3/HP4 retain their existing stopping rules.
+ 
+ `--fit-home-offsets` is enabled by default. It estimates the non-translational
+ home-length offsets with the independent point fitter before the ellipse fit.
+diff --git a/autocal/_autocal_common.py b/autocal/_autocal_common.py
+index 32b78cb7..58ea79d5 100644
+--- a/autocal/_autocal_common.py
++++ b/autocal/_autocal_common.py
+@@ -44,7 +44,7 @@ DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
+ # cannot drift apart on the spelling.
+ FULL_AUTO_STOP_REASON_PATIENCE = "patience"
+ STABLE_STOP_REASON = "stable-estimate"
+-NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, STABLE_STOP_REASON, "workspace-exhausted")
++NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, STABLE_STOP_REASON, "good-fit", "workspace-exhausted")
+ _MIN_RADIUS_SCALE = 0.2
+ _MAX_RADIUS_SCALE = 5.0
+ _DEFAULT_B_BOUNDS = (0.0, 1.0)
+diff --git a/autocal/autocal.py b/autocal/autocal.py
+index 1c7fd2e7..e8cc2be0 100644
+--- a/autocal/autocal.py
++++ b/autocal/autocal.py
+@@ -26,6 +26,7 @@ from autocal.stage_artifacts import write_stage_artifact
+ from autocal import extended_reference
+ from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
+ from autocal.stopping import StoppingPolicy
++from autocal.pose_fit import has_extra_sensor_data, dataset_stretch
+ 
+ 
+ def full_auto_loop(
+@@ -541,22 +542,28 @@ def full_auto_loop(
+                     added = _collect_bootstrap_sweep(cfg, f"rough_extra_{extra + 1}")
+                     rough = _merge_sweep_datasets(rough, added)
+                     _write_json(dataset_path, rough)
+-                # Never mix rough constant-force observations with refined observations.
+-                # Each sweep has its own fixed targets and matching force table.
+-                refined = {**rough, "sweeps": []}
+-                for index, cfg in enumerate(dataset_sweep_configs(rough), start=1):
+-                    write_bootstrap_state(dataset_path, "remeasuring", sweep=index)
+-                    profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
+-                    if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
+-                        raise ValueError("missing M666 W/N/Y/U or tuned forces for equal-strain bootstrap")
+-                    measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
+-                    refined = _merge_sweep_datasets(refined, measured)
+-                    _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
+-                _write_json(dataset_path, refined)
++                if has_extra_sensor_data(rough) and dataset_stretch(rough) is not None:
++                    # HP5 already records the loads needed for per-pose stretch;
++                    # keep these measured ranges instead of collecting them twice.
++                    _write_json(dataset_path, rough)
++                    _log_console("; HP5 bootstrap ranges are force-aware; reusing checked measurements")
++                else:
++                    # Never mix rough constant-force observations with refined observations.
++                    # Each sweep has its own fixed targets and matching force table.
++                    refined = {**rough, "sweeps": []}
++                    for index, cfg in enumerate(dataset_sweep_configs(rough), start=1):
++                        write_bootstrap_state(dataset_path, "remeasuring", sweep=index)
++                        profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
++                        if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
++                            raise ValueError("missing M666 W/N/Y/U or tuned forces for equal-strain bootstrap")
++                        measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
++                        refined = _merge_sweep_datasets(refined, measured)
++                        _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
++                    _write_json(dataset_path, refined)
+                 write_bootstrap_state(dataset_path, "complete")
+             except (ValueError, np.linalg.LinAlgError, subprocess.CalledProcessError, KeyboardInterrupt) as error:
+                 write_bootstrap_state(dataset_path, "failed", reason=str(error))
+-                _log_console(f"; equal-strain bootstrap stopped: {error}; rough data: {rough_path}; checks: {check_path}")
++                _log_console(f"; checked bootstrap stopped: {error}; rough data: {rough_path}; checks: {check_path}")
+                 if headless_sim is not None:
+                     headless_sim.manifest["stop_reason"] = "bootstrap-interrupted" if isinstance(error, KeyboardInterrupt) else "unreliable-rough-bootstrap"
+                 return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
+@@ -655,7 +662,7 @@ def full_auto_loop(
+     best_meta: Dict[str, object] = {}
+     history_candidates: List[Dict[str, object]] = []
+     history_total_iterations = 0
+-    stopping = StoppingPolicy(patience=patience, stop_file=stop_file, stable_step_mm=float(stable_step_mm))
++    stopping = StoppingPolicy(patience=patience, stop_file=stop_file, stable_step_mm=float(stable_step_mm), machine_type=str(machine_type))
+     stopping.announce(_log_console)
+     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
+     has_variants = bool(full_auto_runs)
+@@ -1262,7 +1269,10 @@ def full_auto_loop(
+             if selected_underconstrained:
+                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
+ 
+-            if stop.decision == "accept" and stop.stable_hit:
++            if stop.decision == "accept" and stop.good_fit_hit:
++                _log_console("; full-auto: stopping after two good HP5 fits "
++                             "(range RMS <=0.05 mm, estimated anchor std <=1 mm, agreement <=2 mm).")
++            elif stop.decision == "accept" and stop.stable_hit:
+                 _log_console(
+                     "; full-auto: stopping; the estimate has stopped moving "
+                     f"(last step {_fmt_float(stop.step_mm, suffix='mm')}, "
+@@ -1308,6 +1318,7 @@ def full_auto_loop(
+                     "patience": stopping.patience,
+                     "min_delta": min_delta,
+                     "stable_hit": stop.stable_hit,
++                    "good_fit_hit": stop.good_fit_hit,
+                     "anchor_step_mm": stop.step_mm,
+                     "stable_streak": stopping.stable_streak,
+                     "warnings": selected_warnings,
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 9c20da2e..04701951 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -611,6 +611,7 @@ function validateSweepCollectionInput(context) {
+     maxTravelMm,
+     sweepConfigFile: args.sweepConfigFile ?? null,
+     sensorForceProfileFile: args.sensorForceProfile ?? null,
++    extraSensors: config.numAnchors === 5 && config.dimensions === 3 && !args.noExtraSensors,
+     completedSweeps: parseOptionalNumber(args.completedSweeps, 'completed-sweeps', { integer: true }) ?? 0,
+     debugSweep: !!args.debugSweep,
+     autoTuneForce: !!args.autoTuneForce,
+@@ -1179,6 +1180,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+     forceMax,
+     sensorCollectionForce: constantSensorForce = null,
+     sensorForceProfile = null,
++    extraSensors = false,
+     noiseSampleCount,
+     noiseSampleIntervalMs,
+     noiseMinSamples,
+@@ -1194,13 +1196,17 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+   const driveAxis = axes[driveAnchor];
+   const forbidden = new Set(forbiddenForceAnchors ?? []);
+   const fixedSet = new Set(fixedAnchors ?? []);
+-  // Profiles account for this known load. Historical profiles keep unused lines compliant.
+-  const extraForce = sensorForceProfile?.extra_sensor_force_n;
++  // Constant-force HP5 collection records both loads from the first measurement.
++  // Historical profiles without an extra load retain their original force policy.
++  const extraForce = sensorForceProfile ? sensorForceProfile.extra_sensor_force_n
++    : extraSensors ? resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce: constantSensorForce }) : null;
+   const extraAnchors = Number.isFinite(extraForce) && extraForce > 0
+     ? motorIds.map((_, idx) => idx).filter(idx => idx !== driveAnchor && idx !== sensorAnchor
+       && !fixedSet.has(idx) && !forbidden.has(idx)) : [];
+   const measurementSensors = [sensorAnchor, ...extraAnchors];
+   const measurementSensorForces = Object.fromEntries(extraAnchors.map(idx => [idx, extraForce]));
++  if (extraAnchors.length) console.log(`; measurement sensors [${measurementSensors.join(', ')}]; `
++    + `extra force ${extraForce.toFixed(3)} N; pullout keeps the idle force`);
+   const fixedTargetByAnchor = buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorIds.length);
+   const settleOptions = {
+     validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
+@@ -1907,6 +1913,7 @@ export async function collectSweepData(send, context) {
+             stepMmByAnchor,
+             datasetStartMs,
+             ...forces,
++            extraSensors: options.extraSensors,
+             sensorForceProfile: sensorForceProfiles
+               ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor,
+                 sweepConfig.fixedAnchors, fixedTargets)
+@@ -2057,7 +2064,7 @@ export async function collectSweepData(send, context) {
+       m669: m669Values,
+       m92: m92Values,
+       mm_per_degree: mmPerDeg,
+-      extra_sensors_enabled: machineConfig.numAnchors === 5 && machineConfig.dimensions === 3,
++      extra_sensors_enabled: options.extraSensors,
+       noise_model: { project_zero_tension: false },
+       notes: {
+         buildup_factor_forced: Number.isFinite(forcedBuildupFactor) ? forcedBuildupFactor : undefined,
+diff --git a/autocal/control/cli/collect_sweep_data.mjs b/autocal/control/cli/collect_sweep_data.mjs
+index 187d47c8..97ede895 100644
+--- a/autocal/control/cli/collect_sweep_data.mjs
++++ b/autocal/control/cli/collect_sweep_data.mjs
+@@ -217,6 +217,7 @@ export function parseBridgeArgs(argv) {
+     sensorForce: null,
+     sensorCollectionForce: null,
+     sensorForceProfile: null,
++    noExtraSensors: false,
+     forceLow: null,
+     forceMid: null,
+     forceMax: null,
+@@ -341,6 +342,8 @@ export function parseBridgeArgs(argv) {
+       args.sensorCollectionForce = argv[++i] || null;
+     } else if (arg === '--sensor-force-profile') {
+       args.sensorForceProfile = argv[++i] || null;
++    } else if (arg === '--no-extra-sensors') {
++      args.noExtraSensors = true;
+     } else if (arg === '--torque') {
+       args.torque = argv[++i] || null;
+     } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
+@@ -437,6 +440,7 @@ Options:
+   --force-buildup-factor <k> Force M666 Q to this value before collection
+   --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
+   --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
++  --no-extra-sensors        Keep unused HP5 lines compliant (legacy collection)
+   --no-auto-tune-force       skip auto-tuning and use provided/default forces
+   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
+   --debug-sweep              Print planned sweep permutations before collecting
+diff --git a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+index 781d8412..6c9514c5 100644
+--- a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
++++ b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+@@ -58,7 +58,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
+     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
+     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
+     onPoint: point => points.push(point), sensorForceProfile, sensorSpoolGearRatio, probeSpoolReserve,
+-    stepMmByAnchor,
++    stepMmByAnchor, extraSensors: extraGain !== null,
+   });
+   return { run, commands, points };
+ }
+@@ -236,3 +236,12 @@ test.each([0, 2])('extra sensor with gain %s is tensioned only for measurement a
+   expect(modes.find(row => row[1] > 0)[4]).toBe(.01);
+   expect(modes.some(row => row[1] === 0 && row[2] > 0 && row[4] === 2)).toBe(true);
+ });
++
++
++test('the spare line is a sensor in the first constant-force measurement, without a profile', async () => {
++  const trial = movingPullout({extraGain:2,sweepPoints:5});
++  const result = await trial.run();
++  const extras = result.dataPoints.map(point=>point.extra_sensor_ranges[0]);
++  expect(extras.every(extra=>extra.anchor===4 && Math.abs(extra.force_n-1.15)<1e-9)).toBe(true);
++  expect(extras.some(extra=>extra.accepted)).toBe(true);
++});
+diff --git a/autocal/fit_stage.py b/autocal/fit_stage.py
+index be4c5ba2..2daaca38 100644
+--- a/autocal/fit_stage.py
++++ b/autocal/fit_stage.py
+@@ -4,7 +4,7 @@ from __future__ import annotations
+ from autocal._autocal_common import *  # noqa: F401,F403
+ from autocal.filter_pass import estimate_effective_radii_with_spool_model
+ from autocal.equal_strain import is_equal_strain
+-from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths
++from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths, dataset_stretch
+ from autocal.projection_mode import resolve_projection_mode
+ from autocal.pose_planning import pose_information
+ 
+@@ -419,18 +419,21 @@ def fit_ellipse_dataset(
+         lengths = dataset_line_lengths(dataset_for_estimation, use_noise_mean=bool(use_noise_mean))["lengths_mm"]
+         sigma = float(pose_fit["robust_scale_mm"])
+         info_obs = pose_information(anchors, lengths, machine_type=machine_type,
+-                                   low_anchor_z=low_anchor_z, sigma_mm=sigma)
++                                   low_anchor_z=low_anchor_z, sigma_mm=sigma,
++                                   stretch=dataset_stretch(dataset_for_estimation))
+         offsets = num_anchors - dimensions
+         if fit_home_offsets:
+             info_obs[-offsets:, -offsets:] += np.eye(offsets) / HOME_OFFSET_PRIOR_SIGMA_MM**2
+         else:
+             info_obs = info_obs[:-offsets, :-offsets]
+         observations = int(np.isfinite(lengths).sum())
+-        cost_raw = float(pose_fit["rms_mm"]**2 / (dimensions + 1))
++        residual_dof = observations - dimensions * len(lengths)
++        cost_raw = float(pose_fit["rms_mm"]**2 * len(lengths) / residual_dof)
+         cost = cost_raw / sigma**2
+         cal["cost"] = cost
+         cal["details"]["noise_metrics"] = {
+-            "J": cost, "chi2_red": cost * observations / max(1, observations-info_obs.shape[0]),
++            "J": cost, "chi2_red": cost * residual_dof / max(1, residual_dof-info_obs.shape[0]),
++            "residual_dof": residual_dof,
+             "n_obs": observations, "params": info_obs.shape[0],
+             "norm_mode": "sigma", "noise_normalized": True, "sigma_model_mm": sigma,
+         }
+diff --git a/autocal/history_selection.py b/autocal/history_selection.py
+index 6d0411bc..e260cd74 100644
+--- a/autocal/history_selection.py
++++ b/autocal/history_selection.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ 
+ from autocal._autocal_common import _arg_has_flag, _float_or_none, _full_auto_history_selection_score
+ from autocal.predictive_validation import score_future_sweeps
++from autocal.pose_fit import uses_range_fit, has_extra_sensor_data
+ from typing import Dict, List, Optional, Tuple
+ import numpy as np
+ 
+@@ -73,7 +74,11 @@ def evaluate_history_candidates(
+                     f"run={candidate.get('run_id')} heldout_sweeps={prediction[1]} "
+                     "failed_prediction=True"
+                 )
+-            if isinstance(comparison_dataset, dict):
++            if uses_range_fit(validation_dataset) and candidate_plan.get("spool_model_params") is None and not projected:
++                # The candidate's own offsets are frozen. Borrowing the newest
++                # fit's shifted dataset would leak future offsets into validation.
++                comparison = prediction
++            elif isinstance(comparison_dataset, dict):
+                 # Keep the common length model for comparing anchors.
+                 # A lower own-model residual can instead reflect radius/
+                 # elasticity compensation; it is a veto and tie-breaker.
+@@ -239,11 +244,9 @@ def apply_consensus_plan(chosen_plan, anchors):
+ def select_history_plan(scored):
+     """Return the applied plan, single-fit diagnostics and ordered candidates.
+ 
+-    Held-out predictions rank individual fits. Geometric consensus separately
+-    uses all fitted candidates, including the newest unvalidated fit. The
+-    reported score therefore describes the best-ranked single fit, not the
+-    averaged geometry. Keep the two policies together here so offline replay
+-    can reproduce the calibration actually applied by the loop.
++    HP5 ranges select the best frozen prediction, including its own offsets.
++    Other machines retain geometric consensus across fitted candidates; their
++    reported score describes the best-ranked single fit, not the mean geometry.
+ 
+     Failed held-out predictions veto application when no validated fit remains.
+     """
+@@ -251,7 +254,13 @@ def select_history_plan(scored):
+     if not ranked:
+         return None, None, ranked
+     _key, chosen, info = ranked[0]
+-    anchors, members, spread = consensus_anchor_estimate(scored)
++    dataset = chosen.get("plan", {}).get("dataset", {})
++    if uses_range_fit(dataset) and has_extra_sensor_data(dataset):
++        # Averaging anchors while retaining one model's offsets would no longer
++        # apply the model that passed the all-range held-out validation.
++        anchors, members, spread = None, (), None
++    else:
++        anchors, members, spread = consensus_anchor_estimate(scored)
+     plan = apply_consensus_plan(chosen.get("plan"), anchors)
+     meta = dict(chosen.get("summary_meta") or {})
+     meta.update({
+diff --git a/autocal/planning_pass.py b/autocal/planning_pass.py
+index 033230a3..cb3b6e05 100644
+--- a/autocal/planning_pass.py
++++ b/autocal/planning_pass.py
+@@ -4,7 +4,7 @@ from __future__ import annotations
+ from autocal._autocal_common import *  # noqa: F401,F403
+ from autocal.fit_stage import fit_ellipse_dataset
+ from autocal.equal_strain import InfeasibleForceProfileError, is_equal_strain, write_sensor_force_profile, profile_policy_error
+-from autocal.pose_fit import dataset_line_lengths
++from autocal.pose_fit import dataset_line_lengths, has_extra_sensor_data, dataset_stretch, uses_range_fit
+ from autocal.pose_planning import rank_candidates_pose_information
+ from autocal.workspace import exploration_grid
+ 
+@@ -118,6 +118,8 @@ def plan_ellipse_sweep(
+             # Keep the complete ordering until a force-feasible candidate is
+             # found; the highest-information band may all be infeasible.
+             top_k=len(candidates) if needs_profile else int(top_k),
++            measure_extra_ranges=has_extra_sensor_data(dataset),
++            observed_stretch=dataset_stretch(estimation_dataset),
+         )
+     elif spool_params is not None:
+         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
+@@ -179,6 +181,8 @@ def plan_ellipse_sweep(
+     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
+ 
+     collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
++    if uses_range_fit(dataset) and not has_extra_sensor_data(dataset) and not needs_profile and "--no-extra-sensors" not in collector_args_eff:
++        collector_args_eff.append("--no-extra-sensors")
+     collector_args_eff, _ = _inject_spool_collection_args(
+         collector_args_eff,
+         find_radii_mode=find_radii_mode,
+diff --git a/autocal/pose_fit.py b/autocal/pose_fit.py
+index 4dc82821..8e44a33f 100644
+--- a/autocal/pose_fit.py
++++ b/autocal/pose_fit.py
+@@ -35,6 +35,16 @@ def _point_value(point: dict, mean_key: str, raw_key: str, use_noise_mean: bool)
+     return float(point[raw_key])
+ 
+ 
++def uses_range_fit(dataset: dict) -> bool:
++    return (str(dataset.get("machine_type", "")).startswith("hangprinter_")
++            and int(dataset["num_anchors"]) > int(dataset["dimensions"]) + 1)
++
++
++def has_extra_sensor_data(dataset: dict) -> bool:
++    return any(point.get("extra_sensor_ranges") for sweep in dataset.get("sweeps", [])
++               for point in sweep.get("data_points", []))
++
++
+ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[str, np.ndarray]:
+     """Return every point's length change on every line, in mm, with its sweep index."""
+     num_anchors = int(dataset["num_anchors"])
+@@ -73,12 +83,13 @@ def dataset_stretch(dataset: dict):
+ 
+     Static equilibrium and every commanded torque determine the line loads.
+     A rejected extra range still contributes its commanded force.
+-    Rough bootstrap and historical force records retain the rigid fit.
++    Historical constant-force records without extra load evidence retain the rigid fit.
+     """
+     from autocal.equal_strain import is_equal_strain
+     # Only redundant machines use this range model as their primary objective.
+     # Ellipse fits still rely on equal-strain collection and rigid home offsets.
+-    if int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1 or not is_equal_strain(dataset):
++    if (int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1
++            or not (is_equal_strain(dataset) or has_extra_sensor_data(dataset))):
+         return None
+     config = dataset.get("config") or {}
+     m666 = config.get("m666_before_data_collection") or {}
+diff --git a/autocal/pose_planning.py b/autocal/pose_planning.py
+index 6b96151e..cd29d9eb 100644
+--- a/autocal/pose_planning.py
++++ b/autocal/pose_planning.py
+@@ -92,6 +92,7 @@ def pose_information(
+     low_anchor_z: Optional[float],
+     sigma_mm: float,
+     positions: Optional[np.ndarray] = None,
++    stretch=None,
+ ) -> np.ndarray:
+     """Information the given length changes carry about the anchors and the home length offsets."""
+     anchors = np.asarray(anchors, dtype=float)
+@@ -130,7 +131,7 @@ def pose_information(
+                                          dimensions, low_anchor_z)
+         offsets = np.zeros(num_anchors)
+         offsets[num_anchors - num_offsets:] = step[anchor_vec.size:]
+-        return consistency_residuals(moved, lengths_mm, offsets).ravel()
++        return consistency_residuals(moved, lengths_mm, offsets, stretch=stretch).ravel()
+ 
+     size = anchor_vec.size + num_offsets
+     jacobian = np.zeros((lengths_mm.size, size))
+@@ -152,6 +153,8 @@ def rank_candidates_pose_information(
+     sigma_mm: float,
+     regularization: float,
+     top_k: int,
++    measure_extra_ranges: bool = False,
++    observed_stretch=None,
+ ) -> List[Tuple[float, SweepConfig]]:
+     """Rank candidates by the gain in log-determinant of the point-fit information."""
+     anchors = np.asarray(anchors, dtype=float)
+@@ -159,7 +162,7 @@ def rank_candidates_pose_information(
+     num_offsets = num_anchors - dimensions
+     home_lengths = np.linalg.norm(anchors, axis=1)
+     options = dict(machine_type=machine_type, low_anchor_z=low_anchor_z, sigma_mm=sigma_mm)
+-    base = pose_information(anchors, observed_lengths_mm, **options)
++    base = pose_information(anchors, observed_lengths_mm, stretch=observed_stretch, **options)
+     prior = np.full(base.shape[0], float(regularization))
+     prior[base.shape[0] - num_offsets:] += 1.0 / HOME_OFFSET_PRIOR_SIGMA_MM ** 2
+     base = base + np.diag(prior)
+@@ -172,7 +175,8 @@ def rank_candidates_pose_information(
+             continue
+         lengths = np.linalg.norm(anchors[None, :, :] - positions[:, None, :], axis=2) - home_lengths
+         active = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
+-        lengths[:, [axis for axis in range(num_anchors) if axis not in active]] = np.nan
++        if not measure_extra_ranges:
++            lengths[:, [axis for axis in range(num_anchors) if axis not in active]] = np.nan
+         gain = np.linalg.slogdet(base + pose_information(anchors, lengths, positions=positions, **options))[1] - base_logdet
+         if np.isfinite(gain):
+             scored.append((float(gain), cfg))
+diff --git a/autocal/predictive_validation.py b/autocal/predictive_validation.py
+index fe01d804..1f20bae6 100644
+--- a/autocal/predictive_validation.py
++++ b/autocal/predictive_validation.py
+@@ -7,7 +7,8 @@ import numpy as np
+ from autocal.ellipse_cost import EllipseCostFunction
+ from autocal.projection_mode import resolve_projection_mode
+ from autocal.spool_model import SpoolModelParams, dataset_with_modeled_lengths
+-from autocal.pose_fit import shift_dataset_home_offsets
++from autocal.pose_fit import (shift_dataset_home_offsets, uses_range_fit,
++                              dataset_line_lengths, dataset_stretch, consistency_residuals)
+ 
+ 
+ def score_future_sweeps(
+@@ -51,6 +52,20 @@ def score_future_sweeps(
+             )
+         if home_offsets_mm is not None:
+             validation_data = shift_dataset_home_offsets(validation_data, home_offsets_mm)
++        if uses_range_fit(validation_data) and spool_params is None and not projected:
++            lengths = dataset_line_lengths(validation_data, use_noise_mean=use_noise_mean)["lengths_mm"]
++            measured = np.isfinite(lengths)
++            dimensions = int(validation_data["dimensions"])
++            if not lengths.size or not np.all(measured.sum(axis=1) > dimensions):
++                return float("inf"), len(held_out)
++            residuals = consistency_residuals(anchors, lengths, np.zeros(int(validation_data["num_anchors"])),
++                                             stretch=dataset_stretch(validation_data))
++            if not np.all(np.isfinite(residuals)):
++                return float("inf"), len(held_out)
++            # Each pose consumes d nuisance coordinates. Score only its remaining
++            # range consistency constraints, with offsets frozen from training.
++            dof = int(measured.sum()) - dimensions * len(lengths)
++            return float(np.sum(residuals ** 2) / dof), len(held_out)
+         cost = EllipseCostFunction(
+             validation_data,
+             pointwise_filtering=False,
+diff --git a/autocal/rough_bootstrap.py b/autocal/rough_bootstrap.py
+index 5da290b8..6b7870dc 100644
+--- a/autocal/rough_bootstrap.py
++++ b/autocal/rough_bootstrap.py
+@@ -1,4 +1,4 @@
+-"""Check rough geometry before using it to control measurement forces.
++"""Check initial geometry before planning further sweeps and measurement forces.
+ 
+ This is a local observability check, not an accuracy certificate: the conservative
+ 0.5 mm line-error floor and independent starts detect weak fits without claiming
+@@ -17,6 +17,7 @@ from autocal.calibrate import build_anchor_initial_guess
+ from autocal.pose_fit import (
+     HOME_OFFSET_PRIOR_SIGMA_MM, consistency_residuals, dataset_line_lengths,
+     fit_pose_least_squares,
++    dataset_stretch, has_extra_sensor_data,
+ )
+ from autocal.pose_planning import rank_candidates_pose_information
+ from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix_to_opt_vec
+@@ -36,8 +37,8 @@ def write_bootstrap_state(dataset_path, stage, **details):
+     if stage == "complete":
+         dataset = load_json_file(dataset_path, schema="sweep_dataset")
+         from autocal.equal_strain import is_equal_strain
+-        if not is_equal_strain(dataset):
+-            raise ValueError("A complete bootstrap requires profiled measurements")
++        if not (is_equal_strain(dataset) or (has_extra_sensor_data(dataset) and dataset_stretch(dataset) is not None)):
++            raise ValueError("A complete bootstrap requires profiled or force-aware range measurements")
+         details.update(bootstrap_sweeps=len(dataset["sweeps"]),
+                        prefix_sha256=_prefix_hash(dataset["sweeps"]))
+     temporary = path.with_suffix(".tmp")
+@@ -63,7 +64,7 @@ def bootstrap_state_error(dataset_path):
+             from autocal.equal_strain import is_equal_strain
+             count = state.get("bootstrap_sweeps")
+             if (not isinstance(count, int) or count <= 0 or count > len(dataset["sweeps"])
+-                    or not is_equal_strain(dataset)
++                    or not (is_equal_strain(dataset) or (has_extra_sensor_data(dataset) and dataset_stretch(dataset) is not None))
+                     or _prefix_hash(dataset["sweeps"][:count]) != state.get("prefix_sha256")):
+                 return f"Completed bootstrap data no longer matches its state: {path}"
+         except (OSError, ValueError, TypeError):
+@@ -96,12 +97,16 @@ def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):
+     anchors = fit["anchors"]
+     vector = anchors_matrix_to_opt_vec(anchors, machine, low_anchor_z)
+     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
++    stretch = dataset_stretch(dataset)
+     inliers = fit["point_residuals_mm"] <= max(1.0, 6.0 * fit["robust_scale_mm"])
+     lengths = lengths[inliers]
++    if stretch is not None:
++        stretch = {key: value[inliers] if isinstance(value, np.ndarray) else value
++                   for key, value in stretch.items()}
+ 
+     def residuals(x):
+         moved = anchor_opt_vec_to_matrix(x, machine, n, d, low_anchor_z)
+-        return consistency_residuals(moved, lengths, np.zeros(n)).ravel()
++        return consistency_residuals(moved, lengths, np.zeros(n), stretch=stretch).ravel()
+ 
+     steps = np.eye(vector.size) * 0.1
+     jacobian = np.column_stack([(residuals(vector + step) - residuals(vector - step)) / 0.2
+@@ -139,6 +144,8 @@ def next_rough_sweep(dataset, anchors, *, low_anchor_z=None):
+         observed_lengths_mm=dataset_line_lengths(dataset)["lengths_mm"],
+         candidates=[cfg for cfg in candidates if cfg.normalized_key(tol_mm=1.0) not in seen],
+         points_per_sweep=20, sigma_mm=ROUGH_LINE_SIGMA_MM, regularization=1e-6, top_k=1,
++        measure_extra_ranges=has_extra_sensor_data(dataset),
++        observed_stretch=dataset_stretch(dataset),
+     )
+     if not ranked:
+         raise ValueError("No informative reachable rough-bootstrap sweep remains")
+diff --git a/autocal/stopping.py b/autocal/stopping.py
+index 55880f14..4dc5b3a0 100644
+--- a/autocal/stopping.py
++++ b/autocal/stopping.py
+@@ -19,6 +19,9 @@ from autocal._autocal_common import (
+ # is not accuracy: systematic bias moves no estimate.
+ STABLE_SWEEPS = 2
+ STABLE_STEP_MM = 0.5
++HP5_GOOD_STEP_MM = 2.0
++HP5_GOOD_STD_MM = 1.0
++HP5_GOOD_RMS_MM = 0.05
+ 
+ 
+ def history_rank_position(history_candidates, *, iteration: int) -> Optional[int]:
+@@ -57,11 +60,14 @@ class StopDecision:
+     stable_hit: bool
+     step_mm: Optional[float]
+     decision: str
++    good_fit_hit: bool = False
+ 
+     @property
+     def reason(self) -> Optional[str]:
+         if self.decision != "accept":
+             return None
++        if self.good_fit_hit:
++            return "good-fit"
+         return STABLE_STOP_REASON if self.stable_hit else FULL_AUTO_STOP_REASON_PATIENCE
+ 
+ 
+@@ -70,9 +76,12 @@ class StoppingPolicy:
+     patience: int
+     stop_file: Path
+     stable_step_mm: float = STABLE_STEP_MM
++    machine_type: str = ""
+     no_improve: int = field(default=0, init=False)
+     stable_streak: int = field(default=0, init=False)
+     previous_anchors: Optional[np.ndarray] = field(default=None, init=False)
++    good_fit_streak: int = field(default=0, init=False)
++    last_good_points: int = field(default=0, init=False)
+ 
+     def __post_init__(self):
+         self.patience = max(1, int(self.patience))
+@@ -93,6 +102,9 @@ class StoppingPolicy:
+                 f"; full-auto: stops when {STABLE_SWEEPS} consecutive sweeps each move every anchor "
+                 f"coordinate by at most {self.stable_step_mm:g} mm (--stable-step-mm 0 disables)"
+             )
++            if self.machine_type in ("hangprinter_5", "hangprinter_5_pulley_reduced"):
++                log_console(f"; HP5 also accepts two good fits: range RMS <={HP5_GOOD_RMS_MM:g} mm, "
++                            f"estimated anchor std <={HP5_GOOD_STD_MM:g} mm, agreement <={HP5_GOOD_STEP_MM:g} mm")
+ 
+     def _step(self, history, iteration: int) -> Optional[float]:
+         current = next((c for c in reversed(history) if int(c.get("iteration", -1)) == int(iteration)), None)
+@@ -110,16 +122,41 @@ class StoppingPolicy:
+         rank = history_rank_position(history, iteration=iteration) if admissible else None
+         improved = admissible and rank == 1
+         step_mm = None
++        current = next((c for c in reversed(history) if int(c.get("iteration", -1)) == int(iteration)), {})
++        plan = current.get("plan") or {}
++        dataset = plan.get("dataset") or {}
++        points = [point for sweep in dataset.get("sweeps", []) for point in sweep.get("data_points", [])]
++        extra_coverage = (sum(any(extra.get("accepted") for extra in point.get("extra_sensor_ranges", []))
++                              for point in points) / len(points)) if points else 0.
++        std = _float_or_none(current.get("max_std_mm"))
++        rms = _float_or_none((plan.get("pose_fit") or {}).get("rms_mm"))
++        hp5 = (plan.get("machine_type") in ("hangprinter_5", "hangprinter_5_pulley_reduced")
++               and any(point.get("extra_sensor_ranges") for point in points))
++        good = (hp5 and admissible and not underconstrained and self.stable_step_mm > 0
++                and len(dataset.get("sweeps", [])) >= 4 and extra_coverage >= 0.5
++                and not plan.get("info_rank_deficient", True)
++                and (plan.get("pose_fit") or {}).get("stretch_corrected", False)
++                and std is not None and std <= HP5_GOOD_STD_MM
++                and rms is not None and rms <= HP5_GOOD_RMS_MM)
+         if admissible:
+             self.no_improve = 0 if improved else self.no_improve + 1
+             step_mm = self._step(history, iteration)
+             stable = step_mm is not None and step_mm <= self.stable_step_mm
+             self.stable_streak = self.stable_streak + 1 if stable else 0
+-        stable_hit = self.stable_step_mm > 0.0 and self.stable_streak >= STABLE_SWEEPS
++        if good:
++            self.good_fit_streak = (self.good_fit_streak + 1
++                                    if step_mm is not None and step_mm <= HP5_GOOD_STEP_MM
++                                    and len(points) > self.last_good_points else 1)
++            self.last_good_points = len(points)
++        else:
++            self.good_fit_streak = 0
++        good_fit_hit = self.good_fit_streak >= 2
++        stable_hit = self.stable_step_mm > 0.0 and self.stable_streak >= STABLE_SWEEPS and (not hp5 or good_fit_hit)
+         log_line(
+             f"; stable_stop step_mm={_fmt_float(step_mm)} limit_mm={self.stable_step_mm:g} "
+             f"streak={self.stable_streak}/{STABLE_SWEEPS}"
++            f" good_fits={self.good_fit_streak}/2"
+         )
+-        accept = not underconstrained and (stable_hit or self.no_improve >= self.patience)
++        accept = not underconstrained and (good_fit_hit or stable_hit or self.no_improve >= self.patience)
+         return StopDecision(rank, bool(improved), stable_hit, step_mm,
+-                            "accept" if accept else "collect")
++                            "accept" if accept else "collect", good_fit_hit)
+diff --git a/autocal/tests/test_extra_sensor_headless.py b/autocal/tests/test_extra_sensor_headless.py
+index 26b866b8..cf8189b4 100644
+--- a/autocal/tests/test_extra_sensor_headless.py
++++ b/autocal/tests/test_extra_sensor_headless.py
+@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
+ def verify_extra_sensor_run(dataset):
+     manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
+     assert manifest['normal_completion'] and manifest['status'] == 'complete'
+-    assert manifest['stop_reason'] in ('stable-estimate', 'patience')
++    assert manifest['stop_reason'] in ('good-fit', 'stable-estimate', 'patience')
+     assert any(command.startswith('M669 ') for command in manifest['applied_parameters'])
+     assert set(manifest['firmware_final']) == {'M669', 'M666'}
+     data = json.loads(dataset.read_text())
+@@ -30,6 +30,8 @@ def verify_extra_sensor_run(dataset):
+     lengths = dataset_line_lengths(data)['lengths_mm']
+     assert np.isfinite(lengths).sum() == 4 * len(points) + sum(extra['accepted'] for extra in extras)
+     assert dataset_stretch(data) is not None
++    assert all(point.get('extra_sensor_ranges') for point in data['sweeps'][0]['data_points'])
++    assert not list(dataset.parent.glob('sweeps.equal_strain_*.json'))
+     for sweep in data['sweeps']:
+         for point in sweep['data_points']:
+             for extra in point['extra_sensor_ranges']:
+@@ -53,4 +55,6 @@ def test_fresh_hp5_extra_sensor_full_calibration(tmp_path, machine):
+             '--machine-type', machine, '--dataset', str(dataset), '--recording-mode', 'none',
+             '--patience', '8'], cwd=ROOT, env=env, stdout=log, stderr=log, timeout=1800)
+     assert result.returncode == 0, (tmp_path / 'autocal.log').read_text()[-4000:]
+-    verify_extra_sensor_run(dataset)
++    verified = verify_extra_sensor_run(dataset)
++    assert verified['stop_reason'] == 'good-fit'
++    assert len(json.loads(dataset.read_text())['sweeps']) <= 6
+diff --git a/autocal/tests/test_history_selection.py b/autocal/tests/test_history_selection.py
+index 35de6ac0..22192d59 100644
+--- a/autocal/tests/test_history_selection.py
++++ b/autocal/tests/test_history_selection.py
+@@ -159,3 +159,33 @@ def test_final_heldout_selection_is_distinct_from_running_training_best():
+     assert meta["run_id"] == "default"
+     assert meta["history_consensus_members"] == []
+     np.testing.assert_array_equal(plan["anchors"], _anchors(0.0))
++
++
++def test_hp5_history_keeps_own_offsets_instead_of_borrowing_future_offsets(monkeypatch):
++    import autocal.history_selection as selection
++    raw={'machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,'sweeps':[]}
++    offsets=[0.,0.,0.,.1,.2]
++    candidate={'iteration':1,'rank_score':1.,'training_sweep_ids':[],
++        'plan':{'dataset':raw,'dataset_for_estimation':{'future_offsets':True},
++                'anchors':np.zeros((5,3)),'home_offsets_mm':offsets}}
++    calls=[]
++    def score(dataset,anchors,training,**kwargs):
++        calls.append((dataset,kwargs.get('home_offsets_mm')))
++        return .01,1
++    monkeypatch.setattr(selection,'score_future_sweeps',score)
++    evaluated=selection.evaluate_history_candidates([candidate])
++    assert calls==[(raw,offsets)]
++    assert evaluated[0][2]['anchor_comparison_score']==.01
++
++
++def test_hp5_applies_the_validated_model_without_averaging_an_unvalidated_fit():
++    first=_item(1,np.zeros((5,3)),prediction=.01)
++    newest=_item(2,np.ones((5,3)),prediction=None)
++    dataset={'machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,
++        'sweeps':[{'data_points':[{'extra_sensor_ranges':[{'accepted':True}]}]}]}
++    offsets=[0.,0.,0.,.1,.2]
++    first[1]['plan'].update(dataset=dataset,home_offsets_mm=offsets)
++    newest[1]['plan'].update(dataset=dataset,home_offsets_mm=[0.,0.,0.,.3,.4])
++    plan,meta,_=select_history_plan([first,newest])
++    assert np.array_equal(plan['anchors'],np.zeros((5,3)))
++    assert plan['home_offsets_mm']==offsets and meta['history_consensus_members']==[]
+diff --git a/autocal/tests/test_pose_fit.py b/autocal/tests/test_pose_fit.py
+index f05e5080..456ec1b8 100644
+--- a/autocal/tests/test_pose_fit.py
++++ b/autocal/tests/test_pose_fit.py
+@@ -175,7 +175,8 @@ def test_stretched_hp5_fit_recovers_geometry_from_a_distant_seed():
+ 
+ 
+ @pytest.mark.parametrize('accepted', [True, False])
+-def test_extra_range_force_survives_rejection_and_reversed_roles(accepted):
++@pytest.mark.parametrize('profiled', [True, False])
++def test_extra_range_force_survives_rejection_and_reversed_roles(accepted, profiled):
+     from autocal.pose_fit import consistency_residuals, dataset_stretch
+     anchors = np.array([[0.,-1900.,-280.], [1900.,0.,-280.], [0.,1900.,-280.],
+                         [-1900.,0.,-280.], [0.,0.,1900.]])
+@@ -198,7 +199,7 @@ def test_extra_range_force_survives_rejection_and_reversed_roles(accepted):
+             point = dict(l_drive=delta[1], l_sensor=delta[3], sensor_force_n=4.,
+                          source_sensor_anchor=sensor, extra_sensor_ranges=[extra])
+             dataset['sweeps'].append(dict(fixed_anchors=[0,4], fixed_lengths=delta[[0,4]].tolist(),
+-                drive_anchor=1, sensor_anchor=3, metadata={'sensor_force_profile':True}, data_points=[point]))
++                drive_anchor=1, sensor_anchor=3, metadata={'sensor_force_profile':profiled}, data_points=[point]))
+     lengths = dataset_line_lengths(dataset)['lengths_mm']
+     corrected = consistency_residuals(anchors, lengths, np.zeros(5), stretch=dataset_stretch(dataset))
+     assert np.max(abs(corrected)) < 1e-8
+diff --git a/autocal/tests/test_pose_planning.py b/autocal/tests/test_pose_planning.py
+index 63315b7b..636dadac 100644
+--- a/autocal/tests/test_pose_planning.py
++++ b/autocal/tests/test_pose_planning.py
+@@ -139,3 +139,15 @@ def test_force_infeasible_best_candidate_uses_the_next_ranked_sweep(tmp_path, mo
+     monkeypatch.setattr(planning, 'write_sensor_force_profile', bad_configuration)
+     with pytest.raises(ValueError,match='mechanical advantage'):
+         planning.plan_ellipse_sweep(fit,tmp_path/'sweeps.json')
++
++
++def test_forecast_counts_the_information_in_the_fifth_range():
++    anchors=np.array([[0.,-1900.,-280.],[1900.,0.,-280.],[0.,1900.,-280.],[-1900.,0.,-280.],[0.,0.,1900.]])
++    cfg=SweepConfig((0,4),(-340.,0.),1,3)
++    positions=predict_sweep_positions(anchors,cfg,12,SWEEP_PRETENSION_SHARE)
++    lengths=np.linalg.norm(anchors[None,:,:]-positions[:,None,:],axis=2)-np.linalg.norm(anchors,axis=1)
++    options=dict(machine_type='hangprinter_5',low_anchor_z=None,observed_lengths_mm=lengths,
++        candidates=[cfg],points_per_sweep=12,sigma_mm=.02,regularization=1e-6,top_k=1)
++    four=rank_candidates_pose_information(anchors,**options)
++    five=rank_candidates_pose_information(anchors,measure_extra_ranges=True,**options)
++    assert five[0][0]>four[0][0]
+diff --git a/autocal/tests/test_predictive_validation.py b/autocal/tests/test_predictive_validation.py
+index e96e7afc..b1763ab4 100644
+--- a/autocal/tests/test_predictive_validation.py
++++ b/autocal/tests/test_predictive_validation.py
+@@ -182,3 +182,20 @@ def test_validation_does_not_reinfer_encoder_reference_from_future_observations(
+ 
+     assert np.allclose(params.theta0_deg, 0.0)
+     assert shifted[0] > good[0]
++
++
++def test_hp5_validation_uses_the_extra_range_and_respects_its_rejection():
++    anchors=np.array([[0.,-1900.,-280.],[1900.,0.,-280.],[0.,1900.,-280.],[-1900.,0.,-280.],[0.,0.,1900.]])
++    sweeps=[]
++    for i,position in enumerate([[50.,-100.,200.],[-100.,80.,400.],[200.,-200.,300.]]):
++        delta=np.linalg.norm(anchors-position,axis=1)-np.linalg.norm(anchors,axis=1)
++        sweeps.append({'id':str(i),'fixed_anchors':[0,4],'fixed_lengths':delta[[0,4]].tolist(),
++            'drive_anchor':1,'sensor_anchor':3,'data_points':[{'l_drive':delta[1],'l_sensor':delta[3],
++            'extra_sensor_ranges':[{'anchor':2,'length_mm':delta[2],'accepted':True,'force_n':2.}]}]})
++    dataset={'machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,'config':{},'sweeps':sweeps}
++    exact=score_future_sweeps(dataset,anchors,[])
++    assert exact[0]<1e-12
++    for sweep in sweeps:sweep['data_points'][0]['extra_sensor_ranges'][0]['length_mm']+=2.
++    assert score_future_sweeps(dataset,anchors,[])[0]>.01
++    for sweep in sweeps:sweep['data_points'][0]['extra_sensor_ranges'][0]['accepted']=False
++    assert score_future_sweeps(dataset,anchors,[])[0]<1e-12
+diff --git a/autocal/tests/test_rough_bootstrap.py b/autocal/tests/test_rough_bootstrap.py
+index 7d5c68b7..f1087fd1 100644
+--- a/autocal/tests/test_rough_bootstrap.py
++++ b/autocal/tests/test_rough_bootstrap.py
+@@ -142,3 +142,18 @@ def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path
+     with pytest.raises(SystemExit) as error:
+         ac.main(['--headless-sim', '--machine-type', 'hangprinter_4', '--dataset', str(path)])
+     assert error.value.code == 2
++
++
++def test_completed_force_aware_hp5_bootstrap_can_be_reused_without_profiles(tmp_path):
++    path=tmp_path/'sweeps.json'
++    dataset={'version':'2.0','machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,
++        'config':{'m666_before_data_collection':{'S':20000.,'N':[2,2,2,2,4],'U':[1]*5,'Y':[400]*5,'W':.081}},
++        'sweeps':[{'id':'first','fixed_anchors':[0,4],'fixed_lengths':[0.,0.],'drive_anchor':1,'sensor_anchor':3,
++        'metadata':{'sensor_force_profile':False},'data_points':[{'l_drive':0.,'l_sensor':0.,'sensor_force_n':2.,
++        'extra_sensor_ranges':[{'anchor':2,'length_mm':0.,'force_n':2.,'accepted':True}]} for _ in range(5)]}]}
++    path.write_text(json.dumps(dataset))
++    bootstrap.write_bootstrap_state(path,'complete')
++    assert bootstrap.bootstrap_state_error(path) is None
++    for point in dataset['sweeps'][0]['data_points']:point.pop('extra_sensor_ranges')
++    path.write_text(json.dumps(dataset))
++    assert bootstrap.bootstrap_state_error(path)
+diff --git a/autocal/tests/test_stopping.py b/autocal/tests/test_stopping.py
+index b2d88900..c34071b6 100644
+--- a/autocal/tests/test_stopping.py
++++ b/autocal/tests/test_stopping.py
+@@ -109,3 +109,52 @@ def test_one_coordinate_beyond_the_limit_resets_stability(tmp_path):
+     assert fit_with_d_z(3, 1.01).decision == "collect" and policy.stable_streak == 0  # 0.51 mm in one coordinate
+     assert fit_with_d_z(4, 1.3).decision == "collect" and policy.stable_streak == 1
+     assert fit_with_d_z(5, 1.1).decision == "accept"
++
++
++def _hp5_fit(iteration, offset, *, std=.4, rms=.03, sweeps=None):
++    candidate = _fit(iteration, offset)
++    anchors = np.vstack([candidate['plan']['anchors'], [0.,0.,1900.]])
++    count = sweeps if sweeps is not None else iteration+3
++    candidate.update(max_std_mm=std,plan={'anchors':anchors,'machine_type':'hangprinter_5',
++        'info_rank_deficient':False,'pose_fit':{'rms_mm':rms,'stretch_corrected':True},
++        'dataset':{'sweeps':[{'data_points':[{'extra_sensor_ranges':[{'accepted':True}]}]} for _ in range(count)]}})
++    return candidate
++
++
++def test_hp5_two_good_fits_stop_without_waiting_for_three_half_mm_steps(tmp_path):
++    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
++    history=[]
++    for iteration,offset in enumerate([0.,1.2],1):
++        history.append(_hp5_fit(iteration,offset))
++        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
++    assert result.decision=='accept' and result.reason=='good-fit'
++    assert np.isclose(result.step_mm,1.2) and not result.stable_hit
++
++
++def test_hp5_quality_checks_reset_and_repeated_data_do_not_count(tmp_path):
++    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
++    history=[]
++    for iteration,options in enumerate([{}, {'std':5.}, {'rms':.2}, {}, {'sweeps':7}, {}],1):
++        history.append(_hp5_fit(iteration,.8*iteration,**options))
++        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
++        if iteration<6:assert result.decision=='collect'
++    assert result.reason=='good-fit'
++
++
++def test_hp5_small_steps_with_weak_geometry_do_not_trigger_stable_acceptance(tmp_path):
++    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
++    history=[]
++    for iteration in range(1,4):
++        history.append(_hp5_fit(iteration,.1*iteration,std=5.))
++        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
++    assert result.decision=='collect'
++
++
++def test_hp5_weak_flat_fits_do_not_count_towards_two_good_fits(tmp_path):
++    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
++    history=[]
++    for iteration,std in enumerate([5.,5.,.4,.4],1):
++        history.append(_hp5_fit(iteration,0.,std=std))
++        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
++        if iteration<4:assert result.decision=='collect'
++    assert result.reason=='good-fit'

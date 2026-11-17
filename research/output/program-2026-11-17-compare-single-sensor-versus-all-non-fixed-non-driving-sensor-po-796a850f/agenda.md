@@ -68,3 +68,10 @@ and apply parameters. Three coding/test passes are exhausted. Direct same-record
 refit improves; reduced late-data refit worsens despite a good selected estimate.
 Publish this limitation rather than claiming universal accuracy or speed. Further
 force/bias work is separate; no more experiments are commissioned here.
+
+## Integrated pipeline delivered
+
+68260871 implements sensing from the start, reuse of force-aware bootstrap,
+fifth-range planning, force-aware information, frozen validation/model selection
+and early good-fit acceptance. Three passes used; two fresh simulations per
+machine and final replay/apply completed. No further experiments commissioned.

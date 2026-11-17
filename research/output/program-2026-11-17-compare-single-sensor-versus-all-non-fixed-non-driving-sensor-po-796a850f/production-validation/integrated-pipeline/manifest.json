@@ -1,0 +1,124 @@
+{
+  "implementation_commit": "68260871",
+  "parent": "49f51cf4",
+  "passes": 3,
+  "scope": "Two fresh headless passes per machine, then final replay/model selection and RRF apply; no hardware.",
+  "files": {
+    "implementation.patch": {
+      "sha256": "41258d069bc0769b10d0645b1b6eb2dbcc17ae084a28514cd6a7bb4f4e0b7226",
+      "bytes": 52289
+    },
+    "summary.json": {
+      "sha256": "e093a0a7f39cb7dd42d65987352502a1a8861f3828e016f915dcbb775e52f54b",
+      "bytes": 8185
+    },
+    "summarize.py": {
+      "sha256": "a15df700404f70bfc97330c0944b78e93e993dd746b27bd882574a389644f1b4",
+      "bytes": 2844
+    },
+    "runs/pass2/reduced/sweeps.bootstrap_state.json": {
+      "sha256": "8023c43d77aad731e29d95c729d9b2716e2061d81833ed282c23ac036f07fc14",
+      "bytes": 138
+    },
+    "runs/pass2/reduced/sweeps.json": {
+      "sha256": "8c81be76b9fe129791e2fe9534d5fb3ef7094780bfcfdc2b3cbda648d3343309",
+      "bytes": 293589
+    },
+    "runs/pass2/reduced/run-start.json": {
+      "sha256": "182dda2ad29581e07cc88d142b3ade862fd649aed91765ef3788fba5d07dcb7b",
+      "bytes": 122
+    },
+    "runs/pass2/reduced/sweeps.full_auto_log.jsonl": {
+      "sha256": "e6c22f400e712783fbca59b2477183dcccf4ffdb53569c79a39f5601aff9139c",
+      "bytes": 14125
+    },
+    "runs/pass2/direct/sweeps.bootstrap_state.json": {
+      "sha256": "996918bac0fde5aa8984c56819c752cba3e11e09b529ded798f7ee6abcab471d",
+      "bytes": 138
+    },
+    "runs/pass2/direct/sweeps.json": {
+      "sha256": "fd785f552a6b2b934fbe4f0cb650c8f0c8450af22e48961b0fecf34583c982d0",
+      "bytes": 294329
+    },
+    "runs/pass2/direct/run-start.json": {
+      "sha256": "1335b76750849b563cc8717272b0e8ecda0eb43404df72cc31b1fe3a4fbb09fc",
+      "bytes": 122
+    },
+    "runs/pass2/direct/sweeps.full_auto_log.jsonl": {
+      "sha256": "5aef48d585007f91b3e9b375fea13b0d95fee30554b5f4a02da0c180aac34023",
+      "bytes": 14085
+    },
+    "runs/pass3/reduced/sweeps.json": {
+      "sha256": "8c81be76b9fe129791e2fe9534d5fb3ef7094780bfcfdc2b3cbda648d3343309",
+      "bytes": 293589
+    },
+    "runs/pass3/reduced/sweeps.full_auto_log.jsonl": {
+      "sha256": "cd17f5920249aa26cb410918b9cc5c0562344da1091c9c0313ef190a39f1951e",
+      "bytes": 18905
+    },
+    "runs/pass3/direct/sweeps.json": {
+      "sha256": "fd785f552a6b2b934fbe4f0cb650c8f0c8450af22e48961b0fecf34583c982d0",
+      "bytes": 294329
+    },
+    "runs/pass3/direct/sweeps.full_auto_log.jsonl": {
+      "sha256": "ee1d858a70f26599840df727e9877e027b1acc4e7b6cf878eb3c41da24a4dab2",
+      "bytes": 18859
+    },
+    "runs/pass1/reduced/sweeps.bootstrap_state.json": {
+      "sha256": "08cd702928b6182e6914e0d80bf03ee2b8ff4043901680bda1de5ad9cf049dc6",
+      "bytes": 138
+    },
+    "runs/pass1/reduced/sweeps.json": {
+      "sha256": "a6d111c413472d635993995e30c27553d28361ff76f3d20f30554f4e047534ae",
+      "bytes": 293470
+    },
+    "runs/pass1/reduced/run-start.json": {
+      "sha256": "4b9c989cc9608c744d556c154b81c913310154a6d149ee5e182456d57311ee55",
+      "bytes": 72
+    },
+    "runs/pass1/reduced/sweeps.full_auto_log.jsonl": {
+      "sha256": "aff7673d1b7361872cdc3d2046ee9b4dea51e7f56731eb219120e4ad216b8a29",
+      "bytes": 14078
+    },
+    "runs/pass1/direct/sweeps.bootstrap_state.json": {
+      "sha256": "5f8d53613c301718c0443b356b179ae528b78348a58d98812488b0f7681a19a9",
+      "bytes": 138
+    },
+    "runs/pass1/direct/sweeps.json": {
+      "sha256": "8aadf9ceebc593f7b594c7529b522a4ac25aa913be62591486f5774750df2556",
+      "bytes": 292157
+    },
+    "runs/pass1/direct/run-start.json": {
+      "sha256": "963f49e9b6eb36a3e26b4412cc73db6a18fb6580b19cbc364768d8d5e3277a56",
+      "bytes": 73
+    },
+    "runs/pass1/direct/sweeps.full_auto_log.jsonl": {
+      "sha256": "2da84647540e46960bfa074a85881918be6e28a6ea98380f537de62d0fa8184f",
+      "bytes": 14115
+    },
+    "runs/pass2/reduced/sweeps.headless/manifest.json": {
+      "sha256": "26fe328eba444638aabea477987dcf095fbaf2deeea42dc85c845db345eaed9b",
+      "bytes": 6072
+    },
+    "runs/pass2/direct/sweeps.headless/manifest.json": {
+      "sha256": "8935ffae91961005674eb429629f43ca48440edbc33a734681d768d215d75cf6",
+      "bytes": 6033
+    },
+    "runs/pass3/reduced/sweeps.headless/manifest.json": {
+      "sha256": "b74bbe8e164461dd3492eac0f0db7205dee10fc3063803c7529d35119672aabb",
+      "bytes": 6042
+    },
+    "runs/pass3/direct/sweeps.headless/manifest.json": {
+      "sha256": "b1874d11d0c97a743702a84263342e40e2bb8a30d3069d018a7673a0c935f68f",
+      "bytes": 5993
+    },
+    "runs/pass1/reduced/sweeps.headless/manifest.json": {
+      "sha256": "8e6cce7e2149b1e7ee29eac7c6a842845ac125c40ac6b5e46e378414b3275c6c",
+      "bytes": 6067
+    },
+    "runs/pass1/direct/sweeps.headless/manifest.json": {
+      "sha256": "8e4667d01932336f5667950b8c1bc31034e74b032165412bace17b74b54f1dec",
+      "bytes": 6024
+    }
+  }
+}

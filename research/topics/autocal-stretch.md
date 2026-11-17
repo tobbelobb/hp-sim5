@@ -37,3 +37,13 @@ reduced fits worsen more often. The production fitter uses the extra data, but
 candidate forecasts omit the fifth range, history validation remains ellipse
 based, and rough bootstrap does not collect it. Speed benefits are therefore
 not fully exploited or measured as a controlled end-to-end wall-time result.
+
+The [integrated HP5 implementation](../output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/production-validation/integrated-pipeline/report.md)
+(`68260871`) closes those pipeline gaps: sensing starts in the first sweep,
+force-aware bootstrap is reused, forecasts include the fifth range, covariance
+uses the force-aware residual, and held-out validation keeps each model's own
+offsets. HP5 applies the best validated model instead of mixing geometries and
+offsets through consensus. Two good agreeing fits can stop collection. Fresh
+stock simulations used six total sweeps and three refinement fits; final replay
+applied 1.16/1.92 mm worst-coordinate anchors. This is limited simulation
+validation, with model bias and hardware behaviour still open.

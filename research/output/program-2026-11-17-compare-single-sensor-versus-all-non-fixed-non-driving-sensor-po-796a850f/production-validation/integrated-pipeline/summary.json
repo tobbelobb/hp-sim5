@@ -1,0 +1,274 @@
+{
+  "pass1": {
+    "direct": {
+      "normal_completion": true,
+      "stop_reason": "good-fit",
+      "sweeps": 6,
+      "points": 118,
+      "accepted_extra": 108,
+      "applied_max_coordinate_error_mm": 1.2300000000000182,
+      "applied_aligned_max_coordinate_error_mm": 0.9660000000000346,
+      "wall_s": 393.7979021930005,
+      "simulated_s": 4704.956,
+      "first_logged_refinement_within_2mm": {
+        "sweeps": 5,
+        "max_coordinate_error_mm": 1.3599000363806226,
+        "elapsed_wall_s": 332.28251600265503
+      },
+      "trajectory": [
+        {
+          "iteration": 1,
+          "sweeps": 4,
+          "max_coordinate_error_mm": 2.6620112781893113,
+          "rms_mm": 0.03171184742766088,
+          "max_std_mm": 0.7246029010755121,
+          "decision": "collect"
+        },
+        {
+          "iteration": 2,
+          "sweeps": 5,
+          "max_coordinate_error_mm": 1.3599000363806226,
+          "rms_mm": 0.03885126000269453,
+          "max_std_mm": 0.6157891454323909,
+          "decision": "collect"
+        },
+        {
+          "iteration": 3,
+          "sweeps": 6,
+          "max_coordinate_error_mm": 1.0950884109668095,
+          "rms_mm": 0.041514485363825765,
+          "max_std_mm": 0.5570470629488921,
+          "decision": "accept"
+        }
+      ]
+    },
+    "reduced": {
+      "normal_completion": true,
+      "stop_reason": "good-fit",
+      "sweeps": 6,
+      "points": 120,
+      "accepted_extra": 111,
+      "applied_max_coordinate_error_mm": 1.4700000000000273,
+      "applied_aligned_max_coordinate_error_mm": 1.1019999999999728,
+      "wall_s": 632.522417946002,
+      "simulated_s": 4582.814,
+      "first_logged_refinement_within_2mm": {
+        "sweeps": 4,
+        "max_coordinate_error_mm": 1.7460675771410479,
+        "elapsed_wall_s": 463.9820010662079
+      },
+      "trajectory": [
+        {
+          "iteration": 1,
+          "sweeps": 4,
+          "max_coordinate_error_mm": 1.7460675771410479,
+          "rms_mm": 0.030212209456139522,
+          "max_std_mm": 1.0623835126170547,
+          "decision": "collect"
+        },
+        {
+          "iteration": 2,
+          "sweeps": 5,
+          "max_coordinate_error_mm": 1.6389377501600393,
+          "rms_mm": 0.03466203746727929,
+          "max_std_mm": 0.7017121781024414,
+          "decision": "collect"
+        },
+        {
+          "iteration": 3,
+          "sweeps": 6,
+          "max_coordinate_error_mm": 1.4936211166923385,
+          "rms_mm": 0.04051039474248311,
+          "max_std_mm": 0.5361358944533138,
+          "decision": "accept"
+        }
+      ]
+    }
+  },
+  "pass2": {
+    "direct": {
+      "normal_completion": true,
+      "stop_reason": "good-fit",
+      "sweeps": 6,
+      "points": 119,
+      "accepted_extra": 109,
+      "applied_max_coordinate_error_mm": 1.0499999999999545,
+      "applied_aligned_max_coordinate_error_mm": 0.8179999999999418,
+      "wall_s": 336.4224774530012,
+      "simulated_s": 3779.0640000000003,
+      "first_logged_refinement_within_2mm": {
+        "sweeps": 5,
+        "max_coordinate_error_mm": 1.1636877525320415,
+        "elapsed_wall_s": 263.77863788604736
+      },
+      "trajectory": [
+        {
+          "iteration": 1,
+          "sweeps": 4,
+          "max_coordinate_error_mm": 3.4265790544914125,
+          "rms_mm": 0.03121397098893741,
+          "max_std_mm": 0.7274677986796463,
+          "decision": "collect"
+        },
+        {
+          "iteration": 2,
+          "sweeps": 5,
+          "max_coordinate_error_mm": 1.1636877525320415,
+          "rms_mm": 0.03916434348003074,
+          "max_std_mm": 0.6245845909367524,
+          "decision": "collect"
+        },
+        {
+          "iteration": 3,
+          "sweeps": 6,
+          "max_coordinate_error_mm": 0.9380037491112034,
+          "rms_mm": 0.042609689292443534,
+          "max_std_mm": 0.5756083588782298,
+          "decision": "accept"
+        }
+      ]
+    },
+    "reduced": {
+      "normal_completion": true,
+      "stop_reason": "good-fit",
+      "sweeps": 6,
+      "points": 120,
+      "accepted_extra": 111,
+      "applied_max_coordinate_error_mm": 2.2000000000000455,
+      "applied_aligned_max_coordinate_error_mm": 1.5680000000000291,
+      "wall_s": 516.3234399130015,
+      "simulated_s": 3573.212,
+      "first_logged_refinement_within_2mm": {
+        "sweeps": 4,
+        "max_coordinate_error_mm": 1.851853198135359,
+        "elapsed_wall_s": 334.6997001171112
+      },
+      "trajectory": [
+        {
+          "iteration": 1,
+          "sweeps": 4,
+          "max_coordinate_error_mm": 1.851853198135359,
+          "rms_mm": 0.028711286583878202,
+          "max_std_mm": 1.0436286861597648,
+          "decision": "collect"
+        },
+        {
+          "iteration": 2,
+          "sweeps": 5,
+          "max_coordinate_error_mm": 1.9150671802560737,
+          "rms_mm": 0.03295147610094285,
+          "max_std_mm": 0.6870197980156705,
+          "decision": "collect"
+        },
+        {
+          "iteration": 3,
+          "sweeps": 6,
+          "max_coordinate_error_mm": 2.485312963552815,
+          "rms_mm": 0.038271991708755164,
+          "max_std_mm": 0.521107811977589,
+          "decision": "accept"
+        }
+      ]
+    }
+  },
+  "pass3": {
+    "direct": {
+      "normal_completion": true,
+      "stop_reason": "good-fit",
+      "sweeps": 6,
+      "points": 119,
+      "accepted_extra": 109,
+      "applied_max_coordinate_error_mm": 1.1600000000000819,
+      "applied_aligned_max_coordinate_error_mm": 0.8920000000000564,
+      "wall_s": 26.22064221600158,
+      "simulated_s": 0,
+      "first_logged_refinement_within_2mm": {
+        "sweeps": 5,
+        "max_coordinate_error_mm": 1.1636877525320415
+      },
+      "trajectory": [
+        {
+          "iteration": 1,
+          "sweeps": 3,
+          "max_coordinate_error_mm": 55.32031002514509,
+          "rms_mm": 0.030520328171000078,
+          "max_std_mm": 15.89232318506214,
+          "decision": "collect"
+        },
+        {
+          "iteration": 2,
+          "sweeps": 4,
+          "max_coordinate_error_mm": 3.4265790544914125,
+          "rms_mm": 0.03121397098893741,
+          "max_std_mm": 0.7274677986796463,
+          "decision": "collect"
+        },
+        {
+          "iteration": 3,
+          "sweeps": 5,
+          "max_coordinate_error_mm": 1.1636877525320415,
+          "rms_mm": 0.03916434348003074,
+          "max_std_mm": 0.6245845909367524,
+          "decision": "collect"
+        },
+        {
+          "iteration": 4,
+          "sweeps": 6,
+          "max_coordinate_error_mm": 0.9380037491112034,
+          "rms_mm": 0.042609689292443534,
+          "max_std_mm": 0.5756083588782298,
+          "decision": "accept"
+        }
+      ]
+    },
+    "reduced": {
+      "normal_completion": true,
+      "stop_reason": "good-fit",
+      "sweeps": 6,
+      "points": 120,
+      "accepted_extra": 111,
+      "applied_max_coordinate_error_mm": 1.9200000000000728,
+      "applied_aligned_max_coordinate_error_mm": 1.38400000000006,
+      "wall_s": 29.89020511900162,
+      "simulated_s": 0,
+      "first_logged_refinement_within_2mm": {
+        "sweeps": 4,
+        "max_coordinate_error_mm": 1.8510657085028015
+      },
+      "trajectory": [
+        {
+          "iteration": 1,
+          "sweeps": 3,
+          "max_coordinate_error_mm": 27.649255789826384,
+          "rms_mm": 0.027235696423549272,
+          "max_std_mm": 12.549713983594547,
+          "decision": "collect"
+        },
+        {
+          "iteration": 2,
+          "sweeps": 4,
+          "max_coordinate_error_mm": 1.8510657085028015,
+          "rms_mm": 0.028711265805200153,
+          "max_std_mm": 1.0436287829127444,
+          "decision": "collect"
+        },
+        {
+          "iteration": 3,
+          "sweeps": 5,
+          "max_coordinate_error_mm": 1.915277884455918,
+          "rms_mm": 0.03295147709463026,
+          "max_std_mm": 0.6870197079562925,
+          "decision": "collect"
+        },
+        {
+          "iteration": 4,
+          "sweeps": 6,
+          "max_coordinate_error_mm": 2.485589498111267,
+          "rms_mm": 0.03827201714716542,
+          "max_std_mm": 0.5211083659111294,
+          "decision": "accept"
+        }
+      ]
+    }
+  }
+}

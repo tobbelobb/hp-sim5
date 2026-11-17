@@ -1,6 +1,16 @@
-# HP5 extra sensor: implemented with local coupling validation
+# HP5 extra-sensor implementation and validation
 
-The spare low line is now a sensor during profiled autocal measurements on fresh
+Current implementation: **68260871** uses the spare sensor from the first recorded
+measurement, reuses checked bootstrap data, includes fifth ranges in candidate
+forecasts and frozen validation, and stops after two agreeing good HP5 fits.
+[Integrated-pipeline validation](production-validation/integrated-pipeline/report.md)
+records two fresh headless passes per machine and final replay/application checks.
+Both fresh runs used six total sweeps; final applied errors were 1.16 mm direct
+and 1.92 mm reduced. The earlier rollout and its limitations are preserved below.
+
+## Historical rollout (089a7ad3)
+
+The spare low line became a sensor during profiled autocal measurements on fresh
 HP5 and HP5 pulley-reduced runs. Production implementation is commit `089a7ad3`
 on main. Three coding/end-to-end passes were used. Manual calibration outputs
 and the other research program were not modified.
