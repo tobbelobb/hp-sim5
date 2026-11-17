@@ -85,6 +85,30 @@ or a non-default API ordering.
     same plan yields a 1.804 rad knot difference and 7.2 cm body-position difference.
     UI always sets the flag first, so latent. Repro: `node repro-plan-ambient-flag.mjs`.
 
+### Numeric helpers (numeric probe)
+
+11b. `Vector3.rotateAroundAxis` is not a rotation for a zero-length axis (returns
+    `v·cosθ`; norm 2.3e-16 instead of 3.742 at θ=π/2). Dead code at
+    `cable_joints_core.js:485`. Repro: `repro_rotate_zero_axis.mjs`.
+12. `normalize()` escapes its zero guard outside the double range
+    (`Quaternion(1e200,0,0,1)` -> `(0,0,0,0)`; `Vector3(1e-310,0,0)` ->
+    `(Inf,NaN,NaN)`). Latent. Repro: `repro_normalize_range.mjs`.
+    51 other fuzz checks pass (quaternion identities, rotation matrices, tangent
+    branches, inertia tensors, catenary, all six rotate-ABC orders).
+
+### Per-machine kinematics (kinematics probe) — preset consistency, not solver bugs
+
+13. Layered presets scale moves by 0.47–0.85 %: layer-model radius 39.000/47.000 mm vs
+    RRF `M666 R` 39.1845/46.6045 mm. 20 mm HP4 +X -> 20.1498 mm (non-layered control
+    20.0008 mm). All 9 layered presets. Repro: `repro_layered_radius_scale.mjs`.
+14. CubeCorners tip moves 4.9059 mm (−1.88 %) / 4.7348 mm (−5.30 % layered) for a 5 mm
+    command while the body centre moves 5.046/5.144 mm and rotates 0.189°/0.078°. Exact
+    6-DOF scene geometry predicts the measured tip to 0.0014/0.0002 mm; solver faithful,
+    catalog pairs a 3-DOF RRF model with a 6-DOF scene. Repro:
+    `repro_cubecorners_tip_rotation.mjs`.
+    Direction/sign is correct on every axis of all 20 machines; CAN totals match the
+    config closed form to ≤2 microsteps.
+
 ### Negative results (strong, keep)
 
 - Live worlds are bit-independent; production-order reset/rebuild is exact; runs are
@@ -112,10 +136,25 @@ or a non-default API ordering.
 - Numeric-helper fuzz probe pending: quaternion/vector3/geometry3/planar_math/
   inertia_tensor and JS spool wrap math.
 
+## Review outcome (2026-11-17)
+
+Sealed bundle `reviews/review-89ed95b1b530` verified; a fresh reviewer reproduced all
+seven numerical claims. Confirmed as stated: RRF standstill, multi-driver CAN, ambient
+layering flag. Partially confirmed and downgraded: USD op-order (asset/interop defect,
+not simulation geometry), missing spool attribute (warns, does not silently delete),
+Klipper player (≤1 microstep per non-first stepper, one-time; upload path only), NaN
+poisoning (invalid-input robustness). Reviewer rejected the headline "seven incorrect
+behaviours in normal use" and rated scientific value high, code readiness low-to-moderate.
+Full assessment: `reviews/review-89ed95b1b530/review.md`.
+
+Base-revision label is one commit old: code under test is `c2450975` plus autocal-only
+`089a7ad3`; evidence commit `7d2b0e16`. Reviewer confirmed no finding touches `autocal/`.
+
 ## Next decision
 
-When the numeric probe lands, consolidate the verified cases into a program-level
-summary with a severity/reachability table and one-command repros. Send the two
-strongest *user-visible* clusters (USD units/op-order, firmware step stream) to a fresh
-reviewer. Do not fix anything; do not promote latent cases beyond their stated
-reachability.
+Program is complete for this question. Preserve reports, repros and the review; do not
+fix, push, or change autocal work. If continued, the highest-value follow-ups would be
+(a) an end-to-end UI/worker test for the Klipper upload path, (b) a loader-level
+validation test for `xformOpOrder`/`metersPerUnit`, and (c) a decision on whether
+`M666 R` or the scene layer radius is authoritative for layered presets. These are
+proposals only; no code changes were made.

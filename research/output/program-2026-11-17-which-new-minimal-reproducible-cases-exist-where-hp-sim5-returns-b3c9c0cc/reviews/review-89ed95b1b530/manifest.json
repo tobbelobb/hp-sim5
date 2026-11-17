@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "claim": "hp-sim5 at c2450975 has a set of new, reproducible incorrect behaviors: (1) the USD loader ignores xformOpOrder for translation and ignores metersPerUnit, so shipped wheel prims are 0.20-3.09 m from compliant USD and a valid millimetre scene loads 1000x too large; (2) a missing optional spool attribute silently deletes a motor and leaves dangling cable joints that throw on the first step; (3) the RRF host build loses one microstep around a standstill (M400), changing a later 1 mm move from 80 to 79 steps and leaving -1/+1 steps after an exact return; (4) legal multi-driver CAN configs lose 100% of commanded motion and become 8.34 mm of phantom extrusion; (5) the default Klipper MCU upload player drops the first queue_step batch of every stepper except the first (shipped draw_squares.txt: B -4.052 vs -5 steps; 0.0409 mm effector offset); (6) a single non-finite input coordinate silently NaNs the whole cable network while reporting 0 N; (7) applying a baked scene plan depends on the ambient enableLayering flag (1.804 rad, 7.2 cm). Each case has a one-command reproducer that exits nonzero with the stated numbers.",
+  "scope": "Simulation and firmware-emulation evidence on revision c2450975 with the bundled native addon and checked-in Wasm module, shipped HP3/HP4/HP5/slideprinter/cubecorners assets and the prebuilt RRF simulator. No hardware validation.",
+  "limitations": [
+    "No hardware validation; all evidence is simulation or firmware emulation.",
+    "The USD op-order case is an asset/loader contract defect: simulator geometry matches author intent while a compliant USD consumer sees different geometry.",
+    "Findings 4 (multi-driver CAN) and 7 (ambient flag) are not reachable from bundled machines or the shipped UI.",
+    "The Klipper player loss is one-time per stream (constant position bias), not accumulating, and does not affect RRF preset buttons.",
+    "The physics NaN cases require invalid or opt-in-latent inputs.",
+    "Wasm ran inside Node V8, not a browser; one host, one Node build."
+  ],
+  "candidate_revision": "7d2b0e162b4501137b6a1ab78eb0649450018eea",
+  "candidate_tree": "4a87c758675a175229fe8b791d1a397b91ab69cb",
+  "base_revision": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+  "files": [
+    {
+      "path": "files/00-summary.md",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/summary.md",
+      "blob": "f07c3feac3ce6bff1b20e2eecc8bcd8af3d7efc6",
+      "sha256": "92300aa53ed1fb640c134e78df2fe1fca5e6d169c11a8a96ad304d870015aecf"
+    },
+    {
+      "path": "files/01-report.md",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b/report.md",
+      "blob": "8b52cd3bfdfcd8d96893adf33aa9b0bf84a5b3ac",
+      "sha256": "f68369afe937dffee6ea21739e8fefd7ba0cbc013866e79cd917abd112714c72"
+    },
+    {
+      "path": "files/02-repro_xform_order_minimal.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b/repro_xform_order_minimal.mjs",
+      "blob": "6039de95d91e957296e9e962bae3438fc553d28e",
+      "sha256": "f8c7659b370a67423f97f6fff0845a4aac050ea3c2044b519b59de7515835e09"
+    },
+    {
+      "path": "files/03-repro_meters_per_unit.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b/repro_meters_per_unit.mjs",
+      "blob": "7ca18231fdac34bbade77d3dd7da175cd73d5d19",
+      "sha256": "17ea6a8091fa85969d730736a1501620352b872c563e688aba88be57764900b1"
+    },
+    {
+      "path": "files/04-repro_missing_attr.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-machine-geometry-scene-config-loading-f6d4333b/repro_missing_attr.mjs",
+      "blob": "650fd01a4acf327e9b5748936ea5988bd2292e9c",
+      "sha256": "fa1b3a69c9c4ec59027fdd6f1c5272916b496c76e47465dd299e96de3d308531"
+    },
+    {
+      "path": "files/05-report.md",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52/report.md",
+      "blob": "a473e8421c8a2751ab00593215f8df95279dc490",
+      "sha256": "34a3ec344057a93d02569dd8813354660add716d957ee12076753ab138964a51"
+    },
+    {
+      "path": "files/06-rrf_standstill_offbyone.py",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52/repro/rrf_standstill_offbyone.py",
+      "blob": "a9e78ec6a27f701331bf91d8bd68866e2416f470",
+      "sha256": "112371328e6d644fdb99439b95dda86934bb74c8e7f16f5c91885b4afd2c10c6"
+    },
+    {
+      "path": "files/07-rrf_multidriver_csv.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52/repro/rrf_multidriver_csv.mjs",
+      "blob": "b8501479eeec54bfc6390efc3ad5aabd493b842e",
+      "sha256": "8879751df3dfe4ef7af5c85a06fe33a7718cbe8e7decf138329dda5a047e78e8"
+    },
+    {
+      "path": "files/08-js_mcu_player_step_loss.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-hunt-for-wrong-results-in-the-firmware-and-motion-command-layer-58efbe52/repro/js_mcu_player_step_loss.mjs",
+      "blob": "3d75f37ab634c98e7130f43bb09e9e6fbc6547fe",
+      "sha256": "d00724c8943db21f78dfcb55d3bb5ff2d66702c9df91190bd62c3cf97dd47479"
+    },
+    {
+      "path": "files/09-report.md",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-probe-the-rust-cable-physics-core-for-wrong-results-degenerate-c-79c933d4/report.md",
+      "blob": "ce1904c8cac71ba139c0d18f9307b801925cf36e",
+      "sha256": "e3ca43e09ce12959f8459456717e7decfd456fa9b1697ff27019f5697f1953f2"
+    },
+    {
+      "path": "files/10-repro_nan_poisoning.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-probe-the-rust-cable-physics-core-for-wrong-results-degenerate-c-79c933d4/repro_nan_poisoning.mjs",
+      "blob": "fca8067ee4489085db9e3cf458676afa55ffe52e",
+      "sha256": "70ad3f576f500fc8e43ff13510d6c0f0af69b265a0e7b0d1ae4a9f4170d75b8c"
+    },
+    {
+      "path": "files/11-repro_split_nan_radius.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-probe-the-rust-cable-physics-core-for-wrong-results-degenerate-c-79c933d4/repro_split_nan_radius.mjs",
+      "blob": "97982c6618fc77d779559ae771486f0aa2e90621",
+      "sha256": "bc6f05543181332d61435f866b0b62aea34434678658a26bba61565b44779c4c"
+    },
+    {
+      "path": "files/12-report.md",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-check-cross-backend-and-state-lifecycle-correctness-wasm-vs-nati-8f0a1539/report.md",
+      "blob": "47950a1fc70115cbdc84daed1795a9ad93942344",
+      "sha256": "1d06d199554872970bff2f0687fadfc68479430ba4ec6cc9724bd1af7f0af110"
+    },
+    {
+      "path": "files/13-repro-plan-ambient-flag.mjs",
+      "source": "research/output/program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-check-cross-backend-and-state-lifecycle-correctness-wasm-vs-nati-8f0a1539/repro-plan-ambient-flag.mjs",
+      "blob": "444fb91725c1d4511643ba150247abdb0df82c7a",
+      "sha256": "e690ffaf0a8a4247df450ba65acdd2a8d2dc703d47d7b95f78f8d27b75251f90"
+    }
+  ],
+  "patch_sha256": "ef4d3fa2abb81ecd2e30fa4ad00af1433742eddba9901fa70b20370e2e2c53c5"
+}
