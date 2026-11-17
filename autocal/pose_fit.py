@@ -35,6 +35,16 @@ def _point_value(point: dict, mean_key: str, raw_key: str, use_noise_mean: bool)
     return float(point[raw_key])
 
 
+def uses_range_fit(dataset: dict) -> bool:
+    return (str(dataset.get("machine_type", "")).startswith("hangprinter_")
+            and int(dataset["num_anchors"]) > int(dataset["dimensions"]) + 1)
+
+
+def has_extra_sensor_data(dataset: dict) -> bool:
+    return any(point.get("extra_sensor_ranges") for sweep in dataset.get("sweeps", [])
+               for point in sweep.get("data_points", []))
+
+
 def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[str, np.ndarray]:
     """Return every point's length change on every line, in mm, with its sweep index."""
     num_anchors = int(dataset["num_anchors"])
@@ -73,12 +83,13 @@ def dataset_stretch(dataset: dict):
 
     Static equilibrium and every commanded torque determine the line loads.
     A rejected extra range still contributes its commanded force.
-    Rough bootstrap and historical force records retain the rigid fit.
+    Historical constant-force records without extra load evidence retain the rigid fit.
     """
     from autocal.equal_strain import is_equal_strain
     # Only redundant machines use this range model as their primary objective.
     # Ellipse fits still rely on equal-strain collection and rigid home offsets.
-    if int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1 or not is_equal_strain(dataset):
+    if (int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1
+            or not (is_equal_strain(dataset) or has_extra_sensor_data(dataset))):
         return None
     config = dataset.get("config") or {}
     m666 = config.get("m666_before_data_collection") or {}

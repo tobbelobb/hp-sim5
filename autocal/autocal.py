@@ -26,6 +26,7 @@ from autocal.stage_artifacts import write_stage_artifact
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
+from autocal.pose_fit import has_extra_sensor_data, dataset_stretch
 
 
 def full_auto_loop(
@@ -541,22 +542,28 @@ def full_auto_loop(
                     added = _collect_bootstrap_sweep(cfg, f"rough_extra_{extra + 1}")
                     rough = _merge_sweep_datasets(rough, added)
                     _write_json(dataset_path, rough)
-                # Never mix rough constant-force observations with refined observations.
-                # Each sweep has its own fixed targets and matching force table.
-                refined = {**rough, "sweeps": []}
-                for index, cfg in enumerate(dataset_sweep_configs(rough), start=1):
-                    write_bootstrap_state(dataset_path, "remeasuring", sweep=index)
-                    profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
-                    if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
-                        raise ValueError("missing M666 W/N/Y/U or tuned forces for equal-strain bootstrap")
-                    measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
-                    refined = _merge_sweep_datasets(refined, measured)
-                    _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
-                _write_json(dataset_path, refined)
+                if has_extra_sensor_data(rough) and dataset_stretch(rough) is not None:
+                    # HP5 already records the loads needed for per-pose stretch;
+                    # keep these measured ranges instead of collecting them twice.
+                    _write_json(dataset_path, rough)
+                    _log_console("; HP5 bootstrap ranges are force-aware; reusing checked measurements")
+                else:
+                    # Never mix rough constant-force observations with refined observations.
+                    # Each sweep has its own fixed targets and matching force table.
+                    refined = {**rough, "sweeps": []}
+                    for index, cfg in enumerate(dataset_sweep_configs(rough), start=1):
+                        write_bootstrap_state(dataset_path, "remeasuring", sweep=index)
+                        profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
+                        if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
+                            raise ValueError("missing M666 W/N/Y/U or tuned forces for equal-strain bootstrap")
+                        measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
+                        refined = _merge_sweep_datasets(refined, measured)
+                        _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
+                    _write_json(dataset_path, refined)
                 write_bootstrap_state(dataset_path, "complete")
             except (ValueError, np.linalg.LinAlgError, subprocess.CalledProcessError, KeyboardInterrupt) as error:
                 write_bootstrap_state(dataset_path, "failed", reason=str(error))
-                _log_console(f"; equal-strain bootstrap stopped: {error}; rough data: {rough_path}; checks: {check_path}")
+                _log_console(f"; checked bootstrap stopped: {error}; rough data: {rough_path}; checks: {check_path}")
                 if headless_sim is not None:
                     headless_sim.manifest["stop_reason"] = "bootstrap-interrupted" if isinstance(error, KeyboardInterrupt) else "unreliable-rough-bootstrap"
                 return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
@@ -655,7 +662,7 @@ def full_auto_loop(
     best_meta: Dict[str, object] = {}
     history_candidates: List[Dict[str, object]] = []
     history_total_iterations = 0
-    stopping = StoppingPolicy(patience=patience, stop_file=stop_file, stable_step_mm=float(stable_step_mm))
+    stopping = StoppingPolicy(patience=patience, stop_file=stop_file, stable_step_mm=float(stable_step_mm), machine_type=str(machine_type))
     stopping.announce(_log_console)
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     has_variants = bool(full_auto_runs)
@@ -1262,7 +1269,10 @@ def full_auto_loop(
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
-            if stop.decision == "accept" and stop.stable_hit:
+            if stop.decision == "accept" and stop.good_fit_hit:
+                _log_console("; full-auto: stopping after two good HP5 fits "
+                             "(range RMS <=0.05 mm, estimated anchor std <=1 mm, agreement <=2 mm).")
+            elif stop.decision == "accept" and stop.stable_hit:
                 _log_console(
                     "; full-auto: stopping; the estimate has stopped moving "
                     f"(last step {_fmt_float(stop.step_mm, suffix='mm')}, "
@@ -1308,6 +1318,7 @@ def full_auto_loop(
                     "patience": stopping.patience,
                     "min_delta": min_delta,
                     "stable_hit": stop.stable_hit,
+                    "good_fit_hit": stop.good_fit_hit,
                     "anchor_step_mm": stop.step_mm,
                     "stable_streak": stopping.stable_streak,
                     "warnings": selected_warnings,

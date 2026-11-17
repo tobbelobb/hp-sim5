@@ -142,3 +142,18 @@ def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path
     with pytest.raises(SystemExit) as error:
         ac.main(['--headless-sim', '--machine-type', 'hangprinter_4', '--dataset', str(path)])
     assert error.value.code == 2
+
+
+def test_completed_force_aware_hp5_bootstrap_can_be_reused_without_profiles(tmp_path):
+    path=tmp_path/'sweeps.json'
+    dataset={'version':'2.0','machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,
+        'config':{'m666_before_data_collection':{'S':20000.,'N':[2,2,2,2,4],'U':[1]*5,'Y':[400]*5,'W':.081}},
+        'sweeps':[{'id':'first','fixed_anchors':[0,4],'fixed_lengths':[0.,0.],'drive_anchor':1,'sensor_anchor':3,
+        'metadata':{'sensor_force_profile':False},'data_points':[{'l_drive':0.,'l_sensor':0.,'sensor_force_n':2.,
+        'extra_sensor_ranges':[{'anchor':2,'length_mm':0.,'force_n':2.,'accepted':True}]} for _ in range(5)]}]}
+    path.write_text(json.dumps(dataset))
+    bootstrap.write_bootstrap_state(path,'complete')
+    assert bootstrap.bootstrap_state_error(path) is None
+    for point in dataset['sweeps'][0]['data_points']:point.pop('extra_sensor_ranges')
+    path.write_text(json.dumps(dataset))
+    assert bootstrap.bootstrap_state_error(path)

@@ -1,4 +1,4 @@
-"""Check rough geometry before using it to control measurement forces.
+"""Check initial geometry before planning further sweeps and measurement forces.
 
 This is a local observability check, not an accuracy certificate: the conservative
 0.5 mm line-error floor and independent starts detect weak fits without claiming
@@ -17,6 +17,7 @@ from autocal.calibrate import build_anchor_initial_guess
 from autocal.pose_fit import (
     HOME_OFFSET_PRIOR_SIGMA_MM, consistency_residuals, dataset_line_lengths,
     fit_pose_least_squares,
+    dataset_stretch, has_extra_sensor_data,
 )
 from autocal.pose_planning import rank_candidates_pose_information
 from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix_to_opt_vec
@@ -36,8 +37,8 @@ def write_bootstrap_state(dataset_path, stage, **details):
     if stage == "complete":
         dataset = load_json_file(dataset_path, schema="sweep_dataset")
         from autocal.equal_strain import is_equal_strain
-        if not is_equal_strain(dataset):
-            raise ValueError("A complete bootstrap requires profiled measurements")
+        if not (is_equal_strain(dataset) or (has_extra_sensor_data(dataset) and dataset_stretch(dataset) is not None)):
+            raise ValueError("A complete bootstrap requires profiled or force-aware range measurements")
         details.update(bootstrap_sweeps=len(dataset["sweeps"]),
                        prefix_sha256=_prefix_hash(dataset["sweeps"]))
     temporary = path.with_suffix(".tmp")
@@ -63,7 +64,7 @@ def bootstrap_state_error(dataset_path):
             from autocal.equal_strain import is_equal_strain
             count = state.get("bootstrap_sweeps")
             if (not isinstance(count, int) or count <= 0 or count > len(dataset["sweeps"])
-                    or not is_equal_strain(dataset)
+                    or not (is_equal_strain(dataset) or (has_extra_sensor_data(dataset) and dataset_stretch(dataset) is not None))
                     or _prefix_hash(dataset["sweeps"][:count]) != state.get("prefix_sha256")):
                 return f"Completed bootstrap data no longer matches its state: {path}"
         except (OSError, ValueError, TypeError):
@@ -96,12 +97,16 @@ def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):
     anchors = fit["anchors"]
     vector = anchors_matrix_to_opt_vec(anchors, machine, low_anchor_z)
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
+    stretch = dataset_stretch(dataset)
     inliers = fit["point_residuals_mm"] <= max(1.0, 6.0 * fit["robust_scale_mm"])
     lengths = lengths[inliers]
+    if stretch is not None:
+        stretch = {key: value[inliers] if isinstance(value, np.ndarray) else value
+                   for key, value in stretch.items()}
 
     def residuals(x):
         moved = anchor_opt_vec_to_matrix(x, machine, n, d, low_anchor_z)
-        return consistency_residuals(moved, lengths, np.zeros(n)).ravel()
+        return consistency_residuals(moved, lengths, np.zeros(n), stretch=stretch).ravel()
 
     steps = np.eye(vector.size) * 0.1
     jacobian = np.column_stack([(residuals(vector + step) - residuals(vector - step)) / 0.2
@@ -139,6 +144,8 @@ def next_rough_sweep(dataset, anchors, *, low_anchor_z=None):
         observed_lengths_mm=dataset_line_lengths(dataset)["lengths_mm"],
         candidates=[cfg for cfg in candidates if cfg.normalized_key(tol_mm=1.0) not in seen],
         points_per_sweep=20, sigma_mm=ROUGH_LINE_SIGMA_MM, regularization=1e-6, top_k=1,
+        measure_extra_ranges=has_extra_sensor_data(dataset),
+        observed_stretch=dataset_stretch(dataset),
     )
     if not ranked:
         raise ValueError("No informative reachable rough-bootstrap sweep remains")

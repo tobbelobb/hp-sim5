@@ -78,19 +78,31 @@ a minimum force. Infeasible tails are removed, and measurements stay within the
 table's support. Commanded profiles do not guarantee actual equal strain: friction,
 force tracking and unequal compliance can still bias the observations.
 
-Fresh HP5 and HP5 pulley-reduced runs also measure the remaining free low line
-during profiled collection. Pullout and idle keep the low compliant force;
-measurements use five times the tuned start force, capped at the tuned maximum.
-The primary sensor's force table accounts for this extra load. Each extra range
-must pass a reversible local encoder-coupling probe at its measurement force.
-Unresolved, hysteretic and untestable ranges are excluded. The dataset records
-`extra_sensor_ranges` with physical anchor indices, commanded forces, lengths,
-acceptance and probe evidence. The point fitter uses accepted ranges and both
-sensor loads, including a rejected range's commanded load, for per-pose stretch
-correction. Home offsets apply to the extra range too. Rough bootstrap keeps the
-single-sensor policy until geometry is checked. Historical profiles preserve
-their original collection policy. Coupling establishes local transmission;
-force tracking and systematic length errors still limit calibration accuracy.
+Fresh HP5 and HP5 pulley-reduced runs measure the remaining free low line from
+**the first sweep**. Pullout and travel keep the low compliant force, so a line
+can visibly sag during those phases. Before recording a measurement, both sensor
+lines are preloaded and held at the measurement force: by default five times the
+tuned start force, capped at the tuned maximum. Each extra range must resolve a
+reversible local encoder-coupling probe. Frozen, hysteretic and untestable ranges
+are excluded; their commanded forces remain part of the static load model.
+
+HP5 fits use every accepted range with its physical anchor identity, home offset,
+reeving and per-pose stretch correction. Checked bootstrap ranges are reused for
+refinement rather than collected again with equal-strain profiles. Candidate
+ranking includes future fifth ranges, uncertainty uses the force-aware residual,
+and history validation uses all accepted ranges with offsets frozen from each
+candidate's training data. HP5 applies the best validated anchor/offset model
+rather than averaging it with an unvalidated fit. Historical datasets retain
+their collection policy.
+`--no-extra-sensors` on the collector retains the legacy compliant-line policy.
+
+HP5 can stop after two successive well-constrained fits with range RMS at most
+0.05 mm, estimated maximum anchor standard deviation at most 1 mm, at least four
+sweeps and extra ranges accepted on at least half the points. The fits must use
+new measurements and agree within 2 mm in every anchor coordinate. The stop reason
+is `good-fit`. These checks measure local consistency and observability, not true
+anchor error. `--stable-step-mm 0` disables this early condition as well as ordinary
+stable-estimate stopping. HP3/HP4 retain their existing stopping rules.
 
 `--fit-home-offsets` is enabled by default. It estimates the non-translational
 home-length offsets with the independent point fitter before the ellipse fit.

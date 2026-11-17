@@ -611,6 +611,7 @@ function validateSweepCollectionInput(context) {
     maxTravelMm,
     sweepConfigFile: args.sweepConfigFile ?? null,
     sensorForceProfileFile: args.sensorForceProfile ?? null,
+    extraSensors: config.numAnchors === 5 && config.dimensions === 3 && !args.noExtraSensors,
     completedSweeps: parseOptionalNumber(args.completedSweeps, 'completed-sweeps', { integer: true }) ?? 0,
     debugSweep: !!args.debugSweep,
     autoTuneForce: !!args.autoTuneForce,
@@ -1179,6 +1180,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     forceMax,
     sensorCollectionForce: constantSensorForce = null,
     sensorForceProfile = null,
+    extraSensors = false,
     noiseSampleCount,
     noiseSampleIntervalMs,
     noiseMinSamples,
@@ -1194,13 +1196,17 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   const driveAxis = axes[driveAnchor];
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
-  // Profiles account for this known load. Historical profiles keep unused lines compliant.
-  const extraForce = sensorForceProfile?.extra_sensor_force_n;
+  // Constant-force HP5 collection records both loads from the first measurement.
+  // Historical profiles without an extra load retain their original force policy.
+  const extraForce = sensorForceProfile ? sensorForceProfile.extra_sensor_force_n
+    : extraSensors ? resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce: constantSensorForce }) : null;
   const extraAnchors = Number.isFinite(extraForce) && extraForce > 0
     ? motorIds.map((_, idx) => idx).filter(idx => idx !== driveAnchor && idx !== sensorAnchor
       && !fixedSet.has(idx) && !forbidden.has(idx)) : [];
   const measurementSensors = [sensorAnchor, ...extraAnchors];
   const measurementSensorForces = Object.fromEntries(extraAnchors.map(idx => [idx, extraForce]));
+  if (extraAnchors.length) console.log(`; measurement sensors [${measurementSensors.join(', ')}]; `
+    + `extra force ${extraForce.toFixed(3)} N; pullout keeps the idle force`);
   const fixedTargetByAnchor = buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorIds.length);
   const settleOptions = {
     validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
@@ -1907,6 +1913,7 @@ export async function collectSweepData(send, context) {
             stepMmByAnchor,
             datasetStartMs,
             ...forces,
+            extraSensors: options.extraSensors,
             sensorForceProfile: sensorForceProfiles
               ? sensorForceProfileFor(sensorForceProfiles, subCfg.driveAnchor, subCfg.sensorAnchor,
                 sweepConfig.fixedAnchors, fixedTargets)
@@ -2057,7 +2064,7 @@ export async function collectSweepData(send, context) {
       m669: m669Values,
       m92: m92Values,
       mm_per_degree: mmPerDeg,
-      extra_sensors_enabled: machineConfig.numAnchors === 5 && machineConfig.dimensions === 3,
+      extra_sensors_enabled: options.extraSensors,
       noise_model: { project_zero_tension: false },
       notes: {
         buildup_factor_forced: Number.isFinite(forcedBuildupFactor) ? forcedBuildupFactor : undefined,

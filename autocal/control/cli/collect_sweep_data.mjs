@@ -217,6 +217,7 @@ export function parseBridgeArgs(argv) {
     sensorForce: null,
     sensorCollectionForce: null,
     sensorForceProfile: null,
+    noExtraSensors: false,
     forceLow: null,
     forceMid: null,
     forceMax: null,
@@ -341,6 +342,8 @@ export function parseBridgeArgs(argv) {
       args.sensorCollectionForce = argv[++i] || null;
     } else if (arg === '--sensor-force-profile') {
       args.sensorForceProfile = argv[++i] || null;
+    } else if (arg === '--no-extra-sensors') {
+      args.noExtraSensors = true;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
     } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
@@ -437,6 +440,7 @@ Options:
   --force-buildup-factor <k> Force M666 Q to this value before collection
   --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
   --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
+  --no-extra-sensors        Keep unused HP5 lines compliant (legacy collection)
   --no-auto-tune-force       skip auto-tuning and use provided/default forces
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting

@@ -7,7 +7,8 @@ import numpy as np
 from autocal.ellipse_cost import EllipseCostFunction
 from autocal.projection_mode import resolve_projection_mode
 from autocal.spool_model import SpoolModelParams, dataset_with_modeled_lengths
-from autocal.pose_fit import shift_dataset_home_offsets
+from autocal.pose_fit import (shift_dataset_home_offsets, uses_range_fit,
+                              dataset_line_lengths, dataset_stretch, consistency_residuals)
 
 
 def score_future_sweeps(
@@ -51,6 +52,20 @@ def score_future_sweeps(
             )
         if home_offsets_mm is not None:
             validation_data = shift_dataset_home_offsets(validation_data, home_offsets_mm)
+        if uses_range_fit(validation_data) and spool_params is None and not projected:
+            lengths = dataset_line_lengths(validation_data, use_noise_mean=use_noise_mean)["lengths_mm"]
+            measured = np.isfinite(lengths)
+            dimensions = int(validation_data["dimensions"])
+            if not lengths.size or not np.all(measured.sum(axis=1) > dimensions):
+                return float("inf"), len(held_out)
+            residuals = consistency_residuals(anchors, lengths, np.zeros(int(validation_data["num_anchors"])),
+                                             stretch=dataset_stretch(validation_data))
+            if not np.all(np.isfinite(residuals)):
+                return float("inf"), len(held_out)
+            # Each pose consumes d nuisance coordinates. Score only its remaining
+            # range consistency constraints, with offsets frozen from training.
+            dof = int(measured.sum()) - dimensions * len(lengths)
+            return float(np.sum(residuals ** 2) / dof), len(held_out)
         cost = EllipseCostFunction(
             validation_data,
             pointwise_filtering=False,

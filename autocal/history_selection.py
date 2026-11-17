@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from autocal._autocal_common import _arg_has_flag, _float_or_none, _full_auto_history_selection_score
 from autocal.predictive_validation import score_future_sweeps
+from autocal.pose_fit import uses_range_fit, has_extra_sensor_data
 from typing import Dict, List, Optional, Tuple
 import numpy as np
 
@@ -73,7 +74,11 @@ def evaluate_history_candidates(
                     f"run={candidate.get('run_id')} heldout_sweeps={prediction[1]} "
                     "failed_prediction=True"
                 )
-            if isinstance(comparison_dataset, dict):
+            if uses_range_fit(validation_dataset) and candidate_plan.get("spool_model_params") is None and not projected:
+                # The candidate's own offsets are frozen. Borrowing the newest
+                # fit's shifted dataset would leak future offsets into validation.
+                comparison = prediction
+            elif isinstance(comparison_dataset, dict):
                 # Keep the common length model for comparing anchors.
                 # A lower own-model residual can instead reflect radius/
                 # elasticity compensation; it is a veto and tie-breaker.
@@ -239,11 +244,9 @@ def apply_consensus_plan(chosen_plan, anchors):
 def select_history_plan(scored):
     """Return the applied plan, single-fit diagnostics and ordered candidates.
 
-    Held-out predictions rank individual fits. Geometric consensus separately
-    uses all fitted candidates, including the newest unvalidated fit. The
-    reported score therefore describes the best-ranked single fit, not the
-    averaged geometry. Keep the two policies together here so offline replay
-    can reproduce the calibration actually applied by the loop.
+    HP5 ranges select the best frozen prediction, including its own offsets.
+    Other machines retain geometric consensus across fitted candidates; their
+    reported score describes the best-ranked single fit, not the mean geometry.
 
     Failed held-out predictions veto application when no validated fit remains.
     """
@@ -251,7 +254,13 @@ def select_history_plan(scored):
     if not ranked:
         return None, None, ranked
     _key, chosen, info = ranked[0]
-    anchors, members, spread = consensus_anchor_estimate(scored)
+    dataset = chosen.get("plan", {}).get("dataset", {})
+    if uses_range_fit(dataset) and has_extra_sensor_data(dataset):
+        # Averaging anchors while retaining one model's offsets would no longer
+        # apply the model that passed the all-range held-out validation.
+        anchors, members, spread = None, (), None
+    else:
+        anchors, members, spread = consensus_anchor_estimate(scored)
     plan = apply_consensus_plan(chosen.get("plan"), anchors)
     meta = dict(chosen.get("summary_meta") or {})
     meta.update({

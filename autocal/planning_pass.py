@@ -4,7 +4,7 @@ from __future__ import annotations
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
 from autocal.equal_strain import InfeasibleForceProfileError, is_equal_strain, write_sensor_force_profile, profile_policy_error
-from autocal.pose_fit import dataset_line_lengths
+from autocal.pose_fit import dataset_line_lengths, has_extra_sensor_data, dataset_stretch, uses_range_fit
 from autocal.pose_planning import rank_candidates_pose_information
 from autocal.workspace import exploration_grid
 
@@ -118,6 +118,8 @@ def plan_ellipse_sweep(
             # Keep the complete ordering until a force-feasible candidate is
             # found; the highest-information band may all be infeasible.
             top_k=len(candidates) if needs_profile else int(top_k),
+            measure_extra_ranges=has_extra_sensor_data(dataset),
+            observed_stretch=dataset_stretch(estimation_dataset),
         )
     elif spool_params is not None:
         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
@@ -179,6 +181,8 @@ def plan_ellipse_sweep(
     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
 
     collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
+    if uses_range_fit(dataset) and not has_extra_sensor_data(dataset) and not needs_profile and "--no-extra-sensors" not in collector_args_eff:
+        collector_args_eff.append("--no-extra-sensors")
     collector_args_eff, _ = _inject_spool_collection_args(
         collector_args_eff,
         find_radii_mode=find_radii_mode,

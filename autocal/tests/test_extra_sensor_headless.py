@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def verify_extra_sensor_run(dataset):
     manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
     assert manifest['normal_completion'] and manifest['status'] == 'complete'
-    assert manifest['stop_reason'] in ('stable-estimate', 'patience')
+    assert manifest['stop_reason'] in ('good-fit', 'stable-estimate', 'patience')
     assert any(command.startswith('M669 ') for command in manifest['applied_parameters'])
     assert set(manifest['firmware_final']) == {'M669', 'M666'}
     data = json.loads(dataset.read_text())
@@ -30,6 +30,8 @@ def verify_extra_sensor_run(dataset):
     lengths = dataset_line_lengths(data)['lengths_mm']
     assert np.isfinite(lengths).sum() == 4 * len(points) + sum(extra['accepted'] for extra in extras)
     assert dataset_stretch(data) is not None
+    assert all(point.get('extra_sensor_ranges') for point in data['sweeps'][0]['data_points'])
+    assert not list(dataset.parent.glob('sweeps.equal_strain_*.json'))
     for sweep in data['sweeps']:
         for point in sweep['data_points']:
             for extra in point['extra_sensor_ranges']:
@@ -53,4 +55,6 @@ def test_fresh_hp5_extra_sensor_full_calibration(tmp_path, machine):
             '--machine-type', machine, '--dataset', str(dataset), '--recording-mode', 'none',
             '--patience', '8'], cwd=ROOT, env=env, stdout=log, stderr=log, timeout=1800)
     assert result.returncode == 0, (tmp_path / 'autocal.log').read_text()[-4000:]
-    verify_extra_sensor_run(dataset)
+    verified = verify_extra_sensor_run(dataset)
+    assert verified['stop_reason'] == 'good-fit'
+    assert len(json.loads(dataset.read_text())['sweeps']) <= 6

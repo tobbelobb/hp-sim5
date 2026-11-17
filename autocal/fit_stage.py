@@ -4,7 +4,7 @@ from __future__ import annotations
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.filter_pass import estimate_effective_radii_with_spool_model
 from autocal.equal_strain import is_equal_strain
-from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths
+from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths, dataset_stretch
 from autocal.projection_mode import resolve_projection_mode
 from autocal.pose_planning import pose_information
 
@@ -419,18 +419,21 @@ def fit_ellipse_dataset(
         lengths = dataset_line_lengths(dataset_for_estimation, use_noise_mean=bool(use_noise_mean))["lengths_mm"]
         sigma = float(pose_fit["robust_scale_mm"])
         info_obs = pose_information(anchors, lengths, machine_type=machine_type,
-                                   low_anchor_z=low_anchor_z, sigma_mm=sigma)
+                                   low_anchor_z=low_anchor_z, sigma_mm=sigma,
+                                   stretch=dataset_stretch(dataset_for_estimation))
         offsets = num_anchors - dimensions
         if fit_home_offsets:
             info_obs[-offsets:, -offsets:] += np.eye(offsets) / HOME_OFFSET_PRIOR_SIGMA_MM**2
         else:
             info_obs = info_obs[:-offsets, :-offsets]
         observations = int(np.isfinite(lengths).sum())
-        cost_raw = float(pose_fit["rms_mm"]**2 / (dimensions + 1))
+        residual_dof = observations - dimensions * len(lengths)
+        cost_raw = float(pose_fit["rms_mm"]**2 * len(lengths) / residual_dof)
         cost = cost_raw / sigma**2
         cal["cost"] = cost
         cal["details"]["noise_metrics"] = {
-            "J": cost, "chi2_red": cost * observations / max(1, observations-info_obs.shape[0]),
+            "J": cost, "chi2_red": cost * residual_dof / max(1, residual_dof-info_obs.shape[0]),
+            "residual_dof": residual_dof,
             "n_obs": observations, "params": info_obs.shape[0],
             "norm_mode": "sigma", "noise_normalized": True, "sigma_model_mm": sigma,
         }

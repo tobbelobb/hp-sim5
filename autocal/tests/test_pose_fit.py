@@ -175,7 +175,8 @@ def test_stretched_hp5_fit_recovers_geometry_from_a_distant_seed():
 
 
 @pytest.mark.parametrize('accepted', [True, False])
-def test_extra_range_force_survives_rejection_and_reversed_roles(accepted):
+@pytest.mark.parametrize('profiled', [True, False])
+def test_extra_range_force_survives_rejection_and_reversed_roles(accepted, profiled):
     from autocal.pose_fit import consistency_residuals, dataset_stretch
     anchors = np.array([[0.,-1900.,-280.], [1900.,0.,-280.], [0.,1900.,-280.],
                         [-1900.,0.,-280.], [0.,0.,1900.]])
@@ -198,7 +199,7 @@ def test_extra_range_force_survives_rejection_and_reversed_roles(accepted):
             point = dict(l_drive=delta[1], l_sensor=delta[3], sensor_force_n=4.,
                          source_sensor_anchor=sensor, extra_sensor_ranges=[extra])
             dataset['sweeps'].append(dict(fixed_anchors=[0,4], fixed_lengths=delta[[0,4]].tolist(),
-                drive_anchor=1, sensor_anchor=3, metadata={'sensor_force_profile':True}, data_points=[point]))
+                drive_anchor=1, sensor_anchor=3, metadata={'sensor_force_profile':profiled}, data_points=[point]))
     lengths = dataset_line_lengths(dataset)['lengths_mm']
     corrected = consistency_residuals(anchors, lengths, np.zeros(5), stretch=dataset_stretch(dataset))
     assert np.max(abs(corrected)) < 1e-8

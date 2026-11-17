@@ -58,7 +58,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
     onPoint: point => points.push(point), sensorForceProfile, sensorSpoolGearRatio, probeSpoolReserve,
-    stepMmByAnchor,
+    stepMmByAnchor, extraSensors: extraGain !== null,
   });
   return { run, commands, points };
 }
@@ -235,4 +235,13 @@ test.each([0, 2])('extra sensor with gain %s is tensioned only for measurement a
     .map(({line}) => line.split(' T')[1].split(':').map(Number));
   expect(modes.find(row => row[1] > 0)[4]).toBe(.01);
   expect(modes.some(row => row[1] === 0 && row[2] > 0 && row[4] === 2)).toBe(true);
+});
+
+
+test('the spare line is a sensor in the first constant-force measurement, without a profile', async () => {
+  const trial = movingPullout({extraGain:2,sweepPoints:5});
+  const result = await trial.run();
+  const extras = result.dataPoints.map(point=>point.extra_sensor_ranges[0]);
+  expect(extras.every(extra=>extra.anchor===4 && Math.abs(extra.force_n-1.15)<1e-9)).toBe(true);
+  expect(extras.some(extra=>extra.accepted)).toBe(true);
 });

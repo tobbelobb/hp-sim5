@@ -182,3 +182,20 @@ def test_validation_does_not_reinfer_encoder_reference_from_future_observations(
 
     assert np.allclose(params.theta0_deg, 0.0)
     assert shifted[0] > good[0]
+
+
+def test_hp5_validation_uses_the_extra_range_and_respects_its_rejection():
+    anchors=np.array([[0.,-1900.,-280.],[1900.,0.,-280.],[0.,1900.,-280.],[-1900.,0.,-280.],[0.,0.,1900.]])
+    sweeps=[]
+    for i,position in enumerate([[50.,-100.,200.],[-100.,80.,400.],[200.,-200.,300.]]):
+        delta=np.linalg.norm(anchors-position,axis=1)-np.linalg.norm(anchors,axis=1)
+        sweeps.append({'id':str(i),'fixed_anchors':[0,4],'fixed_lengths':delta[[0,4]].tolist(),
+            'drive_anchor':1,'sensor_anchor':3,'data_points':[{'l_drive':delta[1],'l_sensor':delta[3],
+            'extra_sensor_ranges':[{'anchor':2,'length_mm':delta[2],'accepted':True,'force_n':2.}]}]})
+    dataset={'machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,'config':{},'sweeps':sweeps}
+    exact=score_future_sweeps(dataset,anchors,[])
+    assert exact[0]<1e-12
+    for sweep in sweeps:sweep['data_points'][0]['extra_sensor_ranges'][0]['length_mm']+=2.
+    assert score_future_sweeps(dataset,anchors,[])[0]>.01
+    for sweep in sweeps:sweep['data_points'][0]['extra_sensor_ranges'][0]['accepted']=False
+    assert score_future_sweeps(dataset,anchors,[])[0]<1e-12

@@ -109,3 +109,52 @@ def test_one_coordinate_beyond_the_limit_resets_stability(tmp_path):
     assert fit_with_d_z(3, 1.01).decision == "collect" and policy.stable_streak == 0  # 0.51 mm in one coordinate
     assert fit_with_d_z(4, 1.3).decision == "collect" and policy.stable_streak == 1
     assert fit_with_d_z(5, 1.1).decision == "accept"
+
+
+def _hp5_fit(iteration, offset, *, std=.4, rms=.03, sweeps=None):
+    candidate = _fit(iteration, offset)
+    anchors = np.vstack([candidate['plan']['anchors'], [0.,0.,1900.]])
+    count = sweeps if sweeps is not None else iteration+3
+    candidate.update(max_std_mm=std,plan={'anchors':anchors,'machine_type':'hangprinter_5',
+        'info_rank_deficient':False,'pose_fit':{'rms_mm':rms,'stretch_corrected':True},
+        'dataset':{'sweeps':[{'data_points':[{'extra_sensor_ranges':[{'accepted':True}]}]} for _ in range(count)]}})
+    return candidate
+
+
+def test_hp5_two_good_fits_stop_without_waiting_for_three_half_mm_steps(tmp_path):
+    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
+    history=[]
+    for iteration,offset in enumerate([0.,1.2],1):
+        history.append(_hp5_fit(iteration,offset))
+        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
+    assert result.decision=='accept' and result.reason=='good-fit'
+    assert np.isclose(result.step_mm,1.2) and not result.stable_hit
+
+
+def test_hp5_quality_checks_reset_and_repeated_data_do_not_count(tmp_path):
+    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
+    history=[]
+    for iteration,options in enumerate([{}, {'std':5.}, {'rms':.2}, {}, {'sweeps':7}, {}],1):
+        history.append(_hp5_fit(iteration,.8*iteration,**options))
+        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
+        if iteration<6:assert result.decision=='collect'
+    assert result.reason=='good-fit'
+
+
+def test_hp5_small_steps_with_weak_geometry_do_not_trigger_stable_acceptance(tmp_path):
+    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
+    history=[]
+    for iteration in range(1,4):
+        history.append(_hp5_fit(iteration,.1*iteration,std=5.))
+        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
+    assert result.decision=='collect'
+
+
+def test_hp5_weak_flat_fits_do_not_count_towards_two_good_fits(tmp_path):
+    policy=stopping.StoppingPolicy(patience=20,stop_file=tmp_path/'stop')
+    history=[]
+    for iteration,std in enumerate([5.,5.,.4,.4],1):
+        history.append(_hp5_fit(iteration,0.,std=std))
+        result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
+        if iteration<4:assert result.decision=='collect'
+    assert result.reason=='good-fit'

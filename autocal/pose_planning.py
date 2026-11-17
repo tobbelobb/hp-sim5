@@ -92,6 +92,7 @@ def pose_information(
     low_anchor_z: Optional[float],
     sigma_mm: float,
     positions: Optional[np.ndarray] = None,
+    stretch=None,
 ) -> np.ndarray:
     """Information the given length changes carry about the anchors and the home length offsets."""
     anchors = np.asarray(anchors, dtype=float)
@@ -130,7 +131,7 @@ def pose_information(
                                          dimensions, low_anchor_z)
         offsets = np.zeros(num_anchors)
         offsets[num_anchors - num_offsets:] = step[anchor_vec.size:]
-        return consistency_residuals(moved, lengths_mm, offsets).ravel()
+        return consistency_residuals(moved, lengths_mm, offsets, stretch=stretch).ravel()
 
     size = anchor_vec.size + num_offsets
     jacobian = np.zeros((lengths_mm.size, size))
@@ -152,6 +153,8 @@ def rank_candidates_pose_information(
     sigma_mm: float,
     regularization: float,
     top_k: int,
+    measure_extra_ranges: bool = False,
+    observed_stretch=None,
 ) -> List[Tuple[float, SweepConfig]]:
     """Rank candidates by the gain in log-determinant of the point-fit information."""
     anchors = np.asarray(anchors, dtype=float)
@@ -159,7 +162,7 @@ def rank_candidates_pose_information(
     num_offsets = num_anchors - dimensions
     home_lengths = np.linalg.norm(anchors, axis=1)
     options = dict(machine_type=machine_type, low_anchor_z=low_anchor_z, sigma_mm=sigma_mm)
-    base = pose_information(anchors, observed_lengths_mm, **options)
+    base = pose_information(anchors, observed_lengths_mm, stretch=observed_stretch, **options)
     prior = np.full(base.shape[0], float(regularization))
     prior[base.shape[0] - num_offsets:] += 1.0 / HOME_OFFSET_PRIOR_SIGMA_MM ** 2
     base = base + np.diag(prior)
@@ -172,7 +175,8 @@ def rank_candidates_pose_information(
             continue
         lengths = np.linalg.norm(anchors[None, :, :] - positions[:, None, :], axis=2) - home_lengths
         active = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
-        lengths[:, [axis for axis in range(num_anchors) if axis not in active]] = np.nan
+        if not measure_extra_ranges:
+            lengths[:, [axis for axis in range(num_anchors) if axis not in active]] = np.nan
         gain = np.linalg.slogdet(base + pose_information(anchors, lengths, positions=positions, **options))[1] - base_logdet
         if np.isfinite(gain):
             scored.append((float(gain), cfg))

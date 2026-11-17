@@ -139,3 +139,15 @@ def test_force_infeasible_best_candidate_uses_the_next_ranked_sweep(tmp_path, mo
     monkeypatch.setattr(planning, 'write_sensor_force_profile', bad_configuration)
     with pytest.raises(ValueError,match='mechanical advantage'):
         planning.plan_ellipse_sweep(fit,tmp_path/'sweeps.json')
+
+
+def test_forecast_counts_the_information_in_the_fifth_range():
+    anchors=np.array([[0.,-1900.,-280.],[1900.,0.,-280.],[0.,1900.,-280.],[-1900.,0.,-280.],[0.,0.,1900.]])
+    cfg=SweepConfig((0,4),(-340.,0.),1,3)
+    positions=predict_sweep_positions(anchors,cfg,12,SWEEP_PRETENSION_SHARE)
+    lengths=np.linalg.norm(anchors[None,:,:]-positions[:,None,:],axis=2)-np.linalg.norm(anchors,axis=1)
+    options=dict(machine_type='hangprinter_5',low_anchor_z=None,observed_lengths_mm=lengths,
+        candidates=[cfg],points_per_sweep=12,sigma_mm=.02,regularization=1e-6,top_k=1)
+    four=rank_candidates_pose_information(anchors,**options)
+    five=rank_candidates_pose_information(anchors,measure_extra_ranges=True,**options)
+    assert five[0][0]>four[0][0]
