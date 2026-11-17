@@ -18,6 +18,8 @@ from typing import Dict, List, Optional, Sequence
 import numpy as np
 from scipy.optimize import least_squares
 
+from autocal.flex import FlexModel
+
 from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix_to_opt_vec, get_anchor_opt_bounds
 
 # Wide enough for the stretch of any realistic line, narrow enough to keep the offsets
@@ -63,7 +65,54 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
     }
 
 
-def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offsets_mm: np.ndarray) -> np.ndarray:
+def dataset_stretch(dataset: dict):
+    """Recorded sensor loads plus firmware compliance for per-pose range correction.
+
+    Each sweep has d+1 active lines. Static equilibrium and the commanded sensor
+    force determine their individual loads; unused lines retain the low force.
+    Rough bootstrap and historical force records retain the rigid fit.
+    """
+    from autocal.equal_strain import is_equal_strain
+    # Only redundant machines use this range model as their primary objective.
+    # Ellipse fits still rely on equal-strain collection and rigid home offsets.
+    if int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1 or not is_equal_strain(dataset):
+        return None
+    config = dataset.get("config") or {}
+    m666 = config.get("m666_before_data_collection") or {}
+    model = FlexModel.from_m666(m666, num_axes=int(dataset["num_anchors"]))
+    points = [(sweep, point) for sweep in dataset.get("sweeps", []) for point in sweep.get("data_points", [])]
+    if model is None or not points or not all(isinstance(point.get("sensor_force_n"), (int, float))
+                                              and np.isfinite(point["sensor_force_n"]) for _, point in points):
+        return None
+    sensors = np.array([int(point.get("source_sensor_anchor", sweep["sensor_anchor"])) for sweep, point in points])
+    return dict(model=model, sensors=sensors,
+                forces=np.array([point["sensor_force_n"] for _, point in points]),
+                weight=float(m666.get("W", 0.)) * 9.81,
+                passive=float((config.get("force_tuning") or {}).get("force_low_n", 0.)))
+
+
+def stretch_corrected_lengths(anchors, positions, absolute, measured, stretch):
+    directions = anchors[None, :, :] - positions[:, None, :]
+    directions /= np.maximum(np.linalg.norm(directions, axis=2), 1e-9)[:, :, None]
+    active = np.nonzero(measured)[1].reshape(len(positions), -1)
+    local = np.take_along_axis(directions, active[:, :, None], axis=1)
+    sensor_row = (active == stretch["sensors"][:, None]).astype(float)
+    matrix = np.concatenate([local.transpose(0, 2, 1), sensor_row[:, None, :]], axis=1)
+    load = -stretch["passive"] * np.sum(directions * (~measured)[:, :, None], axis=1)
+    load[:, -1] += stretch["weight"]
+    # Trial geometries can make the static system singular during fitting.
+    # A tiny ridge keeps their residual finite without changing reachable loads.
+    transpose = matrix.transpose(0, 2, 1)
+    normal = transpose @ matrix + 1e-12 * np.eye(matrix.shape[-1])
+    rhs = transpose @ np.column_stack([load, stretch["forces"]])[:, :, None]
+    forces = np.linalg.solve(normal, rhs)[:, :, 0]
+    tensions = np.zeros_like(absolute)
+    np.put_along_axis(tensions, active, forces, axis=1)
+    return np.column_stack([stretch["model"].corrected_distance_mm(absolute[:, axis], tensions[:, axis], axis=axis)
+                            for axis in range(anchors.shape[0])])
+
+
+def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offsets_mm: np.ndarray, *, stretch=None) -> np.ndarray:
     """Per-point, per-line length misfit at each point's best effector position, in mm."""
     anchors = np.asarray(anchors, dtype=float)
     dimensions = anchors.shape[1]
@@ -76,10 +125,14 @@ def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offs
         to_effector = positions[:, None, :] - anchors[None, :, :]
         distance = np.linalg.norm(to_effector, axis=2)
         direction = to_effector / distance[:, :, None] * measured[:, :, None]
-        misfit = np.where(measured, distance - absolute, 0.0)
+        corrected = (absolute if stretch is None else
+                     stretch_corrected_lengths(anchors, positions, absolute, measured, stretch))
+        misfit = np.where(measured, distance - corrected, 0.0)
         normal = np.einsum("pni,pnj->pij", direction, direction) + damping
         gradient = np.einsum("pni,pn->pi", direction, misfit)
         positions = positions - np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
+    if stretch is not None:
+        absolute = stretch_corrected_lengths(anchors, positions, absolute, measured, stretch)
     return np.where(measured, np.linalg.norm(positions[:, None, :] - anchors[None, :, :], axis=2) - absolute, 0.0)
 
 
@@ -105,6 +158,7 @@ def fit_pose_least_squares(
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
     if not lengths.size or not np.all(np.sum(np.isfinite(lengths), axis=1) >= dimensions + 1):
         raise ValueError("Point fit requires finite measurements on at least one point")
+    stretch = dataset_stretch(dataset)
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
 
@@ -115,10 +169,10 @@ def fit_pose_least_squares(
         offsets[offset_lines] = x[x.size - num_offsets:]
         return anchors, offsets
 
-    def residuals(x: np.ndarray, prior_weight: float) -> np.ndarray:
+    def residuals(x: np.ndarray, prior_weight: float, correct_stretch: bool = True) -> np.ndarray:
         anchors, offsets = unpack(x)
         return np.concatenate([
-            consistency_residuals(anchors, lengths, offsets).ravel(),
+            consistency_residuals(anchors, lengths, offsets, stretch=stretch if correct_stretch else None).ravel(),
             offsets[offset_lines] * prior_weight,
         ])
 
@@ -136,6 +190,13 @@ def fit_pose_least_squares(
             np.zeros(num_offsets),
         ])
         x_scale = np.concatenate([np.full(start.size - num_offsets, 100.0), np.ones(num_offsets)])
+        if stretch is not None:
+            # Far trial geometries can have singular static force systems. First
+            # solve the well-behaved rigid problem, then refine its nearby fit.
+            rigid = least_squares(residuals, start,
+                args=(_MIN_SCALE_MM / home_offset_prior_sigma_mm, False),
+                bounds=bounds, x_scale=x_scale, loss="soft_l1", f_scale=1.0)
+            start = rigid.x
         first = least_squares(residuals, start, args=(_MIN_SCALE_MM / home_offset_prior_sigma_mm,),
                               bounds=bounds, x_scale=x_scale, loss="soft_l1", f_scale=1.0)
         point_residuals = first.fun[: lengths.size].reshape(lengths.shape)[np.isfinite(lengths)]
@@ -162,6 +223,7 @@ def fit_pose_least_squares(
         "point_residuals_mm": per_point,
         "num_points": int(lengths.shape[0]),
         "fit_home_offsets": bool(fit_home_offsets),
+        "stretch_corrected": stretch is not None,
         "success": bool(best.success),
         "status": int(best.status),
         "message": str(best.message),

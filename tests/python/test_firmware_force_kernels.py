@@ -84,3 +84,72 @@ def test_qp_continues_when_a_released_cable_reaches_its_opposite_bound(kernel):
                 np.r_[load, np.zeros(5)], bounds=(lower, upper), tol=1e-12).x
             np.testing.assert_allclose(result, reference, atol=.002, rtol=0)
             assert np.all(result >= lower-1e-5) and np.all(result <= upper+1e-5)
+
+
+@pytest.fixture(scope='module')
+def rrf_tikhonov(tmp_path_factory):
+    """Compile the real RRF Tikhonov body against the standalone flex harness."""
+    directory = tmp_path_factory.mktemp('rrf-tikhonov')
+    dev = ROOT / 'flex-compensation-dev/hangprinter-flex-compensation'
+    source = (ROOT / 'RRF/ReprapFirmware/src/Movement/Kinematics/HangprinterKinematics.cpp').read_text()
+    start = source.index('void HangprinterKinematics::StaticForcesTikhonov(')
+    end = source.index('void HangprinterKinematics::StaticForcesQp(', start)
+    body = source[start:end].replace('HangprinterKinematics::', 'Flex::').replace('HANGPRINTER_MAX_ROWS', '6')
+    (directory / 'tikhonov.cpp').write_text('#include "force_solver.hpp"\n' + body)
+    executable = directory / 'probe'
+    subprocess.run(['g++', '-O2', '-std=c++20', f'-I{dev}', str(dev/'flex.cpp'),
+        str(dev/'flex_qp.cpp'), str(directory/'tikhonov.cpp'), str(dev/'test_driver.cpp'),
+        '-o', str(executable)], check=True)
+    return executable
+
+
+def test_rrf_tikhonov_keeps_soft_minimum_and_hard_physical_limits(rrf_tikhonov):
+    def solve(position, mass=.081, upper=170., ignore_pretension=0):
+        values = [5, 1, 0, ignore_pretension, mass, .001, 0., *position,
+                  *ANCHORS.ravel(), *([3.]*5), *([upper]*5),
+                  *([1.]*5), *([1.]*5), *([0.]*5), *([0.]*15)]
+        result = subprocess.run([str(rrf_tikhonov)], input=' '.join(map(str, values))+'\n',
+                                text=True, capture_output=True, check=True)
+        return np.array(list(map(float, result.stdout.split())))[:5]
+    tensions = solve([0., 0., 0.])
+    assert .2 < max(3.-tensions) < .3
+    for ignore in (0, 1):
+        tensions = solve([1800., 300., 1800.], mass=10., upper=.1, ignore_pretension=ignore)
+        assert np.all(tensions >= 0.) and np.all(tensions <= .100001)
+
+
+@pytest.mark.parametrize('implementation', ['dev', 'rrf', 'klipper'])
+def test_range_seed_and_planar_guard_match_in_all_implementations(implementation, tmp_path):
+    paths = {'dev':'forward-transform-dev/hangprinter-forward-transform/motorstepstocartesiantest_quadratic.cpp',
+             'rrf':'RRF/ReprapFirmware/src/Movement/Kinematics/HangprinterKinematics.cpp',
+             'klipper':'klipper/klippy/chelper/kin_winch.c'}
+    scalar, name = ('double', 'range_seed') if implementation == 'klipper' else ('float', 'rangeSeed')
+    source = (ROOT / paths[implementation]).read_text()
+    code = '#include <cmath>\n#include <algorithm>\nusing namespace std;\n' + function(source, name)
+    code += f'''
+extern "C" int probe(const double *input, const double *ranges, double *output) {{
+    {scalar} anchors[5][3], origins[5], lines[5], seed[3];
+    for (int i=0; i<5; ++i) {{
+        double square=0.;
+        for (int j=0; j<3; ++j) {{ anchors[i][j]=input[3*i+j]; square+=input[3*i+j]*input[3*i+j]; }}
+        origins[i]=sqrt(square); lines[i]=ranges[i]-origins[i];
+    }}
+    int ok={name}(anchors, origins, lines, 5, seed);
+    if (ok) for (int j=0; j<3; ++j) output[j]=seed[j];
+    return ok;
+}}
+'''
+    cpp, library = tmp_path/'seed.cpp', tmp_path/'seed.so'
+    cpp.write_text(code)
+    subprocess.run(['g++', '-std=c++17', '-shared', '-fPIC', str(cpp), '-o', str(library)], check=True)
+    solve = ctypes.CDLL(str(library)).probe
+    array = np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS')
+    solve.argtypes = [array]*3
+    position = np.array([10.,20.,100.])
+    for height, expected in ((1900., True), (.01, False), (0., False)):
+        anchors = ANCHORS.copy(); anchors[:,2]=0.; anchors[-1,2]=height
+        ranges = np.linalg.norm(anchors-position, axis=1)
+        output = np.zeros(3)
+        assert bool(solve(anchors.ravel(), ranges, output)) == expected
+        if expected:
+            np.testing.assert_allclose(output, position, atol=.001, rtol=0)

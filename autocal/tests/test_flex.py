@@ -25,3 +25,11 @@ def test_flex_model_handles_nan_tension_as_zero():
     out = model.corrected_distance_mm(l, np.array([np.nan]), axis=0)[0]
     assert np.isclose(out, 1234.0)
 
+
+
+def test_flex_inverse_matches_firmware_ma_squared_and_strand_scaling():
+    for ma, strands in ((1., 2.), (2., 2.), (4., 4.)):
+        model = FlexModel.from_m666({'S':20000., 'U':[ma], 'N':[strands], 'Y':[429.1]}, num_axes=1)
+        distance, force = np.array([1000., 1800., 2200.]), np.array([2., 4., 12.])
+        material = distance - force*(ma*distance+429.1)/(20000.*ma**2*strands)
+        assert np.allclose(model.corrected_distance_mm(material, force, axis=0), distance, atol=1e-10)

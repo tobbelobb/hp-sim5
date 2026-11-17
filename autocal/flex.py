@@ -29,8 +29,7 @@ class FlexModel:
 
     RRF uses:
       springK(springLength) = springKPerUnitLength / springLength
-      flex = -F / (springK * mechanicalAdvantage)
-          = -F * springLength / (springKPerUnitLength * mechanicalAdvantage)
+      flex = -F * springLength / (springKPerUnitLength * U**2 * N)
 
     Here we invert that to correct measured (unstretched/material) lengths into
     geometric distances (mm).
@@ -39,6 +38,7 @@ class FlexModel:
     spring_k_per_unit_length: float
     mechanical_advantage: Sequence[float]
     guy_wire_lengths: Sequence[float]
+    lines_per_axis: Sequence[float] = ()
     spring_k_multiplier: Union[float, Sequence[float]] = 1.0
 
     @classmethod
@@ -68,6 +68,7 @@ class FlexModel:
             spring_k_per_unit_length=float(spring_k_per_unit_length),
             mechanical_advantage=mechanical_advantage,
             guy_wire_lengths=guy_wire_lengths,
+            lines_per_axis=[_axis_value(m666.get("N"), i, 1.0) for i in range(num_axes)],
             spring_k_multiplier=spring_k_multiplier,
         )
 
@@ -96,11 +97,14 @@ class FlexModel:
         s_mult = float(_axis_value(self.spring_k_multiplier, axis, 1.0))
         s_eff = float(self.spring_k_per_unit_length) * max(s_mult, 1e-9)
 
+        strands = max(_axis_value(self.lines_per_axis, axis, 1.0), 1e-9)
+        s_eff *= ma * strands
+
         tension = np.where(np.isfinite(tension_n) & (tension_n > 0.0), tension_n, 0.0)
 
         # Solve for distance in:
         #   l_meas = d + flex(d)
-        #   flex(d) = -F * (d*ma + guy) / (S_eff * ma)
+        #   flex(d) = -F * (d*ma + guy) / (S_eff * ma), where S_eff includes U*N
         # => l_meas = d*(1 - F/S_eff) - F*guy/(S_eff*ma)
         denom = 1.0 - (tension / s_eff)
         denom = np.where(denom > 1e-9, denom, 1e-9)

@@ -79,3 +79,96 @@ def test_fixed_line_lengths_include_the_measured_holding_error():
     lengths = dataset_line_lengths(dataset)["lengths_mm"][0]
     assert lengths[0] == pytest.approx(sweep["fixed_lengths"][0] + 0.1)
     assert lengths[3] == pytest.approx(sweep["fixed_lengths"][1] - 0.2)
+
+
+def test_per_pose_stretch_uses_actual_reversed_sensor_and_reeving():
+    from autocal.pose_fit import consistency_residuals, dataset_stretch
+    anchors = np.array([[0.,-1900.,-280.], [1900.,0.,-280.], [0.,1900.,-280.],
+                        [-1900.,0.,-280.], [0.,0.,1900.]])
+    ma, strands, guy = np.array([2,2,2,2,4]), np.array([2,2,2,2,4]), np.array([429.1]*4+[352.3])
+    dataset = dict(num_anchors=5, dimensions=3, config={
+        'm666_before_data_collection': {'S':20000., 'W':.081, 'U':ma.tolist(), 'N':strands.tolist(), 'Y':guy.tolist()},
+        'force_tuning': {'force_low_n':.05}}, sweeps=[])
+    for sensor in (1, 3):
+        for position in ([0.,-100.,0.], [50.,-100.,100.], [-50.,-100.,200.]):
+            vector = anchors - position
+            distance = np.linalg.norm(vector, axis=1)
+            directions = (vector / distance[:,None]).T
+            active = [0,1,3,4]
+            matrix = np.vstack([directions[:,active], np.array(active)==sensor])
+            tensions = np.zeros(5)
+            tensions[2] = .05
+            tensions[active] = np.linalg.solve(matrix, np.r_[[0.,0.,.081*9.81]-.05*directions[:,2], 4.])
+            assert np.all(tensions > 0)
+            # Independent firmware equation, including guy wires and MA squared.
+            material = distance - tensions*(ma*distance+guy)/(20000*ma**2*strands)
+            delta = material - np.linalg.norm(anchors,axis=1)
+            point = dict(l_drive=delta[1], l_sensor=delta[3], sensor_force_n=4., source_sensor_anchor=sensor)
+            dataset['sweeps'].append(dict(fixed_anchors=[0,4], fixed_lengths=delta[[0,4]].tolist(),
+                                           drive_anchor=1, sensor_anchor=3, metadata={'sensor_force_profile':True}, data_points=[point]))
+    lengths = dataset_line_lengths(dataset)['lengths_mm']
+    rigid = consistency_residuals(anchors, lengths, np.zeros(5))
+    corrected = consistency_residuals(anchors, lengths, np.zeros(5), stretch=dataset_stretch(dataset))
+    assert np.linalg.norm(rigid) > .01
+    assert np.max(abs(corrected)) < 1e-8
+
+
+def test_missing_or_projected_sensor_force_keeps_historical_rigid_fit():
+    from autocal.pose_fit import dataset_stretch
+    dataset = dict(num_anchors=5, dimensions=3, config={
+        'm666_before_data_collection': {'S':20000., 'U':[2]*5, 'N':[2]*5}},
+        sweeps=[dict(fixed_anchors=[0,4], fixed_lengths=[0.,0.], drive_anchor=1,
+                     sensor_anchor=3, data_points=[dict(l_drive=0.,l_sensor=0.)])])
+    assert dataset_stretch(dataset) is None
+    for sweep in dataset['sweeps']:
+        sweep['metadata'] = {'sensor_force_profile':True}
+        sweep['data_points'][0]['sensor_force_n'] = 2.
+    assert dataset_stretch(dataset) is not None
+    dataset['sweeps'][0]['data_points'][0]['sensor_force_n'] = None
+    assert dataset_stretch(dataset) is None
+    point = dataset['sweeps'][0]['data_points'][0]
+    point['sensor_force_n'] = 2.
+    point['raw_angles_zero_tension_deg'] = [0.]*5
+    assert dataset_stretch(dataset) is None
+
+
+def test_nonredundant_ellipse_fit_keeps_its_rigid_offset_model():
+    from autocal.pose_fit import dataset_stretch
+    dataset = _dataset()
+    dataset['config']['m666_before_data_collection'] = {'S':20000., 'U':[2]*4, 'N':[2]*4}
+    for sweep in dataset['sweeps']:
+        sweep['metadata'] = {'sensor_force_profile':True}
+        sweep['data_points'][0]['sensor_force_n'] = 2.
+    assert dataset_stretch(dataset) is None
+
+
+def test_stretched_hp5_fit_recovers_geometry_from_a_distant_seed():
+    anchors = np.array([[0.,-1900.,-280.], [1900.,0.,-280.], [0.,1900.,-280.],
+                        [-1900.,0.,-280.], [0.,0.,1900.]])
+    ma, strands, guy = np.array([2,2,2,2,4]), np.array([2,2,2,2,4]), np.array([429.1]*4+[352.3])
+    dataset = dict(machine_type='hangprinter_5_pulley_reduced', num_anchors=5, dimensions=3, config={
+        'm666_before_data_collection': {'S':20000., 'W':.081, 'U':ma.tolist(), 'N':strands.tolist(), 'Y':guy.tolist()},
+        'force_tuning': {'force_low_n':.05}}, sweeps=[])
+    rng = np.random.default_rng(541)
+    for low in range(4):
+        drive, sensor, passive = (low+1)%4, (low+3)%4, (low+2)%4
+        active = [low,4,drive,sensor]
+        for index in range(12):
+            position = anchors[low]*[.1,.1,0.] + rng.uniform([-100.,-100.,0.],[100.,100.,500.])
+            vector = anchors-position
+            distance = np.linalg.norm(vector,axis=1)
+            directions = (vector/distance[:,None]).T
+            actual_sensor = sensor if index%2 else drive
+            matrix = np.vstack([directions[:,active], np.array(active)==actual_sensor])
+            tension = np.zeros(5); tension[passive]=.05
+            tension[active] = np.linalg.solve(matrix,np.r_[[0.,0.,.081*9.81]-.05*directions[:,passive],4.])
+            assert np.all(tension>0)
+            delta = distance-tension*(ma*distance+guy)/(20000*ma**2*strands)-np.linalg.norm(anchors,axis=1)
+            dataset['sweeps'].append(dict(fixed_anchors=[low,4], fixed_lengths=delta[[low,4]].tolist(),
+                drive_anchor=drive,sensor_anchor=sensor,metadata={'sensor_force_profile':True},
+                data_points=[dict(l_drive=delta[drive],l_sensor=delta[sensor],
+                                  sensor_force_n=4.,source_sensor_anchor=actual_sensor)]))
+    fit = fit_pose_least_squares(dataset, anchors*1.1+[0.,0.,20.], fit_home_offsets=False,
+                                home_offset_prior_sigma_mm=5.)
+    assert fit['success'] and fit['stretch_corrected']
+    assert np.max(np.linalg.norm(fit['anchors']-anchors,axis=1)) < .001

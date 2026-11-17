@@ -1,140 +1,157 @@
-# Hangprinter validation — 2026-11-16
+# Hangprinter validation — 2026-11-17
 
-Reviewed e5593f44, RRF 55a80fd91 and Klipper 98bf60294. The square scenes,
-anchors, four corner attachments, 2:2:2:2:4 strands and 2:2:2:2:4 reduced
-mechanical advantages remain unchanged. Development submodule contents were
-not edited; pointers advance to forward 797620c7 and flex 8e0800a1.
+Work is on superproject main. Forward development was tested, committed and pushed
+first (implementation `ef77f41`, documentation/head `ab981d7` in
+`forward-transform-dev/hangprinter-forward-transform`), then
+ported to RRF and Klipper. Evidence for this follow-up is under
+`/tmp/hp5-followup/`; suite logs are `/tmp/hp5-*.log`.
 
-## Verified fixes
+## Tikhonov correction
 
-* Applied and built the dev audit's firmware patches: axis-major RRF flex
-  derivative buffers, complete QP bound transitions, double RRF row-space
-  arithmetic, stable spool conversions, and Tikhonov hard 0/Tmax clamps even
-  with pretension disabled. Tikhonov Tmin remains a soft target. RRF M666 now
-  preserves the 0.081 kg mover mass instead of reporting 0.08 kg.
-* Actual RRF/Klipper QP kernels match independent bounded least squares within
-  0.002 N on the supplied opposite-bound regression and 60 random layouts,
-  including force-only and moment rows. Real firmware forward/flex tests pass.
-* Equal-strain planning includes nominal loads from compliant unused lines and
-  rejects an unsupported multi-dimensional active pretension null space.
-  Opposing unused low axes remain compliant during acquisition and returns.
-* Candidate information eliminates already-known poses analytically. Ranking
-  3,509 candidates took 2.02 s versus 30.53 s with repeated pose solves;
-  regression tests compare the resulting matrices with finite differences.
-  Removed discarded ellipse calculations from redundant-machine range fits.
-* Headless requests serialize behind an interrupted collector's outstanding
-  advance. Both a disconnected-client regression and a real acquisition-time
-  Ctrl-C applied the selected parameters successfully, without HTTP 409.
-* Research collection uses production tuning for every machine; removed the
-  HP5-only exception and inadequate HP3/HP4 fixed-force defaults. Physical test
-  fixtures now request the required eight encoder samples.
-* Fixed quality-monitor extrusion-boundary assignment across travel moves;
-  Klipper logo outliers of roughly 600 mm disappear. Raw-move spool conversion
-  now handles positive buildup without cancellation or hiding invalid lengths.
+Inspection of RRF 1295c622e and Klipper 97900ec65 found no hard-Tmin clamp to
+revert. Both retain the projected-gradient soft minimum; the moved clamp is
+`[0,Tmax]`, already present in their parent revisions when pretension was enabled.
+It now also applies with pretension disabled. Keep that fix, QP bound transitions,
+axis-major derivative buffers, double row-space arithmetic and spool precision.
 
-## Autocal
+Standalone flex and real firmware regressions explicitly require Tikhonov's
+centre Tmin shortfall to lie between .2 and .3 N (observed .233079 N), separately
+from hard zero/Tmax checks. The cumulative reference patches and SYNC_AUDIT.md
+now describe that distinction. Prints use QP and autocal collects with firmware
+flex disabled, so neither was affected by a supposed hard-Tmin change.
 
-Fresh datasets, native production physics, closed-loop motors, 20 solver
-iterations, unchanged two-consecutive-sweep 0.5 mm coordinate-step rule,
-patience 20, six million physics steps, 1000 s external limit. Wall times include
-bootstrap, remeasurement, fitting and acquisition; other validation ran
-concurrently. Sweep counts are retained sweeps, excluding discarded rough data.
-Errors are Euclidean fitted-anchor errors against firmware anchors, without
-alignment. An interrupted fit is not a stable-stop pass.
+## Forward transform and remaining force tradeoff
 
-| Machine | Stop | Max anchor error mm | Sweeps | Wall s |
-|---|---|---:|---:|---:|
-| HP3 | stable-estimate | 1.023 | 10 | 612.19 |
-| HP4 | stable-estimate | 4.559 | 14 | 937.39 |
-| HP5 | stable-estimate | 1.851 | 11 | 544.45 |
-| HP5 reduced | Ctrl-C | 2.414 | 14 | 999.57 |
+The hybrid tries a double-precision squared-range rigid seed, keeping it only
+when it improves the full length-space residual. It rejects near-planar layouts
+with four or more anchors when a normal-system elimination pivot is <=1e-8 of
+the largest diagonal. The .01 mm flattened-top mirror probe now fails explicitly
+instead of returning a plausible wrong branch. Exactly planar three-anchor
+research cases retain their branch-selecting seed convention.
 
-Evidence is under `/tmp/hp5-review/`: `patched-hangprinter_3`,
-`patched-hangprinter_4`, `hangprinter_5-final`, and `patched-hp5r`, each with
-`.json`, `.full_auto_log.jsonl` and `.headless/manifest.json` artifacts.
+Both development suites pass. The forward tests cover 1,788 workspace/anchor
+approaches, 400 motor roundtrips, 800 inconsistent-length comparisons to SciPy,
+50 noisy flex cases, and mirror/near-planar probes. Clean workspace error remains
+below .02 mm. Some .01 mm anchor-collision flex probes remain nonconvergent
+(worst .423 mm); production autocal enforces 10% home-distance clearance.
 
-Reduced autocal remains open. Its last five fit steps were
-3.254, 0.535, 1.288, 0.494 and 0.523 mm; it missed the second stable hit.
-The selected fit's A/B/C/D/I errors are 1.958/2.414/1.137/1.052/0.857 mm.
-Ctrl-C application succeeded; `normal_completion` correctly remains false.
-The prior run's latest-fit error grew from about 2.35 to 4.03 mm as coverage
-expanded. Increasing the pose solve from 25 to 100 iterations barely changed
-those estimates; this is systematic range-model drift, not pose nonconvergence.
-Two diagnostic sweeps using true-anchor force profiles still left 0.0369 mm
-consistency RMS after common offsets/scale; a pivot-rotation correction only
-reduced it to 0.0346 mm. Remaining routing/load/compliance mismatch is therefore
-not resolved by a better initial anchor estimate alone. Its exact decomposition
-is still open. Firmware flex is disabled (`F0`) during autocal, so the patched
-force allocator is not its direct cause. HP4 and reduced both retained 14 sweeps: 937.39 versus 999.57 seconds,
-so the remaining failure is not a fivefold slowdown relative to HP4. No timeouts
-or stop thresholds were raised. HP5 candidate tests enforce clearance of at least 10% of each anchor's
-home distance; the configured top anchor is far from the low-anchor plane.
+QP's centre imbalance (.025637 N direct HP5 / .107010 N reduced) is the finite
+ridge objective's tradeoff, not an active-set failure. This change preserves
+that objective and its independently checked optimum. Neither force solver
+promises exact static equilibrium at all poses.
 
-## Printing and regression suites
+## Autocal range model
 
-Regenerated registered HP3/HP4/HP5 direct/layered command streams with the patched
-firmware, plus the manually selected HP4 Klipper logo stream. Complete HP5
-squares pass all eight firmware/native/Wasm combinations, with tracking RMS
-below 0.4 mm, contour maxima below 0.5 mm, and zero missed steps.
+The redundant-machine point fit previously treated every range as rigid. It now reconstructs each
+pose's active line forces from static equilibrium, the recorded commanded sensor
+force and compliant unused-line loads. Source sensor axes are preserved when
+reverse sub-sweeps are mapped into canonical drive/sensor coordinates. It then
+inverts the firmware compliance formula
+`material = distance - F*(U*distance+Y)/(EA*U²*N)`.
 
-| Machine | Firmware | Tracking RMS mm | Contour max mm | Wall s |
-|---|---|---:|---:|---:|
-| hp3 | rrf | 0.2196 | 0.1922 | 28.20 |
-| hp3 | klipper | 0.2192 | 0.1320 | 27.83 |
-| hp4 | rrf | 0.2177 | 0.1934 | 145.50 |
-| hp4 | klipper | 0.2283 | 0.1842 | 122.51 |
-| hp5 | rrf | 0.2148 | 0.1762 | 36.81 |
-| hp5 | klipper | 0.2328 | 0.1840 | 34.20 |
-| hp5_pulley_reduced | rrf | 0.2315 | 0.2192 | 174.12 |
-| hp5_pulley_reduced | klipper | 0.2429 | 0.2276 | 162.35 |
+The shared flex inverse had an obsolete MA/strand formula and is corrected.
+Rough bootstrap, missing historical force records and projected datasets retain their rigid fit.
+A synthetic reduced-HP5 regression independently generates stretched ranges,
+including both sensor directions and passive pretension; corrected consistency
+residuals are below 1e-8 mm. The model uses configured EA and static loads; it
+does not model bearing friction, pulley tangency or changing mover orientation.
+A rigid prefit supplies a nearby seed before stretch refinement, avoiding
+singular force systems at distant trial geometries. HP3/HP4 retain their ellipse
+objective and its rigid offset model. Stop rules, iteration limits, patience and
+external timeouts are unchanged.
 
-All complete-logo rows had zero missed steps. Printing uses catalogue defaults:
-open-loop motors, one physics substep, one solver iteration for HP3/direct HP5
-and ten for HP4/reduced HP5. No Rust physics changes were needed.
+### Reference measurements before this follow-up
 
-Final checks: 679 fast Python tests passed; the complete non-heavy Python run
-passed 753 with one viewer-dependent skip (the subsequently added HP5 clearance
-test also passed). 397 Jest tests, 85 physics tests (one optional skip), 12 RRF
-and 13 Klipper tests passed. The two actual-kernel checks are included in Python.
-The heavy interruption test passed. One separate heavy layered HP3 global-radius
-fit test fails before and after the firmware patches: its second adaptive sweep
-reports fixed-anchor drift, then fails returning U to encoder origin. This is
-not a passing full-suite result; that layered spool-fit/return path remains open.
+The e5593f44-era validation recorded stable-stop maximum anchor errors of
+1.023 mm (HP3), 4.559 mm (HP4), and 1.851 mm (HP5). Reduced HP5 was interrupted
+at 1000 seconds with 2.414 mm selected-fit error and 14 retained sweeps; that
+was not a stable-stop pass. Its last fit steps were 3.254/.535/1.288/.494/.523 mm.
 
 ## Reproduction
 
-Use an unused dataset directory for a fresh bootstrap:
+Use a fresh dataset path for each run, including after interrupted bootstrap:
 
 ```bash
 cmake --build RRF/build --target rrf_simulator -j 4
+bash forward-transform-dev/hangprinter-forward-transform/test.sh
+bash flex-compensation-dev/hangprinter-flex-compensation/test.sh
 .venv/bin/python scripts/compile_machine_commands.py --machine hp3 --machine hp4 --machine hp3_w_line_layers --machine hp4_w_line_layers --machine hp5 --machine hp5_pulley_reduced
-mkdir -p /tmp/hp5-validation
-HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS=6000000 timeout -s INT 1000 .venv/bin/python autocal/autocal.py --machine-type hangprinter_5_pulley_reduced --dataset /tmp/hp5-validation/reduced.json --headless-sim --recording-mode none --patience 20 --verbose
-```
-
-Substitute `hangprinter_3`, `hangprinter_4`, or `hangprinter_5` and fresh dataset
-paths for the other autocal rows. Require manifest `normal_completion: true`
-and `stop_reason: stable-estimate` for a stable-stop pass.
-
-```bash
+HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS=6000000 timeout -s INT 1000 .venv/bin/python autocal/autocal.py --machine-type hangprinter_5_pulley_reduced --dataset /tmp/hp5-followup/fresh-reduced.json --headless-sim --recording-mode none --patience 20 --verbose
 .venv/bin/python -m pytest -m 'not heavy' -q
 .venv/bin/python -m pytest -m heavy -q
 .venv/bin/python RRF/tests/test_flex_mode_position.py
 .venv/bin/python -m pytest klipper/test/klippy/test_winch.py -q
 npx jest --runInBand
+npm run build:wasm
 node --test --test-concurrency=1 tests/benchmark/*.test.mjs
 node tests/benchmark/logo_accuracy.mjs --machine hp5_pulley_reduced --firmware klipper --open-loop
 ```
 
-The remaining heavy failure can be isolated with:
-
-```bash
-.venv/bin/python -m pytest autocal/tests/test_headless_sim.py::test_fresh_hp3_full_auto_global_radii_and_matched_browser_collection -m heavy -q
-```
-
-HP4's Klipper logo is manually selectable rather than catalogued:
+Require manifest `normal_completion: true` and `stop_reason: stable-estimate`.
+An interrupted run is not a pass. HP4 Klipper's full logo needs an explicit
+command stream because its catalogue defaults to squares:
 
 ```bash
 .venv/bin/python klipper/klippy/klippy.py public/klipper/hp4/printer-hp4-linux-mcu.cfg -i public/gcode/Hangprinter_logo6.gcode -o /tmp/hp4-logo.serial -d public/klipper/linux_mcu/klipper.dict
 node tests/benchmark/logo_accuracy.mjs --machine hp4 --firmware klipper --commands /tmp/hp4-logo.serial --open-loop
 ```
+
+## Follow-up validation results
+
+The first physics run detected a stale browser Wasm artifact. Rebuilding from the
+current Rust sources fixes it: 86 physics tests pass, one optional GC probe skips.
+Fast Python: 688 pass. Jest: 402 pass. RRF: 12 pass. Klipper: 15 pass.
+The actual-kernel Python tests also cover the soft-minimum contract and all three
+range-seed implementations. Both standalone development suites pass.
+
+The broad non-heavy Python rerun passed 758 with one optional skip. An earlier
+run had three service startup/shutdown failures under concurrent validation; all
+three also passed in an isolated slow-marker rerun (28.44 s). The heavy run passed the interruption test
+and reproduced the pre-existing layered HP3 global-radius bootstrap/return
+failure; it is not a clean full-suite pass. No timeout was increased to hide it.
+
+All eight complete-logo checks have zero missed steps. HP4 Klipper uses its
+explicitly compiled logo stream. Tracking and contour errors remain comparable
+to the earlier validation, with the documented large Klipper outliers absent.
+
+| Machine | Firmware | Tracking RMS mm | Contour max mm |
+|---|---|---:|---:|
+| hp3 | rrf | 0.2196 | 0.1922 |
+| hp3 | klipper | 0.2192 | 0.1320 |
+| hp4 | rrf | 0.2173 | 0.1934 |
+| hp4 | klipper | 0.2283 | 0.1842 |
+| hp5 | rrf | 0.2148 | 0.1762 |
+| hp5 | klipper | 0.2328 | 0.1840 |
+| hp5 reduced | rrf | 0.2315 | 0.2192 |
+| hp5 reduced | klipper | 0.2429 | 0.2276 |
+
+Fresh baseline comparison (`reduced-baseline2`, `hp4-baseline2`): HP4 reached
+stable-estimate in 996.18 s with 13 retained sweeps. Reduced HP5 again hit the
+1000 s limit (999.43 s recorded), with 13 sweeps and no stable-stop. Its latest
+fit worsened as coverage expanded, while the selected fit stayed near the earlier
+result. This reproduces the original issue independently of Tikhonov.
+
+### Final autocal runs
+
+All four production-policy machines reach stable-estimate with normal completion.
+The reduced run retains the original two-sweep .5 mm rule and 1000 s timeout;
+its final two steps are recorded below. Anchor errors use the applied, rounded
+M669 values against firmware anchors, without alignment.
+
+| Machine | Evidence stem | Stop | Max anchor error mm | Sweeps | Wall s |
+|---|---|---|---:|---:|---:|
+| HP3 | `hp3-confirmed` | stable-estimate | 1.030 | 9 | 475.78 |
+| HP4 | `hp4-baseline2` | stable-estimate | 4.570 | 13 | 996.18 |
+| HP5 | `hp5-production` | stable-estimate | 1.258 | 11 | 522.27 |
+| HP5 reduced | `reduced-production` | stable-estimate | 2.378 | 7 | 632.74 |
+
+Reduced final coordinate steps: 0.4094 and 0.2251 mm.
+
+The Tikhonov audit correction does not change QP print tracking or F0 autocal.
+HP3/HP4 accuracy remains comparable to the e5593f44-era measurements; direct
+HP5's selected error improves, and reduced HP5 now satisfies stable-stop. This
+is convergence of the estimate, not proof of unbiased anchor metrology: nominal
+compliance, friction and pulley routing still limit absolute accuracy.
+
+Committed component heads: forward `ab981d7` (pushed), flex `815fa31`,
+RRF `f4b08734b`, Klipper `546416321`. Firmware and superproject are local only.
