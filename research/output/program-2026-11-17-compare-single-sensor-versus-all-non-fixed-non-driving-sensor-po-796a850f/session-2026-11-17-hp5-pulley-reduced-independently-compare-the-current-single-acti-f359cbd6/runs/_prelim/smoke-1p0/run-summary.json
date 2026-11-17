@@ -1,0 +1,12 @@
+{
+  "run_id": "smoke-1p0",
+  "collector_returncode": 0,
+  "wall_s": 31.055092706999858,
+  "collector_time_s": 242.7300000004309,
+  "simulated_s": 242.73000000000002,
+  "service_wall_s": 30.872882054999998,
+  "sweeps": 1,
+  "points": 10,
+  "acquisition_rejections": 0,
+  "dataset_sha256": "73a62b795ede2151b018320d091c5281477e62238378af5830e15e0ee932f5fa"
+}

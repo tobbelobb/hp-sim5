@@ -1,0 +1,66 @@
+{
+  "investigation": "session-2026-11-17-independently-review-the-completed-direct-hp5-sensor-policy-expe-b225ae5c",
+  "program": "program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f",
+  "date": "2026-11-17",
+  "status": "review complete; simulation only; no production defaults changed; no commit",
+  "reviewed": {
+    "session": "session-2026-11-17-hp5-direct-compare-the-current-single-active-sensor-plus-complia-6af2e045",
+    "report": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-direct-compare-the-current-single-active-sensor-plus-complia-6af2e045/report.md",
+    "report_sha256": "f114055cd43d1dea412aea7a5a7853b34411c999b64ec01d818286f4397c31e1",
+    "results_sha256": "94d8062d954ac5cb166df1d208cebf3e75bda2c1f0b3606a46507d4081a3a0f7",
+    "published_sweep_script_sha256": "8e2b94a1e1ddffe7e6a98b020e12d6d820e9c2b837dfc68f06eab3b61bbecfb6"
+  },
+  "revisions": {
+    "worktree_head": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+    "root_head": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+    "physics_engine": "rust-native",
+    "physics_artifact_sha256": "1c137e603ae5190e7389863b5c2680200ae21b48162f26e85e71fb6fd1ed418b",
+    "scene_sha256": "944b66cc1b88646d9b0851e6ca8b2740e891f4678f1fd6551c5c0a0dee35c9bf"
+  },
+  "decisions": {
+    "accepted": [
+      "0.05 N slack is deterministic and replays bit-for-bit (max per-pose delta 0.000000 mm)",
+      "0.30 N removes length slack and keeps both lines taut in the matched 14-pose replay",
+      "torque conversion 0.06 N m/N and the model cogging/Coulomb/stiction parameters",
+      "the passive range is already sampled and discarded by the collector",
+      "fixed-line exactness, near-truth initialisation and 0.01 mm noise are not driving the synthetic gain"
+    ],
+    "rejected_or_corrected": [
+      "'median direction improves only 1.4x': 1.4x is the strongest mode; median sigma improves 6.17x",
+      "the 130x 'variance' figure is a squared covariance-norm ratio, not a per-direction variance",
+      "the constant-0.05 mm-bias warning is an offset-free artifact; per-line home offsets absorb it",
+      "the information gain is not demonstrated on the 14 poses actually swept (paired diff +0.027 +/- 0.141 mm)",
+      "the '0.04-0.12 N' 0.05 N force range mixes scenes and understates per-pose variation",
+      "the archived sweep script is broken (NameError home_geom) and was edited after the runs"
+    ]
+  },
+  "reproduction": {
+    "script": "evidence/sweep_review.py",
+    "one_line_fix": "return s, None (published script referenced undefined home_geom)",
+    "runs": {
+      "evidence/repro_down_0.05.json": "sha256 b434d36c9785fe9196943670d021c87be1b15787cedf62cac8dc4bff0a3db399",
+      "evidence/repro_down_0.3.json": "sha256 cd5e4d4d7f03406b28577e724952c0f27e475f0605c31879cf444b0543c54745",
+      "evidence/repro_up_0.05.json": "sha256 55394a0c2a4008f7d795c5847bf70a4b3b44ef2956639c0bd1aaf8ed9f0b6543",
+      "evidence/repro_up_0.3.json": "sha256 481a8bc7efd534c080ceb078fb8d1cbbd4247641299322e79dc1bfbaeaa02c74"
+    },
+    "key_result": "0.05 N: 1/7 slack, max 1.183 mm (down) / 1.296 mm (up), persists after 6 s; 0.30 N: 0/7, max 0.065/0.075 mm"
+  },
+  "analyses": {
+    "aggregate_recompute": "evidence/recompute.json",
+    "paired_source_stats": "evidence/paired_stats.json",
+    "fisher_and_synthetic": "evidence/stats_review.json",
+    "actual_sweep_scope": "evidence/sweep_scope.json",
+    "initial_guess_sensitivity": "evidence/init_sensitivity.json",
+    "noise_sensitivity": "evidence/noise_sensitivity.json",
+    "matched_30_and_offset": "evidence/matched30_offset.json",
+    "force_table": "evidence/force_table.json"
+  },
+  "constraints_observed": [
+    "No full autocal run; only isolated native-headless worlds in temporary directories.",
+    "Root output/first-manual-autocal-of-hp5-pulley-reduced and its services untouched; one read-only force-setting lookup.",
+    "No root source/config edits, no shared rebuilds; root native artifact reused read-only.",
+    "No commits or pushes; no subagents; owned processes closed."
+  ],
+  "report": "report.md",
+  "abstract": "abstract.md"
+}

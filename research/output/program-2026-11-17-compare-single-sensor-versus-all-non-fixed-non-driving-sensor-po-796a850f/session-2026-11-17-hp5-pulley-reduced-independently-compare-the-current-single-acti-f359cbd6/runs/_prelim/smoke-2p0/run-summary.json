@@ -1,0 +1,8 @@
+{
+  "run_id": "smoke-2p0",
+  "collector_returncode": 1,
+  "wall_s": 5.0537103329988895,
+  "collector_time_s": 36.0579999999981,
+  "simulated_s": 36.058,
+  "service_wall_s": 4.842284105000001
+}

@@ -1,0 +1,25 @@
+{
+  "points": 260,
+  "accepted": 216,
+  "stop_reason": "patience",
+  "simulated_s": 2853.3940000000002,
+  "max_coordinate_error_mm": 1.1700000000000728,
+  "aligned_max_coordinate_error_mm": 0.9840000000000655,
+  "applied_m669": "M669 A0.00:-1900.79:-279.88 B1899.96:0.03:-279.88 C-0.09:1900.58:-279.88 D-1901.17:-0.02:-279.88 I0.37:0.03:1899.64",
+  "sweeps": 13,
+  "wall_s": 484.13258452100126,
+  "same_recording_ablation": {
+    "4": {
+      "max_coordinate_error_mm": 1.9888168681427487,
+      "aligned_max_coordinate_error_mm": 1.266639421676473,
+      "rms_mm": 0.04589977805464681,
+      "success": true
+    },
+    "5": {
+      "max_coordinate_error_mm": 3.426752508237996,
+      "aligned_max_coordinate_error_mm": 2.882677886945926,
+      "rms_mm": 0.0878675127790116,
+      "success": true
+    }
+  }
+}

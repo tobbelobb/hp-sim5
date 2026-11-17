@@ -279,3 +279,11 @@ selected calibration regressions passed. [Session evidence](../research/output/s
 ## Autocal production hardening and robustness (2026-11-15)
 
 [Report](output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/report.md), [abstract](output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/abstract.md), and [topic synthesis](topics/autocal-stretch.md). Implements checked rough bootstrap, default offsets, consistent measurement models, independent recorded-data fitting and full HP3/HP4 sanity tools. [Progressive workspace collection](output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/report.md) removes the permanent ~390 mm budget, preserves initial half-turn reserve and verifies later coupling/recovery. One full nominal HP3 trial passes the coordinate gate at 0.91 mm; nominal HP4 remains 4.65 mm. Independent recorded-force review identifies a strong motor-cogging discrepancy, without proving its causal share of anchor error. Includes negative results, a guarded but not ordinarily operational home correction, four-high/cube pilots and a [controlled next-step plan](output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/next_steps.md). No robust sub-millimetre or hardware guarantee is established. Large recordings remain local only.
+
+## HP5 spare-line sensing (2026-11-17)
+
+[Reviewed findings and production validation](output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/report.md)
+implement measurement-only spare-line sensing with local coupling checks and
+force-aware range fitting. Both simulated continuations apply near-1 mm anchors;
+matched final-data comparisons improve direct HP5 and worsen reduced HP5. See
+the report's negative result and limitations before extending the policy.

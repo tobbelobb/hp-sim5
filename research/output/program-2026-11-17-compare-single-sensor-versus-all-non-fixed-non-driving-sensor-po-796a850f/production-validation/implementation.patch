@@ -1,0 +1,649 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index 4280a59e..3f894833 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -78,6 +78,20 @@ a minimum force. Infeasible tails are removed, and measurements stay within the
+ table's support. Commanded profiles do not guarantee actual equal strain: friction,
+ force tracking and unequal compliance can still bias the observations.
+ 
++Fresh HP5 and HP5 pulley-reduced runs also measure the remaining free low line
++during profiled collection. Pullout and idle keep the low compliant force;
++measurements use five times the tuned start force, capped at the tuned maximum.
++The primary sensor's force table accounts for this extra load. Each extra range
++must pass a reversible local encoder-coupling probe at its measurement force.
++Unresolved, hysteretic and untestable ranges are excluded. The dataset records
++`extra_sensor_ranges` with physical anchor indices, commanded forces, lengths,
++acceptance and probe evidence. The point fitter uses accepted ranges and both
++sensor loads, including a rejected range's commanded load, for per-pose stretch
++correction. Home offsets apply to the extra range too. Rough bootstrap keeps the
++single-sensor policy until geometry is checked. Historical profiles preserve
++their original collection policy. Coupling establishes local transmission;
++force tracking and systematic length errors still limit calibration accuracy.
++
+ `--fit-home-offsets` is enabled by default. It estimates the non-translational
+ home-length offsets with the independent point fitter before the ellipse fit.
+ Both fitters remain active, with their anchors and difference logged each pass.
+diff --git a/autocal/control/behaviors/spool_reserve.mjs b/autocal/control/behaviors/spool_reserve.mjs
+index 19e0775a..d256a8dd 100644
+--- a/autocal/control/behaviors/spool_reserve.mjs
++++ b/autocal/control/behaviors/spool_reserve.mjs
+@@ -5,7 +5,7 @@ export class UnmeasurableSweepError extends Error {
+ }
+ 
+ export async function probeSpoolInterval(moveAndSample, {
+-  start, away, toward, driveAnchor, sensorAnchor, mmPerDeg, sigmaFloorDeg,
++  start, away, toward, driveAnchor, sensorAnchor, mmPerDeg, sigmaFloorDeg, driveToleranceMm = 0,
+ }) {
+   const base = await moveAndSample(start);
+   const farther = await moveAndSample(away);
+@@ -16,10 +16,11 @@ export async function probeSpoolInterval(moveAndSample, {
+   );
+   const tracks = (sample, target) => Number.isFinite(sample.muByMotorDeg[driveAnchor])
+     && Math.abs(sample.muByMotorDeg[driveAnchor] - target / mmPerDeg[driveAnchor])
+-       <= 5 * Math.max(sigmaFloorDeg, sample.sigmaByMotorDeg[driveAnchor]);
++       <= Math.max(5 * Math.max(sigmaFloorDeg, sample.sigmaByMotorDeg[driveAnchor]), driveToleranceMm / mmPerDeg[driveAnchor]);
+   const recovers = (a, b, axes = [driveAnchor, sensorAnchor]) => axes.every(axis =>
+     Number.isFinite(a.muByMotorDeg[axis]) && Number.isFinite(b.muByMotorDeg[axis])
+-    && Math.abs(a.muByMotorDeg[axis] - b.muByMotorDeg[axis]) <= threshold(a, b, axis));
++    && Math.abs(a.muByMotorDeg[axis] - b.muByMotorDeg[axis]) <= Math.max(threshold(a, b, axis),
++      axis === driveAnchor ? driveToleranceMm / mmPerDeg[axis] : 0));
+   const outward = farther.muByMotorDeg[sensorAnchor] - base.muByMotorDeg[sensorAnchor];
+   if (!recovers(base, returned, [driveAnchor])) throw new Error('Spool probe did not restore the held drive');
+   if (!recovers(base, returned)) return { accepted: false, reason: 'hysteretic sensor return' };
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index ac33bc81..9c20da2e 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -697,6 +697,8 @@ export async function loadSensorForceProfiles(filePath) {
+     const { drive_mm: driveMm, force_n: forceN } = profile;
+     if (!Array.isArray(driveMm) || !Array.isArray(forceN) || driveMm.length < 2 || driveMm.length !== forceN.length
+       || ![...driveMm, ...forceN].every(Number.isFinite) || forceN.some(v => v <= 0)
++      || (profile.extra_sensor_force_n !== undefined
++        && !(Number.isFinite(profile.extra_sensor_force_n) && profile.extra_sensor_force_n > 0))
+       || driveMm.some((v, i) => i > 0 && v <= driveMm[i - 1])) {
+       throw new Error(`Invalid sensor force profile in ${filePath}`);
+     }
+@@ -1192,6 +1194,13 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+   const driveAxis = axes[driveAnchor];
+   const forbidden = new Set(forbiddenForceAnchors ?? []);
+   const fixedSet = new Set(fixedAnchors ?? []);
++  // Profiles account for this known load. Historical profiles keep unused lines compliant.
++  const extraForce = sensorForceProfile?.extra_sensor_force_n;
++  const extraAnchors = Number.isFinite(extraForce) && extraForce > 0
++    ? motorIds.map((_, idx) => idx).filter(idx => idx !== driveAnchor && idx !== sensorAnchor
++      && !fixedSet.has(idx) && !forbidden.has(idx)) : [];
++  const measurementSensors = [sensorAnchor, ...extraAnchors];
++  const measurementSensorForces = Object.fromEntries(extraAnchors.map(idx => [idx, extraForce]));
+   const fixedTargetByAnchor = buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorIds.length);
+   const settleOptions = {
+     validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
+@@ -1242,7 +1251,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+     if (fixedSet.has(idx) || forbidden.has(idx)) {
+       return 'position';
+     }
+-    return idx === sensorAnchor ? forceMid * 2.0 : forceLow;
++    return measurementSensors.includes(idx) ? forceMid * 2.0 : forceLow;
+   });
+   await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
+   const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, {
+@@ -1282,12 +1291,12 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+   const moveForReserve = async (target, sensorForce = forceAt(target)) => {
+     if (reserveForceActive !== sensorForce) {
+       await applyDataPointPreloadModes(sendFn, {
+-        motorIds, driveAnchor, sensorAnchors: [sensorAnchor], fixedAnchors, forbiddenForceAnchors,
++        motorIds, driveAnchor, sensorAnchors: measurementSensors, fixedAnchors, forbiddenForceAnchors,
+         forceMax, forceMin: forceMid, forceMid, compliantForce: forceLow, sensorCollectionForce: sensorForce, speedup, settleOptions,
+       });
+       await applyForceModeState(sendFn, { motorIds, modes: motorIds.map((_, idx) => {
+         if (idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
+-        return idx === sensorAnchor ? sensorForce : forceLow;
++        return idx === sensorAnchor ? sensorForce : (measurementSensorForces[idx] ?? forceLow);
+       }) });
+       reserveForceActive = sensorForce;
+     }
+@@ -1337,6 +1346,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+   // With a profile the sensor force follows the drive setpoint; otherwise it stays constant.
+   let sensorCollectionForce = constantSensorForce;
+   let measurementClockMs = null;
++  let extraProbes = [];
+   const dataPoints = [];
+   const validateMeasurementAngles = angles => {
+     if (angles.length !== motorIds.length || !angles.every(Number.isFinite)) {
+@@ -1378,6 +1388,9 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+         Number.isFinite(target) ? angles[idx] - target / mmPerDeg[idx] : null
+       )),
+       sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
++      ...(extraAnchors.length ? { extra_sensor_ranges: extraAnchors.map((anchor, index) => ({
++        anchor, force_n: extraForce, length_mm: lengths[anchor], ...extraProbes[index],
++      })) } : {}),
+       spool_reserve_method: reserveProbe.accepted ? 'local_encoder_coupling' : 'half_turn',
+     };
+     if (extraFields && typeof extraFields === 'object') {
+@@ -1432,7 +1445,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+         await applyDataPointPreloadModes(sendFn, {
+           motorIds,
+           driveAnchor,
+-          sensorAnchors: [sensorAnchor],
++          sensorAnchors: measurementSensors,
+           fixedAnchors,
+           forbiddenForceAnchors,
+           forceMax,
+@@ -1467,13 +1480,35 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+       // Moving the drive leaves the sensor's measurement force unchanged.
+       if (measurementPreloadActive && !sensorForceProfile) settledMeasurement = settled;
+     }
++    extraProbes = [];
++    if (extraAnchors.length) {
++      const force = forceAt(target);
++      const radius = Math.min(initialStepMm, Math.abs(target - driveEndPointMm), Math.abs(target - driveStartPointMm)) / 2;
++      for (const anchor of extraAnchors) {
++        let evidence = { accepted: false, reason: 'no interior interval for extra sensor probe' };
++        if (radius > DEFAULT_FIXED_TOLERANCE_MM) {
++          const { sample, ...result } = await probeSpoolInterval(value => moveForReserve(value, force), {
++            start: target, away: target + stepDirection * radius, toward: target - stepDirection * radius,
++            driveAnchor, sensorAnchor: anchor, mmPerDeg, sigmaFloorDeg: noiseSigmaFloorDeg,
++            driveToleranceMm: DEFAULT_FIXED_TOLERANCE_MM + (stepMmByAnchor[driveAnchor] ?? 0),
++          });
++          evidence = result;
++        }
++        extraProbes.push(evidence);
++      }
++      // Reuse the settled reading at the restored target, without another preload.
++      const sample = await moveForReserve(target, force);
++      settledMeasurement = sample.stableData;
++      settledNoiseStats = sample;
++      measurementClockMs = sample.measuredClockMs;
++    }
+     // eslint-disable-next-line no-await-in-loop
+     const collected = await collectDataPoint(sendFn, {
+       motorIds,
+       axes,
+       mmPerDeg,
+       driveAnchor,
+-      sensorAnchors: [sensorAnchor],
++      sensorAnchors: measurementSensors,
+       fixedAnchors,
+       forbiddenForceAnchors,
+       forceMax,
+@@ -1521,6 +1556,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+         if (Number.isFinite(muLengths[sensorAnchor])) {
+           point.l_sensor_mu = muLengths[sensorAnchor];
+         }
++        for (const extra of point.extra_sensor_ranges ?? []) extra.length_mu_mm = muLengths[extra.anchor];
+       }
+       const warnings = summarizeNoiseWarnings(noiseStats, {
+         minSamples: noiseMinSamples,
+@@ -2021,6 +2057,7 @@ export async function collectSweepData(send, context) {
+       m669: m669Values,
+       m92: m92Values,
+       mm_per_degree: mmPerDeg,
++      extra_sensors_enabled: machineConfig.numAnchors === 5 && machineConfig.dimensions === 3,
+       noise_model: { project_zero_tension: false },
+       notes: {
+         buildup_factor_forced: Number.isFinite(forcedBuildupFactor) ? forcedBuildupFactor : undefined,
+diff --git a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+index 17557637..781d8412 100644
+--- a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
++++ b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+@@ -3,11 +3,11 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
+ 
+ // Endpoint travel may continue indefinitely under force. Measurements must still
+ // settle after the drive is held, and every fixed-anchor reading stays guarded.
+-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2, driveStepMm = 0, stepMmByAnchor = [] } = {}) {
++function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2, driveStepMm = 0, stepMmByAnchor = [], extraGain = null } = {}) {
+   let now = 0;
+   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
+   let preparing = preparationDrift;
+-  let angles = [0, 0, 0, 0];
++  let angles = extraGain === null ? [0, 0, 0, 0] : [0, 0, 0, 0, 0];
+   const commands = [];
+   const points = [];
+   let lastSleepMs = null, noiseBatch = 0;
+@@ -27,6 +27,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
+       // Firmware moves whole steps; truncation can leave almost one step short.
+       angles[1] += driveStepMm ? Math.trunc(Number(move[1]) / driveStepMm) * driveStepMm : Number(move[1]);
+       if (!(forceLosesCoupling && modes[2] > 2.5)) angles[2] -= sensorGain * Number(move[1]);
++      if (extraGain !== null && modes[4] > 0.1) angles[4] += extraGain * Number(move[1]);
+     }
+     return { reply: '' };
+   };
+@@ -50,8 +51,9 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
+     },
+   };
+   const run = () => performForceSweep(send, { driveAnchor: 1, sensorAnchor: 2 }, {
+-    axes: ['X', 'Y', 'Z', 'U'], motorIds: ['40.0', '41.0', '42.0', '43.0'],
+-    sweepPoints, feed: 1400, speedup: 1, mmPerDeg: [1, 1, 1, 1], datasetStartMs: 0,
++    axes: extraGain === null ? ['X', 'Y', 'Z', 'U'] : ['X', 'Y', 'Z', 'U', 'V'],
++    motorIds: angles.map((_, idx) => `${40 + idx}.0`),
++    sweepPoints, feed: 1400, speedup: 1, mmPerDeg: angles.map(() => 1), datasetStartMs: 0,
+     forceLow: .01, forceMid: .23, forceMax: 2.4, fixedAnchors: [0, 3], fixedTargets: [0, 0],
+     forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
+     noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
+@@ -219,3 +221,18 @@ test('sensor force profile interpolates, holds its end values and must match the
+   expect(() => sensorForceProfileFor([profile], 2, 1, [0, 3], [390, -100])).toThrow('found 0');
+   expect(() => sensorForceProfileFor([profile, profile], 1, 2, [0, 3], [390, -100])).toThrow('found 2');
+ });
++
++
++test.each([0, 2])('extra sensor with gain %s is tensioned only for measurement and must pass its own probe', async extraGain => {
++  const trial = movingPullout({ extraGain, sweepPoints: 5,
++    sensorForceProfile: { drive_mm: [-600, 0], force_n: [1, 3], extra_sensor_force_n: 2 } });
++  const result = await trial.run();
++  const extras = result.dataPoints.map(point => point.extra_sensor_ranges[0]);
++  expect(extras.every(extra => extra.anchor === 4 && extra.force_n === 2)).toBe(true);
++  expect(extras.some(extra => extra.accepted)).toBe(extraGain !== 0);
++  expect(extras.every(extra => Number.isFinite(extra.length_mu_mm))).toBe(true);
++  const modes = trial.commands.filter(({line}) => line.startsWith('M569.4'))
++    .map(({line}) => line.split(' T')[1].split(':').map(Number));
++  expect(modes.find(row => row[1] > 0)[4]).toBe(.01);
++  expect(modes.some(row => row[1] === 0 && row[2] > 0 && row[4] === 2)).toBe(true);
++});
+diff --git a/autocal/equal_strain.py b/autocal/equal_strain.py
+index 508124de..200c9036 100644
+--- a/autocal/equal_strain.py
++++ b/autocal/equal_strain.py
+@@ -29,6 +29,10 @@ _COLLECTION_FORCE_MULTIPLE = 5.0
+ PROFILE_STRAIN_MODEL = "reeving-aware-v2"
+ 
+ 
++class InfeasibleForceProfileError(ValueError):
++    """A candidate has no usable interval under the requested line loads."""
++
++
+ def equal_strain_tensions(
+     anchors: np.ndarray,
+     position: np.ndarray,
+@@ -44,13 +48,13 @@ def equal_strain_tensions(
+     """Tensions of the given lines at a position whose weighted mean tension per strand is `strand_tension_n`."""
+     lines = list(lines)
+     if len(lines) != np.asarray(anchors).shape[1] + 1:
+-        raise ValueError("Equal-strain sweeps require d+1 active lines; keep redundant lines compliant")
++        raise ValueError("Equal-strain sweeps require d+1 active lines with known loads on the remaining lines")
+     to_anchor = np.asarray(anchors, dtype=float)[lines] - np.asarray(position, dtype=float)
+     distance = np.linalg.norm(to_anchor, axis=1)
+     directions = (to_anchor / distance[:, None]).T
+     load = np.zeros(directions.shape[0])
+     load[-1] = mover_weight_n
+-    # Redundant lines stay in low-force mode, not at zero tension. Their
++    # Redundant lines hold a known force during measurement. Their
+     # known load removes the extra pretension freedoms before solving the
+     # active d+1 lines' single self-stress mode.
+     unused = [axis for axis in range(len(anchors)) if axis not in lines]
+@@ -105,7 +109,7 @@ def sensor_force_profiles(
+     keep = max(runs, key=len)
+     positions, tensions = positions[keep], tensions[keep]
+     if len(positions) < 2:
+-        raise ValueError("Equal-strain profile needs reachable positions with positive finite line tensions")
++        raise InfeasibleForceProfileError("Equal-strain profile needs reachable positions with positive finite line tensions")
+     profiles = []
+     for drive, sensor in ((cfg.drive_anchor, cfg.sensor_anchor), (cfg.sensor_anchor, cfg.drive_anchor)):
+         drive_mm = np.linalg.norm(anchors[drive] - positions, axis=1) - np.linalg.norm(anchors[drive])
+@@ -146,6 +150,10 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
+         raise ValueError("Cannot combine different equal-strain targets in one refinement dataset")
+     strand_target = (recorded_targets[0] if recorded_targets else
+                      _COLLECTION_FORCE_MULTIPLE * start_force_n / float(np.min(strands * advantage)))
++    extra_force = None
++    if config.get("extra_sensors_enabled") and int(dataset["num_anchors"]) == 5:
++        extra_force = min(float(tuning.get("force_max_n", np.inf)),
++                          _COLLECTION_FORCE_MULTIPLE * start_force_n)
+     profiles = [
+         profile
+         for cfg in cfgs
+@@ -156,10 +164,13 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
+             strands=strands,
+             extra_line_length_mm=np.asarray(line_description["Y"], dtype=float),
+             mechanical_advantage=advantage,
+-            compliant_force_n=float(tuning.get("force_low_n", 0.0)),
++            compliant_force_n=(extra_force if extra_force is not None else float(tuning.get("force_low_n", 0.0))),
+             minimum_force_n=start_force_n,
+         )
+     ]
++    if extra_force is not None:
++        for profile in profiles:
++            profile["extra_sensor_force_n"] = extra_force
+     Path(path).write_text(json.dumps(profiles), encoding="utf-8")
+     return True
+ 
+diff --git a/autocal/planning_pass.py b/autocal/planning_pass.py
+index 747d63b1..033230a3 100644
+--- a/autocal/planning_pass.py
++++ b/autocal/planning_pass.py
+@@ -3,7 +3,7 @@ from __future__ import annotations
+ 
+ from autocal._autocal_common import *  # noqa: F401,F403
+ from autocal.fit_stage import fit_ellipse_dataset
+-from autocal.equal_strain import is_equal_strain, write_sensor_force_profile, profile_policy_error
++from autocal.equal_strain import InfeasibleForceProfileError, is_equal_strain, write_sensor_force_profile, profile_policy_error
+ from autocal.pose_fit import dataset_line_lengths
+ from autocal.pose_planning import rank_candidates_pose_information
+ from autocal.workspace import exploration_grid
+@@ -99,6 +99,9 @@ def plan_ellipse_sweep(
+         # Relax novelty spacing if needed, but never re-admit excluded repeats.
+         candidates = novel_candidates
+ 
++    needs_profile = (is_equal_strain(dataset) and spool_params is None
++                     and machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"))
++
+     if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and spool_params is None:
+         # Position-based ranking: it values sweeps with a shortened D line, which the
+         # ellipse-geometry ranking below never picks.
+@@ -112,7 +115,9 @@ def plan_ellipse_sweep(
+             points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
+             sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
+             regularization=float(regularization),
+-            top_k=int(top_k),
++            # Keep the complete ordering until a force-feasible candidate is
++            # found; the highest-information band may all be infeasible.
++            top_k=len(candidates) if needs_profile else int(top_k),
+         )
+     elif spool_params is not None:
+         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
+@@ -172,8 +177,6 @@ def plan_ellipse_sweep(
+             )
+         collection_fallback = True
+     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
+-    if best_cfg is not None:
+-        _write_sweep_config_file(cfg_path, best_cfg)
+ 
+     collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
+     collector_args_eff, _ = _inject_spool_collection_args(
+@@ -191,18 +194,33 @@ def plan_ellipse_sweep(
+ 
+     cmd = None
+     collection_error = None
++    profile_path = None
+     if best_cfg is not None:
+-        if is_equal_strain(dataset) and spool_params is None and machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
++        if needs_profile:
+             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
+             if error := profile_policy_error(dataset):
+                 collection_error = error
+             elif not equal_strain:
+                 collection_error = "Cannot append constant-force measurements to profiled data; use a fresh dataset for --no-equal-strain"
+-            elif write_sensor_force_profile(profile_path, dataset, anchors, [best_cfg]):
+-                collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
+             else:
+-                collection_error = "Cannot continue profiled collection without M666 W/N/Y/U and tuned forces"
+-        if collection_error is None:
++                # Information gain alone does not establish force feasibility,
++                # especially with the redundant line now carrying a measured load.
++                best_cfg = None
++                for index, (score, cfg) in enumerate(ranked):
++                    try:
++                        written = write_sensor_force_profile(profile_path, dataset, anchors, [cfg])
++                    except InfeasibleForceProfileError:
++                        continue
++                    if not written:
++                        collection_error = "Cannot continue profiled collection without M666 W/N/Y/U and tuned forces"
++                        break
++                    best_cfg = cfg
++                    ranked = ranked[index:index + int(top_k)]
++                    break
++        if best_cfg is not None and collection_error is None:
++            if profile_path is not None:
++                collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
++            _write_sweep_config_file(cfg_path, best_cfg)
+             cmd = _suggested_collect_command(
+                 cfg_path, best_cfg, machine_type=machine_type,
+                 output_file=collector_output,
+diff --git a/autocal/pose_fit.py b/autocal/pose_fit.py
+index fb7ad5b9..4dc82821 100644
+--- a/autocal/pose_fit.py
++++ b/autocal/pose_fit.py
+@@ -57,6 +57,9 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
+                     row[anchor] += float(errors[anchor]) * float(mm_per_degree[anchor])
+             row[drive] = _point_value(point, "l_drive_mu", "l_drive", use_noise_mean)
+             row[sensor] = _point_value(point, "l_sensor_mu", "l_sensor", use_noise_mean)
++            for extra in point.get("extra_sensor_ranges", []):
++                if extra.get("accepted") is True:
++                    row[int(extra["anchor"])] = _point_value(extra, "length_mu_mm", "length_mm", use_noise_mean)
+             lengths.append(row)
+             sweep_index.append(index)
+     return {
+@@ -68,8 +71,8 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
+ def dataset_stretch(dataset: dict):
+     """Recorded sensor loads plus firmware compliance for per-pose range correction.
+ 
+-    Each sweep has d+1 active lines. Static equilibrium and the commanded sensor
+-    force determine their individual loads; unused lines retain the low force.
++    Static equilibrium and every commanded torque determine the line loads.
++    A rejected extra range still contributes its commanded force.
+     Rough bootstrap and historical force records retain the rigid fit.
+     """
+     from autocal.equal_strain import is_equal_strain
+@@ -85,7 +88,14 @@ def dataset_stretch(dataset: dict):
+                                               and np.isfinite(point["sensor_force_n"]) for _, point in points):
+         return None
+     sensors = np.array([int(point.get("source_sensor_anchor", sweep["sensor_anchor"])) for sweep, point in points])
+-    return dict(model=model, sensors=sensors,
++    known = np.full((len(points), int(dataset["num_anchors"])), np.nan)
++    for index, (_, point) in enumerate(points):
++        for extra in point.get("extra_sensor_ranges", []):
++            force = float(extra["force_n"])
++            if not np.isfinite(force) or force <= 0:
++                raise ValueError("Extra sensor requires a positive finite recorded force")
++            known[index, int(extra["anchor"])] = force
++    return dict(model=model, sensors=sensors, known=known,
+                 forces=np.array([point["sensor_force_n"] for _, point in points]),
+                 weight=float(m666.get("W", 0.)) * 9.81,
+                 passive=float((config.get("force_tuning") or {}).get("force_low_n", 0.)))
+@@ -94,20 +104,19 @@ def dataset_stretch(dataset: dict):
+ def stretch_corrected_lengths(anchors, positions, absolute, measured, stretch):
+     directions = anchors[None, :, :] - positions[:, None, :]
+     directions /= np.maximum(np.linalg.norm(directions, axis=2), 1e-9)[:, :, None]
+-    active = np.nonzero(measured)[1].reshape(len(positions), -1)
+-    local = np.take_along_axis(directions, active[:, :, None], axis=1)
+-    sensor_row = (active == stretch["sensors"][:, None]).astype(float)
+-    matrix = np.concatenate([local.transpose(0, 2, 1), sensor_row[:, None, :]], axis=1)
+-    load = -stretch["passive"] * np.sum(directions * (~measured)[:, :, None], axis=1)
+-    load[:, -1] += stretch["weight"]
++    known = np.where(measured, np.nan, stretch["passive"])
++    known = np.where(np.isfinite(stretch["known"]), stretch["known"], known)
++    known[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
++    selectors = np.eye(anchors.shape[0])[None, :, :] * np.isfinite(known)[:, :, None]
++    matrix = np.concatenate([directions.transpose(0, 2, 1), selectors], axis=1)
++    load = np.zeros((len(positions), anchors.shape[1]))
++    load[:, -1] = stretch["weight"]
+     # Trial geometries can make the static system singular during fitting.
+     # A tiny ridge keeps their residual finite without changing reachable loads.
+     transpose = matrix.transpose(0, 2, 1)
+     normal = transpose @ matrix + 1e-12 * np.eye(matrix.shape[-1])
+-    rhs = transpose @ np.column_stack([load, stretch["forces"]])[:, :, None]
+-    forces = np.linalg.solve(normal, rhs)[:, :, 0]
+-    tensions = np.zeros_like(absolute)
+-    np.put_along_axis(tensions, active, forces, axis=1)
++    rhs = transpose @ np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
++    tensions = np.linalg.solve(normal, rhs)[:, :, 0]
+     return np.column_stack([stretch["model"].corrected_distance_mm(absolute[:, axis], tensions[:, axis], axis=axis)
+                             for axis in range(anchors.shape[0])])
+ 
+@@ -246,6 +255,12 @@ def shift_dataset_home_offsets(dataset: dict, home_offsets_mm: Sequence[float])
+             for key, anchor in (("l_drive", drive), ("l_drive_mu", drive), ("l_sensor", sensor), ("l_sensor_mu", sensor)):
+                 if new_point.get(key) is not None:
+                     new_point[key] = float(new_point[key]) + offsets[anchor]
++            if "extra_sensor_ranges" in point:
++                new_point["extra_sensor_ranges"] = [dict(extra) for extra in point["extra_sensor_ranges"]]
++                for extra in new_point["extra_sensor_ranges"]:
++                    for key in ("length_mm", "length_mu_mm"):
++                        if extra.get(key) is not None:
++                            extra[key] = float(extra[key]) + offsets[int(extra["anchor"])]
+             new_sweep["data_points"].append(new_point)
+         shifted["sweeps"].append(new_sweep)
+     return shifted
+diff --git a/autocal/tests/test_equal_strain.py b/autocal/tests/test_equal_strain.py
+index 7e6b9ebe..d38721ff 100644
+--- a/autocal/tests/test_equal_strain.py
++++ b/autocal/tests/test_equal_strain.py
+@@ -155,3 +155,23 @@ def test_historical_projected_profile_markers_do_not_describe_tensioned_measurem
+     sweep = {"metadata": {"sensor_force_profile": True},
+              "data_points": [{"raw_angles_zero_tension_deg": [0.0]*4}]}
+     assert not is_equal_strain({"num_anchors": 4, "sweeps": [sweep]})
++
++
++def test_hp5_profile_plans_the_extra_measurement_load_without_changing_old_data(tmp_path):
++    anchors = np.array([[0., -1900., -280.], [1900., 0., -280.], [0., 1900., -280.],
++                        [-1900., 0., -280.], [0., 0., 1900.]])
++    cfg = SweepConfig((0, 4), (-340., 0.), 1, 3)
++    config = {'m666_before_data_collection': {'W': .081, 'N': [2,2,2,2,4],
++              'Y': [429.1]*4+[352.3], 'U': [2,2,2,2,4]},
++              'force_tuning': {'force_low_n': .05, 'force_mid_n': 1., 'force_max_n': 3.}}
++    dataset = {'num_anchors': 5, 'config': config}
++    path = tmp_path / 'profiles.json'
++    assert write_sensor_force_profile(path, dataset, anchors, [cfg])
++    legacy = json.loads(path.read_text())
++    assert all('extra_sensor_force_n' not in profile for profile in legacy)
++    config['extra_sensors_enabled'] = True
++    assert write_sensor_force_profile(path, dataset, anchors, [cfg])
++    profiles = json.loads(path.read_text())
++    assert all(profile['extra_sensor_force_n'] == 3. for profile in profiles)
++    # Changing the passive load must also change the primary force tables.
++    assert profiles[0]['force_n'] != legacy[0]['force_n']
+diff --git a/autocal/tests/test_extra_sensor_headless.py b/autocal/tests/test_extra_sensor_headless.py
+new file mode 100644
+index 00000000..26b866b8
+--- /dev/null
++++ b/autocal/tests/test_extra_sensor_headless.py
+@@ -0,0 +1,56 @@
++"""Full production-path regression; opt in with pytest -m heavy."""
++import json
++import os
++from pathlib import Path
++import subprocess
++import sys
++
++import numpy as np
++import pytest
++
++from autocal.pose_fit import dataset_line_lengths, dataset_stretch
++
++ROOT = Path(__file__).resolve().parents[2]
++
++
++def verify_extra_sensor_run(dataset):
++    manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
++    assert manifest['normal_completion'] and manifest['status'] == 'complete'
++    assert manifest['stop_reason'] in ('stable-estimate', 'patience')
++    assert any(command.startswith('M669 ') for command in manifest['applied_parameters'])
++    assert set(manifest['firmware_final']) == {'M669', 'M666'}
++    data = json.loads(dataset.read_text())
++    assert data['config']['extra_sensors_enabled']
++    points = [point for sweep in data['sweeps'] for point in sweep['data_points']]
++    extras = [extra for point in points for extra in point.get('extra_sensor_ranges', [])]
++    assert len(extras) == len(points)
++    assert any(extra['accepted'] for extra in extras)
++    assert all(extra['force_n'] > data['config']['force_tuning']['force_low_n'] for extra in extras)
++    assert all(np.isfinite(extra['length_mu_mm']) for extra in extras)
++    lengths = dataset_line_lengths(data)['lengths_mm']
++    assert np.isfinite(lengths).sum() == 4 * len(points) + sum(extra['accepted'] for extra in extras)
++    assert dataset_stretch(data) is not None
++    for sweep in data['sweeps']:
++        for point in sweep['data_points']:
++            for extra in point['extra_sensor_ranges']:
++                assert extra['anchor'] not in [*sweep['fixed_anchors'], sweep['drive_anchor'], sweep['sensor_anchor']]
++    for service in manifest['owned_services']:
++        with pytest.raises(ProcessLookupError):
++            os.kill(service['pid'], 0)
++    return dict(points=len(points), accepted=sum(extra['accepted'] for extra in extras),
++                stop_reason=manifest['stop_reason'], simulated_s=manifest['simulated_s'])
++
++
++@pytest.mark.slow
++@pytest.mark.heavy
++@pytest.mark.parametrize('machine', ['hangprinter_5', 'hangprinter_5_pulley_reduced'])
++def test_fresh_hp5_extra_sensor_full_calibration(tmp_path, machine):
++    dataset = tmp_path / machine / 'sweeps.json'
++    env = {**os.environ, 'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1',
++           'HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS': '6000000'}
++    with (tmp_path / 'autocal.log').open('w') as log:
++        result = subprocess.run([sys.executable, 'autocal/autocal.py', '--headless-sim',
++            '--machine-type', machine, '--dataset', str(dataset), '--recording-mode', 'none',
++            '--patience', '8'], cwd=ROOT, env=env, stdout=log, stderr=log, timeout=1800)
++    assert result.returncode == 0, (tmp_path / 'autocal.log').read_text()[-4000:]
++    verify_extra_sensor_run(dataset)
+diff --git a/autocal/tests/test_pose_fit.py b/autocal/tests/test_pose_fit.py
+index 4bf36e79..f05e5080 100644
+--- a/autocal/tests/test_pose_fit.py
++++ b/autocal/tests/test_pose_fit.py
+@@ -172,3 +172,39 @@ def test_stretched_hp5_fit_recovers_geometry_from_a_distant_seed():
+                                 home_offset_prior_sigma_mm=5.)
+     assert fit['success'] and fit['stretch_corrected']
+     assert np.max(np.linalg.norm(fit['anchors']-anchors,axis=1)) < .001
++
++
++@pytest.mark.parametrize('accepted', [True, False])
++def test_extra_range_force_survives_rejection_and_reversed_roles(accepted):
++    from autocal.pose_fit import consistency_residuals, dataset_stretch
++    anchors = np.array([[0.,-1900.,-280.], [1900.,0.,-280.], [0.,1900.,-280.],
++                        [-1900.,0.,-280.], [0.,0.,1900.]])
++    ma, strands, guy = np.array([2,2,2,2,4]), np.array([2,2,2,2,4]), np.array([429.1]*4+[352.3])
++    dataset = dict(num_anchors=5, dimensions=3, config={
++        'm666_before_data_collection': {'S':20000., 'W':.081, 'U':ma.tolist(), 'N':strands.tolist(), 'Y':guy.tolist()},
++        'force_tuning': {'force_low_n':.05}}, sweeps=[])
++    for sensor in (1, 3):
++        for position in ([0.,-100.,0.], [50.,-100.,100.]):
++            vector = anchors - position
++            distance = np.linalg.norm(vector, axis=1)
++            direction = (vector / distance[:,None]).T
++            tensions = np.linalg.solve(np.vstack([direction, np.eye(5)[sensor], np.eye(5)[2]]),
++                                       [0.,0.,.081*9.81,4.,3.])
++            assert np.all(tensions > 0)
++            delta = distance-tensions*(ma*distance+guy)/(20000*ma**2*strands)-np.linalg.norm(anchors,axis=1)
++            # Mix accepted/rejected points so the measured row count varies.
++            extra = dict(anchor=2, force_n=3., length_mm=delta[2], length_mu_mm=delta[2],
++                         accepted=accepted and sensor == 1)
++            point = dict(l_drive=delta[1], l_sensor=delta[3], sensor_force_n=4.,
++                         source_sensor_anchor=sensor, extra_sensor_ranges=[extra])
++            dataset['sweeps'].append(dict(fixed_anchors=[0,4], fixed_lengths=delta[[0,4]].tolist(),
++                drive_anchor=1, sensor_anchor=3, metadata={'sensor_force_profile':True}, data_points=[point]))
++    lengths = dataset_line_lengths(dataset)['lengths_mm']
++    corrected = consistency_residuals(anchors, lengths, np.zeros(5), stretch=dataset_stretch(dataset))
++    assert np.max(abs(corrected)) < 1e-8
++    shifted = shift_dataset_home_offsets(dataset, [0,0,1.25,0,0])
++    before = dataset['sweeps'][0]['data_points'][0]['extra_sensor_ranges'][0]
++    after = shifted['sweeps'][0]['data_points'][0]['extra_sensor_ranges'][0]
++    assert after['length_mm'] - before['length_mm'] == pytest.approx(1.25)
++    assert after['length_mu_mm'] - before['length_mu_mm'] == pytest.approx(1.25)
++    assert after['force_n'] == before['force_n']
+diff --git a/autocal/tests/test_pose_planning.py b/autocal/tests/test_pose_planning.py
+index 9c14abcc..63315b7b 100644
+--- a/autocal/tests/test_pose_planning.py
++++ b/autocal/tests/test_pose_planning.py
+@@ -104,3 +104,38 @@ def test_no_candidate_position_violates_any_anchors_clearance():
+     distances = np.linalg.norm(ANCHORS[None, :, :] - positions[:, None, :], axis=2)
+     assert positions.shape[0] > 1000
+     assert np.all(distances >= ANCHOR_CLEARANCE_SHARE * HOME - 1e-9)
++
++
++def test_force_infeasible_best_candidate_uses_the_next_ranked_sweep(tmp_path, monkeypatch):
++    from autocal.equal_strain import InfeasibleForceProfileError
++    first, second = [SweepConfig((0, 3), (390., z), 1, 2) for z in (-150., -300.)]
++    dataset = {'machine_type':'hangprinter_4', 'num_anchors':4, 'dimensions':3,
++        'config':{}, 'sweeps':[{'fixed_anchors':[0,3], 'fixed_lengths':[390.,0.],
++        'drive_anchor':1, 'sensor_anchor':2, 'data_points':[{'l_drive':0.,'l_sensor':0.}],
++        'metadata':{'sensor_force_profile':True}}]}
++    fit = {'dataset':dataset, 'dataset_for_estimation':dataset, 'anchors':ANCHORS,
++        'machine_type':'hangprinter_4', 'num_anchors':4, 'dimensions':3,
++        'spool_model_params':None, 'sweep_configs_for_info':[], 'info':np.eye(9),
++        'pose_fit':{'robust_scale_mm':.02},
++        'information_settings':{'fd_eps_mm':1.,'regularization':1e-6},
++        'collection_settings':{'find_radii_mode':'off','find_buildup_mode':'off','base_radii':None,'buildup_factor':None}}
++    monkeypatch.setattr(planning, 'generate_candidate_sweeps', lambda **kw:[first,second])
++    def rank(*args, **kwargs):
++        assert kwargs['top_k'] == 2
++        return [(2.,first),(1.,second)]
++    monkeypatch.setattr(planning, 'rank_candidates_pose_information', rank)
++    monkeypatch.setattr(planning, 'profile_policy_error', lambda dataset:None)
++    calls=[]
++    def write(path, dataset, anchors, cfgs):
++        calls.append(cfgs[0])
++        if cfgs[0] == first:raise InfeasibleForceProfileError('no positive tensions')
++        return True
++    monkeypatch.setattr(planning, 'write_sensor_force_profile', write)
++    plan=planning.plan_ellipse_sweep(fit,tmp_path/'sweeps.json',top_k=1)
++    assert plan['best_cfg'] == second and calls == [first,second]
++    assert plan['collect_command'] and plan['collection_error'] is None
++    assert '-300' in ' '.join(plan['collect_command'])
++    def bad_configuration(*args):raise ValueError('invalid mechanical advantage')
++    monkeypatch.setattr(planning, 'write_sensor_force_profile', bad_configuration)
++    with pytest.raises(ValueError,match='mechanical advantage'):
++        planning.plan_ellipse_sweep(fit,tmp_path/'sweeps.json')

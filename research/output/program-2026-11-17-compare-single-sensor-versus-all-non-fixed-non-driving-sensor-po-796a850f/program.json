@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "id": "program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f",
+  "question": "Compare single-sensor versus all non-fixed non-driving sensor policies on HP5 direct and pulley-reduced with small isolated headless experiments; measure information, flex bias, acquisition reliability and time without disturbing the live first-manual-autocal-of-hp5-pulley-reduced run or doing unnecessary full runs.",
+  "agents": [
+    {
+      "id": "session-2026-11-17-hp5-direct-compare-the-current-single-active-sensor-plus-complia-6af2e045",
+      "question": "HP5 direct: Compare the current single active sensor plus compliant redundant axis against using both non-fixed non-driving low axes as torque-controlled sensors. Run several SMALL isolated headless experiments, no full autocal runs. Determine slack cause, acquisition stability/coverage, measured-range information gain, force/flex bias and equal-time or equal-point calibration value. Read prior autocal topic insights; use truth only as diagnostics. Preserve scripts, manifests and concise report.",
+      "directory": "session-2026-11-17-hp5-direct-compare-the-current-single-active-sensor-plus-complia-6af2e045"
+    },
+    {
+      "id": "session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6",
+      "question": "HP5 pulley-reduced: independently compare the current single active sensor plus compliant redundant axis against both available non-fixed non-driving torque-controlled sensors using several SMALL isolated headless experiments, no full autocal runs. Test whether redundant pretension frees extra informative ranges or creates uncontrolled self-stress/flex bias; compare reliability/coverage/wall and simulation time, range/anchor fit accuracy at matched budget. Preserve reproducible scripts, manifests and concise report.",
+      "directory": "session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6"
+    },
+    {
+      "id": "session-2026-11-17-independently-review-the-completed-direct-hp5-sensor-policy-expe-b225ae5c",
+      "question": "Independently review the completed direct HP5 sensor-policy experiment, inspect units, force calibration and statistical information claims, and reproduce one decisive short matched native-headless comparison. Assess evidence for sensor benefit versus bias, including limitations of the offset-free synthetic fit. No full runs or production changes.",
+      "directory": "session-2026-11-17-independently-review-the-completed-direct-hp5-sensor-policy-expe-b225ae5c"
+    },
+    {
+      "id": "session-2026-11-17-independently-review-reduced-hp5-matched-short-collection-eviden-748ceb19",
+      "question": "Independently review reduced HP5 matched short-collection evidence for two sensors; verify fitter, force and offset handling, claimed information gains and coverage tradeoffs. Resolve whether extra measured ranges genuinely improve rough calibration versus the same force policy with four ranges; no full runs.",
+      "directory": "session-2026-11-17-independently-review-reduced-hp5-matched-short-collection-eviden-748ceb19"
+    },
+    {
+      "id": "session-2026-11-17-run-a-predeclared-paired-full-autocalibration-test-on-hp5-pulley-3e03f53e",
+      "question": "Run a predeclared paired full autocalibration test on HP5 pulley-reduced: current policy versus measurement-only second-sensor acquisition with all five ranges, correct force/offset bookkeeping, and observable validity handling. Develop and validate the experiment-only integrated prototype first; run at most one baseline and one treatment full run initially, preserving unchanged production stopping rules and isolated worlds.",
+      "directory": "session-2026-11-17-run-a-predeclared-paired-full-autocalibration-test-on-hp5-pulley-3e03f53e"
+    }
+  ]
+}

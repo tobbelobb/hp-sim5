@@ -1,0 +1,338 @@
+{
+  "ctl-1": {
+    "current": {
+      "starts": [
+        {
+          "variant": "current",
+          "start": "truth",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3.8577789555292625,
+          "max_abs_coordinate_mm": 6.8349881169922355,
+          "rms_mm": 0.012800108227042454
+        },
+        {
+          "variant": "current",
+          "start": "truth_x1.05",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3.8060446788553985,
+          "max_abs_coordinate_mm": 6.71158802317882,
+          "rms_mm": 0.012799655093462472
+        },
+        {
+          "variant": "current",
+          "start": "truth_x0.95",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3.73266282316564,
+          "max_abs_coordinate_mm": 6.534912293687739,
+          "rms_mm": 0.012798924753861213
+        },
+        {
+          "variant": "current",
+          "start": "top_z+250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3.6946549188596496,
+          "max_abs_coordinate_mm": 6.45140741551495,
+          "rms_mm": 0.012798589641793326
+        },
+        {
+          "variant": "current",
+          "start": "top_z-250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3.772791398137278,
+          "max_abs_coordinate_mm": 6.625956258910946,
+          "rms_mm": 0.012799228469263008
+        },
+        {
+          "variant": "current",
+          "start": "truth_shifted",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3.8038096970547324,
+          "max_abs_coordinate_mm": 6.725393292814488,
+          "rms_mm": 0.012799711698438972
+        }
+      ],
+      "median_max_aligned_mm": 3.7883005475960054,
+      "worst_max_aligned_mm": 3.8577789555292625,
+      "best_max_aligned_mm": 3.6946549188596496
+    },
+    "extra": {
+      "starts": [
+        {
+          "variant": "extra",
+          "start": "truth",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3127.057296501866,
+          "max_abs_coordinate_mm": 3099.999999999999,
+          "rms_mm": 36.045589764959026
+        },
+        {
+          "variant": "extra",
+          "start": "truth_x1.05",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3127.0574054961494,
+          "max_abs_coordinate_mm": 3099.999999999999,
+          "rms_mm": 36.04556417506783
+        },
+        {
+          "variant": "extra",
+          "start": "truth_x0.95",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3127.056250728894,
+          "max_abs_coordinate_mm": 3099.999999999999,
+          "rms_mm": 36.045400531600485
+        },
+        {
+          "variant": "extra",
+          "start": "top_z+250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3127.0610204170607,
+          "max_abs_coordinate_mm": 3099.999999999999,
+          "rms_mm": 36.04541732415671
+        },
+        {
+          "variant": "extra",
+          "start": "top_z-250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3127.05940663164,
+          "max_abs_coordinate_mm": 3099.999999999999,
+          "rms_mm": 36.045474536012016
+        },
+        {
+          "variant": "extra",
+          "start": "truth_shifted",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 3127.05663910661,
+          "max_abs_coordinate_mm": 3099.999999999999,
+          "rms_mm": 36.045623518530356
+        }
+      ],
+      "median_max_aligned_mm": 3127.0573509990077,
+      "worst_max_aligned_mm": 3127.0610204170607,
+      "best_max_aligned_mm": 3127.056250728894
+    }
+  },
+  "twosensor-1": {
+    "current": {
+      "starts": [
+        {
+          "variant": "current",
+          "start": "truth",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 22.12857230639805,
+          "max_abs_coordinate_mm": 23.330573884959904,
+          "rms_mm": 0.01524341074695291
+        },
+        {
+          "variant": "current",
+          "start": "truth_x1.05",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 22.044062125816204,
+          "max_abs_coordinate_mm": 23.237975032561735,
+          "rms_mm": 0.015242831862155859
+        },
+        {
+          "variant": "current",
+          "start": "truth_x0.95",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 22.114293391056794,
+          "max_abs_coordinate_mm": 23.315754666480416,
+          "rms_mm": 0.015243241866239892
+        },
+        {
+          "variant": "current",
+          "start": "top_z+250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 22.2439270881644,
+          "max_abs_coordinate_mm": 23.419425401509898,
+          "rms_mm": 0.015241037400147749
+        },
+        {
+          "variant": "current",
+          "start": "top_z-250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 22.245369649577597,
+          "max_abs_coordinate_mm": 23.428179080539167,
+          "rms_mm": 0.015241734993782566
+        },
+        {
+          "variant": "current",
+          "start": "truth_shifted",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 22.191863719715148,
+          "max_abs_coordinate_mm": 23.375613299377846,
+          "rms_mm": 0.01524175332141394
+        }
+      ],
+      "median_max_aligned_mm": 22.1602180130566,
+      "worst_max_aligned_mm": 22.245369649577597,
+      "best_max_aligned_mm": 22.044062125816204
+    },
+    "extra": {
+      "starts": [
+        {
+          "variant": "extra",
+          "start": "truth",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 1.8513376964952557,
+          "max_abs_coordinate_mm": 2.3481357182417923,
+          "rms_mm": 0.02411932613063478
+        },
+        {
+          "variant": "extra",
+          "start": "truth_x1.05",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 1.8526040445233147,
+          "max_abs_coordinate_mm": 2.3496317526610255,
+          "rms_mm": 0.024119331867473615
+        },
+        {
+          "variant": "extra",
+          "start": "truth_x0.95",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 1.851771139921096,
+          "max_abs_coordinate_mm": 2.348558884229078,
+          "rms_mm": 0.024119310899210752
+        },
+        {
+          "variant": "extra",
+          "start": "top_z+250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 1.853081057334197,
+          "max_abs_coordinate_mm": 2.349044272950323,
+          "rms_mm": 0.02411934068990776
+        },
+        {
+          "variant": "extra",
+          "start": "top_z-250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 1.8520741719197138,
+          "max_abs_coordinate_mm": 2.3481937432973155,
+          "rms_mm": 0.02411931401405246
+        },
+        {
+          "variant": "extra",
+          "start": "truth_shifted",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 1.8526034680344865,
+          "max_abs_coordinate_mm": 2.349121557907665,
+          "rms_mm": 0.024119308644347484
+        }
+      ],
+      "median_max_aligned_mm": 1.8523388199771,
+      "worst_max_aligned_mm": 1.853081057334197,
+      "best_max_aligned_mm": 1.8513376964952557
+    }
+  },
+  "ctl-low1p0": {
+    "current": {
+      "starts": [
+        {
+          "variant": "current",
+          "start": "truth",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 60.820259333933635,
+          "max_abs_coordinate_mm": 62.73789688218267,
+          "rms_mm": 0.01594457352909554
+        },
+        {
+          "variant": "current",
+          "start": "truth_x1.05",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 151.09951587165716,
+          "max_abs_coordinate_mm": 170.68553641827975,
+          "rms_mm": 0.01593712913643369
+        },
+        {
+          "variant": "current",
+          "start": "truth_x0.95",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 99.48441307103877,
+          "max_abs_coordinate_mm": 122.98966116047654,
+          "rms_mm": 0.01594663009231282
+        },
+        {
+          "variant": "current",
+          "start": "top_z+250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 77.33845400674265,
+          "max_abs_coordinate_mm": 89.33207564982263,
+          "rms_mm": 0.015942845412935575
+        },
+        {
+          "variant": "current",
+          "start": "top_z-250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 55.946829020757214,
+          "max_abs_coordinate_mm": 58.01510112670371,
+          "rms_mm": 0.015939255680868576
+        },
+        {
+          "variant": "current",
+          "start": "truth_shifted",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 54.8490481336769,
+          "max_abs_coordinate_mm": 56.83109986016166,
+          "rms_mm": 0.01593892604728769
+        }
+      ],
+      "median_max_aligned_mm": 69.07935667033814,
+      "worst_max_aligned_mm": 151.09951587165716,
+      "best_max_aligned_mm": 54.8490481336769
+    },
+    "extra": {
+      "starts": [
+        {
+          "variant": "extra",
+          "start": "truth",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 14.274132575372832,
+          "max_abs_coordinate_mm": 16.01311377569573,
+          "rms_mm": 0.03571966628405649
+        },
+        {
+          "variant": "extra",
+          "start": "truth_x1.05",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 14.341705404465126,
+          "max_abs_coordinate_mm": 16.15269608965582,
+          "rms_mm": 0.03571978317999734
+        },
+        {
+          "variant": "extra",
+          "start": "truth_x0.95",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 14.296868081594754,
+          "max_abs_coordinate_mm": 16.06112781237698,
+          "rms_mm": 0.03571964737955653
+        },
+        {
+          "variant": "extra",
+          "start": "top_z+250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 14.245092593082544,
+          "max_abs_coordinate_mm": 15.95196060552803,
+          "rms_mm": 0.03571976017172332
+        },
+        {
+          "variant": "extra",
+          "start": "top_z-250",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 14.187574780930383,
+          "max_abs_coordinate_mm": 15.837665290499217,
+          "rms_mm": 0.03571954045162929
+        },
+        {
+          "variant": "extra",
+          "start": "truth_shifted",
+          "success": true,
+          "max_aligned_abs_coordinate_mm": 14.251021195507574,
+          "max_abs_coordinate_mm": 15.972833048740085,
+          "rms_mm": 0.0357197194605263
+        }
+      ],
+      "median_max_aligned_mm": 14.262576885440204,
+      "worst_max_aligned_mm": 14.341705404465126,
+      "best_max_aligned_mm": 14.187574780930383
+    }
+  }
+}

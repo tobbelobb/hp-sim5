@@ -1,0 +1,12 @@
+{
+  "run_id": "ctl-low1p0",
+  "collector_returncode": 0,
+  "wall_s": 104.1443350110003,
+  "collector_time_s": 832.235999994144,
+  "simulated_s": 832.236,
+  "service_wall_s": 103.925836088,
+  "sweeps": 4,
+  "points": 48,
+  "acquisition_rejections": 0,
+  "dataset_sha256": "406315c1d088547486bd8ac8a1435f00cda1e9b6c74c66ab08bc5dd60d99ce88"
+}

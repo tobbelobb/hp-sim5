@@ -1,0 +1,314 @@
+{
+  "investigation": "session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6",
+  "machine": "hangprinter_5_pulley_reduced",
+  "scene_sha256": "db0ff39d3c75553f4b753f64e36863447514efe641e02528df034d3e2f038024",
+  "firmware_config_sha256": "5d00c5835525e8ebac1c7ea792f911ca24144028b45ca8fc394188ca5b15970f",
+  "git_revision": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+  "scripts": {
+    "analyze.py": "3e63e29421acd041ea6a40e7e43b1aed187d21b6cd1a7918fc64977677e9412c",
+    "build_prototype.py": "cfbaa4da705c6fede78930b44642e7d1d0908711724b1dc49fa9b47f3137ad25",
+    "collect_run.py": "97c8cc1bffdd3965ca19f8f00ccb9e1313284939c88f73c6a1b7a844dfcba721",
+    "ext_fit.py": "37b32da27f667aa1b32ee3d8190e23d65cd382b336fadbe3055c75015864b42e",
+    "noise_sensitivity.py": "d3dcfbbb3a48a1719352ce9de3e47dcff567ed052b405ac64dc9f9522931de08",
+    "sensitivity.py": "49faada8eee13889ca93c9e80034dda1ae4183023eef05b59d15f48133b291f9"
+  },
+  "prototype_files": {
+    "evidence/prototype/collect_sweep_data.mjs": "921478cc8c53c1c25d20583c2b6543aa79ed9bde7ff6e26a647d23243772a65a",
+    "evidence/prototype/sweep_data_collection.mjs": "ae89b5bf64085db6d9fddaf0e7ad107a157b68a2f8064b1f484075b815d19417",
+    "evidence/prototype-control/collect_sweep_data.mjs": "b6091c3763269765f161af2b3561b3cd275c6592f3c0fca30608cdf6b72be5a8",
+    "evidence/prototype-control/sweep_data_collection.mjs": "739957b60a3f1ebf918983659d66a1f75980c366da332368863ab02d152fbf0a"
+  },
+  "runs": [
+    {
+      "run": "runs/_prelim/consttarget-prod-low-1",
+      "label": "consttarget-prod-low-1",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/autocal/control/cli/collect_sweep_data.mjs",
+      "redundant_force_mode": "passive",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0",
+      "points_per_sweep": 6,
+      "configs": [
+        "0,4:1:3",
+        "1,4:0:2",
+        "2,4:3:1",
+        "3,4:0:2"
+      ],
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 129.35938664700006,
+      "simulated_s": 1084.792,
+      "dataset_sha256": "e3e2afe57b06ce1ff2c739765f84e46cedb80c8cec5745f23239e37aaa280845",
+      "headless_manifest_sha256": "9bd58a45a408e6b967266208eed64441e12badc1396984e4b4e3695de9c6de55"
+    },
+    {
+      "run": "runs/_prelim/consttarget-twosensor-1",
+      "label": "consttarget-twosensor-1",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype/collect_sweep_data.mjs",
+      "redundant_force_mode": "sensor",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0",
+      "points_per_sweep": 6,
+      "configs": [
+        "0,4:1:3",
+        "1,4:0:2",
+        "2,4:3:1",
+        "3,4:0:2"
+      ],
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 142.18913682400125,
+      "simulated_s": 1182.304,
+      "dataset_sha256": "933401f94a6db3d6bcb521c80106249aa444c3c59590eaa344fc0508e12d440c",
+      "headless_manifest_sha256": "b659d7b340903886cf989c5e540f770789428bb728d31c24d82320643e27416e"
+    },
+    {
+      "run": "runs/_prelim/prod-low-1",
+      "label": "prod-low-1",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/autocal/control/cli/collect_sweep_data.mjs",
+      "redundant_force_mode": "passive",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0",
+      "points_per_sweep": 8,
+      "configs": [
+        "0,4:1:3",
+        "2,4:3:1",
+        "1,4:0:2"
+      ],
+      "sweeps": 3,
+      "points": 48,
+      "wall_s": 150.16800325799886,
+      "simulated_s": 828.804,
+      "dataset_sha256": "e1f5f55b1394f201ff13a8dc553be245f5fcd945ebdb448144a253026dfde2c1",
+      "headless_manifest_sha256": "30e0d553a31b55775a1953fffd0e37ea2390868edb81fbe31aa2dd8265f92152"
+    },
+    {
+      "run": "runs/_prelim/smoke-05",
+      "label": "smoke-05",
+      "collector": null,
+      "redundant_force_mode": null,
+      "force_low_n": 0.5,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-250,0",
+      "points_per_sweep": 5,
+      "configs": [
+        "0,4:1:3"
+      ],
+      "sweeps": 1,
+      "points": 10,
+      "wall_s": 29.99762531700071,
+      "simulated_s": 241.294,
+      "dataset_sha256": "1154d26fd2bb1edb0a819d486fb63e5d1204b5379f9012bbf2990eaef057ad97",
+      "headless_manifest_sha256": "9206ee32bcdfbd107e332204541e47f3bde9b187f25f8bed1802a0aa80c5db1d"
+    },
+    {
+      "run": "runs/_prelim/smoke-1",
+      "label": "smoke-1",
+      "collector": null,
+      "redundant_force_mode": null,
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-250,0",
+      "points_per_sweep": 5,
+      "configs": [
+        "0,4:1:3"
+      ],
+      "sweeps": 1,
+      "points": 10,
+      "wall_s": 33.3724583380008,
+      "simulated_s": 273.952,
+      "dataset_sha256": "a83d2822b997950627f00aa9b56daffb5323d1f2944e7d4d590d1fca5f8c1581",
+      "headless_manifest_sha256": "b40c9dfb4c8eee6a765a394c6f3377e05520788dd7dfd1fe1d8a35985dada3b8"
+    },
+    {
+      "run": "runs/_prelim/smoke-1p0",
+      "label": "smoke-1p0",
+      "collector": null,
+      "redundant_force_mode": null,
+      "force_low_n": 1.0,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-250,0",
+      "points_per_sweep": 5,
+      "configs": [
+        "0,4:1:3"
+      ],
+      "sweeps": 1,
+      "points": 10,
+      "wall_s": 31.055092706999858,
+      "simulated_s": 242.73000000000002,
+      "dataset_sha256": "73a62b795ede2151b018320d091c5281477e62238378af5830e15e0ee932f5fa",
+      "headless_manifest_sha256": "261394daffab5bf66d5981cc79e0f6b146c47aec0085a6efd57d787992a87091"
+    },
+    {
+      "run": "runs/_prelim/smoke-2p0",
+      "label": "smoke-2p0",
+      "collector": null,
+      "redundant_force_mode": null,
+      "force_low_n": 2.0,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-250,0",
+      "points_per_sweep": 5,
+      "configs": [
+        "0,4:1:3"
+      ],
+      "sweeps": null,
+      "points": null,
+      "wall_s": 5.0537103329988895,
+      "simulated_s": 36.058,
+      "dataset_sha256": null,
+      "headless_manifest_sha256": "17a3dea843408cdbfaea568339cf0874084c44f8ef70d90545cebb1e770a281b"
+    },
+    {
+      "run": "runs/_prelim/smoke-2sensor",
+      "label": "smoke-2sensor",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype/collect_sweep_data.mjs",
+      "redundant_force_mode": null,
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-250,0",
+      "points_per_sweep": 5,
+      "configs": [
+        "0,4:1:3"
+      ],
+      "sweeps": 1,
+      "points": 10,
+      "wall_s": 35.364156351999554,
+      "simulated_s": 288.01800000000003,
+      "dataset_sha256": "8e9c41c748095b2c626ffb1d6f519f98ac62c195f72d51c1641a38451f70d3bf",
+      "headless_manifest_sha256": "9f3d0fa904657fb76d288418bedb928f2a38642933ad38514b396d2d7e75eb26"
+    },
+    {
+      "run": "runs/_prelim/twosensor-1",
+      "label": "twosensor-1",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype/collect_sweep_data.mjs",
+      "redundant_force_mode": "sensor",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0",
+      "points_per_sweep": 8,
+      "configs": [
+        "0,4:1:3",
+        "2,4:3:1",
+        "1,4:0:2"
+      ],
+      "sweeps": 3,
+      "points": 48,
+      "wall_s": 263.0077859720004,
+      "simulated_s": 902.816,
+      "dataset_sha256": "69dc683a81e3ab1a2bd40e510652b7189dc25f66cc8d472d63b277e098d716ea",
+      "headless_manifest_sha256": "c44e4526e3bc364f372fdee206097592416ab280ab660505c2e7c82ab4261c55"
+    },
+    {
+      "run": "runs/ctl-1",
+      "label": "ctl-1",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype-control/collect_sweep_data.mjs",
+      "redundant_force_mode": "sensor",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0;-180,-320;-320,-160;-180,-320",
+      "points_per_sweep": 6,
+      "configs": [
+        "0,4:1:3",
+        "1,4:0:2",
+        "2,4:3:1",
+        "3,4:0:2"
+      ],
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 219.72971905799932,
+      "simulated_s": 954.046,
+      "dataset_sha256": "c660f20d7c243a6e2458c1dd91b85dafdb8e5b6cec4f51b85a32d5b76cc09217",
+      "headless_manifest_sha256": "77445b23253717cabf9d54e8a75b3439f21944222a6c91d70968fa7b0df3a6f5"
+    },
+    {
+      "run": "runs/ctl-2",
+      "label": "ctl-2",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype-control/collect_sweep_data.mjs",
+      "redundant_force_mode": "sensor",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0;-180,-320;-320,-160;-180,-320",
+      "points_per_sweep": 6,
+      "configs": [
+        "0,4:1:3",
+        "1,4:0:2",
+        "2,4:3:1",
+        "3,4:0:2"
+      ],
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 115.97234797500096,
+      "simulated_s": 954.046,
+      "dataset_sha256": "c5cf432d215dd36b2338b7ba58023f31e6a5c96b44a96e36b91ef976ef6ce59a",
+      "headless_manifest_sha256": "c524e067c8d0a6475b3ed982d3b9ec4557540caa5a0867927987a7c06d8607d3"
+    },
+    {
+      "run": "runs/ctl-low1p0",
+      "label": "ctl-low1p0",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype-control/collect_sweep_data.mjs",
+      "redundant_force_mode": "sensor",
+      "force_low_n": 1.0,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0;-180,-320;-320,-160;-180,-320",
+      "points_per_sweep": 6,
+      "configs": [
+        "0,4:1:3",
+        "1,4:0:2",
+        "2,4:3:1",
+        "3,4:0:2"
+      ],
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 104.1443350110003,
+      "simulated_s": 832.236,
+      "dataset_sha256": "406315c1d088547486bd8ac8a1435f00cda1e9b6c74c66ab08bc5dd60d99ce88",
+      "headless_manifest_sha256": "d175b87118f2c11610e646a194acfa8d5ccf0074b87534edaa4552d4df839a61"
+    },
+    {
+      "run": "runs/twosensor-1",
+      "label": "twosensor-1",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype/collect_sweep_data.mjs",
+      "redundant_force_mode": "sensor",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0;-180,-320;-320,-160;-180,-320",
+      "points_per_sweep": 6,
+      "configs": [
+        "0,4:1:3",
+        "1,4:0:2",
+        "2,4:3:1",
+        "3,4:0:2"
+      ],
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 122.95043522000014,
+      "simulated_s": 1018.34,
+      "dataset_sha256": "0e2ca15046d6e1955c8f5133b8fab322fd3043e02c390b0f4480caad407a9dd6",
+      "headless_manifest_sha256": "92c54375725fb55a9c00cf794b886d060daf798a0e0c088b24780489a96d4665"
+    },
+    {
+      "run": "runs/twosensor-2",
+      "label": "twosensor-2",
+      "collector": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/prototype/collect_sweep_data.mjs",
+      "redundant_force_mode": "sensor",
+      "force_low_n": 0.0516,
+      "sensor_force_n": 4.9914,
+      "fixed_targets_mm": "-320,0;-180,-320;-320,-160;-180,-320",
+      "points_per_sweep": 6,
+      "configs": [
+        "0,4:1:3",
+        "1,4:0:2",
+        "2,4:3:1",
+        "3,4:0:2"
+      ],
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 124.84273428199958,
+      "simulated_s": 1018.34,
+      "dataset_sha256": "dc265f35f9bb2181d15bde0da7ab2d578fd0d5b9f0c2a788402f99db3ac24520",
+      "headless_manifest_sha256": "499f43290451c843c2efd7b9d6b1d55f8539fda13628d6577d9082ca901c79b1"
+    }
+  ]
+}

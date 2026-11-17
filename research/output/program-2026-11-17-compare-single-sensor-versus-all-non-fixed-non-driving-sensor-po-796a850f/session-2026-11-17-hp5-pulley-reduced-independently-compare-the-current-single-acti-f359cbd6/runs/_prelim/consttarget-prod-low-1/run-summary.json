@@ -1,0 +1,12 @@
+{
+  "run_id": "prod-low-1",
+  "collector_returncode": 0,
+  "wall_s": 129.35938664700006,
+  "collector_time_s": 1084.791999988172,
+  "simulated_s": 1084.792,
+  "service_wall_s": 129.090163903,
+  "sweeps": 4,
+  "points": 48,
+  "acquisition_rejections": 0,
+  "dataset_sha256": "e3e2afe57b06ce1ff2c739765f84e46cedb80c8cec5745f23239e37aaa280845"
+}

@@ -1,0 +1,12 @@
+{
+  "run_id": "ctl-1",
+  "collector_returncode": 0,
+  "wall_s": 219.72971905799932,
+  "collector_time_s": 954.0459999912636,
+  "simulated_s": 954.046,
+  "service_wall_s": 219.049161944,
+  "sweeps": 4,
+  "points": 48,
+  "acquisition_rejections": 0,
+  "dataset_sha256": "c660f20d7c243a6e2458c1dd91b85dafdb8e5b6cec4f51b85a32d5b76cc09217"
+}

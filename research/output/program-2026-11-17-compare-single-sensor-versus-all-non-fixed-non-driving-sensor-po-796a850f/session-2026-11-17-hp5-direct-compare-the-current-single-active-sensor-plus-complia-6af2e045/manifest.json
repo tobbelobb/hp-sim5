@@ -1,0 +1,70 @@
+{
+  "investigation": "session-2026-11-17-hp5-direct-compare-the-current-single-active-sensor-plus-complia-6af2e045",
+  "program": "program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f",
+  "date": "2026-11-17",
+  "machine": "hp5 direct (hangprinter_5, public/usd_scenes/hp5.usda)",
+  "question": "Compare the current single active sensor plus compliant redundant axis against using both non-fixed non-driving low axes as torque-controlled sensors on HP5 direct.",
+  "status": "complete; simulation only; no production defaults changed; no commit",
+  "revisions": {
+    "worktree_head": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+    "root_head": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+    "physics_engine": "rust-native",
+    "physics_artifact_sha256": "1c137e603ae5190e7389863b5c2680200ae21b48162f26e85e71fb6fd1ed418b",
+    "catalog_scene_sha256": "9d2921666dc0e3eee63f7954ad3b7ceca285e574519dda6d3c48946a4c7286d7",
+    "taut_scene_sha256": "944b66cc1b88646d9b0851e6ca8b2740e891f4678f1fd6551c5c0a0dee35c9bf"
+  },
+  "roles": {
+    "fixed_low": "A (0), position",
+    "fixed_top": "I (4), position",
+    "drive": "B (1), ramped position",
+    "sensor": "D (3), torque 1.0 N",
+    "redundant": "C (2), torque 0.05/0.1/0.2/0.3/1.0 N",
+    "role_check": "fixed B, drive C, sensor A, redundant D"
+  },
+  "primary_runs": [
+    "evidence/taut_down_0.05,1.0.json",
+    "evidence/taut_down_0.1,1.0.json",
+    "evidence/taut_down_0.2,1.0.json",
+    "evidence/taut_down_0.3,1.0.json",
+    "evidence/taut_down_1.0,1.0.json",
+    "evidence/taut_up_0.05,1.0.json",
+    "evidence/taut_up_0.1,1.0.json",
+    "evidence/taut_up_0.2,1.0.json",
+    "evidence/taut_up_0.3,1.0.json",
+    "evidence/taut_up_1.0,1.0.json"
+  ],
+  "cross_checks": [
+    "evidence/slow2_down_*.json (catalog scene, scripted pullout)",
+    "evidence/altrole_*.json (rotated roles, 0.05 and 0.3 N)",
+    "evidence/rec_*.json (fast reversal speed stress)"
+  ],
+  "analyses": {
+    "aggregate": "evidence/results.json",
+    "geometry_information": "evidence/info.json",
+    "synthetic_anchor_recovery": "evidence/mc_fit.json",
+    "aggregate_script": "evidence/summarize.py",
+    "info_script": "evidence/info.py",
+    "mc_script": "evidence/mc_fit.py"
+  },
+  "headline_numbers": {
+    "taut_0.05N_slack": "1/7 poses each direction; max 1.18/1.30 mm; persists after 6 s",
+    "taut_0.20N_slack": "0/7; max 0.06/0.07 mm; min segment force 0.000 N (marginal)",
+    "taut_0.30N_slack": "0/7; max 0.06/0.07 mm; min segment force 0.067/0.071 N",
+    "taut_1.0N_slack": "0/7; max 0.08/0.09 mm; min segment force 0.78/0.80 N",
+    "fast_reversal_0.05N": "7/15 poses; max 3.35 mm",
+    "torque_floor": "cogging 0.01 Nm + Coulomb 0.002 Nm + stiction 0.003 Nm; 0.05 N = 0.003 Nm",
+    "geometry_fisher_sigma_trace": "8.15 mm current -> 0.71 mm both sensors at 0.01 mm range noise (11.5x smaller sigma)",
+    "geometry_fisher_weak_mode": "0.0178 -> 3.204 singular value (180x)",
+    "mc_anchor_rms_20pt": "1.47 mm current -> 0.89 mm both sensors",
+    "mc_anchor_rms_with_0.05mm_bias": "1.36 mm both sensors (gain mostly erased)"
+  },
+  "constraints_observed": [
+    "No full autocal run; only isolated headless worlds.",
+    "No connection to the live first-manual-autocal-of-hp5-pulley-reduced dataset or its ports/processes.",
+    "No root source/config edits, no firmware/build changes; root checkout used read-only for Node/native physics.",
+    "No commits or pushes; evidence left in the platform worktree for manager integration.",
+    "No private runtime started; no research processes left running."
+  ],
+  "report": "report.md",
+  "abstract": "abstract.md"
+}

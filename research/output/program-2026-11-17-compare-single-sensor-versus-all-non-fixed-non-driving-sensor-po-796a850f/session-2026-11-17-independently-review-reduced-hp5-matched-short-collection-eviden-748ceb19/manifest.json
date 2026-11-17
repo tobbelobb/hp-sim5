@@ -1,0 +1,42 @@
+{
+  "investigation": "session-2026-11-17-independently-review-reduced-hp5-matched-short-collection-eviden-748ceb19",
+  "kind": "independent-review",
+  "reviewed_investigation": "session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6",
+  "reviewed_report": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/report.md",
+  "source_revision": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+  "review_method": "saved-data replay and static inspection; no simulation run, no runtime started",
+  "source_read_only": true,
+  "source_dataset_sha256": {
+    "ctl-1": "c660f20d7c243a6e2458c1dd91b85dafdb8e5b6cec4f51b85a32d5b76cc09217",
+    "twosensor-1": "0e2ca15046d6e1955c8f5133b8fab322fd3043e02c390b0f4480caad407a9dd6",
+    "ctl-low1p0": "406315c1d088547486bd8ac8a1435f00cda1e9b6c74c66ab08bc5dd60d99ce88"
+  },
+  "source_analysis_sha256": "a1ba718b6810aa50734840de63aec5222ec66b6c8a54fe968b2fa65e6b688bb9",
+  "source_scripts_sha256": {
+    "analyze.py": "3e63e29421acd041ea6a40e7e43b1aed187d21b6cd1a7918fc64977677e9412c",
+    "ext_fit.py": "37b32da27f667aa1b32ee3d8190e23d65cd382b336fadbe3055c75015864b42e",
+    "collect_run.py": "97c8cc1bffdd3965ca19f8f00ccb9e1313284939c88f73c6a1b7a844dfcba721",
+    "sensitivity.py": "49faada8eee13889ca93c9e80034dda1ae4183023eef05b59d15f48133b291f9",
+    "noise_sensitivity.py": "d3dcfbbb3a48a1719352ce9de3e47dcff567ed052b405ac64dc9f9522931de08"
+  },
+  "files": {
+    "abstract.md": "f9c1fac70771c04fd307e93711cb4f37cac89f2ce36400d19532aa2b01570e8a",
+    "evidence/bias-diagnostic.json": "957e15cd3539fcc8a6deab7e3efea3ab7293ffdd71b8fe11476123e899e6a8d3",
+    "evidence/bias_diagnostic.py": "da04592add402d837105a3e6641d82c925f33a9cac076c7a38c72b10e771788f",
+    "evidence/cv-replay.json": "afcf9a5dc9026346f93809e73865605118fe5c29e129c33d277b07c2133287d9",
+    "evidence/force-mode-check.json": "76e3430858f2298277730ecf15d36d053883c17c766bbe8f9bec1aaec2513982",
+    "evidence/force_mode_check.py": "ee37386cb6fa888b0c6b8754df5da55084bdea57f7daf323331dc9f5336fafc1",
+    "evidence/review_fit.py": "ac8f71c299baca1059c887ff2449c43951cf79a8d4983b5a89322089fd4f3118",
+    "evidence/summary-checks.json": "6c4e55e573a6f3fc0ea30406e609cd584b568c416540c350ef0b5c255a70db1f",
+    "evidence/summary_checks.py": "71a196eb5239e3b6adebd4c7302e1b42f8dad6915e418ed7e5cdb3976e855448",
+    "report.md": "390195a20b8344e98246728573c8a78aa33059b2cdd8af8670b86a2b371a255e",
+    "review-fits.json": "d76de0f838b338384b2c23d42f7b4bb1647df693182a661d7a6079a53623c7d0"
+  },
+  "commands": [
+    "/home/torbjorn/repos/hp-sim5/.venv/bin/python evidence/review_fit.py",
+    "/home/torbjorn/repos/hp-sim5/.venv/bin/python evidence/force_mode_check.py",
+    "/home/torbjorn/repos/hp-sim5/.venv/bin/python evidence/bias_diagnostic.py",
+    "/home/torbjorn/repos/hp-sim5/.venv/bin/python evidence/summary_checks.py"
+  ],
+  "notes": "The only shared-tree write was Python regenerating the reviewed session's git-ignored evidence/__pycache__/*.pyc on import. No evidence, source, config or run file was modified."
+}

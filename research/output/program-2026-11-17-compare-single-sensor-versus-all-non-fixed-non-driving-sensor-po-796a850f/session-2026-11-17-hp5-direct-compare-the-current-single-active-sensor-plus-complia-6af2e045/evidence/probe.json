@@ -1,0 +1,616 @@
+{
+ "axes": {
+  "A": [
+   "SpoolA"
+  ],
+  "B": [
+   "SpoolB"
+  ],
+  "C": [
+   "SpoolC"
+  ],
+  "D": [
+   "SpoolD"
+  ],
+  "I": [
+   "SpoolI"
+  ]
+ },
+ "spool": {
+  "A": {
+   "entity": "SpoolA",
+   "angle": 0,
+   "pos": [
+    0,
+    -2.5,
+    -0.18
+   ],
+   "torque_mode": false,
+   "target_torque": 0
+  },
+  "B": {
+   "entity": "SpoolB",
+   "angle": 0,
+   "pos": [
+    2.5,
+    -1.5308084989341916e-16,
+    -0.18
+   ],
+   "torque_mode": false,
+   "target_torque": 0
+  },
+  "C": {
+   "entity": "SpoolC",
+   "angle": 0,
+   "pos": [
+    3.061616997868383e-16,
+    2.5,
+    -0.18
+   ],
+   "torque_mode": false,
+   "target_torque": 0
+  },
+  "D": {
+   "entity": "SpoolD",
+   "angle": 0,
+   "pos": [
+    -2.5,
+    4.592425496802574e-16,
+    -0.18
+   ],
+   "torque_mode": false,
+   "target_torque": 0
+  },
+  "I": {
+   "entity": "SpoolI",
+   "angle": 0.0004772972835788605,
+   "pos": [
+    0,
+    0,
+    2
+   ],
+   "torque_mode": false,
+   "target_torque": 0
+  }
+ },
+ "attachments": {
+  "CornerSW": {
+   "body_entity": 21,
+   "local_position": [
+    -0.25,
+    -0.25,
+    0
+   ],
+   "local_orientation": [
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  "CornerSE": {
+   "body_entity": 21,
+   "local_position": [
+    0.25,
+    -0.25,
+    0
+   ],
+   "local_orientation": [
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  "CornerNE": {
+   "body_entity": 21,
+   "local_position": [
+    0.25,
+    0.25,
+    0
+   ],
+   "local_orientation": [
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  "CornerNW": {
+   "body_entity": 21,
+   "local_position": [
+    -0.25,
+    0.25,
+    0
+   ],
+   "local_orientation": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ },
+ "joints": {
+  "JointAL_0": {
+   "rest_length": 0.4290687590584988,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointAL_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointAR_0": {
+   "rest_length": 0.42906875905849867,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointAR_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointBL_0": {
+   "rest_length": 0.42906875905849867,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointBL_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointBR_0": {
+   "rest_length": 0.42906875905849867,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointBR_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointCL_0": {
+   "rest_length": 0.4290687590584988,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointCL_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointCR_0": {
+   "rest_length": 0.42906875905849867,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointCR_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointDL_0": {
+   "rest_length": 0.42906875905849867,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointDL_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointDR_0": {
+   "rest_length": 0.4290687590584987,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointDR_1": {
+   "rest_length": 1.9205207627099479,
+   "constraint_force_magnitude": 0,
+   "transferred_constraint_force_magnitude": 0
+  },
+  "JointI0_0": {
+   "rest_length": 0.35226513973982904,
+   "constraint_force_magnitude": 0.23485683294474521,
+   "transferred_constraint_force_magnitude": 0.23485683294474521
+  },
+  "JointI0_1": {
+   "rest_length": 1.900016021569892,
+   "constraint_force_magnitude": 0.23485683294474521,
+   "transferred_constraint_force_magnitude": 0.23485683294474521
+  },
+  "JointI1_0": {
+   "rest_length": 0.3522657653889113,
+   "constraint_force_magnitude": 0.16285315543310158,
+   "transferred_constraint_force_magnitude": 0.16285315543310158
+  },
+  "JointI1_1": {
+   "rest_length": 1.9000153959208097,
+   "constraint_force_magnitude": 0.16285315543310158,
+   "transferred_constraint_force_magnitude": 0.16285315543310158
+  },
+  "JointI2_0": {
+   "rest_length": 0.3522646454690565,
+   "constraint_force_magnitude": 0.2348568337244391,
+   "transferred_constraint_force_magnitude": 0.2348568337244391
+  },
+  "JointI2_1": {
+   "rest_length": 1.9000165158406652,
+   "constraint_force_magnitude": 0.2348568337244391,
+   "transferred_constraint_force_magnitude": 0.2348568337244391
+  },
+  "JointI3_0": {
+   "rest_length": 0.35226401982395295,
+   "constraint_force_magnitude": 0.16285315551967644,
+   "transferred_constraint_force_magnitude": 0.16285315551967644
+  },
+  "JointI3_1": {
+   "rest_length": 1.9000171414857727,
+   "constraint_force_magnitude": 0.16285315551967644,
+   "transferred_constraint_force_magnitude": 0.16285315551967644
+  }
+ },
+ "paths": {
+  "CablePathAL": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    22,
+    23
+   ]
+  },
+  "CablePathAR": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    24,
+    25
+   ]
+  },
+  "CablePathBL": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    26,
+    27
+   ]
+  },
+  "CablePathBR": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    28,
+    29
+   ]
+  },
+  "CablePathCL": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    30,
+    31
+   ]
+  },
+  "CablePathCR": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    32,
+    33
+   ]
+  },
+  "CablePathDL": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    34,
+    35
+   ]
+  },
+  "CablePathDR": {
+   "stored": [
+    2,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    36,
+    37
+   ]
+  },
+  "CablePathI0": {
+   "stored": [
+    1.9999971377664474,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    38,
+    39
+   ]
+  },
+  "CablePathI1": {
+   "stored": [
+    1.9999971377664474,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    40,
+    41
+   ]
+  },
+  "CablePathI2": {
+   "stored": [
+    1.9999971377664474,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    42,
+    43
+   ]
+  },
+  "CablePathI3": {
+   "stored": [
+    1.9999971377664474,
+    0,
+    0
+   ],
+   "cable_half_width": 0,
+   "link_types": [
+    "hybrid",
+    "pinhole",
+    "attachment"
+   ],
+   "joint_entities": [
+    44,
+    45
+   ]
+  }
+ },
+ "cable_half_widths": [
+  0
+ ],
+ "dt_s": 0.002,
+ "physics_engine": "rust-native",
+ "physics_artifact": {
+  "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+  "sha256": "1c137e603ae5190e7389863b5c2680200ae21b48162f26e85e71fb6fd1ed418b",
+  "build": {
+   "profile": "release",
+   "platform": "linux",
+   "arch": "x64",
+   "nodeApi": 8,
+   "artifactSha256": "1c137e603ae5190e7389863b5c2680200ae21b48162f26e85e71fb6fd1ed418b",
+   "nodeApiHeaders": {
+    "directory": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/native/node-api",
+    "sha256": {
+     "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+     "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+     "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+     "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+    }
+   },
+   "sources": {
+    "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+    "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+    "native/node_bridge.c": "af7bfc8cbe31e38bf99a75ba20f0393d71f16a7e69241eec2f88637e16e2404c",
+    "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+    "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+    "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+    "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+    "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+    "src/engine.rs": "96d88337de8dd7c45288ff5886a9dd53a855a3ecdf338f2761e85a488b4dda59",
+    "src/lib.rs": "dbe7dd86752a971ea403b8dae7183f9aee7e3a3b8b6396fcc7f9fb44d8c5a7c4"
+   },
+   "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+   "target": "x86_64-unknown-linux-gnu",
+   "rustflags": null,
+   "compiler": "cc",
+   "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+  }
+ },
+ "positions": {
+  "CornerSW": [
+   -0.2500000001658894,
+   -0.2499999992153982,
+   0.0999355146730035
+  ],
+  "CornerSE": [
+   0.2499999998181088,
+   -0.24999999917273144,
+   0.09993951490405403
+  ],
+  "CornerNE": [
+   0.2499999998327291,
+   0.2500000007759962,
+   0.09993235442929214
+  ],
+  "CornerNW": [
+   -0.2500000001512691,
+   0.25000000073332945,
+   0.09992835419824161
+  ],
+  "SpoolA": [
+   0,
+   -2.5,
+   -0.18
+  ],
+  "AnchorAL": [
+   -0.25,
+   -2.15,
+   -0.18
+  ],
+  "AnchorAR": [
+   0.25,
+   -2.15,
+   -0.18
+  ],
+  "SpoolB": [
+   2.5,
+   -1.5308084989341916e-16,
+   -0.18
+  ],
+  "AnchorBL": [
+   2.15,
+   -0.2500000000000001,
+   -0.18
+  ],
+  "AnchorBR": [
+   2.15,
+   0.24999999999999986,
+   -0.18
+  ],
+  "SpoolC": [
+   3.061616997868383e-16,
+   2.5,
+   -0.18
+  ],
+  "AnchorCL": [
+   0.2500000000000003,
+   2.15,
+   -0.18
+  ],
+  "AnchorCR": [
+   -0.24999999999999975,
+   2.15,
+   -0.18
+  ],
+  "SpoolD": [
+   -2.5,
+   4.592425496802574e-16,
+   -0.18
+  ],
+  "AnchorDL": [
+   -2.15,
+   0.2500000000000004,
+   -0.18
+  ],
+  "AnchorDR": [
+   -2.15,
+   -0.2499999999999996,
+   -0.18
+  ],
+  "SpoolI": [
+   0,
+   0,
+   2
+  ],
+  "AnchorI0": [
+   -0.25,
+   -0.25,
+   2
+  ],
+  "AnchorI1": [
+   0.25,
+   -0.25,
+   2
+  ],
+  "AnchorI2": [
+   0.25,
+   0.25,
+   2
+  ],
+  "AnchorI3": [
+   -0.25,
+   0.25,
+   2
+  ],
+  "Effector": [
+   -1.6657848722098192e-10,
+   7.802912332395546e-10,
+   0.09997321454992712
+  ]
+ }
+}

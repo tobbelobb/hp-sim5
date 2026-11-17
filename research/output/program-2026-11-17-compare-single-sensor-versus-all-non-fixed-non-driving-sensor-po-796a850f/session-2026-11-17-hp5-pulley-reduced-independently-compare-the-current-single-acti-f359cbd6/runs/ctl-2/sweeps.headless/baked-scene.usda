@@ -1,0 +1,1797 @@
+#usda 1.0
+
+(
+    defaultPrim = "HangprinterScene"
+    doc = "Square Hangprinter 5, HP4 reeving"
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 500
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Xform "HangprinterScene"
+    {
+        custom string machine:catalog = "hp5_pulley_reduced"
+        custom color3f machine:extrusionColor = (1, 1, 0.5)
+        custom color3f machine:tintColor = (0.1, 0.1, 1)
+        def Circle "CornerSW" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Attachment"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float physics:mass = 0.00745
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.005
+            double3 xformOp:translate = (-0.25, -0.25, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "CornerSE" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Attachment"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float physics:mass = 0.00745
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.005
+            double3 xformOp:translate = (0.25, -0.25, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "CornerNE" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Attachment"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float physics:mass = 0.00745
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.005
+            double3 xformOp:translate = (0.25, 0.25, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "CornerNW" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Attachment"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float physics:mass = 0.00745
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.005
+            double3 xformOp:translate = (-0.25, 0.25, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "SpoolA" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005))
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.011
+            custom double stepper:holdingTorque = 1
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (0, -2.54, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def Xform "AnchorAL_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (-0.25, -2.19, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorAL_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (-0.25, -2.19, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorAR_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (0.25, -2.19, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorAR_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (0.25, -2.19, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelAL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            double3 xformOp:translate = (-0.25, -0.27, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeAL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.25, -0.29, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelAL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            double3 xformOp:translate = (-0.25, -0.27, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeAL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.25, -0.29, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelAR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            double3 xformOp:translate = (0.25, -0.27, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeAR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.25, -0.29, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelAR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            double3 xformOp:translate = (0.25, -0.27, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeAR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.25, -0.29, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def CableJoint "JointAL_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolA>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAL_top>
+            custom point3d localPos0 = (0.023136334973590467, 0.019097382123993256, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.4290687590584988
+        }
+        def CableJoint "JointAL_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorAL_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeAL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointAL_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeAL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.3010426069826053e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointAL_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelAL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAL_bottom>
+            custom point3d localPos0 = (0, 0.006500000000000006, 0)
+            custom point3d localPos1 = (0, 0.006500000000000006, 0)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointAL_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelAL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeAL_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.3010426069826053e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointAL_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeAL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAL_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointAR_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolA>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAR_top>
+            custom point3d localPos0 = (0.0255687674060229, -0.015691976718587686, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.42906875905849867
+        }
+        def CableJoint "JointAR_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorAR_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeAR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointAR_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeAR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.3010426069826053e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointAR_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelAR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAR_bottom>
+            custom point3d localPos0 = (0, 0.006500000000000006, 0)
+            custom point3d localPos1 = (0, 0.006500000000000006, 0)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointAR_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelAR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeAR_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.3010426069826053e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointAR_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeAR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAR_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def Xform "CablePathAL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointAL_0>, </World/HangprinterScene/JointAL_anchor_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.009968005254650341, 0.009968005254650341, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Xform "CablePathAR" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointAR_0>, </World/HangprinterScene/JointAR_anchor_to_pinhole>, </World/HangprinterScene/JointAR_pinhole_to_wheel>, </World/HangprinterScene/JointAR_wheel_to_wheel>, </World/HangprinterScene/JointAR_wheel_to_pinhole>, </World/HangprinterScene/JointAR_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.009968005254650341, 0.009968005254650341, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Circle "SpoolB" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005))
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.011
+            custom double stepper:holdingTorque = 1
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (2.54, -1.5553014349171386e-16, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def Xform "AnchorBL_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (2.19, -0.2500000000000001, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorBL_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (2.19, -0.2500000000000001, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorBR_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (2.19, 0.24999999999999986, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorBR_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (2.19, 0.24999999999999986, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelBL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 90)
+            double3 xformOp:translate = (0.27, -0.25, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeBL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.29, -0.25, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelBL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 90)
+            double3 xformOp:translate = (0.27, -0.25, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeBL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.29, -0.25, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelBR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 90)
+            double3 xformOp:translate = (0.27, 0.24999999999999997, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeBR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.29, 0.24999999999999997, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelBR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 90)
+            double3 xformOp:translate = (0.27, 0.24999999999999997, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeBR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.29, 0.24999999999999997, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def CableJoint "JointBL_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolB>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorBL_top>
+            custom point3d localPos0 = (-0.019097382123993256, 0.023136334973590467, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.42906875905849867
+        }
+        def CableJoint "JointBL_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorBL_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeBL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointBL_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeBL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelBL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.734723475976807e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointBL_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelBL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelBL_bottom>
+            custom point3d localPos0 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointBL_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelBL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeBL_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointBL_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeBL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorBL_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointBR_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolB>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorBR_top>
+            custom point3d localPos0 = (0.015691976718587686, 0.0255687674060229, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.42906875905849867
+        }
+        def CableJoint "JointBR_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorBR_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeBR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointBR_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeBR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelBR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.734723475976807e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointBR_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelBR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelBR_bottom>
+            custom point3d localPos0 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointBR_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelBR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeBR_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointBR_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeBR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorBR_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def Xform "CablePathBL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointBL_0>, </World/HangprinterScene/JointBL_anchor_to_pinhole>, </World/HangprinterScene/JointBL_pinhole_to_wheel>, </World/HangprinterScene/JointBL_wheel_to_wheel>, </World/HangprinterScene/JointBL_wheel_to_pinhole>, </World/HangprinterScene/JointBL_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.00996800525465034, 0.00996800525465034, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Xform "CablePathBR" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointBR_0>, </World/HangprinterScene/JointBR_anchor_to_pinhole>, </World/HangprinterScene/JointBR_pinhole_to_wheel>, </World/HangprinterScene/JointBR_wheel_to_wheel>, </World/HangprinterScene/JointBR_wheel_to_pinhole>, </World/HangprinterScene/JointBR_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.00996800525465034, 0.00996800525465034, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Circle "SpoolC" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005))
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.011
+            custom double stepper:holdingTorque = 1
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (3.110602869834277e-16, 2.54, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def Xform "AnchorCL_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (0.2500000000000003, 2.19, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorCL_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (0.2500000000000003, 2.19, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorCR_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (-0.24999999999999972, 2.19, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorCR_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (-0.24999999999999972, 2.19, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelCL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 180)
+            double3 xformOp:translate = (0.25000000000000006, 0.26999999999999996, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeCL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.25000000000000006, 0.2899999999999999, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelCL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 180)
+            double3 xformOp:translate = (0.25000000000000006, 0.26999999999999996, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeCL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (0.25000000000000006, 0.2899999999999999, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelCR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 180)
+            double3 xformOp:translate = (-0.24999999999999997, 0.2700000000000001, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeCR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.24999999999999997, 0.29000000000000004, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelCR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 180)
+            double3 xformOp:translate = (-0.24999999999999997, 0.2700000000000001, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeCR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.24999999999999997, 0.29000000000000004, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def CableJoint "JointCL_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolC>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorCL_top>
+            custom point3d localPos0 = (-0.02313633497359047, -0.019097382123993256, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.42906875905849867
+        }
+        def CableJoint "JointCL_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorCL_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeCL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointCL_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeCL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelCL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.3010426069826053e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointCL_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelCL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelCL_bottom>
+            custom point3d localPos0 = (-1.6851887013388314e-34, 0.006500000000000006, -7.960204194457802e-19)
+            custom point3d localPos1 = (-1.6851887013388314e-34, 0.006500000000000006, -7.960204194457802e-19)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointCL_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelCL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeCL_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.3010426069826053e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointCL_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeCL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorCL_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointCR_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolC>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorCR_top>
+            custom point3d localPos0 = (-0.025568767406022895, 0.015691976718587686, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.42906875905849867
+        }
+        def CableJoint "JointCR_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorCR_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeCR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointCR_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeCR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelCR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.3010426069826053e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointCR_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelCR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelCR_bottom>
+            custom point3d localPos0 = (-1.6851887013388314e-34, 0.006500000000000006, -7.960204194457802e-19)
+            custom point3d localPos1 = (-1.6851887013388314e-34, 0.006500000000000006, -7.960204194457802e-19)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointCR_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelCR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeCR_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.3010426069826053e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointCR_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeCR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorCR_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def Xform "CablePathCL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointCL_0>, </World/HangprinterScene/JointCL_anchor_to_pinhole>, </World/HangprinterScene/JointCL_pinhole_to_wheel>, </World/HangprinterScene/JointCL_wheel_to_wheel>, </World/HangprinterScene/JointCL_wheel_to_pinhole>, </World/HangprinterScene/JointCL_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.00996800525465034, 0.00996800525465034, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Xform "CablePathCR" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointCR_0>, </World/HangprinterScene/JointCR_anchor_to_pinhole>, </World/HangprinterScene/JointCR_pinhole_to_wheel>, </World/HangprinterScene/JointCR_wheel_to_wheel>, </World/HangprinterScene/JointCR_wheel_to_pinhole>, </World/HangprinterScene/JointCR_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.00996800525465034, 0.00996800525465034, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Circle "SpoolD" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005))
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.011
+            custom double stepper:holdingTorque = 1
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (-2.54, 4.6659043047514155e-16, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def Xform "AnchorDL_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (-2.19, 0.2500000000000004, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorDL_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (-2.19, 0.2500000000000004, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorDR_top"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            double3 xformOp:translate = (-2.19, -0.2499999999999996, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Xform "AnchorDR_bottom"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (-2.19, -0.2499999999999996, -0.2395)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelDL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 270)
+            double3 xformOp:translate = (-0.26999999999999996, 0.25000000000000006, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeDL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.2899999999999999, 0.25000000000000006, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelDL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 270)
+            double3 xformOp:translate = (-0.26999999999999996, 0.25000000000000006, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeDL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.2899999999999999, 0.25000000000000006, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelDR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 270)
+            double3 xformOp:translate = (-0.2700000000000001, -0.24999999999999994, 0.09275)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeDR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.29000000000000004, -0.24999999999999994, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Circle "WheelDR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 270)
+            double3 xformOp:translate = (-0.2700000000000001, -0.24999999999999994, 0.04775)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "PinholeDR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Pinhole"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0, 0, 0)
+            double3 xformOp:translate = (-0.29000000000000004, -0.24999999999999994, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def CableJoint "JointDL_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolD>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorDL_top>
+            custom point3d localPos0 = (0.019097382123993256, -0.023136334973590474, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.42906875905849867
+        }
+        def CableJoint "JointDL_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorDL_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeDL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointDL_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeDL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelDL_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.734723475976807e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointDL_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelDL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelDL_bottom>
+            custom point3d localPos0 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointDL_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelDL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeDL_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointDL_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeDL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorDL_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointDR_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolD>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorDR_top>
+            custom point3d localPos0 = (-0.015691976718587686, -0.025568767406022895, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.4290687590584987
+        }
+        def CableJoint "JointDR_anchor_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/AnchorDR_top>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeDR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def CableJoint "JointDR_pinhole_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeDR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelDR_top>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (-0.006495489234888227, 0.0002421148476469681, 1.734723475976807e-18)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointDR_wheel_to_wheel"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelDR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelDR_bottom>
+            custom point3d localPos0 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0.006500000000000006, -1.734723475976807e-18)
+            custom double restLength = 0.045
+        }
+        def CableJoint "JointDR_wheel_to_pinhole"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelDR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeDR_bottom>
+            custom point3d localPos0 = (0.006495489234888227, 0.0002421148476469681, -1.734723475976807e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 0.020256171898954598
+        }
+        def CableJoint "JointDR_pinhole_to_anchor"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/PinholeDR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorDR_bottom>
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.9205207627099479
+        }
+        def Xform "CablePathDL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointDL_0>, </World/HangprinterScene/JointDL_anchor_to_pinhole>, </World/HangprinterScene/JointDL_pinhole_to_wheel>, </World/HangprinterScene/JointDL_wheel_to_wheel>, </World/HangprinterScene/JointDL_wheel_to_pinhole>, </World/HangprinterScene/JointDL_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.009968005254650341, 0.009968005254650341, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Xform "CablePathDR" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointDR_0>, </World/HangprinterScene/JointDR_anchor_to_pinhole>, </World/HangprinterScene/JointDR_pinhole_to_wheel>, </World/HangprinterScene/JointDR_wheel_to_wheel>, </World/HangprinterScene/JointDR_wheel_to_pinhole>, </World/HangprinterScene/JointDR_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0, 0, 0.009968005254650341, 0.009968005254650341, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Circle "SpoolI" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005))
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.011
+            custom double stepper:holdingTorque = 1
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (0, 0, 2.0065)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def Circle "WheelI0_left_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 315)
+            double3 xformOp:translate = (-0.252121318826663, -0.24787867946879819, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI0_right_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 315)
+            double3 xformOp:translate = (-0.24787867965314422, -0.2521213203412754, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI0_left_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 315)
+            double3 xformOp:translate = (-0.252121318826663, -0.24787867946879819, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI0_right_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 315)
+            double3 xformOp:translate = (-0.24787867965314422, -0.2521213203412754, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "AttachI0" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.001
+            double3 xformOp:translate = (-0.2411611652351689, -0.2496464466094073, 2)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def CableJoint "JointI0_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolI>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI0_left_top>
+            custom point3d localPos0 = (-0.02277174103563034, 0.019530688933219666, 0)
+            custom point3d localPos1 = (-0.00649999999999995, -4.336808689942018e-19, 7.047314121155779e-19)
+            custom double restLength = 0.3522910716184715
+        }
+        def CableJoint "JointI0_1"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI0_left_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI0_left_bottom>
+            custom point3d localPos0 = (2.168404344971009e-19, -0.006500000000000016, 2.1250362580715887e-17)
+            custom point3d localPos1 = (-8.304988641238964e-17, -0.006499999999999978, -1.7780915628762273e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI0_2"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI0_left_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI0_right_top>
+            custom point3d localPos0 = (-4.1098654427612624e-12, 0.006499999999999996, -1.951563910473908e-18)
+            custom point3d localPos1 = (-4.1096019816333484e-12, 0.006500000000000016, -2.1250362580715887e-17)
+            custom double restLength = 1.9000094736576256
+        }
+        def CableJoint "JointI0_3"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI0_right_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI0_right_bottom>
+            custom point3d localPos0 = (2.168404344971009e-19, -0.006500000000000016, -1.7780915628762273e-17)
+            custom point3d localPos1 = (-8.283304597789254e-17, -0.006499999999999978, -5.702903427273753e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI0_4"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI0_right_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AttachI0>
+            custom point3d localPos0 = (-1.3503087537003466e-14, 0.006499999999999996, -1.951563910473908e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.900002368419562
+        }
+        def Xform "CablePathI0" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 0, 0, 0, 0, 0]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointI0_0>, </World/HangprinterScene/JointI0_1>, </World/HangprinterScene/JointI0_2>, </World/HangprinterScene/JointI0_3>, </World/HangprinterScene/JointI0_4>]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "rolling", "rolling", "rolling", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0.010210176124166827, 0.0204203522524436, 0.02042035224422405, 0.020420352248347238, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Circle "WheelI1_left_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 405)
+            double3 xformOp:translate = (0.24787867946879819, -0.252121318826663, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI1_right_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 405)
+            double3 xformOp:translate = (0.2521213203412754, -0.24787867965314422, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI1_left_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 405)
+            double3 xformOp:translate = (0.24787867946879819, -0.252121318826663, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI1_right_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 405)
+            double3 xformOp:translate = (0.2521213203412754, -0.24787867965314422, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "AttachI1" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.001
+            double3 xformOp:translate = (0.2496464466094073, -0.2411611652351689, 2)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def CableJoint "JointI1_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolI>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI1_left_top>
+            custom point3d localPos0 = (-0.01953068893321968, -0.022771741035630327, 0)
+            custom point3d localPos1 = (-0.00649999999999995, 2.168404344971009e-19, 1.3010426069826053e-18)
+            custom double restLength = 0.35229107161847156
+        }
+        def CableJoint "JointI1_1"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI1_left_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI1_left_bottom>
+            custom point3d localPos0 = (-4.336808689942018e-19, -0.006500000000000016, 2.168404344971009e-17)
+            custom point3d localPos1 = (-8.370040771588094e-17, -0.006500000000000016, 2.168404344971009e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI1_2"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI1_left_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI1_right_top>
+            custom point3d localPos0 = (-4.109864792239959e-12, 0.006499999999999997, -1.734723475976807e-18)
+            custom point3d localPos1 = (-4.1096019816333484e-12, 0.006499999999999997, -1.951563910473908e-18)
+            custom double restLength = 1.9000094736576256
+        }
+        def CableJoint "JointI1_3"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI1_right_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI1_right_bottom>
+            custom point3d localPos0 = (0, -0.006500000000000018, -1.8214596497756474e-17)
+            custom point3d localPos1 = (-8.326672684688674e-17, -0.006500000000000018, -1.7997756063259374e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI1_4"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI1_right_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AttachI1>
+            custom point3d localPos0 = (-1.3503304377437964e-14, 0.006499999999999997, -1.951563910473908e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.900002368419562
+        }
+        def Xform "CablePathI1" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 0, 0, 0, 0, 0]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointI1_0>, </World/HangprinterScene/JointI1_1>, </World/HangprinterScene/JointI1_2>, </World/HangprinterScene/JointI1_3>, </World/HangprinterScene/JointI1_4>]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "rolling", "rolling", "rolling", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0.010210176124166827, 0.0204203522524436, 0.020420352244224053, 0.020420352248347238, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Circle "WheelI2_left_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 495)
+            double3 xformOp:translate = (0.252121318826663, 0.24787867946879819, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI2_right_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 495)
+            double3 xformOp:translate = (0.24787867965314422, 0.2521213203412754, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI2_left_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 495)
+            double3 xformOp:translate = (0.252121318826663, 0.24787867946879819, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI2_right_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 495)
+            double3 xformOp:translate = (0.24787867965314422, 0.2521213203412754, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "AttachI2" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.001
+            double3 xformOp:translate = (0.2411611652351689, 0.2496464466094073, 2)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def CableJoint "JointI2_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolI>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI2_left_top>
+            custom point3d localPos0 = (0.02277174103563034, -0.019530688933219666, 0)
+            custom point3d localPos1 = (-0.006499999999999949, -2.168404344971009e-19, 1.3010426069826053e-18)
+            custom double restLength = 0.3522910716184715
+        }
+        def CableJoint "JointI2_1"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI2_left_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI2_left_bottom>
+            custom point3d localPos0 = (2.168404344971009e-19, -0.006500000000000016, 1.6263032587282567e-17)
+            custom point3d localPos1 = (-8.326672684688674e-17, -0.006500000000000016, 1.6046192152785466e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI2_2"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI2_left_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI2_right_top>
+            custom point3d localPos0 = (-4.1098654427612624e-12, 0.006499999999999997, 3.686287386450715e-18)
+            custom point3d localPos1 = (-4.1096015479524795e-12, 0.006499999999999996, 3.686287386450715e-18)
+            custom double restLength = 1.9000094736576256
+        }
+        def CableJoint "JointI2_3"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI2_right_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI2_right_bottom>
+            custom point3d localPos0 = (2.168404344971009e-19, -0.006499999999999976, 1.6046192152785466e-17)
+            custom point3d localPos1 = (-8.304988641238964e-17, -0.006499999999999976, 1.6046192152785466e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI2_4"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI2_right_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AttachI2>
+            custom point3d localPos0 = (-1.350287069656897e-14, 0.006499999999999997, 3.2526065174565133e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.900002368419562
+        }
+        def Xform "CablePathI2" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 0, 0, 0, 0, 0]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointI2_0>, </World/HangprinterScene/JointI2_1>, </World/HangprinterScene/JointI2_2>, </World/HangprinterScene/JointI2_3>, </World/HangprinterScene/JointI2_4>]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "rolling", "rolling", "rolling", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0.01021017612416683, 0.0204203522524436, 0.020420352244224053, 0.020420352248347238, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Circle "WheelI3_left_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 585)
+            double3 xformOp:translate = (-0.24787867946879819, 0.252121318826663, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI3_right_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = -1
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 585)
+            double3 xformOp:translate = (-0.2521213203412754, 0.24787867965314422, 2)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI3_left_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 585)
+            double3 xformOp:translate = (-0.24787867946879819, 0.252121318826663, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "WheelI3_right_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double height = 0.004
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            float physics:mass = 0.002
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.0065
+            double3 xformOp:rotateXYZ = (0, 90, 585)
+            double3 xformOp:translate = (-0.2521213203412754, 0.24787867965314422, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        }
+        def Circle "AttachI3" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.001
+            double3 xformOp:translate = (-0.2496464466094073, 0.2411611652351689, 2)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+        def CableJoint "JointI3_0"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/SpoolI>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI3_left_top>
+            custom point3d localPos0 = (0.01953068893321967, 0.022771741035630337, 0)
+            custom point3d localPos1 = (-0.006499999999999951, 2.168404344971009e-19, 8.673617379884035e-19)
+            custom double restLength = 0.3522910716184715
+        }
+        def CableJoint "JointI3_1"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI3_left_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI3_left_bottom>
+            custom point3d localPos0 = (0, -0.006500000000000018, 1.6046192152785466e-17)
+            custom point3d localPos1 = (-8.326672684688674e-17, -0.006499999999999978, 5.5294310796760726e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI3_2"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI3_left_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI3_right_top>
+            custom point3d localPos0 = (-4.109865225920828e-12, 0.006499999999999999, 3.903127820947816e-18)
+            custom point3d localPos1 = (-4.109601331112045e-12, 0.006500000000000018, 2.3418766925686896e-17)
+            custom double restLength = 1.9000094736576256
+        }
+        def CableJoint "JointI3_3"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI3_right_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelI3_right_bottom>
+            custom point3d localPos0 = (0, -0.006499999999999978, 1.6046192152785466e-17)
+            custom point3d localPos1 = (-8.326672684688674e-17, -0.006499999999999978, 1.6046192152785466e-17)
+            custom double restLength = 1.9
+        }
+        def CableJoint "JointI3_4"
+        {
+            custom rel physics:body0 = </World/HangprinterScene/WheelI3_right_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AttachI3>
+            custom point3d localPos0 = (-1.3502653856134472e-14, 0.006499999999999997, 3.469446951953614e-18)
+            custom point3d localPos1 = (0, 0, 0)
+            custom double restLength = 1.900002368419562
+        }
+        def Xform "CablePathI3" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 0, 0, 0, 0, 0]
+            custom double cablePath:dampingPerUnitLength = 5
+            custom double cablePath:halfWidth = 0
+            custom token cablePath:initPolicy = "manual"
+            custom rel cablePath:joints = [</World/HangprinterScene/JointI3_0>, </World/HangprinterScene/JointI3_1>, </World/HangprinterScene/JointI3_2>, </World/HangprinterScene/JointI3_3>, </World/HangprinterScene/JointI3_4>]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "rolling", "rolling", "rolling", "attachment"]
+            custom double cablePath:stiffnessPerUnitLength = 20000
+            custom double[] cablePath:stored = [4, 0.01021017612416683, 0.0204203522524436, 0.020420352244224053, 0.020420352248347238, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual", "manual", "manual", "manual"]
+        }
+        def Xform "Extruder"
+        {
+            token[] ecs:tags = ["Extruder"]
+            rel machine:centerSources = [</World/HangprinterScene/CornerSW>, </World/HangprinterScene/CornerSE>, </World/HangprinterScene/CornerNE>, </World/HangprinterScene/CornerNW>]
+            rel machine:rigidBody = </World/HangprinterScene/Effector>
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "ColdEnd"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def Xform "Tip"
+            {
+                double3 xformOp:translate = (0, 0, -0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        def RigidBody "Effector"
+        {
+            custom string[] rigidBody:renderPolyline = ["</World/HangprinterScene/CornerSW>", "</World/HangprinterScene/CornerSE>", "</World/HangprinterScene/CornerNE>", "</World/HangprinterScene/CornerNW>"]
+            custom rel rigidBody:members = [</World/HangprinterScene/CornerSW>, </World/HangprinterScene/CornerSE>, </World/HangprinterScene/CornerNE>, </World/HangprinterScene/CornerNW>, </World/HangprinterScene/WheelAL_top>, </World/HangprinterScene/PinholeAL_top>, </World/HangprinterScene/WheelAL_bottom>, </World/HangprinterScene/PinholeAL_bottom>, </World/HangprinterScene/WheelAR_top>, </World/HangprinterScene/PinholeAR_top>, </World/HangprinterScene/WheelAR_bottom>, </World/HangprinterScene/PinholeAR_bottom>, </World/HangprinterScene/WheelBL_top>, </World/HangprinterScene/PinholeBL_top>, </World/HangprinterScene/WheelBL_bottom>, </World/HangprinterScene/PinholeBL_bottom>, </World/HangprinterScene/WheelBR_top>, </World/HangprinterScene/PinholeBR_top>, </World/HangprinterScene/WheelBR_bottom>, </World/HangprinterScene/PinholeBR_bottom>, </World/HangprinterScene/WheelCL_top>, </World/HangprinterScene/PinholeCL_top>, </World/HangprinterScene/WheelCL_bottom>, </World/HangprinterScene/PinholeCL_bottom>, </World/HangprinterScene/WheelCR_top>, </World/HangprinterScene/PinholeCR_top>, </World/HangprinterScene/WheelCR_bottom>, </World/HangprinterScene/PinholeCR_bottom>, </World/HangprinterScene/WheelDL_top>, </World/HangprinterScene/PinholeDL_top>, </World/HangprinterScene/WheelDL_bottom>, </World/HangprinterScene/PinholeDL_bottom>, </World/HangprinterScene/WheelDR_top>, </World/HangprinterScene/PinholeDR_top>, </World/HangprinterScene/WheelDR_bottom>, </World/HangprinterScene/PinholeDR_bottom>, </World/HangprinterScene/WheelI0_left_bottom>, </World/HangprinterScene/WheelI0_right_bottom>, </World/HangprinterScene/WheelI1_left_bottom>, </World/HangprinterScene/WheelI1_right_bottom>, </World/HangprinterScene/WheelI2_left_bottom>, </World/HangprinterScene/WheelI2_right_bottom>, </World/HangprinterScene/WheelI3_left_bottom>, </World/HangprinterScene/WheelI3_right_bottom>]
+        }
+    }
+    def PhysicsScene "PhysicsScene"
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.82
+        def Material "SpoolMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            float physics:dynamicFriction = 0.2
+            float physics:restitution = 0.5
+            float physics:staticFriction = 0.2
+            def Shader "Shader"
+            {
+                color3f inputs:diffuseColor = (0.5, 0, 0.5)
+            }
+        }
+        def Material "PinholeMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            float physics:dynamicFriction = 0
+            float physics:restitution = 0.025
+            float physics:staticFriction = 0
+        }
+        def Material "WheelMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            float physics:dynamicFriction = 0.5
+            float physics:restitution = 0.025
+            float physics:staticFriction = 0.5
+        }
+        def Material "AnchorMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            def Shader "Shader"
+            {
+                color3f inputs:diffuseColor = (0.6, 0.6, 0.6)
+            }
+        }
+    }
+}

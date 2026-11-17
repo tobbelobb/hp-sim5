@@ -1,0 +1,6 @@
+{
+  "arm": "treatment",
+  "run_present": false,
+  "unrun": true,
+  "reason": "hard deadline; not launched after the interrupted baseline"
+}

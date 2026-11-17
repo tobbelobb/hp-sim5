@@ -1,0 +1,12 @@
+{
+  "run_id": "twosensor-1",
+  "collector_returncode": 0,
+  "wall_s": 142.18913682400125,
+  "collector_time_s": 1182.303999985866,
+  "simulated_s": 1182.304,
+  "service_wall_s": 141.91718468099998,
+  "sweeps": 4,
+  "points": 48,
+  "acquisition_rejections": 0,
+  "dataset_sha256": "933401f94a6db3d6bcb521c80106249aa444c3c59590eaa344fc0508e12d440c"
+}

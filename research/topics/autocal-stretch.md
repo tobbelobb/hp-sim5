@@ -17,3 +17,14 @@ A common terminal-validation pilot scored frozen candidates on one new, unfitted
 The [home-reference investigation](../output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-determine-and-implement-physically-justified-final-home-shift-co-fc8f5233/report.md) finds that fitted offsets and nominal stiffness alone do not identify absolute home. RRF and Klipper already have an absolute flex reference term. A guarded correction helper requires independently established compatible extension evidence; ordinary collection supplies none. Its algebra is tested, but correlated wrong evidence can pass consistency checks. A reliable physical home-reference protocol remains needed, and translation correction alone cannot remove the observed shape errors.
 
 The [broader-layout pilot](../output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-review-production-integration-of-pose-fit-information-planning-a-84abd4be/report.md) shows why HP3 assumptions cannot simply be enabled for four-high or cube corners. Four-high needs gravity-supported nonnegative equilibrium and branch/gauge handling; cube corners needs all fixed constraints, active/slack sets and multidimensional tension allocation. Their new-method rollout remains a staged synthetic and simulator plan. No hardware behavior is established.
+
+The [HP5 redundant-sensor program](../output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/report.md)
+now implements measurement-only spare-line pretension, per-point reversible
+coupling, two-load static stretch and extra-range home offsets. Two simulated
+continuations apply approximately 1 mm worst-coordinate anchors. Same-recording
+full-data refits improve direct HP5 (aligned 3.11 → 0.70 mm) but worsen reduced
+HP5 (1.27 → 2.88 mm). Coupling does not remove smooth mechanical bias; the good
+selected reduced estimate must not hide its worse final refit. Earlier reviewed
+short reduced recordings favor five ranges, while direct narrow physical sweeps
+did not establish a gain. Neither universal accuracy nor full-loop speed benefit
+is established. Rough bootstrap and historical datasets keep the old policy.

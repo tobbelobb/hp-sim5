@@ -1,0 +1,36 @@
+{
+  "run_id": "smoke-05",
+  "machine": "hangprinter_5_pulley_reduced",
+  "argv": [
+    "research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/evidence/collect_run.py",
+    "--run-id",
+    "smoke-05",
+    "--force-low",
+    "0.5",
+    "--force-mid",
+    "1.0318",
+    "--force-max",
+    "2.8313",
+    "--sensor-force",
+    "4.9914",
+    "--fixed-targets=-250,0",
+    "--points",
+    "5",
+    "--configs",
+    "0,4:1:3"
+  ],
+  "force_low_n": 0.5,
+  "force_mid_n": 1.0318,
+  "force_max_n": 2.8313,
+  "sensor_force_n": 4.9914,
+  "fixed_targets_mm": "-250,0",
+  "points_per_sweep": 5,
+  "configs": [
+    "0,4:1:3"
+  ],
+  "solver_iterations": 20,
+  "recording_mode": "none",
+  "settle_ms": 200,
+  "script_sha256": "f60e0cab27d37d5fdfa98c17f3857fa31f35459bcdd1a41ba7e63c617a903f24",
+  "started_unix": 1794912177.2112904
+}

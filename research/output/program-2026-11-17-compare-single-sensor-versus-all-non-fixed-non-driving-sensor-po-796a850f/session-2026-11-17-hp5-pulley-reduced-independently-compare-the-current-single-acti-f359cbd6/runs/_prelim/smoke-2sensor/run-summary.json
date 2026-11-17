@@ -1,0 +1,12 @@
+{
+  "run_id": "smoke-2sensor",
+  "collector_returncode": 0,
+  "wall_s": 35.364156351999554,
+  "collector_time_s": 288.01800000064713,
+  "simulated_s": 288.01800000000003,
+  "service_wall_s": 35.179745073,
+  "sweeps": 1,
+  "points": 10,
+  "acquisition_rejections": 0,
+  "dataset_sha256": "8e9c41c748095b2c626ffb1d6f519f98ac62c195f72d51c1641a38451f70d3bf"
+}

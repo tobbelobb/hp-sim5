@@ -1,0 +1,72 @@
+{
+  "session": "session-2026-11-17-run-a-predeclared-paired-full-autocalibration-test-on-hp5-pulley-3e03f53e",
+  "program": "program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f",
+  "status": "partial: prototype complete and validated; baseline interrupted; treatment unrun",
+  "code_revision": "c2450975d7a3dcf1e6bd90d60afc1e7c3acc51f6",
+  "worktree": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-794b0ca8-7363e50a905a6615",
+  "artifacts": {
+    "report.md": "9cecb0c22037c5af03d62503711248a4a00660037921c77d21a3ef8df17210ef",
+    "abstract.md": "b286cc502bfd811bbdb0caea48b635a670f6bdfb545120a4556d3d4e9fa513cc",
+    "predeclaration.md": "0f8e7ef70abb277a82bd2c18e6d64474c6649b8f49829cbc2c4495bf818930a6",
+    "pair-result.json": "3cd48e156343562430da2b777a952e9eb7008c1ea89fd9eab28cba142e57c6d8",
+    "pair-result.md": "3d34d27faf9bfe4e2deac17ffa33011f62072c2246396666f376b36dec94d079",
+    "evidence/extra_range_fit.py": "4820b3fa7656b8086c5320a666c25677766066232908733c03341e136dfd7f0d",
+    "evidence/build_extra_range_collector.py": "dce5b069dd8b1bce110c6acc82e4eef66cfb719799f80b65f50b84d6777c496a",
+    "evidence/extra_range_collector/collect_sweep_data.mjs": "a9d244a10336809b91b4195502fc9b5eacaf9996c3c22016e41c1d4436aeee47",
+    "evidence/extra_range_collector/sweep_data_collection.mjs": "6922eb807d78d61d78783d70fae7b4d2561f42c8569cb3c6d00d7d111a16c08b",
+    "evidence/run_treatment.py": "6f72d79335d7ac8bac3c10f3ed7bfc7d077a237b0848f255b33c8f08524bfcb4",
+    "evidence/collect_short.py": "74e20529f684ca3f20439d090bf45793691394fb22b94bc35fc0d91618a41c34",
+    "evidence/run_pair.py": "f4083f9b80e794a62ef7c0fe8c4983045128e2da22564742f057e4c07aac3921",
+    "evidence/analyze_pair.py": "e3ebe6eea5d959cf1a9d2a967c6e8d80f76de011bf2b47e105816ecc994f84d1",
+    "evidence/autocal_treatment.patch": "6958957ff7405a43d7b266f1bc18ba4853ca21e837300eb6e5ee805797bfe80c",
+    "tests/test_extra_range.py": "368fd207ae9db0ba80bae53142e9e09f4881e18e9eeb73cb583223b5b2dd8041",
+    "preflight/baseline-short/sweeps.json": "08fa9b9699916f4cbf4e056b352bec92754e5ca9f1dc392084969a2e2ca58e41",
+    "preflight/treatment-short/sweeps.json": "d38c617ccffcfd02631ac683a969a07160e34addf827cc716c3bbcc6db920a2c",
+    "runs/baseline/run.json": "51152548f8246908ed2de3a743015c92eea2229d2c95ff67a6529c309ac24cad",
+    "runs/baseline/sweeps.headless/manifest.json": "894954baab16f8afd79b03ded7e44589f6df423917dd6181ea6183eba1672169",
+    "runs/treatment/run.json": "16bfa826d08d3be3d6b7a33c29efc9ba457ab20b8f7ca389b39ab014295f148c"
+  },
+  "baseline": {
+    "status": "interrupted",
+    "stop_reason": "bootstrap-interrupted",
+    "normal_completion": false,
+    "wall_s": 115.92397216099926,
+    "total_steps": 494955,
+    "simulated_s": 989.91,
+    "dataset_written": false,
+    "reason": "hard deadline; stopped before bootstrap completed"
+  },
+  "treatment": {
+    "status": "unrun",
+    "reason": "hard deadline after interrupted baseline"
+  },
+  "preflight": {
+    "baseline_short": {
+      "sweeps": 1,
+      "points": 12,
+      "wall_s": 33.41,
+      "simulated_s": 270.77
+    },
+    "treatment_short": {
+      "sweeps": 4,
+      "points": 48,
+      "wall_s": 124.36,
+      "simulated_s": 1017.34,
+      "gate_accepted": 4,
+      "gate_rejected": 0,
+      "aligned_mm_5range": 2.62,
+      "aligned_mm_4range": 5.45
+    }
+  },
+  "tests": {
+    "command": "PYTHONPATH=<worktree> .venv/bin/python -m pytest <session>/tests -q",
+    "result": "6 passed"
+  },
+  "isolation": {
+    "root_files_edited": false,
+    "shared_ports_used": false,
+    "processes_remaining": false,
+    "committed": false,
+    "pushed": false
+  }
+}

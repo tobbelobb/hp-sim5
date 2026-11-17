@@ -1,0 +1,69 @@
+{
+  "implementation_commit": "089a7ad3",
+  "parent_commit": "c2450975",
+  "coding_e2e_passes": 3,
+  "files": {
+    "implementation.patch": {
+      "bytes": 39503,
+      "sha256": "5b131e60f27e74e20f7e4c2da9d619a9795b0fec6847dd788b8be8331ebd5111"
+    },
+    "force-plan-repro.json": {
+      "bytes": 4788,
+      "sha256": "3c22f5d0d20dbf2f1e193f6a01e39e76cf47708efaafa60eafc1cee013800a58"
+    },
+    "force_plan_repro.py": {
+      "bytes": 1357,
+      "sha256": "b589f4fc71dc12f3320c8c114d6cd99a682cb8669f6e7b16b9c90cf435d25cf6"
+    },
+    "score.py": {
+      "bytes": 1962,
+      "sha256": "dbb1630c76ac753fad8326b7b98aea33f3ccd9777eb3fcabf1cd4067b3385ba1"
+    },
+    "reduced/sweeps.json": {
+      "bytes": 632629,
+      "sha256": "ce58ff2384531658a266eec250eec979f46bddd651520be80cc5c7b115b052b3"
+    },
+    "reduced/sweeps.full_auto_log.jsonl": {
+      "bytes": 52258,
+      "sha256": "4ef0590e869283385bff3686730525aa17a5bbc3df210140c20f635f2ac0d421"
+    },
+    "reduced/validation.json": {
+      "bytes": 809,
+      "sha256": "96327f1d64ef0295d2115be8fa28189105aad30ae22c9e10cfc370eb2b9b2ab4"
+    },
+    "reduced/pass1-manifest.json": {
+      "bytes": 5314,
+      "sha256": "292ae3a88d6aa48f70609f8f1f342114b67cccc6ae29dfc70693bc9c09d91e64"
+    },
+    "failed-plan/sweeps.json": {
+      "bytes": 431766,
+      "sha256": "4263f0d9734722992929cfa3b8b368f215aeb4881e4d41b827f676a674d6f26a"
+    },
+    "failed-plan/sweeps.full_auto_log.jsonl": {
+      "bytes": 17344,
+      "sha256": "f286b701ee770ef2ffb7faa4eaaf9b88361a6417726adc2af02088cf35ab9a46"
+    },
+    "direct/pass2-manifest.json": {
+      "bytes": 5241,
+      "sha256": "847ada9d7cb6aff3face4b39b0944a51ce1af8a3473f469084d47c47be380e35"
+    },
+    "direct/sweeps.json": {
+      "bytes": 576343,
+      "sha256": "58ae32ffff0dfc89479b39392cfa62f69c3f190cb3438a47b1d6e3cc8de9f85a"
+    },
+    "direct/sweeps.full_auto_log.jsonl": {
+      "bytes": 47560,
+      "sha256": "d239ddc7004f6d182d81109cf2429222e4155b5f533e15d99aeba98c97c8374c"
+    },
+    "direct/validation.json": {
+      "bytes": 810,
+      "sha256": "2ad05987538acddbb6edf74e6a0a7fe52e63af5860a34f57d72cc8fda09b3f9a"
+    },
+    "direct/pass1-manifest.json": {
+      "bytes": 5279,
+      "sha256": "f5dac0d3b0edfdd9cdd2cacac310c0cffcc45b43a569a89e95b63b1217f65458"
+    }
+  },
+  "raw_source": "output/extra-sensor-production",
+  "scope": "Simulation only. Final runs resume own saved observations in identical stock scenes; no paired full baseline/treatment result."
+}

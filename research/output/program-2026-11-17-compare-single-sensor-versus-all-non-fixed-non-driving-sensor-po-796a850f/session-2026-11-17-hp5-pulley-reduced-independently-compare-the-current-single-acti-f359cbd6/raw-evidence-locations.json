@@ -1,0 +1,338 @@
+[
+  {
+    "path": "runs/ctl-1/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-1/collector.log",
+    "size_bytes": 2986,
+    "sha256": "595a78f5e35c38be6c7665e26a0322beb270c3445e8edadb1249473797c5e820"
+  },
+  {
+    "path": "runs/twosensor-1/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-1/collector.log",
+    "size_bytes": 2463,
+    "sha256": "4540671954c61d70bf63732ed9b7f199ad07827865aa7f3415073237b26d005a"
+  },
+  {
+    "path": "runs/ctl-low1p0/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-low1p0/collector.log",
+    "size_bytes": 2372,
+    "sha256": "fc266342e7211a96cdab0bb7a4a78402a1d95543e30c6dfe2c9e33c8fb9e5a26"
+  },
+  {
+    "path": "runs/ctl-2/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-2/collector.log",
+    "size_bytes": 2187,
+    "sha256": "9772cda7b64fbc6d56dd2ae834b88dd815d0d4f7aec0b2094bb03a27d3fed881"
+  },
+  {
+    "path": "runs/twosensor-2/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-2/collector.log",
+    "size_bytes": 2463,
+    "sha256": "a63cca0e4d30c8c9d160be3dfb07fa04204130aa0c60ab665e5265042c85190a"
+  },
+  {
+    "path": "runs/ctl-1/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-1/sweeps.headless/events.jsonl",
+    "size_bytes": 46415021,
+    "sha256": "b5ea04895537babc5f5306d5f185a7b9cbe923202ac9045ca2bdc6d58abfa63f"
+  },
+  {
+    "path": "runs/ctl-1/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-1/sweeps.headless/rrf.log",
+    "size_bytes": 22445,
+    "sha256": "0882585afbe16daedcee5b61ac8a56ff072c3200e47e01ff3cf48b3e9f677091"
+  },
+  {
+    "path": "runs/ctl-1/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-1/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/twosensor-1/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-1/sweeps.headless/events.jsonl",
+    "size_bytes": 43513032,
+    "sha256": "2ff27fabbb4e5914bb0231b1853201b13b33a430cb613713522435c1fde38fdd"
+  },
+  {
+    "path": "runs/twosensor-1/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-1/sweeps.headless/rrf.log",
+    "size_bytes": 23527,
+    "sha256": "d09438c954374806c0e87e292fb0f33085937fa2cd17888bda397c1790e0faa9"
+  },
+  {
+    "path": "runs/twosensor-1/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-1/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/twosensor-1/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/twosensor-1/collector.log",
+    "size_bytes": 3826,
+    "sha256": "bba79b1be4608bfcc8e423d978f6c69d69944a1e583808715656fe2ff0546da0"
+  },
+  {
+    "path": "runs/_prelim/smoke-1p0/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1p0/collector.log",
+    "size_bytes": 1137,
+    "sha256": "3eaac8e3cc50017c2e46ecfc7a4a9d3bcc3a24331d8344acc6a0b8df78c7eebc"
+  },
+  {
+    "path": "runs/_prelim/smoke-05/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-05/collector.log",
+    "size_bytes": 1224,
+    "sha256": "f7d116499fc033904b28c6fdf8ef3f79507c4b756f5eb57405230fd111fb9920"
+  },
+  {
+    "path": "runs/_prelim/smoke-2sensor/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2sensor/collector.log",
+    "size_bytes": 1234,
+    "sha256": "27b5fa580a01a36fbb190fdcae4f6ffcd3002cb04af5e783c4ac79ceb81c70b1"
+  },
+  {
+    "path": "runs/_prelim/consttarget-twosensor-1/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-twosensor-1/collector.log",
+    "size_bytes": 2454,
+    "sha256": "484f6c102f42126245a3ffd83746042b735786d6440f6500ee9a8aa8121d4978"
+  },
+  {
+    "path": "runs/_prelim/smoke-2p0/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2p0/collector.log",
+    "size_bytes": 629,
+    "sha256": "058e12ee1256f7d93ceef2cc9cc081f8a7532ac815c204898578f835a679138f"
+  },
+  {
+    "path": "runs/_prelim/prod-low-1/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/prod-low-1/collector.log",
+    "size_bytes": 2400,
+    "sha256": "2aa053dbb814e4ad3db216ab5a6a1fafd87f00474fa26a23d094af067e3a21f7"
+  },
+  {
+    "path": "runs/_prelim/consttarget-prod-low-1/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-prod-low-1/collector.log",
+    "size_bytes": 2452,
+    "sha256": "50b35344ff1403268328728ca72d4ec0b9e8b5b4df59a4cdde3dc6c8c64abff7"
+  },
+  {
+    "path": "runs/_prelim/smoke-1/collector.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1/collector.log",
+    "size_bytes": 1222,
+    "sha256": "f4e1612828dd548b032de9538f4b89ef392d8254a16e04ef9d06c6c2d4a7cb9c"
+  },
+  {
+    "path": "runs/_prelim/twosensor-1/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/twosensor-1/sweeps.headless/events.jsonl",
+    "size_bytes": 28045781,
+    "sha256": "89296f76a747d44b14f86e0ccdc6f5c09d015c57564d6361a247001d206da830"
+  },
+  {
+    "path": "runs/_prelim/twosensor-1/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/twosensor-1/sweeps.headless/rrf.log",
+    "size_bytes": 21333,
+    "sha256": "4f496492c6927c23dc63b9d99ae0ece1439ec6ce91e029c32d3088537349d7f6"
+  },
+  {
+    "path": "runs/_prelim/twosensor-1/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/twosensor-1/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/smoke-1p0/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1p0/sweeps.headless/events.jsonl",
+    "size_bytes": 4734575,
+    "sha256": "d7470e10db1399b3c0e670ec4abcc3ad94fbf95ed0f741bd4e7f35c8bf25a7bc"
+  },
+  {
+    "path": "runs/_prelim/smoke-1p0/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1p0/sweeps.headless/rrf.log",
+    "size_bytes": 7681,
+    "sha256": "3c00dcd7427a4888b02fa596f06ec8e3e265db93c5a485dd13f4e4101dc5bde1"
+  },
+  {
+    "path": "runs/_prelim/smoke-1p0/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1p0/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/smoke-05/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-05/sweeps.headless/events.jsonl",
+    "size_bytes": 6750442,
+    "sha256": "ca700fbbb2efa55e1cb3cd4ff7e683fa924b34a68ade6b920dc0276cbdaed2b3"
+  },
+  {
+    "path": "runs/_prelim/smoke-05/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-05/sweeps.headless/rrf.log",
+    "size_bytes": 7441,
+    "sha256": "95f782b64e5d8de3ecb4fecbd01fc139fad6323554766e7bd781fed8a936f5c3"
+  },
+  {
+    "path": "runs/_prelim/smoke-05/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-05/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/smoke-2sensor/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2sensor/sweeps.headless/events.jsonl",
+    "size_bytes": 7991678,
+    "sha256": "a4668ebe0edff24adda6dc4c07a952025ee7b4088e5193803a74b33b2a68a2c6"
+  },
+  {
+    "path": "runs/_prelim/smoke-2sensor/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2sensor/sweeps.headless/rrf.log",
+    "size_bytes": 7863,
+    "sha256": "35f9825b69b27c4f8c3c75a352bfb96e2d269d9c816c2593034a965212b6a721"
+  },
+  {
+    "path": "runs/_prelim/smoke-2sensor/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2sensor/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/consttarget-twosensor-1/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-twosensor-1/sweeps.headless/events.jsonl",
+    "size_bytes": 37391845,
+    "sha256": "2b8448f7d01292ed115919eaa1ed07656fff1d40f2dd11a15e8fd780cc2300c8"
+  },
+  {
+    "path": "runs/_prelim/consttarget-twosensor-1/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-twosensor-1/sweeps.headless/rrf.log",
+    "size_bytes": 25784,
+    "sha256": "ee26d1f8c66e6a74fbc98d77b5b1ebef36dc316bf4f850bb5c10f15ee86f9301"
+  },
+  {
+    "path": "runs/_prelim/consttarget-twosensor-1/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-twosensor-1/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/smoke-2p0/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2p0/sweeps.headless/events.jsonl",
+    "size_bytes": 1110487,
+    "sha256": "57cf0c36edeeab09a2783e3ca3259784c493c267b3445c8fc99f9e342c3e86d1"
+  },
+  {
+    "path": "runs/_prelim/smoke-2p0/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2p0/sweeps.headless/rrf.log",
+    "size_bytes": 3083,
+    "sha256": "5e36a2d9ecb311e99104d4f7f449c99db92daf8e07b9fedf598ab745c9a87d74"
+  },
+  {
+    "path": "runs/_prelim/smoke-2p0/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-2p0/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/prod-low-1/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/prod-low-1/sweeps.headless/events.jsonl",
+    "size_bytes": 30968137,
+    "sha256": "fb5de0466c3ef3e0651aaf5c23b3a88f5ff6fb02d461c48608d574bdb327b38e"
+  },
+  {
+    "path": "runs/_prelim/prod-low-1/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/prod-low-1/sweeps.headless/rrf.log",
+    "size_bytes": 20157,
+    "sha256": "886bae5eab2a45d8961c98b5b0594121b5ed6a519c750789e0b939ceaaef42e7"
+  },
+  {
+    "path": "runs/_prelim/prod-low-1/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/prod-low-1/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/consttarget-prod-low-1/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-prod-low-1/sweeps.headless/events.jsonl",
+    "size_bytes": 41265273,
+    "sha256": "d8d564779c8dedb5190d1c421e415fa698b4b1c9bd0832535d5aa1fd55a7e98a"
+  },
+  {
+    "path": "runs/_prelim/consttarget-prod-low-1/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-prod-low-1/sweeps.headless/rrf.log",
+    "size_bytes": 24230,
+    "sha256": "f83434c1acf9f33a026e8e0ced8e872d40a7b7d3184b9ee84f619c16ca43f320"
+  },
+  {
+    "path": "runs/_prelim/consttarget-prod-low-1/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/consttarget-prod-low-1/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/_prelim/smoke-1/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1/sweeps.headless/events.jsonl",
+    "size_bytes": 9094200,
+    "sha256": "cc53b071f4d3abf74c05f363d3a62397354d79c8a4cebf43f64ed1cdc2cc9d2d"
+  },
+  {
+    "path": "runs/_prelim/smoke-1/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1/sweeps.headless/rrf.log",
+    "size_bytes": 7575,
+    "sha256": "c5d369ac2661a2a5bcc7a2f8863e87d4f168511400f9cb4f8dd5753bc1bae9a4"
+  },
+  {
+    "path": "runs/_prelim/smoke-1/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/_prelim/smoke-1/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/ctl-low1p0/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-low1p0/sweeps.headless/events.jsonl",
+    "size_bytes": 28248593,
+    "sha256": "1fce47af93922f06a68e1ccae60fc9101aa4b6201621c00089b3a2ddee458716"
+  },
+  {
+    "path": "runs/ctl-low1p0/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-low1p0/sweeps.headless/rrf.log",
+    "size_bytes": 22660,
+    "sha256": "b617457f188d7dbc522001df5978f2d228b331a84f7eb24ecea3fb314210d4c2"
+  },
+  {
+    "path": "runs/ctl-low1p0/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-low1p0/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/ctl-2/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-2/sweeps.headless/events.jsonl",
+    "size_bytes": 46415021,
+    "sha256": "3372f901a00fdfe19117c191c9f491b3943e8ed4004065f485fe84d844467560"
+  },
+  {
+    "path": "runs/ctl-2/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-2/sweeps.headless/rrf.log",
+    "size_bytes": 22445,
+    "sha256": "daee2e1264d05c9cbee0280aead3837d8a38c04359e1852d38349eccafd9e321"
+  },
+  {
+    "path": "runs/ctl-2/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/ctl-2/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "runs/twosensor-2/sweeps.headless/events.jsonl",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-2/sweeps.headless/events.jsonl",
+    "size_bytes": 43513032,
+    "sha256": "37673bd7a887c5156c029a8f0192353c9c48dce0e8fc00881b9a56d481e5a042"
+  },
+  {
+    "path": "runs/twosensor-2/sweeps.headless/rrf.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-2/sweeps.headless/rrf.log",
+    "size_bytes": 23527,
+    "sha256": "cc68e07039dcfb3f21176a5184aae8c6a59c71dcc1efab82fd9141078538b4c0"
+  },
+  {
+    "path": "runs/twosensor-2/sweeps.headless/physics.log",
+    "source_uri": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/research/output/program-2026-11-17-compare-single-sensor-versus-all-non-fixed-non-driving-sensor-po-796a850f/session-2026-11-17-hp5-pulley-reduced-independently-compare-the-current-single-acti-f359cbd6/runs/twosensor-2/sweeps.headless/physics.log",
+    "size_bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

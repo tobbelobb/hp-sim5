@@ -1,0 +1,61 @@
+{
+  "backend": "headless-js",
+  "physics_engine": "rust-native",
+  "physics_artifact": {
+    "path": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-ededea32-4aea2d0117a6f2c0/src/wasm/cable_solver/target/native/physics.node",
+    "sha256": "1c137e603ae5190e7389863b5c2680200ae21b48162f26e85e71fb6fd1ed418b",
+    "build": {
+      "profile": "release",
+      "platform": "linux",
+      "arch": "x64",
+      "nodeApi": 8,
+      "artifactSha256": "1c137e603ae5190e7389863b5c2680200ae21b48162f26e85e71fb6fd1ed418b",
+      "nodeApiHeaders": {
+        "directory": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/native/node-api",
+        "sha256": {
+          "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+          "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+          "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+          "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+        }
+      },
+      "sources": {
+        "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+        "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+        "native/node_bridge.c": "af7bfc8cbe31e38bf99a75ba20f0393d71f16a7e69241eec2f88637e16e2404c",
+        "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+        "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+        "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+        "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+        "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+        "src/engine.rs": "96d88337de8dd7c45288ff5886a9dd53a855a3ecdf338f2761e85a488b4dda59",
+        "src/lib.rs": "dbe7dd86752a971ea403b8dae7183f9aee7e3a3b8b6396fcc7f9fb44d8c5a7c4"
+      },
+      "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+      "target": "x86_64-unknown-linux-gnu",
+      "rustflags": null,
+      "compiler": "cc",
+      "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+    }
+  },
+  "step": 509170,
+  "epoch": 0,
+  "total_steps": 509170,
+  "dt_s": 0.002,
+  "simulated_s": 1018.34,
+  "collector_time_s": 1018.3399999897432,
+  "wall_s": 124.68355055699999,
+  "queue_length": 0,
+  "error": null,
+  "recording_drained": false,
+  "recording_error": null,
+  "baked_scene_file": "baked-scene.usda",
+  "baked_scene_sha256": "b783b66e330857a9d1f7525122b8c05ed419feb267e9767ed35ee220133b071e",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "physicsSubsteps": 1,
+    "solverIterations": 20,
+    "timeScale": 1
+  }
+}
