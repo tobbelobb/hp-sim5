@@ -64,9 +64,10 @@ test('native and Wasm compile the same unconditional Rust physics sources', () =
   assert(native.length > 0);
   assert.equal(native, wasm);
   assert.match(native, /src\/engine\.rs/);
-  assert.deepEqual(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)),
-    fs.readFileSync(new URL('target/wasm32-unknown-unknown/release/hp_sim5_cable_solver.wasm', crate)),
-    'The browser must use the Wasm artifact built from these sources');
+  const browserWasm = fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url));
+  const cargoWasm = fs.readFileSync(new URL('target/wasm32-unknown-unknown/release/hp_sim5_cable_solver.wasm', crate));
+  // Compare bytes without generating a diff of the entire binaries.
+  assert.ok(browserWasm.equals(cargoWasm), 'The browser must use the Wasm artifact built from these sources');
   // Identical files must not hide alternate physics behind target/feature cfgs.
   for (const file of fs.readdirSync(new URL('src/', crate), { recursive: true }).filter(file => file.endsWith('.rs'))) {
     assert.doesNotMatch(fs.readFileSync(new URL(`src/${file}`, crate), 'utf8'),
