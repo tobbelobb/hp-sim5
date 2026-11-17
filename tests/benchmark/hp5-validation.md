@@ -22,12 +22,13 @@ flex disabled, so neither was affected by a supposed hard-Tmin change.
 
 ## Forward transform and remaining force tradeoff
 
-The hybrid tries a double-precision squared-range rigid seed, keeping it only
-when it improves the full length-space residual. It rejects near-planar layouts
-with four or more anchors when a normal-system elimination pivot is <=1e-8 of
-the largest diagonal. The .01 mm flattened-top mirror probe now fails explicitly
-instead of returning a plausible wrong branch. Exactly planar three-anchor
-research cases retain their branch-selecting seed convention.
+The hybrid compares double-precision squared-range and near-planar mirror seeds
+using the full flex residual. Planar layouts select below-plane positions using
+negative-Z gravity. The earlier unconditional near-planar rejection is removed.
+Full nonplanar information, including the high-anchor range, remains available.
+Candidate and final positions obey the configured workspace. Shared geometry
+code is copied byte-for-byte from forward development into both firmwares.
+CubeCorner mode 3 requires eight anchors and includes the lower-face prism.
 
 Both development suites pass. The forward tests cover 1,788 workspace/anchor
 approaches, 400 motor roundtrips, 800 inconsistent-length comparisons to SciPy,
@@ -153,5 +154,41 @@ HP5's selected error improves, and reduced HP5 now satisfies stable-stop. This
 is convergence of the estimate, not proof of unbiased anchor metrology: nominal
 compliance, friction and pulley routing still limit absolute accuracy.
 
-Committed component heads: forward `ab981d7` (pushed), flex `815fa31`,
+HP5 validation component heads before the workspace follow-up: forward `ab981d7` (pushed), flex `815fa31`,
 RRF `f4b08734b`, Klipper `546416321`. Firmware and superproject are local only.
+
+## Workspace-aware follow-up
+
+Forward development `c62d95b` and the flattened-apex follow-up `0c69617` were
+tested and pushed before their firmware ports.
+It adds seven workspace/branch tests alongside the five numerical suites and
+historical comparisons. RRF and Klipper now share the same C/C++ geometry header.
+RRF mode 3 is explicitly CubeCorner rather than silently ignoring the existing
+CubeCorners configs' A3. Changing a CubeCorner to a non-eight anchor count fails.
+Klipper config `winch_anchor_mode` and runtime `M666 A0..A3` select the modes;
+`check_move` rejects endpoints outside the corresponding workspace.
+Shipped Klipper configs explicitly select their matching RRF anchor mode.
+
+AllOnTop checks every cyclic perimeter edge (fixing the old modulo-N-1 edge
+index), retaining no height limit for movement. Planar forward solves choose
+below the plane. Both firmwares include workspace boundaries and preserve the
+LastOnTop lower prism. CubeCorner uses upper four then corresponding lower four
+in cyclic order; its downward extension follows the lower face, including tilt.
+
+RRF's move-limiting path now applies IsReachable: a real CubeCorner motion test
+accepts Z=-500 below the lower face and rejects X=1300 / Z=1950 beyond the
+configured cube. RRF cancels the G-code file on the rejected move. Klipper's
+matching tests raise move errors. Planar SkyCam flex-mode transitions also pass
+through the real RRF pipeline without selecting the upper mirror.
+
+Workspace validation: development numerical suites (5), workspace suites (7),
+RRF (15), Klipper (17), actual-kernel/header checks (6), Python fast suite (688),
+Jest (402), physics (86 with one optional skip) pass. Catalogue command streams
+were regenerated for all seven machine families and their layered variants.
+
+The final real native HP5 collection checks pass for both direct and pulley-reduced
+machines (2 tests, 223.05 s), retaining all five firmware anchors and valid autocal
+residuals. No motion/collection timeout or stopping threshold was changed.
+Final workspace component heads: forward `0c69617` (pushed), RRF `82f356b45`,
+Klipper `9ad05951e`, flex audit/reference patches `2eaf50f`. Firmware and main
+remain local commits.

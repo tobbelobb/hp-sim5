@@ -7,7 +7,7 @@ M83              ; ...but relative extruder moves
 M584 X40.0 Y41.0 Z42.0 U43.0 V44.0 W45.0 A46.0 B47.0 E48.0 P8 ; map ABCDIJLOE-axes to CAN addresses, and set eight visible axes.
 M669 K6                         ; "This is a Hangprinter"
 M669 N8                         ; This Hangprinter has eight anchors
-M666 A3                         ; anchorMode=HangprinterAnchorMode::HalfTop, // 0=None, 1=last-top, 2=all-top, 3-half-top, etc
+M666 A3                         ; anchorMode=HangprinterAnchorMode::CubeCorner, // 0=None, 1=last-top, 2=all-top, 3=CubeCorner
 M669 S130 T0.5                  ; Segments per second and min segment length
 
 ; Anchor Location

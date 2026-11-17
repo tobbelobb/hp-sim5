@@ -43,6 +43,33 @@ class FlexModePositionTest(unittest.TestCase):
             self.assertNotIn('Error:', result.stdout)
             return positions, counts, motion, result.stdout
 
+    def test_cube_corner_mode_requires_exactly_eight_anchors(self):
+        _, _, _, output = self.run_gcode('M666\nM669 N7\nM666\n', 'config_cubecorners.g')
+        self.assertIn('M666 A3', output)
+        self.assertIn('U1:1:1:1:1:1:1:1', output)
+        _, _, _, output = self.run_gcode('M666 A3\nM666\n')
+        self.assertIn('M666 A1', output)
+
+    def test_cube_corner_moves_stay_inside_cube_or_lower_prism(self):
+        for invalid in ('X1300', 'Z1950'):
+            positions, _, _, output = self.run_gcode(
+                'G28\nG1 X0 Y0 Z-500 F1200\nM400\nM114\n'
+                f'G1 {invalid}\nM400\nM114\n', 'config_cubecorners.g')
+            # RRF cancels the file at an unreachable move, retaining its last pose.
+            self.assertEqual(len(positions), 1, output)
+            self.assertIn('Cancelled printing file', output)
+            for actual, wanted in zip(positions[0][:3], (0.,0.,-500.)):
+                self.assertAlmostEqual(actual, wanted, delta=.1)
+
+    def test_planar_all_top_forward_keeps_the_lower_branch(self):
+        positions, _, _, output = self.run_gcode(
+            'M666 F0\nM669 A1000:-1000:1900 B1000:1000:1900 C-1000:1000:1900 D-1000:-1000:1900\n'
+            'G28\nG1 X100 Y200 Z300 F1200\nM400\nM114\nM666 F1\nM114\n', 'config_skycam.g')
+        self.assertEqual(len(positions), 2, output)
+        for position in positions:
+            for actual, wanted in zip(position[:3], (100.,200.,300.)):
+                self.assertAlmostEqual(actual, wanted, delta=.1)
+
     def assert_same_pose(self, before, after):
         for axis, (start, end) in enumerate(zip(before, after)):
             # Motor-step quantisation and the Hangprinter FK tolerance remain.

@@ -119,37 +119,40 @@ def test_rrf_tikhonov_keeps_soft_minimum_and_hard_physical_limits(rrf_tikhonov):
 
 
 @pytest.mark.parametrize('implementation', ['dev', 'rrf', 'klipper'])
-def test_range_seed_and_planar_guard_match_in_all_implementations(implementation, tmp_path):
-    paths = {'dev':'forward-transform-dev/hangprinter-forward-transform/motorstepstocartesiantest_quadratic.cpp',
-             'rrf':'RRF/ReprapFirmware/src/Movement/Kinematics/HangprinterKinematics.cpp',
-             'klipper':'klipper/klippy/chelper/kin_winch.c'}
-    scalar, name = ('double', 'range_seed') if implementation == 'klipper' else ('float', 'rangeSeed')
-    source = (ROOT / paths[implementation]).read_text()
-    code = '#include <cmath>\n#include <algorithm>\nusing namespace std;\n' + function(source, name)
-    code += f'''
-extern "C" int probe(const double *input, const double *ranges, double *output) {{
-    {scalar} anchors[5][3], origins[5], lines[5], seed[3];
-    for (int i=0; i<5; ++i) {{
-        double square=0.;
-        for (int j=0; j<3; ++j) {{ anchors[i][j]=input[3*i+j]; square+=input[3*i+j]*input[3*i+j]; }}
-        origins[i]=sqrt(square); lines[i]=ranges[i]-origins[i];
-    }}
-    int ok={name}(anchors, origins, lines, 5, seed);
-    if (ok) for (int j=0; j<3; ++j) output[j]=seed[j];
-    return ok;
-}}
+def test_workspace_candidates_match_in_all_implementations(implementation, tmp_path):
+    paths = {'dev':'forward-transform-dev/hangprinter-forward-transform/forward_workspace.h',
+             'rrf':'RRF/ReprapFirmware/src/Movement/Kinematics/ForwardWorkspace.h',
+             'klipper':'klipper/klippy/chelper/forward_workspace.h'}
+    contents = [(ROOT / path).read_bytes() for path in paths.values()]
+    assert contents[0] == contents[1] == contents[2]
+    code = '#include "' + str(ROOT / paths[implementation]) + '"\n'
+    code += r'''
+int probe(const double *input, const double *ranges, double *output) {
+    const double (*anchors)[3]=(const double (*)[3])input;
+    double candidates[3][3], normal[3]; int planar=0;
+    int count=hp_range_candidates(anchors,ranges,5,candidates,normal,&planar);
+    double best=INFINITY;
+    for (int i=0;i<count;++i) {
+        if (!hp_forward_allowed(anchors,5,0,normal,planar,candidates[i])) continue;
+        double cost=0;
+        for (int k=0;k<5;++k) {
+            double d[3];hp_difference(candidates[i],anchors[k],d);
+            double residual=sqrt(hp_dot(d,d))-ranges[k];cost+=residual*residual;
+        }
+        if (cost<best) {best=cost;for(int j=0;j<3;++j)output[j]=candidates[i][j];}
+    }
+    return isfinite(best);
+}
 '''
-    cpp, library = tmp_path/'seed.cpp', tmp_path/'seed.so'
-    cpp.write_text(code)
-    subprocess.run(['g++', '-std=c++17', '-shared', '-fPIC', str(cpp), '-o', str(library)], check=True)
+    source, library = tmp_path/'seed.c', tmp_path/'seed.so'
+    source.write_text(code)
+    subprocess.run(['gcc', '-std=c11', '-shared', '-fPIC', str(source), '-lm', '-o', str(library)], check=True)
     solve = ctypes.CDLL(str(library)).probe
     array = np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS')
     solve.argtypes = [array]*3
-    position = np.array([10.,20.,100.])
-    for height, expected in ((1900., True), (.01, False), (0., False)):
+    position = np.array([10.,20.,-100.])
+    for height in (1900., .01, 0.):
         anchors = ANCHORS.copy(); anchors[:,2]=0.; anchors[-1,2]=height
-        ranges = np.linalg.norm(anchors-position, axis=1)
         output = np.zeros(3)
-        assert bool(solve(anchors.ravel(), ranges, output)) == expected
-        if expected:
-            np.testing.assert_allclose(output, position, atol=.001, rtol=0)
+        assert solve(anchors.ravel(), np.linalg.norm(anchors-position, axis=1), output)
+        np.testing.assert_allclose(output, position, atol=.001, rtol=0)
