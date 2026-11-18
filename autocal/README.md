@@ -114,8 +114,14 @@ Joint spool/offset fitting is not implemented: spool searches require
 `--no-fit-home-offsets` and retain constant-force collection. Historical projected
 datasets remain replayable, but `--project-zero-tension` collection is retired.
 
-Fitted home-length offsets do not identify a physical-home translation; that
-needs independently measured line extensions, which collection does not provide.
+Sweep lengths alone cannot locate physical home under a change of tension.
+For HP4 equal-strain collections with free anchor height, the fitter estimates
+the change from slack ABC lines at encoder zero to the recorded strand target.
+It adds `(strand_tension_n / S) * (home_distance_mm + Y/U)` to each ABC
+range and fits the remaining D offset. The home distances come from the fitted
+geometry. This approximation assumes negligible initial ABC tension and uses
+the configured line stiffness. Collections without a common recorded target
+or usable M666 S, Y and U retain the existing offset fit.
 
 For full simulation sanity checks, run `python -m autocal.tools.sanity_battery
 OUTPUT --machine hangprinter_3` with `.venv/bin/python`. Use `--stiffness 12000`

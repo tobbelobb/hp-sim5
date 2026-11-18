@@ -9,7 +9,8 @@ It can also fit home length offsets. The encoder origin is taken with some lines
 slack while every measurement is taken under tension, so the lengths at the origin
 do not describe one effector position. Of the n possible per-line offsets, d are
 equivalent to moving the home position, which leaves n - d real ones. They are
-placed on the last n - d lines.
+placed on the last n - d lines. HP4 equal-strain data can also use configured
+compliance to estimate the ABC offsets that set the physical home reference.
 """
 from __future__ import annotations
 
@@ -156,6 +157,29 @@ def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offs
     return np.where(measured, np.linalg.norm(positions[:, None, :] - anchors[None, :, :], axis=2) - absolute, 0.0)
 
 
+def _hp4_home_strain(dataset: dict) -> Optional[tuple[float, np.ndarray]]:
+    """ABC hang slack at encoder zero. Approximate their measurement strain by T/EA."""
+    from autocal.equal_strain import is_equal_strain
+
+    if dataset["machine_type"] != "hangprinter_4" or not is_equal_strain(dataset):
+        return None
+    m666 = (dataset.get("config") or {}).get("m666_before_data_collection") or {}
+    targets = [(s.get("metadata") or {}).get("strand_tension_n") for s in dataset["sweeps"]]
+    try:
+        targets = np.asarray(targets, dtype=float)
+        stiffness = float(m666["S"])
+        advantage = np.broadcast_to(np.asarray(m666["U"], dtype=float), (4,))
+        guy = np.broadcast_to(np.asarray(m666["Y"], dtype=float), (4,))
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not (np.all(np.isfinite(targets) & (targets > 0)) and np.allclose(targets, targets[0])
+            and np.isfinite(stiffness) and stiffness > 0
+            and np.all(np.isfinite(advantage) & (advantage > 0))
+            and np.all(np.isfinite(guy) & (guy >= 0))):
+        return None
+    return targets[0] / stiffness, guy[:3] / advantage[:3]
+
+
 def fit_pose_least_squares(
     dataset: dict,
     initial_anchors: np.ndarray,
@@ -182,10 +206,15 @@ def fit_pose_least_squares(
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
 
+    home_strain = _hp4_home_strain(dataset) if fit_home_offsets and low_anchor_z is None else None
+
     def unpack(x: np.ndarray):
         anchor_vec = x[: x.size - num_offsets]
         anchors = anchor_opt_vec_to_matrix(anchor_vec, machine_type, num_anchors, dimensions, low_anchor_z)
         offsets = np.zeros(num_anchors)
+        if home_strain is not None:
+            strain, extra_length = home_strain
+            offsets[:3] = strain * (np.linalg.norm(anchors[:3], axis=1) + extra_length)
         offsets[offset_lines] = x[x.size - num_offsets:]
         return anchors, offsets
 
