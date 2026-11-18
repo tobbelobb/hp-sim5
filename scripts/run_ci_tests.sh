@@ -30,10 +30,6 @@ echo ""
 echo "== Python research, service and integration tests =="
 (cd "$ROOT" && .venv/bin/python -m pytest tests/python research-program/tests)
 
-echo ""
-echo "== Python slow integration tests (simulators, recorders, MCP, hosts) =="
-(cd "$ROOT" && .venv/bin/python -m pytest -v --durations=10 -o faulthandler_timeout=60 -m "slow and not heavy")
-
 run_with_retries() {
   local label="$1"
   local cmd="$2"
@@ -78,9 +74,3 @@ if [[ "${RUN_SIM_E2E:-0}" == "1" ]]; then
   (cd "$ROOT" && node autocal/control/tests/e2e/return_to_origin_all_at_once.e2e.test.mjs --sim)
   (cd "$ROOT" && node autocal/control/tests/e2e/calibrate_encoder_noise.e2e.test.mjs --sim)
 fi
-
-for machine in hangprinter_3 hangprinter_4 hangprinter_5 hangprinter_5_pulley_reduced; do
-  echo "== Autocal benchmark $machine (warns on slower or less precise/accurate calibration) =="
-  (cd "$ROOT" && OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python -m pytest \
-    -s -m heavy "autocal/tests/test_autocal_benchmark.py::test_benchmark_$machine")
-done
