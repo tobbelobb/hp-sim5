@@ -2,15 +2,17 @@ import {
     createMotionProfile,
     distributeEvenly,
     distributeWithProfile,
-    isFloatValue,
 } from '../shared/motionUtils.js';
 
 import {
   computeTicksPerBucket,
   EXTRUDER_MM_PER_STEP_RRF,
   MOTOR_AXIS_MAP,
+  parseRrfDriveSpecifier,
+  rrfMotorId,
   STEP_ANGLE_RAD,
 } from './rrfFirmwareModel.js';
+import { parseCanMotionRow } from './rrfCanCsv.js';
 
 export class RrfHttpBridge {
     constructor(options = {}) {
@@ -27,7 +29,6 @@ export class RrfHttpBridge {
 
         this.dt = Number.isFinite(options.dt) && options.dt > 0 ? options.dt : 1 / 500;
         this.ticksPerBucket = computeTicksPerBucket(this.dt);
-        this.valueTypeByMotorId = new Map();
         this.axisStates = new Map();
         this.activeAxes = new Set();
         this.spoolAxisOrder = [];
@@ -147,30 +148,7 @@ export class RrfHttpBridge {
             return null;
         }
 
-        const text = typeof raw === 'number'
-            ? raw.toString()
-            : typeof raw === 'string'
-                ? raw.trim()
-                : '';
-        if (!text) {
-            return null;
-        }
-        const [canPart, driverPart] = text.split('.');
-        const canAddress = parseInt(canPart, 10);
-        if (!Number.isFinite(canAddress)) {
-            return null;
-        }
-        let driver = 0;
-        if (driverPart !== undefined) {
-            const parsedDriver = parseInt(driverPart, 10);
-            if (Number.isFinite(parsedDriver)) {
-                driver = parsedDriver;
-            }
-        }
-        return {
-            canAddress,
-            driver,
-        };
+        return parseRrfDriveSpecifier(raw);
     }
 
     _motorDescriptorKey(descriptor) {
@@ -237,7 +215,7 @@ export class RrfHttpBridge {
         const descriptorEntries = descriptors.map((descriptor) => ({
             descriptor,
             key: this._motorDescriptorKey(descriptor),
-            axis: descriptor ? this.driverToAxis.get(descriptor.canAddress) : null,
+            axis: this.driverToAxis.get(rrfMotorId(descriptor.canAddress, descriptor.driver)),
         }));
         const axesForQuery = descriptorEntries
             .filter((entry) => entry.axis)
@@ -503,26 +481,18 @@ export class RrfHttpBridge {
                         type: 'TorqueMode',
                         can_address: descriptor.canAddress,
                         driver: descriptor.driver,
-                        motorId: descriptor.canAddress,
+                        motorId: rrfMotorId(descriptor.canAddress, descriptor.driver),
                         torqueNm,
                         positionMode,
                     });
                     continue;
                 }
 
-                const fields = line.split(',');
-                if (fields.length >= 7) {
+                for (const movement of parseCanMotionRow(line)) {
                     result.motion.push({
+                        ...movement,
                         type: 'Motion',
-                        index: parseInt(fields[0], 10),
-                        motorId: parseInt(fields[1], 10),
-                        timestamp: parseInt(fields[2], 10),
-                        accelTicks: parseInt(fields[3], 10),
-                        steadyTicks: parseInt(fields[4], 10),
-                        decelTicks: parseInt(fields[5], 10),
-                        steps: parseFloat(fields[6]),
-                        acceleration: fields[7] ? parseFloat(fields[7]) : 0,
-                        deceleration: fields[8] ? parseFloat(fields[8]) : 0,
+                        timestamp: movement.whenToExecute,
                     });
                 }
             }
@@ -555,10 +525,11 @@ export class RrfHttpBridge {
             return;
         }
         const torqueNm = event?.torqueNm ?? 0;
-        const axis = this.driverToAxis.get(descriptor.canAddress);
+        const motorId = rrfMotorId(descriptor.canAddress, descriptor.driver);
+        const axis = this.driverToAxis.get(motorId);
 
         if (!axis) {
-            console.warn(`RrfHttpBridge: Unknown motorId ${descriptor.canAddress}`);
+            console.warn(`RrfHttpBridge: Unknown motorId ${motorId}`);
             return;
         }
 
@@ -568,7 +539,7 @@ export class RrfHttpBridge {
         if (this.onTorqueModeChange) {
             try {
                 this.onTorqueModeChange(
-                    descriptor.canAddress,
+                    motorId,
                     axis,
                     positionMode ? 0 : effectiveTorque,
                 );
@@ -582,7 +553,7 @@ export class RrfHttpBridge {
             this.remoteSpoolSystem.addCommand({
                 type: isPositionMode ? 'SetPositionMode' : 'SetTorqueMode',
                 axis,
-                driver: descriptor.canAddress,
+                driver: motorId,
                 torqueNm: effectiveTorque,
                 timestamp: Date.now(),
             });
@@ -605,16 +576,13 @@ export class RrfHttpBridge {
             state.lastTick = Math.max(state.lastTick, motion.timestamp + totalTicks);
         }
 
-        if (!this.valueTypeByMotorId.has(motion.motorId)) {
-            this.valueTypeByMotorId.set(motion.motorId, isFloatValue(motion.steps) ? 'float' : 'int');
-        }
-        const axisType = this.valueTypeByMotorId.get(motion.motorId);
+        const extrudes = axis === 'E' || motion.isExtruder;
         const startTick = motion.timestamp;
         const profile = createMotionProfile(motion);
         const useProfile = profile && profile.totalTicks > 0;
         const distribute = (bucketIdx, normalizedDelta) => {
             const deltaValue = motion.steps * normalizedDelta;
-            if (axis === 'E' || axisType === 'float') {
+            if (extrudes) {
                 this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP_RRF);
             } else {
                 this._recordBucketSteps(axis, bucketIdx, deltaValue);
@@ -633,7 +601,7 @@ export class RrfHttpBridge {
                 accumulateNormalized: distribute,
                 setMaxBucket: updateMax,
             });
-        } else if (axis === 'E' || axisType === 'float') {
+        } else if (extrudes) {
             distributeEvenly({
                 startTick,
                 durationTicks: totalTicks,

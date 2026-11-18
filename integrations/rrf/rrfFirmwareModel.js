@@ -30,6 +30,12 @@ export function computeTicksPerBucket(dt) {
   return Math.max(1, Math.round(STEP_CLOCK_HZ_RRF_HOST * dt));
 }
 
+export function rrfMotorId(canAddress, driver = 0) {
+  // Keep legacy address-only keys for driver zero. Other slots use a string
+  // so the driver index is never interpreted as a decimal fraction.
+  return driver === 0 ? canAddress : `${canAddress}.${driver}`;
+}
+
 export function parseRrfDriveSpecifier(value) {
   if (value == null) {
     return null;
@@ -38,15 +44,13 @@ export function parseRrfDriveSpecifier(value) {
   if (!text) {
     return null;
   }
-  const [canPart, driverPart] = text.split('.');
-  const canAddress = parseInt(canPart, 10);
-  if (!Number.isFinite(canAddress)) {
+  const match = /^(\d+)(?:\.(\d+))?$/.exec(text);
+  if (!match) {
     return null;
   }
-  const driver = driverPart === undefined ? 0 : parseInt(driverPart, 10);
   return {
-    canAddress,
-    driver: Number.isFinite(driver) ? driver : 0,
+    canAddress: Number(match[1]),
+    driver: Number(match[2] ?? 0),
   };
 }
 
@@ -71,7 +75,7 @@ export function parseRrfMotorAxisMapFromConfigText(configText, {
         for (const driveToken of match[2].split(':')) {
           const descriptor = parseRrfDriveSpecifier(driveToken);
           if (descriptor && Number.isFinite(descriptor.canAddress)) {
-            result.set(descriptor.canAddress, spoolAxis);
+            result.set(rrfMotorId(descriptor.canAddress, descriptor.driver), spoolAxis);
           }
         }
       }

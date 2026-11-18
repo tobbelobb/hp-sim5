@@ -66,6 +66,12 @@ if command -v node &> /dev/null; then
 
     cleanup_js
     trap - EXIT
+
+    if PORT="$((SERVER_PORT + 1))" node "$ROOT/tests/rrf_http_endpoint/test_07_multidriver_can.mjs"; then
+        PASSED=$((PASSED + 1))
+    else
+        FAILED=$((FAILED + 1))
+    fi
 else
     echo ""
     echo "SKIP: Node.js not available for JS integration test"

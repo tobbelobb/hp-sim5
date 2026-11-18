@@ -4,14 +4,16 @@ import {
   DEFAULT_AXIS_ORDER,
   MOTOR_AXIS_MAP,
   computeTicksPerBucket,
+  parseRrfDriveSpecifier,
+  rrfMotorId,
 } from './rrfFirmwareModel.js';
+import { parseCanMotionRow } from './rrfCanCsv.js';
 
 import { detectFileFormat, FileFormat, isRrfFormat } from '../shared/fileFormatUtils.js';
 import {
     createMotionProfile,
     distributeEvenly,
     distributeWithProfile,
-    isFloatValue,
 } from '../shared/motionUtils.js';
 
 
@@ -63,7 +65,6 @@ export class RrfCanPlayer {
         this.asapYieldBudgetMs = 24;
         this.lastYieldTime = 0;
         this.axisByMotorId = new Map();
-        this.valueTypeByMotorId = new Map();
         this.driverToAxis = new Map(MOTOR_AXIS_MAP);
         this.baselineEmitted = false;
         this._resetState();
@@ -129,7 +130,6 @@ export class RrfCanPlayer {
         this.activeAxes = new Set();
         this.usedAxes = new Set();
         this.axisByMotorId.clear();
-        this.valueTypeByMotorId.clear();
         this.baselineEmitted = false;
     }
 
@@ -141,10 +141,10 @@ export class RrfCanPlayer {
                 : Object.entries(driverToAxis || {});
         const next = new Map();
         for (const [driver, axis] of entries) {
-            const motorId = Number(driver);
+            const descriptor = parseRrfDriveSpecifier(driver);
             const axisName = typeof axis === 'string' ? axis.toUpperCase() : '';
-            if (Number.isFinite(motorId) && axisName) {
-                next.set(motorId, axisName);
+            if (descriptor && axisName) {
+                next.set(rrfMotorId(descriptor.canAddress, descriptor.driver), axisName);
             }
         }
         this.driverToAxis = next.size > 0 ? next : new Map(MOTOR_AXIS_MAP);
@@ -414,6 +414,7 @@ export class RrfCanPlayer {
             steadyTicks,
             decelTicks,
             steps,
+            isExtruder,
         } = row;
 
         const axis = this._assignAxisName(motorId);
@@ -423,17 +424,13 @@ export class RrfCanPlayer {
             state.lastTick = Math.max(state.lastTick, whenToExecute + totalTicks);
         }
 
-        if (!this.valueTypeByMotorId.has(motorId)) {
-            this.valueTypeByMotorId.set(motorId, isFloatValue(steps) ? 'float' : 'int');
-        }
-
-        const axisType = this.valueTypeByMotorId.get(motorId);
+        const extrudes = axis === 'E' || isExtruder;
         const startTick = whenToExecute;
         const profile = this._createMotionProfile(row);
         const useProfile = profile && profile.totalTicks > 0;
         const distribute = (bucketIdx, normalizedDelta) => {
             const deltaValue = steps * normalizedDelta;
-            if (axis === 'E' || axisType === 'float') {
+            if (extrudes) {
                 this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP_RRF);
             } else {
                 this._recordBucketSteps(axis, bucketIdx, deltaValue);
@@ -441,7 +438,7 @@ export class RrfCanPlayer {
         };
         if (useProfile) {
             this._distributeWithProfile(startTick, profile, distribute);
-        } else if (axis === 'E' || axisType === 'float') {
+        } else if (extrudes) {
             const extrusionMm = steps * EXTRUDER_MM_PER_STEP_RRF;
             this._distributeEvenly(startTick, totalTicks, extrusionMm, (bucketIdx, delta) => {
                 this._recordBucketExtrusion(bucketIdx, delta);
@@ -458,47 +455,6 @@ export class RrfCanPlayer {
         this._markAxisActive(axis);
     }
 
-    _parseCsvRow(line) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) {
-            return null;
-        }
-        const parts = trimmed.split(',');
-        if (parts.length < 9) {
-            return null;
-        }
-        const motorId = Number(parts[1]);
-        if (!Number.isFinite(motorId)) {
-            return null;
-        }
-        const whenToExecute = Number(parts[2]);
-        const accelTicks = Number(parts[3]);
-        const steadyTicks = Number(parts[4]);
-        const decelTicks = Number(parts[5]);
-        const steps = Number(parts[6]);
-        const acceleration = Number(parts[7]);
-        const deceleration = Number(parts[8]);
-        if (
-            !Number.isFinite(whenToExecute)
-            || !Number.isFinite(accelTicks)
-            || !Number.isFinite(steadyTicks)
-            || !Number.isFinite(decelTicks)
-            || !Number.isFinite(steps)
-        ) {
-            return null;
-        }
-        return {
-            motorId,
-            whenToExecute,
-            accelTicks,
-            steadyTicks,
-            decelTicks,
-            steps,
-            acceleration,
-            deceleration,
-        };
-    }
-
     _parseTorqueRow(line) {
         if (!line || !line.startsWith('T,')) {
             return null;
@@ -507,12 +463,12 @@ export class RrfCanPlayer {
         if (parts.length < 3) {
             return null;
         }
-        const motorId = Number(parts[1]);
+        const descriptor = parseRrfDriveSpecifier(parts[1]);
         const torqueNm = Number(parts[2]);
-        if (!Number.isFinite(motorId) || !Number.isFinite(torqueNm)) {
+        if (!descriptor || !Number.isFinite(torqueNm)) {
             return null;
         }
-        return { motorId, torqueNm };
+        return { motorId: rrfMotorId(descriptor.canAddress, descriptor.driver), torqueNm };
     }
 
     async _handleTorque(row) {
@@ -550,15 +506,20 @@ export class RrfCanPlayer {
                 continue;
             }
 
-            const movement = this._parseCsvRow(line);
-            if (!movement) {
+            const movements = parseCanMotionRow(line);
+            if (movements.length === 0) {
                 continue;
             }
-            if (lastWhen !== null && movement.whenToExecute !== lastWhen) {
+            const { whenToExecute } = movements[0];
+            if (lastWhen !== null && whenToExecute !== lastWhen) {
                 await this._flushReadyBuckets();
             }
-            this._handleMovement(movement);
-            lastWhen = movement.whenToExecute;
+            for (const movement of movements) {
+                if (movements.length === 1 || movement.steps !== 0 || this.driverToAxis.has(movement.motorId)) {
+                    this._handleMovement(movement);
+                }
+            }
+            lastWhen = whenToExecute;
         }
         await this._flushReadyBuckets(true);
     }
@@ -645,6 +606,9 @@ export class RrfCanPlayer {
             ensureAvailable(2);
             const mask = view.getUint8(offset++);
             const count = view.getUint8(offset++);
+            // Bit 6 selects the extended address, driver and type header
+            // written by csv2can.py. Legacy items always target driver zero.
+            const extendedMotorId = (mask & 0x40) !== 0;
 
             if (mask & 1) {
                 ensureAvailable(8);
@@ -678,10 +642,14 @@ export class RrfCanPlayer {
             }
 
             for (let i = 0; i < count; i += 1) {
-                ensureAvailable(1);
-                const headerByte = view.getUint8(offset++);
-                const typeCode = (headerByte >> 6) & 0x03;
-                const canId = headerByte & 0x3F;
+                const headerSize = extendedMotorId ? 2 : 1;
+                ensureAvailable(headerSize);
+                const header = extendedMotorId ? view.getUint16(offset, true) : view.getUint8(offset);
+                offset += headerSize;
+                const typeCode = extendedMotorId ? (header >> 10) & 0x03 : header >> 6;
+                const canAddress = header & (extendedMotorId ? 0x7F : 0x3F);
+                const driver = extendedMotorId ? (header >> 7) & 0x07 : 0;
+                const motorId = rrfMotorId(canAddress, driver);
                 let value;
                 switch (typeCode) {
                     case 0:
@@ -712,16 +680,21 @@ export class RrfCanPlayer {
                     await this._flushReadyBuckets();
                 }
                 const movement = {
-                    motorId: canId,
+                    motorId,
+                    canAddress,
+                    driver,
                     whenToExecute,
                     accelTicks: ctxCol3,
                     steadyTicks: ctxCol4,
                     decelTicks: ctxCol5,
                     steps: value,
+                    isExtruder: typeCode === 3,
                     acceleration: ctxAccel,
                     deceleration: ctxDecel,
                 };
-                this._handleMovement(movement);
+                if (!extendedMotorId || value !== 0 || this.driverToAxis.has(motorId)) {
+                    this._handleMovement(movement);
+                }
                 lastWhen = whenToExecute;
             }
         }
