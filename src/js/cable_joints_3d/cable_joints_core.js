@@ -85,7 +85,8 @@ export class CablePathComponent {
     stored = null,
     cableHalfWidth = 0.0,
     dampingPerUnitLength = 0.0,
-    solverIterations = 1
+    solverIterations = 1,
+    { initialLayeringEnabled = layeringEnabled(world) } = {}
   ) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
@@ -101,6 +102,7 @@ export class CablePathComponent {
       : 1;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
     this.cableHalfWidth = Number.isFinite(cableHalfWidth) ? Math.max(0.0, cableHalfWidth) : 0.0;
+    const initialHalfWidth = initialLayeringEnabled ? this.cableHalfWidth : 0.0;
 
     for (const jointId of jointEntities) {
       const joint = world.getComponent(jointId, CableJointComponent);
@@ -121,7 +123,7 @@ export class CablePathComponent {
       if (isRolling) {
         const center = getEntityWorldPosition(world, linkId);
         const baseRadius = world.getComponent(linkId, RadiusComponent).radius;
-        const radius = baseRadius + (layeringEnabled(world) ? this.cableHalfWidth : 0.0);
+        const radius = baseRadius + initialHalfWidth;
         const isCw = cw[i + 1];
 
         const initialStoredLength = signedArcLengthOnWheel(
@@ -150,9 +152,9 @@ export class CablePathComponent {
 
     const lastLinkIndex = this.linkTypes.length - 1;
     if (lastLinkIndex >= 0) {
-      _ensureHybridKnotAngleComponentForEndpoint(world, this, 0);
+      _ensureHybridKnotAngleComponentForEndpoint(world, this, 0, initialHalfWidth);
       if (lastLinkIndex !== 0) {
-        _ensureHybridKnotAngleComponentForEndpoint(world, this, lastLinkIndex);
+        _ensureHybridKnotAngleComponentForEndpoint(world, this, lastLinkIndex, initialHalfWidth);
       }
     }
   }
@@ -1079,71 +1081,7 @@ function _effectivePathRadiusForEntity(world, path, entityId, preferredLinkIndex
   return effectiveRadius;
 }
 
-function _knotPathKey(pathId) {
-  if (pathId === null || pathId === undefined) {
-    return '__default__';
-  }
-  return String(pathId);
-}
-
-function _hybridKnotAngleForPath(knotComp, pathId) {
-  if (!knotComp) {
-    return null;
-  }
-  if (pathId !== null && pathId !== undefined) {
-    const pathAngles = knotComp.pathAngles;
-    const key = _knotPathKey(pathId);
-    if (pathAngles && typeof pathAngles === 'object' && !Array.isArray(pathAngles)) {
-      const value = pathAngles[key];
-      if (Number.isFinite(value)) {
-        return value;
-      }
-    }
-    return null;
-  }
-  return Number.isFinite(knotComp.angle) ? knotComp.angle : null;
-}
-
-function _setHybridKnotAngleForPath(knotComp, pathId, angle) {
-  if (!knotComp || !Number.isFinite(angle)) {
-    return;
-  }
-  if (!knotComp.pathAngles || typeof knotComp.pathAngles !== 'object' || Array.isArray(knotComp.pathAngles)) {
-    knotComp.pathAngles = {};
-  }
-  knotComp.pathAngles[_knotPathKey(pathId)] = angle;
-  knotComp.angle = angle;
-}
-
-function _copyDefaultKnotAngleToPathIfUnambiguous(knotComp, pathId) {
-  if (!knotComp || pathId === null || pathId === undefined) {
-    return false;
-  }
-  const pathAngles = knotComp.pathAngles;
-  if (!pathAngles || typeof pathAngles !== 'object' || Array.isArray(pathAngles)) {
-    return false;
-  }
-  const defaultAngle = pathAngles[_knotPathKey(null)];
-  if (!Number.isFinite(defaultAngle)) {
-    return false;
-  }
-  let nonDefaultPathCount = 0;
-  for (const key in pathAngles) {
-    if (key === _knotPathKey(null)) {
-      continue;
-    }
-    if (Number.isFinite(pathAngles[key])) {
-      nonDefaultPathCount += 1;
-    }
-  }
-  if (nonDefaultPathCount > 0) {
-    return false;
-  }
-  _setHybridKnotAngleForPath(knotComp, pathId, defaultAngle);
-  return true;
-}
-
-function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, pathId = null, options = null) {
+function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, initialHalfWidth) {
   if (!world || !path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities)) {
     return;
   }
@@ -1171,52 +1109,38 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, 
     }
   }
 
-  const createIfMissing = options && typeof options.createIfMissing === 'boolean'
-    ? options.createIfMissing
-    : true;
-  const resolvedAttachmentPoint = options?.attachmentPoint ?? attachmentPoint;
-  if (entityId === null || entityId === undefined || !resolvedAttachmentPoint) {
+  if (entityId === null || entityId === undefined || !attachmentPoint) {
     return;
   }
 
   let knotComp = world.getComponent(entityId, HybridKnotAngleComponent);
-  if (_hybridKnotAngleForPath(knotComp, pathId) !== null) {
-    return;
-  }
-  if (_copyDefaultKnotAngleToPathIfUnambiguous(knotComp, pathId)) {
-    return;
-  }
-  if (!knotComp && createIfMissing === false) {
+  if (Number.isFinite(knotComp?.angle)) {
     return;
   }
 
-  const center = options?.center ?? getEntityWorldPosition(world, entityId);
+  const center = getEntityWorldPosition(world, entityId);
   if (!center) {
     return;
   }
 
   const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
-  const pathHalfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
   const rampLength = Math.max(0.0, baseRadius ?? 0.0) * KNOT_SPAN;
   const thetaAtState = Math.abs(
-    _storedToThetaSigned(path.stored[endpointIndex] ?? 0.0, baseRadius, pathHalfWidth, rampLength)
+    _storedToThetaSigned(path.stored[endpointIndex] ?? 0.0, baseRadius, initialHalfWidth, rampLength)
   );
   const cwAtState = _effectiveCW(path, endpointIndex, endpointIndex === 0);
   const thetaSignAtState = endpointIndex === 0
     ? (cwAtState ? -1.0 : 1.0)
     : (cwAtState ? 1.0 : -1.0);
   const thetaSignedAtState = thetaSignAtState * thetaAtState;
-  const currentWorldOrientation = options?.quaternion ?? getEntityWorldOrientation(world, entityId);
-  const currentLocalOrientation = options?.localQuaternion
-    ?? _currentLocalOrientationForEntity(world, entityId, currentWorldOrientation);
-  const orientation = Number.isFinite(options?.orientation)
-    ? options.orientation
-    : _orientationAngleForEntity(world, entityId, currentWorldOrientation, currentLocalOrientation);
+  const currentWorldOrientation = getEntityWorldOrientation(world, entityId);
+  const currentLocalOrientation = _currentLocalOrientationForEntity(world, entityId, currentWorldOrientation);
+  const orientation = _orientationAngleForEntity(world, entityId, currentWorldOrientation, currentLocalOrientation);
   const relAttachmentAngle = _attachmentRelativeOrientationForEntity(
     world,
     entityId,
     center,
-    resolvedAttachmentPoint,
+    attachmentPoint,
     currentWorldOrientation,
     orientation,
     currentLocalOrientation,
@@ -1233,5 +1157,9 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, 
     knotComp = new HybridKnotAngleComponent(knotAngle);
     world.addComponent(entityId, knotComp);
   }
-  _setHybridKnotAngleForPath(knotComp, pathId, knotAngle);
+  if (!knotComp.pathAngles || typeof knotComp.pathAngles !== 'object' || Array.isArray(knotComp.pathAngles)) {
+    knotComp.pathAngles = {};
+  }
+  knotComp.pathAngles.__default__ = knotAngle;
+  knotComp.angle = knotAngle;
 }
