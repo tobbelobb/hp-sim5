@@ -120,7 +120,6 @@ export class KlipperMcuCommandPlayer {
         this.usedAxes = new Set();
         this.axisStates = new Map();
         this.spoolAxisOrder = [];
-        this.activeAxes = new Set();
         this.bucketSteps = new Map();
         this.bucketExtrusion = new Map();
         this.bucketAddToReference = new Map();
@@ -142,8 +141,6 @@ export class KlipperMcuCommandPlayer {
                 dir: 1,
                 lastTick: 0,
                 baseAngle: 0,
-                active: false,
-                hasSteps: false,
             };
             this.axisStates.set(axis, state);
         }
@@ -179,56 +176,22 @@ export class KlipperMcuCommandPlayer {
         });
     }
 
-    _markAxisActive(axis) {
-        const state = this._ensureAxisState(axis);
-        if (!state) {
-            return;
-        }
-        state.active = true;
-        this.activeAxes.add(axis);
+    _initializeAxisAngle(axis, state) {
         if (!this.axisAngles.has(axis)) {
             this.axisAngles.set(axis, state.baseAngle || 0);
         }
     }
 
-    _readyBucketThreshold(force = false) {
-        if (force) {
-            return this.maxBucketSeen + 1;
-        }
-        if (this.maxBucketSeen < 0) {
-            return null;
-        }
-        if (this.activeAxes.size === 0) {
-            return null;
-        }
-        let hasBlockingAxis = false;
-        let minBucket = Infinity;
-        for (const axis of this.activeAxes) {
-            const state = this.axisStates.get(axis);
-            if (!state) {
-                continue;
-            }
-            if (!state.hasSteps && state.lastTick === 0) {
-                continue;
-            }
-            hasBlockingAxis = true;
-            const bucket = Math.floor(state.lastTick / this.ticksPerBucket);
-            if (bucket < minBucket) {
-                minBucket = bucket;
-            }
-        }
-        if (!hasBlockingAxis) {
-            return this.maxBucketSeen + 1;
-        }
-        return minBucket;
-    }
-
     async _flushReadyBuckets(force = false) {
-        const threshold = this._readyBucketThreshold(force);
-        if (threshold == null) {
-            return;
+        let upperBound = this.maxBucketSeen + 1;
+        if (!force) {
+            // Input is ordered per stepper. Every configured stepper, including
+            // E, can still write to the bucket at its current clock. An idle
+            // stepper holds that boundary until another command or EOF.
+            for (const { lastTick } of this.axisStates.values()) {
+                upperBound = Math.min(upperBound, Math.floor(lastTick / this.ticksPerBucket));
+            }
         }
-        const upperBound = Math.min(threshold, this.maxBucketSeen + 1);
         while (this.nextBucketToEmit < upperBound) {
             await this._emitBucket(this.nextBucketToEmit);
             this.nextBucketToEmit += 1;
@@ -402,7 +365,7 @@ export class KlipperMcuCommandPlayer {
                     this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
                 }
                 state.baseAngle = newAngle;
-                this._markAxisActive(axis);
+                this._initializeAxisAngle(axis, state);
                 await this._flushReadyBuckets();
                 continue;
             }
@@ -414,7 +377,7 @@ export class KlipperMcuCommandPlayer {
                     continue;
                 }
                 const state = this._ensureAxisState(axis);
-                let interval = Number(kv.interval) || 1;
+                const interval = Number(kv.interval) || 1;
                 const count = Number(kv.count) || 0;
                 const add = ('add' in kv) ? Number(kv.add) || 0 : 0;
                 if (count <= 0) {
@@ -445,8 +408,7 @@ export class KlipperMcuCommandPlayer {
                     this._recordDistributedSequence(axis, state.lastTick, totalDurationTicks, totalValue);
                     state.lastTick += totalDurationTicks;
                 }
-                state.hasSteps = true;
-                this._markAxisActive(axis);
+                this._initializeAxisAngle(axis, state);
                 await this._flushReadyBuckets();
                 continue;
             }
