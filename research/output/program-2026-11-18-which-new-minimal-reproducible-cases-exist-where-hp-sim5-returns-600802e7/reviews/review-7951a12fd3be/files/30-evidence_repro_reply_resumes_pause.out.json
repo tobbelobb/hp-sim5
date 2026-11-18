@@ -1,0 +1,48 @@
+{
+  "pauseStateModel": "runner.js resumeSimulation",
+  "results": [
+    {
+      "label": "reply-to-M105",
+      "expectedPaused": true,
+      "actualPaused": false,
+      "resumed": true
+    },
+    {
+      "label": "reply-empty",
+      "expectedPaused": true,
+      "actualPaused": false,
+      "resumed": true
+    },
+    {
+      "label": "unknown-type",
+      "expectedPaused": true,
+      "actualPaused": false,
+      "resumed": true
+    },
+    {
+      "label": "empty-object",
+      "expectedPaused": true,
+      "actualPaused": false,
+      "resumed": true
+    },
+    {
+      "label": "json-array",
+      "expectedPaused": true,
+      "actualPaused": false,
+      "resumed": true
+    },
+    {
+      "label": "position_trace_mode",
+      "expectedPaused": true,
+      "actualPaused": true,
+      "resumed": false
+    },
+    {
+      "label": "command-Move",
+      "expectedPaused": false,
+      "actualPaused": false,
+      "resumed": true
+    }
+  ]
+}
+DEFECT: 5 payload(s) without motion changed the run state: reply-to-M105, reply-empty, unknown-type, empty-object, json-array

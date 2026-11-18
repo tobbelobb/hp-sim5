@@ -1,0 +1,65 @@
+{
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp4.usda",
+  "rrd": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro-output/reset-generation/recording.rrd",
+  "rrd_bytes": 710374,
+  "rrd_sha256": "26e614c4e10db8b2ea29af835e70ebd81db495e159f434e61556306d8ef24fe4",
+  "native_addon": "/tmp/opencode/hp_sim5_4dda8987d8ca.node",
+  "native_addon_sha256": "4dda8987d8ca2d10f1468c65a9671247adb92da9ac818a9cdeac636638eea870",
+  "before_reset": {
+    "epoch": 0,
+    "step": 50,
+    "generation": 1
+  },
+  "after_reset": {
+    "epoch": 1,
+    "step": 0,
+    "generation": 1
+  },
+  "after_second_run": {
+    "epoch": 1,
+    "step": 50,
+    "generation": 1
+  },
+  "scene_generation_timeline": false,
+  "timeline_names": [
+    "log_time",
+    "sim_step",
+    "sim_time"
+  ],
+  "sim_steps": [
+    0,
+    50,
+    0,
+    50
+  ],
+  "duplicate_sim_steps": {
+    "0": [
+      [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ]
+    ],
+    "50": [
+      [
+        4.5599915665661683e-07,
+        -1.1405418263166212e-06,
+        0.10021360963582993
+      ],
+      [
+        0.0035835455637425184,
+        -0.001923029194585979,
+        0.10086899250745773
+      ]
+    ]
+  },
+  "max_collision_pose_distance_m": 0.0041184600920578995,
+  "event_scene_generations": [
+    1
+  ]
+}

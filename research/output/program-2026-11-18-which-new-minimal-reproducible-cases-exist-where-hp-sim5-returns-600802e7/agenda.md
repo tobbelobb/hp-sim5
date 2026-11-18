@@ -181,7 +181,9 @@ queue.
     2.3532 (**+39.0 %**). HP4's 24 wheels each have `I/r^2 = 0.0118 kg` (5.9x their
     own mass) against an 0.081 kg effector, so "negligible inertia" is not
     quantitatively true. The prior `a=g/3` negative used a fixed zero-inertia
-    roller; it does not validate authored inertia. Repro:
+    roller; it does not validate authored inertia. **Review correction: this is a
+    latent fidelity gap (a deliberate massless-pulley idealisation), not a measured
+    shipped-trajectory error.** Repro:
     `session-...-damped-h-c6fd65ea/repro_atwood_wheel_inertia.mjs` (exit 1, re-run
     by manager).
 14. **No gyroscopic term for a freely rotating asymmetric body.** With no torque,
@@ -213,8 +215,25 @@ prior findings.
 (14 s) and swap use rose to ~1.4 GiB. No further builds are allowed; prefer pure JS
 and stub-based tests.
 
+## Review outcome (2026-11-18)
+
+Sealed bundle `reviews/review-7951a12fd3be` verified (candidate `212c56ea`, code
+`74ecdc95`, zero non-research diffs). A fresh reviewer reproduced 7 of 11 headlines
+exactly; native `.rrd` and two-client claims were confirmed by inspection plus
+supplied evidence. Confirmed: upload extrusion accounting, quality-record timing,
+recorder-kills-bridge, non-motion resume, length telemetry. Confirmed with corrected
+wording: in-place reset generation, unrecognised-payload scope, conditional
+`fastModeActive` leak. Behaviour confirmed but not classified as a shipped bug:
+passive-wheel inertia (deliberate massless-pulley idealisation) and the missing
+gyroscopic term (standard PBD simplification); two-client encoder stickiness is a
+documented-unsupported setup. Summary has been corrected.
+
 ## Next decision
 
-Commission two independent researchers at a time, each with a distinct lens above.
-Require reading-heavy work first and micro-experiments only. Reconsider the agenda
-after the first results; concentrate on the most consequential cluster.
+Program is complete for this question. Preserve reports, reproducers, sealed review and
+the negative results; do not fix, push or merge. Highest-value follow-ups if continued:
+(a) the reviewer's decisive test for passive-wheel inertia on a representative HP4
+trajectory, (b) an end-to-end UI/worker test for the quality-record timing and bridge
+recorder paths, and (c) a decision on whether the Python/native recording layer is
+meant to mirror the JS recorder (findings 5-7). These are proposals only; no code
+changes were made.

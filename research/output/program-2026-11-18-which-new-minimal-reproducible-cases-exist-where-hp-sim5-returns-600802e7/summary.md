@@ -18,13 +18,13 @@ are excluded; those programs' negative controls were reused where relevant.
 | 1 | G-code upload path mis-accounts extrusion (relative-E default, `M83` and `G92 E` ignored, `last_e` leaks across jobs) | Interactive `.gcode` upload; shipped logo file | 49,950.460 vs 49,719.253 mm (**-231.21 mm, -0.463 %**); 337x if `M82` absent; 2nd job 5 mm -> 0 mm | `repro_gcode_extrusion_bookkeeping.mjs`, `repro_shipped_gcode_extrusion.mjs` |
 | 2 | Quality History is recorded when the worker stops sending, before the world drains its queue | Every linear (non-ASAP) print | **680/1000** samples, 2/3 corners, score **100.0** vs completed **94.313** | `repro_quality_recorded_before_drain.mjs` |
 | 3 | A stopped flight recorder silently disables the external bridge | Click **Rerun** with no receiver, then connect a G-code client | 0/1 commands accepted, encoder requests unanswered, clock replies still work | `repro_recorder_blocks_protocol.mjs` |
-| 4 | Any payload without motion resumes the simulation | Paused run + bridge `reply`/unknown message | 5/5 non-motion payloads resumed; `{type:'reply'}` is sent for every `M105`/`M114` | `repro_reply_resumes_pause.mjs` |
+| 4 | Unrecognised/no-motion payloads resume the simulation | Paused run + bridge `reply`/unknown message | 5/5 unrecognised payloads resumed; recognised `position_trace_mode` stayed paused; `{type:'reply'}` is sent for every `M105`/`M114` | `repro_reply_resumes_pause.mjs` |
 | 5 | Python/native length telemetry aliases `commanded` to `actual`; `error` is always 0 | Every `run_experiment`, `read_run`, research-MCP read, native `.rrd` | JS reports **-15.0867 mm** error; Python/native report **0.000000**; torque mode not omitted | `repro_length_telemetry.py` |
 | 6 | Native recordings write all 33 rigid members at the parent body pose and omit motors/encoders/velocities/tool points/extrusions | Every native `.rrd` | Worst member **0.424359 m** from true pose; 33/33 wrong; documented channels absent | `repro_recording_scene_content.py` |
-| 7 | In-place reset is not a distinct replayable generation | Any native session reset | `scene_generation` stays 1, no timeline, `sim_step` repeats 0..50; poses 4.118 mm apart share step 50 | `repro_reset_generation.py` |
-| 8 | Authored pulley inertia is ignored on frictionless passive wheels | Any cable over free wheels; shipped HP4 D-line idlers | 3.270 vs 2.4525 m/s^2 (**+33.3 %**, one pulley); +39.0 % with four HP4 idlers | `repro_atwood_wheel_inertia.mjs` |
+| 7 | In-place reset is not a distinct replayable generation | In-place `NativeSession`/API reset | `scene_generation` stays 1, no timeline, `sim_step` repeats 0..50; poses 4.118 mm apart share step 50 | `repro_reset_generation.py` |
+| 8 | Authored pulley inertia is ignored on frictionless passive wheels | Any cable over free wheels; shipped HP4 idlers have non-negligible authored inertia, but no shipped trajectory error was measured | 3.270 vs 2.4525 m/s^2 (**+33.3 %**, one pulley); +39.0 % with four HP4 idlers | `repro_atwood_wheel_inertia.mjs` |
 | 9 | No gyroscopic term for a freely rotating asymmetric body | Latent: shipped bodies are symmetric | 14.19 deg orientation error, angular momentum direction off 27.25 deg after 0.5 s | `repro_gyroscopic_free_body.mjs` |
-| 10 | `fastModeActive` mirror survives worker replacement | Every job after the first | Job 2 worker never receives `set_fast_mode(true)` at queue 159 < 160 | `repro_worker_replacement_state.mjs` |
+| 10 | `fastModeActive` mirror survives worker replacement | Jobs where job 1 ends with 160-224 queued; impact on throughput unmeasured | Job 2 worker never receives `set_fast_mode(true)` at queue 159 < 160 | `repro_worker_replacement_state.mjs` |
 | 11 | Two-client encoder requests stick to the newest (possibly silent) client | Two tabs (documented as unsupported) | 3/3 requests to silent tab; healthy tab never asked | `repro_two_clients_sticky_encoder.mjs` |
 
 Latent extras preserved in the reports: the 5000-entry bridge backlogs evict oldest
@@ -36,14 +36,36 @@ feed millimetres; `physicsSubsteps` is ignored without a `RigidBodyComponent`;
 ## Severity and classification
 
 - **Shipped, user-visible numerical error:** 1 (uploaded prints deposit 0.46 % less
-  filament and never emit 121 unretract primes), 2 (saved quality record hides the
-  last 0.64 s of every print), 8 (line dynamics over free wheels are too fast because
-  authored inertia is dropped).
+  filament and never emit 121 unretract primes), 2 (the saved quality record hides the
+  last 0.64 s of every linear print).
 - **Shipped, user-visible functional error:** 3 (bridge dead after a recorder
-  failure), 4 (paused run silently resumes), 10 (lost prefetch after the first job).
+  failure), 4 (a paused run resumes on an unrecognised non-motion payload), 10
+  (lost prefetch when a job ends with 160-224 commands queued; impact unmeasured).
 - **Research/telemetry trust:** 5, 6, 7. The physics state itself is fine; the
   observation layer is not, and `peak_abs_length_error_m` can never be nonzero.
-- **Latent / non-default:** 9, 11, and the extras above.
+- **Latent model fidelity:** 8 (authored wheel inertia is deliberately dropped for
+  frictionless passive wheels; the +39 % is a controlled minimal-system measurement,
+  not a measured shipped-trajectory error), 9, 11, and the extras above.
+
+## Independent review outcome (2026-11-18)
+
+A fresh reviewer verified the sealed bundle (`reviews/review-7951a12fd3be`, candidate
+`212c56ea`, code `74ecdc95`, zero non-research diffs) and reproduced 7 of the 11
+headlines exactly with 8 runs; the native `.rrd` and two-client claims were confirmed
+by inspection plus supplied evidence. Verdicts: 1, 2, 3 and 5 confirmed; 4 and 7
+confirmed but the summary's wording was overbroad; 6 confirmed by
+inspection/evidence; 8 behaviour confirmed but **not** a confirmed shipped numerical
+error (a deliberate massless-pulley idealisation); 9 behaviour confirmed but a standard
+PBD simplification; 10 state leak confirmed, "every job" not; 11 confirmed but
+documented as unsupported. This summary has been corrected accordingly. The reviewer's
+decisive follow-up: measure whether HP4 idlers actually rotate with the line and
+whether including their authored inertia materially changes a representative print
+trajectory. Until then, finding 8 stays latent.
+
+The reviewer also noted the sealed `files/` copies are not directly one-command
+reproducible because numeric filename prefixes break relative imports; the original
+session paths in `manifest.json` are. That is a bundle-presentation issue, not a
+scientific one.
 
 ## Strong negative results (keep)
 
