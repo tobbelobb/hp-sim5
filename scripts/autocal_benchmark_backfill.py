@@ -6,11 +6,16 @@ For each selected first-parent commit, check it out in a temporary worktree
 reuse a cached rrf_simulator and native physics addon, run full-auto autocal for
 each machine and score it with the *current* autocal/tools/autocal_benchmark.py.
 
+Each (commit, machine) gets a fingerprint of everything its headless run loads:
+the Python/JS import closure of the entry points, the native solver and RRF
+sources, and that machine's scene and firmware config. Runs are deterministic,
+so only the first commit per fingerprint is run; later ones reuse its result.
+
 Results go to OUT/results.jsonl, one line per (commit, machine), and are
 resumable: finished pairs are skipped. OUT/summary.md tabulates them and marks
 every metric that got worse than the previous commit's value.
 
-  .venv/bin/python scripts/autocal_benchmark_backfill.py --since 2026-11-10
+  .venv/bin/python scripts/autocal_benchmark_backfill.py --since 2026-11-01
   .venv/bin/python scripts/autocal_benchmark_backfill.py --revs 921ced3c dfc0e3e3 HEAD
   .venv/bin/python scripts/autocal_benchmark_backfill.py --summary-only
 
@@ -22,6 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -34,9 +40,6 @@ sys.path.insert(0, str(ROOT))
 from autocal.tools.autocal_benchmark import benchmark_metrics  # noqa: E402
 
 MACHINES = ('hangprinter_3', 'hangprinter_4', 'hangprinter_5', 'hangprinter_5_pulley_reduced')
-# Commits touching none of these cannot change an autocal result.
-RELEVANT_PATHS = ('autocal', 'src', 'integrations', 'public/usd_scenes', 'RRF', 'hp-sim-3d/app',
-                  'scripts/autocal_headless.mjs', 'scripts/build_native_physics.mjs')
 RRF_SUBMODULES = ('RRF/ReprapFirmware', 'RRF/RRFLibraries', 'RRF/CANlib')
 METRICS = (('accuracy_mm', 'mm', 0.1), ('precision_mm', 'mm', 0.1),
            ('convergence_sim_s', 's', 0.02), ('total_sim_s', 's', 0.02))
@@ -45,6 +48,77 @@ LOCK = threading.Lock()
 
 def git(*args, cwd=ROOT):
     return subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+
+SCENES = {'hangprinter_3': 'hp3', 'hangprinter_4': 'hp4', 'hangprinter_5': 'hp5',
+          'hangprinter_5_pulley_reduced': 'hp5_pulley_reduced'}
+ENTRY_POINTS = ('autocal/autocal.py', 'scripts/autocal_headless.mjs', 'autocal/control/cli/collect_sweep_data.mjs')
+# Inputs read as directories rather than through imports. Firmware is its whole
+# tree (including submodule commits) minus tests, docs and other machines' configs.
+DATA_PREFIXES = ('src/wasm/cable_solver/', 'scripts/build_native_physics.mjs', 'autocal/schemas/',
+                 'public/usd_scenes/cable_joint_typed_schema/', 'RRF/')
+DATA_EXCLUDED = re.compile(r'(^|/)(tests?|benches|ai_docs|logs|gcodes|firmware)/|\.md$|^RRF/run/vsd/sys/'
+                           r'|^RRF/(RepRapFirmware\.wiki|DuetWebControl|DuetSoftwareFramework)$')
+PY_IMPORT = re.compile(r'^\s*(?:from\s+(\.*[\w.]*)\s+import\s+([\w\s,()*]+)|import\s+([\w.,\s]+))', re.M)
+JS_IMPORT = re.compile(r"""(?:\bfrom\s*|\bimport\s*\(?\s*|require\(\s*|new URL\(\s*)['"](\.{1,2}/[^'"]+)['"]""")
+JS_PATH_IN_PY = re.compile(r"""['"]([\w./-]+\.(?:m?js|json|g|usda))['"]""")
+FINGERPRINT_CACHE = {}
+
+
+def runtime_files(commit):
+    """Repository files the headless run can load at this commit: the Python and
+    JavaScript import closures from the entry points, plus DATA_PREFIXES."""
+    tree = dict(line.split('\t', 1)[::-1] for line in git('ls-tree', '-r', commit).splitlines())
+    blobs = {path: entry.split()[2] for path, entry in tree.items()}
+    seen, todo = set(), [p for p in ENTRY_POINTS if p in blobs]
+    while todo:
+        path = todo.pop()
+        if path in seen:
+            continue
+        seen.add(path)
+        text = blob_text(blobs[path])
+        if path.endswith('.py'):
+            here = path.rsplit('/', 1)[0]
+            for base, names, plain in PY_IMPORT.findall(text):
+                modules = [m.strip() for m in plain.split(',')] if plain else [base]
+                if base:
+                    names = [n.strip().split(' as ')[0] for n in names.strip('()').split(',')]
+                    modules += [f'{base}.{n}' if base.strip('.') else base + n for n in names if n]
+                for module in modules:
+                    dots = len(module) - len(module.lstrip('.'))
+                    stem = module.lstrip('.').replace('.', '/')
+                    roots = ['/'.join(here.split('/')[:len(here.split('/')) - dots + 1])] if dots else ['', 'autocal', here]
+                    for root in roots:
+                        for candidate in (f'{root}/{stem}.py', f'{root}/{stem}/__init__.py'):
+                            candidate = candidate.lstrip('/')
+                            if candidate in blobs:
+                                todo.append(candidate)
+            todo += [p for p in JS_PATH_IN_PY.findall(text) if p in blobs]
+        elif path.endswith(('.js', '.mjs')):
+            for spec in JS_IMPORT.findall(text):
+                candidate = os.path.normpath(os.path.join(os.path.dirname(path), spec.split('?')[0]))
+                if candidate in blobs:
+                    todo.append(candidate)
+    data = {p for p in blobs if p.startswith(DATA_PREFIXES) and not DATA_EXCLUDED.search(p)}
+    return {p: blobs[p] for p in seen | data}, blobs
+
+
+def blob_text(blob, cache={}):
+    if blob not in cache:
+        cache[blob] = subprocess.run(['git', 'cat-file', 'blob', blob], cwd=ROOT, capture_output=True,
+                                     text=True, errors='replace').stdout
+    return cache[blob]
+
+
+def fingerprint(commit, machine):
+    """Equal fingerprints mean the headless run for this machine sees identical inputs."""
+    if commit not in FINGERPRINT_CACHE:
+        FINGERPRINT_CACHE[commit] = runtime_files(commit)
+    files, blobs = FINGERPRINT_CACHE[commit]
+    scene = SCENES[machine]
+    files = dict(files, **{p: b for p, b in blobs.items() if p in (
+        f'public/usd_scenes/{scene}.usda', f'RRF/run/vsd/sys/config_{scene}.g')})
+    return hashlib.sha256(json.dumps(sorted(files.items())).encode()).hexdigest()[:20]
 
 
 def run(command, cwd, log):
@@ -57,8 +131,7 @@ def run(command, cwd, log):
 def select_commits(args):
     if args.revs:
         return [git('rev-parse', rev) for rev in args.revs]
-    commits = git('rev-list', '--first-parent', '--reverse', f'--since={args.since}', 'main', '--',
-                  *RELEVANT_PATHS).split()
+    commits = git('rev-list', '--first-parent', '--reverse', f'--since={args.since}', 'main').split()
     return commits[::-args.stride][::-1]  # keep the newest commit whatever the stride
 
 
@@ -125,7 +198,7 @@ def remove_worktree(worktree):
         subprocess.run(['git', 'worktree', 'prune'], cwd=sub)
 
 
-def benchmark(commit, machine, worktree, out, timeout_s):
+def benchmark(commit, machine, fp, worktree, out, timeout_s):
     directory = out / 'runs' / commit[:12] / machine
     shutil.rmtree(directory, ignore_errors=True)
     directory.mkdir(parents=True)
@@ -134,7 +207,7 @@ def benchmark(commit, machine, worktree, out, timeout_s):
            'XLA_FLAGS': '--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1',
            'HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS': '6000000'}
     record = dict(commit=commit, date=git('show', '-s', '--format=%cI', commit),
-                  subject=git('show', '-s', '--format=%s', commit), machine=machine)
+                  subject=git('show', '-s', '--format=%s', commit), machine=machine, fingerprint=fp)
     try:
         with (directory / 'autocal.log').open('w') as log:
             result = subprocess.run([sys.executable, 'autocal/autocal.py', '--headless-sim', '--machine-type',
@@ -152,6 +225,29 @@ def benchmark(commit, machine, worktree, out, timeout_s):
     print(commit[:12], machine, record.get('metrics') or record['error'][:200], flush=True)
 
 
+def run_results(out):
+    """(machine, fingerprint) -> record of an actual run; build failures don't count."""
+    found = {}
+    for r in load_results(out):
+        if 'reused_from' in r or r.get('error', '').startswith('prepare:'):
+            continue
+        found.setdefault((r['machine'], r.get('fingerprint') or fingerprint(r['commit'], r['machine'])), r)
+    return found
+
+
+def fill_reused(out, selection):
+    """Record a result for every selected (commit, machine) whose inputs equal an earlier run's."""
+    have = {(r['commit'], r['machine']) for r in load_results(out) if not r.get('error', '').startswith('prepare:')}
+    runs = run_results(out)
+    with LOCK, (out / 'results.jsonl').open('a') as f:
+        for commit, machine, fp in selection:
+            source = runs.get((machine, fp))
+            if (commit, machine) not in have and source is not None:
+                f.write(json.dumps(dict(source, commit=commit, date=git('show', '-s', '--format=%cI', commit),
+                                        subject=git('show', '-s', '--format=%s', commit),
+                                        fingerprint=fp, reused_from=source['commit'])) + '\n')
+
+
 def load_results(out):
     path = out / 'results.jsonl'
     return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
@@ -166,7 +262,8 @@ def write_summary(out):
     lines = ['# Autocal benchmark per commit', '',
              'Accuracy: worst applied anchor coordinate error. Precision: largest anchor difference '
              'between fits of alternating points. Converged: simulated s until all anchors within 2 mm. '
-             'Total: simulated s for the whole run. ▲ marks a value worse than the previous commit.', '']
+             'Total: simulated s for the whole run. ▲ marks a value worse than the previous commit. '
+             '= marks a commit whose runtime inputs equal an earlier run, so that result is reused.', '']
     for machine in MACHINES:
         lines += [f'## {machine}', '', '| Commit | Date | Accuracy | Precision | Converged | Total | Sweeps | Stop | Subject |',
                   '|---|---|---:|---:|---:|---:|---:|---|---|']
@@ -175,7 +272,7 @@ def write_summary(out):
             record = latest.get((commit, machine))
             if record is None:
                 continue
-            head = f'| {commit[:10]} | {record["date"][:16]} |'
+            head = f'| {commit[:10]}{" =" if "reused_from" in record else ""} | {record["date"][:16]} |'
             if 'error' in record:
                 rows.append(f'{head} error | | | | | | {record["subject"][:60]} — {record["error"][:80].replace("|", "/")} |')
                 continue
@@ -218,10 +315,16 @@ def main():
         return write_summary(out)
 
     # Build failures are retried on the next invocation; run results are final.
-    done = {(r['commit'], r['machine']) for r in load_results(out)
-            if not r.get('error', '').startswith('prepare:')}
-    todo = [(c, [m for m in args.machines if (c, m) not in done]) for c in select_commits(args)]
-    todo = [(c, machines) for c, machines in todo if machines]
+    # Only the first commit with each machine's runtime fingerprint is run.
+    selection = [(c, m, fingerprint(c, m)) for c in select_commits(args) for m in args.machines]
+    fill_reused(out, selection)
+    known = set(run_results(out))
+    todo = {}
+    for commit, machine, fp in selection:
+        if (machine, fp) not in known:
+            known.add((machine, fp))
+            todo.setdefault(commit, []).append((machine, fp))
+    todo = list(todo.items())
     workers = max(1, min(args.threads // args.threads_per_run, int(args.mem_gb // args.mem_gb_per_run)))
     print(f'{len(todo)} commits, {sum(len(m) for _, m in todo)} runs, {workers} at a time; results in {out}')
 
@@ -247,7 +350,7 @@ def main():
             except Exception:
                 error = traceback.format_exc()[-2000:]
                 with LOCK, (out / 'results.jsonl').open('a') as f:
-                    for machine in machines:
+                    for machine, _ in machines:
                         f.write(json.dumps(dict(commit=commit, date=git('show', '-s', '--format=%cI', commit),
                                                 subject=git('show', '-s', '--format=%s', commit),
                                                 machine=machine, error=f'prepare: {error}')) + '\n')
@@ -256,10 +359,11 @@ def main():
                 live.release()
                 continue
             pending[commit] = len(machines)
-            for machine in machines:
-                future = pool.submit(benchmark, commit, machine, worktree, out, args.timeout_min * 60)
+            for machine, fp in machines:
+                future = pool.submit(benchmark, commit, machine, fp, worktree, out, args.timeout_min * 60)
                 future.add_done_callback(lambda _, c=commit, w=worktree: finished(c, w))
                 futures.append(future)
+    fill_reused(out, selection)
     write_summary(out)
 
 
