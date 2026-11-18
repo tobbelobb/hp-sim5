@@ -8,7 +8,7 @@ The per-commit autocal benchmark puts nominal HP4 (no buildup) at about 4.6 mm w
 
 ## Method
 
-- **Exact replay.** [`scripts/replay_poses.mjs`](evidence/scripts/replay_poses.mjs) replays the benchmark's `sweeps.headless/events.jsonl` through the production headless world. It uses the same controller, `simulation_settings` (closed loop, 20 solver iterations) and step schedule. At every 4-axis encoder read it records the true effector pose (position and quaternion) and every cable joint's force. The replay must use today's `public/usd_scenes/hp4.usda`: `d8987ab6` reinterpreted `xformOpOrder`, so the run's own copied `scene.usda` mis-places wheels under HEAD code. With today's scene, all 16 062 HP4 reads and 15 269 HP3 reads reproduce the recorded encoder angles to 0.000°.
+- **Exact replay.** [`scripts/replay_poses.mjs`](evidence/scripts/replay_poses.mjs) replays the benchmark's `sweeps.headless/events.jsonl` through the production headless world. It uses the same controller, `simulation_settings` (closed loop, 20 solver iterations) and step schedule. At every 4-axis encoder read it records the true effector pose (position and quaternion) and every cable joint's force. The replay must use `public/usd_scenes/hp4.usda` from `8aa519dc^`: `d8987ab6` reinterpreted `xformOpOrder`, so the run's own copied `scene.usda` mis-places wheels under HEAD code. With that scene, all 16 062 HP4 reads and 15 269 HP3 reads reproduce the recorded encoder angles to 0.000°.
 - **Data.** Benchmark run `0623060e2227` for HP4 (256 dataset points, 13 sweeps) and HP3 (179 points). Truth is the manifest's initial M669.
 - **Attribution.** The production `fit_pose_least_squares` is run with home offsets on and the default prior. Lengths are substituted with true lengths, measured lengths, or models in between ([`attrib*.py`](evidence/scripts/)). The fitter itself is unchanged. Only `dataset_line_lengths` is replaced.
 - **Geometry.** [`geom.py`](evidence/scripts/geom.py) computes strand-by-strand line lengths from the scene for any effector pose. It includes pinholes, effector wheels and the 4-strand D reeving with wraps.
@@ -85,9 +85,9 @@ The ×2 target is what `5 × start force / min(N)` gives on HP4, compared with t
 ## Limitations and what would change the conclusion
 
 - Single deterministic simulations per setting. No repeat spread, no worn-bearing or soft-stiffness variants, no hardware.
-- The D-reeving roll is a property of the scene. If the real HP4 line verticalizer is not chiral, or its attach point sits on the other side so the per-line offsets cancel, the real machine would roll less. The scene geometry is not changed here; that is a hardware-fidelity question for the owner.
+- The D-reeving roll is a property of the scene. If the real HP4 line verticalizer is not chiral, or its attach point sits on the other side so the per-line offsets cancel, the real machine would roll less. Commit `8aa519dc` aligns the top-line knots with the first wheels in the reduced scenes. Rough-bootstrap replays then give 0.008°/m roll for HP4 and 0.003°/m for pulley-reduced HP5. Hardware needs a separate geometry check.
 - HP5 pulley-reduced has the same ingredients (parallel ABC/D pairs, U = 2) and also loses accuracy versus HP5. Whether the same mechanism explains it is only tested by the validation run below.
-- The remaining common z shift needs a home-reference protocol, for example zeroing or re-measuring home under measurement tension. Fitting more offsets cannot identify it.
+- The sweep lengths leave the physical-home translation undetermined. The home-reference experiment below supplies a stiffness-based estimate.
 
 ## Validation of the code change
 
@@ -102,4 +102,34 @@ These are the committed code (`strand target = 5 × start force / min(N)`) on to
 
 The HP4 run reproduces the ×2 environment-override run exactly, with identical final anchors. HP3 and HP5 have U = 1, so their target is unchanged by construction. The `autocal/tests` suite passes (499).
 
-HP4 is not yet at HP3's accuracy (1.52 vs 0.96 mm). Its remaining error is mostly the common z shift (−1.49 mm, against −0.93 mm on HP3). The next step is a home reference taken under measurement tension, not more tension. HP5 pulley-reduced precision got worse (0.63 → 1.41 mm) while accuracy improved. That is one run, and it needs repeats before reading anything into it.
+With the tension change alone, HP4 still trails HP3 in accuracy (1.52 vs 0.96 mm). Its remaining error is mostly the common z shift (−1.49 mm, against −0.93 mm on HP3). HP5 pulley-reduced precision got worse (0.63 → 1.41 mm) while accuracy improved. That is one run, and it needs repeats before reading anything into it.
+
+## HP4 home reference
+
+The encoder origin has slack ABC lines. For a profiled HP4 sweep fit with free anchor height, estimate their measurement extension as `(T / S) × (home distance + Y/U)`. Here T is the recorded target in newtons per strand, S is the configured axial stiffness in newtons, and Y/U is the carriage-equivalent extra line length in millimetres. The home distance follows the trial anchors during fitting. D still has a free offset because it supports weight at encoder zero. Both fitters and held-out validation receive the same offsets through the existing home-offset path.
+
+Refitting all nine sweeps from the original-scene 1.98 N run isolates the length correction. The benchmark scored 1.52 mm on the anchors applied by history selection. The all-data rigid refit below scores 1.46 mm. Errors are in millimetres relative to the initial firmware geometry.
+
+| Stiffness used in the home estimate | ABC.z error | D.z error | Worst coordinate |
+|---|---:|---:|---:|
+| No home correction | −1.46 | −1.31 | 1.46 |
+| 10 kN | +1.51 | +1.66 | 1.66 |
+| 20 kN (configured) | +0.02 | +0.17 | 0.78 |
+| 40 kN | −0.72 | −0.57 | 0.78 |
+
+At 20 kN the ABC corrections were about +0.217 mm each. The resulting height depends on the configured stiffness and on how closely the real home approaches zero ABC tension. The correction uses the weighted mean strand target as an approximation to the three low-line strains. It has only been tested in simulation.
+
+### End-to-end comparison
+
+Two fresh HP4 headless runs used the revised scene, 5× strand target policy, 4.5 million step budget and patience 8. The control disabled only the ABC home-strain estimate in the fitter and scorer. Each run planned its own sweeps. Both stopped on a stable estimate and applied anchors in firmware.
+
+| Headless run | Worst coordinate (mm) | Split-fit difference (mm) | First within 2 mm (sim s) | Total (sim s) | Sweeps |
+|---|---:|---:|---:|---:|---:|
+| HP4 benchmark | 4.57 | 1.51 | Never | 5912 | 13 |
+| HP4 revised reeving and tension | 1.50 | 0.26 | 4233 | 6519 | 12 |
+| HP4 with home correction | **0.65** | 1.07 | 4233 | 5573 | 9 |
+| HP3 benchmark | 0.96 | 1.23 | 3574 | 5255 | 9 |
+
+D.z moved from 1.33 mm low in the control to 0.02 mm high with the home correction. The largest corrected error was C.x. Both runs first crossed the convergence threshold at the same sweep. The corrected run stopped three sweeps earlier. Its disjoint point fits disagreed more than the control's, even though the applied anchors were closer to truth. Each row represents one simulation.
+
+[Control metrics](evidence/runs/home_control/metrics.json) · [Corrected metrics](evidence/runs/home_reference/metrics.json)
