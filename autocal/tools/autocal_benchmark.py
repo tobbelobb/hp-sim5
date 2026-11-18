@@ -54,8 +54,9 @@ def _convergence_sim_s(data, rows, truth):
             return None
         if np.max(np.abs(np.asarray(anchors) - truth)) <= CONVERGED_MM:
             sweeps = row.get('num_sweeps', len(data['sweeps']) - (last - row['iteration']))
-            points = [p for s in data['sweeps'][:sweeps] for p in s['data_points']]
-            return max(p['clock_time_ms'] for p in points) / 1000
+            times = [p.get('clock_time_ms') for s in data['sweeps'][:sweeps] for p in s['data_points']]
+            # Before 2026-11-15 points carry only per-collection timestamps.
+            return None if None in times else max(times) / 1000
     return None
 
 

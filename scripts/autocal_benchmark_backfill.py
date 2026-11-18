@@ -232,12 +232,43 @@ def benchmark(commit, machine, fp, worktree, out, timeout_s, max_steps):
 # Not a property of the commit: a failed build, a run stopped by killing this
 # script, or a wall-clock deadline missed under load. Such records are retried.
 RETRYABLE = ('prepare:', 'interrupted:')
-RETRYABLE_TEXT = ('stop requested (Ctrl-C)', 'wall-clock deadline')
+RETRYABLE_TEXT = ('stop requested (Ctrl-C)', 'wall-clock deadline', 'fetch failed')
+
+
+def flat(record, out):
+    """The results.jsonl form of a run: one flat line, metrics first, a one-line reason."""
+    if 'status' in record:
+        return record
+    directory = out / 'runs' / record['commit'][:12] / record['machine']
+    error, metrics = record.get('error', ''), record.get('metrics') or {}
+    manifest = directory / 'sweeps.headless/manifest.json'
+    if not metrics and manifest.exists() and json.loads(manifest.read_text()).get('status') == 'complete':
+        try:  # the run finished; only scoring failed, possibly with an older scorer
+            metrics = record['metrics'] = benchmark_metrics(directory / 'sweeps.json', ROOT)
+        except Exception as scoring_error:
+            error = f'scoring: {type(scoring_error).__name__}: {scoring_error}'
+    log = directory / 'sweeps.full_auto.log'
+    collect = next((line.split('sweeps: ', 1)[1] for line in (log.read_text(errors='replace').splitlines()
+                    if log.exists() else []) if line.startswith('Failed to collect sweeps: ')), None)
+    if 'metrics' in record:
+        status, reason = 'ok', None
+    elif error.startswith(RETRYABLE) or any(t in error + (collect or '') for t in RETRYABLE_TEXT):
+        status, reason = 'retry', (collect or error.splitlines()[0])[:200]
+    elif 'usage:' in error:
+        status, reason = 'unsupported', error.rsplit('error: ', 1)[-1].strip()[:120]
+    else:
+        reason = (collect or [line for line in error.splitlines() if line.strip()][-1])[:200]
+        status = 'step-cap' if 'step budget exhausted' in reason else 'failed'
+    rounded = {k: (round(metrics[k], 3 if k.endswith('_mm') else 1) if metrics.get(k) is not None else None)
+               for k in ('accuracy_mm', 'precision_mm', 'convergence_sim_s', 'total_sim_s')}
+    return dict(date=record['date'], commit=record['commit'][:12], machine=record['machine'], status=status,
+                **rounded, sweeps=metrics.get('sweeps'), stop_reason=metrics.get('stop_reason'),
+                reason=reason, subject=record['subject'], run_dir=str(directory.relative_to(out)),
+                fingerprint=record.get('fingerprint') or fingerprint(record['commit'], record['machine']))
 
 
 def is_final(record):
-    error = record.get('error', '')
-    return not error.startswith(RETRYABLE) and not any(text in error for text in RETRYABLE_TEXT)
+    return record['status'] != 'retry'
 
 
 def run_results(out):
@@ -257,9 +288,8 @@ def save_results(out, records):
     def date(r):
         return datetime.fromisoformat(r['date']), MACHINES.index(r['machine'])
     unique = {}
-    for r in sorted(filter(is_final, records), key=date):
-        if 'reused_from' not in r:
-            r.setdefault('fingerprint', fingerprint(r['commit'], r['machine']))
+    for r in sorted((flat(r, out) for r in records if 'reused_from' not in r), key=date):
+        if is_final(r):
             unique.setdefault((r['machine'], r['fingerprint']), r)
     path = out / 'results.jsonl'
     path.with_suffix('.tmp').write_text(''.join(json.dumps(r) + '\n' for r in sorted(unique.values(), key=date)))
@@ -269,6 +299,7 @@ def save_results(out, records):
 def record_result(out, record):
     """Final results into results.jsonl; retryable failures only into retry.jsonl."""
     with LOCK:
+        record = flat(record, out)
         if is_final(record):
             save_results(out, load_results(out) + [record])
         else:
@@ -294,10 +325,11 @@ def write_summary(out):
             if record is None:
                 continue
             head = f'| {commit[:10]} | {record["date"][:16]} |'
-            if 'error' in record:
-                rows.append(f'{head} error | | | | | | {record["subject"][:60]} — {record["error"][:80].replace("|", "/")} |')
+            if record['status'] != 'ok':
+                rows.append(f'{head} {record["status"]} | | | | | | {record["subject"][:60]} — '
+                            f'{record["reason"][:80].replace("|", "/")} |')
                 continue
-            m, cells = record['metrics'], []
+            m, cells = record, []
             for key, unit, margin in METRICS:
                 value, old = m.get(key), previous.get(key)
                 if value is None:
