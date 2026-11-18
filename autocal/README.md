@@ -590,3 +590,39 @@ finite positive value; the resulting covariance is not calibrated uncertainty.
 `--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3 as a fallback
 to the `--stable-step-mm` stop. Final history-selection logs identify the
 held-out-selected iteration/run separately from the running training-rank best.
+
+## Headless benchmark history
+
+CI runs fast tests, slow integration tests, and the four autocal benchmarks in
+parallel. A benchmark job skips simulator setup when its inputs match its
+parent and CI already has a successful run under the same settings and scorer.
+Local backfills and CI use a 4.5 million physics step cap by default.
+
+Default-branch CI publishes `results.jsonl` and `summary.md` at the root of the
+`benchmark-history` branch. The JSONL file retains individual measurements,
+wall times where available, run IDs, and failures. Wall time depends on runner
+load and hardware. The summary groups matching
+inputs and shows medians and counts. CI flags a simulated-time increase above
+5%, loss of convergence, an anchor coordinate error increase above the greater
+of 0.2 mm and 10%, or a maximum error crossing above 1 mm. CI compares with the
+nearest comparable measured first-parent revision. A calibration crash, timeout,
+or failure to apply parameters still fails the benchmark job.
+
+Use matched repeats to investigate a flag. Run the same machine three times
+on each revision under the same local environment and scorer, then compare
+their medians. Increase the sample count if the result is still ambiguous.
+
+```bash
+.venv/bin/python scripts/autocal_benchmark_backfill.py \
+  --revs OLD_SHA NEW_SHA --machines hangprinter_4 --repeat 3
+.venv/bin/python scripts/autocal_benchmark_backfill.py --contribute
+git add autocal/benchmark-results.jsonl
+```
+
+Commit the contributions file as part of the usual review and merge workflow.
+`--contribute` also imports a completed stride-based backfill from the default
+output directory. Pass the same `--out` to the run and import commands if using
+a different directory. The importer verifies each fingerprint against its
+recorded commit. The collector retains additional runs for matching inputs and
+can safely reimport the same file. Legacy backfill measurements with unrecorded
+settings and scorer appear in the summary under their own protocol.

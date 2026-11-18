@@ -1,35 +1,20 @@
-"""Full headless autocal benchmark per machine; opt in with pytest -m heavy.
-
-Each run appends its metrics to autocal_benchmark_history.jsonl. Commit that file
-so total time, convergence time, precision and accuracy can be tracked from commit
-to commit. A metric that got worse than the previous commit's entry for the same
-machine raises a warning; only a broken calibration run fails the test.
-"""
+"""Full headless autocal benchmarks. Opt in with pytest -m heavy."""
 import json
 import os
 from pathlib import Path
 import subprocess
-import sys
-import warnings
 
 import numpy as np
 import pytest
 
 from autocal.pose_fit import dataset_line_lengths, dataset_stretch
-from autocal.tools.autocal_benchmark import CONVERGED_MM, benchmark_metrics
-
-ROOT = Path(__file__).resolve().parents[2]
-HISTORY = Path(__file__).with_name('autocal_benchmark_history.jsonl')
-# Worsening beyond these margins warns: relative for times, absolute mm for errors.
-TIME_MARGIN = 0.02
-ERROR_MARGIN_MM = 0.1
+from autocal.tools.autocal_benchmark import benchmark_metrics
+from autocal.tools.benchmark_history import ROOT, git, measurement, run_autocal, results_text
 
 
 def verify_extra_sensor_run(dataset):
-    manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
-    assert manifest['normal_completion'] and manifest['status'] == 'complete'
+    manifest = verify_applied_calibration(dataset)
     assert manifest['stop_reason'] in ('good-fit', 'stable-estimate', 'patience')
-    assert any(command.startswith('M669 ') for command in manifest['applied_parameters'])
     assert set(manifest['firmware_final']) == {'M669', 'M666'}
     data = json.loads(dataset.read_text())
     assert data['config']['extra_sensors_enabled']
@@ -55,55 +40,36 @@ def verify_extra_sensor_run(dataset):
                 stop_reason=manifest['stop_reason'], simulated_s=manifest['simulated_s'])
 
 
-def git_revision():
-    rev = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    dirty = subprocess.run(['git', 'status', '--porcelain', '--untracked-files=no', '--', '.',
-                            f':!{HISTORY.relative_to(ROOT)}'], cwd=ROOT, capture_output=True, text=True).stdout
-    return rev + ('-dirty' if dirty.strip() else '')
+def verify_applied_calibration(dataset):
+    manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
+    assert manifest['normal_completion'] and manifest['status'] == 'complete'
+    assert any(command.startswith('M669 ') for command in manifest['applied_parameters'])
+    return manifest
 
 
-def regressions(previous, metrics):
-    found = []
-    for key in ('total_sim_s', 'convergence_sim_s'):
-        old, new = previous['metrics'].get(key), metrics[key]
-        if new is None and old is not None:
-            found.append(f'{key}: no longer converges within {CONVERGED_MM} mm (was {old:.0f} s)')
-        elif None not in (old, new) and new > old * (1 + TIME_MARGIN):
-            found.append(f'{key}: {old:.0f} s -> {new:.0f} s')
-    for key in ('precision_mm', 'accuracy_mm'):
-        old, new = previous['metrics'].get(key), metrics[key]
-        if new is None and old is not None:
-            found.append(f'{key}: could not be computed (was {old:.3f} mm)')
-        elif None not in (old, new) and new > old + ERROR_MARGIN_MM:
-            found.append(f'{key}: {old:.3f} mm -> {new:.3f} mm')
-    return found
-
-
-def record_and_compare(machine, metrics):
-    history = [json.loads(line) for line in HISTORY.read_text().splitlines()] if HISTORY.exists() else []
-    revision = git_revision()
-    previous = next((h for h in reversed(history)
-                     if h['machine'] == machine and h['revision'] != revision), None)
-    with HISTORY.open('a') as f:
-        f.write(json.dumps(dict(machine=machine, revision=revision, metrics=metrics)) + '\n')
-    print(machine, revision, metrics)
-    if previous is None:
-        return
-    for message in regressions(previous, metrics):
-        warnings.warn(f'AUTOCAL REGRESSION {machine} since {previous["revision"][:12]}: {message}')
-
-
-def run_benchmark(tmp_path, machine):
+def run_benchmark(tmp_path, machine, verify=verify_applied_calibration):
     dataset = tmp_path / machine / 'sweeps.json'
-    env = {**os.environ, 'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1',
-           'HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS': '6000000'}
-    with (tmp_path / 'autocal.log').open('w') as log:
-        result = subprocess.run([sys.executable, 'autocal/autocal.py', '--headless-sim',
-            '--machine-type', machine, '--dataset', str(dataset), '--recording-mode', 'none',
-            '--patience', '8'], cwd=ROOT, env=env, stdout=log, stderr=log, timeout=3600)
-    assert result.returncode == 0, (tmp_path / 'autocal.log').read_text()[-4000:]
-    record_and_compare(machine, benchmark_metrics(dataset, ROOT))
-    return dataset
+    output = Path(os.environ.get('AUTOCAL_BENCHMARK_OUTPUT', ROOT / 'output/autocal-benchmark'))
+    output.mkdir(parents=True, exist_ok=True)
+    row = measurement(git('rev-parse', 'HEAD'), machine, ci=True)
+    log = output / f'{machine}-{row["measurement_id"].replace(":", "-")}.log'
+    try:
+        result = run_autocal(machine, dataset, ROOT, log, timeout_s=55 * 60)
+        assert result == 0, log.read_text(errors='replace')[-4000:]
+        verify(dataset)
+        row.update(benchmark_metrics(dataset, ROOT), status='ok')
+    except Exception as error:
+        status = 'timeout' if isinstance(error, subprocess.TimeoutExpired) else 'failed'
+        details = log.read_text(errors='replace')[-4000:] if log.exists() else ''
+        if 'physics step budget exhausted' in details.lower():
+            status = 'step-cap'
+        row.update(status=status, reason=str(error).splitlines()[0][:400] if str(error) else type(error).__name__)
+        raise
+    finally:
+        if 'status' in row:
+            name = f'{machine}.jsonl' if row['github_run_id'] else f'{row["measurement_id"]}.jsonl'
+            (output / name).write_text(results_text([row]))
+            print(json.dumps(row))
 
 
 @pytest.mark.slow
@@ -121,10 +87,10 @@ def test_benchmark_hangprinter_4(tmp_path):
 @pytest.mark.slow
 @pytest.mark.heavy
 def test_benchmark_hangprinter_5(tmp_path):
-    verify_extra_sensor_run(run_benchmark(tmp_path, 'hangprinter_5'))
+    run_benchmark(tmp_path, 'hangprinter_5', verify_extra_sensor_run)
 
 
 @pytest.mark.slow
 @pytest.mark.heavy
 def test_benchmark_hangprinter_5_pulley_reduced(tmp_path):
-    verify_extra_sensor_run(run_benchmark(tmp_path, 'hangprinter_5_pulley_reduced'))
+    run_benchmark(tmp_path, 'hangprinter_5_pulley_reduced', verify_extra_sensor_run)

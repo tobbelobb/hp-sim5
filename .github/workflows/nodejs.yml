@@ -4,16 +4,51 @@ on:
   push:
     branches-ignore:
       - deploy_flipper
+      - benchmark-history
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Fast tests
+            suite: fast
+          - name: Slow integration
+            suite: slow
+          - name: Autocal HP3
+            suite: benchmark
+            machine: hangprinter_3
+          - name: Autocal HP4
+            suite: benchmark
+            machine: hangprinter_4
+          - name: Autocal HP5
+            suite: benchmark
+            machine: hangprinter_5
+          - name: Autocal HP5 reduced
+            suite: benchmark
+            machine: hangprinter_5_pulley_reduced
     env:
       CI: true
       RUN_RRF_HTTP_ENDPOINT_TESTS: "1"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ matrix.suite == 'benchmark' && 2 || 1 }}
+      - name: Check benchmark inputs
+        if: matrix.suite == 'benchmark'
+        id: benchmark
+        env:
+          MACHINE: ${{ matrix.machine }}
+        run: python3 scripts/autocal_benchmark_ci.py check "$MACHINE"
       - name: Fetch required submodules (https)
+        if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
@@ -27,18 +62,22 @@ jobs:
             forward-transform-dev/hangprinter-forward-transform \
             flex-compensation-dev/hangprinter-flex-compensation
       - name: Use latest Node.js LTS
-        uses: actions/setup-node@v3
+        if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
           check-latest: true
           cache: 'npm'
       - name: Install dependencies
+        if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
         run: npm ci
       - name: Install Rust for native and Wasm builds
+        if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
       - name: Install Python, pytest, numpy, scipy, matplotlib, websockets, pytest-asyncio, and usd-core
+        if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip python3-venv build-essential
@@ -48,8 +87,60 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install -r autocal/requirements-jax-cpu.txt
       - name: Configure rrf_simulator build
+        if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
         run: cmake -S RRF -B RRF/build
       - name: Build rrf_simulator
+        if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
         run: cmake --build RRF/build --target rrf_simulator -j
-      - name: Run test suite
+      - name: Build physics for slow tests
+        if: matrix.suite == 'slow' || steps.benchmark.outputs.run == 'true'
+        run: |
+          npm run build:native -- --no-pgo
+          npm run build:wasm
+      - name: Fast tests
+        if: matrix.suite == 'fast'
         run: scripts/run_ci_tests.sh
+      - name: Slow integration tests
+        if: matrix.suite == 'slow'
+        run: .venv/bin/python -m pytest -v --durations=10 -o faulthandler_timeout=60 -m "slow and not heavy"
+      - name: Autocal benchmark
+        if: steps.benchmark.outputs.run == 'true'
+        env:
+          MACHINE: ${{ matrix.machine }}
+          AUTOCAL_BENCHMARK_OUTPUT: ${{ runner.temp }}/autocal-benchmark
+        run: .venv/bin/python -m pytest -s -m heavy "autocal/tests/test_autocal_benchmark.py::test_benchmark_$MACHINE"
+      - name: Record benchmark setup failure
+        if: failure() && steps.benchmark.outputs.run == 'true'
+        env:
+          MACHINE: ${{ matrix.machine }}
+          AUTOCAL_BENCHMARK_OUTPUT: ${{ runner.temp }}/autocal-benchmark
+        run: python3 scripts/autocal_benchmark_ci.py missing "$MACHINE" "$AUTOCAL_BENCHMARK_OUTPUT"
+      - name: Upload benchmark result and log
+        if: "!cancelled() && steps.benchmark.outputs.run == 'true'"
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ matrix.machine }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/autocal-benchmark/
+          if-no-files-found: error
+
+  collect-benchmark-history:
+    if: "!cancelled() && github.ref_name == github.event.repository.default_branch"
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-*
+          path: ${{ runner.temp }}/autocal-benchmark-incoming
+      - name: Publish benchmark history
+        env:
+          INCOMING: ${{ runner.temp }}/autocal-benchmark-incoming
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          python3 scripts/autocal_benchmark_ci.py collect "$INCOMING"
