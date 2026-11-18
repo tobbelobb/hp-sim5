@@ -493,7 +493,6 @@ def estimate_effective_radii_with_spool_model(
     robust_debug: bool,
     low_anchor_z: Optional[float] = None,
     prefer_zero_tension_angles: bool = False,
-    fit_structure_levels: Optional[Sequence[int]] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     initial_radii_mm: Optional[np.ndarray] = None,
@@ -510,7 +509,6 @@ def estimate_effective_radii_with_spool_model(
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_r = _spool_mode_enabled(mode_r)
     search_b = _spool_mode_enabled(mode_b)
-    fit_structure_set = set(_parse_fit_structure_levels(fit_structure_levels))
     if not (search_r or search_b):
         raise ValueError("spool estimation requires find_radii and/or find_buildup_factor")
 
@@ -819,7 +817,6 @@ def estimate_effective_radii_with_spool_model(
                 sigma_source=sigma_source,
                 robust_debug=robust_debug,
                 prefer_zero_tension_angles=prefer_zero_tension_angles,
-                fit_structure_levels=sorted(int(v) for v in fit_structure_set),
                 filter_schedule=None,
                 objective_schedule=[int(pass_objective_id)],
                 initial_radii_mm=radii_seed,
@@ -848,18 +845,6 @@ def estimate_effective_radii_with_spool_model(
                 initial_guess=np.asarray(fit_anchors_pass, dtype=float),
                 low_anchor_z=low_anchor_z,
             )
-            plan_tmp = {
-                "length_model": {
-                    "find_radii": bool(search_r),
-                    "find_buildup_factor": bool(search_b),
-                    "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
-                },
-                "calibration": cal_pass,
-                "cost_raw": cal_pass.get("cost"),
-                "cost_noise_normalized": cal_pass.get("cost"),
-                "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
-            }
-            pass_score_ui, pass_rank_score, pass_score_basis = _plan_score_ui(plan_tmp)
             if pass_kind == "dynamic":
                 constant_mask_info["attempted"] = True
                 mask_dataset, mask_info = _build_locked_filter_dataset(
@@ -892,9 +877,6 @@ def estimate_effective_radii_with_spool_model(
                         if isinstance(fit_info_pass, dict)
                         else False
                     ),
-                    "score_ui": float(pass_score_ui) if np.isfinite(pass_score_ui) else None,
-                    "rank_score": float(pass_rank_score) if np.isfinite(pass_rank_score) else None,
-                    "score_basis": str(pass_score_basis),
                     "cost_noise_normalized": (
                         float(cal_pass.get("cost"))
                         if isinstance(cal_pass.get("cost"), (int, float))
@@ -1548,11 +1530,7 @@ def estimate_effective_radii_with_spool_model(
                 rows_policy="always",
                 need_legacy_cost=False,
             )
-            m_layered = _layered_internal_metric_from_noise_metrics(
-                noise_metrics,
-                fit_structure_levels=fit_structure_set,
-                use_fit_structure_penalties=False,
-            )
+            m_layered = _layered_internal_metric_from_noise_metrics(noise_metrics)
             m_internal = _blend_internal_metric_with_risk(m_layered, risk_metric)
             rank_score = _layered_rank_score_from_internal_metric(m_internal)
             return float(rank_score), (None if m_internal is None else float(m_internal))
@@ -1915,7 +1893,6 @@ def estimate_effective_radii_with_spool_model(
         "anchor_step_improvement_rel_threshold": float(_SPOOL_ANCHOR_STEP_IMPROVE_REL),
         "filter_schedule_requested": [str(v) for v in requested_filter_schedule],
         "objective_schedule_requested": [int(v) for v in requested_objective_schedule],
-        "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
         "prefit_enabled": bool(enable_prefit),
         "bootstrap_anchor_refresh_enabled": bool(enable_bootstrap_anchor_refresh),
         "prefit": dict(prefit_info),

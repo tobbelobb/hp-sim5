@@ -102,7 +102,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         equal_strain=bool(args.equal_strain),
         filter_schedule=spool_options["filter_schedule"],
         objective_schedule=spool_options["objective_schedule"],
-        fit_structure=spool_options["fit_structure"],
     )
     _print_ellipse_plan(
         plan,

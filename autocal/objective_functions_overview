@@ -98,106 +98,26 @@ bounded prior. Anchor estimates can supply these sensitivities during fitting.
 Do not freely adjust each observation to fit the current anchors: that would
 remove the evidence the optimizer is meant to explain. This model change is
 proposed and needs synthetic perturbation, derivative-parity and held-out tests
-before affecting scores, filtering or final history selection.
+before affecting filtering or the fit.
 
-## Plan scores and patience
+## Variant choice, applied fit and reported quality
 
-`_plan_score_ui(...)` returns `raw_fit_score_ui`, `rank_score`, and `score_basis`.
-Without spool fitting, the score basis is `standard-noise`.
-Both scores then use the primary noise-normalized cost.
+Variants of one iteration fit the same data. The loop
+picks the lowest primary cost, after constrained variants. It never compares the
+costs of fits to different data: more poses expose more model mismatch, so cost
+rises while anchors improve.
 
-With spool fitting, the score basis is `layered-calibrated`.
-It combines residual diagnostics, trimmed risk, and structural penalties.
-`raw_fit_score_ui` is the per-plan quality score.
-`rank_score` orders run variants within an iteration.
-Relative uncertainty and primary cost break ties.
-Constrained variants take priority over variants with an underconstrained sentinel.
+The newest admissible fit is applied. `anchor_uncertainty.plan_anchor_uncertainty_mm`
+reports its quality in mm: the largest anchor-coordinate standard deviation of point
+fits that each leave out one sweep. Patience counts sweeps without a new lowest
+uncertainty. The value misses bias every sweep shares, such as unmodelled stretch.
+With `--find-radii` or `--find-buildup-factor`, adding sweeps does not reliably improve the fit, so those runs instead score every saved fit, frozen, on the sweeps that arrived after it, and apply the consensus of the best-predicting fits (`history_selection.py`). A failed or diverged jackknife (above 3 mm and 10 times the lowest so far) is never applied.
 
-Full-auto computes a history score for the selected plan from each iteration:
+Spool refinement still compares candidates on the same data with
+`_spool_rank_score(...)`: a reduced chi-square inflated by robust spread and trimming,
+blended with the trimmed risk metric.
 
-```text
-history_rank_score = rank_score + iteration_adjust + 0.20 * coverage_adjust
-```
+## Stage boundaries
 
-The iteration adjustment gives a small early bonus and a growing linear penalty.
-The coverage adjustment rewards retained observations and penalizes filtering.
-`history_rank_score` controls "The best try so far" and patience resets.
-Prediction scores do not control patience.
-
-## Final history selection by prediction
-
-`_select_history_summary_candidate(...)` runs when full-auto accepts a result.
-It evaluates saved, frozen models on whole sweeps absent from their training IDs.
-It uses the latest saved history plan's datasets.
-Stored replay sweeps that have not entered that dataset are not used.
-Sweeps trimmed during fitting still count as training sweeps.
-
-`score_future_sweeps(...)` in `predictive_validation.py` computes two scores:
-
-- `heldout_prediction` uses the raw dataset and the candidate's own spool model.
-  It uses that candidate's flex, spring, noise-mean, residual, and sigma settings.
-- `anchor_comparison` uses the latest saved plan's transformed estimation dataset.
-  All candidates share this length model and the helper's default validation settings.
-  This score compares anchors before considering each candidate's own-model score.
-
-Validation keeps pointwise and sweep filtering off. It uses a robust loss.
-It does not refit anchors or spool parameters. One held-out sweep is enough.
-Every observation must produce a residual. Invalid or incomplete predictions
-receive infinity. No held-out sweeps means the score is unavailable.
-
-If any candidate has a finite own-model prediction, only those candidates compete.
-If held-out predictions exist but all fail, calibration is not applied.
-If no candidate has held-out sweeps, selection falls back to history ranking.
-
-The final ordering is:
-
-1. `anchor_comparison`
-2. `heldout_prediction`
-3. `history_rank_score`
-4. `rank_score`
-5. Relative uncertainty
-6. Primary cost
-7. Later iteration
-
-Candidates can have different numbers of held-out sweeps.
-These prediction scores are residual costs, not the displayed quality score.
-
-That ordering chooses the reported candidate, and it still decides when to stop,
-but it no longer sets the applied geometry. `history_selection` merges candidate
-anchor sets closer than `HISTORY_CONSENSUS_MERGE_MM` (0.01 mm) and averages the
-closest remaining pair; `consensus_anchor_estimate` returns that mean together
-with its member iterations and spread, and `apply_consensus_plan` replaces the
-applied `anchors` while dropping any cached `calibration` block so M669 rebuilds
-from the consensus. With one usable candidate the best-ranked plan is applied
-unchanged, so the rule degrades to the previous behaviour. The members and
-spread are logged as `history_select: consensus ...` and summarized in
-`history_consensus_members` and `history_consensus_spread_mm`.
-
-## Displayed quality and structural penalties
-
-In layered full-auto mode, displayed `fit_score_ui` comes from `history_rank_score`.
-In standard mode, it equals `raw_fit_score_ui`.
-It is not remapped from either prediction score.
-The interpretation bands are below `2` (ideal), `2` to below `5` (good),
-`5` to below `10` (usable), and `10` or above (concerning).
-Fit quality does not establish anchor accuracy.
-
-`normalized_sweep_bias` always contributes to layered plan scoring when its
-trimmed-risk scale is available. `--fit-structure 2` adds an above-reference penalty.
-Levels `1` and `3` add tail-ratio and tail-factor penalties. The default is `3`.
-These penalties affect plan ranking and displayed quality.
-They do not affect `_data_cost(...)`, `_spool_rank_score(...)`, or spool priors.
-
-The implementation is in `filter_pass.py`, `initialize_pass.py`,
-`alternating_refinement.py`, `scale_polish.py`, `_autocal_common.py`, and `autocal.py`.
-See `optimization_algorithm_overview` for the loop structure.
-
-## Testing one score at a time
-
-`history_selection.evaluate_history_candidates` produces prediction scores and
-ordering keys from frozen history models. `rank_history_candidates` applies the
-existing eligibility and ordering policy to those evaluated records. A saved
-history artifact permits ranking trials without fitting or re-evaluating
-residuals. `fit_stage.fit_ellipse_dataset` and
-`planning_pass.plan_ellipse_sweep` likewise separate fitting from movement
-ranking. These boundaries do not redefine any objective or acceptance score.
+`fit_stage.fit_ellipse_dataset` and `planning_pass.plan_ellipse_sweep` separate
+fitting from movement ranking. These boundaries do not redefine any objective.

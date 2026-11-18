@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import signal
 import sys
+import time
 from contextlib import nullcontext, ExitStack
 from pathlib import Path
 
@@ -17,12 +18,8 @@ from autocal.rough_bootstrap import (
     MAX_EXTRA_ROUGH_SWEEPS, assess_rough_geometry, next_rough_sweep,
     bootstrap_state_error, write_bootstrap_state,
 )
-from autocal.history_selection import (
-    HISTORY_CONSENSUS_MAX_SPREAD_MM,
-    evaluate_history_candidates,
-    select_history_plan,
-)
-from autocal.stage_artifacts import write_stage_artifact
+from autocal.history_selection import HISTORY_CONSENSUS_MAX_SPREAD_MM, evaluate_history_candidates, select_history_plan
+from autocal.anchor_uncertainty import newest_trusted_index, plan_anchor_uncertainty_mm, uncertainty_label
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
@@ -133,7 +130,6 @@ def _full_auto_loop(
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
-    fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
     sparse_recovery: bool = False,
     firmware: str = "rrf",
@@ -213,19 +209,8 @@ def _full_auto_loop(
             anchor_str = np.array2string(anchors, precision=2, separator=", ")
         elif anchors is not None:
             anchor_str = str(np.asarray(anchors))
-        summary_raw_fit_score_ui, _, summary_score_basis = _plan_score_ui(best_plan)
-        meta_for_summary = summary_meta if isinstance(summary_meta, dict) else best_meta
-        summary_fit_score_ui = _full_auto_display_fit_score_ui(
-            score_basis=meta_for_summary.get("score_basis", summary_score_basis),
-            raw_fit_score_ui=_float_or_none(
-                meta_for_summary.get("raw_fit_score_ui", summary_raw_fit_score_ui)
-            ),
-            history_rank_score=_float_or_none(meta_for_summary.get("history_rank_score")),
-        )
-        summary_fit_score_for_quality = (
-            float(summary_fit_score_ui) if np.isfinite(summary_fit_score_ui) else None
-        )
-        quality_label = _solution_quality_label(summary_fit_score_for_quality)
+        meta_for_summary = dict(summary_meta or {})
+        uncertainty = _float_or_none(meta_for_summary.get("anchor_uncertainty_mm"))
         _append_jsonl(log_path, {
             "timestamp": datetime.now().isoformat(), "dataset": str(work_path),
             "event": "summary", "m669": m669, "m666": m666,
@@ -235,9 +220,10 @@ def _full_auto_loop(
         })
         _log_console("")
         _log_console("== Calibration summary ==")
-        _log_console(f"Found parameters of {quality_label} quality")
-        _log_console(f"Fit quality score (lower is better): {_fmt_float(summary_fit_score_for_quality)}")
-        _log_console("; Fit quality measures agreement with the length model. Absolute anchor accuracy needs independent validation.")
+        _log_console(f"Found parameters of {uncertainty_label(uncertainty)} quality")
+        _log_console(f"Anchor uncertainty (mm, lower is better): {_fmt_float(uncertainty)}")
+        _log_console("; Spread of anchors refitted without one sweep at a time. "
+                     "It misses bias that every sweep shares, such as unmodelled line stretch.")
         if m669:
             _log_console(f"Anchors (M669): {m669}")
         elif anchor_str:
@@ -249,7 +235,6 @@ def _full_auto_loop(
             best_run = str(meta_for_summary.get("run_id", "")).strip()
             label = best_flags or best_run or "default"
             _log_console(f"Selected variant/flag setup: {label}")
-        _log_console(_solution_quality_message(summary_fit_score_for_quality))
 
         skip_sim_send = bool(sim and no_collect and not server_explicit)
         if headless_sim is not None and not no_collect:
@@ -692,82 +677,62 @@ def _full_auto_loop(
         "objective_schedule": [
             int(v) for v in _parse_objective_schedule(objective_schedule, label="objective_schedule")
         ],
-        "fit_structure": [int(v) for v in _parse_fit_structure_levels(fit_structure)],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "low_anchor_z": (None if low_anchor_z is None else float(low_anchor_z)),
         "fit_home_offsets": bool(fit_home_offsets),
     }
 
-    best_cost = float("inf")
-    best_score_ui = float("inf")
-    best_rank_score = float("inf")
-    best_plan: Optional[Dict[str, object]] = None
-    best_meta: Dict[str, object] = {}
     history_candidates: List[Dict[str, object]] = []
-    history_total_iterations = 0
     stopping = StoppingPolicy(patience=patience, stop_file=stop_file, stable_step_mm=float(stable_step_mm), machine_type=str(machine_type))
     stopping.announce(_log_console)
-    min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     has_variants = bool(full_auto_runs)
-    def _select_history_summary_candidate(
-        *,
-        reason: str,
+
+    spool_fit = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+
+    def _heldout_candidate() -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
+        scored = evaluate_history_candidates(
+            history_candidates, use_noise_mean=use_noise_mean,
+            pointwise_residual_mode=pointwise_residual_mode, sigma_source=sigma_source, log_line=_log_line,
+        )
+        plan, meta, ranked = select_history_plan(scored)
+        if not ranked:
+            _log_console("; full-auto: all held-out predictions failed; stopping without applying calibration.")
+            return None, None
+        for _key, candidate, info in ranked[:5]:
+            _log_line(f"; history_select: iter={candidate.get('iteration')} run={candidate.get('run_id')} "
+                      f"anchor_comparison={_fmt_float(info.get('anchor_comparison_score'))} "
+                      f"heldout_prediction={_fmt_float(info.get('prediction_score'))} "
+                      f"heldout_sweeps={_fmt_float(info.get('prediction_sweeps'), fmt='.0f')}")
+        members = meta["history_consensus_members"]
+        _log_line(f"; history_select: consensus selected_iter={meta.get('iteration')} members={members} "
+                  f"spread_mm={_fmt_float(meta['history_consensus_spread_mm'])} "
+                  f"max_spread_mm={HISTORY_CONSENSUS_MAX_SPREAD_MM:g} "
+                  f"applied={'consensus' if len(members) > 1 else 'best-ranked'}")
+        return plan, meta
+
+    def _newest_candidate(
         fallback_plan: Optional[Dict[str, object]] = None,
         fallback_meta: Optional[Dict[str, object]] = None,
     ) -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
+        # Apply the fit to all admissible data. Across 69 distinct recorded headless
+        # runs the newest fit was within 0.8 mm of the best candidate on average and no
+        # worse than fit-cost, held-out or consensus selection. A newest fit whose
+        # jackknife failed or diverged is skipped; the replayed 23_april_2026 dataset
+        # ends with diverged fits.
+        if history_candidates and spool_fit:
+            return _heldout_candidate()
         if history_candidates:
-            scored = evaluate_history_candidates(
-                history_candidates, collector_args=collector_args_eff,
-                use_noise_mean=use_noise_mean,
-                pointwise_residual_mode=pointwise_residual_mode,
-                sigma_source=sigma_source, log_line=_log_line,
-            )
-            if stage_artifacts is not None:
-                write_stage_artifact(stage_artifacts / f"history-{history_total_iterations:03d}.json", "history", {
-                    "candidates": history_candidates, "evaluated": scored,
-                    "validation_options": {
-                        "collector_args": collector_args_eff, "use_noise_mean": use_noise_mean,
-                        "pointwise_residual_mode": pointwise_residual_mode, "sigma_source": sigma_source,
-                    },
-                })
-            applied_plan, summary_meta, ranked = select_history_plan(scored)
-            if not ranked:
-                _log_console(
-                    "; full-auto: all held-out predictions failed; "
-                    "stopping without applying calibration."
-                )
+            index = newest_trusted_index([c.get("anchor_uncertainty_mm") for c in history_candidates])
+            if index is None:
+                _log_console("; full-auto: no fit has a usable anchor uncertainty.")
                 return None, None
-            _log_line(
-                f"; history_select: reason={reason} "
-                f"candidates={len(ranked)} total_iterations={history_total_iterations}"
-            )
-            for _sort_key, candidate, info in ranked[: min(5, len(ranked))]:
-                _log_line(
-                    f"; history_select: "
-                    f"iter={candidate.get('iteration')} "
-                    f"run={candidate.get('run_id')} "
-                    f"rank={_fmt_float(_float_or_none(candidate.get('rank_score')))} "
-                    f"anchor_comparison={_fmt_float(info.get('anchor_comparison_score'))} "
-                    f"heldout_prediction={_fmt_float(info.get('prediction_score'))} "
-                    f"heldout_sweeps={_fmt_float(info.get('prediction_sweeps'), fmt='.0f')} "
-                    f"iteration_adjust={_fmt_float(info.get('iteration_adjust'))} "
-                    f"coverage_adjust={_fmt_float(info.get('coverage_adjust'))} "
-                    f"selection_score={_fmt_float(info.get('selection_score'))}"
-                )
-            _log_line(
-                f"; history_select: consensus reason={reason} "
-                f"selected_iter={summary_meta.get('iteration')} "
-                f"selected_run={summary_meta.get('run_id')} "
-                f"members={summary_meta['history_consensus_members']} "
-                f"spread_mm={_fmt_float(summary_meta['history_consensus_spread_mm'])} "
-                f"max_spread_mm={HISTORY_CONSENSUS_MAX_SPREAD_MM:g} "
-                f"applied={'consensus' if len(summary_meta['history_consensus_members']) > 1 else 'best-ranked'}"
-            )
-            return applied_plan, summary_meta
-
-        if best_plan is not None:
-            return best_plan, dict(best_meta)
+            newest = history_candidates[index]
+            if newest is not history_candidates[-1]:
+                _log_console(f"; full-auto: newest fit failed or diverged (anchor uncertainty "
+                             f"{_fmt_float(history_candidates[-1].get('anchor_uncertainty_mm'), suffix=' mm')}); "
+                             f"applying iteration {newest['iteration']}.")
+            return newest["plan"], dict(newest["summary_meta"])
         if fallback_plan is not None:
             return fallback_plan, dict(fallback_meta or {})
         return None, None
@@ -775,27 +740,22 @@ def _full_auto_loop(
     def _accept_best(reason: str) -> int:
         if headless_sim is not None:
             headless_sim.manifest["stop_reason"] = reason
-        summary_plan, summary_meta = _select_history_summary_candidate(reason=reason)
+        summary_plan, summary_meta = _newest_candidate()
         if summary_plan is None:
-            _log_console(f"; full-auto: stop requested ({reason}) but no best plan available; stopping.")
-            _log_console(_solution_quality_message(None))
+            _log_console(f"; full-auto: stop requested ({reason}) but no admissible fit available; stopping.")
             return _finalize(2)
-        _log_console(f"; full-auto: stop requested ({reason}); accepting best-so-far.")
+        _log_console(f"; full-auto: stop requested ({reason}); accepting the newest fit.")
         return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
 
     def _compute_run_metrics(plan: Dict[str, object]) -> Dict[str, object]:
         primary_cost = _plan_primary_cost(plan)
-        raw_fit_score_ui, rank_score, score_basis = _plan_score_ui(plan)
         max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
         warnings = list(_plan_data_quality_warnings(plan))
         noise_metrics = _plan_noise_metrics(plan)
-        rank_coverage_adjust, rank_coverage_info = _rank_coverage_adjustment_from_noise_metrics(
-            noise_metrics
-        )
         underconstrained_penalty = _plan_hits_underconstrained_penalty(plan, primary_cost)
         if underconstrained_penalty and "underconstrained_penalty" not in warnings:
             warnings.append("underconstrained_penalty")
-        valid = bool(np.isfinite(primary_cost) and np.isfinite(rank_score) and cov_ok)
+        valid = bool(np.isfinite(primary_cost) and cov_ok)
         pose_fit_metrics: Dict[str, object] = {}
         pose_fit = plan.get("pose_fit")
         if isinstance(pose_fit, dict):
@@ -809,10 +769,6 @@ def _full_auto_loop(
         return {
             **pose_fit_metrics,
             "primary_cost": primary_cost,
-            "raw_fit_score_ui": raw_fit_score_ui,
-            "score_ui": raw_fit_score_ui,
-            "rank_score": rank_score,
-            "score_basis": score_basis,
             "cost_noise_normalized": plan.get("cost_noise_normalized"),
             "chi2_red": noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None,
             "J": noise_metrics.get("J") if isinstance(noise_metrics, dict) else None,
@@ -822,12 +778,6 @@ def _full_auto_loop(
             "rel_std": rel_std,
             "covariance_ok": cov_ok,
             "underconstrained_penalty": underconstrained_penalty,
-            "rank_coverage_adjust": rank_coverage_adjust,
-            "rank_effective_obs": rank_coverage_info.get("effective_obs"),
-            "rank_total_obs": rank_coverage_info.get("total_obs"),
-            "rank_filtered_ratio": rank_coverage_info.get("filtered_ratio"),
-            "rank_obs_bonus": rank_coverage_info.get("obs_bonus"),
-            "rank_filtered_penalty": rank_coverage_info.get("filtered_penalty"),
             "warnings": warnings,
             "valid": valid,
             "line_model_prefit": (
@@ -843,12 +793,7 @@ def _full_auto_loop(
         _log_line(
             f"{log_prefix}: cost_raw={_fmt_float(cost_raw)} "
             f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(metrics.get('J'))} "
-            f"chi2_red={_fmt_float(metrics.get('chi2_red'))} "
-            f"raw_fit_score_ui={_fmt_float(metrics.get('raw_fit_score_ui'))} "
-            f"score_basis={metrics.get('score_basis')} "
-            f"rank_coverage_adjust={_fmt_float(metrics.get('rank_coverage_adjust'))} "
-            f"effective_obs={_fmt_float(metrics.get('rank_effective_obs'), fmt='.0f')} "
-            f"filtered_ratio={_fmt_float(metrics.get('rank_filtered_ratio'))}"
+            f"chi2_red={_fmt_float(metrics.get('chi2_red'))}"
         )
 
     def _execute_plan_run(
@@ -946,7 +891,6 @@ def _full_auto_loop(
                 write_cfg=cfg_path,
                 collector_output=collector_output,
                 collector_args=collector_args_eff,
-                fit_structure=settings.get("fit_structure"),
                 stage_artifact=(
                     stage_artifacts / f"fit-{step:03d}-{cfg_run_id}.json"
                     if stage_artifacts is not None else None
@@ -1005,9 +949,6 @@ def _full_auto_loop(
                     settings.get("find_buildup_factor")
                 )
                 settings["theta0_mode"] = _normalize_theta0_mode(settings.get("theta0_mode"))
-                settings["fit_structure"] = [
-                    int(v) for v in _parse_fit_structure_levels(settings.get("fit_structure"))
-                ]
 
                 raw_r0_bounds = settings.get("r0_bounds")
                 if isinstance(raw_r0_bounds, str):
@@ -1099,8 +1040,6 @@ def _full_auto_loop(
                 candidate_plan = history_candidates[-1].get("plan")
                 if isinstance(candidate_plan, dict):
                     warm_source = candidate_plan
-            if warm_source is None and isinstance(best_plan, dict):
-                warm_source = best_plan
             if warm_source is not None and not stopping.stop_requested():
                 warm_seeds = warm_start_seeds_from_plan(warm_source)
                 if warm_seeds.get("initial_guess") is not None:
@@ -1129,23 +1068,18 @@ def _full_auto_loop(
                 )
                 _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
                 _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
-                if best_plan is not None:
+                if history_candidates:
                     return _accept_best("no-valid-runs")
-                _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
                 return _finalize(2)
 
-            def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, float, float, str]:
+            def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
+                # Cold and warm starts of one run spec share an objective, so their
+                # costs compare. --shotgun specs that change the sigma source or
+                # filtering do not share one; main ranked those by cost as well.
                 metrics = entry["metrics"]
                 underconstrained = bool(metrics.get("underconstrained_penalty", False))
-                score = float(metrics.get("rank_score", float("inf")))
                 cost = float(metrics.get("primary_cost", float("inf")))
-                rel = metrics.get("rel_std")
-                rel_val = (
-                    float(rel)
-                    if isinstance(rel, (int, float)) and np.isfinite(rel)
-                    else float("inf")
-                )
-                return (1.0 if underconstrained else 0.0), score, rel_val, cost, str(entry.get("id", ""))
+                return (1.0 if underconstrained else 0.0), cost, str(entry.get("id", ""))
 
             selected = sorted(valid_runs, key=_sort_key)[0]
             recovery_info = None
@@ -1166,33 +1100,19 @@ def _full_auto_loop(
             selected_id = str(selected.get("id", "run"))
             selected_flags = str(selected.get("flags", "")).strip()
             selected_cost = float(metrics.get("primary_cost", float("nan")))
-            selected_raw_fit_score_ui = float(
-                metrics.get("raw_fit_score_ui", metrics.get("score_ui", float("nan")))
-            )
-            selected_rank_score = float(metrics.get("rank_score", float("inf")))
-            selected_score_basis = str(metrics.get("score_basis", "standard-noise"))
             selected_underconstrained = bool(metrics.get("underconstrained_penalty", False))
             selected_max_std = metrics.get("max_std_mm")
             selected_rel_std = metrics.get("rel_std")
             selected_warnings = list(metrics.get("warnings") or [])
-            selected_history_rank_score, selected_history_rank_info = _full_auto_history_selection_score(
-                selected_rank_score,
-                iteration_index=step,
-                coverage_adjust=_float_or_none(metrics.get("rank_coverage_adjust")),
-            )
-            selected_fit_score_ui = _full_auto_display_fit_score_ui(
-                score_basis=selected_score_basis,
-                raw_fit_score_ui=selected_raw_fit_score_ui,
-                history_rank_score=selected_history_rank_score,
-            )
+            history_admissible = (not selected_underconstrained) and np.isfinite(selected_cost)
+            uncertainty_started = time.perf_counter()
+            selected_uncertainty = plan_anchor_uncertainty_mm(plan) if history_admissible else None
+            uncertainty_seconds = time.perf_counter() - uncertainty_started
             selected_summary_meta = {
                 "iteration": step,
                 "run_id": selected_id,
                 "flags": selected_flags,
-                "score_ui": selected_fit_score_ui,
-                "raw_fit_score_ui": selected_raw_fit_score_ui,
-                "history_rank_score": selected_history_rank_score,
-                "score_basis": selected_score_basis,
+                "anchor_uncertainty_mm": selected_uncertainty,
                 "cost": selected_cost,
                 "rel_std": selected_rel_std,
                 "max_std_mm": selected_max_std,
@@ -1220,28 +1140,6 @@ def _full_auto_loop(
                 except Exception as exc:
                     _log_line(f"; full-auto warning: failed to write sweep config {write_cfg}: {exc}")
 
-            improvement = None
-            if np.isfinite(selected_cost):
-                improvement = float(best_cost) - float(selected_cost) if np.isfinite(best_cost) else None
-            score_improvement = None
-            if np.isfinite(selected_fit_score_ui):
-                score_improvement = (
-                    float(best_score_ui) - float(selected_fit_score_ui)
-                    if np.isfinite(best_score_ui)
-                    else None
-                )
-            improved = False
-            if (not selected_underconstrained) and np.isfinite(selected_rank_score) and (
-                best_plan is None or selected_rank_score <= best_rank_score - min_delta
-            ):
-                best_score_ui = float(selected_fit_score_ui)
-                best_rank_score = float(selected_rank_score)
-                best_cost = float(selected_cost)
-                best_plan = plan
-                best_meta = dict(selected_summary_meta)
-                improved = True
-
-            history_admissible = (not selected_underconstrained) and np.isfinite(selected_rank_score)
             if history_admissible:
                 training_dataset = plan.get("dataset")
                 training_sweeps = (
@@ -1255,12 +1153,7 @@ def _full_auto_loop(
                         "iteration": step,
                         "run_id": selected_id,
                         "flags": selected_flags,
-                        "rank_score": selected_rank_score,
-                        "history_rank_score": selected_history_rank_score,
-                        "rank_coverage_adjust": metrics.get("rank_coverage_adjust"),
-                        "score_ui": selected_fit_score_ui,
-                        "raw_fit_score_ui": selected_raw_fit_score_ui,
-                        "score_basis": selected_score_basis,
+                        "anchor_uncertainty_mm": selected_uncertainty,
                         "cost": selected_cost,
                         "rel_std": selected_rel_std,
                         "max_std_mm": selected_max_std,
@@ -1277,22 +1170,15 @@ def _full_auto_loop(
                 history_candidates, iteration=step, admissible=bool(history_admissible),
                 underconstrained=selected_underconstrained, log_line=_log_line,
             )
-            history_total_iterations = max(history_total_iterations, int(step))
 
             summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
             summary_rel = _fmt_float(selected_rel_std)
             summary_std = _fmt_float(selected_max_std, suffix="mm")
             summary_cost = _fmt_float(selected_cost)
-            summary_fit_score_ui = _fmt_float(selected_fit_score_ui)
             selected_summary_line = (
-                f"; selected run={selected_id}{summary_flags} fit_score_ui={summary_fit_score_ui} "
-                f"raw_fit_score_ui={_fmt_float(selected_raw_fit_score_ui)} "
-                f"score_basis={selected_score_basis} cost={summary_cost} "
-                f"rel_std={summary_rel} max_std={summary_std} "
-                f"rank_score={_fmt_float(selected_rank_score)} "
-                f"iteration_adjust={_fmt_float(selected_history_rank_info.get('iteration_adjust'))} "
-                f"coverage_adjust={_fmt_float(selected_history_rank_info.get('coverage_adjust'))} "
-                f"history_rank_score={_fmt_float(selected_history_rank_score)}"
+                f"; selected run={selected_id}{summary_flags} "
+                f"anchor_uncertainty_mm={_fmt_float(selected_uncertainty)} cost={summary_cost} "
+                f"rel_std={summary_rel} max_std={summary_std}"
             )
             _log_line(selected_summary_line)
             if verbose:
@@ -1307,8 +1193,9 @@ def _full_auto_loop(
                 _log_console(f"; selected run={selected_id}{summary_flags}")
             if not selected_underconstrained:
                 if stop.rank is not None:
-                    rank_label = "best" if stop.rank == 1 else _ordinal(stop.rank) + " best"
-                    _log_console(f"The {rank_label} try so far.")
+                    rank_label = "lowest" if stop.rank == 1 else _ordinal(stop.rank) + " lowest"
+                    _log_console(f"Anchor uncertainty {_fmt_float(selected_uncertainty, suffix=' mm')}, "
+                                 f"the {rank_label} so far.")
                 if stop.history_improved:
                     _log_console("Patience reset.")
             if selected_underconstrained:
@@ -1344,25 +1231,11 @@ def _full_auto_loop(
                     "selected_run": selected_id,
                     "decision": stop.decision,
                     "cost": selected_cost,
-                    "cost_improvement": improvement,
-                    "score_ui": selected_fit_score_ui,
-                    "raw_fit_score_ui": selected_raw_fit_score_ui,
-                    "history_rank_score": selected_history_rank_score,
-                    "history_iteration_adjust": selected_history_rank_info.get("iteration_adjust"),
-                    "history_coverage_adjust": selected_history_rank_info.get("coverage_adjust"),
-                    "selection_rank_score": selected_history_rank_score,
-                    "selection_iteration_adjust": selected_history_rank_info.get("iteration_adjust"),
-                    "selection_coverage_adjust": selected_history_rank_info.get("coverage_adjust"),
-                    "score_ui_improvement": score_improvement,
-                    "improved_best": improved,
-                    "best_cost": best_cost,
-                    "best_score_ui": best_score_ui,
-                    "best_score_basis": best_meta.get("score_basis"),
-                    "best_run": best_meta.get("run_id"),
-                    "best_iteration": best_meta.get("iteration"),
+                    "anchor_uncertainty_mm": selected_uncertainty,
+                    "uncertainty_compute_seconds": uncertainty_seconds,
+                    "uncertainty_rank": stop.rank,
                     "no_improve_count": stopping.no_improve,
                     "patience": stopping.patience,
-                    "min_delta": min_delta,
                     "stable_hit": stop.stable_hit,
                     "good_fit_hit": stop.good_fit_hit,
                     "anchor_step_mm": stop.step_mm,
@@ -1378,11 +1251,9 @@ def _full_auto_loop(
                 stop_reason = stop.reason
                 if headless_sim is not None:
                     headless_sim.manifest["stop_reason"] = stop_reason
-                summary_plan, summary_meta = _select_history_summary_candidate(reason=stop_reason)
-
+                summary_plan, summary_meta = _newest_candidate()
                 if summary_plan is None:
-                    _log_console("; full-auto: no best plan available; stopping.")
-                    _log_console(_solution_quality_message(None))
+                    _log_console("; full-auto: no admissible fit available; stopping.")
                     return _finalize(2)
                 return _emit_summary_and_send(
                     summary_plan,
@@ -1426,14 +1297,12 @@ def _full_auto_loop(
             if no_collect:
                 _log_line("; --no-collect set; stopping before live collection.")
                 _log_console("; --no-collect set; stopping before live collection.")
-                summary_plan, summary_meta = _select_history_summary_candidate(
-                    reason="no-collect",
+                summary_plan, summary_meta = _newest_candidate(
                     fallback_plan=plan if isinstance(plan, dict) else None,
                     fallback_meta=selected_summary_meta,
                 )
                 if summary_plan is None:
                     _log_console("; full-auto: no summary candidate available; stopping.")
-                    _log_console(_solution_quality_message(None))
                     return _finalize(2)
                 return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
 
@@ -1507,10 +1376,9 @@ def _full_auto_loop(
     if headless_sim is not None:
         headless_sim.manifest["stop_reason"] = "max-steps"
     _log_console(f"; reached max steps; dataset={work_path}")
-    summary_plan, summary_meta = _select_history_summary_candidate(reason="max-steps")
+    summary_plan, summary_meta = _newest_candidate()
     if summary_plan is not None:
         return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
-    _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
     return _finalize(0)
 
 
@@ -1565,8 +1433,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if error := profile_policy_error(_load_json(args.dataset)):
             parser.error(error)
     spool_opts = _resolve_spool_cli_options(parser, args)
-    if args.fit_home_offsets and any(_spool_mode_enabled(spool_opts[name]) for name in ("find_radii", "find_buildup_factor")):
-        parser.error("Home-offset and spool fitting are not jointly supported; use --no-fit-home-offsets with --find-radii or --find-buildup-factor")
     machine_type = _normalize_machine_type(str(args.machine_type))
     full_auto_runs = list(args.full_auto_run or [])
     if bool(args.shotgun):
@@ -1665,7 +1531,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         verbose=bool(args.verbose),
         filter_schedule=spool_opts.get("filter_schedule"),
         objective_schedule=spool_opts.get("objective_schedule"),
-        fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),
         sparse_recovery=bool(args.sparse_recovery),
         firmware=str(args.firmware),

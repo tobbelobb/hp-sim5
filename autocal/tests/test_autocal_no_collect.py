@@ -75,7 +75,6 @@ def test_build_semi_auto_parser_accepts_no_collect():
 
 @pytest.mark.parametrize('transport_failure', [False, True])
 def test_resolved_boundary_replans_without_refitting_but_transport_failure_aborts(tmp_path, monkeypatch, transport_failure):
-    import autocal.history_selection as selection
     path = tmp_path / 'sweeps.json'
     _write_dataset(path, sweeps=3)
     fits, collects, replans, sent = [], [], [], []
@@ -110,7 +109,6 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
     monkeypatch.setattr(ac, '_print_ellipse_plan', lambda *a, **kw: None)
     monkeypatch.setattr(ac, '_plan_hits_underconstrained_penalty', lambda *a: False)
     monkeypatch.setattr(ac.StoppingPolicy, 'update', lambda *a, **kw: StopDecision(1, True, False, None, 'accept' if 4 in fits else 'collect'))
-    monkeypatch.setattr(selection, 'score_future_sweeps', lambda *a, **kw: (.1, 1))
     monkeypatch.setattr(ac.BrowserCollector, 'collect', collect)
     monkeypatch.setattr(ac.RRFFirmwareProvider, 'send_gcode', lambda *a: sent.append(a) or '')
     code = ac.main(['--sim', '--machine-type', 'slideprinter', '--dataset', str(path), '--max-steps', '4',
@@ -165,30 +163,7 @@ def test_final_application_does_not_retry_and_preserves_stop_reason(tmp_path, mo
         assert "stop requested (stop-file)" in output
 
 
-def test_full_auto_stops_when_every_future_prediction_fails(tmp_path, monkeypatch, capsys):
-    dataset = tmp_path / "invalid_validation.json"
-    _write_dataset(dataset, sweeps=5)
-
-    def fake_plan(path, **_kwargs):
-        plan = _fake_plan()
-        plan["dataset"] = ac._load_json(path)
-        return plan
-
-    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
-    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_args: False)
-    rc = ac.main([
-        "--sim", "--machine-type", "slideprinter", "--dataset", str(dataset),
-        "--no-collect", "--max-steps", "3",
-    ])
-
-    assert rc == 2
-    output = capsys.readouterr().out
-    assert "all held-out predictions failed" in output
-    assert "== Calibration summary ==" not in output
-
-
-def test_full_auto_breaks_anchor_prediction_tie_using_frozen_radius(tmp_path, monkeypatch, capsys):
+def test_full_auto_applies_the_newest_fit_with_its_own_radius(tmp_path, monkeypatch, capsys):
 
     from autocal.spool_model import build_spool_model_params, dataset_with_modeled_lengths
 
@@ -440,7 +415,7 @@ def test_write_bootstrap_sweep_config_uses_machine_specific_constraints(tmp_path
         assert sweep.validate(config) == []
 
 
-def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, monkeypatch, capsys):
+def test_full_auto_applies_newest_fit_after_patience(tmp_path, monkeypatch, capsys):
     dataset = tmp_path / "full_dataset.json"
     _write_dataset(dataset, sweeps=5)
 
@@ -491,10 +466,6 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
         cold_plans.append(plan)
         return plan
 
-    def fake_score(plan):
-        score = float(plan["cost"])
-        return score, score, "standard-noise"
-
     def fake_cost(plan):
         return float(plan["cost"])
 
@@ -506,7 +477,7 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
         return "ok"
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
-    monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
@@ -569,19 +540,17 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
     assert rc == 0
     assert sent == []
     out = capsys.readouterr().out
-    assert "M669 iter_1" in out
-    assert "M669 iter_3" not in out
-    assert "Rank score:" not in out
-    assert "Fit score:" not in out
-    assert "try so far." in out
+    assert "M669 iter_3" in out
+    assert "Anchor uncertainty 1 mm, the lowest so far." in out
+    assert "the 3rd lowest so far." in out
     assert "Replaying next sweep to try and beat it." in out
     assert "Still has patience for 2 more attempts." in out
     assert "Patience reset." in out
 
 
-def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, monkeypatch, capsys):
+def test_full_auto_skips_a_newest_fit_whose_uncertainty_diverged(tmp_path, monkeypatch, capsys):
     dataset = tmp_path / "full_dataset.json"
-    _write_dataset(dataset, sweeps=7)
+    _write_dataset(dataset, sweeps=5)
 
     sent = []
     plan_queue = [
@@ -600,9 +569,9 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
             "marker": "iter_2",
             "anchors": np.asarray([[20.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
             "machine_type": "slideprinter",
-            "cost": 1.12,
-            "cost_raw": 1.12,
-            "cost_noise_normalized": 1.12,
+            "cost": 2.0,
+            "cost_raw": 2.0,
+            "cost_noise_normalized": 2.0,
             "covariance": np.eye(6, dtype=float),
             "covariance_scaled": np.eye(6, dtype=float),
             "collect_command": ["node", "collect"],
@@ -611,31 +580,9 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
             "marker": "iter_3",
             "anchors": np.asarray([[30.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
             "machine_type": "slideprinter",
-            "cost": 1.10,
-            "cost_raw": 1.10,
-            "cost_noise_normalized": 1.10,
-            "covariance": np.eye(6, dtype=float),
-            "covariance_scaled": np.eye(6, dtype=float),
-            "collect_command": ["node", "collect"],
-        },
-        {
-            "marker": "iter_4",
-            "anchors": np.asarray([[40.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
-            "machine_type": "slideprinter",
-            "cost": 1.40,
-            "cost_raw": 1.40,
-            "cost_noise_normalized": 1.40,
-            "covariance": np.eye(6, dtype=float),
-            "covariance_scaled": np.eye(6, dtype=float),
-            "collect_command": ["node", "collect"],
-        },
-        {
-            "marker": "iter_5",
-            "anchors": np.asarray([[50.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=float),
-            "machine_type": "slideprinter",
-            "cost": 1.55,
-            "cost_raw": 1.55,
-            "cost_noise_normalized": 1.55,
+            "cost": 30.0,
+            "cost_raw": 30.0,
+            "cost_noise_normalized": 30.0,
             "covariance": np.eye(6, dtype=float),
             "covariance_scaled": np.eye(6, dtype=float),
             "collect_command": ["node", "collect"],
@@ -652,10 +599,6 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
         cold_plans.append(plan)
         return plan
 
-    def fake_score(plan):
-        score = float(plan["cost"])
-        return score, score, "standard-noise"
-
     def fake_cost(plan):
         return float(plan["cost"])
 
@@ -667,7 +610,7 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
         return "ok"
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
-    monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
@@ -722,15 +665,15 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
         output_with_explanations=False,
         full_auto_runs=None,
         full_auto_log=None,
-        patience=3,
+        patience=2,
         verbose=False,
         no_collect=True,
     )
 
     assert rc == 0
-    assert sent == []
     out = capsys.readouterr().out
-    assert "M669 iter_3" in out
+    assert "newest fit failed or diverged" in out
+    assert "M669 iter_2" in out
 
 
 def test_full_auto_underconstrained_recovery_reuses_warm_start_and_keeps_collect_decision(
@@ -783,10 +726,6 @@ def test_full_auto_underconstrained_recovery_reuses_warm_start_and_keeps_collect
         assert planned_runs, "expected a recovery plan for each attempt"
         return planned_runs.pop(0)
 
-    def fake_score(plan):
-        score = float(plan["cost"])
-        return score, score, "standard-noise"
-
     def fake_cost(plan):
         return float(plan["cost"])
 
@@ -798,7 +737,7 @@ def test_full_auto_underconstrained_recovery_reuses_warm_start_and_keeps_collect
         return "ok"
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan_next)
-    monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
@@ -959,10 +898,6 @@ def test_full_auto_underconstrained_recovery_still_replays_next_sweep(
         assert plan_queue, "expected replay recovery plans"
         return plan_queue.pop(0)
 
-    def fake_score(plan):
-        score = float(plan["cost"])
-        return score, score, "standard-noise"
-
     def fake_cost(plan):
         return float(plan["cost"])
 
@@ -970,7 +905,7 @@ def test_full_auto_underconstrained_recovery_still_replays_next_sweep(
         return 1.0, 1.0, True
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
-    monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
@@ -1040,3 +975,27 @@ def test_full_auto_underconstrained_recovery_still_replays_next_sweep(
     out = capsys.readouterr().out
     assert "underconstrained recovery succeeded" in out
     assert "Replaying next sweep to try and beat it." in out
+
+
+def test_spool_fitting_run_stops_when_every_future_prediction_fails(tmp_path, monkeypatch, capsys):
+    dataset = tmp_path / "invalid_validation.json"
+    _write_dataset(dataset, sweeps=5)
+
+    def fake_plan(path, **_kwargs):
+        plan = _fake_plan()
+        plan["dataset"] = ac._load_json(path)
+        return plan
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_args: False)
+    rc = ac.main([
+        "--sim", "--machine-type", "slideprinter", "--dataset", str(dataset),
+        "--no-collect", "--max-steps", "3", "--find-radii", "global", "--base-radii", "30",
+        "--buildup-factor", "0",
+    ])
+
+    assert rc == 2
+    output = capsys.readouterr().out
+    assert "all held-out predictions failed" in output
+    assert "== Calibration summary ==" not in output

@@ -106,6 +106,14 @@ SIM_3D_TRUE_ANCHORS: List[Coord] = [
 ]
 SIM_3D_TRUE_RADII = [39.1845, 39.1845, 39.1845, 39.1845]
 
+SIM_HP5_TRUE_ANCHORS: List[Coord] = [
+    (0.0, -1900.0, -280.0),
+    (1900.0, 0.0, -280.0),
+    (0.0, 1900.0, -280.0),
+    (-1900.0, 0.0, -280.0),
+    (0.0, 0.0, 1900.0),
+]
+
 
 @dataclass(frozen=True)
 class DatasetSpec:
@@ -234,6 +242,25 @@ DATASETS = [
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=[30.0, 30.0, 30.0, 30.0],
     ),
+    *(
+        DatasetSpec(
+            # Headless benchmark sweeps from commit 0623060e22 (2026-11-18), copied from
+            # output/autocal-benchmark-backfill/runs/0623060e2227/<machine>/sweeps.json.
+            name=f"benchmark_0623060e22_{machine}",
+            machine_type=machine,
+            base_radii="30",
+            buildup_factor="0",
+            find_radii="off",
+            true_anchors=anchors,
+            true_radii=[30.0] * len(anchors),
+        )
+        for machine, anchors in (
+            ("hangprinter_3", SIM_3D_TRUE_ANCHORS),
+            ("hangprinter_4", SIM_3D_TRUE_ANCHORS),
+            ("hangprinter_5", SIM_HP5_TRUE_ANCHORS),
+            ("hangprinter_5_pulley_reduced", SIM_HP5_TRUE_ANCHORS),
+        )
+    ),
 ]
 
 
@@ -290,7 +317,7 @@ _RE_ANCHORS = re.compile(r"Anchors:\s*(\[\[.*\]\])")
 _RE_EFFECTIVE = re.compile(r"effective=\[([^\]]+)\]")
 _RE_LEGACY_FIT_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
 _RE_SELECTED_FIT_SCORE_UI = re.compile(r"\b(?:fit_score_ui|score_ui)=([0-9.+-eE]+)\b")
-_RE_SELECTED_RANK_SCORE = re.compile(r"\brank_score=([0-9.+-eE]+)\b")
+_RE_SELECTED_RANK_SCORE = re.compile(r"\b(?:rank_score|anchor_uncertainty_mm)=([0-9.+-eE]+)\b")
 _RE_SELECTED_HISTORY_RANK_SCORE = re.compile(r"\b(?:history_rank_score|selection_rank)=([0-9.+-eE]+)\b")
 _RE_REPLAY_START = re.compile(r"; full-auto replay: starting from (\d+) sweeps, replaying (\d+) additional sweeps")
 _RE_REPLAYED_SWEEP_TOTAL = re.compile(r"; replayed sweep \d+/\d+ -> .*? sweeps=(\d+)\s*$")
@@ -298,7 +325,7 @@ _RE_COLLECTED_SWEEP = re.compile(r"Collected sweep nr (\d+)\b")
 _NUM_PATTERN = r"[+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?"
 _RE_M669_PARTS = re.compile(rf"([A-Z])\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
 _RE_M666_R = re.compile(rf"\bR\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
-_RE_FIT_SCORE = re.compile(r"Fit(?:/UI)? quality score.*?:\s*([0-9.+-eE]+)\s*$")
+_RE_FIT_SCORE = re.compile(r"(?:Fit(?:/UI)? quality score|Anchor uncertainty).*?:\s*([0-9.+-eE]+)\s*$")
 _RE_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
@@ -423,7 +450,7 @@ def parse_summary(text: str, fixed_radii: Optional[List[float]] = None) -> Optio
     radii: Optional[List[float]] = fixed_radii
 
     for line in lines:
-        if "quality score" in line:
+        if "quality score" in line or "Anchor uncertainty" in line:
             m = _RE_FIT_SCORE.search(line)
             if m:
                 fit_score = _safe_float(m.group(1))
@@ -725,8 +752,6 @@ def run_autocal(
         "--buildup-factor",
         dataset_spec.buildup_factor,
         "--no-collect",
-        # These frozen references predate home-offset fitting.
-        "--no-fit-home-offsets",
         *(('--sparse-recovery',) if sparse_recovery else ()),
         *extra_args,
     ]

@@ -30,12 +30,23 @@ def _parse_spool_args(*extra_args):
 
 
 def test_home_offsets_and_equal_strain_default_on_with_explicit_ablation():
-    _, args = _parse_spool_args()
+    parser, args = _parse_spool_args()
+    _resolve_spool_cli_options(parser, args)
     assert args.fit_home_offsets and args.equal_strain
-    _, args = _parse_spool_args("--no-fit-home-offsets", "--no-equal-strain")
+    parser, args = _parse_spool_args("--no-fit-home-offsets", "--no-equal-strain")
+    _resolve_spool_cli_options(parser, args)
     assert not args.fit_home_offsets and not args.equal_strain
     _, overrides = _parse_full_auto_run_spec("--no-fit-home-offsets")
     assert overrides["fit_home_offsets"] is False
+
+
+def test_spool_fitting_turns_home_offsets_off_unless_requested():
+    parser, args = _parse_spool_args("--find-radii", "global")
+    _resolve_spool_cli_options(parser, args)
+    assert args.fit_home_offsets is False
+    parser, args = _parse_spool_args("--find-radii", "global", "--fit-home-offsets")
+    with pytest.raises(SystemExit):
+        _resolve_spool_cli_options(parser, args)
 
 
 def test_planned_collection_cannot_be_redirected_by_forwarded_aliases(tmp_path):
@@ -83,7 +94,6 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["objective_schedule"] == [1, 1, 1, 1]
     assert opts["line_width"] == 1.25
     assert opts["sigma_floor_mm"] == 0.05
-    assert opts["fit_structure"] == [3]
 
 
 def test_spool_cli_flags_without_value_default_to_per_anchor():
@@ -147,18 +157,6 @@ def test_spool_cli_rejects_unknown_objective_schedule_alias():
 
 def test_spool_cli_rejects_constant_without_dynamic_since_last_warmup():
     parser, args = _parse_spool_args("--filter-schedule", "warmup,constant")
-    with pytest.raises(SystemExit):
-        _resolve_spool_cli_options(parser, args)
-
-
-def test_spool_cli_parses_fit_structure_levels():
-    parser, args = _parse_spool_args("--fit-structure", "1,3")
-    opts = _resolve_spool_cli_options(parser, args)
-    assert opts["fit_structure"] == [1, 3]
-
-
-def test_spool_cli_rejects_invalid_fit_structure_level():
-    parser, args = _parse_spool_args("--fit-structure", "4")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 

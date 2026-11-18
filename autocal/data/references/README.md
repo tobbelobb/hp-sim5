@@ -100,3 +100,22 @@ A stored calibration reference is a regression baseline, not a replacement for
 simulation truth. Report distances to that fit as reference agreement, not
 physical accuracy. Original unrecorded browser overrides remain a provenance
 limitation; neither a bad fit nor agreement between two fits proves an override.
+
+## Headless benchmark sweeps, 0623060e22 (2026-11-18)
+
+`benchmark_0623060e22_<machine>.json` are the `sweeps.json` files of the newest
+backfilled autocal benchmark run, from
+`output/autocal-benchmark-backfill/runs/0623060e2227/<machine>/` (HP3, HP4, HP5 and
+HP5 pulley-reduced, headless simulator, equal-strain collection, home-offset fitting,
+30 mm radii, no buildup). Truth is the run manifest's `firmware_initial` M669. Their
+`DATASETS` entries replay with home-offset fitting, matching the collection.
+
+## Reference zero-point, november_18_2026
+
+The `november_18_2026` reference logs were regenerated after PR #111 replaced fit-cost
+ranking with newest-fit selection plus a leave-one-sweep-out anchor uncertainty, and
+kept held-out selection only for spool-fitting runs. Older dated logs remain for
+history; the runner compares against the newest date. Known weak case:
+`nineteenth_hp3_dataset_even_more_pressure` applies a fit ~360 mm off, where the
+October reference applied one ~165 mm off; every fit on that dataset is poor, and
+radius-search selection is left for separate work.

@@ -37,7 +37,6 @@ RRF_SIM_LINE_LAYER_CONFIG = "sys/config_slideprinter_w_line_layers.g"
 DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_LAYER_LINE_WIDTH_MM = 1.0
-DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 # Reasons the full-auto loop reports when it finished on its own.  Both are a
 # normal completion: the loop ran its automatic stopping logic and applied the
 # parameters it settled on.  Kept here so the loop and the headless manifest
@@ -56,40 +55,18 @@ _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 _SOLVE_OPTIMIZER_CHOICES = ("lbfgsb", "lm", "trf")
 _OPTIMIZER_MODE_CHOICES = ("fast", "fast-fd", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
-_FIT_STRUCTURE_LEVELS = (1, 2, 3)
 _OBJECTIVE_SCHEDULE_LEVELS = (0, 1, 2)
 _FILTER_SCHEDULE_PASS_CHOICES = ("warmup", "dynamic", "constant")
 _DEFAULT_OBJECTIVE_SCHEDULE = (1, 1, 1, 1)
 _DEFAULT_FILTER_SCHEDULE = ("warmup", "warmup", "warmup", "dynamic")
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
 _TAU_MAD_SCALE = 1.4826
-_SCORE_UI_LAYERED_COST_RAW_REF = 0.8
-_SCORE_UI_LAYERED_COST_RAW_WEIGHT = 0.20
 _SCORE_UI_LAYERED_TAU_MAD_REF_MM = 1.0
 _SCORE_UI_LAYERED_TAU_MAD_WEIGHT = 0.15
 _SCORE_UI_LAYERED_N_TRIM_REF = 40.0
 _SCORE_UI_LAYERED_N_TRIM_WEIGHT = 0.10
-_SCORE_UI_LAYERED_TAIL_RATIO_REF = 1.8
-_SCORE_UI_LAYERED_TAIL_RATIO_WEIGHT = 0.35
-_SCORE_UI_LAYERED_SWEEP_BIAS_REF = 0.12
-_SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT = 1.50
-_SCORE_UI_LAYERED_TAIL_FACTOR_REF = 3.0
-_SCORE_UI_LAYERED_TAIL_FACTOR_WEIGHT = 0.20
-_SCORE_UI_LAYERED_MAP_SCALE = 95.0
-_SCORE_UI_LAYERED_MAP_EXP = 5.0
-_SCORE_UI_LAYERED_MAP_MULT = 1.0
 _SCORE_UI_LAYERED_RISK_BLEND_WEIGHT = 0.5
-_SCORE_UI_RANK_OBS_REF = 60.0
-_SCORE_UI_RANK_OBS_BONUS_WEIGHT = 0.30
-_SCORE_UI_RANK_FILTERED_RATIO_WEIGHT = 0.50
-_SCORE_UI_HARD_FAIL = 50.0
 _SPOOL_ANCHOR_STEP_IMPROVE_REL = 1e-4
-_FULL_AUTO_HISTORY_LOG_BONUS_WEIGHT = 0.45
-_FULL_AUTO_HISTORY_LINEAR_PENALTY = 0.12
-_FULL_AUTO_HISTORY_COVERAGE_WEIGHT = 0.20
-_FULL_AUTO_HISTORY_UI_RANK_POINTS = np.asarray([4.00, 4.10, 4.20, 4.35, 4.55, 4.85, 5.50, 50.0], dtype=float)
-_FULL_AUTO_HISTORY_UI_SCORE_POINTS = np.asarray([0.6, 1.0, 1.8, 4.5, 9.0, 15.0, 25.0, 50.0], dtype=float)
-_FULL_AUTO_HISTORY_UI_SCORE_LOG_POINTS = np.log1p(_FULL_AUTO_HISTORY_UI_SCORE_POINTS)
 
 from autocal.active_learning import (
     SweepConfig,
@@ -1832,38 +1809,6 @@ def _apply_optimizer_mode_env(mode: Optional[str]) -> str:
     return mode_norm
 
 
-def _parse_fit_structure_levels(
-    spec: Optional[Any],
-    *,
-    label: str = "--fit-structure",
-) -> Tuple[int, ...]:
-    if spec is None:
-        return tuple()
-    if isinstance(spec, (list, tuple, set)):
-        parts = [str(v).strip() for v in spec]
-    else:
-        text = str(spec).strip()
-        if not text:
-            return tuple()
-        if text.lower() in ("off", "none", "false", "0"):
-            return tuple()
-        parts = [p.strip() for p in text.split(",")]
-    out: List[int] = []
-    for part in parts:
-        if not part:
-            continue
-        try:
-            val = int(part)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(f"{label} must be a comma-separated list of integers: 1,2,3") from exc
-        if val not in _FIT_STRUCTURE_LEVELS:
-            allowed = ",".join(str(v) for v in _FIT_STRUCTURE_LEVELS)
-            raise ValueError(f"{label} allows only: {allowed}")
-        if val not in out:
-            out.append(int(val))
-    return tuple(out)
-
-
 def _normalize_objective_schedule_pass(
     pass_name: object,
     *,
@@ -2892,8 +2837,6 @@ def _print_ellipse_plan(
                     f"; line_model_filter_schedule: passes={_fmt_float(len(filter_schedule_history), fmt='.0f')} "
                     f"schedule=[{schedule_text}] "
                     f"objectives=[{objective_text}] "
-                    f"last_raw_fit_score_ui={_fmt_float(last_filter_pass.get('score_ui'))} "
-                    f"last_rank_score={_fmt_float(last_filter_pass.get('rank_score'))} "
                     f"last_cost={_fmt_float(last_filter_pass.get('cost_noise_normalized'))}"
                 )
     if isinstance(cal, dict):
@@ -3127,22 +3070,6 @@ def _print_ellipse_plan(
                         f"tail_factor_median={_fmt_float(per_sweep_demean.get('tail_factor_median'))} "
                         f"sweep_bias_span={_fmt_float(per_sweep_demean.get('sweep_bias_span_mm'), suffix='mm')} "
                         f"n_obs={n_obs_str}"
-                    )
-                rank_coverage_adjust, rank_coverage_info = _rank_coverage_adjustment_from_noise_metrics(
-                    noise_metrics
-                )
-                if any(
-                    rank_coverage_info.get(key) is not None
-                    for key in ("effective_obs", "filtered_ratio", "obs_bonus", "filtered_penalty")
-                ):
-                    print(
-                        f"; rank_coverage: "
-                        f"effective_obs={_fmt_float(rank_coverage_info.get('effective_obs'), fmt='.0f')} "
-                        f"total_obs={_fmt_float(rank_coverage_info.get('total_obs'), fmt='.0f')} "
-                        f"filtered_ratio={_fmt_float(rank_coverage_info.get('filtered_ratio'))} "
-                        f"obs_bonus={_fmt_float(rank_coverage_info.get('obs_bonus'))} "
-                        f"filtered_penalty={_fmt_float(rank_coverage_info.get('filtered_penalty'))} "
-                        f"rank_adjust={_fmt_float(rank_coverage_adjust)}"
                     )
                 sigma_min_mm = noise_metrics.get("sigma_min_mm")
                 sigma_model_mm = noise_metrics.get("sigma_model_mm")
@@ -3415,11 +3342,11 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--fit-home-offsets",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
         help="Fit home length offsets with the point-based fit and apply them before the ellipse fit. "
              "They absorb the difference between slack lines at the encoder origin and tensioned lines "
-             "during measurement (default: enabled). Not available together with --find-radii or --find-buildup-factor; "
-             "use --no-fit-home-offsets for those experiments.",
+             "during measurement (default: enabled, except with --find-radii or --find-buildup-factor, "
+             "which do not support them).",
     )
     parser.add_argument(
         "--r0-bounds",
@@ -3456,15 +3383,6 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         choices=_THETA0_MODE_CHOICES,
         default="zero",
         help="Theta offset mode for spool model: infer | zero (default: zero).",
-    )
-    parser.add_argument(
-        "--fit-structure",
-        type=str,
-        default="3",
-        help=(
-            "Enable fit-structure rank penalties by id (comma-separated): "
-            "1=tail_ratio, 2=sweep_bias_directionality, 3=tail_factor (default: 3)."
-        ),
     )
     parser.add_argument(
         "--filter-schedule",
@@ -3899,7 +3817,6 @@ def _resolve_spool_cli_options(
         theta0_mode = _normalize_theta0_mode(args.theta0_mode)
         r0_bounds = _parse_min_max_bounds(args.r0_bounds, label="--r0-bounds")
         b_bounds = _parse_min_max_bounds(args.b_bounds, label="--b-bounds")
-        fit_structure_levels = _parse_fit_structure_levels(args.fit_structure, label="--fit-structure")
         objective_schedule = _parse_objective_schedule(
             args.objective_schedule,
             label="--objective-schedule",
@@ -3950,6 +3867,14 @@ def _resolve_spool_cli_options(
         if not np.isfinite(sigma_floor_mm) or sigma_floor_mm <= 0.0:
             parser.error("--sigma-floor-mm must be finite and > 0")
 
+    # Joint spool/offset fitting is not implemented, so spool fitting turns offsets off.
+    spool_fit = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+    if getattr(args, "fit_home_offsets", None) is None:
+        args.fit_home_offsets = not spool_fit
+    elif args.fit_home_offsets and spool_fit:
+        parser.error("Home-offset and spool fitting are not jointly supported; "
+                     "--fit-home-offsets cannot be combined with --find-radii or --find-buildup-factor")
+
     return {
         "find_radii": str(find_radii_mode),
         "find_buildup_factor": str(find_buildup_mode),
@@ -3963,7 +3888,6 @@ def _resolve_spool_cli_options(
         "objective_schedule": [int(v) for v in objective_schedule],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
-        "fit_structure": [int(v) for v in fit_structure_levels],
     }
 
 
@@ -4040,7 +3964,6 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--b-prior-sigma", type=float, default=None)
     parser.add_argument("--spool-outer-iters", type=int, default=None)
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
-    parser.add_argument("--fit-structure", default=None)
     parser.add_argument("--filter-schedule", default=None)
     parser.add_argument("--objective-schedule", default=None)
     parser.add_argument("--line-width", type=float, default=None)
@@ -4129,299 +4052,16 @@ def _plan_primary_cost(plan: Dict[str, object]) -> float:
         return float("nan")
 
 
-def _plan_uses_layered_score(plan: Dict[str, object]) -> bool:
-    length_model = plan.get("length_model")
-    if isinstance(length_model, dict):
-        for key in ("find_radii_mode", "find_buildup_factor_mode"):
-            mode = str(length_model.get(key, "")).strip().lower()
-            if mode and mode != "off":
-                return True
-        for key in ("find_radii", "find_buildup_factor"):
-            if bool(length_model.get(key)):
-                return True
-    noise_metrics = _plan_noise_metrics(plan)
-    if isinstance(noise_metrics, dict):
-        if _float_or_none(noise_metrics.get("chi2_red_rescored_tau_3bin_debiased")) is not None:
-            return True
-    return False
-
-
-def _noise_metric_float(noise_metrics: dict, key: str) -> Optional[float]:
-    direct = _float_or_none(noise_metrics.get(key))
-    if direct is not None:
-        return float(direct)
-    per_sweep_demean = noise_metrics.get("per_sweep_demean")
-    if isinstance(per_sweep_demean, dict):
-        nested = _float_or_none(per_sweep_demean.get(key))
-        if nested is not None:
-            return float(nested)
-    return None
-
-
-def _normalized_sweep_bias_penalty_multiplier(
-    noise_metrics: Optional[dict],
-    *,
-    excess_only: bool = False,
-    weight: float = _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT,
-    ref: float = _SCORE_UI_LAYERED_SWEEP_BIAS_REF,
-) -> float:
-    if not isinstance(noise_metrics, dict):
-        return 1.0
-    normalized_sweep_bias = _noise_metric_float(noise_metrics, "normalized_sweep_bias")
-    if normalized_sweep_bias is None or not np.isfinite(normalized_sweep_bias):
-        return 1.0
-    ref_safe = max(float(ref), float(np.finfo(float).eps))
-    ratio = max(float(normalized_sweep_bias), 0.0) / ref_safe
-    if excess_only:
-        ratio = max(0.0, ratio - 1.0)
-    return float(1.0 + float(weight) * float(ratio))
-
-
-def _normalized_sweep_bias_penalty_term(
-    noise_metrics: Optional[dict],
-    *,
-    scale: Optional[float],
-    weight: float = _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT,
-    ref: float = _SCORE_UI_LAYERED_SWEEP_BIAS_REF,
-) -> float:
-    scale_val = _float_or_none(scale)
-    if scale_val is None or not np.isfinite(scale_val) or scale_val <= 0.0:
-        return 0.0
-    if not isinstance(noise_metrics, dict):
-        return 0.0
-    normalized_sweep_bias = _noise_metric_float(noise_metrics, "normalized_sweep_bias")
-    if normalized_sweep_bias is None or not np.isfinite(normalized_sweep_bias):
-        return 0.0
-    ref_safe = max(float(ref), float(np.finfo(float).eps))
-    ratio = max(float(normalized_sweep_bias), 0.0) / ref_safe
-    return float(float(weight) * float(scale_val) * float(ratio))
-
-
-def _apply_normalized_sweep_bias_penalty(
-    metric: Optional[float],
-    noise_metrics: Optional[dict],
-    *,
-    excess_only: bool = False,
-    weight: float = _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT,
-    ref: float = _SCORE_UI_LAYERED_SWEEP_BIAS_REF,
-) -> Optional[float]:
-    metric_val = _float_or_none(metric)
-    if metric_val is None or not np.isfinite(metric_val):
-        return None
-    multiplier = _normalized_sweep_bias_penalty_multiplier(
-        noise_metrics,
-        excess_only=bool(excess_only),
-        weight=float(weight),
-        ref=float(ref),
-    )
-    return float(metric_val * float(multiplier))
-
-
-def _rank_coverage_adjustment_from_noise_metrics(
-    noise_metrics: Optional[dict],
-    *,
-    obs_ref: float = _SCORE_UI_RANK_OBS_REF,
-    obs_bonus_weight: float = _SCORE_UI_RANK_OBS_BONUS_WEIGHT,
-    filtered_ratio_weight: float = _SCORE_UI_RANK_FILTERED_RATIO_WEIGHT,
-) -> Tuple[float, Dict[str, Optional[float]]]:
-    info: Dict[str, Optional[float]] = {
-        "effective_obs": None,
-        "total_obs": None,
-        "obs_bonus": None,
-        "filtered_ratio": None,
-        "filtered_penalty": None,
-    }
-    if not isinstance(noise_metrics, dict):
-        return 0.0, info
-
-    effective_obs = None
-    for key in (
-        "n_inlier_rows_used_for_tau",
-        "tau_mad_inlier_points",
-        "n_obs_trimmed",
-        "n_obs",
-    ):
-        val = _float_or_none(noise_metrics.get(key))
-        if val is not None and val > 0.0:
-            effective_obs = float(val)
-            break
-
-    total_obs = None
-    for key in (
-        "tau_mad_total_points",
-        "n_obs",
-        "n_obs_trimmed",
-    ):
-        val = _float_or_none(noise_metrics.get(key))
-        if val is not None and val > 0.0:
-            total_obs = float(val)
-            break
-
-    if effective_obs is not None:
-        info["effective_obs"] = float(effective_obs)
-    if total_obs is not None:
-        if effective_obs is not None and total_obs < effective_obs:
-            total_obs = float(effective_obs)
-        info["total_obs"] = float(total_obs)
-
-    adjustment = 0.0
-
-    obs_bonus = 0.0
-    if (
-        effective_obs is not None
-        and np.isfinite(effective_obs)
-        and effective_obs > max(1.0, float(obs_ref))
-    ):
-        obs_bonus = float(obs_bonus_weight) * float(
-            np.log(max(float(effective_obs) / max(float(obs_ref), 1e-9), 1.0))
-        )
-        adjustment -= float(obs_bonus)
-    info["obs_bonus"] = float(obs_bonus)
-
-    filtered_ratio = None
-    filtered_penalty = 0.0
-    if (
-        effective_obs is not None
-        and total_obs is not None
-        and np.isfinite(effective_obs)
-        and np.isfinite(total_obs)
-        and total_obs > 0.0
-    ):
-        filtered_ratio = max(0.0, 1.0 - (float(effective_obs) / float(total_obs)))
-        filtered_penalty = float(filtered_ratio_weight) * float(filtered_ratio)
-        adjustment += float(filtered_penalty)
-    info["filtered_ratio"] = None if filtered_ratio is None else float(filtered_ratio)
-    info["filtered_penalty"] = float(filtered_penalty)
-
-    return float(adjustment), info
-
-
-def _full_auto_history_iteration_adjustment(iteration_index: int) -> float:
-    idx = max(1, int(iteration_index))
-    if idx <= 1:
-        return 0.0
-    return float(
-        -_FULL_AUTO_HISTORY_LOG_BONUS_WEIGHT * np.log(float(idx))
-        + _FULL_AUTO_HISTORY_LINEAR_PENALTY * float(idx - 1)
-    )
-
-
-def _full_auto_history_selection_score(
-    rank_score: Optional[float],
-    *,
-    iteration_index: int,
-    coverage_adjust: Optional[float] = None,
-    coverage_weight: float = _FULL_AUTO_HISTORY_COVERAGE_WEIGHT,
-) -> Tuple[float, Dict[str, Optional[float]]]:
-    info: Dict[str, Optional[float]] = {
-        "iteration_adjust": None,
-        "coverage_adjust": None,
-        "selection_score": None,
-    }
-    rank = _float_or_none(rank_score)
-    if rank is None or not np.isfinite(rank):
-        return float("inf"), info
-
-    idx = max(1, int(iteration_index))
-    iteration_adjust = _full_auto_history_iteration_adjustment(idx)
-
-    coverage = _float_or_none(coverage_adjust)
-    if coverage is None or not np.isfinite(coverage):
-        coverage = 0.0
-
-    selection_score = float(rank + iteration_adjust + float(coverage_weight) * coverage)
-    info["iteration_adjust"] = float(iteration_adjust)
-    info["coverage_adjust"] = float(coverage)
-    info["selection_score"] = float(selection_score)
-    return float(selection_score), info
-
-
-def _fit_score_ui_from_history_rank_score(
-    history_rank_score: Optional[float],
-    *,
-    fallback_score_ui: Optional[float] = None,
-) -> float:
-    history_rank = _float_or_none(history_rank_score)
-    if history_rank is None or not np.isfinite(history_rank):
-        fallback = _float_or_none(fallback_score_ui)
-        return float(fallback) if fallback is not None and np.isfinite(fallback) else float("nan")
-
-    rank = float(history_rank)
-    xp = _FULL_AUTO_HISTORY_UI_RANK_POINTS
-    yp = _FULL_AUTO_HISTORY_UI_SCORE_LOG_POINTS
-    if rank <= float(xp[0]):
-        x0 = float(xp[0])
-        x1 = float(xp[1])
-        y0 = float(yp[0])
-        y1 = float(yp[1])
-        slope = (y1 - y0) / max(x1 - x0, 1e-12)
-        mapped_log = float(y0 + slope * (rank - x0))
-    elif rank >= float(xp[-1]):
-        return float(_FULL_AUTO_HISTORY_UI_SCORE_POINTS[-1])
-    else:
-        mapped_log = float(np.interp(rank, xp, yp))
-
-    mapped = float(np.expm1(mapped_log))
-    if mapped < 0.0:
-        fallback = _float_or_none(fallback_score_ui)
-        if fallback is not None and np.isfinite(fallback) and fallback >= 0.0:
-            return float(fallback)
-        return 0.0
-    return float(min(mapped, float(_FULL_AUTO_HISTORY_UI_SCORE_POINTS[-1])))
-
-
-def _full_auto_display_fit_score_ui(
-    *,
-    score_basis: Optional[str],
-    raw_fit_score_ui: Optional[float],
-    history_rank_score: Optional[float],
-) -> float:
-    basis = str(score_basis or "")
-    if basis != "layered-calibrated":
-        raw = _float_or_none(raw_fit_score_ui)
-        return float(raw) if raw is not None and np.isfinite(raw) else float("nan")
-    return _fit_score_ui_from_history_rank_score(
-        history_rank_score,
-        fallback_score_ui=raw_fit_score_ui,
-    )
-
-
-def _layered_internal_metric_from_noise_metrics(
-    noise_metrics: Optional[dict],
-    *,
-    cost_raw: Optional[float] = None,
-    fit_structure_levels: Optional[Sequence[int]] = None,
-    use_fit_structure_penalties: bool = True,
-) -> Optional[float]:
+def _layered_internal_metric_from_noise_metrics(noise_metrics: Optional[dict]) -> Optional[float]:
+    """Spool-fit comparison metric: reduced chi-square inflated by robust spread and trimming."""
     if not isinstance(noise_metrics, dict):
         return None
-    fit_structure_set: set[int] = set()
-    if use_fit_structure_penalties:
-        fit_structure_set = set(
-            _parse_fit_structure_levels(fit_structure_levels, label="fit_structure")
-        )
-    m_layered = None
-    for key in (
-        "chi2_red_rescored_tau_3bin_debiased",
-        "chi2_red_rescored",
-        "chi2_red_trimmed",
-        "chi2_red",
-    ):
-        m_try = _float_or_none(noise_metrics.get(key))
-        if m_try is not None:
-            m_layered = float(m_try)
-            break
+    m_layered = next((float(value) for value in (
+        _float_or_none(noise_metrics.get(key)) for key in (
+            "chi2_red_rescored_tau_3bin_debiased", "chi2_red_rescored", "chi2_red_trimmed", "chi2_red",
+        )) if value is not None), None)
     if m_layered is None:
         return None
-
-    cost_raw_val = _float_or_none(cost_raw)
-    if cost_raw_val is not None:
-        m_layered *= (
-            1.0
-            + _SCORE_UI_LAYERED_COST_RAW_WEIGHT
-            * max(0.0, cost_raw_val / _SCORE_UI_LAYERED_COST_RAW_REF - 1.0)
-        )
-
     tau_mad_mm = _float_or_none(noise_metrics.get("tau_mad_mm"))
     if tau_mad_mm is not None:
         m_layered *= (
@@ -4429,7 +4069,6 @@ def _layered_internal_metric_from_noise_metrics(
             + _SCORE_UI_LAYERED_TAU_MAD_WEIGHT
             * max(0.0, tau_mad_mm / _SCORE_UI_LAYERED_TAU_MAD_REF_MM - 1.0)
         )
-
     n_trim = _float_or_none(noise_metrics.get("n_obs_trimmed"))
     if n_trim is not None:
         m_layered *= (
@@ -4437,47 +4076,13 @@ def _layered_internal_metric_from_noise_metrics(
             + _SCORE_UI_LAYERED_N_TRIM_WEIGHT
             * max(0.0, (_SCORE_UI_LAYERED_N_TRIM_REF - n_trim) / 10.0)
         )
-
-    if 1 in fit_structure_set:
-        tail_ratio = _noise_metric_float(noise_metrics, "tail_ratio")
-        if tail_ratio is not None:
-            m_layered *= (
-                1.0
-                + _SCORE_UI_LAYERED_TAIL_RATIO_WEIGHT
-                * max(0.0, tail_ratio / _SCORE_UI_LAYERED_TAIL_RATIO_REF - 1.0)
-            )
-    if 2 in fit_structure_set:
-        penalized = _apply_normalized_sweep_bias_penalty(
-            m_layered,
-            noise_metrics,
-            excess_only=True,
-        )
-        if penalized is not None:
-            m_layered = float(penalized)
-    if 3 in fit_structure_set:
-        tail_factor_median = _noise_metric_float(noise_metrics, "tail_factor_median")
-        if tail_factor_median is not None:
-            m_layered *= (
-                1.0
-                + _SCORE_UI_LAYERED_TAIL_FACTOR_WEIGHT
-                * max(0.0, tail_factor_median / _SCORE_UI_LAYERED_TAIL_FACTOR_REF - 1.0)
-            )
-
     return float(m_layered)
 
 
-def _layered_rank_score_from_internal_metric(
-    m_layered: Optional[float],
-    *,
-    cost_raw: Optional[float] = None,
-) -> float:
+def _layered_rank_score_from_internal_metric(m_layered: Optional[float]) -> float:
     if m_layered is None or not np.isfinite(m_layered):
         return float("inf")
-    rank_score = float(np.log1p(max(float(m_layered), 0.0)))
-    cost_raw_val = _float_or_none(cost_raw)
-    if cost_raw_val is not None and cost_raw_val > 5.0:
-        rank_score = max(rank_score, float(np.log1p(_SCORE_UI_HARD_FAIL)))
-    return float(rank_score)
+    return float(np.log1p(max(float(m_layered), 0.0)))
 
 
 def _trimmed_risk_metric_from_components(
@@ -4512,77 +4117,6 @@ def _blend_internal_metric_with_risk(
         return float(base)
     w = max(0.0, float(weight))
     return float(base + w * max(float(risk), 0.0))
-
-
-def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
-    noise_metrics = _plan_noise_metrics(plan)
-    if not isinstance(noise_metrics, dict):
-        return None
-
-    _max_std_mm, _rel_std, _cov_ok = _plan_covariance_summary(plan)
-    return _trimmed_risk_metric_from_components(noise_metrics)
-
-
-def _plan_fit_structure_levels(plan: Dict[str, object]) -> Tuple[int, ...]:
-    length_model = plan.get("length_model")
-    raw = None
-    if isinstance(length_model, dict):
-        raw = length_model.get("fit_structure_levels")
-    if raw is None:
-        raw = plan.get("fit_structure_levels")
-    try:
-        return _parse_fit_structure_levels(raw, label="fit_structure")
-    except ValueError:
-        return tuple()
-
-
-def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
-    noise_metrics = _plan_noise_metrics(plan)
-    nm = noise_metrics if isinstance(noise_metrics, dict) else {}
-
-    cost_raw = _float_or_none(plan.get("cost_raw"))
-    tau_mad_mm = _float_or_none(nm.get("tau_mad_mm"))
-    n_trim = _float_or_none(nm.get("n_obs_trimmed"))
-    m_base = _layered_internal_metric_from_noise_metrics(
-        nm,
-        cost_raw=cost_raw,
-        fit_structure_levels=_plan_fit_structure_levels(plan),
-    )
-    m_risk = _plan_trimmed_risk_metric(plan)
-    m_layered = _blend_internal_metric_with_risk(m_base, m_risk)
-    m_penalty = _normalized_sweep_bias_penalty_term(nm, scale=m_risk)
-    if m_layered is not None and np.isfinite(m_penalty) and m_penalty > 0.0:
-        m_layered = float(m_layered + m_penalty)
-    critical_nonfinite = (
-        m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
-    )
-    m = float(m_layered) if m_layered is not None else float("nan")
-
-    score_ui = float("nan")
-    if np.isfinite(m) and m >= 0.0:
-        score_ui = _SCORE_UI_LAYERED_MAP_MULT * (m / _SCORE_UI_LAYERED_MAP_SCALE) ** _SCORE_UI_LAYERED_MAP_EXP
-
-    if critical_nonfinite or not np.isfinite(score_ui) or (cost_raw is not None and cost_raw > 5.0):
-        score_ui = max(score_ui if np.isfinite(score_ui) else _SCORE_UI_HARD_FAIL, _SCORE_UI_HARD_FAIL)
-
-    return float(score_ui), float(m)
-
-
-def _plan_score_ui(plan: Dict[str, object]) -> Tuple[float, float, str]:
-    # score_ui is a calibrated fit-quality score, not a literal chi-square.
-    if _plan_uses_layered_score(plan):
-        score_ui, m_layered = _compute_score_ui_layered(plan)
-        rank_score = _layered_rank_score_from_internal_metric(
-            m_layered,
-            cost_raw=_float_or_none(plan.get("cost_raw")),
-        )
-        if not np.isfinite(rank_score):
-            rank_score = score_ui if np.isfinite(score_ui) else float("inf")
-        return float(score_ui), float(rank_score), "layered-calibrated"
-
-    score_ui = _plan_primary_cost(plan)
-    rank_score = score_ui if np.isfinite(score_ui) else float("inf")
-    return float(score_ui), float(rank_score), "standard-noise"
 
 
 def _plan_covariance_summary(
@@ -4671,32 +4205,6 @@ def _full_auto_stop_path(dataset_path: Path) -> Path:
 
 def _append_jsonl(path: Path, payload: dict) -> None:
     append_jsonl_line(path, payload, schema="full_auto_log_entry")
-
-
-def _solution_quality_message(score_ui: Optional[float]) -> str:
-    if score_ui is None or not np.isfinite(score_ui):
-        return "Interpretation: Quality score is unavailable."
-    score = float(score_ui)
-    if score < 2.0:
-        return "Interpretation: A Quality score below 2 indicates a near-perfect fit."
-    if score < 5.0:
-        return "Interpretation: A Quality score between 2 and 5 is a useful fit."
-    if score < 10.0:
-        return "Interpretation: A Quality score between 5 and 10 is borderline but often usable."
-    return "Interpretation: A Quality score above 10 is concerning; this fit is probably bad."
-
-
-def _solution_quality_label(score_ui: Optional[float]) -> str:
-    if score_ui is None or not np.isfinite(score_ui):
-        return "unknown"
-    score = float(score_ui)
-    if score < 2.0:
-        return "ideal"
-    if score < 5.0:
-        return "good"
-    if score < 10.0:
-        return "usable"
-    return "concerning"
 
 
 def _ordinal(n: int) -> str:

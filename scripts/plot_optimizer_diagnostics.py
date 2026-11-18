@@ -54,7 +54,7 @@ _RE_ANCHORS = re.compile(r"Anchors:\s*(\[\[.*\]\])")
 _RE_EFFECTIVE = re.compile(r"effective=\[([^\]]+)\]")
 _RE_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
 _RE_K = re.compile(r"\bk=([^\s;]+)")
-_RE_SUMMARY_FIT_SCORE = re.compile(r"Fit(?:/UI)? quality score.*?:\s*([0-9.+-eE]+)\s*$", re.IGNORECASE)
+_RE_SUMMARY_FIT_SCORE = re.compile(r"(?:Fit(?:/UI)? quality score|Anchor uncertainty).*?:\s*([0-9.+-eE]+)\s*$", re.IGNORECASE)
 _RE_M669_PARTS = re.compile(
     r"((?:P\d+)|[A-Z])\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
     re.IGNORECASE,

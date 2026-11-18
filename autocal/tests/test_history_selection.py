@@ -159,33 +159,3 @@ def test_final_heldout_selection_is_distinct_from_running_training_best():
     assert meta["run_id"] == "default"
     assert meta["history_consensus_members"] == []
     np.testing.assert_array_equal(plan["anchors"], _anchors(0.0))
-
-
-def test_hp5_history_keeps_own_offsets_instead_of_borrowing_future_offsets(monkeypatch):
-    import autocal.history_selection as selection
-    raw={'machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,'sweeps':[]}
-    offsets=[0.,0.,0.,.1,.2]
-    candidate={'iteration':1,'rank_score':1.,'training_sweep_ids':[],
-        'plan':{'dataset':raw,'dataset_for_estimation':{'future_offsets':True},
-                'anchors':np.zeros((5,3)),'home_offsets_mm':offsets}}
-    calls=[]
-    def score(dataset,anchors,training,**kwargs):
-        calls.append((dataset,kwargs.get('home_offsets_mm')))
-        return .01,1
-    monkeypatch.setattr(selection,'score_future_sweeps',score)
-    evaluated=selection.evaluate_history_candidates([candidate])
-    assert calls==[(raw,offsets)]
-    assert evaluated[0][2]['anchor_comparison_score']==.01
-
-
-def test_hp5_applies_the_validated_model_without_averaging_an_unvalidated_fit():
-    first=_item(1,np.zeros((5,3)),prediction=.01)
-    newest=_item(2,np.ones((5,3)),prediction=None)
-    dataset={'machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,
-        'sweeps':[{'data_points':[{'extra_sensor_ranges':[{'accepted':True}]}]}]}
-    offsets=[0.,0.,0.,.1,.2]
-    first[1]['plan'].update(dataset=dataset,home_offsets_mm=offsets)
-    newest[1]['plan'].update(dataset=dataset,home_offsets_mm=[0.,0.,0.,.3,.4])
-    plan,meta,_=select_history_plan([first,newest])
-    assert np.array_equal(plan['anchors'],np.zeros((5,3)))
-    assert plan['home_offsets_mm']==offsets and meta['history_consensus_members']==[]

@@ -9,7 +9,7 @@ import numpy as np
 
 from autocal._autocal_common import (
     FULL_AUTO_STOP_REASON_PATIENCE, STABLE_STOP_REASON,
-    _float_or_none, _fmt_float, _full_auto_history_selection_score,
+    _float_or_none, _fmt_float,
 )
 
 # Stop once this many consecutive sweeps each moved every anchor coordinate by
@@ -25,32 +25,17 @@ HP5_GOOD_RMS_MM = 0.05
 
 
 def history_rank_position(history_candidates, *, iteration: int) -> Optional[int]:
-    if not history_candidates:
-        return None
-    scored = []
-    for candidate in history_candidates:
-        candidate_rank = _float_or_none(candidate.get("rank_score"))
-        selection_score, _selection_info = _full_auto_history_selection_score(
-            candidate_rank,
-            iteration_index=int(candidate.get("iteration", 1)),
-            coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
-        )
-        rel_std = _float_or_none(candidate.get("rel_std"))
-        cost = _float_or_none(candidate.get("cost"))
-        sort_key = (
-            float(selection_score),
-            float(candidate_rank) if candidate_rank is not None else float("inf"),
-            float(rel_std) if rel_std is not None else float("inf"),
-            float(cost) if cost is not None else float("inf"),
-            -float(candidate.get("iteration", 0)),
-        )
-        scored.append((sort_key, candidate))
-    scored.sort(key=lambda item: item[0])
-    for idx, (_sort_key, candidate) in enumerate(scored, start=1):
-        if int(candidate.get("iteration", -1)) == int(iteration):
-            return idx
-    return None
+    """Rank of an iteration's anchor uncertainty among all admissible fits; 1 is lowest.
 
+    Ties go to the newer fit, which saw more data. A fit whose uncertainty is
+    unknown ranks after every known one.
+    """
+    def key(candidate):
+        value = _float_or_none(candidate.get("anchor_uncertainty_mm"))
+        return (value if value is not None else float("inf"), -int(candidate.get("iteration", 0)))
+    ordered = sorted(history_candidates, key=key)
+    return next((index for index, candidate in enumerate(ordered, start=1)
+                 if int(candidate.get("iteration", -1)) == int(iteration)), None)
 
 
 @dataclass(frozen=True)

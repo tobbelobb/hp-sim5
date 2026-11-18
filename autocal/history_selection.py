@@ -1,108 +1,63 @@
-"""Frozen prediction evaluation and pure history ordering, without refitting."""
+"""Held-out selection for spool-fitting runs, without refitting.
+
+With radii or buildup fitted, adding sweeps does not reliably improve the fit: on
+the replayed legacy datasets per-iteration anchor error moved like 1.5, 10, 17.5,
+5.8, 27 mm. Applying the newest fit there summed to ~380 mm more true error over
+12 datasets than this selection, so spool runs keep it. Runs without spool fitting
+apply the newest fit instead (see autocal.anchor_uncertainty).
+"""
 from __future__ import annotations
 
-from autocal._autocal_common import _arg_has_flag, _float_or_none, _full_auto_history_selection_score
-from autocal.predictive_validation import score_future_sweeps
-from autocal.pose_fit import uses_range_fit, has_extra_sensor_data
 from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 
+from autocal._autocal_common import _float_or_none
+from autocal.predictive_validation import score_future_sweeps
 
-def evaluate_history_candidates(
-    history_candidates, *, collector_args=(), use_noise_mean=True,
-    pointwise_residual_mode="sampson", sigma_source="auto", log_line=lambda _line: None,
-):
-    """Evaluate saved models on future sweeps, keeping every model frozen."""
-    validation_dataset = next(
-        (
-            candidate["plan"].get("dataset")
-            for candidate in reversed(history_candidates)
-            if isinstance(candidate.get("plan"), dict)
-            and isinstance(candidate["plan"].get("dataset"), dict)
-        ),
-        None,
-    )
-    comparison_dataset = next(
-        (
-            candidate["plan"].get("dataset_for_estimation")
-            for candidate in reversed(history_candidates)
-            if isinstance(candidate.get("plan"), dict)
-            and isinstance(candidate["plan"].get("dataset_for_estimation"), dict)
-        ),
-        None,
-    )
-    scored: List[
-        Tuple[
-            Tuple[float, ...],
-            Dict[str, object],
-            Dict[str, Optional[float]],
-        ]
-    ] = []
+
+def evaluate_history_candidates(history_candidates, *, use_noise_mean=True,
+                                pointwise_residual_mode="sampson", sigma_source="auto",
+                                log_line=lambda _line: None):
+    """Score each saved model, frozen, on the sweeps that arrived after its fit."""
+    def newest(key):
+        return next((c["plan"][key] for c in reversed(history_candidates)
+                     if isinstance(c["plan"].get(key), dict)), None)
+    validation_dataset = newest("dataset")
+    comparison_dataset = newest("dataset_for_estimation")
+    scored: List[Tuple[Tuple[float, ...], Dict[str, object], Dict[str, Optional[float]]]] = []
     for candidate in history_candidates:
-        candidate_rank = _float_or_none(candidate.get("rank_score"))
-        selection_score, selection_info = _full_auto_history_selection_score(
-            candidate_rank,
-            iteration_index=int(candidate.get("iteration", 1)),
-            coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
-        )
-        rel_std = _float_or_none(candidate.get("rel_std"))
-        cost = _float_or_none(candidate.get("cost"))
-        prediction = None
-        comparison = None
-        candidate_plan = candidate.get("plan")
-        if isinstance(validation_dataset, dict) and isinstance(candidate_plan, dict):
-            settings = candidate.get("settings") or {}
-            projected = _arg_has_flag(
-                collector_args, "--project-zero-tension", "--projectZeroTension"
-            )
+        plan = candidate["plan"]
+        anchors = np.asarray(plan["anchors"], dtype=float)
+        training = candidate.get("training_sweep_ids", ())
+        settings = candidate.get("settings") or {}
+        prediction = comparison = None
+        if validation_dataset is not None:
             prediction = score_future_sweeps(
-                validation_dataset,
-                np.asarray(candidate_plan.get("anchors"), dtype=float),
-                candidate.get("training_sweep_ids", ()),
-                spool_params=candidate_plan.get("spool_model_params"),
-                home_offsets_mm=candidate_plan.get("home_offsets_mm"),
-                prefer_zero_tension_angles=projected,
+                validation_dataset, anchors, training, spool_params=plan.get("spool_model_params"),
                 use_noise_mean=bool(settings.get("use_noise_mean", use_noise_mean)),
-                pointwise_residual_mode=str(
-                    settings.get("pointwise_residual_mode", pointwise_residual_mode)
-                ),
+                pointwise_residual_mode=str(settings.get("pointwise_residual_mode", pointwise_residual_mode)),
                 sigma_source=str(settings.get("sigma_source", sigma_source)),
             )
             if prediction is not None and not np.isfinite(prediction[0]):
-                log_line(
-                    f"; history_validate: iter={candidate.get('iteration')} "
-                    f"run={candidate.get('run_id')} heldout_sweeps={prediction[1]} "
-                    "failed_prediction=True"
-                )
-            if uses_range_fit(validation_dataset) and candidate_plan.get("spool_model_params") is None and not projected:
-                # The candidate's own offsets are frozen. Borrowing the newest
-                # fit's shifted dataset would leak future offsets into validation.
-                comparison = prediction
-            elif isinstance(comparison_dataset, dict):
-                # Keep the common length model for comparing anchors.
-                # A lower own-model residual can instead reflect radius/
-                # elasticity compensation; it is a veto and tie-breaker.
-                comparison = score_future_sweeps(
-                    comparison_dataset,
-                    np.asarray(candidate_plan.get("anchors"), dtype=float),
-                    candidate.get("training_sweep_ids", ()),
-                    prefer_zero_tension_angles=projected,
-                )
+                log_line(f"; history_validate: iter={candidate.get('iteration')} "
+                         f"run={candidate.get('run_id')} heldout_sweeps={prediction[1]} failed_prediction=True")
+        if comparison_dataset is not None:
+            # Compare anchors under one common (newest) length model. A lower own-model
+            # residual can instead reflect radius compensation; it only breaks ties.
+            comparison = score_future_sweeps(comparison_dataset, anchors, training)
+        cost = _float_or_none(candidate.get("cost"))
         sort_key = (
             float(comparison[0]) if comparison is not None else float("inf"),
             float(prediction[0]) if prediction is not None else float("inf"),
-            float(selection_score),
-            float(candidate_rank) if candidate_rank is not None else float("inf"),
-            float(rel_std) if rel_std is not None else float("inf"),
             float(cost) if cost is not None else float("inf"),
             -float(candidate.get("iteration", 0)),
         )
-        selection_info = dict(selection_info)
-        selection_info["prediction_score"] = prediction[0] if prediction else None
-        selection_info["prediction_sweeps"] = float(prediction[1]) if prediction else None
-        selection_info["anchor_comparison_score"] = comparison[0] if comparison else None
-        scored.append((sort_key, candidate, selection_info))
-
+        scored.append((sort_key, candidate, {
+            "prediction_score": prediction[0] if prediction else None,
+            "prediction_sweeps": float(prediction[1]) if prediction else None,
+            "anchor_comparison_score": comparison[0] if comparison else None,
+        }))
     return scored
 
 
@@ -244,9 +199,8 @@ def apply_consensus_plan(chosen_plan, anchors):
 def select_history_plan(scored):
     """Return the applied plan, single-fit diagnostics and ordered candidates.
 
-    HP5 ranges select the best frozen prediction, including its own offsets.
-    Other machines retain geometric consensus across fitted candidates; their
-    reported score describes the best-ranked single fit, not the mean geometry.
+    The applied anchors are the geometric consensus of the fitted candidates; the
+    metadata describes the best-ranked single fit, not the mean geometry.
 
     Failed held-out predictions veto application when no validated fit remains.
     """
@@ -254,21 +208,12 @@ def select_history_plan(scored):
     if not ranked:
         return None, None, ranked
     _key, chosen, info = ranked[0]
-    dataset = chosen.get("plan", {}).get("dataset", {})
-    if uses_range_fit(dataset) and has_extra_sensor_data(dataset):
-        # Averaging anchors while retaining one model's offsets would no longer
-        # apply the model that passed the all-range held-out validation.
-        anchors, members, spread = None, (), None
-    else:
-        anchors, members, spread = consensus_anchor_estimate(scored)
+    anchors, members, spread = consensus_anchor_estimate(scored)
     plan = apply_consensus_plan(chosen.get("plan"), anchors)
     meta = dict(chosen.get("summary_meta") or {})
     meta.update({
         "iteration": chosen.get("iteration"),
         "run_id": chosen.get("run_id"),
-        "history_iteration_adjust": info.get("iteration_adjust"),
-        "history_coverage_adjust": info.get("coverage_adjust"),
-        "history_selection_score": info.get("selection_score"),
         "heldout_prediction_score": info.get("prediction_score"),
         "heldout_prediction_sweeps": info.get("prediction_sweeps"),
         "anchor_comparison_score": info.get("anchor_comparison_score"),
