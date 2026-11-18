@@ -8,6 +8,7 @@ import {
 } from '../cable_joints_3d/geometry3.js';
 import { getAttribute, getRelationship } from './stage.js';
 import { parseUsdaAst } from './usda_parser.js';
+import { normalizeSceneUnits } from './scene_units.js';
 
 const DEFAULT_INIT_POLICY = 'deriveMissing';
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
@@ -891,6 +892,7 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
 
 export function bakeCableSceneAst(ast, options = {}) {
   const bakedAst = cloneAst(ast);
+  normalizeSceneUnits(bakedAst);
   const index = indexPrims(bakedAst.statements);
   const transformCache = new Map();
   const bodyCache = new Map();

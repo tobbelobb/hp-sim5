@@ -142,8 +142,8 @@ state.
 `app/setupScene.js` is a small scene-loading coordinator. Scene construction is
 split into these phases:
 
-1. `app/scene/machineSceneSpec.js` normalizes the supplied USDA stage, reads the
-   selected scene root, and validates the machine specification.
+1. `app/scene/machineSceneSpec.js` reads the selected scene root from the
+   supplied stage and validates the machine specification.
 2. `app/scene/machineScenePipeline.js` discovers scene prims and builds an
    entity plan using the feature-specific builders in `app/scene/`.
 3. `app/scene/entityPlanApplier.js` applies resources, entities, and post-apply
@@ -155,6 +155,13 @@ split into these phases:
 scene data before loading, and can append multiple namespaced machines to the
 same world. The first machine supplies global physics resources such as gravity
 and the fixed timestep derived from USDA `timeCodesPerSecond`.
+
+Machine USDA scenes can author `metersPerUnit` in the stage metadata. The
+simulator converts scene distances, linear velocity and gravity to metre-based
+units and scales inertia by the square of the length factor. Scenes without
+this metadata use metres. Bakes write converted scenes with `metersPerUnit = 1`.
+Mass is in kilograms, and cable axial stiffness, cable axial damping, and
+stepper and bearing parameters use their usual SI units at every scene scale.
 
 The renderer is stored as the `renderSystem` world resource rather than as a
 simulation system. In a visible tab, normal playback steps physics inside each

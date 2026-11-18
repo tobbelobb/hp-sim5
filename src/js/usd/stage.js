@@ -1,9 +1,10 @@
 import { parseUsdaAst } from './usda_parser.js';
+import { normalizeSceneUnits } from './scene_units.js';
 
 /**
  * Open() – the JavaScript twin of Usd.Stage.Open().
  * Accepts either a file path/URL or an in-memory USDA string and
- * returns a Stage-like object with GetPrimAtPath(), Traverse(), and the raw AST.
+ * returns a Stage-like object with GetPrimAtPath(), Traverse(), and the normalized AST.
  */
 export async function Open(pathOrSource) {
   return OpenText(await readUsdaSource(pathOrSource));
@@ -32,6 +33,7 @@ export async function readUsdaSource(pathOrSource) {
 
 export function OpenText(source) {
   const ast = parseUsdaAst(source);
+  normalizeSceneUnits(ast);
   resolveAttributePrecision(ast.statements);
   const primIndex = indexPrims(ast.statements);
 
@@ -51,7 +53,7 @@ export function OpenText(source) {
       }
     },
 
-    /** Parsed AST with USD attribute precision resolved. */
+    /** Parsed AST with machine scene units and USD attribute precision resolved. */
     ast,
   };
 }
