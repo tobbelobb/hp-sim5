@@ -79,6 +79,8 @@ if [[ "${RUN_SIM_E2E:-0}" == "1" ]]; then
   (cd "$ROOT" && node autocal/control/tests/e2e/calibrate_encoder_noise.e2e.test.mjs --sim)
 fi
 
-echo "== HP5 headless collection, convergence, precision and accuracy budgets =="
-(cd "$ROOT" && OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python -m pytest \
-  -s -m heavy autocal/tests/test_extra_sensor_headless.py)
+for machine in hangprinter_3 hangprinter_4 hangprinter_5 hangprinter_5_pulley_reduced; do
+  echo "== Autocal benchmark $machine (warns on slower or less precise/accurate calibration) =="
+  (cd "$ROOT" && OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python -m pytest \
+    -s -m heavy "autocal/tests/test_autocal_benchmark.py::test_benchmark_$machine")
+done

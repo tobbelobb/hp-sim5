@@ -1330,6 +1330,7 @@ def _full_auto_loop(
                     "timestamp": datetime.now().isoformat(),
                     "iteration": step,
                     "dataset": str(dataset_path),
+                    "num_sweeps": len((plan.get("dataset") or {}).get("sweeps", [])),
                     "runs": [
                         {
                             "id": r["id"],
