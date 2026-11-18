@@ -148,8 +148,11 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
                              or min(recorded_targets) <= 0
                              or not np.allclose(recorded_targets, recorded_targets[0], rtol=1e-9, atol=0)):
         raise ValueError("Cannot combine different equal-strain targets in one refinement dataset")
+    # Pulley reduction must not lower the strand tension. Parallel lines on one
+    # spool share load through effector roll, and a lightly loaded line goes slack;
+    # the encoder then follows only the taut line, which no point model describes.
     strand_target = (recorded_targets[0] if recorded_targets else
-                     _COLLECTION_FORCE_MULTIPLE * start_force_n / float(np.min(strands * advantage)))
+                     _COLLECTION_FORCE_MULTIPLE * start_force_n / float(np.min(strands)))
     extra_force = None
     if config.get("extra_sensors_enabled") and int(dataset["num_anchors"]) == 5:
         extra_force = min(float(tuning.get("force_max_n", np.inf)),
