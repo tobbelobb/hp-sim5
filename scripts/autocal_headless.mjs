@@ -90,7 +90,7 @@ async function advance(seconds = 0, drain = false) {
     }
     world.update(dt); step++; totalSteps++; collectorTime += dt;
     world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
-    if (totalSteps % 1000 === 0) fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status()));
+    if (totalSteps % 1000 === 0) writeClock(status());
     if (i % 50 === 49) await yieldStep();
   }
 }
@@ -190,13 +190,18 @@ const server = http.createServer(async (request, reply) => {
       result = await bridge.sendEncoderRequest([], 120000);
     } else if (request.url !== '/status') throw new Error('Unknown operation');
     const state = status();
-    fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(state, null, 2));
+    writeClock(state);
     reply.end(JSON.stringify({ ...state, result }));
   } catch (error) {
     reply.writeHead(500).end(JSON.stringify({ error: error.message }));
   } finally { release(); }
 });
 server.listen(Number(apiPort), '127.0.0.1');
+// Readers poll clock.json while stepping runs; a rename never exposes a partial file.
+function writeClock(state) {
+  fs.writeFileSync(`${directory}/clock.json.tmp`, JSON.stringify(state, null, 2));
+  fs.renameSync(`${directory}/clock.json.tmp`, `${directory}/clock.json`);
+}
 async function close() {
   if (stopped) return;
   stopped = true;
@@ -211,7 +216,7 @@ async function close() {
       } catch (error) { disableRecorder(error); }
     }
   } catch (error) { failure = error.message; }
-  fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status(), null, 2));
+  writeClock(status());
   event('service_stopped'); fs.closeSync(events);
   socket.close(); bridge.close(); server.close();
   process.exit(failure ? 1 : 0);
