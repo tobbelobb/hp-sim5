@@ -54,7 +54,7 @@ for await (const line of readline.createInterface({ input: fs.createReadStream(e
   const p = e.payload;
   if (p.type === 'encoder_request' && p.axes.length) drain();
   controller.handlePayload(p);
-  if (p.type === 'encoder_request' && p.axes.length === 4) {
+  if (p.type === 'encoder_request' && p.axes.length >= 4) {
     names ??= named();
     const eff = names.Effector;
     const rec = { epoch, step, axes: p.axes, angles_deg: response.anglesDeg,

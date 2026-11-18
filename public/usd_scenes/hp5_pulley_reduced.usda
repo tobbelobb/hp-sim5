@@ -1315,7 +1315,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (-0.2411611652351689, -0.2496464466094073, 2)
+            double3 xformOp:translate = (-0.24752512626584777, -0.2432824855787283, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
@@ -1445,7 +1445,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (0.2496464466094073, -0.2411611652351689, 2)
+            double3 xformOp:translate = (0.2432824855787283, -0.24752512626584777, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
@@ -1575,7 +1575,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (0.2411611652351689, 0.2496464466094073, 2)
+            double3 xformOp:translate = (0.24752512626584777, 0.2432824855787283, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
@@ -1705,7 +1705,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (-0.2496464466094073, 0.2411611652351689, 2)
+            double3 xformOp:translate = (-0.2432824855787283, 0.24752512626584777, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 

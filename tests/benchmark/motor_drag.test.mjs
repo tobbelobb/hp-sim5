@@ -58,7 +58,9 @@ function drag(scene, closed, pull, strength = 1, cableSolverBackend) {
 
 for (const scene of ['hp4', 'slideprinter']) {
   test(`${scene}: dragging makes open-loop motors skip steps`, () => {
-    const { dragged, back, shifts, cycle, diagnostics } = drag(scene, false, [0.5, 0, 0]);
+    // Pull against a load-bearing line. A slipped HP4 line that only carried
+    // pretension goes slack, and the other three still hold the effector in place.
+    const { dragged, back, shifts, cycle, diagnostics } = drag(scene, false, scene === 'hp4' ? [0, 0, -0.6] : [0.5, 0, 0]);
     assert(dragged > 0.2, `effector followed the hand only ${dragged} m`);
     const slipped = shifts.filter(s => Math.abs(s) > cycle / 2);
     assert(slipped.length > 0, `no motor skipped: ${shifts}`);
