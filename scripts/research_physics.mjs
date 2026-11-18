@@ -6,11 +6,12 @@ import { PositionComponent, OrientationComponent, VelocityComponent, AngularVelo
   EncoderComponent, RigidBodyMemberComponent, SceneEntityInfoComponent, RadiusComponent,
   MachineTagComponent, RenderableComponent } from '../src/js/cable_joints_3d/ecs.js';
 import { CableJointComponent, CablePathComponent } from '../src/js/cable_joints_3d/cable_joints_core.js';
+import { getEntityWorldOrientation } from '../src/js/cable_joints_3d/rigid_bodies.js';
 import { SpoolStateComponent } from '../hp-sim-3d/app/hangprinter_spools.js';
 import { cableTargetLengthDelta } from '../hp-sim-3d/app/flightRecorderSnapshot.js';
 import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
 import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
-import { ExtruderComponent } from '../hp-sim-3d/app/hangprinter_extruder.js';
+import { ExtruderComponent, estimateEffectorRotation } from '../hp-sim-3d/app/hangprinter_extruder.js';
 
 // Keep stdout strictly a request/reply protocol, including scene-load warnings.
 console.log = console.warn = (...args) => console.error(...args);
@@ -23,12 +24,23 @@ let step = 0;
 let physicsWallS = 0;
 const xyz = v => [v.x, v.y, v.z];
 const xyzw = q => [q.x, q.y, q.z, q.w];
+function effectorOrientations(extruder) {
+  return Object.fromEntries(Object.entries(extruder.machineEffectorCenters).map(([machine, center]) => {
+    const sources = extruder.centerSources[machine] ?? [];
+    const body = world.getComponent(sources[0], RigidBodyMemberComponent)?.bodyEntity;
+    const commonBody = body != null && sources.every(id =>
+      world.getComponent(id, RigidBodyMemberComponent)?.bodyEntity === body);
+    const rotation = (commonBody ? getEntityWorldOrientation(world, body) : null)
+      ?? estimateEffectorRotation(extruder.centerSourceOffsets[machine], center, sources, world);
+    return [machine, xyzw(rotation)];
+  }));
+}
 const fields = [
   [PositionComponent, c => ({pos: xyz(c.pos)})],
   [OrientationComponent, c => ({quaternion: xyzw(c.quaternion)})],
   [VelocityComponent, c => ({vel: xyz(c.vel)})],
   [AngularVelocityComponent, c => ({omega: xyz(c.omega)})],
-  [EncoderComponent, c => ({angle: c.angle})],
+  [EncoderComponent, c => ({angle: c.angle, axis: xyz(c.axis)})],
   [RigidBodyMemberComponent, c => ({body_entity: c.bodyEntity, local_position: xyz(c.localPosition), local_orientation: xyzw(c.localOrientation)})],
   [StepperMotorComponent, c => ({commanded_angle: c.commandedAngle, delta_angle: c.deltaAngle,
     torque_mode: c.torqueMode, target_torque: c.targetTorque, missed_steps: c.missedSteps,
@@ -44,7 +56,7 @@ const fields = [
   [MachineTagComponent, c => ({id: c.id})],
   [SceneEntityInfoComponent, c => ({name: c.name, tags: c.tags})],
   [RenderableComponent, c => ({shape: c.shape, color: c.color})],
-  [ExtruderComponent, c => ({extrusions: c.extrusions.map(r => ({...r, pos: xyz(r.pos)})),
+  [ExtruderComponent, c => ({extrusions: c.extrusions, machine_effector_orientations: effectorOrientations(c),
     ...Object.fromEntries(['machineEffectorCenters', 'machineCenters', 'machineTips', 'machineColdEnds'].map(key => [
       key.replace(/[A-Z]/g, s => '_' + s.toLowerCase()),
       Object.fromEntries(Object.entries(c[key]).map(([name, v]) => [name, xyz(v)])),

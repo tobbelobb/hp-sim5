@@ -5,7 +5,8 @@ telemetry, recording, encoder reads and tests share one small data model.
 """
 from __future__ import annotations
 
-import math
+import re
+
 import numpy as np
 
 
@@ -194,27 +195,43 @@ def world_orientation(world, entity):
 
 
 def _path_part(value):
-    import re
     return re.sub(r'[^a-zA-Z0-9_.-]', '_', str(value))
+
+
+def entity_key(world, entity):
+    return f'{_path_part(machine_id(world, entity))}/{_path_part(entity_name(world, entity))}'
+
+
+def _is_anchor(world, entity):
+    info = world.get_component(entity, SceneEntityInfoComponent)
+    return info is not None and 'Anchor' in (info.tags or [])
+
+
+def _frame_path(world, entity):
+    member = world.get_component(entity, RigidBodyMemberComponent)
+    name = _path_part(entity_name(world, entity))
+    if member is not None:
+        return f'{_frame_path(world, member.body_entity)}/members/{name}'
+    machine = _path_part(machine_id(world, entity))
+    category = 'anchors' if _is_anchor(world, entity) else 'bodies'
+    return f'world/machines/{machine}/{category}/{name}'
 
 
 def capture_snapshot(world):
     frames = []
     for entity in world.query([PositionComponent]):
-        info = world.get_component(entity, SceneEntityInfoComponent)
         member = world.get_component(entity, RigidBodyMemberComponent)
-        position = world_position(world, member.body_entity if member is not None else entity)
-        orientation = world_orientation(world, member.body_entity if member is not None else entity)
-        frames.append({'path': f'world/machines/{_path_part(machine_id(world, entity))}/bodies/{_path_part(entity_name(world, entity))}',
-                       'name': info.name if info is not None and info.name else f'entity {entity}',
+        position = member.local_position if member is not None else world_position(world, entity)
+        orientation = member.local_orientation if member is not None else world_orientation(world, entity)
+        frames.append({'path': _frame_path(world, entity), 'name': entity_name(world, entity),
                        'position': position.tolist(), 'quaternion': (orientation or Quaternion()).as_xyzw(),
-                       'kind': 'anchor' if info is not None and 'Anchor' in (info.tags or []) else 'body'})
+                       'kind': 'anchor' if _is_anchor(world, entity) else 'body'})
     for entity in world.query([ExtruderComponent]):
         extruder = world.get_component(entity, ExtruderComponent)
         for machine, center in getattr(extruder, 'machine_effector_centers', {}).items():
+            orientation = getattr(extruder, 'machine_effector_orientations', {}).get(machine, [0., 0., 0., 1.])
             frames.append({'path': f'world/machines/{_path_part(machine)}/effector', 'name': 'Effector',
-                           'position': np.asarray(center, dtype=float).tolist(),
-                           'quaternion': Quaternion().as_xyzw(), 'kind': 'effector'})
+                           'position': center.tolist(), 'quaternion': orientation, 'kind': 'effector'})
     cables = []
     for entity in world.query([CablePathComponent]):
         path = world.get_component(entity, CablePathComponent)
