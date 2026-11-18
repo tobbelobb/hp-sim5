@@ -152,6 +152,7 @@ async function ensureKlippySimulator({
   configPath,
   speedup = 1,
   quiet,
+  onSpawn,
 } = {}) {
   if (!sim || firmware !== 'klipper') {
     return null;
@@ -173,6 +174,11 @@ async function ensureKlippySimulator({
     motionQueueStepGenLowTime,
     motionQueueStepGenHighTime,
     onInfo: quiet ? null : (message) => console.log(message),
+    spawnImpl: (...args) => {
+      const child = spawn(...args);
+      onSpawn(child);
+      return child;
+    },
   });
 }
 
@@ -475,93 +481,13 @@ Examples:
 }
 
 
-async function main() {
-  const argv = process.argv.slice(2);
-  const args = parseBridgeArgs(argv);
-  const hasNoTrace = argv.includes('--no-trace');
-  if (hasNoTrace) {
-    args.trace = false;
-  } else if (!args.trace) {
-    args.trace = true;
-  }
-  if (args.help) {
-    printHelp();
-    process.exit(0);
-  }
-  stepGcodeMode = !!args.stepGcode;
-  const machineType = normalizeMachineType(args.machineType || 'slideprinter');
-  const machineConfig = MACHINE_CONFIGS[machineType];
-  if (!machineConfig) {
-    console.error(`Unknown machine type: ${machineType}`);
-    process.exit(1);
-  }
-  const motorIds = MOTOR_IDS_BY_MACHINE[machineType];
-  if (!motorIds || motorIds.length !== machineConfig.numAnchors) {
-    console.error(`Motor ID mapping missing or mismatched for ${machineType}`);
-    process.exit(1);
-  }
-  if (motorIds.length !== machineConfig.axes.length) {
-    console.error(`Motor ID count (${motorIds.length}) does not match axes count (${machineConfig.axes.length}) for ${machineType}`);
-    process.exit(1);
-  }
-
-  const speedup = Number.isFinite(parseFloat(args.speedup)) && parseFloat(args.speedup) > 0
-    ? parseFloat(args.speedup)
-    : 1;
-  const debugSweepActions = !!args.debugSweepActions;
+async function openBridge(session, args, machineType, speedup) {
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
-  const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : 0;
-
   const targetPort = Number.isFinite(parseInt(args.port, 10)) ? parseInt(args.port, 10) : DEFAULT_RRF_PORT;
   const targetServer = args.serverExplicit ? args.server : `http://localhost:${targetPort}`;
   const socketPath = args.socket || process.env.KLIPPY_SOCKET_PATH || DEFAULT_KLIPPY_SOCKET_PATH;
   const shouldSpawnRrf = args.firmware === 'rrf' && !args.noSpawnRrfSimulator && !args.serverExplicit;
-  let rrfProcess = null;
-  let managedKlippyProcess = null;
-  let bridgeCtx = null;
-  let send = null;
-  let cleanupStarted = false;
-  const reference = createReferenceLogger();
-
-  const cleanup = async () => {
-    if (cleanupStarted) {
-      return;
-    }
-    cleanupStarted = true;
-    if (rrfProcess && !args.persistRrfSimulator) {
-      stopProcess(rrfProcess);
-      rrfProcess = null;
-    }
-    if (managedKlippyProcess) {
-      stopKlippyApiServer(managedKlippyProcess);
-      managedKlippyProcess = null;
-    }
-    if (stepReadline) {
-      stepReadline.close();
-      stepReadline = null;
-    }
-    if (bridgeCtx?.close) {
-      bridgeCtx.close();
-      bridgeCtx = null;
-    }
-    await reference.close();
-    const recordingFailure = reference.failure();
-    if (recordingFailure) console.error(`Extended recording degraded: ${recordingFailure.message ?? recordingFailure}`);
-  };
-
-  const onSigInt = () => {
-    cleanup().finally(() => process.exit(130));
-  };
-  const onSigTerm = () => {
-    cleanup().finally(() => process.exit(143));
-  };
-  const onSigHup = () => {
-    cleanup().finally(() => process.exit(129));
-  };
-  process.once('SIGINT', onSigInt);
-  process.once('SIGTERM', onSigTerm);
-  process.once('SIGHUP', onSigHup);
-
+  session.persistRrfSimulator = args.persistRrfSimulator;
   scheduleSimulatorProcessWarning({
     sim: args.sim,
     firmware: args.firmware,
@@ -571,47 +497,81 @@ async function main() {
   if (shouldSpawnRrf) {
     try {
       console.log(`Starting rrf_simulator at ${targetServer}...`);
-      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug, machineType,
+      session.rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug, machineType,
         preferLineLayerConfig: Boolean(args.lineLayering || Number(args.forceBuildupFactor)),
       });
       await waitForRrfSimulator(targetServer);
     } catch (err) {
-      console.error(`Unable to start rrf_simulator: ${err?.message || err}`);
-      await cleanup();
-      process.exit(1);
+      throw new Error(`Unable to start rrf_simulator: ${err?.message || err}`, { cause: err });
     }
   }
 
   try {
-    managedKlippyProcess = await ensureKlippySimulator({
+    await ensureKlippySimulator({
       sim: args.sim,
       firmware: args.firmware,
       socketPath,
       configPath: args.config,
       speedup,
       quiet: args.quiet,
+      onSpawn: child => { session.klippyProcess = child; },
     });
   } catch (err) {
-    console.error(`Unable to start Klippy simulator: ${err?.message || err}`);
-    await cleanup();
-    process.exit(1);
+    throw new Error(`Unable to start Klippy simulator: ${err?.message || err}`, { cause: err });
   }
 
-  let success = false;
-  try {
-    bridgeCtx = await createBridge(args.firmware, {
-      server: targetServer,
-      socketPath,
-      wsPort: args.noWs ? 0 : args.wsPort,
-      quiet: args.quiet,
-      configPath: args.config,
-      encoderTimeoutMs,
-      speedup,
-      sim: args.sim,
-      headlessUrl: args.headlessUrl,
-    });
+  session.bridge = await createBridge(args.firmware, {
+    server: targetServer,
+    socketPath,
+    wsPort: args.noWs ? 0 : args.wsPort,
+    quiet: args.quiet,
+    configPath: args.config,
+    encoderTimeoutMs,
+    speedup,
+    sim: args.sim,
+    headlessUrl: args.headlessUrl,
+  });
+}
 
-    reference.emit('collection_start', { argv: process.argv, speedup, machineType,
+async function collect(argv, session) {
+  const args = parseBridgeArgs(argv);
+  const hasNoTrace = argv.includes('--no-trace');
+  if (hasNoTrace) {
+    args.trace = false;
+  } else if (!args.trace) {
+    args.trace = true;
+  }
+  if (args.help) {
+    printHelp();
+    return true;
+  }
+  stepGcodeMode = !!args.stepGcode;
+  pendingPreSendDelayMs = 0;
+  const machineType = normalizeMachineType(args.machineType || 'slideprinter');
+  const machineConfig = MACHINE_CONFIGS[machineType];
+  if (!machineConfig) {
+    throw new Error(`Unknown machine type: ${machineType}`);
+  }
+  const motorIds = MOTOR_IDS_BY_MACHINE[machineType];
+  if (!motorIds || motorIds.length !== machineConfig.numAnchors) {
+    throw new Error(`Motor ID mapping missing or mismatched for ${machineType}`);
+  }
+  if (motorIds.length !== machineConfig.axes.length) {
+    throw new Error(`Motor ID count (${motorIds.length}) does not match axes count (${machineConfig.axes.length}) for ${machineType}`);
+  }
+
+  const speedup = Number.isFinite(parseFloat(args.speedup)) && parseFloat(args.speedup) > 0
+    ? parseFloat(args.speedup)
+    : 1;
+  const debugSweepActions = !!args.debugSweepActions;
+  const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : 0;
+
+  if (!session.bridge) await openBridge(session, args, machineType, speedup);
+  const bridgeCtx = session.bridge;
+  const reference = session.reference;
+  let send = null;
+  try {
+    reference.emit('collection_start', { argv: [...process.argv.slice(0, 2), ...argv], speedup, machineType,
       timing_source: bridgeCtx.simulationClock?.source ?? bridgeCtx.simulationClock?.backend ?? 'collector.Date.now',
       wall_deadline_ms: 120000, node_version: process.version });
     if (args.sweepConfigFile) await reference.artifact(args.sweepConfigFile);
@@ -707,23 +667,63 @@ async function main() {
     });
     await reference.artifact(args.outputFile, bridgeCtx.simulationClock);
     reference.emit('collection_complete', { outputFile: args.outputFile }, bridgeCtx.simulationClock);
-    await reference.close();
-    success = true;
+    await reference.flush();
+    return true;
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);
-    if (send) {
+    if (send && !session.closing) {
       try {
         await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
       } catch (holdError) {
         console.error(`Failed to hold motors after collection error: ${holdError?.message || holdError}`);
       }
     }
+    return false;
+  }
+}
+
+async function main() {
+  const argv = process.argv.slice(2);
+  const session = { reference: createReferenceLogger() };
+  let cleanup;
+  const close = () => cleanup ??= (async () => {
+    session.closing = true;
+    if (session.rrfProcess && !session.persistRrfSimulator) stopProcess(session.rrfProcess);
+    if (session.klippyProcess) stopKlippyApiServer(session.klippyProcess);
+    stepReadline?.close();
+    const clients = [...(session.bridge?.wss?.clients ?? [])];
+    const disconnected = clients.map(client => new Promise(resolve => {
+      client.once('close', resolve);
+      client.close(1001, 'Autocal session ended');
+    }));
+    session.bridge?.close();
+    const timer = clients.length ? setTimeout(() => clients.forEach(client => client.terminate()), 500) : null;
+    await Promise.all([session.reference.close(), ...disconnected]);
+    clearTimeout(timer);
+    const failure = session.reference.failure();
+    if (failure) console.error(`Extended recording degraded: ${failure.message ?? failure}`);
+  })();
+
+  process.once('SIGINT', () => close().finally(() => process.exit(130)));
+  process.once('SIGTERM', () => close().finally(() => process.exit(143)));
+  process.once('SIGHUP', () => close().finally(() => process.exit(129)));
+
+  try {
+    if (argv.length !== 1 || argv[0] !== '--autocal-session') {
+      return (await collect(argv, session)) ? 0 : 1;
+    }
+
+    const commands = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
+    // The parent owns this session. EOF also covers a parent killed during collection.
+    process.stdin.once('end', () => close().finally(() => process.exit(0)));
+    for await (const line of commands) {
+      const success = await collect(JSON.parse(line), session);
+      if (!success) return 1;
+      process.stdout.write('AUTOCAL_COLLECTOR_COMPLETE\n');
+    }
+    return 0;
   } finally {
-    process.off('SIGINT', onSigInt);
-    process.off('SIGTERM', onSigTerm);
-    process.off('SIGHUP', onSigHup);
-    await cleanup();
-    process.exit(success ? 0 : 1);
+    await close();
   }
 }
 
@@ -742,7 +742,7 @@ export {
 
 const isMain = path.basename(process.argv[1] || '') === 'collect_sweep_data.mjs';
 if (isMain) {
-  main().catch((err) => {
+  main().then(code => process.exit(code)).catch((err) => {
     console.error(err);
     process.exit(1);
   });

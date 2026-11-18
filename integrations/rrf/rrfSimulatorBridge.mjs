@@ -252,7 +252,9 @@ export function createGcodeBridge({
   const helpers = buildWsHelpers({ wsPort, quiet, onClientChange });
   if (sim && !helpers.wss) throw new Error('Browser simulation collection requires a WebSocket connection');
   // Clock polls must tolerate slow physics frames, just like collector waits.
-  const simulationClock = sim ? createBrowserClock(() => helpers.sendEncoderRequest([], 30000)) : undefined;
+  const simulationClock = sim ? createBrowserClock(() => helpers.sendEncoderRequest([], 30000), {
+    onReset: () => bridge.resetSimulationReference(),
+  }) : undefined;
   let currentGcode = null;
 
   const encoderResolver = helpers.wss

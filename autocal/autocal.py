@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import atexit
 import os
+import signal
 import sys
 from contextlib import nullcontext, ExitStack
 from pathlib import Path
@@ -28,7 +28,60 @@ from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_s
 from autocal.stopping import StoppingPolicy
 
 
-def full_auto_loop(
+class BrowserCollector:
+    """Run sequential collection commands over one simulator bridge."""
+
+    def __init__(self, log_line):
+        self.log_line = log_line
+        self.process = None
+
+    def collect(self, cmd):
+        if self.process is None:
+            self.process = subprocess.Popen(
+                [*cmd[:2], "--autocal-session"],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace",
+                start_new_session=not bool(os.environ.get("HP_SIM5_AUTOCAL_JOB")),
+            )
+        process = self.process
+        try:
+            process.stdin.write(json.dumps(cmd[2:]) + "\n")
+            process.stdin.flush()
+        except BrokenPipeError:
+            # Read the worker's diagnostics before reporting its exit.
+            pass
+        for line in process.stdout:
+            if line == "AUTOCAL_COLLECTOR_COMPLETE\n":
+                return
+            self.log_line(line.rstrip("\n"))
+        raise subprocess.CalledProcessError(process.wait() or 1, cmd)
+
+    def close(self):
+        if self.process is None:
+            return
+        process, self.process = self.process, None
+        try:
+            try:
+                process.stdin.close()
+            except BrokenPipeError:
+                pass
+            process.wait(timeout=12)
+        except subprocess.TimeoutExpired:
+            _stop_process(process)
+            process.wait()
+        finally:
+            with process.stdout:
+                for line in process.stdout:
+                    self.log_line(line.rstrip("\n"))
+
+
+def full_auto_loop(**kwargs) -> int:
+    with ExitStack() as resources:
+        return _full_auto_loop(resources, **kwargs)
+
+
+def _full_auto_loop(
+    resources: ExitStack,
     *,
     work_dataset: Optional[Path],
     machine_type: str,
@@ -110,7 +163,7 @@ def full_auto_loop(
     text_log_path = _unique_path(dataset_path.with_name(f"{dataset_path.stem}.full_auto.log"))
     text_log_path.parent.mkdir(parents=True, exist_ok=True)
     text_log_path.write_text("", encoding="utf-8")
-    log_handle = text_log_path.open("a", encoding="utf-8")
+    log_handle = resources.enter_context(text_log_path.open("a", encoding="utf-8"))
     if extended_reference.enabled():
         log_handle = extended_reference.EventLog(log_handle, text_log_path)
         extended_reference.emit("run_start", argv=sys.argv)
@@ -328,20 +381,7 @@ def full_auto_loop(
             collector_speedup = float(parsed_speedup)
     reset_pending = bool(sim and hp_sim_reset_eff)
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
-    sim_process: Optional[subprocess.Popen] = None
-    cleanup_registered = False
-
-    def _cleanup() -> None:
-        if sim_process and not keep_sim_alive:
-            _stop_process(sim_process)
-        try:
-            log_handle.close()
-        except Exception:
-            pass
-
     if sim and not no_collect and not server_explicit and not user_no_spawn:
-        atexit.register(_cleanup)
-        cleanup_registered = True
         target_port = port or DEFAULT_RRF_PORT
         _log_line(f"; starting {firmware} simulator at http://localhost:{target_port} (config: {sim_config})")
         sim_process = provider.start_simulator(
@@ -349,46 +389,34 @@ def full_auto_loop(
             sim_config=sim_config,
             speedup=collector_speedup,
         )
+        if not keep_sim_alive:
+            resources.callback(_stop_process, sim_process)
         provider.wait_for_ready(f"http://localhost:{target_port}")
 
-    if (
-        sim
-        and not no_collect
-        and headless_sim is None
-        and not _arg_has_flag(collector_args_eff, "--no-ws")
+    browser_collector = None
+    if sim and not no_collect and headless_sim is None and not _arg_has_flag(
+        collector_args_eff, "--no-ws", "--headless-url"
     ):
-        ws_port = 8790
         raw_ws_port = _arg_value(collector_args_eff, "--ws-port")
-        if raw_ws_port is not None:
-            try:
-                ws_port = int(raw_ws_port)
-            except (TypeError, ValueError):
-                ws_port = 8790
+        try:
+            ws_port = int(raw_ws_port) if raw_ws_port is not None else 8790
+        except ValueError:
+            ws_port = 0
         if ws_port > 0:
-            simulator_url = (
-                f"http://localhost:5173/hp-sim5/hp-sim-3d/"
-                f"?gcode_ws=ws://localhost:{ws_port}"
-            )
+            _log_console(f"; --sim: collection waits for a browser connected to ws://localhost:{ws_port}")
             _log_console(
-                f"; --sim: collection waits for a browser connected to ws://localhost:{ws_port}"
+                f";        open http://localhost:5173/hp-sim5/hp-sim-3d/"
+                f"?gcode_ws=ws://localhost:{ws_port} and keep the simulator page open"
             )
-            _log_console(
-                f";        open {simulator_url} and keep the simulator page open"
-            )
+        if not _arg_has_flag(collector_args_eff, "--step-gcode", "--step-gcodes", "--interactive-gcode"):
+            browser_collector = BrowserCollector(_log_line)
+            resources.callback(browser_collector.close)
 
     def _finalize(code: int) -> int:
-        nonlocal cleanup_registered
         extended_reference.artifact(work_path)
         extended_reference.artifact(text_log_path)
         extended_reference.artifact(log_path)
         extended_reference.emit("run_complete", returncode=code)
-        if cleanup_registered:
-            try:
-                atexit.unregister(_cleanup)
-            except Exception:
-                pass
-            cleanup_registered = False
-        _cleanup()
         return code
 
     def _run_collection_command(cmd):
@@ -396,6 +424,22 @@ def full_auto_loop(
         for index, value in enumerate(cmd[:-1]):
             if value in ("--config", "--sweep-config", "--sweep-config-file"):
                 extended_reference.artifact(cmd[index + 1])
+        if browser_collector is not None:
+            code = 1
+            try:
+                browser_collector.collect(cmd)
+                code = 0
+            except subprocess.CalledProcessError as error:
+                code = error.returncode
+                raise
+            except (KeyboardInterrupt, SystemExit) as error:
+                code = 130 if isinstance(error, KeyboardInterrupt) else error.code
+                browser_collector.close()
+                raise
+            finally:
+                extended_reference.emit("collection_exit", returncode=code)
+                extended_reference.artifact(work_path)
+            return
         if extended_reference.enabled():
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                        text=True, start_new_session=not bool(os.environ.get('HP_SIM5_AUTOCAL_JOB')))
@@ -424,6 +468,7 @@ def full_auto_loop(
         finally:
             _stop_process(process)
 
+    checked_hp5_seed = None
     collected_bootstrap = not dataset_path.exists()
     if collected_bootstrap:
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
@@ -490,9 +535,11 @@ def full_auto_loop(
         try:
             with _log_context():
                 _run_collection_command(cmd)
-        except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
+        except (subprocess.CalledProcessError, KeyboardInterrupt, SystemExit) as error:
             if checked_bootstrap:
                 write_bootstrap_state(dataset_path, "failed", reason=str(error))
+            if isinstance(error, SystemExit):
+                raise
             _log_console(f"; bootstrap collection stopped: {error}; partial data retained")
             if headless_sim is not None:
                 headless_sim.manifest["stop_reason"] = "bootstrap-interrupted" if isinstance(error, KeyboardInterrupt) else "bootstrap-collection-failed"
@@ -553,10 +600,14 @@ def full_auto_loop(
                     refined = _merge_sweep_datasets(refined, measured)
                     _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
                 _write_json(dataset_path, refined)
+                if machine_type in ("hangprinter_5", "hangprinter_5_pulley_reduced"):
+                    checked_hp5_seed = rough_anchors
                 write_bootstrap_state(dataset_path, "complete")
-            except (ValueError, np.linalg.LinAlgError, subprocess.CalledProcessError, KeyboardInterrupt) as error:
+            except (ValueError, np.linalg.LinAlgError, subprocess.CalledProcessError, KeyboardInterrupt, SystemExit) as error:
                 write_bootstrap_state(dataset_path, "failed", reason=str(error))
                 _log_console(f"; checked bootstrap stopped: {error}; rough data: {rough_path}; checks: {check_path}")
+                if isinstance(error, SystemExit):
+                    raise
                 if headless_sim is not None:
                     headless_sim.manifest["stop_reason"] = "bootstrap-interrupted" if isinstance(error, KeyboardInterrupt) else "unreliable-rough-bootstrap"
                 return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
@@ -1020,6 +1071,7 @@ def full_auto_loop(
                         settings=settings,
                         collector_output=collector_output,
                         log_prefix=f"; full-auto run {run_id}",
+                        initial_guess=checked_hp5_seed if step == 1 else None,
                     )
                 warm_id = f"{run_id}.warm"
                 return _execute_plan_run(
@@ -1278,6 +1330,7 @@ def full_auto_loop(
                     "timestamp": datetime.now().isoformat(),
                     "iteration": step,
                     "dataset": str(dataset_path),
+                    "num_sweeps": len((plan.get("dataset") or {}).get("sweeps", [])),
                     "runs": [
                         {
                             "id": r["id"],
@@ -1625,6 +1678,11 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
 
 
 if __name__ == "__main__":
+    def interrupt(signum, frame):
+        raise SystemExit(128 + signum)
+
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, interrupt)
     try:
         exit_code = main()
     except KeyboardInterrupt:
