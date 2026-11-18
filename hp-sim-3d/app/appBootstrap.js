@@ -121,6 +121,7 @@ export function createHpSimApp({
     button: dom.rerunBtn,
     url: urlParams?.get('rerun_ws') || 'ws://127.0.0.1:9877',
     WebSocketClass: ownerWindow?.WebSocket,
+    nonFatal: true,
   });
   flightRecorder.extendedReference = parseBooleanParam(urlParams, 'extended_autocal');
   world.setResource('flightRecorder', flightRecorder);
