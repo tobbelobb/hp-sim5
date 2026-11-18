@@ -226,8 +226,9 @@ def main():
     print(f'{len(todo)} commits, {sum(len(m) for _, m in todo)} runs, {workers} at a time; results in {out}')
 
     pending, futures = {}, []
-    # Prepare only enough commits ahead to keep every worker busy.
-    live = threading.Semaphore(-(-workers // len(args.machines)) + 1)
+    # One live commit per worker keeps every worker busy even when a single
+    # slow machine (HP4) is all that remains of several commits.
+    live = threading.Semaphore(workers)
 
     def finished(commit, worktree):
         with LOCK:
