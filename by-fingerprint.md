@@ -9,6 +9,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 daf2711f048f74674685 | 2026-11-18T21:19 | 1/1 | 0.96 | 1.22 | 3574 | 5265 | 9 | stable-estimate | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| f2be134944 | v2 83c9b259b9ba93896b0a | 2026-11-18T21:16 | 1/1 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 5cb6a2120b678a5e1b10 | 2026-11-18T18:17 | 1/1 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
 | e4785901fa | v1 21a14da94822c449f3df | 2026-11-18T16:53 | 1/1 | 0.96 | 1.22 | 3574 | 5265 | 9 | stable-estimate | ok | Merge pull request #108 from tobbelobb/codex/autocal-benchmark-ci-history |
 | 0623060e22 | v1 918282e8dd16861d93d9 | 2026-11-18T11:48 | 1/1 | 0.96 | 1.23 | 3574 | 5255 | 9 | stable-estimate | ok (legacy) | Track autocal benchmark per machine and warn on regressions |
@@ -82,6 +83,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 034990ae1e90591c1630 | 2026-11-18T21:19 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| f2be134944 | v2 52a29666a46f60479f53 | 2026-11-18T21:16 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 fdc9c52ee787dbdde295 | 2026-11-18T18:17 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
 | e4785901fa | v1 db83d3f94b9573bc9a39 | 2026-11-18T16:53 | 1/1 | 4.42 | 1.31 | unavailable | 5731 | 12 | stable-estimate | ok | Merge pull request #108 from tobbelobb/codex/autocal-benchmark-ci-history |
 | 0623060e22 | v1 71c1dc453fa01d516923 | 2026-11-18T11:48 | 1/1 | 4.57 | 1.51 | unavailable | 5912 | 13 | stable-estimate | ok (legacy) | Track autocal benchmark per machine and warn on regressions |
@@ -155,6 +157,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 c0f8c96686e0b9124e17 | 2026-11-18T21:19 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| f2be134944 | v2 6969effe4a19ee84a039 | 2026-11-18T21:16 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 c9af9758cc9c363ae274 | 2026-11-18T18:17 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
 | e4785901fa | v1 ec76c752d8af462b4731 | 2026-11-18T16:53 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #108 from tobbelobb/codex/autocal-benchmark-ci-history |
 | 0623060e22 | v1 0b587a4e4d93452c8475 | 2026-11-18T11:48 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok (legacy) | Track autocal benchmark per machine and warn on regressions |
@@ -228,6 +231,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 e461e15ee118b9f2a873 | 2026-11-18T21:19 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| f2be134944 | v2 494a309671e53c1297b9 | 2026-11-18T21:16 | 1/1 | 2.57 | 0.63 | 4132 | 4201 | 6 | good-fit | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 1a2005fcdd1766204c2c | 2026-11-18T18:17 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
 | e4785901fa | v1 cd2405c0977da2d289d1 | 2026-11-18T16:53 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #108 from tobbelobb/codex/autocal-benchmark-ci-history |
 | 0623060e22 | v1 575da6ac75202ecb3332 | 2026-11-18T11:48 | 1/1 | 2.57 | 0.63 | 4130 | 4200 | 6 | good-fit | ok (legacy) | Track autocal benchmark per machine and warn on regressions |
