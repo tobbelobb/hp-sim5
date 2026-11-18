@@ -34,6 +34,8 @@ function applyCablePaths(world, context, registry) {
             getAttribute(prim, "cablePath:halfWidth") ?? 0.0,
             readNumericAttribute(prim, "cablePath:dampingPerUnitLength") ?? 0.0,
             iterations ?? readNumericAttribute(prim, "cablePath:solverIterations") ?? 1,
+            // The baked half-width already encodes the initial geometry, including zero for an unlayered bake.
+            { initialLayeringEnabled: true },
         );
         const cablePath = world.createEntity();
         world.addComponent(cablePath, pathComp);

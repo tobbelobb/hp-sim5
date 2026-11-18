@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { World, RigidBodyComponent } from '../../../src/js/cable_joints_3d/ecs.js';
-import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import { World, HybridKnotAngleComponent, RigidBodyComponent } from '../../../src/js/cable_joints_3d/ecs.js';
+import { CableJointComponent, CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import { OpenText } from '../../../src/js/usd/stage.js';
 import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
 import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../../../hp-sim-3d/app/scene/machineScenePipeline.js';
@@ -8,8 +8,37 @@ import { registerSimulationSystems } from '../../../hp-sim-3d/app/simulationSyst
 import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
 import { setSolverIterations } from '../../../hp-sim-3d/app/solver-iterations.js';
 import { setPhysicsSubsteps } from '../../../hp-sim-3d/app/physics-substeps.js';
+import { LINE_LAYERING_TOGGLE_KEYS, setLineLayeringFeatureFlags } from '../../../hp-sim-3d/app/line-layering-flags.js';
 
 const minimalSource = () => readFileSync('tests/fixtures/engine_parity/usd_scene_minimal.usda', 'utf8');
+
+test.each([true, false])('an HP3 plan keeps its baked geometry on reset (layered=%s)', layered => {
+  const source = readFileSync('public/usd_scenes/hp3.usda', 'utf8');
+  const { source: baked } = bakeCableSceneUsdaSource(source, layered
+    ? {} : { cablePathHalfWidthOverride: 0, deriveAll: true });
+  const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(OpenText(baked)), '/World/HangprinterScene'));
+  expect(checked.valid).toBe(true);
+  const plan = buildEntityPlan(checked);
+  const world = new World();
+  const read = Type => world.query([Type]).map(id => world.getComponent(id, Type));
+
+  setLineLayeringFeatureFlags(world, layered);
+  applyEntityPlan(world, plan);
+  const knots = read(HybridKnotAngleComponent);
+  const joints = read(CableJointComponent);
+  const paths = read(CablePathComponent);
+  expect(knots.length).toBeGreaterThan(0);
+  expect(paths.map(path => path.cableHalfWidth)).toEqual(Array(paths.length).fill(layered ? .001 : 0));
+
+  setLineLayeringFeatureFlags(world, !layered);
+  applyEntityPlan(world, plan);
+  expect(read(HybridKnotAngleComponent)).toEqual(knots);
+  expect(read(CableJointComponent)).toEqual(joints);
+  expect(read(CablePathComponent)).toEqual(paths);
+  for (const key of LINE_LAYERING_TOGGLE_KEYS) {
+    expect(world.getResource(key)).toBe(!layered);
+  }
+});
 
 test('scene changes retain per-machine iterations and overrides survive resets', () => {
   const source = name => readFileSync(`public/usd_scenes/${name}.usda`, 'utf8');
