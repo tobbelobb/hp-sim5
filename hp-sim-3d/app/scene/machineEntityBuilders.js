@@ -25,10 +25,8 @@ import {
     SpoolStateComponent,
 } from '../hangprinter_spools.js';
 import { StepperMotorComponent } from '../hangprinter_stepper_motor.js';
-import Quaternion from '../../../src/js/cable_joints_3d/quaternion.js';
 import {
     readNumericAttribute,
-    readOrientationAttribute,
     readSpoolAxisLocal,
 } from './usdValueReaders.js';
 import { scopedKey } from './sceneNaming.js';
@@ -41,44 +39,40 @@ export function buildMachineBodies(context, registry) {
         return [];
     }
     return registry.bodyPrims
-        .map((prim) => buildMachineBody(context, registry, prim))
+        .map(({ prim, readTransform }) => buildMachineBody(context, registry, prim, readTransform))
         .filter(Boolean);
 }
 
-function buildMachineBody(context, registry, prim) {
+function buildMachineBody(context, registry, prim, readTransform) {
     const tags = getAttribute(prim, "ecs:tags") || [];
-    const posArr = getAttribute(prim, "xformOp:translate");
-    if (tags.length === 0 || !posArr) {
+    let apply;
+    if (tags.includes("Spool")) {
+        apply = applySpool;
+    } else if (tags.includes("Wheel")) {
+        apply = applyWheel;
+    } else if (tags.includes("Anchor")) {
+        apply = applyAnchor;
+    } else if (tags.includes("Pinhole") || tags.includes("Eyelet") || tags.includes("Attachment")) {
+        apply = applyPinhole;
+    } else {
         return null;
     }
-
-    if (tags.includes("Spool")) {
-        return (world) => applySpool(world, context, registry, prim, posArr);
-    }
-    if (tags.includes("Wheel")) {
-        return (world) => applyWheel(world, context, registry, prim, posArr);
-    }
-    if (tags.includes("Anchor")) {
-        return (world) => applyAnchor(world, context, registry, prim, posArr);
-    }
-    if (tags.includes("Pinhole") || tags.includes("Eyelet") || tags.includes("Attachment")) {
-        return (world) => applyPinhole(world, context, registry, prim, posArr);
-    }
-    return null;
+    const transform = readTransform();
+    return (world) => apply(world, context, registry, prim, transform);
 }
 
-function applySpool(world, context, registry, prim, posArr) {
+function applySpool(world, context, registry, prim, transform) {
     const { color, friction, restitution } = materialProperties(context.stage, prim);
     const palette = context.options.palette || null;
     const machineId = context.options.namespace || 'default';
     const namespace = context.options.namespace || null;
-    const pos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
+    const pos = transform.position.clone();
     const radius = getAttribute(prim, "radius");
     const mass = getAttribute(prim, "physics:mass");
     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
     const velArr = getAttribute(prim, "physics:velocity");
     const angVelArr = getAttribute(prim, "physics:angularVelocity");
-    const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
+    const initialOrientation = transform.orientation;
     const spoolAxisLocal = readSpoolAxisLocal(prim);
 
     if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
@@ -106,19 +100,19 @@ function applySpool(world, context, registry, prim, posArr) {
     registerNamedEntity(world, registry, namespace, prim, ent);
 }
 
-function applyWheel(world, context, registry, prim, posArr) {
+function applyWheel(world, context, registry, prim, transform) {
     const { color, friction, restitution } = materialProperties(context.stage, prim);
     const palette = context.options.palette || null;
     const machineId = context.options.namespace || 'default';
     const namespace = context.options.namespace || null;
-    const pos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
+    const pos = transform.position.clone();
     const radius = getAttribute(prim, "radius");
     const mass = getAttribute(prim, "physics:mass");
     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
     const velArr = getAttribute(prim, "physics:velocity");
     const angVelArr = getAttribute(prim, "physics:angularVelocity");
     const height = Number(getAttribute(prim, "height"));
-    const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
+    const initialOrientation = transform.orientation;
     const wheelAxisLocal = readSpoolAxisLocal(prim);
 
     if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
@@ -148,37 +142,40 @@ function applyWheel(world, context, registry, prim, posArr) {
     registerNamedEntity(world, registry, namespace, prim, ent);
 }
 
-function applyAnchor(world, context, registry, prim, posArr) {
+function applyAnchor(world, context, registry, prim, transform) {
     const { color, friction, restitution } = materialProperties(context.stage, prim);
     const palette = context.options.palette || null;
     const machineId = context.options.namespace || 'default';
     const namespace = context.options.namespace || null;
-    const pos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
+    const pos = transform.position.clone();
     const ent = world.createEntity();
     world.addComponent(ent, new MachineTagComponent(machineId));
     world.addComponent(ent, new PositionComponent(pos.x, pos.y, pos.z));
+    if (hasRotation(transform.orientation)) {
+        addOrientationState(world, ent, transform.orientation);
+    }
     world.addComponent(ent, new RadiusComponent(0.01));
     world.addComponent(ent, new MassComponent(-1.0));
     world.addComponent(ent, new RenderableComponent('circle', palette?.anchor ?? color ?? '#aaaaaa'));
     addMaterialComponents(world, ent, restitution, friction);
     if (getAttribute(prim, "cable:linkable")) {
-        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, null, DEFAULT_PLANE_NORMAL));
+        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, transform.orientation, DEFAULT_PLANE_NORMAL));
     }
     registerNamedEntity(world, registry, namespace, prim, ent);
 }
 
-function applyPinhole(world, context, registry, prim, posArr) {
+function applyPinhole(world, context, registry, prim, transform) {
     const { color, friction, restitution } = materialProperties(context.stage, prim);
     const palette = context.options.palette || null;
     const machineId = context.options.namespace || 'default';
     const namespace = context.options.namespace || null;
-    const pos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
+    const pos = transform.position.clone();
     const radius = getAttribute(prim, "radius");
     const mass = getAttribute(prim, "physics:mass");
     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
     const velArr = getAttribute(prim, "physics:velocity");
     const angVelArr = getAttribute(prim, "physics:angularVelocity");
-    const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
+    const initialOrientation = transform.orientation;
 
     const ent = world.createEntity();
     world.addComponent(ent, new SpoolTagComponent());
@@ -187,8 +184,10 @@ function applyPinhole(world, context, registry, prim, posArr) {
     world.addComponent(ent, new RadiusComponent(radius ?? DEFAULT_PINHOLE_RADIUS));
     addGravityIfDynamic(world, ent, mass);
     world.addComponent(ent, new RenderableComponent('circle', palette?.pinhole ?? color ?? '#cccccc'));
-    if (angVelArr !== null) {
+    if (angVelArr !== null || hasRotation(initialOrientation)) {
         addOrientationState(world, ent, initialOrientation);
+    }
+    if (angVelArr !== null) {
         world.addComponent(ent, vectorComponent(AngularVelocityComponent, angVelArr));
     }
     if (inertiaTensor !== null) {
@@ -220,6 +219,10 @@ function addBodyKinematics(world, ent, pos, velArr, mass) {
 function addOrientationState(world, ent, orientation) {
     world.addComponent(ent, new OrientationComponent(orientation.x, orientation.y, orientation.z, orientation.w));
     world.addComponent(ent, new PrevFinalOrientationComponent(orientation.x, orientation.y, orientation.z, orientation.w));
+}
+
+function hasRotation({ x, y, z }) {
+    return x !== 0 || y !== 0 || z !== 0;
 }
 
 function addGravityIfDynamic(world, entityId, mass) {

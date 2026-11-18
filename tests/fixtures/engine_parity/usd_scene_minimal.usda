@@ -36,6 +36,7 @@ def Xform "World" {
             token[] ecs:tags = ["Wheel"]
             double3 xformOp:translate = (0.5, 0, 0.2)
             double3 xformOp:rotateZYX = (30, 20, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZYX"]
             double radius = 0.1
             double height = 0.04
             double physics:mass = 0.4
@@ -47,6 +48,7 @@ def Xform "World" {
         def Circle "Pinhole" {
             token[] ecs:tags = ["Eyelet"]
             double3 xformOp:translate = (1, 1, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
             double physics:mass = 0.3
             double3 physics:velocity = (-0.01, 0.02, 0)
             double3 physics:angularVelocity = (0, 0, 0)
@@ -55,11 +57,13 @@ def Xform "World" {
         def Circle "Corner" {
             token[] ecs:tags = ["Attachment"]
             double3 xformOp:translate = (1, -1, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
             double physics:mass = 0.1
         }
         def Xform "Anchor" {
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (2, 1, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
         }
         def RigidBody "Effector" {
             rel rigidBody:members = [</World/Scene/Wheel>, </World/Scene/Pinhole>, </World/Scene/Corner>]
@@ -102,12 +106,15 @@ def Xform "World" {
         def Xform "Extruder" {
             token[] ecs:tags = ["Extruder"]
             double3 xformOp:translate = (0.01, -0.02, 0.03)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [</World/Scene/Wheel>, </World/Scene/Pinhole>, </World/Scene/Corner>]
             def Xform "Tip" {
                 double3 xformOp:translate = (0, 0, -0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
             }
             def Xform "ColdEnd" {
                 double3 xformOp:translate = (0, 0, 0.2)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
             }
         }
     }

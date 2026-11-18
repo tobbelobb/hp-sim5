@@ -1,5 +1,4 @@
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
-import Quaternion from '../../../src/js/cable_joints_3d/quaternion.js';
 import { getAttribute } from '../../../src/js/usd/stage.js';
 import { normalizeSpoolAxisLocal } from '../hangprinter_spools.js';
 
@@ -27,7 +26,7 @@ export function readNumericAttribute(primNode, attributeName) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function readVectorAttribute(primNode, attributeName) {
+function readVectorAttribute(primNode, attributeName) {
     const rawValue = getAttribute(primNode, attributeName);
     if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 2) {
         return null;
@@ -39,90 +38,6 @@ export function readVectorAttribute(primNode, attributeName) {
         return null;
     }
     return new Vector3(x, y, z);
-}
-
-export function readQuaternionAttribute(primNode, attributeName) {
-    const rawValue = getAttribute(primNode, attributeName);
-    if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 4) {
-        return null;
-    }
-    const w = Number(rawValue[0]);
-    const x = Number(rawValue[1]);
-    const y = Number(rawValue[2]);
-    const z = Number(rawValue[3]);
-    if (!Number.isFinite(w) || !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
-        return null;
-    }
-    return new Quaternion(x, y, z, w).normalize();
-}
-
-export function readRotateABCAttribute(primNode, attributeName, rotationOrder) {
-    const rawValue = getAttribute(primNode, attributeName);
-    if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 3) {
-        return null;
-    }
-    const xDeg = Number(rawValue[0]);
-    const yDeg = Number(rawValue[1]);
-    const zDeg = Number(rawValue[2]);
-    if (!Number.isFinite(xDeg) || !Number.isFinite(yDeg) || !Number.isFinite(zDeg)) {
-        return null;
-    }
-    const degToRad = Math.PI / 180.0;
-    const axisRotations = {
-        X: new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), xDeg * degToRad),
-        Y: new Quaternion().setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), yDeg * degToRad),
-        Z: new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), zDeg * degToRad),
-    };
-    const combined = new Quaternion();
-    for (const axisName of rotationOrder) {
-        const axisRotation = axisRotations[axisName];
-        if (!axisRotation) {
-            return null;
-        }
-        combined.multiplyQuaternions(axisRotation, combined).normalize();
-    }
-    return combined;
-}
-
-export function readRotationOpAttribute(primNode, opName) {
-    if (typeof opName !== 'string') {
-        return null;
-    }
-    const normalizedOpName = opName.startsWith('!invert!') ? opName.slice('!invert!'.length) : opName;
-    if (/^xformOp:orient(?:[:].+)?$/.test(normalizedOpName)) {
-        return readQuaternionAttribute(primNode, normalizedOpName);
-    }
-    const rotateMatch = normalizedOpName.match(/^xformOp:rotate(XYZ|XZY|YXZ|YZX|ZXY|ZYX)(?:[:].+)?$/);
-    return rotateMatch ? readRotateABCAttribute(primNode, normalizedOpName, rotateMatch[1]) : null;
-}
-
-export function readOrientationAttribute(primNode) {
-    const xformOpOrder = normalizeToPlainArray(getAttribute(primNode, 'xformOpOrder'));
-    const rotationOrder = Array.isArray(xformOpOrder) ? xformOpOrder : [];
-    if (rotationOrder.length > 0) {
-        const combined = new Quaternion();
-        let found = false;
-        for (const opName of rotationOrder) {
-            const opRotation = readRotationOpAttribute(primNode, opName);
-            if (!opRotation) {
-                continue;
-            }
-            combined.multiplyQuaternions(opRotation, combined).normalize();
-            found = true;
-        }
-        if (found) {
-            return combined;
-        }
-    }
-    return (
-        readQuaternionAttribute(primNode, 'xformOp:orient')
-        || readRotateABCAttribute(primNode, 'xformOp:rotateXYZ', 'XYZ')
-        || readRotateABCAttribute(primNode, 'xformOp:rotateXZY', 'XZY')
-        || readRotateABCAttribute(primNode, 'xformOp:rotateYXZ', 'YXZ')
-        || readRotateABCAttribute(primNode, 'xformOp:rotateYZX', 'YZX')
-        || readRotateABCAttribute(primNode, 'xformOp:rotateZXY', 'ZXY')
-        || readRotateABCAttribute(primNode, 'xformOp:rotateZYX', 'ZYX')
-    );
 }
 
 export function readSpoolAxisLocal(primNode) {

@@ -23,7 +23,7 @@ def Xform "World"
             double radius = 0.03
             double3 xformOp:rotateXYZ = (0, 0, 20)
             double3 xformOp:translate = (1.5402, -1.5949, 2.4)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
             # Typical intertia range for Nema 17 stepper motors are ca 3e-5 to 8e-5.

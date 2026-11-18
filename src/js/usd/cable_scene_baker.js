@@ -1,5 +1,4 @@
 import Vector3 from '../cable_joints_3d/vector3.js';
-import Quaternion from '../cable_joints_3d/quaternion.js';
 import {
   signedArcLengthOnWheel,
   tangentFromPointToSphere,
@@ -8,6 +7,7 @@ import {
 } from '../cable_joints_3d/geometry3.js';
 import { getAttribute, getRelationship } from './stage.js';
 import { parseUsdaAst } from './usda_parser.js';
+import { createRigidTransformReader } from './rigid_transforms.js';
 
 const DEFAULT_INIT_POLICY = 'deriveMissing';
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
@@ -47,21 +47,6 @@ function normalizeToPlainArray(value) {
     return Array.from(value);
   }
   return value;
-}
-
-function getParentPath(path) {
-  if (typeof path !== 'string') {
-    return null;
-  }
-  const trimmed = path.trim();
-  if (!trimmed || trimmed === '/') {
-    return null;
-  }
-  const separatorIndex = trimmed.lastIndexOf('/');
-  if (separatorIndex <= 0) {
-    return '/';
-  }
-  return trimmed.slice(0, separatorIndex);
 }
 
 function quoteString(value) {
@@ -237,97 +222,6 @@ function readVectorAttribute(primNode, attributeName) {
   return toVector3(normalizeToPlainArray(getAttribute(primNode, attributeName)));
 }
 
-function readQuaternionAttribute(primNode, attributeName) {
-  const rawValue = normalizeToPlainArray(getAttribute(primNode, attributeName));
-  if (!Array.isArray(rawValue) || rawValue.length < 4) {
-    return null;
-  }
-  const w = Number(rawValue[0]);
-  const x = Number(rawValue[1]);
-  const y = Number(rawValue[2]);
-  const z = Number(rawValue[3]);
-  if (![w, x, y, z].every(Number.isFinite)) {
-    return null;
-  }
-  return new Quaternion(x, y, z, w).normalize();
-}
-
-function readRotateABCAttribute(primNode, attributeName, rotationOrder) {
-  const rawValue = normalizeToPlainArray(getAttribute(primNode, attributeName));
-  if (!Array.isArray(rawValue) || rawValue.length < 3) {
-    return null;
-  }
-  const xDeg = Number(rawValue[0]);
-  const yDeg = Number(rawValue[1]);
-  const zDeg = Number(rawValue[2]);
-  if (![xDeg, yDeg, zDeg].every(Number.isFinite)) {
-    return null;
-  }
-
-  const degToRad = Math.PI / 180.0;
-  const axisRotations = {
-    X: new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), xDeg * degToRad),
-    Y: new Quaternion().setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), yDeg * degToRad),
-    Z: new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), zDeg * degToRad),
-  };
-
-  const combined = new Quaternion();
-  for (const axisName of rotationOrder) {
-    const axisRotation = axisRotations[axisName];
-    if (!axisRotation) {
-      return null;
-    }
-    combined.multiplyQuaternions(axisRotation, combined).normalize();
-  }
-  return combined;
-}
-
-function readRotationOpAttribute(primNode, opName) {
-  if (typeof opName !== 'string') {
-    return null;
-  }
-  const normalizedOpName = opName.startsWith('!invert!') ? opName.slice('!invert!'.length) : opName;
-  const orientMatch = normalizedOpName.match(/^xformOp:orient(?:[:].+)?$/);
-  if (orientMatch) {
-    return readQuaternionAttribute(primNode, normalizedOpName);
-  }
-  const rotateMatch = normalizedOpName.match(/^xformOp:rotate(XYZ|XZY|YXZ|YZX|ZXY|ZYX)(?:[:].+)?$/);
-  if (rotateMatch) {
-    return readRotateABCAttribute(primNode, normalizedOpName, rotateMatch[1]);
-  }
-  return null;
-}
-
-function readOrientationAttribute(primNode) {
-  const xformOpOrder = normalizeToPlainArray(getAttribute(primNode, 'xformOpOrder'));
-  const rotationOrder = Array.isArray(xformOpOrder) ? xformOpOrder : [];
-  if (rotationOrder.length > 0) {
-    const combined = new Quaternion();
-    let found = false;
-    for (const opName of rotationOrder) {
-      const opRotation = readRotationOpAttribute(primNode, opName);
-      if (!opRotation) {
-        continue;
-      }
-      combined.multiplyQuaternions(opRotation, combined).normalize();
-      found = true;
-    }
-    if (found) {
-      return combined;
-    }
-  }
-  return (
-    readQuaternionAttribute(primNode, 'xformOp:orient')
-    || readRotateABCAttribute(primNode, 'xformOp:rotateXYZ', 'XYZ')
-    || readRotateABCAttribute(primNode, 'xformOp:rotateXZY', 'XZY')
-    || readRotateABCAttribute(primNode, 'xformOp:rotateYXZ', 'YXZ')
-    || readRotateABCAttribute(primNode, 'xformOp:rotateYZX', 'YZX')
-    || readRotateABCAttribute(primNode, 'xformOp:rotateZXY', 'ZXY')
-    || readRotateABCAttribute(primNode, 'xformOp:rotateZYX', 'ZYX')
-    || new Quaternion()
-  );
-}
-
 function readAxisLocal(primNode) {
   const axis = (
     readVectorAttribute(primNode, 'spool:axisLocal')
@@ -339,41 +233,6 @@ function readAxisLocal(primNode) {
     return DEFAULT_PLANE_NORMAL.clone();
   }
   return axis.normalize();
-}
-
-function getPrimWorldTransform(index, path, cache) {
-  if (cache.has(path)) {
-    return cache.get(path);
-  }
-
-  const prim = index[path];
-  if (!prim) {
-    const identity = { position: new Vector3(), orientation: new Quaternion() };
-    cache.set(path, identity);
-    return identity;
-  }
-
-  const localPosition = readVectorAttribute(prim, 'xformOp:translate') ?? new Vector3();
-  const localOrientation = readOrientationAttribute(prim);
-  const parentPath = getParentPath(path);
-  const parentPrim = parentPath ? index[parentPath] : null;
-
-  let position = localPosition.clone();
-  let orientation = localOrientation.clone().normalize();
-
-  if (parentPrim) {
-    const parentTransform = getPrimWorldTransform(index, parentPath, cache);
-    position = parentTransform.position
-      .clone()
-      .add(parentTransform.orientation.transformVector(localPosition));
-    orientation = new Quaternion()
-      .multiplyQuaternions(parentTransform.orientation, localOrientation)
-      .normalize();
-  }
-
-  const transform = { position, orientation };
-  cache.set(path, transform);
-  return transform;
 }
 
 function computeWorldPoint(transform, localPoint) {
@@ -572,7 +431,7 @@ function normalizeStoredModes(pathPrim, expectedLength) {
   });
 }
 
-function buildBodyContext(index, path, transformCache, bodyCache) {
+function buildBodyContext(index, path, readWorldTransform, bodyCache) {
   if (bodyCache.has(path)) {
     return bodyCache.get(path);
   }
@@ -582,7 +441,7 @@ function buildBodyContext(index, path, transformCache, bodyCache) {
     throw new Error(`Missing body prim at ${path}.`);
   }
 
-  const transform = getPrimWorldTransform(index, path, transformCache);
+  const transform = readWorldTransform(path);
   const radiusValue = Number(getAttribute(prim, 'radius'));
   const radius = Number.isFinite(radiusValue) ? radiusValue : 0.0;
   const planeNormal = transform.orientation.transformVector(readAxisLocal(prim));
@@ -773,7 +632,7 @@ function resolveStoredValue(linkIndex, pathContext) {
   return 0.0;
 }
 
-function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJoints, options = {}) {
+function resolvePath(pathPrim, pathPath, index, readWorldTransform, bodyCache, seenJoints, options = {}) {
   const jointPaths = getRelationship(pathPrim, 'cablePath:joints');
   const linkTypes = normalizeToPlainArray(getAttribute(pathPrim, 'cablePath:linkTypes')) ?? [];
   const clockwise = (normalizeToPlainArray(getAttribute(pathPrim, 'cablePath:clockwise')) ?? [])
@@ -833,13 +692,13 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
     entityPaths.push(jointDef.body1Path);
   }
 
-  const bodies = entityPaths.map((bodyPath) => buildBodyContext(index, bodyPath, transformCache, bodyCache));
+  const bodies = entityPaths.map((bodyPath) => buildBodyContext(index, bodyPath, readWorldTransform, bodyCache));
   const jointResults = jointDefs.map((jointDef, jointIndex) => resolveJoint(
     jointDef.jointPath,
     jointDef.jointPrim,
     {
-      body0: buildBodyContext(index, jointDef.body0Path, transformCache, bodyCache),
-      body1: buildBodyContext(index, jointDef.body1Path, transformCache, bodyCache),
+      body0: buildBodyContext(index, jointDef.body0Path, readWorldTransform, bodyCache),
+      body1: buildBodyContext(index, jointDef.body1Path, readWorldTransform, bodyCache),
       initPolicy,
       linkType0: linkTypes[jointIndex],
       linkType1: linkTypes[jointIndex + 1],
@@ -892,7 +751,7 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
 export function bakeCableSceneAst(ast, options = {}) {
   const bakedAst = cloneAst(ast);
   const index = indexPrims(bakedAst.statements);
-  const transformCache = new Map();
+  const readWorldTransform = createRigidTransformReader(path => index[path]);
   const bodyCache = new Map();
   const seenJoints = new Set();
 
@@ -904,7 +763,7 @@ export function bakeCableSceneAst(ast, options = {}) {
     pathPrim,
     pathPath,
     index,
-    transformCache,
+    readWorldTransform,
     bodyCache,
     seenJoints,
     options,
