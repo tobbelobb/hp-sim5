@@ -456,13 +456,16 @@ not accuracy: a systematic bias moves no estimate. Three iterations
 Ctrl-C during the loop accepts the newest fit.
 
 The loop applies the newest admissible fit, which uses all the data. Variants of
-one iteration fit the same data, so the lowest cost picks among them; costs of
+one iteration fit the same data, so the lowest cost picks among them (`--shotgun`
+specs with different sigma sources do not share an objective); costs of
 fits to different data are not compared. The reported quality is the anchor
 uncertainty in mm: the largest coordinate standard deviation of point fits that
 each leave out one sweep. Up to 1 mm is good, up to 3 mm usable, above that poor.
 It misses bias that every sweep shares, such as unmodelled line stretch or wrong
 reeving geometry; on HP4 the true error is about 2.7 times the reported value.
+For spool fits it also holds the fitted radii fixed, so it misses radius uncertainty.
 See `anchor_uncertainty.py` for the evidence.
+With `--find-radii` or `--find-buildup-factor`, adding sweeps does not reliably improve the fit, so those runs instead score every saved fit, frozen, on the sweeps that arrived after it, and apply the consensus of the best-predicting fits (`history_selection.py`). A failed or diverged jackknife (above 3 mm and 10 times the lowest so far) is never applied.
 
 Collection checks the latest 1.5 seconds of encoder readings for quiet settling,
 with a range limit scaled to the longer 5-second vibration window's drift allowance.

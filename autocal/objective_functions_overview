@@ -102,7 +102,7 @@ before affecting filtering or the fit.
 
 ## Variant choice, applied fit and reported quality
 
-Variants of one iteration fit the same data with the same objective. The loop
+Variants of one iteration fit the same data. The loop
 picks the lowest primary cost, after constrained variants. It never compares the
 costs of fits to different data: more poses expose more model mismatch, so cost
 rises while anchors improve.
@@ -111,6 +111,7 @@ The newest admissible fit is applied. `anchor_uncertainty.plan_anchor_uncertaint
 reports its quality in mm: the largest anchor-coordinate standard deviation of point
 fits that each leave out one sweep. Patience counts sweeps without a new lowest
 uncertainty. The value misses bias every sweep shares, such as unmodelled stretch.
+With `--find-radii` or `--find-buildup-factor`, adding sweeps does not reliably improve the fit, so those runs instead score every saved fit, frozen, on the sweeps that arrived after it, and apply the consensus of the best-predicting fits (`history_selection.py`). A failed or diverged jackknife (above 3 mm and 10 times the lowest so far) is never applied.
 
 Spool refinement still compares candidates on the same data with
 `_spool_rank_score(...)`: a reduced chi-square inflated by robust spread and trimming,

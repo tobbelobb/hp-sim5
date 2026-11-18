@@ -975,3 +975,27 @@ def test_full_auto_underconstrained_recovery_still_replays_next_sweep(
     out = capsys.readouterr().out
     assert "underconstrained recovery succeeded" in out
     assert "Replaying next sweep to try and beat it." in out
+
+
+def test_spool_fitting_run_stops_when_every_future_prediction_fails(tmp_path, monkeypatch, capsys):
+    dataset = tmp_path / "invalid_validation.json"
+    _write_dataset(dataset, sweeps=5)
+
+    def fake_plan(path, **_kwargs):
+        plan = _fake_plan()
+        plan["dataset"] = ac._load_json(path)
+        return plan
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_args: False)
+    rc = ac.main([
+        "--sim", "--machine-type", "slideprinter", "--dataset", str(dataset),
+        "--no-collect", "--max-steps", "3", "--find-radii", "global", "--base-radii", "30",
+        "--buildup-factor", "0", "--no-fit-home-offsets",
+    ])
+
+    assert rc == 2
+    output = capsys.readouterr().out
+    assert "all held-out predictions failed" in output
+    assert "== Calibration summary ==" not in output

@@ -152,11 +152,12 @@ patience acceptance is `patience`.
 Ctrl-C during the loop or a `<dataset-stem>.full_auto.stop` file requests acceptance.
 
 At acceptance, the newest admissible fit is applied. It uses all the data.
+With `--find-radii` or `--find-buildup-factor`, adding sweeps does not reliably improve the fit, so those runs instead score every saved fit, frozen, on the sweeps that arrived after it, and apply the consensus of the best-predicting fits (`history_selection.py`). A failed or diverged jackknife (above 3 mm and 10 times the lowest so far) is never applied.
 
 The summary prints M669 anchors and fitted M666 spool settings.
 It sends M669 to RRF, but does not send M666.
 Klipper skips M669. `--sim --no-collect` skips sending unless a server was supplied.
-Reaching `--max-steps` applies the newest admissible fit.
+Reaching `--max-steps` applies the fit acceptance would apply.
 The default limit is 20 iterations.
 
 ## Anchor uncertainty
@@ -203,7 +204,8 @@ Existing log files get a unique suffix.
 | `next_sweep score=...` | Information gain for a proposed movement |
 | `selected run=...` | Current iteration's selected variant, its cost and anchor uncertainty |
 
-Full-auto applies the newest admissible fit. Its anchor uncertainty is the spread
+Full-auto applies the newest admissible fit, or with spool fitting the held-out
+consensus. Its anchor uncertainty is the spread
 of point fits that each leave out one sweep; it misses bias shared by all sweeps.
 
 ## Manual utilities

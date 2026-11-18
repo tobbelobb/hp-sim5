@@ -18,6 +18,7 @@ from autocal.rough_bootstrap import (
     MAX_EXTRA_ROUGH_SWEEPS, assess_rough_geometry, next_rough_sweep,
     bootstrap_state_error, write_bootstrap_state,
 )
+from autocal.history_selection import HISTORY_CONSENSUS_MAX_SPREAD_MM, evaluate_history_candidates, select_history_plan
 from autocal.anchor_uncertainty import newest_trusted_index, plan_anchor_uncertainty_mm, uncertainty_label
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
@@ -687,6 +688,29 @@ def _full_auto_loop(
     stopping.announce(_log_console)
     has_variants = bool(full_auto_runs)
 
+    spool_fit = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+
+    def _heldout_candidate() -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
+        scored = evaluate_history_candidates(
+            history_candidates, use_noise_mean=use_noise_mean,
+            pointwise_residual_mode=pointwise_residual_mode, sigma_source=sigma_source, log_line=_log_line,
+        )
+        plan, meta, ranked = select_history_plan(scored)
+        if not ranked:
+            _log_console("; full-auto: all held-out predictions failed; stopping without applying calibration.")
+            return None, None
+        for _key, candidate, info in ranked[:5]:
+            _log_line(f"; history_select: iter={candidate.get('iteration')} run={candidate.get('run_id')} "
+                      f"anchor_comparison={_fmt_float(info.get('anchor_comparison_score'))} "
+                      f"heldout_prediction={_fmt_float(info.get('prediction_score'))} "
+                      f"heldout_sweeps={_fmt_float(info.get('prediction_sweeps'), fmt='.0f')}")
+        members = meta["history_consensus_members"]
+        _log_line(f"; history_select: consensus selected_iter={meta.get('iteration')} members={members} "
+                  f"spread_mm={_fmt_float(meta['history_consensus_spread_mm'])} "
+                  f"max_spread_mm={HISTORY_CONSENSUS_MAX_SPREAD_MM:g} "
+                  f"applied={'consensus' if len(members) > 1 else 'best-ranked'}")
+        return plan, meta
+
     def _newest_candidate(
         fallback_plan: Optional[Dict[str, object]] = None,
         fallback_meta: Optional[Dict[str, object]] = None,
@@ -696,6 +720,8 @@ def _full_auto_loop(
         # worse than fit-cost, held-out or consensus selection. A newest fit whose
         # jackknife failed or diverged is skipped; the replayed 23_april_2026 dataset
         # ends with diverged fits.
+        if history_candidates and spool_fit:
+            return _heldout_candidate()
         if history_candidates:
             index = newest_trusted_index([c.get("anchor_uncertainty_mm") for c in history_candidates])
             if index is None:

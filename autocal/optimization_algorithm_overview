@@ -64,13 +64,14 @@ Live collection uses the selected plan's suggested command and merges its output
 `--no-collect` stops before live collection. It requires an existing dataset to
 avoid the initial bootstrap.
 
-Acceptance applies the newest admissible fit, prints the summary, and sends M669 to RRF.
+Acceptance applies the newest admissible fit (spool fits: the held-out
+consensus, see `history_selection.py`), prints the summary, and sends M669 to RRF.
 The summary prints fitted M666 parameters but does not send them.
 Klipper skips M669. `--sim --no-collect` also skips sending unless a server was
 explicitly supplied.
 Ctrl-C during the fitting/collection loop requests best-so-far acceptance.
 A `<dataset-stem>.full_auto.stop` file requests the same action.
-Reaching `--max-steps` also applies the newest admissible fit.
+Reaching `--max-steps` also applies that fit.
 The default limit is 20 iterations.
 
 See `objective_functions_overview` and `anchor_uncertainty.py` for the evidence behind this.
