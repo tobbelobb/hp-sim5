@@ -17,11 +17,14 @@ export class RemoteSpoolSystem {
     this._commands = [];
     this.commandHead = 0;
     this.commandCompactThreshold = 1024;
+    this.onWorkerDrained = null;
+    this.commandStepPending = false;
     Object.defineProperty(this, 'commands', {
       configurable: true,
       enumerable: true,
       get: () => this._commands,
       set: (value) => {
+        this.cancelWorkerDrain();
         if (Array.isArray(value)) {
           this._commands = value;
         } else if (value && typeof value.length === 'number') {
@@ -52,6 +55,7 @@ export class RemoteSpoolSystem {
       enumerable: true,
       get: () => this._worker,
       set: (value) => {
+        this.cancelWorkerDrain();
         this._worker = value || null;
         if (!this._worker || typeof this._worker.postMessage !== 'function') {
           return;
@@ -97,8 +101,7 @@ export class RemoteSpoolSystem {
   clearPlaybackState() {
     this.rebaseAxes = null;
     this.history = [];
-    this._commands.length = 0;
-    this.commandHead = 0;
+    this.clearCommandQueue();
   }
 
   getPlaybackState() {
@@ -112,8 +115,7 @@ export class RemoteSpoolSystem {
     const nextHistory = Array.isArray(state.history) ? state.history : [];
     const nextQueue = Array.isArray(state.queue) ? state.queue : [];
     this.history = nextHistory.map((cmd) => ({ ...cmd }));
-    this._commands = nextQueue.map((cmd) => ({ ...cmd }));
-    this.commandHead = 0;
+    this.commands = nextQueue.map((cmd) => ({ ...cmd }));
   }
 
   setCommandExecutedListener(listener) {
@@ -130,8 +132,34 @@ export class RemoteSpoolSystem {
   }
 
   clearCommandQueue() {
+    this.cancelWorkerDrain();
     this._commands.length = 0;
     this.commandHead = 0;
+  }
+
+  cancelWorkerDrain() {
+    this.onWorkerDrained = null;
+  }
+
+  finishWorker(onDrained) {
+    this.worker = null;
+    this.onWorkerDrained = onDrained;
+    // Short jobs can finish their last physics step before "done" arrives.
+    this._notifyWorkerDrained();
+  }
+
+  afterPhysicsStep() {
+    this.commandStepPending = false;
+    this._notifyWorkerDrained();
+  }
+
+  _notifyWorkerDrained() {
+    if (!this.onWorkerDrained || this.commandStepPending || this.getQueueLength() > 0) {
+      return;
+    }
+    const onDrained = this.onWorkerDrained;
+    this.cancelWorkerDrain();
+    onDrained();
   }
 
   _compactCommands(force = false) {
@@ -416,6 +444,7 @@ export class RemoteSpoolSystem {
     }
     this._commands[this.commandHead] = undefined;
     this.commandHead += 1;
+    this.commandStepPending = true;
     this._compactCommands();
     this._processCommand(world, command, { recordHistory: true, emitEvents: true });
   }

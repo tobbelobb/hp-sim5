@@ -194,7 +194,7 @@ export function createHpSimApp({
   const workers = createWorkerController({
     state,
     getRemoteSystem: () => controllers.commands?.getRemoteSystem?.() || null,
-    onWorkerDone: () => controllers.commands?.finishJob?.(),
+    onWorkerDrained: () => controllers.commands?.finishJob?.(),
     onWorkerError: () => controllers.commands?.handleWorkerError?.(),
     klipperPacerDiagnosticsEnabled: parseBooleanParam(urlParams, 'klipper_pacer_debug'),
   });

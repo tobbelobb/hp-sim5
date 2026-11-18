@@ -1,6 +1,18 @@
 import { runGame } from '../../../hp-sim-3d/app/runner.js';
+import { createWorkerController } from '../../../hp-sim-3d/app/workerController.js';
+import { createCommandJobController } from '../../../hp-sim-3d/app/commandJobController.js';
+import { createQualityController } from '../../../hp-sim-3d/app/qualityController.js';
+import { QualityMonitor } from '../../../hp-sim-3d/app/quality-monitor.js';
+import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
+import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
+import { World } from '../../../src/js/cable_joints_3d/ecs.js';
 
-jest.mock('../../../hp-sim-3d/app/workerController.js', () => ({ startSimulationClock: jest.fn() }));
+jest.mock('../../../integrations/klipper/klipperSimulatorBridge.js', () => ({ createKlipperRawBridge: jest.fn() }));
+jest.mock('../../../integrations/klipper/klipperMcuCommandPlayer.js?worker&url', () => '', { virtual: true });
+jest.mock('../../../integrations/rrf/rrfCanPlayer.js?worker&url', () => '', { virtual: true });
+jest.mock('../../../hp-sim-3d/app/workers/moveCommander.js?worker&url', () => '', { virtual: true });
+jest.mock('../../../hp-sim-3d/app/workers/simulationClock.js?worker&url', () => '', { virtual: true });
+jest.mock('../../../hp-sim-3d/app/machineCatalog.js', () => ({ buildRepositoryFileUrl: (path) => path }));
 
 let controls;
 const originalGlobals = Object.fromEntries(
@@ -25,7 +37,7 @@ afterEach(() => {
   Object.assign(global, originalGlobals);
 });
 
-function setup({ render = { update: jest.fn(), requestRender: jest.fn() } } = {}) {
+function setup({ render = { update: jest.fn(), requestRender: jest.fn() }, simulationWorld } = {}) {
   const stepButton = { addEventListener: (_event, handler) => { stepButton.click = () => handler({ preventDefault() {} }); } };
   const pauseButton = { addEventListener: (_event, handler) => { pauseButton.click = () => handler({ preventDefault() {} }); } };
   const speed = { textContent: '' };
@@ -37,12 +49,15 @@ function setup({ render = { update: jest.fn(), requestRender: jest.fn() } } = {}
     addEventListener: (event, handler) => { listeners[event] = handler; },
   };
   const resources = new Map([['dt', 0.002], ['pauseState', { paused: false }], ['renderSystem', render]]);
-  const world = {
+  const world = simulationWorld ?? {
     systems: [],
     getResource: (key) => resources.get(key),
     setResource: (key, value) => resources.set(key, value),
     update: jest.fn(),
   };
+  if (simulationWorld) {
+    for (const [key, value] of resources) world.setResource(key, value);
+  }
   const clocks = [];
   const startClock = (tick, fail) => {
     const clock = { tick, fail, stop: jest.fn() };
@@ -247,4 +262,154 @@ test('the speed readout shows achieved over the last second next to the target, 
   const before = speed.textContent;
   while (speed.textContent === before) { clock.now += 16; clocks.at(-1).tick(clock.now); }
   expect(speed.textContent).toMatch(/^(3\.\d|4\.0)x \/ 4x$/);
+});
+
+async function setupWorkerPrint(segments, fileName = 'print.gcode') {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+  const clock = wallClock();
+  const world = new World();
+  const remote = new RemoteSpoolSystem();
+  const extruder = new ExtruderComponent();
+  world.addComponent(world.createEntity(), extruder);
+  world.registerSystem(remote);
+  let physicsCommands = 0;
+  world.registerSystem({ update: () => { physicsCommands = remote.history.length; } });
+  const { clocks } = setup({ simulationWorld: world });
+  const state = { currentTimeScale: 1, jobSequenceCounter: 0 };
+  const machines = { getMachines: () => [{ id: 'm1' }], getActiveSourceKeys: () => [] };
+  const quality = createQualityController({ world, state, ...machines, getMachineDisplayName: () => 'Test machine' });
+  const monitor = new QualityMonitor();
+  monitor.setMachineContext({ id: 'm1' });
+  monitor.setReferenceSegments(segments);
+  quality.monitors.set('m1', { monitor });
+  quality.attachToRemoteSystem(remote);
+
+  let commands;
+  const snapshots = [];
+  const runFinalQualityChecks = quality.runFinalQualityChecks;
+  quality.runFinalQualityChecks = (job) => {
+    runFinalQualityChecks(job);
+    snapshots.push({ physicsCommands, ...monitor.getMetrics() });
+  };
+  const workers = createWorkerController({
+    state,
+    getRemoteSystem: () => commands.getRemoteSystem(),
+    onWorkerDrained: () => commands.finishJob(),
+    onWorkerError: () => commands.handleWorkerError(),
+    WorkerCtor: class {
+      postMessage() {}
+      terminate() {}
+      receive(data) { this.onmessage({ data }); }
+    },
+  });
+  const finishAsapBtn = {
+    addEventListener: (_event, handler) => { finishAsapBtn.click = () => handler({ preventDefault() {} }); },
+  };
+  commands = createCommandJobController({
+    world, state, dom: { finishAsapBtn }, machines, workers, quality,
+    runtime: {
+      ...controls, isStageReady: () => true, getGameControls: () => controls,
+      setTimeScale: (scale) => { controls.setTimeScale(scale); return scale; },
+    },
+  });
+  commands.bindUi();
+  await commands.queueCommandFile({ name: fileName });
+  const worker = remote.worker;
+  const send = (segment) => worker.receive({ action: 'gcode', command: { type: 'Move', E: segment.extrusion } });
+  const tick = (ms = 16) => {
+    clock.now += ms;
+    clocks.at(-1).tick(clock.now);
+  };
+  const drain = () => {
+    for (let i = 0; i < 100 && remote.getQueueLength() > 0; i += 1) tick();
+    expect(remote.getQueueLength()).toBe(0);
+  };
+  return { clock, commands, drain, quality, remote, snapshots, state, worker, send, tick, world, extruder, finishAsapBtn };
+}
+
+const firstSegment = { start: [0, 0, 0], end: [0.001, 0, 0], extrusion: 0.01 };
+
+test('linear Quality History includes the tail of a 1000-command worker print', async () => {
+  const corners = [[0, 0], [0.25, 0], [0.25, 0.25], [0, 0.25], [0, 0]];
+  const segments = Array.from({ length: 1000 }, (_, index) => {
+    const side = Math.floor(index / 250);
+    const point = (fraction) => [...corners[side].map((start, axis) =>
+      start + (corners[side + 1][axis] - start) * fraction), 0];
+    return { start: point((index % 250) / 250), end: point((index % 250 + 1) / 250), extrusion: 0.01 };
+  });
+  const { drain, quality, remote, snapshots, state, worker, send, tick, world, extruder } = await setupWorkerPrint(segments);
+  // Supply deterministic tips before command processing, with a 3 mm error on the last side.
+  world.systems.unshift({ update: () => {
+    const index = remote.history.length;
+    const [x, y, z] = segments[Math.min(index, segments.length - 1)].end;
+    extruder.machineTips.m1 = { x, y: y + (index >= 750 ? 0.003 : 0), z };
+  } });
+  segments.slice(0, 680).forEach(send);
+  drain();
+  segments.slice(680).forEach(send);
+  worker.receive({ type: 'done' });
+  expect(quality.historyRecords).toHaveLength(0);
+  expect(state.printActive).toBe(true);
+  drain();
+  worker.receive({ type: 'done' });
+  tick();
+  expect(snapshots).toMatchObject([{ samples: 1000, cornerCount: 3, physicsCommands: 1000 }]);
+  expect(quality.historyRecords).toHaveLength(1);
+  expect(quality.historyRecords[0].score).toBeCloseTo(94.313247, 6);
+  expect(state.printActive).toBe(false);
+});
+
+test.each([false, true])('short worker job completes once (queue already drained: %s)', async (alreadyDrained) => {
+  const { extruder, quality, snapshots, worker, send, tick } = await setupWorkerPrint([firstSegment], 'print.serial');
+  extruder.machineTips.m1 = { x: 0.001, y: 0, z: 0 };
+  send(firstSegment);
+  if (alreadyDrained) {
+    tick();
+    controls.pause();
+  }
+  worker.receive({ type: 'done' });
+  expect(quality.historyRecords).toHaveLength(alreadyDrained ? 1 : 0);
+  tick();
+  expect(snapshots).toMatchObject([{ samples: 1, physicsCommands: 1 }]);
+});
+
+test.each(['reset', 'clear queue', 'replacement', 'worker error'])('%s does not record an unfinished job', async (action) => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  const { commands, remote, snapshots, worker, send, tick } = await setupWorkerPrint([firstSegment]);
+  send(firstSegment);
+  worker.receive({ type: action === 'worker error' ? 'error' : 'done' });
+  if (action === 'reset') {
+    commands.handleUserReset();
+    controls.resume();
+  } else if (action === 'clear queue') {
+    remote.clearCommandQueue();
+  } else if (action === 'replacement') {
+    await commands.queueCommandFile({ name: 'replacement.gcode' });
+  }
+  worker.receive({ type: 'done' });
+  tick();
+  expect(snapshots).toHaveLength(0);
+});
+
+test('Finish ASAP uses the same post-physics completion', async () => {
+  const channels = [];
+  global.MessageChannel = class {
+    port1 = {};
+    port2 = { postMessage() {} };
+    constructor() { channels.push(this); }
+  };
+  const { clock, commands, finishAsapBtn, extruder, quality, snapshots, worker, send, world } =
+    await setupWorkerPrint([firstSegment], 'print.can');
+  extruder.machineTips.m1 = { x: 0.001, y: 0, z: 0 };
+  world.registerSystem({ update: () => { clock.now += 1; } });
+  send(firstSegment);
+  worker.receive({ type: 'done' });
+  expect(quality.historyRecords).toHaveLength(0);
+  finishAsapBtn.click();
+  expect(snapshots).toMatchObject([{ samples: 1, physicsCommands: 1 }]);
+  channels[1].port1.onmessage();
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(commands.isFinishAsapActive()).toBe(false);
+  expect(quality.historyRecords).toHaveLength(1);
 });
