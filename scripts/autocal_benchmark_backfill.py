@@ -131,8 +131,7 @@ def run(command, cwd, log):
 def select_commits(args):
     if args.revs:
         return [git('rev-parse', rev) for rev in args.revs]
-    commits = git('rev-list', '--first-parent', '--reverse', f'--since={args.since}', 'main').split()
-    return commits[::-args.stride][::-1]  # keep the newest commit whatever the stride
+    return git('rev-list', '--first-parent', '--reverse', f'--since={args.since}', 'main').split()
 
 
 def build_rrf(commit, worktree, out, threads):
@@ -294,9 +293,10 @@ def write_summary(out):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--since', default='2026-11-10', help='first-parent main commits since this date')
+    parser.add_argument('--since', default='2026-11-01', help='first-parent main commits since this date')
     parser.add_argument('--revs', nargs='+', help='explicit commits instead of --since')
-    parser.add_argument('--stride', type=int, default=1, help='benchmark every Nth selected commit')
+    parser.add_argument('--stride', type=int, default=1,
+                        help="run every Nth distinct runtime input per machine; skipped inputs' commits are not reported")
     parser.add_argument('--machines', nargs='+', default=MACHINES, choices=MACHINES)
     parser.add_argument('--threads', type=int, default=18)
     parser.add_argument('--mem-gb', type=float, default=50)
@@ -317,6 +317,13 @@ def main():
     # Build failures are retried on the next invocation; run results are final.
     # Only the first commit with each machine's runtime fingerprint is run.
     selection = [(c, m, fingerprint(c, m)) for c in select_commits(args) for m in args.machines]
+    if args.stride > 1:
+        # Every Nth distinct input per machine, newest kept; finished inputs are free.
+        keep = set(run_results(out))
+        for machine in args.machines:
+            order = list(dict.fromkeys(fp for _, m, fp in selection if m == machine))
+            keep |= {(machine, fp) for fp in order[::-args.stride]}
+        selection = [s for s in selection if (s[1], s[2]) in keep]
     fill_reused(out, selection)
     known = set(run_results(out))
     todo = {}
