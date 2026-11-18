@@ -16,31 +16,26 @@ export {
 } from './scene/machineScenePipeline.js';
 export { registerSceneSystems } from './sceneSystems.js';
 
-export function setupScene(world, stage, canvas, options = {}) {
-    const scenePrimPath = typeof options.scenePrimPath === 'string' && options.scenePrimPath.length > 0
-        ? options.scenePrimPath
-        : '/World/SlideprinterScene';
+export function buildScenePlan(stage, options = {}) {
     const parsed = parseStage(stage);
-    const spec = readMachineSceneSpec(parsed, scenePrimPath, options);
+    const spec = readMachineSceneSpec(parsed, options.scenePrimPath, options);
     const checked = validateMachineSceneSpec(spec);
 
     if (!checked.valid) {
-        for (const warning of checked.warnings) {
-            console.warn(warning);
-        }
-        return;
+        throw new Error(checked.warnings.join('\n'));
     }
 
     const namespace = typeof options.namespace === 'string' && options.namespace.length > 0
         ? options.namespace
         : null;
-    const plan = buildEntityPlan(checked, {
+    return buildEntityPlan(checked, {
         ...options,
         namespace,
-        palette: options.palette || null,
-        canvas,
     });
-    applyEntityPlan(world, plan);
+}
+
+export function setupScene(world, stage, canvas, options = {}) {
+    applyEntityPlan(world, buildScenePlan(stage, { ...options, canvas }));
     registerSceneSystems(world, {
         canvas,
         mode: '3d',

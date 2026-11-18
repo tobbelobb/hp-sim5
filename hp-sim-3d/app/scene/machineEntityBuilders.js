@@ -38,9 +38,16 @@ export function buildMachineBodies(context, registry) {
     if (context.options.remote) {
         return [];
     }
-    return registry.bodyPrims
-        .map(({ prim, readTransform }) => buildMachineBody(context, registry, prim, readTransform))
-        .filter(Boolean);
+    const bodies = [];
+    for (const { prim, readTransform } of registry.bodyPrims) {
+        const applyBody = buildMachineBody(context, registry, prim, readTransform);
+        if (applyBody) {
+            // Cable planning can check for this body before apply assigns its entity ID.
+            registry.nameToEntityId.set(scopedKey(context.options.namespace, prim.name), null);
+            bodies.push(applyBody);
+        }
+    }
+    return bodies;
 }
 
 function buildMachineBody(context, registry, prim, readTransform) {
@@ -56,6 +63,14 @@ function buildMachineBody(context, registry, prim, readTransform) {
         apply = applyPinhole;
     } else {
         return null;
+    }
+    if (apply === applySpool || apply === applyWheel) {
+        const missing = ["radius", "physics:mass", "physics:inertiaTensor"]
+            .filter((attribute) => getAttribute(prim, attribute) == null);
+        if (missing.length > 0) {
+            const type = apply === applySpool ? "Spool" : "Wheel";
+            throw new Error(`${context.sceneRootPath}/${prim.name}: ${type} is missing required attributes: ${missing.join(", ")}.`);
+        }
     }
     const transform = readTransform();
     return (world) => apply(world, context, registry, prim, transform);
@@ -74,11 +89,6 @@ function applySpool(world, context, registry, prim, transform) {
     const angVelArr = getAttribute(prim, "physics:angularVelocity");
     const initialOrientation = transform.orientation;
     const spoolAxisLocal = readSpoolAxisLocal(prim);
-
-    if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
-        console.warn(`Skipping Spool prim ${prim.name} due to missing attributes.`);
-        return;
-    }
 
     const ent = world.createEntity();
     world.addComponent(ent, new MachineTagComponent(machineId));
@@ -114,11 +124,6 @@ function applyWheel(world, context, registry, prim, transform) {
     const height = Number(getAttribute(prim, "height"));
     const initialOrientation = transform.orientation;
     const wheelAxisLocal = readSpoolAxisLocal(prim);
-
-    if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
-        console.warn(`Skipping Wheel prim ${prim.name} due to missing attributes.`);
-        return;
-    }
 
     const ent = world.createEntity();
     world.addComponent(ent, new MachineTagComponent(machineId));
@@ -250,6 +255,9 @@ function buildStepperMotorComponent(prim) {
 }
 
 function vectorComponent(ComponentClass, values) {
+    if (values == null) {
+        return new ComponentClass();
+    }
     return new ComponentClass(
         Number(values[0] ?? 0.0),
         Number(values[1] ?? 0.0),

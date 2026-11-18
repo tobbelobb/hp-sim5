@@ -2,8 +2,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHeadlessWorld } from '../../../hp-sim-3d/app/headlessWorld.js';
 import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
-import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
-import { layeringEnabled, PositionComponent, EncoderComponent } from '../../../src/js/cable_joints_3d/ecs.js';
+import { CableJointComponent, CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import { AngularVelocityComponent, layeringEnabled, PositionComponent, EncoderComponent, SceneEntityInfoComponent } from '../../../src/js/cable_joints_3d/ecs.js';
+import { WasmPhysicsEngine } from '../../../src/js/cable_joints_3d/wasm_physics_engine.js';
+
+test('HP5 SpoolC starts at rest when angular velocity is omitted', () => {
+  const authored = fs.readFileSync('public/usd_scenes/hp5.usda', 'utf8');
+  const source = authored
+    .replace(/def Circle "SpoolC"[\s\S]*?\n {8}\}/, spool =>
+      spool.replace(/^ *float3 physics:angularVelocity = .*\n/m, ''));
+  expect(source).not.toBe(authored);
+  const backend = new WasmPhysicsEngine(new WebAssembly.Module(fs.readFileSync('public/wasm/cable_solver.wasm')));
+  try {
+    const { world, dt } = createHeadlessWorld(source, { physicsSubsteps: 1, cableSolverBackend: backend });
+    const spool = world.query([SceneEntityInfoComponent])
+      .find(id => world.getComponent(id, SceneEntityInfoComponent).name === 'SpoolC');
+    expect(world.getComponent(spool, AngularVelocityComponent)?.omega).toMatchObject({ x: 0, y: 0, z: 0 });
+    const joints = world.query([CableJointComponent]).map(id => world.getComponent(id, CableJointComponent));
+    expect(joints.filter(joint => joint.entityA === spool)).toHaveLength(2);
+    expect(joints.every(joint => world.entities.has(joint.entityA) && world.entities.has(joint.entityB))).toBe(true);
+    world.update(dt);
+  } finally {
+    backend.dispose();
+  }
+});
 
 test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering geometry', machine => {
   const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}.usda`), 'utf8');

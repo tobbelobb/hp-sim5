@@ -1,6 +1,6 @@
 import { OpenText as UsdOpenText, getAttribute } from '../../src/js/usd/stage.js';
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
-import { setupScene } from './setupScene.js';
+import { buildScenePlan, setupScene } from './setupScene.js';
 import { machineForScene } from '../../machines/catalog.js';
 
 async function fetchUsdaText(url) {
@@ -331,8 +331,13 @@ export function createMachineSceneController({
     if (sourceKey && state.machines.some((machine) => machine.sourceKey === sourceKey)) {
       return state.machines.find((machine) => machine.sourceKey === sourceKey) || null;
     }
-    const machineId = `machine-${state.machineIdCounter++}`;
     const scenePrimPath = findScenePrimPath(stage);
+    try {
+      buildScenePlan(stage, { scenePrimPath, append: state.machines.length > 0 });
+    } catch (error) {
+      throw new Error(`Unable to load USDA ${name || sourceKey || scenePrimPath}. ${error.message}`, { cause: error });
+    }
+    const machineId = `machine-${state.machineIdCounter++}`;
     const { tintColor, extrusionColor } = extractMachineColors(stage, scenePrimPath);
     const machine = {
       id: machineId,

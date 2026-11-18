@@ -11,29 +11,40 @@ export function buildCableJoints(context, registry) {
     if (context.options.remote) {
         return [];
     }
-    return [(world) => applyCableJoints(world, context, registry)];
+    return registry.jointPrims.map((prim) => buildCableJoint(context, registry, prim));
 }
 
-function applyCableJoints(world, context, registry) {
+function buildCableJoint(context, registry, prim) {
     const palette = context.options.palette || null;
     const machineId = context.options.namespace || 'default';
     const namespace = context.options.namespace || null;
-
-    for (const prim of registry.jointPrims) {
-        const body0Path = getRelationship(prim, "physics:body0")[0];
-        const body1Path = getRelationship(prim, "physics:body1")[0];
-        const entityA = registry.nameToEntityId.get(scopedKeyFromPath(namespace, context.sceneRootPath, body0Path));
-        const entityB = registry.nameToEntityId.get(scopedKeyFromPath(namespace, context.sceneRootPath, body1Path));
-        const restLength = getAttribute(prim, "restLength");
-        const attachAArr = getAttribute(prim, "localPos0");
-        const attachBArr = getAttribute(prim, "localPos1");
-
-        if (entityA === null || entityB === null || restLength === null || attachAArr === null || attachBArr === null) {
-            console.warn(`Skipping CableJoint ${prim.name} due to missing data.`);
-            console.log(`entityA: ${entityA}, entityB: ${entityB}, restLength: ${restLength}, attachAArr: ${attachAArr}, attachBarr: ${attachBArr}`);
-            continue;
+    const jointPath = `${context.sceneRootPath}/${prim.name}`;
+    const resolveBodyKey = (relationship) => {
+        const targets = getRelationship(prim, relationship);
+        if (targets.length !== 1) {
+            throw new Error(`${jointPath}: CableJoint requires exactly one ${relationship} target.`);
         }
+        const key = scopedKeyFromPath(namespace, context.sceneRootPath, targets[0]);
+        if (!registry.nameToEntityId.has(key)) {
+            throw new Error(`${jointPath}: CableJoint ${relationship} target ${targets[0]} did not resolve to a simulation body. Check the target path and its ecs:tags.`);
+        }
+        return key;
+    };
+    const bodyAKey = resolveBodyKey("physics:body0");
+    const bodyBKey = resolveBodyKey("physics:body1");
+    const restLength = getAttribute(prim, "restLength");
+    const attachAArr = getAttribute(prim, "localPos0");
+    const attachBArr = getAttribute(prim, "localPos1");
+    const missing = Object.entries({ restLength, localPos0: attachAArr, localPos1: attachBArr })
+        .filter(([, value]) => value == null)
+        .map(([attribute]) => attribute);
+    if (missing.length > 0) {
+        throw new Error(`${jointPath}: CableJoint is missing required attributes: ${missing.join(", ")}.`);
+    }
 
+    const jointKey = scopedKey(namespace, prim.name);
+    registry.jointEntityMap.set(jointKey, null);
+    return (world) => {
         const joint = world.createEntity();
         world.addComponent(joint, new MachineTagComponent(machineId));
         world.addComponent(joint, new SceneEntityInfoComponent(prim.name, ['CableJoint']));
@@ -41,14 +52,14 @@ function applyCableJoints(world, context, registry) {
             joint,
             CableJointComponent.fromLocal(
                 world,
-                entityA,
-                entityB,
+                registry.nameToEntityId.get(bodyAKey),
+                registry.nameToEntityId.get(bodyBKey),
                 restLength,
                 new Vector3(attachAArr[0], attachAArr[1], attachAArr[2] || 0),
                 new Vector3(attachBArr[0], attachBArr[1], attachBArr[2] || 0),
             ),
         );
         world.addComponent(joint, new RenderableComponent('line', palette?.cable ?? linecolor1));
-        registry.jointEntityMap.set(scopedKey(namespace, prim.name), joint);
-    }
+        registry.jointEntityMap.set(jointKey, joint);
+    };
 }

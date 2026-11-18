@@ -1,3 +1,8 @@
+jest.mock('../../../src/js/cable_joints_3d/render_system_3d.js', () => ({
+  RenderSystem3D: jest.fn(),
+}));
+jest.mock('../../../hp-sim-3d/app/runner.js', () => ({ runGame: jest.fn() }));
+
 import { readFileSync } from 'node:fs';
 import { World, HybridKnotAngleComponent, RigidBodyComponent } from '../../../src/js/cable_joints_3d/ecs.js';
 import { CableJointComponent, CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
@@ -9,6 +14,9 @@ import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
 import { setSolverIterations } from '../../../hp-sim-3d/app/solver-iterations.js';
 import { setPhysicsSubsteps } from '../../../hp-sim-3d/app/physics-substeps.js';
 import { LINE_LAYERING_TOGGLE_KEYS, setLineLayeringFeatureFlags } from '../../../hp-sim-3d/app/line-layering-flags.js';
+import { createMachineSceneController } from '../../../hp-sim-3d/app/machineSceneController.js';
+import { createSceneChangeQueue } from '../../../hp-sim-3d/app/sceneController.js';
+import { setupScene } from '../../../hp-sim-3d/app/setupScene.js';
 
 const minimalSource = () => readFileSync('tests/fixtures/engine_parity/usd_scene_minimal.usda', 'utf8');
 
@@ -85,6 +93,39 @@ test('the authored scene builder retains zero cable stiffness', () => {
   const path = world.getComponent(paths[0], CablePathComponent);
   expect(path.stiffnessPerUnitLength).toBe(0);
   expect(path.compliancePerUnitLength).toBe(Infinity);
+});
+
+test.each([
+  ['double physics:mass = -1', /SpoolA.*missing required attributes: physics:mass/],
+  ['token[] ecs:tags = ["Spool"]', /J0.*physics:body0 target \/World\/Scene\/SpoolA did not resolve/],
+  ['rel physics:body0 = </World/Scene/SpoolA>', /J0.*requires exactly one physics:body0 target/],
+  [/custom double restLength = [^\n]+/, /J0.*missing required attributes: restLength/],
+  ['</World/Scene/J0>', /Path.*cablePath:joints target .* did not resolve to a CableJoint/, '</World/Scene/MissingJoint>'],
+])('setup rejects invalid authored data for %s before replacing the world', (attribute, message, replacement = '') => {
+  const source = bakeCableSceneUsdaSource(minimalSource()).source.replace(attribute, replacement);
+  const world = applyScene(new World(), minimalSource());
+  const generation = world.getResource('sceneGeneration');
+  expect(() => setupScene(world, OpenText(source), null, { scenePrimPath: '/World/Scene' })).toThrow(message);
+  expect(world.getResource('sceneGeneration')).toBe(generation);
+});
+
+test('an uploaded USDA with an unresolved cable body leaves the active machine registered', async () => {
+  const world = applyScene(new World(), minimalSource());
+  const structureVersion = world.structureVersion;
+  const activeMachine = { id: 'machine-0' };
+  const state = { machines: [activeMachine], machineIdCounter: 1, simDtSec: .002 };
+  const onError = jest.fn();
+  const controller = createMachineSceneController({
+    world, state, dom: { canvas: {} }, catalog: new Map(),
+    sceneQueue: createSceneChangeQueue({ onError }), featureFlags: { lineLayeringEnabled: true },
+  });
+  const source = minimalSource().replace('token[] ecs:tags = ["Spool"]', '');
+  await expect(controller.addUploadedMachine({ name: 'bad.usda', text: async () => source }))
+    .rejects.toThrow(/bad\.usda.*J0.*physics:body0 target \/World\/Scene\/SpoolA did not resolve/);
+  expect(onError).toHaveBeenCalledTimes(1);
+  expect(state.machines).toEqual([activeMachine]);
+  expect(state.machineIdCounter).toBe(1);
+  expect(world.structureVersion).toBe(structureVersion);
 });
 
 test('the legacy rigid-group spelling resolves its member relationships', () => {
