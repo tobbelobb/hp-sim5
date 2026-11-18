@@ -77,13 +77,17 @@ function indexPrims(statements, parent = "", out = {}) {
   return out;
 }
 
-function resolveAttributePrecision(statements) {
-  const singlePrecision = /^(?:float[234]?|(?:point3|vector3|normal3|color[34]|texCoord[23]|quat)f)(?:\[\])?$/;
-  const round = value => Array.isArray(value) ? value.map(round)
+const singlePrecision = /^(?:float[234]?|(?:point3|vector3|normal3|color[34]|texCoord[23]|quat)f)(?:\[\])?$/;
+
+function roundToFloat(value) {
+  return Array.isArray(value) ? value.map(roundToFloat)
     : typeof value === 'number' ? Math.fround(value) : value;
+}
+
+function resolveAttributePrecision(statements) {
   for (const statement of statements ?? []) {
     if (statement.type === 'declaration' && singlePrecision.test(statement.defineType)) {
-      statement.value = round(statement.value);
+      statement.value = roundToFloat(statement.value);
     }
     if (statement.statements) resolveAttributePrecision(statement.statements);
   }
@@ -91,7 +95,7 @@ function resolveAttributePrecision(statements) {
 
 
 // --- USD Parsing Helpers ---
-export function getAttribute(primNode, attrName) {
+export function getAttribute(primNode, attrName, { resolvePrecision = false } = {}) {
     if (!primNode) return null;
 
     // First, check the prim's metadata assignments (e.g., apiSchemas = ["..."])
@@ -106,7 +110,9 @@ export function getAttribute(primNode, attrName) {
     if (primNode.statements) {
         const decl = primNode.statements.find(s => s.type === 'declaration' && s.reference === attrName);
         if (decl) {
-            return decl.value;
+            return resolvePrecision && singlePrecision.test(decl.defineType)
+                ? roundToFloat(decl.value)
+                : decl.value;
         }
     }
 

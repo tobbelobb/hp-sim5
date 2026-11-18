@@ -1,11 +1,10 @@
-import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import { createRigidTransformReader } from '../../../src/js/usd/rigid_transforms.js';
 import {
     getAttribute,
     getChild,
     getChildren,
     getRelationship,
 } from '../../../src/js/usd/stage.js';
-import { readVectorAttribute } from './usdValueReaders.js';
 
 export function createSceneBuildRegistry() {
     return {
@@ -32,6 +31,7 @@ export function discoverScenePrims(context, registry) {
         return;
     }
 
+    const readWorldTransform = createRigidTransformReader(path => context.stage.GetPrimAtPath(path));
     for (const prim of getChildren(context.sceneRoot)) {
         const apiSchemas = getAttribute(prim, "apiSchemas");
         if (apiSchemas && apiSchemas.includes("CablePathAPI")) {
@@ -55,24 +55,23 @@ export function discoverScenePrims(context, registry) {
             continue;
         }
 
-        const posArr = getAttribute(prim, "xformOp:translate");
-        if (!posArr) {
-            continue;
-        }
-
+        const path = `${context.sceneRootPath}/${prim.name}`;
         const centerPaths = getRelationship(prim, 'machine:centerSources');
         if (tags.includes("Extruder") || centerPaths.length > 0) {
+            const { position } = readWorldTransform(path);
+            const sceneOrigin = readWorldTransform(context.sceneRootPath).position;
+            const offset = child => child
+                ? readWorldTransform(`${path}/${child.name}`).position.clone().subtract(position)
+                : null;
             registry.extruder.prim = prim;
-            registry.extruder.authoredPos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
+            registry.extruder.authoredPos = position.clone().subtract(sceneOrigin);
             registry.extruder.centerPaths = centerPaths;
-            const tipPrim = getChild(prim, 'Tip') || getChild(prim, 'HotEnd');
-            const coldEndPrim = getChild(prim, 'ColdEnd') || getChild(prim, 'Bottom');
-            registry.extruder.tipOffset = readVectorAttribute(tipPrim, 'xformOp:translate') || new Vector3(0.0, 0.0, 0.0);
-            registry.extruder.coldEndOffset = readVectorAttribute(coldEndPrim, 'xformOp:translate');
+            registry.extruder.tipOffset = offset(getChild(prim, 'Tip') || getChild(prim, 'HotEnd'));
+            registry.extruder.coldEndOffset = offset(getChild(prim, 'ColdEnd') || getChild(prim, 'Bottom'));
             continue;
         }
 
-        registry.bodyPrims.push(prim);
+        registry.bodyPrims.push({ prim, readTransform: () => readWorldTransform(path) });
     }
 }
 

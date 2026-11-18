@@ -13,19 +13,23 @@ def Xform "World" {
         def Xform "A" {
             double radius = 0.03
             double3 xformOp:translate = (-1, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
         }
         def Xform "B" {
             double radius = 0.1
             double3 xformOp:translate = (0, 0.5, 0.2)
             double3 xformOp:rotateXYZ = (0, 0, 30)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
         def Xform "C" {
             double radius = 0.08
             double3 xformOp:translate = (1, 0, 0.4)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
             double3 spool:axisLocal = (1, 0, 0)
         }
         def Xform "D" {
             double3 xformOp:translate = (2, -0.5, 0.2)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
         }
         def CableJoint "J0" {
             rel physics:body0 = </World/Scene/A>

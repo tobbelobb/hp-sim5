@@ -83,7 +83,7 @@ def Xform "World"
             # 0.1 - 0.0065 - 0.00075 = 0.09275
             double3 xformOp:translate = (-0.346410161513775, -0.22, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 0)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             # Typical mass of a 623 bearing is 2 g
             float physics:mass = 0.002
             # Typical rotational inertia of a 623 bearing is 3e-8. Our outer pla ring adds a little bit so say 5e-7
@@ -117,7 +117,7 @@ def Xform "World"
             # 0.1 - 0.0065 - 0.00075 - 0.045 = 0.04775
             double3 xformOp:translate = (-0.346410161513775, -0.22, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 0)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -161,7 +161,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.346410161513775, -0.22, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 0)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             # Typical mass of a 623 bearing is 2 g
             float physics:mass = 0.002
             # Typical rotational inertia of a 623 bearing is 3e-8. Our outer pla ring adds a little bit so say 5e-7
@@ -193,7 +193,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.346410161513775, -0.22, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 0)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -289,7 +289,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.363730669589464, -0.19, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 120)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -319,7 +319,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.363730669589464, -0.19, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 120)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -349,7 +349,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.017320508075689, 0.41, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 120)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -379,7 +379,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.017320508075689, 0.41, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 120)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -474,7 +474,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (-0.017320508075689, 0.41, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 240)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -504,7 +504,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (-0.017320508075689, 0.41, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 240)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -534,7 +534,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (-0.363730669589464, -0.19, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 240)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -564,7 +564,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (-0.363730669589464, -0.19, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 240)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-7, 0, 0), (0, 5e-7, 0), (0, 0, 5e-7))
             vector3f physics:velocity = (0, 0, 0)
@@ -616,7 +616,7 @@ def Xform "World"
             # rotz(300)*[-0.003,-0.4,0]'
             double3 xformOp:translate = (-0.34791016, -0.197401924, 2.0)
             double3 xformOp:rotateXYZ = (0, 90, 300)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
@@ -634,7 +634,7 @@ def Xform "World"
             # rotz(300)*[0.003,-0.4,0]'
             double3 xformOp:translate = (-0.34491016151, -0.20259807621, 2.0)
             double3 xformOp:rotateXYZ = (0, 90, 300)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
@@ -650,7 +650,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (-0.34791016, -0.197401924, 0.1)
             double3 xformOp:rotateXYZ = (0, 90, 300)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
@@ -667,7 +667,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (-0.34491016151, -0.20259807621, 0.1)
             double3 xformOp:rotateXYZ = (0, 90, 300)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
@@ -700,7 +700,7 @@ def Xform "World"
             # rotz(60)*[-0.003,-0.4,0]'
             double3 xformOp:translate = (0.34491016151, -0.20259807621, 2.0)
             double3 xformOp:rotateXYZ = (0, 90, 60)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
@@ -718,7 +718,7 @@ def Xform "World"
             # rotz(60)*[0.003,-0.4,0]'
             double3 xformOp:translate = (0.34791016151, -0.19740192379, 2.0)
             double3 xformOp:rotateXYZ = (0, 90, 60)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
@@ -734,7 +734,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.34491016151, -0.20259807621, 0.1)
             double3 xformOp:rotateXYZ = (0, 90, 60)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
@@ -751,7 +751,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.34791016151, -0.19740192379, 0.1)
             double3 xformOp:rotateXYZ = (0, 90, 60)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
@@ -784,7 +784,7 @@ def Xform "World"
             # rotz(180)*[-0.003,-0.4,0]'
             double3 xformOp:translate = (0.003, 0.4, 2.0)
             double3 xformOp:rotateXYZ = (0, 90, 180)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
@@ -802,7 +802,7 @@ def Xform "World"
             # rotz(60)*[0.003,-0.4,0]'
             double3 xformOp:translate = (-0.003, 0.4, 2.0)
             double3 xformOp:rotateXYZ = (0, 90, 180)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
@@ -818,7 +818,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (0.003, 0.4, 0.1)
             double3 xformOp:rotateXYZ = (0, 90, 180)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
@@ -835,7 +835,7 @@ def Xform "World"
             double height = 0.004
             double3 xformOp:translate = (-0.003, 0.4, 0.1)
             double3 xformOp:rotateXYZ = (0, 90, 180)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = 0.002
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
