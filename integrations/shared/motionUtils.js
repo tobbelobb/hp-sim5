@@ -1,10 +1,3 @@
-export function isFloatValue(num) {
-    if (!Number.isFinite(num)) {
-        return false;
-    }
-    return Math.abs(num - Math.trunc(num)) > 1e-9;
-}
-
 export function createMotionProfile(row) {
     const { accelTicks, steadyTicks, decelTicks, acceleration, deceleration } = row;
     const totalTicks = accelTicks + steadyTicks + decelTicks;
