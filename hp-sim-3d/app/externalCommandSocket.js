@@ -371,8 +371,10 @@ export function createExternalCommandController({
         }
       }
     }
-    pushCommands(batch);
-    runtime?.resume?.();
+    if (batch.length > 0) {
+      pushCommands(batch);
+      runtime?.resume?.();
+    }
     if (typeof payload.reply === 'string' && payload.reply.trim().length > 0) {
       logger.info('hp-sim-3d: gcode reply', payload.reply.trim());
     }

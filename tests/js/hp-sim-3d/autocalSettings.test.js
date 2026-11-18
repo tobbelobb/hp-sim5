@@ -289,3 +289,38 @@ test('layering edits during Finish ASAP leave flags and the UI unchanged', () =>
   expect(world.getResource('enableLayering')).toBe(false);
   expect(rebake).toHaveBeenCalledTimes(1);
 });
+
+test('the external command fallback resumes only for nonempty command batches', () => {
+  const world = new World();
+  const resume = jest.fn();
+  const commands = { pushExternalCommands: jest.fn(() => true) };
+  const controller = createExternalCommandController({
+    world, commands, runtime: { resume }, logger: { info: jest.fn() },
+  });
+
+  for (const payload of [
+    { type: 'reply', gcode: 'M105', reply: 'ok T:20.0 /0.0 B:20.0' },
+    { type: 'reply', gcode: 'M114', reply: 'X:0.000 Y:0.000 Z:0.000' },
+    { type: 'reply', reply: '' },
+    { type: 'heartbeat', seq: 4 },
+    {},
+    [1, 2, 3],
+    { type: 'command', command: null },
+    { commands: [] },
+    { commands: [null, false] },
+    { type: 'position_trace_mode', enabled: true },
+  ]) {
+    controller.handlePayload(payload);
+  }
+
+  expect(resume).not.toHaveBeenCalled();
+  expect(commands.pushExternalCommands).not.toHaveBeenCalled();
+
+  controller.handlePayload({ type: 'command', command: { type: 'Move', B: 0.02 } });
+  controller.handlePayload({ commands: [null, { type: 'Move', B: 0.04 }] });
+  expect(commands.pushExternalCommands.mock.calls).toEqual([
+    [[{ type: 'Move', B: 0.02 }]],
+    [[{ type: 'Move', B: 0.04 }]],
+  ]);
+  expect(resume).toHaveBeenCalledTimes(2);
+});
