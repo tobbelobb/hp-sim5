@@ -622,3 +622,16 @@ def test_hp3_reference_truth_matches_effective_scene_anchors(axis, anchor, attac
     # raw world-space pinhole positions. SIM_3D rounds B/C X to 0.01 mm.
     effective = [(a - b) * 1000 for a, b in zip(translation(anchor), translation(attachment))]
     assert effective == pytest.approx(rcl.SIM_3D_TRUE_ANCHORS[axis], abs=0.002)
+
+
+def test_parse_summary_reads_anchor_uncertainty_as_the_score():
+    text = "\n".join([
+        "== Calibration summary ==",
+        "Found parameters of good quality",
+        "Anchor uncertainty (mm, lower is better): 0.5896",
+        "Anchors (M669): M669 A0.00:-1900.70:-279.97 B1899.50:0.00:-279.97 C-0.06:1899.95:-279.97 "
+        "D-1900.60:-0.02:-279.97 I0.14:0.07:1900.25",
+    ])
+    summary = rcl.parse_summary(text, [30.0] * 5)
+    assert summary.fit_score_ui == pytest.approx(0.5896)
+    assert len(summary.anchors) == 5

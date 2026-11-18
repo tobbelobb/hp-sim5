@@ -106,6 +106,14 @@ SIM_3D_TRUE_ANCHORS: List[Coord] = [
 ]
 SIM_3D_TRUE_RADII = [39.1845, 39.1845, 39.1845, 39.1845]
 
+SIM_HP5_TRUE_ANCHORS: List[Coord] = [
+    (0.0, -1900.0, -280.0),
+    (1900.0, 0.0, -280.0),
+    (0.0, 1900.0, -280.0),
+    (-1900.0, 0.0, -280.0),
+    (0.0, 0.0, 1900.0),
+]
+
 
 @dataclass(frozen=True)
 class DatasetSpec:
@@ -118,6 +126,8 @@ class DatasetSpec:
     find_radii: str
     extra_args: Tuple[str, ...] = ()
     reference_log_names: Tuple[str, ...] = field(default_factory=tuple)
+    # Headless benchmark datasets were collected with home-offset fitting.
+    fit_home_offsets: bool = False
 
 
 DATASETS = [
@@ -233,6 +243,26 @@ DATASETS = [
         find_radii="off",
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=[30.0, 30.0, 30.0, 30.0],
+    ),
+    *(
+        DatasetSpec(
+            # Headless benchmark sweeps from commit 0623060e22 (2026-11-18), copied from
+            # output/autocal-benchmark-backfill/runs/0623060e2227/<machine>/sweeps.json.
+            name=f"benchmark_0623060e22_{machine}",
+            machine_type=machine,
+            base_radii="30",
+            buildup_factor="0",
+            find_radii="off",
+            true_anchors=anchors,
+            true_radii=[30.0] * len(anchors),
+            fit_home_offsets=True,
+        )
+        for machine, anchors in (
+            ("hangprinter_3", SIM_3D_TRUE_ANCHORS),
+            ("hangprinter_4", SIM_3D_TRUE_ANCHORS),
+            ("hangprinter_5", SIM_HP5_TRUE_ANCHORS),
+            ("hangprinter_5_pulley_reduced", SIM_HP5_TRUE_ANCHORS),
+        )
     ),
 ]
 
@@ -423,7 +453,7 @@ def parse_summary(text: str, fixed_radii: Optional[List[float]] = None) -> Optio
     radii: Optional[List[float]] = fixed_radii
 
     for line in lines:
-        if "quality score" in line:
+        if "quality score" in line or "Anchor uncertainty" in line:
             m = _RE_FIT_SCORE.search(line)
             if m:
                 fit_score = _safe_float(m.group(1))
@@ -725,8 +755,8 @@ def run_autocal(
         "--buildup-factor",
         dataset_spec.buildup_factor,
         "--no-collect",
-        # These frozen references predate home-offset fitting.
-        "--no-fit-home-offsets",
+        # The older frozen references predate home-offset fitting.
+        *(() if dataset_spec.fit_home_offsets else ("--no-fit-home-offsets",)),
         *(('--sparse-recovery',) if sparse_recovery else ()),
         *extra_args,
     ]
