@@ -7,6 +7,7 @@ import { PositionComponent, OrientationComponent, VelocityComponent, AngularVelo
   MachineTagComponent, RenderableComponent } from '../src/js/cable_joints_3d/ecs.js';
 import { CableJointComponent, CablePathComponent } from '../src/js/cable_joints_3d/cable_joints_core.js';
 import { SpoolStateComponent } from '../hp-sim-3d/app/hangprinter_spools.js';
+import { cableTargetLengthDelta } from '../hp-sim-3d/app/flightRecorderSnapshot.js';
 import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
 import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { ExtruderComponent } from '../hp-sim-3d/app/hangprinter_extruder.js';
@@ -36,7 +37,8 @@ const fields = [
     attachment_point_b_world: xyz(c.attachmentPointB_world), constraint_lambda: c.constraintLambda,
     constraint_force: xyz(c.constraintForce), constraint_force_magnitude: c.constraintForceMagnitude,
     transferred_constraint_force_magnitude: c.transferredConstraintForceMagnitude})],
-  [CablePathComponent, c => ({stored: c.stored, cable_half_width: c.cableHalfWidth, link_types: c.linkTypes, joint_entities: c.jointEntities})],
+  [CablePathComponent, c => ({stored: c.stored, cable_half_width: c.cableHalfWidth, link_types: c.linkTypes,
+    joint_entities: c.jointEntities, target_length_delta: cableTargetLengthDelta(world, c)})],
   [SpoolStateComponent, c => ({axis: c.axis})],
   [RadiusComponent, c => ({radius: c.radius})],
   [MachineTagComponent, c => ({id: c.id})],

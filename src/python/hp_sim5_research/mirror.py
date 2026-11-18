@@ -235,11 +235,14 @@ def capture_snapshot(world):
         guides = sum(path.stored[1:-1]) if path.stored else 0.
         actual = sum(segment['rest_length'] for segment in segments) + guides
         geometric = sum(segment['geometric_length'] for segment in segments) + guides
+        target_delta = getattr(path, 'target_length_delta', None)
+        commanded = None if target_delta is None else actual + target_delta
         render = world.get_component(path.joint_entities[0], RenderableComponent) if path.joint_entities else None
         cables.append({'machine': _path_part(machine_id(world, entity)), 'name': _path_part(entity_name(world, entity)),
                        'color': render.color if render is not None and render.color else '#ffff00',
-                       'segments': segments, 'lengths': {'commanded': actual, 'actual': actual,
-                       'geometric': geometric, 'error': actual - actual, 'stretch': geometric - actual}})
+                       'segments': segments, 'lengths': {'commanded': commanded, 'actual': actual,
+                       'geometric': geometric, 'error': None if commanded is None else actual - commanded,
+                       'stretch': geometric - actual}})
     return {'frames': frames, 'cables': cables}
 
 

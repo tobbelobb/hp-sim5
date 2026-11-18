@@ -77,12 +77,14 @@ class RerunSystem:
                     vectors=[[value * .01 for value in segment['force_vector_n']] for segment in segments],
                     colors=[[255, 90, 90]] * len(segments)))
             for name, value in cable['lengths'].items():
-                if value is None:
-                    continue
-                if name in ('actual', 'commanded', 'geometric'):
-                    self.recording.log(f'line_lengths/{key}/{name}', rr.Scalars(value))
-                if name in ('error', 'stretch'):
-                    self.recording.log(f'line_errors/{key}/{name}', rr.Scalars(value))
+                namespace = 'line_errors' if name in ('error', 'stretch') else 'line_lengths'
+                path = f'{namespace}/{key}/{name}'
+                if value is not None:
+                    self.recording.log(path, rr.Scalars(value))
+                    self._series.add(path)
+                elif path in self._series:
+                    self.recording.log(path, rr.Clear.flat())
+                    self._series.remove(path)
             for segment in segments:
                 self.recording.log(f"cable_forces/{key}/{segment['name']}", rr.Scalars(segment['force_n']))
         return snapshot
