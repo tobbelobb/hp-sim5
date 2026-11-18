@@ -8,6 +8,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 73a826d1c6 | v2 a6a8f9c907fed41c7491 | 2026-11-18T23:25 | 1/1 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Publish illustrated HP4 autocalibration hardware research note |
 | cc13e84df0 | v2 a6a8f9c907fed41c7491 | 2026-11-18T23:19 | 1/1 | 0.96 | **2.27 ▲** | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #118 from tobbelobb/t3/fix-native-recording-scene-content |
 | e0b0999401 | v2 a6a8f9c907fed41c7491 | 2026-11-18T23:19 | 1/1 | 0.90 | 1.22 | 3574 | 5265 | 9 | stable-estimate | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 30db440fefb61681cd67 | 2026-11-18T23:18 | 1/1 | 0.96 | 1.22 | 3574 | 5265 | 9 | stable-estimate | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
@@ -88,6 +89,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 73a826d1c6 | v2 d3c297a6acca1c763837 | 2026-11-18T23:25 | 1/1 | 0.71 | 1.15 | 4233 | 5579 | 9 | stable-estimate | ok | Publish illustrated HP4 autocalibration hardware research note |
 | cc13e84df0 | v2 d3c297a6acca1c763837 | 2026-11-18T23:19 | 1/1 | 0.70 | 1.12 | 4232 | 5572 | 9 | stable-estimate | ok | Merge pull request #118 from tobbelobb/t3/fix-native-recording-scene-content |
 | e0b0999401 | v2 d3c297a6acca1c763837 | 2026-11-18T23:19 | 1/1 | 0.71 | 1.15 | 4233 | 5579 | 9 | stable-estimate | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 220c770e2b794210ab93 | 2026-11-18T23:18 | 1/1 | 0.69 | 1.12 | 4232 | 5572 | 9 | stable-estimate | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
@@ -168,6 +170,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 73a826d1c6 | v2 93dd8c59b1c60958be4e | 2026-11-18T23:25 | 1/1 | 0.70 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Publish illustrated HP4 autocalibration hardware research note |
 | cc13e84df0 | v2 93dd8c59b1c60958be4e | 2026-11-18T23:19 | 1/1 | 0.70 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #118 from tobbelobb/t3/fix-native-recording-scene-content |
 | e0b0999401 | v2 93dd8c59b1c60958be4e | 2026-11-18T23:19 | 1/1 | 0.70 | 0.69 | 3423 | 3767 | 5 | good-fit | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 81b6484ca521eafe3dd7 | 2026-11-18T23:18 | 1/1 | 0.83 | 0.69 | 3423 | 3767 | 5 | good-fit | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
@@ -248,6 +251,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 73a826d1c6 | v2 9f8d355b6e49c9c5845a | 2026-11-18T23:25 | 1/1 | 1.31 | 1.17 | 3961 | 4671 | 6 | good-fit | ok | Publish illustrated HP4 autocalibration hardware research note |
 | cc13e84df0 | v2 9f8d355b6e49c9c5845a | 2026-11-18T23:19 | 1/1 | 1.31 | 1.17 | 3961 | 4671 | 6 | good-fit | ok | Merge pull request #118 from tobbelobb/t3/fix-native-recording-scene-content |
 | e0b0999401 | v2 9f8d355b6e49c9c5845a | 2026-11-18T23:19 | 1/1 | 1.31 | 1.17 | 3961 | 4671 | 6 | good-fit | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 73dd3187ee4a4d433fe6 | 2026-11-18T23:18 | 1/1 | 1.45 | 1.17 | 3961 | 4671 | 6 | good-fit | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
