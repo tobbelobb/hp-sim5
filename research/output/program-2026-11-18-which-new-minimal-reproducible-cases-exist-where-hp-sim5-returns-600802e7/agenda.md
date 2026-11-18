@@ -228,10 +228,21 @@ passive-wheel inertia (deliberate massless-pulley idealisation) and the missing
 gyroscopic term (standard PBD simplification); two-client encoder stickiness is a
 documented-unsupported setup. Summary has been corrected.
 
+## Post-rebase revalidation (2026-11-18)
+
+Rebased onto `origin/main` `e4785901` (18 new commits, including fixes for the
+2026-11-17 USD/units/MCU/CAN/non-finite findings) and re-ran every reproducer. All
+findings reproduce with identical numbers; the native addon was rebuilt once from the
+new source. Only the integration reproducers needed a research-side scene fix: their
+synthetic prims omitted `xformOpOrder`, and one translate had two components, which
+the new strict USD loader correctly rejects/ignores. `common.mjs` now declares the op
+order and uses 3-component translations, restoring the +33.33 % Atwood and 14.19 deg
+gyroscopic results. No upstream change addresses any finding in this program.
+
 ## Next decision
 
-Program is complete for this question. Preserve reports, reproducers, sealed review and
-the negative results; do not fix, push or merge. Highest-value follow-ups if continued:
+Program is complete for this question; evidence is prepared for a PR. Preserve reports,
+reproducers, sealed review and the negative results; do not fix or merge. Highest-value follow-ups if continued:
 (a) the reviewer's decisive test for passive-wheel inertia on a representative HP4
 trajectory, (b) an end-to-end UI/worker test for the quality-record timing and bridge
 recorder paths, and (c) a decision on whether the Python/native recording layer is

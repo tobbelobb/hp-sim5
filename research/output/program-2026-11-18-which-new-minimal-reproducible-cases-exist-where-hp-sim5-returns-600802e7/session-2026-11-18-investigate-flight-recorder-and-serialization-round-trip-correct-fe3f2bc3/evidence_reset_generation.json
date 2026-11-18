@@ -1,10 +1,10 @@
 {
   "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp4.usda",
   "rrd": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro-output/reset-generation/recording.rrd",
-  "rrd_bytes": 710374,
-  "rrd_sha256": "26e614c4e10db8b2ea29af835e70ebd81db495e159f434e61556306d8ef24fe4",
-  "native_addon": "/tmp/opencode/hp_sim5_4dda8987d8ca.node",
-  "native_addon_sha256": "4dda8987d8ca2d10f1468c65a9671247adb92da9ac818a9cdeac636638eea870",
+  "rrd_bytes": 712759,
+  "rrd_sha256": "0355b31a77e76f8c686bd6dc069c9ed2315d95aaf5eca40b86bd7a08d5a1b3f5",
+  "native_addon": "/tmp/opencode/hp_sim5_819f178a889a.node",
+  "native_addon_sha256": "819f178a889a5e9279f2e951cfab1cd0743031722c10fc0bc442e1179f81e5eb",
   "before_reset": {
     "epoch": 0,
     "step": 50,

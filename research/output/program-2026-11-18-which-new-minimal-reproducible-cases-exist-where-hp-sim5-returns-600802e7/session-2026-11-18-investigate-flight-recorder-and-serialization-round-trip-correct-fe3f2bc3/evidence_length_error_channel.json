@@ -1,10 +1,10 @@
 {
-  "run_id": "01afad00037e41ff80428b07c8424eca",
-  "rrd": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/experiments/01afad00037e41ff80428b07c8424eca/recording.rrd",
-  "rrd_bytes": 744042,
-  "rrd_sha256": "afe6ee937615d5f064bea0fd18aa7ac45a08d7598f6c1f40cc8719e0e18dadce",
-  "native_addon": "/tmp/opencode/hp_sim5_4dda8987d8ca.node",
-  "native_addon_sha256": "4dda8987d8ca2d10f1468c65a9671247adb92da9ac818a9cdeac636638eea870",
+  "run_id": "0ecfb7c72ede434b933f8c63361a0993",
+  "rrd": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/experiments/0ecfb7c72ede434b933f8c63361a0993/recording.rrd",
+  "rrd_bytes": 747012,
+  "rrd_sha256": "fb108b4f3d135c6999aaaa2816fcddadca3d368816a3c4867324c0ab4aed2849",
+  "native_addon": "/tmp/opencode/hp_sim5_819f178a889a.node",
+  "native_addon_sha256": "819f178a889a5e9279f2e951cfab1cd0743031722c10fc0bc442e1179f81e5eb",
   "metrics": {
     "effector_displacement_m": {
       "world/machines/default/effector": 0.00016135843702602952

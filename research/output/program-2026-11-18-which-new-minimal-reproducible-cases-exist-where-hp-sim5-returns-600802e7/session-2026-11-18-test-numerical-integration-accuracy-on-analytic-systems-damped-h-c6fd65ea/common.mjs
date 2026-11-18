@@ -33,6 +33,7 @@ export function wheelPrim(name, p, { mass = 1, radius = 0.01, inertia = 1e-3, ta
   return `        def Circle "${name}" {
             token[] ecs:tags = ${JSON.stringify(tags)}
             double3 xformOp:translate = (${p.join(', ')})
+            uniform token[] xformOpOrder = ["xformOp:translate"]
             double radius = ${radius}
             double physics:mass = ${mass}
             double3 physics:velocity = (0, 0, 0)
@@ -45,6 +46,7 @@ export function pointPrim(name, p, mass) {
   return `        def Circle "${name}" {
             token[] ecs:tags = ["Pinhole"]
             double3 xformOp:translate = (${p.join(', ')})
+            uniform token[] xformOpOrder = ["xformOp:translate"]
             double radius = 0.002
             double physics:mass = ${mass}
             double3 physics:velocity = (0, 0, 0)
@@ -55,6 +57,7 @@ export function anchorPrim(name, p) {
   return `        def Xform "${name}" {
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (${p.join(', ')})
+            uniform token[] xformOpOrder = ["xformOp:translate"]
             bool cable:linkable = 1
         }`;
 }
@@ -172,8 +175,8 @@ export function atwoodScene({ r = 0.05, I = 0.0025, m1 = 2, m2 = 1, dt = 0.002, 
   const arc = Math.PI * r;
   return sceneText([
     wheelPrim('Pulley', [0, 0, 0], { mass: -1, radius: r, inertia: I }),
-    pointPrim('M1', [-r, -1], m1),
-    pointPrim('M2', [r, -1], m2),
+    pointPrim('M1', [-r, -1, 0], m1),
+    pointPrim('M2', [r, -1, 0], m2),
     jointPrim('J0', 'M1', 'Pulley', { rest: 1, localA: [0, 0, 0], localB: [-r, 0, 0] }),
     jointPrim('J1', 'Pulley', 'M2', { rest: 1, localA: [r, 0, 0], localB: [0, 0, 0] }),
     pathPrim('Path', ['J0', 'J1'], {

@@ -1,10 +1,10 @@
 # New reproducible correctness failures in hp-sim5 (2026-11-18)
 
 Program: `program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7`
-Code under test: `74ecdc95` (only submodule pointers dirty). Environment: Linux x64,
-Node 26.13.0, Python 3.12, checked-in native addon and checked-in
-`public/wasm/cable_solver.wasm`. All evidence is simulation; no hardware claim.
-Nothing was fixed and no source file was edited.
+Code under test: **`e4785901`** (origin/main at PR time; originally investigated on
+`74ecdc95` and re-run after rebase). Environment: Linux x64, Node 26.13.0, Python 3.12,
+checked-in native addon and checked-in `public/wasm/cable_solver.wasm`. All evidence is
+simulation; no hardware claim. Nothing was fixed and no source file was edited.
 
 Every headline below was re-run by the manager on this checkout and fails as
 documented. Each reproducer is one command from its session directory; a failing
@@ -32,6 +32,25 @@ silently and a 6000-command message overflows the browser limit; extrusion depos
 positions round-trip as NaN; the headless E contract says metres while browser players
 feed millimetres; `physicsSubsteps` is ignored without a `RigidBodyComponent`;
 `state.simDtSec` can keep the previous scene's dt.
+
+### Post-rebase revalidation (2026-11-18)
+
+The 18 commits pulled before this PR fixed the 2026-11-17 findings (USD op order and
+units, missing spool attributes, MCU initial steps, multi-driver CAN, non-finite
+positions) and made the USD loader strict. All 11 reproducers were re-run on
+`e4785901` after rebasing:
+
+- Findings 1-7 and 10-11 reproduce with **identical numbers**. The native addon was
+  rebuilt once from the new source to validate findings 6-7 (new addon SHA-256
+  `819f178a...`; the `.rrd` member error is still exactly `0.424358821 m`).
+- The two integration reproducers initially stopped exercising their claims because
+  their synthetic USD prims omitted `xformOpOrder` and one translate had only two
+  components; the new strict loader correctly ignores undeclared ops. `common.mjs` now
+  declares `uniform token[] xformOpOrder = ["xformOp:translate"]` on every synthetic
+  prim and uses 3-component translations. The findings return unchanged (+33.33 % /
+  +38.96 % Atwood; 14.19 deg / 27.25 deg gyroscopic).
+- No pulled commit addresses any finding in this program. Upstream asset edits did not
+  change the HP4 recording numbers.
 
 ## Severity and classification
 

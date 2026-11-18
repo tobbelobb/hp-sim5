@@ -6,6 +6,14 @@ Date: 2026-11-18. Checkout: `74ecdc95`. Node 26.13.0, Linux x64.
 Engine under test: checked-in `public/wasm/cable_solver.wasm` (ABI 2), driven through
 the production `createHeadlessWorld` pipeline. No native addon, no build, no Python path.
 
+**Post-rebase addendum (2026-11-18).** Re-run on `e4785901`. The new strict USD loader
+ignores xform ops that are not declared in `xformOpOrder`, so the synthetic prims in
+`common.mjs` now declare `uniform token[] xformOpOrder = ["xformOp:translate"]` and use
+3-component translations. Results are unchanged (+33.33 %/+38.96 % Atwood; 14.19 deg/
+27.25 deg gyroscopic). "No integration defect" in the verdict below refers to time
+integration; the passive-wheel-inertia and gyroscopic-term gaps are separate
+model-fidelity findings.
+
 ## Verdict
 
 **No new numerical-integration defect.** The solver is a first-order
