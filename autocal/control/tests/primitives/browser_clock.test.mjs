@@ -30,10 +30,15 @@ test('a nested wait honors its callers earlier wall deadline', async () => {
 
 test('rejects a scene reset during a wait', async () => {
   let generation = 1;
+  let resets = 0;
   const clock = createBrowserClock(async () => ({ simulationClock: {
     time_ms: 0, generation,
-  } }), { poll: async () => { generation += 1; } });
+  } }), {
+    poll: async () => { generation += 1; },
+    onReset: () => { resets += 1; },
+  });
   await expect(clock.sleep(1000)).rejects.toThrow('reset');
+  expect(resets).toBe(1);
 });
 
 test('an old browser cannot silently fall back to requested speed', async () => {
