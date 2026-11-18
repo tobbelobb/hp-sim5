@@ -5,9 +5,9 @@ import {
   tangentFromSphereToPoint,
   tangentFromSphereToSphere,
 } from '../cable_joints_3d/geometry3.js';
+import { createRigidTransformReader } from './rigid_transforms.js';
 import { getAttribute, getRelationship } from './stage.js';
 import { parseUsdaAst } from './usda_parser.js';
-import { createRigidTransformReader } from './rigid_transforms.js';
 
 const DEFAULT_INIT_POLICY = 'deriveMissing';
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
