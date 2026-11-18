@@ -21,10 +21,12 @@ MACHINES = ('hangprinter_3', 'hangprinter_4', 'hangprinter_5', 'hangprinter_5_pu
 MAX_PHYSICS_STEPS = 4_500_000
 PATIENCE = 8
 METRICS = ('accuracy_mm', 'precision_mm', 'convergence_sim_s', 'total_sim_s')
-CONTRIBUTIONS = ROOT / 'autocal/benchmark-results.jsonl'
+BACKFILL_DIR = ROOT / 'output/autocal-benchmark-backfill'
 HISTORY_REF = 'refs/heads/benchmark-history'
 FINGERPRINT_VERSION = 2
 SCORER_ENTRY = 'autocal/tools/autocal_benchmark.py'
+EXECUTION_INPUTS = ('autocal/tests/test_autocal_benchmark.py', 'package.json', '.github/workflows/nodejs.yml',
+                    'scripts/autocal_benchmark_ci.py', 'autocal/tools/benchmark_history.py')
 CATALOG = 'machines/catalog.json'
 LEGACY_TRANSFORM = 'autocal/auto-calibration-simulation-for-hangprinter'
 DEPENDENCY_INPUTS = ('package-lock.json', 'requirements.txt', 'autocal/requirements-jax-cpu.txt')
@@ -155,6 +157,13 @@ def fingerprint(commit, machine, version=FINGERPRINT_VERSION):
     return hashlib.sha256(json.dumps(sorted(files.items())).encode()).hexdigest()[:20]
 
 
+def execution_fingerprint(commit):
+    """Hash the CI benchmark harness separately from simulated runtime inputs."""
+    _, blobs = runtime_files(commit, FINGERPRINT_VERSION)
+    inputs = [(path, blobs.get(path)) for path in EXECUTION_INPUTS]
+    return hashlib.sha256(json.dumps(inputs).encode()).hexdigest()
+
+
 def scorer_fingerprint(root):
     """Hash the running scorer and its transitive local Python imports."""
     files, pending = {}, [SCORER_ENTRY]
@@ -226,6 +235,7 @@ def measurement(commit, machine, *, repeat=1, max_steps=MAX_PHYSICS_STEPS, ci=Fa
                 recorded_at=datetime.now(timezone.utc).isoformat(), repeat=repeat, settings=settings(max_steps),
                 scorer_revision=git('rev-parse', 'HEAD'),
                 scorer=scorer_fingerprint(ROOT),
+                execution_fingerprint=execution_fingerprint(commit) if ci else None,
                 github_run_id=run_id, github_run_attempt=attempt)
 
 
@@ -318,7 +328,7 @@ def markdown_summary(rows, *, by_fingerprint=False):
     for machine in MACHINES:
         lines += [f'## {machine}', '',
                   '| Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |',
-                  '|---|---|---:|---:|---:|---:|---:|---:|---|---|---|']
+                  '|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|']
         groups = {}
         for row in rows:
             if row['machine'] == machine:

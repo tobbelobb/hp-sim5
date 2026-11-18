@@ -595,7 +595,9 @@ held-out-selected iteration/run separately from the running training-rank best.
 
 CI runs fast tests, slow integration tests, and the four autocal benchmarks in
 parallel. A benchmark job skips simulator setup when its inputs match its
-parent and CI already has a successful run under the same settings and scorer.
+parent and CI already has a successful run under the same settings, scorer,
+and benchmark harness. Changes to the benchmark test, package scripts, or CI
+workflow also trigger a fresh run.
 Local backfills and CI use a 4.5 million physics step cap by default.
 
 Default-branch CI publishes `results.jsonl`, `summary.md`, and `by-fingerprint.md`
@@ -620,19 +622,19 @@ their medians. Increase the sample count if the result is still ambiguous.
 ```bash
 .venv/bin/python scripts/autocal_benchmark_backfill.py \
   --revs OLD_SHA NEW_SHA --machines hangprinter_4 --repeat 3
-.venv/bin/python scripts/autocal_benchmark_backfill.py --contribute
-git add autocal/benchmark-results.jsonl
+git add output/autocal-benchmark-backfill/results.jsonl
 ```
 
-Commit the contributions file as part of the usual review and merge workflow.
-`--contribute` also imports a completed stride-based backfill from the default
-output directory. Pass the same `--out` to the run and import commands if using
-a different directory. The importer verifies each fingerprint against its
-recorded commit. The collector retains additional runs for matching inputs and
-can safely reimport the same file. Legacy backfill measurements with unrecorded
-settings and scorer appear in the summary under their own protocol. The importer
-continues to verify version 1 fingerprints. New runs use version 2, which includes
-the machine catalog, referenced scenes and firmware configs, the legacy transform,
-and dependency declarations.
-Each new measurement records the installed Python and Node environments and hashes
-the scorer with its local Python dependencies.
+Commit the results file directly. CI reads it when the commit reaches the
+default branch, verifies the recorded fingerprints, and adds the observations
+to the history branch. The default output directory also allows committing
+`retry.jsonl` if a legacy backfill produced it. Logs, caches, and generated
+summaries stay ignored. Reprocessing the same data keeps each observation once.
+
+Version 1 fingerprints from existing backfills remain valid for import. New runs
+use version 2, which includes the machine catalog, referenced scenes and
+firmware configs, the legacy transform, and dependency declarations. The
+runner selects new work using version 2, so a historical scan can remeasure
+inputs covered only by version 1. Each new measurement records the installed
+Python and Node environments and hashes the scorer with its local Python
+dependencies.

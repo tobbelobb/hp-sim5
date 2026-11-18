@@ -9,7 +9,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from autocal.tools.benchmark_history import (  # noqa: E402
-    CONTRIBUTIONS, HISTORY_REF, MACHINES, METRICS, ROOT, fingerprint, git, markdown_summary, measurement,
+    BACKFILL_DIR, HISTORY_REF, MACHINES, METRICS, ROOT, execution_fingerprint, fingerprint, git,
+    markdown_summary, measurement,
     merge_results, metric_medians, protocol, read_results, regressions, results_text, verified_results,
 )
 
@@ -26,13 +27,15 @@ def remote_history():
 
 
 def should_run(candidate, rows, parent):
-    if parent is None or fingerprint(parent, candidate['machine']) != candidate['fingerprint']:
+    if (parent is None or fingerprint(parent, candidate['machine']) != candidate['fingerprint']
+            or execution_fingerprint(parent) != candidate['execution_fingerprint']):
         return True
     # Installed dependencies are recorded after setup. The fingerprint includes the
     # dependency declarations so a change to those declarations still triggers a run.
     matching = [row for row in rows if row.get('github_run_id') and row['machine'] == candidate['machine']
                 and row.get('fingerprint_version') == candidate['fingerprint_version']
                 and row['fingerprint'] == candidate['fingerprint']
+                and row.get('execution_fingerprint') == candidate['execution_fingerprint']
                 and row.get('settings') == candidate['settings'] and row.get('scorer') == candidate['scorer']]
     last = max(matching, key=lambda row: row['recorded_at'], default={})
     return last.get('status') != 'ok'
@@ -101,11 +104,14 @@ def history_commit(parent, rows):
 
 def collect(artifacts):
     incoming = [row for path in sorted(artifacts.glob('*/*.jsonl')) for row in read_results(path)]
-    contributed = read_results(CONTRIBUTIONS)
+    contributed = read_results(BACKFILL_DIR / 'results.jsonl') + read_results(BACKFILL_DIR / 'retry.jsonl')
     if not incoming and not contributed:
         return
     parent, previous = remote_history()
-    archived = {json.dumps(row, sort_keys=True) for row in previous}
+    # Archived rows have full SHAs. Legacy backfill files can retain abbreviated SHAs.
+    widths = {len(row['commit']) for row in contributed + incoming}
+    archived = {json.dumps(dict(row, commit=row['commit'][:width]), sort_keys=True)
+                for row in previous for width in widths}
     if all(json.dumps(row, sort_keys=True) in archived for row in contributed + incoming):
         return
     if git('rev-parse', '--is-shallow-repository') == 'true':

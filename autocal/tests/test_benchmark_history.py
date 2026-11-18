@@ -25,8 +25,8 @@ def test_collector_bootstraps_and_preserves_repeats(tmp_path, monkeypatch, capsy
     root.mkdir()
     monkeypatch.setattr(history, 'ROOT', root)
     monkeypatch.setattr(ci, 'ROOT', root)
-    contributions = root / 'contributions.jsonl'
-    monkeypatch.setattr(ci, 'CONTRIBUTIONS', contributions)
+    contributions = root / 'backfill' / 'results.jsonl'
+    monkeypatch.setattr(ci, 'BACKFILL_DIR', contributions.parent)
 
     def git(*args):
         return history.git(*args, cwd=root)
@@ -51,7 +51,7 @@ def test_collector_bootstraps_and_preserves_repeats(tmp_path, monkeypatch, capsy
     first = git('rev-parse', 'HEAD')
     machine = history.MACHINES[0]
     old = dict(history.measurement(first, machine), status='ok', accuracy_mm=0.95, total_sim_s=100)
-    history.write_results(contributions, [old])
+    history.write_results(contributions, [dict(old, commit=first[:12])])
     artifacts = tmp_path / 'artifacts'
     ci.collect(artifacts)
     parent, archived = ci.remote_history()
@@ -86,16 +86,18 @@ def test_collector_bootstraps_and_preserves_repeats(tmp_path, monkeypatch, capsy
     root = shallow
     monkeypatch.setattr(history, 'ROOT', root)
     monkeypatch.setattr(ci, 'ROOT', root)
-    monkeypatch.setattr(ci, 'CONTRIBUTIONS', root / 'contributions.jsonl')
+    monkeypatch.setattr(ci, 'BACKFILL_DIR', root / 'backfill')
     git('config', 'user.name', 'Test')
     git('config', 'user.email', 'test@example.com')
-    history.write_results(ci.CONTRIBUTIONS, [old, repeat])
+    history.write_results(ci.BACKFILL_DIR / 'results.jsonl', [dict(old, commit=first[:12]), repeat])
+    retry = dict(old, measurement_id='legacy-retry', status='retry')
+    history.write_results(ci.BACKFILL_DIR / 'retry.jsonl', [dict(retry, commit=first[:12])])
     assert git('rev-parse', '--is-shallow-repository') == 'true'
     assert '1 mm target' in '\n'.join(ci.review_measurement(new, ci.remote_history()[1]))
     ci.collect(artifacts)
     assert git('rev-parse', '--is-shallow-repository') == 'false'
     tip, archived = ci.remote_history()
-    assert {row['measurement_id'] for row in archived} == {r['measurement_id'] for r in (old, new, repeat, failure)}
+    assert {row['measurement_id'] for row in archived} == {r['measurement_id'] for r in (old, new, repeat, failure, retry)}
     assert '2/3' in git('show', f'{tip}:summary.md')
     assert '1 mm target' in '\n'.join(ci.review_measurement(new, archived))
     assert '::warning::' in capsys.readouterr().out
@@ -110,6 +112,19 @@ def test_collector_bootstraps_and_preserves_repeats(tmp_path, monkeypatch, capsy
     with pytest.raises(subprocess.CalledProcessError):
         list(history.verified_results([dict(new, commit='0' * 40)]))
 
+    parent = second
+    for path in ('autocal/tests/test_autocal_benchmark.py', 'package.json', '.github/workflows/nodejs.yml'):
+        changed = root / path
+        changed.parent.mkdir(parents=True, exist_ok=True)
+        changed.write_text('changed execution input\n')
+        git('add', path)
+        git('commit', '-qm', f'Change {path}')
+        commit = git('rev-parse', 'HEAD')
+        candidate = history.measurement(commit, machine, ci=True)
+        assert candidate['fingerprint'] == new['fingerprint']
+        assert ci.should_run(candidate, archived, parent)
+        parent = commit
+
 
 def test_summary_keeps_a_reverted_input_at_its_commit():
     rows = [dict(commit=sha * 40, date=f'2026-11-0{i}', machine=history.MACHINES[0], fingerprint=fp,
@@ -121,6 +136,8 @@ def test_summary_keeps_a_reverted_input_at_its_commit():
     aggregates = history.markdown_summary(rows, by_fingerprint=True)
     assert '2/2' in aggregates
     assert 'Revert' not in aggregates
+    for text in (summary, aggregates):
+        assert {line.count('|') for line in text.splitlines() if line.startswith('|')} == {13}
 
 
 def test_scorer_fingerprint_includes_imported_source(tmp_path):

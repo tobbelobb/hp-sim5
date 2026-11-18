@@ -9,12 +9,11 @@ each machine and score it with the *current* autocal/tools/autocal_benchmark.py.
 By default, measure each distinct runtime input once. --repeat N runs N fresh
 measurements of each explicitly selected revision and machine. results.jsonl
 keeps individual measurements; summary.md shows medians by runtime input.
---contribute imports results into the tracked history contributions file.
+Commit the results file from the default output directory to share local runs.
 
   .venv/bin/python scripts/autocal_benchmark_backfill.py --since 2026-11-01
   .venv/bin/python scripts/autocal_benchmark_backfill.py --revs OLD NEW --machines hangprinter_4 --repeat 3
   .venv/bin/python scripts/autocal_benchmark_backfill.py --summary-only
-  .venv/bin/python scripts/autocal_benchmark_backfill.py --contribute
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -32,9 +31,9 @@ import traceback
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from autocal.tools.benchmark_history import (  # noqa: E402
-    CONTRIBUTIONS, FINGERPRINT_VERSION, LEGACY_TRANSFORM, MACHINES, MAX_PHYSICS_STEPS, dependency_environment,
+    BACKFILL_DIR, FINGERPRINT_VERSION, LEGACY_TRANSFORM, MACHINES, MAX_PHYSICS_STEPS, dependency_environment,
     fingerprint, git, markdown_summary, measurement,
-    merge_results, protocol, read_results, run_autocal, settings, scorer_fingerprint, verified_results, write_results,
+    merge_results, protocol, read_results, run_autocal, settings, scorer_fingerprint, write_results,
 )
 
 SUBMODULES = ('RRF/ReprapFirmware', 'RRF/RRFLibraries', 'RRF/CANlib', LEGACY_TRANSFORM)
@@ -182,25 +181,16 @@ def main():
     # HEAD needs at most ~3M steps (HP4); broken older revisions otherwise burn 6M.
     parser.add_argument('--max-physics-steps', type=int, default=MAX_PHYSICS_STEPS)
     parser.add_argument('--timeout-min', type=float, default=90)
-    parser.add_argument('--out', type=Path, default=ROOT / 'output/autocal-benchmark-backfill')
+    parser.add_argument('--out', type=Path, default=BACKFILL_DIR)
     # RRF's host simulator silently runs without config when its SD path is long.
     parser.add_argument('--worktree-dir', type=Path, default=Path.home() / '.cache/hpbf',
                         help='short path for checkouts')
-    modes = parser.add_mutually_exclusive_group()
-    modes.add_argument('--summary-only', action='store_true')
-    modes.add_argument('--contribute', action='store_true', help='import results into the tracked contributions file')
+    parser.add_argument('--summary-only', action='store_true')
     parser.add_argument('--repeat', type=int, help='fresh measurements per explicit revision and machine')
     args = parser.parse_args()
     if args.stride < 1 or (args.repeat is not None and (args.repeat < 1 or not args.revs or args.stride != 1)):
         parser.error('--stride must be positive; --repeat requires --revs and a stride of 1')
     out = args.out.resolve()
-    if args.contribute:
-        rows = list(verified_results(read_results(out / 'results.jsonl') + read_results(out / 'retry.jsonl')))
-        existing = read_results(CONTRIBUTIONS)
-        combined = merge_results(existing, rows)
-        write_results(CONTRIBUTIONS, combined)
-        print(f'Added {len(combined) - len(existing)} measurements to {CONTRIBUTIONS.relative_to(ROOT)}')
-        return
     if args.summary_only:
         return write_summary(out)
     (out / 'cache').mkdir(parents=True, exist_ok=True)
