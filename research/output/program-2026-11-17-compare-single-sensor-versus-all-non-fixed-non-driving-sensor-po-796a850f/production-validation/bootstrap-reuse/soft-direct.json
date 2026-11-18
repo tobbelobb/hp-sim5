@@ -1,0 +1,115 @@
+{
+  "bootstrap_configurations": 4,
+  "rough_last_sample_s": 914.5419999921977,
+  "profiled_last_sample_s": 1970.7099999672228,
+  "rows": [
+    {
+      "policy": "rough",
+      "stiffness": null,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 23.238944689716618,
+      "aligned_mm": 19.115309010779946,
+      "heldout_constraints_rms_mm": 1.2094964622777493
+    },
+    {
+      "policy": "rough",
+      "stiffness": null,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 6.889157037544919,
+      "aligned_mm": 5.484108776953098,
+      "heldout_constraints_rms_mm": 0.42232033072398806
+    },
+    {
+      "policy": "rough",
+      "stiffness": 20000.0,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 12.921473321191343,
+      "aligned_mm": 10.511275719499917,
+      "heldout_constraints_rms_mm": 0.6385823730358362
+    },
+    {
+      "policy": "rough",
+      "stiffness": 20000.0,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 3.0059664112425253,
+      "aligned_mm": 3.068738129061603,
+      "heldout_constraints_rms_mm": 0.1991795862357889
+    },
+    {
+      "policy": "rough",
+      "stiffness": 10000.0,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 2.5519725855197066,
+      "aligned_mm": 1.8742092120129201,
+      "heldout_constraints_rms_mm": 0.0875000944586047
+    },
+    {
+      "policy": "rough",
+      "stiffness": 10000.0,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 1.3263834556685197,
+      "aligned_mm": 0.965324125553525,
+      "heldout_constraints_rms_mm": 0.0759661548586781
+    },
+    {
+      "policy": "profiled",
+      "stiffness": null,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 2.521532976819799,
+      "aligned_mm": 3.4846753680098117,
+      "heldout_constraints_rms_mm": 0.21193570922593402
+    },
+    {
+      "policy": "profiled",
+      "stiffness": null,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 4.985032055725924,
+      "aligned_mm": 4.076425399626273,
+      "heldout_constraints_rms_mm": 0.10127329280003564
+    },
+    {
+      "policy": "profiled",
+      "stiffness": 20000.0,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 2.843963671764186,
+      "aligned_mm": 2.938495014673663,
+      "heldout_constraints_rms_mm": 0.16481968946421421
+    },
+    {
+      "policy": "profiled",
+      "stiffness": 20000.0,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 2.930927624574224,
+      "aligned_mm": 2.3277705203000636,
+      "heldout_constraints_rms_mm": 0.08120430510255937
+    },
+    {
+      "policy": "profiled",
+      "stiffness": 10000.0,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 3.1678403542541673,
+      "aligned_mm": 2.3891318722198776,
+      "heldout_constraints_rms_mm": 0.13309739566251647
+    },
+    {
+      "policy": "profiled",
+      "stiffness": 10000.0,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 0.9685890461398685,
+      "aligned_mm": 0.7533353911227225,
+      "heldout_constraints_rms_mm": 0.07039922002509683
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 export function createBrowserClock(request, {
   wallTimeoutMs = 120000, wallNow = () => Date.now(), poll = ms => new Promise(resolve => setTimeout(resolve, ms)),
   onProgress = message => console.log(message),
+  onReset,
 } = {}) {
   let sample;
   const clock = {
@@ -11,6 +12,9 @@ export function createBrowserClock(request, {
     observe(value) {
       if (!value || !Number.isFinite(value.time_ms) || !Number.isInteger(value.generation)) {
         throw new Error('Browser did not report a simulation clock; reload the updated simulator');
+      }
+      if (sample && (value.generation !== sample.generation || value.time_ms < sample.time_ms)) {
+        onReset?.();
       }
       sample = value;
     },

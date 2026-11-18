@@ -43,6 +43,11 @@ export class RrfHttpBridge {
         this._encoderReferences = new Map();
     }
 
+    resetSimulationReference() {
+        this._axisAngles.clear();
+        this._encoderReferences.clear();
+    }
+
     async sendGCode(gcode, options = {}) {
         const {
             timeout = 30000,
