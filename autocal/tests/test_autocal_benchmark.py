@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 
 import numpy as np
@@ -9,7 +10,7 @@ import pytest
 
 from autocal.pose_fit import dataset_line_lengths, dataset_stretch
 from autocal.tools.autocal_benchmark import benchmark_metrics
-from autocal.tools.benchmark_history import ROOT, git, measurement, run_autocal, results_text
+from autocal.tools.benchmark_history import ROOT, dependency_environment, git, measurement, results_text, run_autocal
 
 
 def verify_extra_sensor_run(dataset):
@@ -54,6 +55,7 @@ def run_benchmark(tmp_path, machine, verify=verify_applied_calibration):
     row = measurement(git('rev-parse', 'HEAD'), machine, ci=True)
     log = output / f'{machine}-{row["measurement_id"].replace(":", "-")}.log'
     try:
+        row['environment'] = dependency_environment((ROOT / 'node_modules').resolve())
         result = run_autocal(machine, dataset, ROOT, log, timeout_s=55 * 60)
         assert result == 0, log.read_text(errors='replace')[-4000:]
         verify(dataset)
@@ -69,7 +71,14 @@ def run_benchmark(tmp_path, machine, verify=verify_applied_calibration):
         if 'status' in row:
             name = f'{machine}.jsonl' if row['github_run_id'] else f'{row["measurement_id"]}.jsonl'
             (output / name).write_text(results_text([row]))
-            print(json.dumps(row))
+            print(machine, row['status'], {key: row[key] for key in ('accuracy_mm', 'total_sim_s') if key in row})
+        diagnostics = output / 'diagnostics' / log.stem
+        headless = dataset.with_suffix('.headless')
+        for source in (headless / 'manifest.json', headless / 'physics.log', headless / 'rrf.log',
+                       dataset.with_suffix('.full_auto.log'), dataset.with_suffix('.full_auto_log.jsonl')):
+            if source.is_file():
+                diagnostics.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, diagnostics / source.name)
 
 
 @pytest.mark.slow

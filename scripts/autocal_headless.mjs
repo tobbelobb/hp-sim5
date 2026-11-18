@@ -15,6 +15,7 @@ import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
 
 const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
 const sceneText = fs.readFileSync(scene, 'utf8');
+const clockPath = `${directory}/clock.json`;
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
 let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false, physicsSubsteps, solverIterations;
 let world, remote, dt, bakedScene, bakedSceneFile, bakedSceneHash;
@@ -70,6 +71,12 @@ function status() {
     settings: { enableLayering: world.getResource('enableLayering') === true,
       closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps: world.getResource('physicsSubsteps'), solverIterations: world.getResource('solverIterations'), timeScale: speed } };
 }
+function writeClock(state = status()) {
+  // Readers poll this file while physics is advancing. Publish a complete snapshot.
+  const temporary = `${clockPath}.tmp`;
+  fs.writeFileSync(temporary, JSON.stringify(state, null, 2));
+  fs.renameSync(temporary, clockPath);
+}
 async function advance(seconds = 0, drain = false) {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
   // Collector waits are simulation seconds, as in createBrowserClock. This
@@ -90,7 +97,7 @@ async function advance(seconds = 0, drain = false) {
     }
     world.update(dt); step++; totalSteps++; collectorTime += dt;
     world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
-    if (totalSteps % 1000 === 0) fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status()));
+    if (totalSteps % 1000 === 0) writeClock();
     if (i % 50 === 49) await yieldStep();
   }
 }
@@ -190,7 +197,7 @@ const server = http.createServer(async (request, reply) => {
       result = await bridge.sendEncoderRequest([], 120000);
     } else if (request.url !== '/status') throw new Error('Unknown operation');
     const state = status();
-    fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(state, null, 2));
+    writeClock(state);
     reply.end(JSON.stringify({ ...state, result }));
   } catch (error) {
     reply.writeHead(500).end(JSON.stringify({ error: error.message }));
@@ -211,7 +218,7 @@ async function close() {
       } catch (error) { disableRecorder(error); }
     }
   } catch (error) { failure = error.message; }
-  fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status(), null, 2));
+  writeClock();
   event('service_stopped'); fs.closeSync(events);
   socket.close(); bridge.close(); server.close();
   process.exit(failure ? 1 : 0);

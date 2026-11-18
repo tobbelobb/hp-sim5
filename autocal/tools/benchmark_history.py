@@ -1,10 +1,13 @@
 """Benchmark inputs, measurements, and history for local runs and CI."""
 
+import ast
 from datetime import datetime, timezone
 from functools import lru_cache
 import hashlib
+from importlib import metadata
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import signal
@@ -18,8 +21,14 @@ MACHINES = ('hangprinter_3', 'hangprinter_4', 'hangprinter_5', 'hangprinter_5_pu
 MAX_PHYSICS_STEPS = 4_500_000
 PATIENCE = 8
 METRICS = ('accuracy_mm', 'precision_mm', 'convergence_sim_s', 'total_sim_s')
-CONTRIBUTIONS = ROOT / 'autocal/benchmark-results.jsonl'
+BACKFILL_DIR = ROOT / 'output/autocal-benchmark-backfill'
 HISTORY_REF = 'refs/heads/benchmark-history'
+FINGERPRINT_VERSION = 2
+SCORER_ENTRY = 'autocal/tools/autocal_benchmark.py'
+EXECUTION_INPUTS = ('autocal/tests/test_autocal_benchmark.py', 'package.json', '.github/workflows/nodejs.yml',
+                    'scripts/autocal_benchmark_ci.py', 'autocal/tools/benchmark_history.py')
+CATALOG = 'machines/catalog.json'
+LEGACY_TRANSFORM = 'autocal/auto-calibration-simulation-for-hangprinter'
 DEPENDENCY_INPUTS = ('package-lock.json', 'requirements.txt', 'autocal/requirements-jax-cpu.txt')
 
 
@@ -42,8 +51,32 @@ JS_IMPORT = re.compile(r"""(?:\bfrom\s*|\bimport\s*\(?\s*|require\(\s*|new URL\(
 JS_PATH_IN_PY = re.compile(r"""['"]([\w./-]+\.(?:m?js|json|g|usda))['"]""")
 
 
+def python_imports(path, text, exists):
+    """Find local modules and package initializers imported by Python source."""
+    package = path.split('/')[:-1]
+    for node in ast.walk(ast.parse(text, filename=path)):
+        if isinstance(node, ast.ImportFrom):
+            prefix = package[:len(package) - node.level + 1] if node.level else []
+            module = prefix + (node.module.split('.') if node.module else [])
+            imports = [module, *(module + [alias.name] for alias in node.names)]
+        elif isinstance(node, ast.Import):
+            imports = [alias.name.split('.') for alias in node.names]
+        else:
+            continue
+        for parts in imports:
+            if not parts:
+                continue
+            for depth in range(1, len(parts) + 1):
+                initializer = '/'.join(parts[:depth]) + '/__init__.py'
+                if exists(initializer):
+                    yield initializer
+            module_file = '/'.join(parts) + '.py'
+            if exists(module_file):
+                yield module_file
+
+
 @lru_cache(maxsize=16)
-def runtime_files(commit):
+def runtime_files(commit, version):
     """Repository files the headless run can load at this commit: the Python and
     JavaScript import closures from the entry points, plus DATA_PREFIXES."""
     tree = dict(line.split('\t', 1)[::-1] for line in git('ls-tree', '-r', commit).splitlines())
@@ -55,7 +88,10 @@ def runtime_files(commit):
             continue
         seen.add(path)
         text = blob_text(blobs[path])
-        if path.endswith('.py'):
+        if path.endswith('.py') and version == 2:
+            todo.extend(python_imports(path, text, blobs.__contains__))
+            todo.extend(p for p in JS_PATH_IN_PY.findall(text) if p in blobs)
+        elif path.endswith('.py'):
             here = path.rsplit('/', 1)[0]
             for base, names, plain in PY_IMPORT.findall(text):
                 modules = [m.strip() for m in plain.split(',')] if plain else [base]
@@ -87,13 +123,83 @@ def blob_text(blob):
                           text=True, errors='replace').stdout
 
 
-def fingerprint(commit, machine):
-    """Equal fingerprints mean the headless run for this machine sees identical inputs."""
-    files, blobs = runtime_files(commit)
+def catalog_inputs(blobs, machine):
+    files = {CATALOG, LEGACY_TRANSFORM, 'scripts/build_cable_wasm.mjs', *DEPENDENCY_INPUTS}
+    files.update(p for p in blobs if p.startswith('RRF/run/vsd/sys/') and not Path(p).name.startswith('config'))
+    if CATALOG in blobs:
+        catalog = json.loads(blob_text(blobs[CATALOG]))
+        entries = catalog['machines']
+        scenes = {entry['scene'] for entry in entries
+                  if machine in (entry['name'].lower(), *(alias.lower() for alias in entry['nicknames']))}
+        files.update(entry['rrf_config'] for entry in entries
+                     if entry['scene'] in scenes and entry.get('rrf_config'))
+        pending = list(scenes)
+        while pending:
+            scene = pending.pop()
+            if scene not in blobs or scene in files:
+                continue
+            files.add(scene)
+            pending.extend(os.path.normpath(os.path.join(os.path.dirname(scene), ref))
+                           for ref in re.findall(r'@([^@\n]+)@', blob_text(blobs[scene])))
+    return files
+
+
+def fingerprint(commit, machine, version=FINGERPRINT_VERSION):
+    """Hash tracked runtime inputs. Version 1 is retained for backfill imports."""
+    if version not in (1, 2):
+        raise ValueError(f'Unsupported benchmark fingerprint version {version}')
+    files, blobs = runtime_files(commit, version)
     scene = SCENES[machine]
-    machine_paths = (f'public/usd_scenes/{scene}.usda', f'RRF/run/vsd/sys/config_{scene}.g')
-    files = {**files, **{p: blobs[p] for p in machine_paths if p in blobs}}
+    paths = {f'public/usd_scenes/{scene}.usda', f'RRF/run/vsd/sys/config_{scene}.g'}
+    if version == 2:
+        paths.update(catalog_inputs(blobs, machine))
+    files = {**files, **{p: blobs[p] for p in paths if p in blobs}}
     return hashlib.sha256(json.dumps(sorted(files.items())).encode()).hexdigest()[:20]
+
+
+def execution_fingerprint(commit):
+    """Hash the CI benchmark harness separately from simulated runtime inputs."""
+    _, blobs = runtime_files(commit, FINGERPRINT_VERSION)
+    inputs = [(path, blobs.get(path)) for path in EXECUTION_INPUTS]
+    return hashlib.sha256(json.dumps(inputs).encode()).hexdigest()
+
+
+def scorer_fingerprint(root):
+    """Hash the running scorer and its transitive local Python imports."""
+    files, pending = {}, [SCORER_ENTRY]
+    while pending:
+        path = pending.pop()
+        if path in files:
+            continue
+        source = (root / path).read_bytes()
+        files[path] = hashlib.sha256(source).hexdigest()
+        pending.extend(python_imports(path, source, lambda p: (root / p).is_file()))
+    return 'sha256:' + hashlib.sha256(json.dumps(sorted(files.items())).encode()).hexdigest()
+
+
+def installed_node_packages(modules):
+    packages = {}
+    for path in sorted(modules.glob('*')):
+        if path.name.startswith('.'):
+            continue
+        candidates = sorted(path.glob('*')) if path.name.startswith('@') else [path]
+        for package in candidates:
+            manifest = package / 'package.json'
+            if manifest.is_file():
+                info = json.loads(manifest.read_text())
+                name = str(package.relative_to(modules))
+                packages[name] = info.get('version')
+                for child, version in installed_node_packages(package / 'node_modules').items():
+                    packages[f'{name}/node_modules/{child}'] = version
+    return packages
+
+
+@lru_cache(maxsize=8)
+def dependency_environment(modules):
+    return dict(python=platform.python_version(),
+                python_packages=sorted([d.metadata['Name'].lower(), d.version] for d in metadata.distributions()),
+                node=subprocess.check_output(['node', '--version'], text=True).strip(),
+                node_packages=installed_node_packages(modules))
 
 
 def settings(max_steps=MAX_PHYSICS_STEPS):
@@ -122,14 +228,14 @@ def run_autocal(machine, dataset, repo, log, timeout_s, max_steps=MAX_PHYSICS_ST
 def measurement(commit, machine, *, repeat=1, max_steps=MAX_PHYSICS_STEPS, ci=False):
     run_id = os.environ.get('GITHUB_RUN_ID') if ci else None
     attempt = os.environ.get('GITHUB_RUN_ATTEMPT') if ci else None
-    _, blobs = runtime_files(commit)
     return dict(commit=commit, machine=machine, fingerprint=fingerprint(commit, machine),
+                fingerprint_version=FINGERPRINT_VERSION,
                 date=git('show', '-s', '--format=%cI', commit), subject=git('show', '-s', '--format=%s', commit),
                 measurement_id=f'ci:{run_id}:{attempt}:{machine}' if run_id else uuid4().hex,
                 recorded_at=datetime.now(timezone.utc).isoformat(), repeat=repeat, settings=settings(max_steps),
                 scorer_revision=git('rev-parse', 'HEAD'),
-                scorer=git('hash-object', 'autocal/tools/autocal_benchmark.py'),
-                dependency_inputs={path: blobs[path] for path in DEPENDENCY_INPUTS if path in blobs},
+                scorer=scorer_fingerprint(ROOT),
+                execution_fingerprint=execution_fingerprint(commit) if ci else None,
                 github_run_id=run_id, github_run_attempt=attempt)
 
 
@@ -188,14 +294,14 @@ def verified_results(rows):
         if machine not in MACHINES or not re.fullmatch(r'[0-9a-f]{7,40}', row['commit']):
             raise ValueError(f'Invalid benchmark machine or commit: {machine} {row["commit"]}')
         commit = git('rev-parse', '--verify', row['commit'] + '^{commit}')
-        if row['fingerprint'] != fingerprint(commit, machine):
+        if row['fingerprint'] != fingerprint(commit, machine, row.get('fingerprint_version', 1)):
             raise ValueError(f'Fingerprint mismatch for {machine} at {commit}')
         yield dict(row, commit=commit)
 
 
 def protocol(row):
     return (json.dumps(row.get('settings'), sort_keys=True), row.get('scorer'),
-            json.dumps(row.get('dependency_inputs'), sort_keys=True))
+            json.dumps(row.get('environment', row.get('dependency_inputs')), sort_keys=True))
 
 
 def metric_medians(rows):
@@ -208,29 +314,32 @@ def metric_medians(rows):
     return result
 
 
-def markdown_summary(rows):
+def markdown_summary(rows, *, by_fingerprint=False):
+    group_name = 'runtime fingerprint' if by_fingerprint else 'tested commit'
+    review_note = '' if by_fingerprint else (
+        '▲ marks a review threshold crossed since the preceding successful input under the same protocol. ')
     lines = ['# Autocal benchmark history', '',
              'Accuracy is maximum applied anchor coordinate error in mm. Precision is the largest '
              'split-fit anchor coordinate difference in mm. Convergence is simulated seconds to '
              'within 2 mm of truth. Total is simulated seconds for the whole run.', '',
-             'Rows group measurements by runtime fingerprint and scoring protocol. Values are medians '
+             f'Rows group measurements by {group_name} and scoring protocol. Values are medians '
              'of successful runs. Convergence requires a majority to report a time. '
-             '▲ marks a review threshold crossed since the preceding successful input under the same protocol. '
-             'Individual results, wall times, and failures are in `results.jsonl`.', '']
+             + review_note + 'Individual results, wall times, and failures are in `results.jsonl`.', '']
     for machine in MACHINES:
         lines += [f'## {machine}', '',
-                  '| Commit | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |',
-                  '|---|---|---:|---:|---:|---:|---:|---:|---|---|---|']
+                  '| Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |',
+                  '|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|']
         groups = {}
         for row in rows:
             if row['machine'] == machine:
-                groups.setdefault((row['fingerprint'], protocol(row)), []).append(row)
+                identity = (row.get('fingerprint_version', 1), row['fingerprint']) if by_fingerprint else row['commit']
+                groups.setdefault((identity, protocol(row)), []).append(row)
         table, previous = [], {}
         for (_, config), group in groups.items():
             first = group[0]
             successes = [row for row in group if row['status'] == 'ok']
             m = metric_medians(successes)
-            findings = regressions(previous.get(config, {}), m) if successes else {}
+            findings = regressions(previous.get(config, {}), m) if successes and not by_fingerprint else {}
             cells = []
             for key, value in m.items():
                 if value is None:
@@ -247,7 +356,8 @@ def markdown_summary(rows):
             if first.get('settings') is None:
                 status += ' (legacy)'
             subject = first['subject'][:80].replace('|', '&#124;')
-            table.append(f'| {first["commit"][:10]} | {first["date"][:16]} | {len(successes)}/{len(group)} '
+            fp = f'v{first.get("fingerprint_version", 1)} {first["fingerprint"]}'
+            table.append(f'| {first["commit"][:10]} | {fp} | {first["date"][:16]} | {len(successes)}/{len(group)} '
                          f'| {" | ".join(cells)} | {sweeps} | {stops} | {status} | {subject} |')
         lines += table[::-1] + ['']
     return '\n'.join(lines)
