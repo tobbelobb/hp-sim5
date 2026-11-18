@@ -1,0 +1,40 @@
+{
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp4.usda",
+  "steps": 10,
+  "move_rad_and_mm": 0.2,
+  "native_addon": "/tmp/opencode/hp_sim5_4dda8987d8ca.node",
+  "native_addon_sha256": "4dda8987d8ca2d10f1468c65a9671247adb92da9ac818a9cdeac636638eea870",
+  "js_extrusions": [
+    {
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "length": 0.2,
+      "machineId": "default",
+      "color": "#800080"
+    }
+  ],
+  "js_deposited_length": 0.2,
+  "worker_exported_extrusions": [
+    {
+      "pos": [
+        null,
+        null,
+        null
+      ],
+      "length": 0.2,
+      "machineId": "default",
+      "color": "#800080"
+    }
+  ],
+  "python_decoded_positions": [
+    [
+      "nan",
+      "nan",
+      "nan"
+    ]
+  ],
+  "exported_positions_are_finite": false
+}

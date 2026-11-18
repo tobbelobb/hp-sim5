@@ -1,0 +1,15 @@
+{
+  "recorderError": "Flight recorder disconnected",
+  "control": {
+    "commandsAccepted": 1,
+    "encoderRequestAnswered": true
+  },
+  "afterRecorderLoss": {
+    "commandsAccepted": 0,
+    "encoderRequestAnswered": false,
+    "clockRequestAnswered": true,
+    "consoleWarnings": 2,
+    "bridgeWasTold": false
+  }
+}
+DEFECT: after the recording socket closed, the external protocol dropped every command and never answered the encoder request (only a console warning).

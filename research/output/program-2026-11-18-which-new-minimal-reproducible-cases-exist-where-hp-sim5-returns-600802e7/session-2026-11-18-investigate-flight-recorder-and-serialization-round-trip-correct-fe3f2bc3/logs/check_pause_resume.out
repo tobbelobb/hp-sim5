@@ -1,0 +1,33 @@
+{
+  "seen": [
+    {
+      "step": 0,
+      "time": 0
+    },
+    {
+      "step": 1,
+      "time": 0.002
+    },
+    {
+      "step": 2,
+      "time": 0.004
+    },
+    {
+      "step": 3,
+      "time": 0.006
+    }
+  ],
+  "afterPause": {
+    "step": 3,
+    "time": 0.006
+  },
+  "afterResume": {
+    "step": 4,
+    "time": 0.008
+  },
+  "afterReset": {
+    "step": 1,
+    "time": 0.002
+  },
+  "samples": 6
+}

@@ -1,0 +1,25 @@
+scene: public/usd_scenes/slideprinter.usda, axes ['A', 'B', 'C'], dt 0.002 s
+  step0/CablePathA: JS commanded=1.902264578 error=+0.000000000 m | Python commanded=1.902264578 error=+0.000000000 m
+  step0/CablePathB: JS commanded=1.902264578 error=+0.000000000 m | Python commanded=1.902264578 error=+0.000000000 m
+  step0/CablePathC: JS commanded=1.902264578 error=+0.000000000 m | Python commanded=1.902264578 error=+0.000000000 m
+  position-move/CablePathA: JS commanded=1.917265792 error=-0.015086662 m | Python commanded=1.902179130 error=+0.000000000 m
+  position-move/CablePathB: JS commanded=1.902260241 error=+0.000006931 m | Python commanded=1.902267172 error=+0.000000000 m
+  position-move/CablePathC: JS commanded=1.902262889 error=+0.000006884 m | Python commanded=1.902269773 error=+0.000000000 m
+  torque-mode/CablePathA: JS commanded=1.917264402 error=-0.015070822 m | Python commanded=1.902193580 error=+0.000000000 m
+  torque-mode/CablePathB: JS commanded=1.902260523 error=+0.000004299 m | Python commanded=1.902264822 error=+0.000000000 m
+
+BUG REPRODUCED: Python/native length telemetry does not match the JS world.
+  - position-move/CablePathA: commanded disagrees by 0.0150867 m (JS 1.917265792, Python 1.902179130)
+  - position-move/CablePathA: error disagrees by 0.0150867 m (JS -0.015086662, Python +0.000000000)
+  - position-move/CablePathB: commanded disagrees by 6.93085e-06 m (JS 1.902260241, Python 1.902267172)
+  - position-move/CablePathB: error disagrees by 6.93085e-06 m (JS +0.000006931, Python +0.000000000)
+  - position-move/CablePathC: commanded disagrees by 6.88416e-06 m (JS 1.902262889, Python 1.902269773)
+  - position-move/CablePathC: error disagrees by 6.88416e-06 m (JS +0.000006884, Python +0.000000000)
+  - torque-mode/CablePathA: commanded disagrees by 0.0150708 m (JS 1.917264402, Python 1.902193580)
+  - torque-mode/CablePathA: error disagrees by 0.0150708 m (JS -0.015070822, Python +0.000000000)
+  - torque-mode/CablePathB: commanded disagrees by 4.29884e-06 m (JS 1.902260523, Python 1.902264822)
+  - torque-mode/CablePathB: error disagrees by 4.29884e-06 m (JS +0.000004299, Python +0.000000000)
+  - torque-mode/CablePathC: torque mode, JS commanded=None, Python mirror reports commanded=1.9023086674033467
+  - torque-mode/CablePathC: torque mode, JS error=None, Python mirror reports error=0.0
+
+Expected contract (FLIGHT_RECORDER.md): commanded = predicted paid-out length at the position-mode motor target; error = actual - commanded; both omitted in torque mode.

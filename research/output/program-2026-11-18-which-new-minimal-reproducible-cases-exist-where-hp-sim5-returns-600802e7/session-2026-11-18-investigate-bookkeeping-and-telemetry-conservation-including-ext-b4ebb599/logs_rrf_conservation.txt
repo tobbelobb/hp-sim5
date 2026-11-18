@@ -1,0 +1,7 @@
+E driver: 44, moves: 200416
+reference G-code positive extrusion: 49950.460240 mm
+RRF CAN positive extrusion:         49950.458783 mm
+difference: -0.001457 mm (-2.917e-6 %)
+RRF CAN net extrusion (after retracts): 49708.458789 mm
+
+OK: the RRF/CAN preset path conserves extrusion.

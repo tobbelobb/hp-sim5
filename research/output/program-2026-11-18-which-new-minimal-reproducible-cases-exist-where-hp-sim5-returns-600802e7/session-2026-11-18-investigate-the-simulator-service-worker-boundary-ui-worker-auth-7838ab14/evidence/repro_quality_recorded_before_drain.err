@@ -1,0 +1,6 @@
+FAIL (quality recorded before the world drains):
+ - tail error: recorded 680 samples, the print has 1000
+ - tail error: recorded 2 corners, the print has 3
+ - tail error: recorded score 100 != completed-run score 94.31324717531413
+ - control: recorded 680 samples, the print has 1000
+ - control: recorded 2 corners, the print has 3

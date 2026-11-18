@@ -1,0 +1,36 @@
+{
+  "runs": [
+    "8b1bb76c06ac495a96d0e7c493a8f761",
+    "4df30517c03e44bfb021e7a72bbecbab"
+  ],
+  "record_false_run": "ece3d90fc24f4eb5a83c117343b9ef96",
+  "rrd_bytes": [
+    747067,
+    746954
+  ],
+  "rrd_sha256": [
+    "346256cc4248c1f26bfb476af6f1692bde4368fb1a52183f47a25d24090b31eb",
+    "0bd1b3a92a54eba801b0ae7b7e4146a2215ed6c121a9aae4e4c3f507988ef5f1"
+  ],
+  "compare_after_dropping_manifest_exit": 0,
+  "compare_output_tail": [],
+  "sim_step": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "sim_time_s": [
+    0.0,
+    0.002,
+    0.004,
+    0.006,
+    0.008,
+    0.01
+  ],
+  "dt_s": 0.002,
+  "replay_vs_telemetry_max_abs_error_m": 1.8934233347867035e-09,
+  "record_true_vs_false_telemetry_identical": true
+}

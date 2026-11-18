@@ -1,0 +1,11 @@
+
+FAIL (headless .rrd content does not match FLIGHT_RECORDER.md):
+  - no rigid-member path contains /members/; the frame tree is flat
+  - PinholeCR_bottom is recorded 0.424359 m away from its true world pose
+  - no anchor path contains /anchors/; anchors are written under /bodies/
+  - documented native-recording entity group is absent: tool points
+  - documented native-recording entity group is absent: extrusion deposits
+  - documented native-recording entity group is absent: deposited length
+  - documented native-recording entity group is absent: motors
+  - documented native-recording entity group is absent: encoders
+  - documented native-recording entity group is absent: velocities

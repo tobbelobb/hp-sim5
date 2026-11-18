@@ -1,0 +1,15 @@
+hoop-like pulley, I/r^2 = 1 kg
+  expected with pulley inertia: 2.452500 m/s^2
+  expected with massless pulley: 3.270000 m/s^2
+  measured: 3.270000 m/s^2  (+33.33% vs with-inertia)
+one shipped HP4 wheel (5e-7 kg m^2, r=6.5 mm), 81 g / 40.5 g loads
+  expected with pulley inertia: 2.979765 m/s^2
+  expected with massless pulley: 3.270000 m/s^2
+  measured: 3.270000 m/s^2  (+9.74% vs with-inertia)
+four shipped HP4 wheels (D-line idler count), 81 g / 40.5 g loads
+  expected with pulley inertia: 2.353183 m/s^2
+  expected with massless pulley: 3.270000 m/s^2
+  measured: 3.270000 m/s^2  (+38.96% vs with-inertia)
+
+FAIL: the authored physics:inertiaTensor of a passive wheel does not affect the dynamics.
+The engine treats every non-motor wheel on a rolling link as massless (engine.rs turn_wheel).

@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "claim": "Eleven new, one-command reproducible incorrect behaviours in hp-sim5 (upload extrusion accounting, quality-record timing, bridge lifecycle, native telemetry/recording content, passive-wheel inertia, gyroscopic integration, and worker pacing), each with quantitative expected-vs-actual evidence; the strongest findings plus key negative controls are included.",
+  "scope": "Simulator evidence on one host, revision 74ecdc95 plus research-only evidence commit; no hardware validation, no browser automation. Findings 5-7 use the checked-in native addon; finding 5 was also reproduced on the checked-in Wasm build.",
+  "limitations": [
+    "No browser/UI automation; UI-adjacent defects use stubbed workers/sockets and production modules.",
+    "The quality-history reproducer mirrors four boundary source lines because workerController imports Vite-only modules; it fails on source drift.",
+    "Finding 8 (ignored passive-wheel inertia) is a minimal Atwood, not an end-to-end machine run; the machine-level consequence is inferred.",
+    "Finding 9 (no gyroscopic term) is latent: shipped bodies are symmetric.",
+    "Generated .rrd recordings are not in the selection; evidence JSON summaries are."
+  ],
+  "candidate_revision": "212c56ea7b894cf0e138590e1fa750a522aadbb6",
+  "candidate_tree": "261d3ff9c2b9c25a5625751e9392c6e3de6ce4dd",
+  "base_revision": "74ecdc951666821ac1ba44250fb69badfbc46c26",
+  "files": [
+    {
+      "path": "files/00-summary.md",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/summary.md",
+      "blob": "d1eba6ff477cfdc93f9d04e81d94243adeacf604",
+      "sha256": "4a1c23512f1a2dba3bd3328a20774758758f128f109360accd590527fe31c8d5"
+    },
+    {
+      "path": "files/01-agenda.md",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/agenda.md",
+      "blob": "a5597aa0b7a123ccf6bfe2810ca4a04fe12ece92",
+      "sha256": "597b0c3f9d1f463ba4206d00d5d3b0ede2f62bbdb8b98b5458bd2c824d7daf80"
+    },
+    {
+      "path": "files/02-report.md",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/report.md",
+      "blob": "6d35d95ffc4ea6570fd09f150639901b4cb301bd",
+      "sha256": "250a8756fae67d096aa81f1f60401eef423ab2ff9ba578ee7a7bf297a1a83493"
+    },
+    {
+      "path": "files/03-repro_gcode_extrusion_bookkeeping.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/repro_gcode_extrusion_bookkeeping.mjs",
+      "blob": "a238f6cee358b0caaf1a54bfcfc72b57bee001bc",
+      "sha256": "8e14c28380020ebca09b0b9aaa449fd77ca278b74832f66d8e65ae7f73e48329"
+    },
+    {
+      "path": "files/04-repro_shipped_gcode_extrusion.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/repro_shipped_gcode_extrusion.mjs",
+      "blob": "d175d910bb04c008fb940c38ef0d9a5567a38870",
+      "sha256": "5fbc9575b33178a867aac440ab8807b4acc8f3751ff8bad969093210be8f3019"
+    },
+    {
+      "path": "files/05-repro_length_telemetry.py",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/repro_length_telemetry.py",
+      "blob": "03e49c7e07f460946c902952e061baca9171277f",
+      "sha256": "89cd02ebbb36b828001b93651c088a552843d21931ae03fef8105d767f69dbc0"
+    },
+    {
+      "path": "files/06-probe_length_telemetry.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/probe_length_telemetry.mjs",
+      "blob": "8f9d7693d191d42b85a7285237cf742a0b61afe2",
+      "sha256": "3a13a7523d81737fdeef607ca4e5b90745aa0ef5a3db9588fca4bea2a035ef09"
+    },
+    {
+      "path": "files/07-measurements.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/measurements.json",
+      "blob": "42c820cdf87022e163e8ce2dde28fa2d56931ddc",
+      "sha256": "a65280252ff752ba1a8b3d4ecf37bfe58e09dbf8bab820bfd905f4b8173eb5ca"
+    },
+    {
+      "path": "files/08-probe_length_telemetry.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/probe_length_telemetry.json",
+      "blob": "4315f25f6028695332c5d8cf2268ee27863f8592",
+      "sha256": "e4c844fc1552eb757d174e47e2494ff9182d37d5c4b2c532c46c514191cdf0ab"
+    },
+    {
+      "path": "files/09-check_rrf_extrusion_conservation.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/check_rrf_extrusion_conservation.mjs",
+      "blob": "28047cba2c7bab312ed0f564b3cf85e77e238110",
+      "sha256": "3ccf7dc3f116a856424358ee4819581a3ad6ac3ca80e3ebdd94a00ea6cc6dca8"
+    },
+    {
+      "path": "files/10-report.md",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/report.md",
+      "blob": "82555cc36c3fad15e238192e818279b2f4776e0b",
+      "sha256": "2367467ec27d0788104ba7fe2e8cce648eac0ebfb12f9979ba145e34c08757d4"
+    },
+    {
+      "path": "files/11-repro_recording_scene_content.py",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro_recording_scene_content.py",
+      "blob": "3c9e47667301961065b7b4da08337e5a4f7a5211",
+      "sha256": "691764aec7f48529616fcf20e5db4288f29b0bb3e951d0c7e2a2b052aba47c23"
+    },
+    {
+      "path": "files/12-repro_reset_generation.py",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro_reset_generation.py",
+      "blob": "cd1f1f40676ef8fa6dda5b409f8260b09ab0a8ce",
+      "sha256": "c7026fce8d67cdf960e69ffd5a52f77cb81bb098bdfc4baa447a2f002a873fa9"
+    },
+    {
+      "path": "files/13-repro_length_error_channel.py",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro_length_error_channel.py",
+      "blob": "a1e770a4dbb7b4867d3c69d41de04d785d25a752",
+      "sha256": "10840fbd8fffe1daf9ed6aa3423d9518043726e5257e7e05505c50f01f675b17"
+    },
+    {
+      "path": "files/14-snapshot_truth.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/snapshot_truth.mjs",
+      "blob": "256ed759e43a8dbce0ba0aa7f022f6e32579df36",
+      "sha256": "93c595d39485d7559e58329d2f8cf8828a9ab14c6894bed27ac764b5b8dae5f6"
+    },
+    {
+      "path": "files/15-evidence_scene_content.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/evidence_scene_content.json",
+      "blob": "a55e3f224c92a9846378c1cbdc22b147eedd30e9",
+      "sha256": "b8b62ea0c01dab899a4883082231d25c5a85bb23202cd06dbf2c2675cfb501a6"
+    },
+    {
+      "path": "files/16-evidence_reset_generation.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/evidence_reset_generation.json",
+      "blob": "a500c20ff0c8832c9a5081264cb4f89bb3048228",
+      "sha256": "61eef9702b8a2585f2d1016666e43f5211981c5d351d2dc527031942aa1d99df"
+    },
+    {
+      "path": "files/17-evidence_length_error_channel.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/evidence_length_error_channel.json",
+      "blob": "87844339b33b76111a034b3c99745538b1c5cd37",
+      "sha256": "ed5c544c7998f7cb0c52c834da49e34d1f5e24c534362f7cb0609ff609cab7c6"
+    },
+    {
+      "path": "files/18-report.md",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14/report.md",
+      "blob": "5f3eb37f3cb7bf9d7cb67a7b5d04aa487df1a94c",
+      "sha256": "44d784d3f600ed19678b57ab0494e83d8a671188f6d9aa979df9204f7d368ad6"
+    },
+    {
+      "path": "files/19-repro_quality_recorded_before_drain.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14/repro_quality_recorded_before_drain.mjs",
+      "blob": "0b2e038bce1bc7e8b7ff9c1da25433bbb138b594",
+      "sha256": "553c2ed7781037c32dc971082469afb4e77524dd67a65cac80acb40ea07bdabe"
+    },
+    {
+      "path": "files/20-repro_worker_replacement_state.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14/repro_worker_replacement_state.mjs",
+      "blob": "e8a5b6aa0a1b5a619dedf859eaf1580a768082ab",
+      "sha256": "632e82d8ff11f39d735442b06620bd3ab7739c1bf1d983fe337970d18016fe63"
+    },
+    {
+      "path": "files/21-probe_substeps_cadence.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14/probe_substeps_cadence.mjs",
+      "blob": "edee5cbf3c94431153cb4da5bcf6a80dd33787f2",
+      "sha256": "7a38f0660e986e206ccc705d3f5e9e3c7010be9b727409ebb65ca955d9ceea04"
+    },
+    {
+      "path": "files/22-report.md",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/report.md",
+      "blob": "93d4147f1a422aeb5b59a2cb1a16889df543ae40",
+      "sha256": "4eb33a9736d8c37ab37ded06ad9b5f93aebf1537088ed6ca191d0ff864af3dba"
+    },
+    {
+      "path": "files/23-repro_recorder_blocks_protocol.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/repro_recorder_blocks_protocol.mjs",
+      "blob": "31c17bd8c04c44469694c373b517e1a31a4c01f4",
+      "sha256": "f16961142d8ad7861b5bb99ad32589fb5569be14b3cf12ba2956159b74a24ca7"
+    },
+    {
+      "path": "files/24-repro_reply_resumes_pause.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/repro_reply_resumes_pause.mjs",
+      "blob": "fecf525c8b8f97defaf65ac29b1701cbb906a296",
+      "sha256": "c92c7785e354647b85fda3d7bfebd7d77bfe833fc756498eb01f0d2c8c25dc8c"
+    },
+    {
+      "path": "files/25-repro_two_clients_sticky_encoder.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/repro_two_clients_sticky_encoder.mjs",
+      "blob": "15d17e7d7242720766c572152011d8e8dcfa2f12",
+      "sha256": "2ad5cb7be882beaf66223132c1146a1df136c138346f271ba51632dea55dfdda"
+    },
+    {
+      "path": "files/26-ws-register.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/ws-stub/ws-register.mjs",
+      "blob": "ad774be566e317f80bc4d0cc76fb3bea11ed9a0f",
+      "sha256": "882aa0987b5e3f74d3cc502ec3616b222f6b0f3c0aed595db7fd18d31a2287e5"
+    },
+    {
+      "path": "files/27-fake-ws.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/ws-stub/fake-ws.mjs",
+      "blob": "1ca8a8020c761b81678b9403d3a63d6858303436",
+      "sha256": "caa7bd67053f7e0b3ade57369838cf8796cadfd71b70801add6ca781b02e4345"
+    },
+    {
+      "path": "files/28-harness.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/harness.mjs",
+      "blob": "dbc325e5a1bb3a5787863f53e812151f349a236a",
+      "sha256": "e2881715fd1939f0d9c9f16df6e5f9e0361b03ac9854ab1f9f6da233b272b1f4"
+    },
+    {
+      "path": "files/29-evidence_repro_recorder_blocks_protocol.out.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/evidence_repro_recorder_blocks_protocol.out.json",
+      "blob": "dd6d549d1bac0a966868d0e57872fcb49f7f2719",
+      "sha256": "93f4bfcaeceb29d462b061f4a91b9ea074cdc8d891b3df28f48b6822c5d106ff"
+    },
+    {
+      "path": "files/30-evidence_repro_reply_resumes_pause.out.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/evidence_repro_reply_resumes_pause.out.json",
+      "blob": "8257f8a53fb6f7ae1ca56dcce106bb52e169b8a2",
+      "sha256": "427b978c924ec88fe9a363c4f4643d5188d3f271020f494416781e8ad3223181"
+    },
+    {
+      "path": "files/31-report.md",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/report.md",
+      "blob": "3be25cd2434f1e93910e4bd1d7a4e09edecfb91d",
+      "sha256": "b68f8a12660ab4c4aff13e1873791d4edc375090c554d3632e1f26df59c8873c"
+    },
+    {
+      "path": "files/32-repro_atwood_wheel_inertia.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/repro_atwood_wheel_inertia.mjs",
+      "blob": "ceadb474c9a9b8b346e9ed48cd26be9bcf77127d",
+      "sha256": "f6c97a26666d016d9fb2d038e8e7bf6dd822df70692c730404667c079c59af48"
+    },
+    {
+      "path": "files/33-repro_gyroscopic_free_body.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/repro_gyroscopic_free_body.mjs",
+      "blob": "710420eac112bbbd03963f7d52fa58c6996f50e8",
+      "sha256": "60092ee3c4deaf04a97fc4075bd49c9dcf3a1a08d70c93171f19fd63c89905df"
+    },
+    {
+      "path": "files/34-common.mjs",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/common.mjs",
+      "blob": "110cc05235e60fb7b0ae224218d99a78606c2c2d",
+      "sha256": "87fc6ad6e9c19cead5b0c0b9683b25f397632917d16a4e56f5a24afdef356ed5"
+    },
+    {
+      "path": "files/35-evidence.json",
+      "source": "research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/evidence.json",
+      "blob": "b4aa0a12e529c7656015c6402cf0d58f214c5a6e",
+      "sha256": "f0159826fe47a327cf1f760953d5113dc44b412bed03a37e77ae3e002c034f60"
+    }
+  ],
+  "patch_sha256": "fca9dfe6d915a46273ed4d7b7287d4a8416f50a156ae6e149c063e14b086522a"
+}

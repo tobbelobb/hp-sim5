@@ -1,0 +1,323 @@
+{
+  "note": "rows come from real createExternalCommandController.handlePayload via a stub WebSocket",
+  "rows": [
+    {
+      "label": "command:single",
+      "queueDelta": 1,
+      "applied": [
+        "Rebase reference",
+        "Move"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "command:duplicate-twice",
+      "queueDelta": 2,
+      "applied": [
+        "Rebase reference",
+        "Move",
+        "Move"
+      ],
+      "resumed": 2,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "command:no-command-field",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "command:null-command",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "command:string-command",
+      "queueDelta": 1,
+      "applied": [
+        "Rebase reference",
+        "G1 X1"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "commands:array",
+      "queueDelta": 2,
+      "applied": [
+        "Rebase reference",
+        "Move",
+        "Move"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "commands:with-nulls",
+      "queueDelta": 1,
+      "applied": [
+        "Rebase reference",
+        "Move"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "reply:status-query",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "reply:empty",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "unknown-type",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "empty-object",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "json-array",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "json-null",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "json-number",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "reset",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 1,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "reset:with-command",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 1,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "set_speed_scale:25",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 0,
+      "speed": [
+        25
+      ],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "set_speed_scale:0",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "set_speed_scale:string",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "encoder_request:no-requestId",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "encoder_request:no-axes",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "simulation_settings:empty",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "klipper_api_session_start",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    },
+    {
+      "label": "malformed-json",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 0,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": [
+        "warn:hp-sim-3d: failed to process external G-code payload."
+      ]
+    },
+    {
+      "label": "json-string",
+      "queueDelta": 0,
+      "applied": [
+        "Rebase reference"
+      ],
+      "resumed": 1,
+      "reset": 0,
+      "speed": [],
+      "responses": 0,
+      "warnings": []
+    }
+  ],
+  "connectBehaviour": {
+    "afterOpenQueue": [
+      "Rebase reference"
+    ]
+  },
+  "socketCountBeforeReconnectAttempt": 26,
+  "socketsCreated": 26
+}

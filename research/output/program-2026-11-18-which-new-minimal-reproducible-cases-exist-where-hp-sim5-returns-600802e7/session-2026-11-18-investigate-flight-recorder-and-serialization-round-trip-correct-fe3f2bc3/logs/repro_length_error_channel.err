@@ -1,0 +1,3 @@
+
+FAIL (documented length-error channel is not recorded):
+  - peak_abs_length_error_m is 0.0; the JS snapshot measures 0.00632636 m

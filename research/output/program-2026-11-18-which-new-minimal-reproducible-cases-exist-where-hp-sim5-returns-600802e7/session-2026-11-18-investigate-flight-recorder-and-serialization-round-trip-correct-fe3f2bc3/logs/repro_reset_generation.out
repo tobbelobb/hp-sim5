@@ -1,0 +1,28 @@
+{
+  "before_reset": {
+    "epoch": 0,
+    "step": 50,
+    "generation": 1
+  },
+  "after_reset": {
+    "epoch": 1,
+    "step": 0,
+    "generation": 1
+  },
+  "after_second_run": {
+    "epoch": 1,
+    "step": 50,
+    "generation": 1
+  },
+  "scene_generation_timeline": false,
+  "sim_steps": [
+    0,
+    50,
+    0,
+    50
+  ],
+  "max_collision_pose_distance_m": 0.0041184600920578995,
+  "event_scene_generations": [
+    1
+  ]
+}

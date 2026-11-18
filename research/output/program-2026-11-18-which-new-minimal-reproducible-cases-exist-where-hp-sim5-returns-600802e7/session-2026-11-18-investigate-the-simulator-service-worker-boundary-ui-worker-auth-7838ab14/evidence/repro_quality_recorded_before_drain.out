@@ -1,0 +1,43 @@
+{
+  "sourceDrift": [],
+  "withTailError": {
+    "tailErrorMm": 3,
+    "atDone": {
+      "executedCommands": 680,
+      "queuedCommands": 320,
+      "samples": 680,
+      "cornerCount": 2,
+      "progress": 0.6800000000000014,
+      "score": 100
+    },
+    "atDoneSimTimeS": 1.36,
+    "completed": {
+      "samples": 1000,
+      "cornerCount": 3,
+      "progress": 1,
+      "score": 94.31324717531413
+    },
+    "commandsExecutedAfterDone": 320,
+    "scoreDelta": -5.687
+  },
+  "withoutTailError": {
+    "tailErrorMm": 0,
+    "atDone": {
+      "executedCommands": 680,
+      "queuedCommands": 320,
+      "samples": 680,
+      "cornerCount": 2,
+      "progress": 0.6800000000000014,
+      "score": 100
+    },
+    "atDoneSimTimeS": 1.36,
+    "completed": {
+      "samples": 1000,
+      "cornerCount": 3,
+      "progress": 1,
+      "score": 100
+    },
+    "commandsExecutedAfterDone": 320,
+    "scoreDelta": 0
+  }
+}
