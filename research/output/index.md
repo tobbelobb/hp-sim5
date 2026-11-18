@@ -206,6 +206,18 @@ One result sentence per session; follow the report for evidence.
 
 - [End-to-end kinematic correctness for every catalog machine](program-2026-11-17-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-b3c9c0cc/session-2026-11-17-verify-end-to-end-kinematic-correctness-for-every-catalog-machin-4745f431/report.md) — Direction and sign are correct on every axis of all 20 catalog machines, but layered presets carry a 0.47–0.85 % spool-radius scale error and CubeCorners moves the tool tip 1.9–5.3 % short because its 6-DOF effector rotates; see report.md.
 
+- [HP4 autocal D.z bias: effector roll and slack parallel lines](session-2026-11-18-hp4-autocal-dz-bias/report.md) — No result summary available.
+
+- [session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599](program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599/report.md) — No result summary available.
+
+- [session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3](program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/report.md) — No result summary available.
+
+- [session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7](program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7/report.md) — No result summary available.
+
+- [session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14](program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14/report.md) — No result summary available.
+
+- [session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea](program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/report.md) — No result summary available.
+
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
 - [Saved HP4 recording Viewer inspection](session-338606b11fde452bb3886bb861a7e96c/report.md) — Retrospective summary of saved evidence, written 2026-10-08.

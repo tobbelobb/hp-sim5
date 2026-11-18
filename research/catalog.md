@@ -13,6 +13,14 @@ and evidence in Git; prefer those links when continuing in another environment.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## HP4 autocal D.z bias: effector roll and slack parallel lines
+
+Status: complete, 2026-11-18. Topics: autocalibration, HP4, HP5 pulley-reduced, reeving, equal strain, effector rotation.
+
+An exact replay of the benchmark collection recovered true effector poses. Chiral D reeving on one shared spool rolls the HP4 effector about 0.2°/m off-centre. One of each ABC parallel line pair goes slack, and the near-horizontal ABC geometry amplifies the taut-line length error into about 5 mm of D.z. This is not stretch. Doubling the per-strand measurement target on U=2 machines cut single-run error to 1.52 mm (HP4) and 1.34 mm (HP5 pulley-reduced). A home reference under tension remains open. Simulation only.
+
+[Report and evidence](output/session-2026-11-18-hp4-autocal-dz-bias/report.md).
+
 ## Separately reviewed audit of saved consensus evidence
 
 Status: complete and separately reviewed, 2026-10-26. Topics: CM-E1, consensus

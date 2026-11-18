@@ -1,0 +1,11 @@
+points 179
+true point model (translation only)        worst=  0.00  Dz= -0.00 ABCz= -0.00 Ay= -0.00 Bx= -0.00 Cx= -0.00 off=[0. 0. 0. 0.] rms=0.000
+geometry incl. effector rotation           worst=  0.11  Dz= +0.11 ABCz= +0.00 Ay= +0.01 Bx= -0.00 Cx= +0.01 off=[ 0.     0.     0.    -0.001] rms=0.000
+measured                                   worst=  0.82  Dz= -0.28 ABCz= -0.82 Ay= +0.47 Bx= +0.04 Cx= +0.44 off=[0.   0.   0.   1.01] rms=0.028
+measured minus rotation effect             worst=  0.82  Dz= -0.40 ABCz= -0.82 Ay= +0.47 Bx= +0.04 Cx= +0.44 off=[0.    0.    0.    1.012] rms=0.028
+point model + stretch on axis A only       worst=  0.37  Dz= -0.34 ABCz= -0.30 Ay= -0.37 Bx= -0.10 Cx= +0.19 off=[0.    0.    0.    0.333] rms=0.009
+point model + stretch on axis B only       worst=  0.71  Dz= -0.42 ABCz= -0.35 Ay= +0.24 Bx= +0.71 Cx= +0.29 off=[0.    0.    0.    0.334] rms=0.008
+point model + stretch on axis C only       worst=  0.48  Dz= -0.48 ABCz= -0.29 Ay= +0.25 Bx= -0.35 Cx= -0.45 off=[0.    0.    0.    0.335] rms=0.009
+point model + stretch on axis D only       worst=  0.81  Dz= +0.81 ABCz= +0.11 Ay= +0.29 Bx= -0.26 Cx= +0.42 off=[0.   0.   0.   0.01] rms=0.009
+point model + stretch minus its per-axis mean worst=  0.63  Dz= +0.63 ABCz= +0.20 Ay= +0.46 Bx= +0.04 Cx= +0.44 off=[ 0.     0.     0.    -0.031] rms=0.028
+point model + per-axis mean stretch only   worst=  1.02  Dz= -1.02 ABCz= -1.02 Ay= +0.00 Bx= +0.00 Cx= +0.00 off=[0.    0.    0.    1.042] rms=0.000

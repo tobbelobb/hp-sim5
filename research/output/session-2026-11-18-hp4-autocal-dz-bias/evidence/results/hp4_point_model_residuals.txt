@@ -1,0 +1,4 @@
+matched 256 home [-1.79582413e-09 -7.11888498e-08  9.02957443e+01]
+effector range mm min [-683.7 -763.6   48.7] max [ 671.3  547.5 1597.5]
+effector rotation deg: median 0.0971 max 0.2679
+residual (measured - point model) per axis mm: mean [-0.05  -0.038 -0.024 -0.025] std [0.157 0.157 0.22  0.015] min [-0.321 -0.329 -0.348 -0.066] max [0.704 0.443 1.208 0.008]
