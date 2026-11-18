@@ -197,14 +197,14 @@ def remove_worktree(worktree):
         subprocess.run(['git', 'worktree', 'prune'], cwd=sub)
 
 
-def benchmark(commit, machine, fp, worktree, out, timeout_s):
+def benchmark(commit, machine, fp, worktree, out, timeout_s, max_steps):
     directory = out / 'runs' / commit[:12] / machine
     shutil.rmtree(directory, ignore_errors=True)
     directory.mkdir(parents=True)
     dataset = directory / 'sweeps.json'
     env = {**os.environ, 'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1',
            'XLA_FLAGS': '--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1',
-           'HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS': '6000000'}
+           'HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS': str(max_steps)}
     record = dict(commit=commit, date=git('show', '-s', '--format=%cI', commit),
                   subject=git('show', '-s', '--format=%s', commit), machine=machine, fingerprint=fp)
     try:
@@ -298,10 +298,13 @@ def main():
     parser.add_argument('--stride', type=int, default=1,
                         help="run every Nth distinct runtime input per machine; skipped inputs' commits are not reported")
     parser.add_argument('--machines', nargs='+', default=MACHINES, choices=MACHINES)
-    parser.add_argument('--threads', type=int, default=18)
+    # A run keeps about 1.5 cores busy (physics 1, rrf_simulator 0.5): 12 runs ~ 85% of 20 cores.
+    parser.add_argument('--threads', type=int, default=24)
     parser.add_argument('--mem-gb', type=float, default=50)
     parser.add_argument('--threads-per-run', type=int, default=2, help='python fit + native physics')
     parser.add_argument('--mem-gb-per-run', type=float, default=4)
+    # HEAD needs at most ~3M steps (HP4); broken older revisions otherwise burn 6M.
+    parser.add_argument('--max-physics-steps', type=int, default=4_500_000)
     parser.add_argument('--timeout-min', type=float, default=90)
     parser.add_argument('--out', type=Path, default=ROOT / 'output/autocal-benchmark-backfill')
     # RRF's host simulator silently runs without config when its SD path is long.
@@ -367,7 +370,8 @@ def main():
                 continue
             pending[commit] = len(machines)
             for machine, fp in machines:
-                future = pool.submit(benchmark, commit, machine, fp, worktree, out, args.timeout_min * 60)
+                future = pool.submit(benchmark, commit, machine, fp, worktree, out, args.timeout_min * 60,
+                                     args.max_physics_steps)
                 future.add_done_callback(lambda _, c=commit, w=worktree: finished(c, w))
                 futures.append(future)
     fill_reused(out, selection)
