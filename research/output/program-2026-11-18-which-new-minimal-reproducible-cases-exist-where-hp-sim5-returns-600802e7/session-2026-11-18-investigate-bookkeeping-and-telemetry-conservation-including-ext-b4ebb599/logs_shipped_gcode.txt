@@ -1,0 +1,8 @@
+worker: MoveCommander is up
+file: public/gcode/Hangprinter_logo6.gcode
+G92 E resets: 123
+reference (parseGcodeText) positive extrusion: 49950.460240 mm
+MoveCommander positive extrusion:              49719.253160 mm
+difference: 231.207080 mm (0.462873 %)
+
+BUG REPRODUCED: simulation loses 231.207080 mm of extrusion (0.463 %), above the 0.01 mm tolerance.

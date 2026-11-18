@@ -1,0 +1,64 @@
+{
+  "cases": [
+    {
+      "case": "A_healthy_never_connected",
+      "recorderError": null,
+      "commandsAccepted": 2,
+      "warnings": []
+    },
+    {
+      "case": "B_recorder_died_mid_run",
+      "recorderError": "Flight recorder disconnected",
+      "acceptedWhileRecording": 2,
+      "acceptedAfterFailure": 2,
+      "warnings": 5,
+      "lastWarning": "warn:hp-sim-3d: failed to process external G-code payload."
+    },
+    {
+      "case": "C_rerun_button_without_receiver",
+      "recorderError": "Flight recorder disconnected",
+      "commandsAccepted": 1,
+      "warnings": 1
+    },
+    {
+      "case": "D_settings_message_recovers_path",
+      "recorderErrorAfterSettings": null,
+      "acceptedBeforeRecovery": 1,
+      "acceptedAfterRecovery": 2,
+      "warnings": 2
+    },
+    {
+      "case": "E_clean_disconnect",
+      "recorderError": null,
+      "commandsAccepted": 2,
+      "warnings": 0
+    },
+    {
+      "case": "F_nonFatal_recorder",
+      "recorderError": "Flight recorder disconnected",
+      "commandsAccepted": 2,
+      "warnings": 0
+    },
+    {
+      "case": "G_traffic_after_recorder_failure",
+      "recorderError": "Flight recorder disconnected",
+      "responsesSent": 1,
+      "answeredRequestIds": [
+        1
+      ],
+      "unansweredRequestIds": [
+        2
+      ],
+      "traceModeApplied": false,
+      "commandsAccepted": 1,
+      "warnings": 3
+    },
+    {
+      "case": "H_default_page_error_before_extended_reference_check",
+      "extendedReference": false,
+      "recorderError": "Flight recorder disconnected",
+      "commandsAccepted": 0,
+      "warnings": 1
+    }
+  ]
+}

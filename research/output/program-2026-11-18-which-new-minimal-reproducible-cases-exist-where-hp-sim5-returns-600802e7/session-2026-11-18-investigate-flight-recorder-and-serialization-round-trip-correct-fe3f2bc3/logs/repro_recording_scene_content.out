@@ -1,0 +1,71 @@
+{
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp4.usda",
+  "rrd": "/home/torbjorn/repos/hp-sim5/research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro-output/scene-content/recording.rrd",
+  "rrd_bytes": 672555,
+  "rrd_sha256": "a0b361684beb8f92001ca6e7e0b2be4de12ef562e80eea17f766434fb74e19e4",
+  "native_addon": "/tmp/opencode/hp_sim5_4dda8987d8ca.node",
+  "native_addon_sha256": "4dda8987d8ca2d10f1468c65a9671247adb92da9ac818a9cdeac636638eea870",
+  "rigid_members_recorded": 33,
+  "rigid_members_in_state": 33,
+  "max_member_position_error_m": 0.424358821014561,
+  "worst_member": "PinholeCR_bottom",
+  "worst_member_recorded": [
+    3.728395370217186e-11,
+    -5.185184746847593e-12,
+    0.0903037041425705
+  ],
+  "worst_member_truth": [
+    -0.381051177665153,
+    -0.18,
+    0.0405
+  ],
+  "sample_members": {
+    "CornerBR": {
+      "recorded": [
+        3.728395370217186e-11,
+        -5.185184746847593e-12,
+        0.0903037041425705
+      ],
+      "truth": [
+        0.0,
+        0.4,
+        0.1
+      ]
+    },
+    "PinholeCL_top": {
+      "recorded": [
+        3.728395370217186e-11,
+        -5.185184746847593e-12,
+        0.0903037041425705
+      ],
+      "truth": [
+        -0.034641016151378,
+        0.42,
+        0.1
+      ]
+    },
+    "PinholeBL_bottom": {
+      "recorded": [
+        3.728395370217186e-11,
+        -5.185184746847593e-12,
+        0.0903037041425705
+      ],
+      "truth": [
+        0.381051177665153,
+        -0.18,
+        0.0405
+      ]
+    }
+  },
+  "entity_groups_present": {
+    "member frame hierarchy": 0,
+    "anchor frames": 0,
+    "tool points": 0,
+    "extrusion deposits": 0,
+    "deposited length": 0,
+    "motors": 0,
+    "encoders": 0,
+    "velocities": 0
+  },
+  "entity_path_count": 236
+}

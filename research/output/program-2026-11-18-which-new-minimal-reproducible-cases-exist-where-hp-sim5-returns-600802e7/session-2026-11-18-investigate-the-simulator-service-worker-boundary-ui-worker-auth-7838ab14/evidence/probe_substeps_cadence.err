@@ -1,0 +1,1 @@
+PASS: one World.update(dt) always advances dt and runs the command consumer once

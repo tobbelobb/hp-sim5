@@ -1,0 +1,13 @@
+{
+  "export_integrity": "verified_selected_files",
+  "import_integrity": "verified_selected_files",
+  "files_copied": [
+    "abstract.md",
+    "report.md",
+    "research.md",
+    "trace.json"
+  ],
+  "hashes_match_sources": true,
+  "tampered_integrity": "partial",
+  "tamper_detected": true
+}

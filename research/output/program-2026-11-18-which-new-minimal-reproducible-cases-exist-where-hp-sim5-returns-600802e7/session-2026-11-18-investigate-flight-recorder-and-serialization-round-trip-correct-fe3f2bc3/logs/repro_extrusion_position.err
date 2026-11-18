@@ -1,0 +1,3 @@
+
+FAIL (extrusion deposit serialization):
+  - worker export lost the deposit position (nulls instead of coordinates)

@@ -1,0 +1,138 @@
+{
+  "dt": 0.002,
+  "cases": [
+    {
+      "change": "1->1",
+      "first": {
+        "substeps": 1,
+        "physicsCalls": 1,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      },
+      "second": {
+        "substeps": 1,
+        "physicsCalls": 1,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      }
+    },
+    {
+      "change": "2->2",
+      "first": {
+        "substeps": 2,
+        "physicsCalls": 2,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      },
+      "second": {
+        "substeps": 2,
+        "physicsCalls": 2,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      }
+    },
+    {
+      "change": "4->4",
+      "first": {
+        "substeps": 4,
+        "physicsCalls": 4,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      },
+      "second": {
+        "substeps": 4,
+        "physicsCalls": 4,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      }
+    },
+    {
+      "change": "8->8",
+      "first": {
+        "substeps": 8,
+        "physicsCalls": 8,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      },
+      "second": {
+        "substeps": 8,
+        "physicsCalls": 8,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      }
+    },
+    {
+      "change": "16->16",
+      "first": {
+        "substeps": 16,
+        "physicsCalls": 16,
+        "physicsTime": 0.002000000000000001,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      },
+      "second": {
+        "substeps": 16,
+        "physicsCalls": 16,
+        "physicsTime": 0.002000000000000001,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      }
+    },
+    {
+      "change": "1->8",
+      "first": {
+        "substeps": 1,
+        "physicsCalls": 1,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      },
+      "second": {
+        "substeps": 8,
+        "physicsCalls": 8,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      }
+    },
+    {
+      "change": "8->1",
+      "first": {
+        "substeps": 8,
+        "physicsCalls": 8,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      },
+      "second": {
+        "substeps": 1,
+        "physicsCalls": 1,
+        "physicsTime": 0.002,
+        "outsideCalls": 1,
+        "outsideDt": 0.002,
+        "dtAfter": 0.002
+      }
+    }
+  ]
+}

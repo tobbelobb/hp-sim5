@@ -1,0 +1,2 @@
+FAIL (worker replacement state):
+ - job 2 worker never received set_fast_mode(true) (mirror leaked from job 1)

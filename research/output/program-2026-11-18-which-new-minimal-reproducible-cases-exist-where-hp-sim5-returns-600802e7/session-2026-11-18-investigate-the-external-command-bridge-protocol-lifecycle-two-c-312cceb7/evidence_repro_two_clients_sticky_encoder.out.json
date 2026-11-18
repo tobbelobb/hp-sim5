@@ -1,0 +1,37 @@
+{
+  "attempts": [
+    {
+      "i": 0,
+      "ok": false,
+      "error": "Browser simulator did not answer encoder request (X) within 50 ms; the browser may be busy or suspended",
+      "ms": 51,
+      "sentToHealthy": 0,
+      "sentToSilent": 1
+    },
+    {
+      "i": 1,
+      "ok": false,
+      "error": "Browser simulator did not answer encoder request (X) within 50 ms; the browser may be busy or suspended",
+      "ms": 50,
+      "sentToHealthy": 0,
+      "sentToSilent": 2
+    },
+    {
+      "i": 2,
+      "ok": false,
+      "error": "Browser simulator did not answer encoder request (X) within 50 ms; the browser may be busy or suspended",
+      "ms": 50,
+      "sentToHealthy": 0,
+      "sentToSilent": 3
+    }
+  ],
+  "healthyOffersDuringAttempts": 0,
+  "control": {
+    "ok": true,
+    "anglesDeg": [
+      11
+    ]
+  },
+  "readyClients": 1
+}
+DEFECT: with two ready clients, the healthy client was never asked (3/3 requests went to the unresponsive one, each costing the full timeout).

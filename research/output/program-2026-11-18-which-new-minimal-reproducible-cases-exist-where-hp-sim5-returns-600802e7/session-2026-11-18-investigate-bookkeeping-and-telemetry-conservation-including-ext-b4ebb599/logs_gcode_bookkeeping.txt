@@ -1,0 +1,13 @@
+worker: MoveCommander is up
+ok   control: absolute E with M82 (should agree): reference 10 mm, MoveCommander 10 mm
+FAIL absolute E, firmware default, no M82 (RRF and Klipper default to absolute): reference 10 mm, MoveCommander 15 mm
+FAIL absolute E with a mid-file G92 E0 reset: reference 15 mm, MoveCommander 10 mm
+FAIL M82 then M83 (switch to relative E): reference 10 mm, MoveCommander 5 mm
+first job: 100 mm (expect 100)
+second job on the same worker: 0 mm (expect 5)
+
+BUG REPRODUCED: G-code upload extrusion accounting disagrees with the reference path.
+  - absolute E, firmware default, no M82 (RRF and Klipper default to absolute): reference 10 mm, simulation 15 mm (150.000 %)
+  - absolute E with a mid-file G92 E0 reset: reference 15 mm, simulation 10 mm (66.667 %)
+  - M82 then M83 (switch to relative E): reference 10 mm, simulation 5 mm (50.000 %)
+  - second job on the same worker: reference 5 mm, simulation 0 mm; configure() does not reset last_e

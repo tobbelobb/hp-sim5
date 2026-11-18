@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "id": "program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7",
+  "question": "Which NEW, minimal, reproducible cases exist where hp-sim5 returns wrong results or violates its own stated invariants, in areas not already covered by the 2026-11-16 and 2026-11-17 correctness programs? Deliver the smallest possible one-command reproducer and quantitative evidence (expected vs actual) for each genuine case. Do not fix anything. Exclude encoder autocalibration (a separate program owns it).",
+  "agents": [
+    {
+      "id": "session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599",
+      "question": "Investigate bookkeeping and telemetry conservation, including extrusion accounting (skipped by earlier programs): deposited/extruded length, filament consumed, line material, force/power/energy and odometer accumulators across moves, torque mode, pause and reset; and agreement between JS, Python mirror and recorded values. Look for double counting, missing accounting, units errors or reset leaks. Read code first; micro-experiments only.",
+      "directory": "session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599"
+    },
+    {
+      "id": "session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3",
+      "question": "Investigate flight-recorder and serialization round-trip correctness. Record a very short headless run, then test replay, seek/pause/resume, export/import and resume-from-recording. Does replay reproduce the recorded trajectory, and are sim_time, sim_step, scene_generation and the reported counters/deposits preserved? Check documented recorder invariants. Read recorder modules first; micro-experiments only.",
+      "directory": "session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3"
+    },
+    {
+      "id": "session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7",
+      "question": "Investigate the external command/bridge protocol lifecycle: two clients, attach/detach/reconnect, queue overflow and backpressure, malformed or duplicate messages, pause/resume and set_speed_scale ordering, and Reset versus queued commands. Check behavior against README_adv.md, FLIGHT_RECORDER.md and the socket code. Distinct from the already-known Rebase-reference leak. Test with stubbed WebSocket objects and pure JS; no browser, no builds.",
+      "directory": "session-2026-11-18-investigate-the-external-command-bridge-protocol-lifecycle-two-c-312cceb7"
+    },
+    {
+      "id": "session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14",
+      "question": "Investigate the simulator service/worker boundary: UI <-> worker <-> authoritative world message protocol. Check for stale state after reconfigure or machine change, settings/quality/substep changes mid-run, pause semantics, dropped/duplicated/late updates, and whether the worker-reported quality, encoder and clock state matches the authoritative world. Pure JS with stubbed workers and timers; no browser, no builds.",
+      "directory": "session-2026-11-18-investigate-the-simulator-service-worker-boundary-ui-worker-auth-7838ab14"
+    },
+    {
+      "id": "session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea",
+      "question": "Test numerical integration accuracy on analytic systems (damped harmonic oscillator, pendulum/small-angle, Atwood with inertia, constant-acceleration free mass, freely rotating rigid body) at documented default dt and substep/solver-iteration settings. Compare against closed-form solutions and documented claims; quantify error, convergence order and any divergence. Use the checked-in Wasm build or pure JS; no native rebuild, no Python experiment path, no long runs.",
+      "directory": "session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea"
+    }
+  ]
+}
