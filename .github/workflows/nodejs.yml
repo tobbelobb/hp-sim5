@@ -17,8 +17,15 @@ jobs:
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
-          git submodule sync klipper RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib autocal/auto-calibration-simulation-for-hangprinter
-          git submodule update --init klipper RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib autocal/auto-calibration-simulation-for-hangprinter
+          git submodule sync
+          git submodule update --init \
+            klipper \
+            RRF/ReprapFirmware \
+            RRF/RRFLibraries \
+            RRF/CANlib \
+            autocal/auto-calibration-simulation-for-hangprinter \
+            forward-transform-dev/hangprinter-forward-transform \
+            flex-compensation-dev/hangprinter-flex-compensation
       - name: Use latest Node.js LTS
         uses: actions/setup-node@v3
         with:
