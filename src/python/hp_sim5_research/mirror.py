@@ -113,7 +113,7 @@ class World:
         self.components.clear()
 
 
-def apply_state(world: World, state: dict):
+def apply_state(world: World, state: dict, *, scene_generation=None):
     """Replace detached observations with one worker state snapshot."""
     seen = set()
     for name, rows in state.get('components', []):
@@ -141,8 +141,10 @@ def apply_state(world: World, state: dict):
     for key in ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps'):
         if key in state.get('layering_flags', {}):
             world.set_resource(key, state['layering_flags'][key])
-    if state.get('scene_generation') is not None:
-        world.set_resource('sceneGeneration', state['scene_generation'])
+    if scene_generation is None:
+        scene_generation = state.get('scene_generation')
+    if scene_generation is not None:
+        world.set_resource('sceneGeneration', scene_generation)
     return world
 
 
