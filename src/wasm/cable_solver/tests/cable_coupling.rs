@@ -48,7 +48,7 @@ fn hysteresis(mu: f64, steps: usize) -> (f64, f64, f64, f64, f64) {
     for k in 1..=2 * steps {
         let u = if k <= steps { k } else { 2 * steps - k } as f64 / steps as f64;
         place(&mut w, 2, [0.0, -1.0 - peak * u, 0.0]);
-        w.step(0.001);
+        w.step(0.001).unwrap();
         let fix = strain_tension(&mut w, 0, 0, 1, EA);
         let drv = strain_tension(&mut w, 1, 1, 2, EA);
         worst = worst.max(cone_violation(fix, drv, alpha));
@@ -104,11 +104,11 @@ fn capstan_threshold_is_unbiased_at_coarse_steps() {
         let mut w = world(es, vec![path(&links, &segs, 1e6, 2e3, 10.0)]);
         let dt = 0.002;
         for _ in 0..250 {
-            w.step(dt);
+            w.step(dt).unwrap();
         }
         let (v0, y0) = (vy(&w, 1), y(&w, 1));
         for _ in 0..250 {
-            w.step(dt);
+            w.step(dt).unwrap();
         }
         let a = -(vy(&w, 1) - v0) / (250.0 * dt);
         let expected = (G * (m1 - m2 * alpha) / (m1 + m2 * alpha)).max(0.0);
@@ -152,7 +152,7 @@ fn sliding_hairpin_stops_and_dissipates() {
         let mut previous = energy(&mut w);
         let mut gain: f64 = 0.0;
         for _ in 0..(1.5 / dt) as usize {
-            w.step(dt);
+            w.step(dt).unwrap();
             let e = energy(&mut w);
             gain = gain.max(e - previous);
             previous = previous.min(e);
@@ -195,14 +195,14 @@ fn narrowing_wrap_releases_tension() {
         for k in 1..=200 {
             let r = 1.0 + (radius - 1.0) * k as f64 / 200.0;
             place(&mut w, 2, [-r, 1e-6, 0.0]);
-            w.step(0.001);
+            w.step(0.001).unwrap();
         }
         let mut worst: f64 = 0.0;
         for k in 1..=swing {
             // Wrap angle from pi down to zero.
             let wrap = PI * (1.0 - k as f64 / swing as f64);
             place(&mut w, 2, [radius * wrap.cos(), radius * wrap.sin(), 0.0]);
-            w.step(0.001);
+            w.step(0.001).unwrap();
             let fix = strain_tension(&mut w, 0, 0, 1, EA);
             let drv = strain_tension(&mut w, 1, 1, 2, EA);
             worst = worst.max(cone_violation(fix, drv, (mu * wrap).exp()));
@@ -232,7 +232,7 @@ fn capstan_chain_loads_and_unloads() {
         for k in 1..=2 * steps {
             let u = if k <= steps { k } else { 2 * steps - k } as f64 / steps as f64;
             place(&mut w, 4, [2.0, -2.0 - 4e-3 * u, 0.0]);
-            w.step(0.001);
+            w.step(0.001).unwrap();
             let t: Vec<f64> = (0..4).map(|i| strain_tension(&mut w, i, i, i + 1, EA)).collect();
             for i in 0..3 {
                 worst = worst.max(cone_violation(t[i], t[i + 1], alpha));
@@ -302,7 +302,7 @@ fn free_pinhole_body(mu: f64, dt: f64) -> ([f64; 2], f64, f64, f64) {
     let before = rest(&mut w, 0, 0);
     let (mut drift, mut gain, mut previous) = ([0.0f64; 2], 0.0f64, e0);
     for _ in 0..(2.0 / dt) as usize {
-        w.step(dt);
+        w.step(dt).unwrap();
         let p = momentum(&w);
         drift[0] = drift[0].max((p[0] - p0[0]).abs()).max((p[1] - p0[1]).abs());
         drift[1] = drift[1].max((p[2] - p0[2]).abs());
@@ -344,13 +344,13 @@ fn slack_stays_until_pulled() {
         // The right end moves away while its span still has slack.
         for k in 1..=100 {
             place(&mut w, 2, [0.0, -1.0 - 0.05 * k as f64 / 100.0, 0.0]);
-            w.step(0.001);
+            w.step(0.001).unwrap();
         }
         let held = (rest(&mut w, 0, 0), rest(&mut w, 0, 1));
         // Then 0.1 m beyond its own material.
         for k in 1..=100 {
             place(&mut w, 2, [0.0, -1.05 - 0.15 * k as f64 / 100.0, 0.0]);
-            w.step(0.001);
+            w.step(0.001).unwrap();
         }
         let pulled = (rest(&mut w, 0, 0), rest(&mut w, 0, 1));
         let force = tension(&mut w, 0, 1);
@@ -375,7 +375,7 @@ fn long_rows_report_every_segment() {
     links[n] = (ATTACHMENT, true, 0.0);
     let mut w = world(es, vec![path(&links, &segs, 1e6, 1e3, 4.0)]);
     for _ in 0..2000 {
-        w.step(0.001);
+        w.step(0.001).unwrap();
     }
     for i in 0..n {
         let force: Vec<f64> = (13..16).map(|slot| seg_field(&mut w, 0, i, slot)).collect();
@@ -407,11 +407,11 @@ fn worn_wheel_atwood(mu: f64, rim: f64, bearing: f64) -> (f64, f64) {
     let before = material(&mut w, 0);
     let dt = 0.0005;
     for _ in 0..400 {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     let (v0, y0, angle0) = (vy(&w, 1), y(&w, 1), w.entities[0][66]);
     for _ in 0..400 {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     assert!((material(&mut w, 0) - before).abs() < 1e-9);
     let travel = y0 - y(&w, 1);

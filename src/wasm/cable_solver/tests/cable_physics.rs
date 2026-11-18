@@ -31,7 +31,7 @@ fn hanging_stretch(pinholes: usize) -> f64 {
         .collect();
     let mut w = world(es, vec![path(&links, &segs, ea, 50.0, 4.0)]);
     for _ in 0..4000 {
-        w.step(0.001);
+        w.step(0.001).unwrap();
     }
     -1.0 - y(&w, mid)
 }
@@ -71,12 +71,12 @@ fn hairpin(mu: f64, m1: f64, m2: f64, kind: f64) -> (f64, f64, f64) {
     let dt = 0.0005;
     // Let the stretch settle, then measure the acceleration over 0.2 s.
     for _ in 0..200 {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     let v0 = vy(&w, 1);
     let steps = 400;
     for _ in 0..steps {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     let a = -(vy(&w, 1) - v0) / (steps as f64 * dt);
     let t0 = tension(&mut w, 0, 0);
@@ -133,11 +133,11 @@ fn straight_pinhole_has_no_capstan_friction() {
     let mut w = world(es, vec![path(&links, &segs, 1e6, 1e3, 4.0)]);
     let dt = 0.0005;
     for _ in 0..200 {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     let v0 = vy(&w, 2);
     for _ in 0..400 {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     let a = -(vy(&w, 2) - v0) / (400.0 * dt);
     let expected = G * (m1 - m2) / (m1 + m2);
@@ -163,11 +163,11 @@ fn free_wheel_atwood_turns_with_line() {
     let before = material(&mut w, 0);
     let dt = 0.0005;
     for _ in 0..200 {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     let (v0, y0, angle0) = (vy(&w, 1), y(&w, 1), w.entities[0][66]);
     for _ in 0..400 {
-        w.step(dt);
+        w.step(dt).unwrap();
     }
     let a = -(vy(&w, 1) - v0) / (400.0 * dt);
     let travel = y0 - y(&w, 1);
@@ -197,7 +197,7 @@ fn pendulum_loss(dt: f64) -> f64 {
     let e0 = energy(&w);
     let mut gain: f64 = 0.0;
     for _ in 0..(4.0 / dt) as usize {
-        w.step(dt);
+        w.step(dt).unwrap();
         gain = gain.max(energy(&w) - e0);
     }
     assert!(gain < 1e-3 * m * G, "pendulum gained {gain} J");
@@ -254,7 +254,7 @@ fn stress_energy_never_grows() {
         let scale = (m1 + m2) * G;
         let mut gain: f64 = 0.0;
         for _ in 0..4000 {
-            w.step(0.001);
+            w.step(0.001).unwrap();
             let e = kinetic_plus_potential(&w, &ids);
             assert!(e.is_finite());
             gain = gain.max((e - e0) / scale);
@@ -294,7 +294,7 @@ fn slack_slides_over_frictional_pinhole() {
     let mut w = world(es, vec![path(&links, &segs, 1e6, 1e3, 4.0)]);
     let total = 0.9 + 0.5;
     for _ in 0..2000 {
-        w.step(0.0005);
+        w.step(0.0005).unwrap();
     }
     // The tail straightens, then the mass hangs at the end of all the cable.
     let hang = -y(&w, 2);
@@ -316,7 +316,7 @@ fn vanishing_span_is_stable() {
     let mut w = world(es, vec![path(&links, &segs, 1e6, 1e3, 2.0)]);
     let before = material(&mut w, 0);
     for _ in 0..4000 {
-        w.step(0.0005);
+        w.step(0.0005).unwrap();
         assert!(w.entities.iter().all(|e| e[..3].iter().all(|x| x.is_finite())));
     }
     let after = material(&mut w, 0);
@@ -343,7 +343,7 @@ fn replay_prepared_world() {
     let steps: usize = std::env::var("HP_SIM5_STEPS").ok().and_then(|s| s.parse().ok()).unwrap_or(2000);
     let start = std::time::Instant::now();
     for _ in 0..steps {
-        w.step(0.002);
+        w.step(0.002).unwrap();
     }
     eprintln!("replayed {steps} steps in {:?}", start.elapsed());
 }

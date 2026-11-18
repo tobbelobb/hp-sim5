@@ -5,6 +5,8 @@ import { setImmediate } from 'node:timers/promises';
 import { runFixture } from '../parity3d/oracle.mjs';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
 import { NativePhysicsEngine, loadNativePhysicsAddon } from '../../src/js/cable_joints_3d/native_physics_engine.js';
+import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
+import { CableJointComponent } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { PositionComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { runTrajectory } from '../../scripts/profile_headless.mjs';
 
@@ -42,6 +44,47 @@ test('native boundary rejects malformed records, indices and disposed handles', 
   host.dispose(); assert.equal(options.byteLength, 0);
   assert.throws(() => host.step(.002), /disposed/);
 });
+
+for (const [name, createBackend] of [
+  ['native', () => new NativePhysicsEngine()],
+  ['Wasm', () => new WasmPhysicsEngine(new WebAssembly.Module(
+    fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url))))],
+]) {
+  test(`${name} rejects non-finite positions without advancing physics`, () => {
+    const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3.usda', import.meta.url), 'utf8');
+    const backend = createBackend(), control = createBackend();
+    const snapshot = engine => engine.regions.map(region => region.data.slice());
+    try {
+      const { world, dt } = createHeadlessWorld(scene, { cableSolverBackend: backend });
+      const reference = createHeadlessWorld(scene, { cableSolverBackend: control }).world;
+      const step = () => world.update(dt);
+      for (let i = 0; i < 200; i++) {
+        step();
+        reference.update(dt);
+      }
+      const joints = world.query([CableJointComponent]).map(id => world.getComponent(id, CableJointComponent));
+      const joint = joints.find(joint => joint.constraintForceMagnitude > 0);
+      assert.ok(joint, 'the settled reference cable carries a load');
+      const pos = world.getComponent(joint.entityA, PositionComponent).pos;
+      const row = backend.index.get(joint.entityA);
+      for (const [axis, invalid] of [['x', NaN], ['x', Infinity], ['y', -Infinity], ['z', NaN]]) {
+        const original = pos[axis], topology = backend.topologyVersion;
+        pos[axis] = invalid;
+        const before = snapshot(backend);
+        assert.throws(step, { name: 'RangeError', message: `Non-finite physics position at entity row ${row}` });
+        assert.deepEqual(snapshot(backend), before);
+        assert.equal(backend.topologyVersion, topology);
+        pos[axis] = original;
+        step();
+        reference.update(dt);
+        assert.deepEqual(snapshot(backend), snapshot(control));
+      }
+    } finally {
+      backend.dispose();
+      control.dispose();
+    }
+  });
+}
 test('native views retain their allocation after their host is collected', { skip: !global.gc }, async () => {
   let host = loadNativePhysicsAddon().addon.create(new Float64Array(), new Float64Array(), 0);
   const reference = new WeakRef(host), options = host.options();

@@ -37,13 +37,13 @@ fn continuing_native_world_integrates_and_accepts_edits() {
     let mut w = world(vec![e], vec![]);
     w.options[2] = -9.81;
     for _ in 0..100 {
-        w.step(0.002);
+        w.step(0.002).unwrap();
     }
     assert!((w.entities[0][72 - 1] + 1.962).abs() < 1e-11);
     assert!((w.entities[0][2] + 0.198162).abs() < 1e-11);
     w.entities[0][0] = 5.0;
     w.entities[0][69] = 2.0;
-    w.step(0.002);
+    w.step(0.002).unwrap();
     assert!((w.entities[0][0] - 5.004).abs() < 1e-12);
 }
 
@@ -70,7 +70,7 @@ fn native_cable_solve_retains_lengths_and_forces() {
         2.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     ]);
     let mut w = world(vec![a, b], vec![path]);
-    w.step(1.0);
+    w.step(1.0).unwrap();
     assert_eq!(w.entities[0][0], 1.0);
     assert_eq!(w.entities[1][0], 2.0);
     let data = w.path_data(0);
@@ -78,7 +78,7 @@ fn native_cable_solve_retains_lengths_and_forces() {
     assert_eq!(data[segment + 11], 1.0);
     assert_eq!(data[7], 1.0);
     for _ in 0..10 {
-        w.step(1.0);
+        w.step(1.0).unwrap();
     }
     assert_eq!(w.entities[0][0], 1.0);
 }
@@ -98,18 +98,18 @@ fn native_position_and_torque_motors_use_the_same_core() {
     let mut w = world(vec![e], vec![]);
     // A closed-loop servo engages where the rotor is, then moves the unloaded
     // rotor to its commanded angle.
-    w.step(0.002);
+    w.step(0.002).unwrap();
     w.entities[0][107] = 0.1;
     for _ in 0..5000 {
-        w.step(0.002);
+        w.step(0.002).unwrap();
     }
     assert!((w.entities[0][66] - 0.1).abs() < 1e-4);
     w.entities[0][57] = 1.0;
     w.entities[0][114] = 0.2;
-    w.step(0.002);
+    w.step(0.002).unwrap();
     assert!(w.entities[0][74] > 0.0);
     let mut independent = world(vec![entity(0.0, 0.0)], vec![]);
-    independent.step(0.002);
+    independent.step(0.002).unwrap();
     assert_eq!(independent.entities[0][66], 0.0);
 }
 
@@ -121,7 +121,7 @@ fn encoder_steps_with_large_accumulated_angles() {
     let mut w = world(vec![e], vec![]);
     for angle in [1e6, -1e6, 1e18, -1e18] {
         w.entities[0][66] = angle;
-        w.step(0.002);
+        w.step(0.002).unwrap();
         assert!(w.entities[0][66].is_finite());
         assert!((w.entities[0][66] - angle).abs() <= std::f64::consts::PI);
     }
@@ -142,7 +142,7 @@ fn encoder_unwrap_preserves_turns_across_phase_boundary() {
             let mut expected = angle;
             while expected - reference > pi { expected -= tau; }
             while expected - reference < -pi { expected += tau; }
-            w.step(0.002);
+            w.step(0.002).unwrap();
             assert!((w.entities[0][66] - expected).abs() < 1e-12);
         }
     }
