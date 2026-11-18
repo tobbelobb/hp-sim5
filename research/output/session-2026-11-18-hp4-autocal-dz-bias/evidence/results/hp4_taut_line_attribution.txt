@@ -1,0 +1,6 @@
+mean-of-lines geometry (rotation, no stretch) worst=  0.66  Dz= -0.22 ABCz= -0.14 Ay= -0.62 Bx= +0.60 Cx= -0.66 off=[ 0.     0.     0.    -0.048] rms=0.007
+taut-line geometry (rotation, no stretch)  worst=  7.02  Dz= -7.02 ABCz= -0.05 Ay= +0.12 Bx= +0.20 Cx= -0.66 off=[ 0.     0.     0.    -0.074] rms=0.032
+taut-line geometry + its stretch (model)   worst=  6.68  Dz= -6.68 ABCz= -0.96 Ay= +0.17 Bx= +0.49 Cx= -0.47 off=[0.    0.    0.    0.928] rms=0.045
+measured                                   worst=  5.91  Dz= -5.91 ABCz= -1.04 Ay= +0.83 Bx= +0.06 Cx= +0.09 off=[0.    0.    0.    1.141] rms=0.053
+taut-line geometry on ABC, ideal D         worst=  6.04  Dz= -6.04 ABCz= +0.15 Ay= +0.79 Bx= -0.49 Cx= +0.14 off=[ 0.     0.     0.    -0.037] rms=0.030
+ideal ABC, taut-line geometry on D         worst=  0.98  Dz= -0.98 ABCz= -0.20 Ay= -0.68 Bx= +0.67 Cx= -0.78 off=[ 0.     0.     0.    -0.034] rms=0.009

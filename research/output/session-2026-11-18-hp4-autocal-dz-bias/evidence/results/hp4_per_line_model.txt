@@ -1,0 +1,25 @@
+A EA 20000.0 per-line err std [0.141 0.275] taut-line err mean -0.028 std 0.012 | mean-of-lines err std 0.144 min T 0.0 frac pts with a line <0.1N 0.54
+A EA 10000.0 per-line err std [0.113 0.259] taut-line err mean 0.142 std 0.064 | mean-of-lines err std 0.140 min T 0.0 frac pts with a line <0.1N 0.54
+B EA 20000.0 per-line err std [0.218 0.153] taut-line err mean -0.028 std 0.012 | mean-of-lines err std 0.118 min T 0.0 frac pts with a line <0.1N 0.52
+B EA 10000.0 per-line err std [0.189 0.131] taut-line err mean 0.136 std 0.056 | mean-of-lines err std 0.117 min T 0.0 frac pts with a line <0.1N 0.52
+C EA 20000.0 per-line err std [0.209 0.256] taut-line err mean -0.024 std 0.014 | mean-of-lines err std 0.150 min T 0.0 frac pts with a line <0.1N 0.51
+C EA 10000.0 per-line err std [0.176 0.233] taut-line err mean 0.136 std 0.050 | mean-of-lines err std 0.145 min T 0.0 frac pts with a line <0.1N 0.51
+D EA 20000.0 per-line err std [0.043 0.043 0.045] taut-line err mean 0.015 std 0.043 | mean-of-lines err std 0.043 min T 0.068 frac pts with a line <0.1N 0.39
+D EA 10000.0 per-line err std [0.038 0.044 0.044] taut-line err mean 0.065 std 0.031 | mean-of-lines err std 0.035 min T 0.068 frac pts with a line <0.1N 0.39
+--- centre point model (what autocal assumes) + mean stretch, split by slackness of the weaker parallel line
+A weaker line T in [0,0.1)  n=138  err mean +0.098 std 0.154  min/max ratio 0.01
+A weaker line T in [0.1,0.3)  n= 37  err mean +0.025 std 0.115  min/max ratio 0.13
+A weaker line T in [0.3,9)  n= 81  err mean -0.027 std 0.093  min/max ratio 0.49
+A corr(mean T, min/max ratio) 0.32
+B weaker line T in [0,0.1)  n=134  err mean +0.112 std 0.160  min/max ratio 0.01
+B weaker line T in [0.1,0.3)  n= 39  err mean +0.017 std 0.117  min/max ratio 0.15
+B weaker line T in [0.3,9)  n= 83  err mean -0.009 std 0.100  min/max ratio 0.50
+B corr(mean T, min/max ratio) 0.27
+C weaker line T in [0,0.1)  n=131  err mean +0.167 std 0.236  min/max ratio 0.01
+C weaker line T in [0.1,0.3)  n= 39  err mean -0.036 std 0.125  min/max ratio 0.15
+C weaker line T in [0.3,9)  n= 86  err mean -0.024 std 0.097  min/max ratio 0.60
+C corr(mean T, min/max ratio) 0.26
+D weaker line T in [0,0.1)  n=100  err mean -0.006 std 0.007  min/max ratio 0.08
+D weaker line T in [0.1,0.3)  n=126  err mean -0.001 std 0.006  min/max ratio 0.29
+D weaker line T in [0.3,9)  n= 30  err mean +0.001 std 0.005  min/max ratio 0.49
+D corr(mean T, min/max ratio) -0.36

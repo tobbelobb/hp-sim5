@@ -1,0 +1,14 @@
+measured (np.float64(-5.912496777631986), np.float64(5.912496777631986))
+sweep 0 z~79 true lengths in this sweep only -> Dz -5.60 worst 5.60  | measured only in this sweep -> Dz -0.25 worst 0.25
+sweep 1 z~79 true lengths in this sweep only -> Dz -5.45 worst 5.45  | measured only in this sweep -> Dz -0.34 worst 0.57
+sweep 2 z~79 true lengths in this sweep only -> Dz -5.47 worst 5.47  | measured only in this sweep -> Dz -0.38 worst 1.10
+sweep 3 z~515 true lengths in this sweep only -> Dz -6.06 worst 6.06  | measured only in this sweep -> Dz +0.08 worst 0.33
+sweep 4 z~900 true lengths in this sweep only -> Dz -5.72 worst 5.72  | measured only in this sweep -> Dz -0.12 worst 0.28
+sweep 5 z~1305 true lengths in this sweep only -> Dz -5.52 worst 5.52  | measured only in this sweep -> Dz -0.23 worst 0.23
+sweep 6 z~1590 true lengths in this sweep only -> Dz -5.44 worst 5.44  | measured only in this sweep -> Dz -0.36 worst 0.55
+sweep 7 z~194 true lengths in this sweep only -> Dz -6.09 worst 6.09  | measured only in this sweep -> Dz +0.02 worst 0.66
+sweep 8 z~271 true lengths in this sweep only -> Dz -6.00 worst 6.00  | measured only in this sweep -> Dz +0.02 worst 0.49
+sweep 9 z~576 true lengths in this sweep only -> Dz -4.09 worst 4.09  | measured only in this sweep -> Dz -1.67 worst 1.67
+sweep 10 z~560 true lengths in this sweep only -> Dz -4.37 worst 4.37  | measured only in this sweep -> Dz -1.03 worst 1.03
+sweep 11 z~1540 true lengths in this sweep only -> Dz -5.97 worst 5.97  | measured only in this sweep -> Dz +0.03 worst 0.29
+sweep 12 z~601 true lengths in this sweep only -> Dz -5.19 worst 5.19  | measured only in this sweep -> Dz -0.38 worst 0.38

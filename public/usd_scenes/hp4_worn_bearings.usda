@@ -701,8 +701,10 @@ def Xform "World"
         {
             token[] ecs:tags = ["Attachment"]
             double radius = 0.001
-            # rotz(300)*[0.006,-0.4+0.0065,0]'
-            double3 xformOp:translate = (-0.337780996389177, -0.201946152422707, 2.0)
+            # rotz(300)*[-0.003,-0.4+0.0065,0]': above the first top wheel's axle position, so the
+            # crossing strand's 6 mm axle offset is cancelled and the line pivots like a point.
+            # An attach point beside the second wheel made the three D lines chiral; the effector rolled.
+            double3 xformOp:translate = (-0.342280996389177, -0.194151923788647, 2.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             vector3f physics:velocity = (0, 0, 0)
@@ -789,8 +791,10 @@ def Xform "World"
         {
             token[] ecs:tags = ["Attachment"]
             double radius = 0.001
-            # rotz(60)*[0.006,-0.4+0.0065,0]'
-            double3 xformOp:translate = (0.343780996389177, -0.191553847577293, 2.0)
+            # rotz(60)*[-0.003,-0.4+0.0065,0]': above the first top wheel's axle position, so the
+            # crossing strand's 6 mm axle offset is cancelled and the line pivots like a point.
+            # An attach point beside the second wheel made the three D lines chiral; the effector rolled.
+            double3 xformOp:translate = (0.339280996389177, -0.199348076211353, 2.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             vector3f physics:velocity = (0, 0, 0)
@@ -877,8 +881,10 @@ def Xform "World"
         {
             token[] ecs:tags = ["Attachment"]
             double radius = 0.001
-            # rotz(180)*[0.006,-0.4+0.0065,0]'
-            double3 xformOp:translate = (-0.006, 0.3935, 2.0)
+            # rotz(180)*[-0.003,-0.4+0.0065,0]': above the first top wheel's axle position, so the
+            # crossing strand's 6 mm axle offset is cancelled and the line pivots like a point.
+            # An attach point beside the second wheel made the three D lines chiral; the effector rolled.
+            double3 xformOp:translate = (0.003, 0.3935, 2.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             vector3f physics:velocity = (0, 0, 0)

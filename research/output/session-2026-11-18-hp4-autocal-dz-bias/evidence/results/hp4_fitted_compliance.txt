@@ -1,0 +1,8 @@
+measured (all 256)                         worst=  5.91  Dz= -5.91 ABCz= -1.04 Ay= +0.83 Bx= +0.06 Cx= +0.09 off=[0.    0.    0.    1.141] rms=0.053
+truth                                      worst=  0.00  Dz= -0.00 ABCz= -0.00 Ay= +0.00 Bx= -0.00 Cx= -0.00 off=[0. 0. 0. 0.] rms=0.000
+measured - fitted per-axis T*d stretch     worst=  4.25  Dz= -4.25 ABCz= -0.14 Ay= -0.42 Bx= +0.78 Cx= -0.47 off=[ 0.    0.    0.   -0.32] rms=0.024
+measured - fitted T*d stretch, ABC only    worst=  3.68  Dz= -3.68 ABCz= +0.15 Ay= +0.55 Bx= +0.09 Cx= +0.29 off=[ 0.     0.     0.    -0.169] rms=0.027
+measured - fitted T*d stretch, D only      worst=  6.43  Dz= -6.43 ABCz= -1.33 Ay= -0.12 Bx= +0.75 Cx= -0.64 off=[0.    0.    0.    0.989] rms=0.043
+measured - fitted per-axis T stretch       worst=  5.20  Dz= -5.20 ABCz= -0.04 Ay= +0.15 Bx= +0.04 Cx= +0.04 off=[0.    0.    0.    0.217] rms=0.039
+measured - fitted T stretch, ABC only      worst=  5.12  Dz= -5.12 ABCz= -0.14 Ay= +0.23 Bx= -0.08 Cx= +0.03 off=[0.    0.    0.    0.201] rms=0.033
+measured - fitted T stretch, D only        worst=  6.02  Dz= -6.02 ABCz= -0.94 Ay= +0.75 Bx= +0.17 Cx= +0.10 off=[0.   0.   0.   1.16] rms=0.059

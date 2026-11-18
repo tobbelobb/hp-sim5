@@ -209,3 +209,23 @@ def test_extra_range_force_survives_rejection_and_reversed_roles(accepted, profi
     assert after['length_mm'] - before['length_mm'] == pytest.approx(1.25)
     assert after['length_mu_mm'] - before['length_mu_mm'] == pytest.approx(1.25)
     assert after['force_n'] == before['force_n']
+
+
+def test_hp4_equal_strain_home_reference_reaches_the_second_fit_once():
+    target = 2.0
+    stiffness = 20000.0
+    guy = np.array([500., 400., 300., 200.])
+    advantage = np.array([2., 2., 2., 4.])
+    offsets = target / stiffness * (np.linalg.norm(ANCHORS, axis=1) + guy / advantage)
+    offsets[3] = 1.5  # The weight-bearing top line has an independent fitted offset.
+    data = _dataset(offsets)
+    data["config"]["m666_before_data_collection"] = {
+        "S": stiffness, "U": advantage.tolist(), "Y": guy.tolist(),
+    }
+    for sweep in data["sweeps"]:
+        sweep["metadata"] = {"sensor_force_profile": True, "strand_tension_n": target}
+
+    result = _fit(data, fit_home_offsets=True)
+    assert result["home_offsets_mm"] == pytest.approx(offsets, abs=0.01)
+    refit = _fit(shift_dataset_home_offsets(data, result["home_offsets_mm"]), fit_home_offsets=False)
+    assert np.max(np.abs(refit["anchors"] - ANCHORS)) < 0.05
