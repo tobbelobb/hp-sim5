@@ -465,18 +465,21 @@ class Runtime:
                 raise ValueError('Select a recorded native step in this session')
             if step == self.session.step:
                 self.session.observe()
-            observation = recording = scene_generation = None
+            observation = recording = recording_step = scene_generation = None
             with (self.session_dir / 'events.jsonl').open() as events:
                 for line in events:
                     event = json.loads(line)
                     if event['type'] == 'observation' and event['step'] == step and event['epoch'] == self.session.epoch:
                         observation = event['sample']
                         recording = event.get('recording')
+                        recording_step = event.get('recording_step')
                         scene_generation = event.get('scene_generation')
             if observation is None:
-                raise ValueError('No numerical observation exists at this step; select an observed sim_step')
+                raise ValueError('No numerical observation exists at this step in the current generation')
             context = {'capture_id': uuid.uuid4().hex, 'backend': self.session.backend, 'session_id': self.session_id,
-                       'scene_generation': scene_generation, 'sim_step': step, 'sim_time_s': step * self.session.dt,
+                       'scene_generation': scene_generation, 'sim_step_in_generation': step,
+                       'sim_step': step if recording_step is None else recording_step,
+                       'sim_time_s': step * self.session.dt,
                        'timeline': 'sim_step', 'selected_entity': args.get('selected_entity'), 'message': message,
                        'recording': recording, 'observation': observation}
             self.directory.mkdir(parents=True, exist_ok=True)

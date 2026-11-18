@@ -75,6 +75,42 @@ async def test_persistent_world_batch_motion_barrier_and_advance(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_reset_keeps_generation_local_steps_and_unique_recording_indices(tmp_path):
+    from rerun.chunk import RrdReader
+
+    session = NativeSession(ROOT, tmp_path)
+    try:
+        await session.handle({'type': 'command', 'command': {'type': 'Move', **dict.fromkeys('ABCD', .1)}})
+        await session.advance(.1)
+        assert session.world.get_resource('sceneGeneration') == 1
+        assert await session.handle({'type': 'reset'}) is None
+        assert (session.epoch, session.step, session.world.get_resource('sceneGeneration')) == (1, 0, 2)
+        await session.handle({'type': 'command', 'command': {'type': 'Move', **dict.fromkeys('ABCD', -.2)}})
+        await session.advance(.1)
+        assert (session.step, session.world.get_resource('sceneGeneration')) == (50, 2)
+    finally:
+        session.close()
+
+    chunks = RrdReader(tmp_path / 'recording.rrd').stream().filter(
+        content='/world/machines/default/effector', components='Transform3D:translation').to_chunks()
+    rows = []
+    for chunk in chunks:
+        batch = chunk.to_record_batch()
+        rows.extend(zip(batch.column('sim_step').to_pylist(),
+                        batch.column('scene_generation').to_pylist(),
+                        batch.column('sim_step_in_generation').to_pylist(),
+                        batch.column('Transform3D:translation').to_pylist()))
+    rows.sort(key=lambda row: row[0])
+    indices = [(0, 1, 0), (50, 1, 50), (51, 2, 0), (101, 2, 50)]
+    assert [row[:3] for row in rows] == indices
+    assert math.dist(rows[1][3][0], rows[3][3][0]) > .001
+
+    events = [json.loads(line) for line in (tmp_path / 'events.jsonl').read_text().splitlines()]
+    assert [(event['recording_step'], event['scene_generation'], event['step'])
+            for event in events if event['type'] == 'observation'] == indices
+
+
+@pytest.mark.asyncio
 async def test_collection_rrd_rotation_finalizes_files_and_preserves_physics(tmp_path):
     from rerun.chunk import RrdReader
     session = NativeSession(ROOT, tmp_path)

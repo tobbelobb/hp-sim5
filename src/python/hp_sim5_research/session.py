@@ -40,6 +40,7 @@ class NativeSession:
         self.remote = mirror.RemoteSpoolSystem()
         self.dt = None
         self.step = 0
+        self.recording_step_offset = 0
         self.epoch = 0
         self.collector_time_s = 0.
         self.speed = 1.
@@ -65,7 +66,8 @@ class NativeSession:
         self.dt = state['dt_s']
         if not math.isclose(self.dt, .002, abs_tol=1e-12):
             raise ValueError('RRF bridge requires a 0.002 s physics timestep')
-        mirror.apply_state(self.world, state)
+        # Each new worker starts at generation 1. The session owns the generation across resets.
+        mirror.apply_state(self.world, state, scene_generation=self.epoch + 1)
         self.remote.axis_to_entity = {axis: list(ids) for axis, ids in state.get('axes', {}).items()}
         self.remote.set_queue_length(state.get('queue_length', 0))
         if len(self.remote.axis_to_entity) < 4 or set(self.remote.axis_to_entity) - set('ABCDIJKLO'):
@@ -90,7 +92,7 @@ class NativeSession:
         self.next_live_flush = time.monotonic() + 5
         if viewer:
             sinks.append(rr.GrpcSink(viewer.replace('http://', 'rerun+http://') + '/proxy'))
-        self.recording.set_sinks(*sinks, default_blueprint=blueprint())
+        self.recording.set_sinks(*sinks, default_blueprint=blueprint(timeline='sim_step'))
         self.recorder = RerunSystem(self.recording)
         self.last_observed = None
         self.observe()
@@ -108,12 +110,15 @@ class NativeSession:
             return
         started = time.monotonic()
         self.last_observed = (self.epoch, self.step)
+        recording_step = None
         if self.recorder is not None:
+            recording_step = self.recording_step_offset + self.step
             self.recorder.step = self.step
             self.recorder.elapsed = self.step * self.dt
-            self.recorder.update(self.world, 0.)
+            self.recorder.update(self.world, 0., recording_step=recording_step)
         self.event('observation', sample=sample(self.world, self.step, self.dt),
-                   recording=str(self.recording_path) if self.recording is not None else None)
+                   recording=str(self.recording_path) if self.recording is not None else None,
+                   recording_step=recording_step)
         if self.recording is not None and self.live_viewer and time.monotonic() >= self.next_live_flush:
             # Explicit delivery also updates the Viewer during long collector advances.
             self.recorder.flush()
@@ -141,7 +146,7 @@ class NativeSession:
         self.remote.clear_command_queue()
         if self.js_physics is not None:
             state = self.js_physics.request(clear_commands=True)
-            mirror.apply_state(self.world, state)
+            mirror.apply_state(self.world, state, scene_generation=self.epoch + 1)
             self.remote.set_queue_length(state.get('queue_length', 0))
         self.error = 'Collection cancelled; reset_session is required'
         self.observe()
@@ -178,7 +183,7 @@ class NativeSession:
                 self.js_physics.physics_wall_s = state['physics_wall_s']
                 if state['step'] != self.step + batch:
                     raise RuntimeError('JS worker did not execute the requested fixed steps')
-                mirror.apply_state(self.world, state)
+                mirror.apply_state(self.world, state, scene_generation=self.epoch + 1)
                 self.remote.set_queue_length(state.get('queue_length', 0))
                 self.step = state['step']
                 self.collector_time_s += batch * self.dt / self.speed
@@ -239,11 +244,12 @@ class NativeSession:
                 old_world = self.world
                 self.world = mirror.World()
                 self.epoch += 1
-                self.world.set_resource('sceneGeneration', self.epoch + 1)
                 self.js_physics.close()
                 self.dt = None
                 self._start_physics()
                 assert self.world is not old_world
+                # Reserve the next recording step for the new world's step zero.
+                self.recording_step_offset += self.step + 1
                 self.step = 0
                 self.remote.clear_command_queue()
                 self.observe()
