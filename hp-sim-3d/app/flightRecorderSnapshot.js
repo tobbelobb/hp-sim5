@@ -88,6 +88,25 @@ function guideWrap(world, path, index, before, after) {
   return points;
 }
 
+// Offset from the current paid-out length to the position target, in metres.
+export function cableTargetLengthDelta(world, path) {
+  if (!path.jointEntities.length) return 0;
+  const first = world.getComponent(path.jointEntities[0], CableJointComponent);
+  const last = world.getComponent(path.jointEntities.at(-1), CableJointComponent);
+  let delta = 0;
+  for (const [index, endpoint] of [[0, first.entityA], [path.linkTypes.length - 1, last.entityB]]) {
+    const motor = world.getComponent(endpoint, StepperMotorComponent);
+    if (!motor) continue;
+    const encoder = world.getComponent(endpoint, EncoderComponent);
+    if (motor.torqueMode || !Number.isFinite(encoder?.angle)) return null;
+    const measured = encoder.angle - (motor.missedStepEncoderOffset || 0);
+    const target = motor.commandedAngle - motor.deltaAngle;
+    const targetStored = cableStoredLengthAfterRotation(world, path, index, endpoint, target - measured);
+    delta -= targetStored - (path.stored[index] || 0);
+  }
+  return delta;
+}
+
 function collectCables(world, geometryDetail) {
   const gravity = world.getResource('gravity');
   const up = gravity?.lengthSq() > 1e-9 ? gravity.clone().normalize().scale(-1) : new Vector3(0, 0, 1);
@@ -116,22 +135,8 @@ function collectCables(world, geometryDetail) {
     const guideLength = path.stored.slice(1, -1).reduce((sum, value) => sum + value, 0);
     const actual = segments.reduce((sum, segment) => sum + segment.rest_length, guideLength);
     const geometric = segments.reduce((sum, segment) => sum + segment.geometric_length, guideLength);
-    let commanded = actual;
-    if (joints.length > 0) {
-      for (const [index, endpoint] of [[0, joints[0].entityA], [path.linkTypes.length - 1, joints.at(-1).entityB]]) {
-        const motor = world.getComponent(endpoint, StepperMotorComponent);
-        if (!motor) continue;
-        const encoder = world.getComponent(endpoint, EncoderComponent);
-        if (motor.torqueMode || !Number.isFinite(encoder?.angle)) {
-          commanded = null;
-          break;
-        }
-        const measured = encoder.angle - (motor.missedStepEncoderOffset || 0);
-        const target = motor.commandedAngle - motor.deltaAngle;
-        const targetStored = cableStoredLengthAfterRotation(world, path, index, endpoint, target - measured);
-        commanded -= targetStored - (path.stored[index] || 0);
-      }
-    }
+    const targetDelta = cableTargetLengthDelta(world, path);
+    const commanded = targetDelta == null ? null : actual + targetDelta;
     const wraps = [];
     for (let index = 1; geometryDetail === 'full' && index < joints.length; index += 1) {
       const wrap = guideWrap(world, path, index, joints[index - 1], joints[index]);

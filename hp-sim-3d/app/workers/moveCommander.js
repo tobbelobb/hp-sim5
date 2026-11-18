@@ -38,8 +38,7 @@ export class MoveCommander {
         this.low_axis_max_force = 20.0;
         this.use_flex = false;
         this.spool_buildup_factor = 0.0;
-        this.absolute_extrusion = false;
-        this.last_e = 0.0;
+        this._resetExtrusion();
         this.isPaused = false;
         this.resolveResume = null;
         this.accumulated_wait_ms = 0.0;
@@ -50,6 +49,11 @@ export class MoveCommander {
         this.asapYieldInterval = 512;
         this.asapYieldBudgetMs = 24;
         this.lastYieldTime = 0;
+    }
+
+    _resetExtrusion() {
+        this.absolute_extrusion = true;
+        this.last_e = 0.0;
     }
 
     configure(configText) {
@@ -75,6 +79,7 @@ export class MoveCommander {
         this.spool_radius_mm = params.R;
         this.spool_buildup_factor = params.Q?.[0] ?? 0;
         this.spoolParams = params;
+        this._resetExtrusion();
     }
 
     async connect() {
@@ -130,8 +135,9 @@ export class MoveCommander {
         let has_coords = false;
         for (const part of parts) {
             const code = part.charAt(0).toUpperCase();
-            if (code === 'X' || code === 'Y' || code === 'Z') {
-                command[code] = parseFloat(part.substring(1));
+            const value = parseFloat(part.substring(1));
+            if (Number.isFinite(value) && (code === 'X' || code === 'Y' || code === 'Z' || code === 'E')) {
+                command[code] = value;
                 has_coords = true;
             }
         }
@@ -188,34 +194,36 @@ export class MoveCommander {
 
     async run(stream) {
         try {
+            this._resetExtrusion();
             await this.connect();
             const motorAxes = this.motorAxes;
             const axesXYZ = ['X', 'Y', 'Z'];
 
             const lineIterator = makeLineIterator(stream);
-            for await (const line of lineIterator) {
+            for await (const rawLine of lineIterator) {
                 if (this.isPaused) {
                     await new Promise(resolve => { this.resolveResume = resolve; });
                 }
 
+                const line = rawLine.split(';', 1)[0].trim();
+                const code = line.split(/\s+/, 1)[0].toUpperCase();
                 let command;
-                if (line.startsWith('G1')) {
+                if (code === 'M82' || code === 'M83') {
+                    this.absolute_extrusion = code === 'M82';
+                    continue;
+                } else if (code === 'G1') {
                     command = this._parse_g1_command(line);
-                } else if (line.startsWith('G6')) {
+                } else if (code === 'G6') {
                     command = this._parse_g6_command(line);
-                } else if (line.startsWith('G92')) {
+                } else if (code === 'G92') {
                     command = this._parse_g92_command(line);
-                } else if (line.startsWith('M82')) {
-                    command = { type: 'M82' };
                 }
 
                 if (!command) {
                     continue;
                 }
 
-                if (command.type === 'M82') {
-                    this.absolute_extrusion = true;
-                } else if (command.type === 'G1') {
+                if (command.type === 'G1') {
                     const target_pos_mm = { ...this.current_pos_mm };
                     let has_move = false;
                     axesXYZ.forEach(axis => {
@@ -225,16 +233,10 @@ export class MoveCommander {
                         }
                     });
 
-                    let extrusion_delta_mm;
-                    if (this.absolute_extrusion) {
-                        if ('E' in command) {
-                            extrusion_delta_mm = command.E - this.last_e;
-                            this.last_e = command.E;
-                        } else {
-                            extrusion_delta_mm = 0.0;
-                        }
-                    } else {
-                        extrusion_delta_mm = command.E || 0.0;
+                    let extrusion_delta_mm = 0.0;
+                    if (Number.isFinite(command.E)) {
+                        extrusion_delta_mm = this.absolute_extrusion ? command.E - this.last_e : command.E;
+                        this.last_e = this.absolute_extrusion ? command.E : this.last_e + command.E;
                     }
 
                     if (!has_move && extrusion_delta_mm === 0.0) {
@@ -328,6 +330,12 @@ export class MoveCommander {
                     this.current_pos_mm = target_pos_mm;
 
                 } else if (command.type === 'G92') {
+                    if ('E' in command) {
+                        this.last_e = command.E;
+                    }
+                    if (!axesXYZ.some(axis => axis in command)) {
+                        continue;
+                    }
                     const target_pos_mm = { ...this.current_pos_mm };
                     axesXYZ.forEach(axis => {
                         if (axis in command) target_pos_mm[axis] = command[axis];

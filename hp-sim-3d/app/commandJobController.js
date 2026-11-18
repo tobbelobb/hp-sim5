@@ -52,7 +52,6 @@ export function createCommandJobController({
     prevPauseDisabled: null,
     prevResetDisabled: null,
     renderSuspended: false,
-    pendingFinalCheck: false,
   };
 
   function getRemoteSystem() {
@@ -135,11 +134,7 @@ export function createCommandJobController({
 
   function finishJob() {
     setPrintActive(false);
-    if (asapState.active) {
-      asapState.pendingFinalCheck = true;
-    } else {
-      recordFinalQualityAndResetJob();
-    }
+    recordFinalQualityAndResetJob();
   }
 
   function stopAndClearWorkers() {
@@ -148,6 +143,7 @@ export function createCommandJobController({
 
   function handleWorkerError() {
     setPrintActive(false);
+    resetJobTracking();
   }
 
   function maybeResumeFromPause() {
@@ -422,13 +418,8 @@ export function createCommandJobController({
       return;
     }
     const checkIntervalMs = 25;
-    const maxIdleChecks = 10;
     const maxDurationMs = 10 * 60 * 1000;
     const startTime = performance.now();
-    let idleChecks = 0;
-    const queueLengthAccessor = typeof remoteSystem.getQueueLength === 'function'
-      ? () => remoteSystem.getQueueLength()
-      : () => (Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length : 0);
     let nextCheck = performance.now();
     while (asapState.active) {
       await waitForNextTask();
@@ -440,21 +431,11 @@ export function createCommandJobController({
         continue;
       }
       nextCheck = performance.now() + checkIntervalMs;
-      const queueLen = queueLengthAccessor();
-      const workerActive = Boolean(remoteSystem.worker);
-      if (!state.printActive && queueLen === 0) {
-        idleChecks += 1;
-        if (idleChecks >= maxIdleChecks) {
-          break;
-        }
-      } else {
-        idleChecks = 0;
-      }
-      if (!workerActive && queueLen === 0) {
+      if (getRemoteSystem() !== remoteSystem || (!remoteSystem.worker && remoteSystem.getQueueLength() === 0)) {
         break;
       }
       if (performance.now() - startTime > maxDurationMs) {
-        console.warn('hp-sim-3d: Finish ASAP exceeded expected duration; continuing to finalize.');
+        console.warn('hp-sim-3d: Finish ASAP exceeded expected duration; returning to linear playback.');
         break;
       }
     }
@@ -508,11 +489,6 @@ export function createCommandJobController({
     asapState.prevPauseDisabled = null;
     asapState.prevResetDisabled = null;
     asapState.renderSuspended = false;
-    const shouldRunFinalCheck = asapState.pendingFinalCheck;
-    asapState.pendingFinalCheck = false;
-    if (shouldRunFinalCheck) {
-      recordFinalQualityAndResetJob();
-    }
     updateFinishAsapButtonState();
   }
 
@@ -535,7 +511,6 @@ export function createCommandJobController({
       return null;
     }
     asapState.active = true;
-    asapState.pendingFinalCheck = false;
     asapState.previousTimeScale = runtime.getTimeScale();
     asapState.previousQualityEnabled = quality?.enabled ?? false;
     asapState.previousQualityToggleDisabled = dom.qualityToggle ? dom.qualityToggle.disabled : null;

@@ -91,6 +91,7 @@ def test_real_physics_measurements_recording_and_reproducible_inputs(experiment_
 
 @pytest.mark.slow
 def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experiment_root):
+    from rerun.chunk import RrdReader
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     root = experiment_root
     baseline = run_experiment(root, steps=200, record=False)
@@ -101,13 +102,30 @@ def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experi
     difference = compare_runs(root, baseline['run_id'], trial['run_id'])
     assert difference['changed_inputs'] == ['commands_sha256']
     assert max(difference['final_effector_distance_m'].values()) > 1e-6
+    assert trial['metrics']['peak_abs_length_error_m'] > 0
     torque = run_experiment(root, steps=3, commands=[{'type': 'SetTorqueMode', 'axis': 'A', 'torqueNm': .003},
-                                                   {}, {'type': 'SetPositionMode', 'axis': 'A'}], record=False)
+                                                   {}, {'type': 'SetPositionMode', 'axis': 'A'}])
     rows = read_run(root, torque['run_id'], 0, 4)['samples']
     axis = lambda row: next(motor for motor in row['motors'] if motor['axis'] == 'A')
     assert axis(rows[1])['mode'] == 'torque'
     assert axis(rows[1])['tracking_error_rad'] is None
     assert axis(rows[3])['mode'] == 'position'
+    affected = {cable['name'] for cable in rows[1]['cables'] if cable['lengths_m']['commanded'] is None}
+    assert affected
+    for row in rows:
+        for cable in row['cables']:
+            lengths = cable['lengths_m']
+            if cable['name'] in affected and row['step'] in (1, 2):
+                assert lengths['commanded'] is lengths['error'] is None
+            else:
+                assert lengths['error'] == lengths['actual'] - lengths['commanded']
+    reader = RrdReader(torque['artifacts']['rrd'])
+    for namespace, name in (('line_lengths', 'commanded'), ('line_errors', 'error')):
+        path = f'/{namespace}/{min(affected)}/{name}'
+        for component, expected in (('Scalars:scalars', [0, 3]), ('Clear:is_recursive', [1])):
+            chunks = reader.stream().filter(content=path, components=component).to_chunks()
+            steps = [step for chunk in chunks for step in chunk.to_record_batch().column('sim_step').to_pylist()]
+            assert sorted(steps) == expected
     with pytest.raises(ValueError, match='identical steps and dt'):
         compare_runs(root, baseline['run_id'], torque['run_id'])
 

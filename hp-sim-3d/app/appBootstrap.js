@@ -121,6 +121,7 @@ export function createHpSimApp({
     button: dom.rerunBtn,
     url: urlParams?.get('rerun_ws') || 'ws://127.0.0.1:9877',
     WebSocketClass: ownerWindow?.WebSocket,
+    nonFatal: true,
   });
   flightRecorder.extendedReference = parseBooleanParam(urlParams, 'extended_autocal');
   world.setResource('flightRecorder', flightRecorder);
@@ -193,7 +194,7 @@ export function createHpSimApp({
   const workers = createWorkerController({
     state,
     getRemoteSystem: () => controllers.commands?.getRemoteSystem?.() || null,
-    onWorkerDone: () => controllers.commands?.finishJob?.(),
+    onWorkerDrained: () => controllers.commands?.finishJob?.(),
     onWorkerError: () => controllers.commands?.handleWorkerError?.(),
     klipperPacerDiagnosticsEnabled: parseBooleanParam(urlParams, 'klipper_pacer_debug'),
   });

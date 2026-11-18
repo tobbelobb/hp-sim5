@@ -42,7 +42,7 @@ export function shouldUseRawKlipperUploadPipeline(pipeline = KLIPPER_UPLOAD_PIPE
 export function createWorkerController({
   state,
   getRemoteSystem,
-  onWorkerDone = () => {},
+  onWorkerDrained = () => {},
   onWorkerError = () => {},
   klipperPacerDiagnosticsEnabled = false,
   WorkerCtor = globalThis.Worker,
@@ -71,11 +71,12 @@ export function createWorkerController({
       return;
     }
     if (event.data.type === 'done') {
-      console.log(`hp-sim-3d: ${label} playback finished.`);
       const remoteSystem = getRemoteSystem();
       if (remoteSystem && remoteSystem.worker === worker) {
-        remoteSystem.worker = null;
-        onWorkerDone(worker);
+        remoteSystem.finishWorker(() => {
+          console.log(`hp-sim-3d: ${label} playback finished.`);
+          onWorkerDrained(worker);
+        });
       }
       return;
     }
@@ -145,8 +146,7 @@ export function createWorkerController({
       onDone: () => {
         const remoteSystem = getRemoteSystem();
         if (remoteSystem && remoteSystem.worker === bridge) {
-          remoteSystem.worker = null;
-          onWorkerDone(bridge);
+          remoteSystem.finishWorker(() => onWorkerDrained(bridge));
         }
         if (klipperRawUploadBridge === bridge) {
           terminateKlipperRawUploadBridge();

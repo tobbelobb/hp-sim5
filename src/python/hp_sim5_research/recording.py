@@ -14,7 +14,7 @@ def _rgb(color):
     return [int(value[index:index + 2], 16) for index in (0, 2, 4)]
 
 
-def blueprint():
+def blueprint(*, timeline='sim_time'):
     import rerun.blueprint as rrb
     metrics = [
         rrb.TimeSeriesView(origin='/line_lengths', name='Line lengths (m)'),
@@ -29,7 +29,7 @@ def blueprint():
     return rrb.Blueprint(
         rrb.Horizontal(rrb.Spatial3DView(origin='/world', name='Hangprinter'),
                        rrb.Tabs(rrb.Vertical(*metrics, name='Cables'), drive), column_shares=[2, 1]),
-        rrb.TimePanel(timeline='sim_time', play_state=rrb.components.PlayState.Following),
+        rrb.TimePanel(timeline=timeline, play_state=rrb.components.PlayState.Following),
     )
 
 
@@ -44,13 +44,14 @@ class RerunSystem:
         self.step = 0
         self._coordinates_logged = False
         self._frame_paths = set()
+        self._series = set()
         self._columns = ColumnarRecording(recording)
 
     def flush(self):
         self._columns.flush()
         self.recording.flush(timeout_sec=5)
 
-    def update(self, world, dt):
+    def update(self, world, dt, *, recording_step=None):
         if not math.isfinite(dt):
             raise ValueError('Recording timestep must be finite')
         if not self._coordinates_logged:
@@ -60,9 +61,16 @@ class RerunSystem:
         if dt > 0 and not (pause is not None and getattr(pause, 'paused', False)):
             self.elapsed += dt
             self.step += 1
-        self.recording.set_time('sim_step', sequence=self.step)
-        self.recording.set_time(self.timeline, duration=self.elapsed)
-        self._columns.begin(sim_step=('sequence', self.step), **{self.timeline: ('duration', self.elapsed)})
+        timelines = {
+            'sim_step': ('sequence', self.step if recording_step is None else recording_step),
+            self.timeline: ('duration', self.elapsed),
+        }
+        if recording_step is not None:
+            timelines['scene_generation'] = ('sequence', world.get_resource('sceneGeneration'))
+            timelines['sim_step_in_generation'] = ('sequence', self.step)
+        for name, (kind, value) in timelines.items():
+            self.recording.set_time(name, **{kind: value})
+        self._columns.begin(**timelines)
         columns = self._columns.append
         snapshot = mirror.capture_snapshot(world)
         for frame in snapshot['frames']:
@@ -87,12 +95,14 @@ class RerunSystem:
                     vectors=[[value * .01 for value in segment['force_vector_n']] for segment in segments],
                     colors=[[255, 90, 90]] * len(segments)))
             for name, value in cable['lengths'].items():
-                if value is None:
-                    continue
-                if name in ('actual', 'commanded', 'geometric'):
-                    self.recording.log(f'line_lengths/{key}/{name}', rr.Scalars(value))
-                if name in ('error', 'stretch'):
-                    self.recording.log(f'line_errors/{key}/{name}', rr.Scalars(value))
+                namespace = 'line_errors' if name in ('error', 'stretch') else 'line_lengths'
+                path = f'{namespace}/{key}/{name}'
+                if value is not None:
+                    self.recording.log(path, rr.Scalars(value))
+                    self._series.add(path)
+                elif path in self._series:
+                    self.recording.log(path, rr.Clear.flat())
+                    self._series.remove(path)
             for segment in segments:
                 self.recording.log(f"cable_forces/{key}/{segment['name']}", rr.Scalars(segment['force_n']))
 
