@@ -13,7 +13,7 @@ import numpy as np
 
 from autocal.dataset_roles import normalize_dataset_point_roles
 from autocal.pose_fit import fit_pose_least_squares, shift_dataset_home_offsets, HOME_OFFSET_PRIOR_SIGMA_MM
-from autocal.tools.sanity_battery import anchor_errors
+from autocal.tools.anchor_errors import anchor_errors
 
 CONVERGED_MM = 2.0
 

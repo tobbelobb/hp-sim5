@@ -598,14 +598,19 @@ parallel. A benchmark job skips simulator setup when its inputs match its
 parent and CI already has a successful run under the same settings and scorer.
 Local backfills and CI use a 4.5 million physics step cap by default.
 
-Default-branch CI publishes `results.jsonl` and `summary.md` at the root of the
-`benchmark-history` branch. The JSONL file retains individual measurements,
+Default-branch CI publishes `results.jsonl`, `summary.md`, and `by-fingerprint.md`
+at the root of the `benchmark-history` branch. The JSONL file retains individual measurements,
 wall times where available, run IDs, and failures. Wall time depends on runner
-load and hardware. The summary groups matching
-inputs and shows medians and counts. CI flags a simulated-time increase above
+load and hardware. `summary.md` groups repeats by tested commit
+so it shows reversions. `by-fingerprint.md` groups runs on identical inputs across
+commits. Both show medians and counts. CI flags a simulated-time increase above
 5%, loss of convergence, an anchor coordinate error increase above the greater
 of 0.2 mm and 10%, or a maximum error crossing above 1 mm. CI compares with the
-nearest comparable measured first-parent revision. A calibration crash, timeout,
+nearest comparable measured first-parent revision. Each branch gets a job
+summary. When the only available baseline used a different or unknown benchmark
+protocol, the summary labels the comparison exploratory. The artifact retains
+the simulator and calibration logs and the headless manifest, including for failed
+runs that reached the simulator. A calibration crash, timeout,
 or failure to apply parameters still fails the benchmark job.
 
 Use matched repeats to investigate a flag. Run the same machine three times
@@ -625,4 +630,9 @@ output directory. Pass the same `--out` to the run and import commands if using
 a different directory. The importer verifies each fingerprint against its
 recorded commit. The collector retains additional runs for matching inputs and
 can safely reimport the same file. Legacy backfill measurements with unrecorded
-settings and scorer appear in the summary under their own protocol.
+settings and scorer appear in the summary under their own protocol. The importer
+continues to verify version 1 fingerprints. New runs use version 2, which includes
+the machine catalog, referenced scenes and firmware configs, the legacy transform,
+and dependency declarations.
+Each new measurement records the installed Python and Node environments and hashes
+the scorer with its local Python dependencies.
