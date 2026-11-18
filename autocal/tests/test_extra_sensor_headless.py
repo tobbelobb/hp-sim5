@@ -31,7 +31,7 @@ def verify_extra_sensor_run(dataset):
     assert np.isfinite(lengths).sum() == 4 * len(points) + sum(extra['accepted'] for extra in extras)
     assert dataset_stretch(data) is not None
     assert all(point.get('extra_sensor_ranges') for point in data['sweeps'][0]['data_points'])
-    assert not list(dataset.parent.glob('sweeps.equal_strain_*.json'))
+    assert all(sweep['metadata']['sensor_force_profile'] for sweep in data['sweeps'])
     for sweep in data['sweeps']:
         for point in sweep['data_points']:
             for extra in point['extra_sensor_ranges']:

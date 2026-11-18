@@ -38,7 +38,7 @@ Autocal collects circular sweeps and fits anchor positions from their ellipse ge
 It chooses new sweeps by information gain. It can also fit spool radii and buildup.
 At final acceptance, it checks saved estimates against sweeps collected after their fit.
 
-On HP3/HP4, new runs use sweeps spread over height and a per-point sensor force
+On HP3, HP4 and both HP5 variants, new default runs use a per-point sensor force
 profile computed from rough anchors, mover weight, strand counts and reeving. Before using
 those anchors to set forces, a two-start point fit must pass a local geometry
 check: full rank, at least 80% inliers, and at most 25 mm estimated parameter
@@ -89,8 +89,8 @@ a change of direction or a gap in the samples breaks that sequence. Rejected
 ranges still contribute their commanded force to the static load model.
 
 HP5 fits use every accepted range with its physical anchor identity, home offset,
-reeving and per-pose stretch correction. Checked bootstrap ranges are reused for
-refinement rather than collected again with equal-strain profiles. Candidate
+reeving and per-pose stretch correction. The default bootstrap uses the rough
+anchors to compute the equal-strain force profiles for remeasurement. Candidate
 ranking includes future fifth ranges, uncertainty uses the force-aware residual,
 and history validation uses all accepted ranges with offsets frozen from each
 candidate's training data. HP5 applies the best validated anchor/offset model

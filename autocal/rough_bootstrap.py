@@ -37,8 +37,8 @@ def write_bootstrap_state(dataset_path, stage, **details):
     if stage == "complete":
         dataset = load_json_file(dataset_path, schema="sweep_dataset")
         from autocal.equal_strain import is_equal_strain
-        if not (is_equal_strain(dataset) or (has_extra_sensor_data(dataset) and dataset_stretch(dataset) is not None)):
-            raise ValueError("A complete bootstrap requires profiled or force-aware range measurements")
+        if not is_equal_strain(dataset):
+            raise ValueError("A complete bootstrap requires equal-strain measurements")
         details.update(bootstrap_sweeps=len(dataset["sweeps"]),
                        prefix_sha256=_prefix_hash(dataset["sweeps"]))
     temporary = path.with_suffix(".tmp")

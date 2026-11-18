@@ -144,7 +144,7 @@ def test_legacy_profile_policy_is_refused_before_headless_context_entry(tmp_path
     assert error.value.code == 2
 
 
-def test_completed_force_aware_hp5_bootstrap_can_be_reused_without_profiles(tmp_path):
+def test_legacy_force_aware_bootstrap_can_resume_but_new_bootstraps_require_profiles(tmp_path):
     path=tmp_path/'sweeps.json'
     dataset={'version':'2.0','machine_type':'hangprinter_5','num_anchors':5,'dimensions':3,
         'config':{'m666_before_data_collection':{'S':20000.,'N':[2,2,2,2,4],'U':[1]*5,'Y':[400]*5,'W':.081}},
@@ -152,7 +152,12 @@ def test_completed_force_aware_hp5_bootstrap_can_be_reused_without_profiles(tmp_
         'metadata':{'sensor_force_profile':False},'data_points':[{'l_drive':0.,'l_sensor':0.,'sensor_force_n':2.,
         'extra_sensor_ranges':[{'anchor':2,'length_mm':0.,'force_n':2.,'accepted':True}]} for _ in range(5)]}]}
     path.write_text(json.dumps(dataset))
-    bootstrap.write_bootstrap_state(path,'complete')
+    with pytest.raises(ValueError, match="requires equal-strain"):
+        bootstrap.write_bootstrap_state(path, 'complete')
+    path.with_suffix('.bootstrap_state.json').write_text(json.dumps({
+        'stage': 'complete', 'bootstrap_sweeps': 1,
+        'prefix_sha256': bootstrap._prefix_hash(dataset['sweeps']),
+    }))
     assert bootstrap.bootstrap_state_error(path) is None
     for point in dataset['sweeps'][0]['data_points']:point.pop('extra_sensor_ranges')
     path.write_text(json.dumps(dataset))

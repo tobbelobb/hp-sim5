@@ -26,7 +26,6 @@ from autocal.stage_artifacts import write_stage_artifact
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
-from autocal.pose_fit import has_extra_sensor_data, dataset_stretch
 
 
 def full_auto_loop(
@@ -542,24 +541,18 @@ def full_auto_loop(
                     added = _collect_bootstrap_sweep(cfg, f"rough_extra_{extra + 1}")
                     rough = _merge_sweep_datasets(rough, added)
                     _write_json(dataset_path, rough)
-                if has_extra_sensor_data(rough) and dataset_stretch(rough) is not None:
-                    # HP5 already records the loads needed for per-pose stretch;
-                    # keep these measured ranges instead of collecting them twice.
-                    _write_json(dataset_path, rough)
-                    _log_console("; HP5 bootstrap ranges are force-aware; reusing checked measurements")
-                else:
-                    # Never mix rough constant-force observations with refined observations.
-                    # Each sweep has its own fixed targets and matching force table.
-                    refined = {**rough, "sweeps": []}
-                    for index, cfg in enumerate(dataset_sweep_configs(rough), start=1):
-                        write_bootstrap_state(dataset_path, "remeasuring", sweep=index)
-                        profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
-                        if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
-                            raise ValueError("missing M666 W/N/Y/U or tuned forces for equal-strain bootstrap")
-                        measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
-                        refined = _merge_sweep_datasets(refined, measured)
-                        _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
-                    _write_json(dataset_path, refined)
+                # Never mix rough constant-force observations with refined observations.
+                # Each sweep has its own fixed targets and matching force table.
+                refined = {**rough, "sweeps": []}
+                for index, cfg in enumerate(dataset_sweep_configs(rough), start=1):
+                    write_bootstrap_state(dataset_path, "remeasuring", sweep=index)
+                    profile = dataset_path.with_suffix(f".bootstrap_force_{index}.json")
+                    if not write_sensor_force_profile(profile, rough, rough_anchors, [cfg]):
+                        raise ValueError("missing M666 W/N/Y/U or tuned forces for equal-strain bootstrap")
+                    measured = _collect_bootstrap_sweep(cfg, f"equal_strain_{index}", profile=profile)
+                    refined = _merge_sweep_datasets(refined, measured)
+                    _write_json(dataset_path.with_suffix(".refining_bootstrap.json"), refined)
+                _write_json(dataset_path, refined)
                 write_bootstrap_state(dataset_path, "complete")
             except (ValueError, np.linalg.LinAlgError, subprocess.CalledProcessError, KeyboardInterrupt) as error:
                 write_bootstrap_state(dataset_path, "failed", reason=str(error))
