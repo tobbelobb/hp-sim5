@@ -213,22 +213,36 @@ def benchmark(commit, machine, fp, worktree, out, timeout_s, max_steps):
                                      machine, '--dataset', str(dataset), '--recording-mode', 'none',
                                      '--patience', '8'], cwd=worktree, env=env, stdout=log,
                                     stderr=subprocess.STDOUT, timeout=timeout_s)
+        if result.returncode < 0 or 'stop requested (Ctrl-C)' in (directory / 'autocal.log').read_text():
+            raise RuntimeError(f'interrupted: autocal exit {result.returncode}')
         if result.returncode:
             raise RuntimeError(f'autocal exit {result.returncode}: '
                                + (directory / 'autocal.log').read_text()[-1500:])
         record['metrics'] = benchmark_metrics(dataset, worktree)
     except Exception as error:  # every failure is a result worth recording
-        record['error'] = f'{type(error).__name__}: {error}'[-2000:]
+        message = str(error)
+        record['error'] = (message if message.startswith('interrupted:') else f'{type(error).__name__}: {message}')[-2000:]
     with LOCK, (out / 'results.jsonl').open('a') as f:
         f.write(json.dumps(record) + '\n')
     print(commit[:12], machine, record.get('metrics') or record['error'][:200], flush=True)
+
+
+# Not a property of the commit: a failed build, a run stopped by killing this
+# script, or a wall-clock deadline missed under load. Such records are retried.
+RETRYABLE = ('prepare:', 'interrupted:')
+RETRYABLE_TEXT = ('stop requested (Ctrl-C)', 'wall-clock deadline')
+
+
+def is_final(record):
+    error = record.get('error', '')
+    return not error.startswith(RETRYABLE) and not any(text in error for text in RETRYABLE_TEXT)
 
 
 def run_results(out):
     """(machine, fingerprint) -> record of an actual run; build failures don't count."""
     found = {}
     for r in load_results(out):
-        if 'reused_from' in r or r.get('error', '').startswith('prepare:'):
+        if 'reused_from' in r or not is_final(r):
             continue
         found.setdefault((r['machine'], r.get('fingerprint') or fingerprint(r['commit'], r['machine'])), r)
     return found
@@ -236,7 +250,7 @@ def run_results(out):
 
 def fill_reused(out, selection):
     """Record a result for every selected (commit, machine) whose inputs equal an earlier run's."""
-    have = {(r['commit'], r['machine']) for r in load_results(out) if not r.get('error', '').startswith('prepare:')}
+    have = {(r['commit'], r['machine']) for r in load_results(out) if is_final(r)}
     runs = run_results(out)
     with LOCK, (out / 'results.jsonl').open('a') as f:
         for commit, machine, fp in selection:
@@ -255,7 +269,7 @@ def load_results(out):
 def write_summary(out):
     """Newest commit first; a metric worse than the previous commit's is bold with ▲."""
     latest = {}
-    for record in load_results(out):
+    for record in filter(is_final, load_results(out)):
         latest[record['commit'], record['machine']] = record
     order = list(dict.fromkeys(r['commit'] for r in sorted(latest.values(), key=lambda r: r['date'])))
     lines = ['# Autocal benchmark per commit', '',
