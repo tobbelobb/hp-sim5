@@ -9,10 +9,12 @@ each machine and score it with the *current* autocal/tools/autocal_benchmark.py.
 Each (commit, machine) gets a fingerprint of everything its headless run loads:
 the Python/JS import closure of the entry points, the native solver and RRF
 sources, and that machine's scene and firmware config. Runs are deterministic,
-so only the first commit per fingerprint is run; later ones reuse its result.
+so only the first commit per fingerprint is run.
 
-Results go to OUT/results.jsonl, one line per (commit, machine), and are
-resumable: finished pairs are skipped. OUT/summary.md tabulates them and marks
+OUT/results.jsonl holds one record per machine and distinct runtime input, at
+the commit that introduced it, oldest first; commits in between load the same
+inputs. Reruns skip recorded inputs. Interrupted runs and failed builds go to
+OUT/retry.jsonl instead and are retried. OUT/summary.md tabulates them and marks
 every metric that got worse than the previous commit's value.
 
   .venv/bin/python scripts/autocal_benchmark_backfill.py --since 2026-11-01
@@ -23,6 +25,7 @@ Wall times are not comparable between commits here; builds and parallel runs
 share the CPU. Simulated times are.
 """
 import argparse
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
@@ -222,8 +225,7 @@ def benchmark(commit, machine, fp, worktree, out, timeout_s, max_steps):
     except Exception as error:  # every failure is a result worth recording
         message = str(error)
         record['error'] = (message if message.startswith('interrupted:') else f'{type(error).__name__}: {message}')[-2000:]
-    with LOCK, (out / 'results.jsonl').open('a') as f:
-        f.write(json.dumps(record) + '\n')
+    record_result(out, record)
     print(commit[:12], machine, record.get('metrics') or record['error'][:200], flush=True)
 
 
@@ -239,26 +241,8 @@ def is_final(record):
 
 
 def run_results(out):
-    """(machine, fingerprint) -> record of an actual run; build failures don't count."""
-    found = {}
-    for r in load_results(out):
-        if 'reused_from' in r or not is_final(r):
-            continue
-        found.setdefault((r['machine'], r.get('fingerprint') or fingerprint(r['commit'], r['machine'])), r)
-    return found
-
-
-def fill_reused(out, selection):
-    """Record a result for every selected (commit, machine) whose inputs equal an earlier run's."""
-    have = {(r['commit'], r['machine']) for r in load_results(out) if is_final(r)}
-    runs = run_results(out)
-    with LOCK, (out / 'results.jsonl').open('a') as f:
-        for commit, machine, fp in selection:
-            source = runs.get((machine, fp))
-            if (commit, machine) not in have and source is not None:
-                f.write(json.dumps(dict(source, commit=commit, date=git('show', '-s', '--format=%cI', commit),
-                                        subject=git('show', '-s', '--format=%s', commit),
-                                        fingerprint=fp, reused_from=source['commit'])) + '\n')
+    """(machine, fingerprint) -> its record."""
+    return {(r['machine'], r['fingerprint']): r for r in load_results(out)}
 
 
 def load_results(out):
@@ -266,17 +250,41 @@ def load_results(out):
     return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
 
 
+def save_results(out, records):
+    """One final record per machine and runtime input, at the earliest commit that has it,
+    oldest first. Each record stands for its commit and every later commit up to the next
+    record of that machine."""
+    def date(r):
+        return datetime.fromisoformat(r['date']), MACHINES.index(r['machine'])
+    unique = {}
+    for r in sorted(filter(is_final, records), key=date):
+        if 'reused_from' not in r:
+            r.setdefault('fingerprint', fingerprint(r['commit'], r['machine']))
+            unique.setdefault((r['machine'], r['fingerprint']), r)
+    path = out / 'results.jsonl'
+    path.with_suffix('.tmp').write_text(''.join(json.dumps(r) + '\n' for r in sorted(unique.values(), key=date)))
+    path.with_suffix('.tmp').replace(path)
+
+
+def record_result(out, record):
+    """Final results into results.jsonl; retryable failures only into retry.jsonl."""
+    with LOCK:
+        if is_final(record):
+            save_results(out, load_results(out) + [record])
+        else:
+            with (out / 'retry.jsonl').open('a') as f:
+                f.write(json.dumps(record) + '\n')
+
+
 def write_summary(out):
     """Newest commit first; a metric worse than the previous commit's is bold with ▲."""
-    latest = {}
-    for record in filter(is_final, load_results(out)):
-        latest[record['commit'], record['machine']] = record
-    order = list(dict.fromkeys(r['commit'] for r in sorted(latest.values(), key=lambda r: r['date'])))
+    latest = {(r['commit'], r['machine']): r for r in load_results(out)}
+    order = list(dict.fromkeys(r['commit'] for r in load_results(out)))
     lines = ['# Autocal benchmark per commit', '',
              'Accuracy: worst applied anchor coordinate error. Precision: largest anchor difference '
              'between fits of alternating points. Converged: simulated s until all anchors within 2 mm. '
-             'Total: simulated s for the whole run. ▲ marks a value worse than the previous commit. '
-             '= marks a commit whose runtime inputs equal an earlier run, so that result is reused.', '']
+             'Total: simulated s for the whole run. ▲ marks a value worse than the previous row. '
+             'Each row holds until the next one: commits in between load identical runtime inputs.', '']
     for machine in MACHINES:
         lines += [f'## {machine}', '', '| Commit | Date | Accuracy | Precision | Converged | Total | Sweeps | Stop | Subject |',
                   '|---|---|---:|---:|---:|---:|---:|---|---|']
@@ -285,7 +293,7 @@ def write_summary(out):
             record = latest.get((commit, machine))
             if record is None:
                 continue
-            head = f'| {commit[:10]}{" =" if "reused_from" in record else ""} | {record["date"][:16]} |'
+            head = f'| {commit[:10]} | {record["date"][:16]} |'
             if 'error' in record:
                 rows.append(f'{head} error | | | | | | {record["subject"][:60]} — {record["error"][:80].replace("|", "/")} |')
                 continue
@@ -330,6 +338,10 @@ def main():
     (out / 'cache').mkdir(parents=True, exist_ok=True)
     if args.summary_only:
         return write_summary(out)
+    results = out / 'results.jsonl'
+    if results.exists() and not (out / 'results.before-dedupe.jsonl').exists():
+        shutil.copy2(results, out / 'results.before-dedupe.jsonl')  # older format, kept once
+    save_results(out, load_results(out))
 
     # Build failures are retried on the next invocation; run results are final.
     # Only the first commit with each machine's runtime fingerprint is run.
@@ -341,7 +353,6 @@ def main():
             order = list(dict.fromkeys(fp for _, m, fp in selection if m == machine))
             keep |= {(machine, fp) for fp in order[::-args.stride]}
         selection = [s for s in selection if (s[1], s[2]) in keep]
-    fill_reused(out, selection)
     known = set(run_results(out))
     todo = {}
     for commit, machine, fp in selection:
@@ -373,11 +384,10 @@ def main():
                 worktree = prepare(commit, out, args.threads, args.worktree_dir)
             except Exception:
                 error = traceback.format_exc()[-2000:]
-                with LOCK, (out / 'results.jsonl').open('a') as f:
-                    for machine, _ in machines:
-                        f.write(json.dumps(dict(commit=commit, date=git('show', '-s', '--format=%cI', commit),
-                                                subject=git('show', '-s', '--format=%s', commit),
-                                                machine=machine, error=f'prepare: {error}')) + '\n')
+                for machine, fp in machines:
+                    record_result(out, dict(commit=commit, date=git('show', '-s', '--format=%cI', commit),
+                                            subject=git('show', '-s', '--format=%s', commit),
+                                            machine=machine, fingerprint=fp, error=f'prepare: {error}'))
                 print(commit[:12], 'prepare failed', error.splitlines()[-1], flush=True)
                 remove_worktree(args.worktree_dir / commit[:12])
                 live.release()
@@ -388,7 +398,6 @@ def main():
                                      args.max_physics_steps)
                 future.add_done_callback(lambda _, c=commit, w=worktree: finished(c, w))
                 futures.append(future)
-    fill_reused(out, selection)
     write_summary(out)
 
 
