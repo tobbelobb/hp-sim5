@@ -1,0 +1,46 @@
+{
+  "settingsBarrier": {
+    "afterSettingsTick": {
+      "queueAfterSwapStarted": 0,
+      "calls": 0
+    },
+    "commandLandedDuringSwap": 1,
+    "encoderAnsweredDuringSwap": false,
+    "encoderAnsweredAfterLoad": true,
+    "note": "encoder replies wait for the machine swap; commands do not"
+  },
+  "speedOrdering": {
+    "connect_only": {
+      "resumedAtOpen": true,
+      "paused": true,
+      "scale": 1,
+      "queued": 0,
+      "resumeCalls": 0,
+      "clockResets": 0
+    },
+    "speed_then_command": {
+      "resumedAtOpen": true,
+      "paused": false,
+      "scale": 25,
+      "queued": 1,
+      "resumeCalls": 1,
+      "clockResets": 1
+    },
+    "command_then_speed": {
+      "resumedAtOpen": true,
+      "paused": false,
+      "scale": 25,
+      "queued": 1,
+      "resumeCalls": 1,
+      "clockResets": 1
+    },
+    "speed_while_paused": {
+      "resumedAtOpen": true,
+      "paused": true,
+      "scale": 25,
+      "queued": 0,
+      "resumeCalls": 0,
+      "clockResets": 1
+    }
+  }
+}

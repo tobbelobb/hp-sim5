@@ -9,7 +9,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from autocal.tools.benchmark_history import (  # noqa: E402
-    CONTRIBUTIONS, HISTORY_REF, MACHINES, ROOT, fingerprint, git, markdown_summary, measurement,
+    BACKFILL_DIR, HISTORY_REF, MACHINES, METRICS, ROOT, execution_fingerprint, fingerprint, git,
+    markdown_summary, measurement,
     merge_results, metric_medians, protocol, read_results, regressions, results_text, verified_results,
 )
 
@@ -26,35 +27,72 @@ def remote_history():
 
 
 def should_run(candidate, rows, parent):
-    if parent is None or fingerprint(parent, candidate['machine']) != candidate['fingerprint']:
+    if (parent is None or fingerprint(parent, candidate['machine']) != candidate['fingerprint']
+            or execution_fingerprint(parent) != candidate['execution_fingerprint']):
         return True
+    # Installed dependencies are recorded after setup. The fingerprint includes the
+    # dependency declarations so a change to those declarations still triggers a run.
     matching = [row for row in rows if row.get('github_run_id') and row['machine'] == candidate['machine']
-                and row['fingerprint'] == candidate['fingerprint'] and protocol(row) == protocol(candidate)]
+                and row.get('fingerprint_version') == candidate['fingerprint_version']
+                and row['fingerprint'] == candidate['fingerprint']
+                and row.get('execution_fingerprint') == candidate['execution_fingerprint']
+                and row.get('settings') == candidate['settings'] and row.get('scorer') == candidate['scorer']]
     last = max(matching, key=lambda row: row['recorded_at'], default={})
     return last.get('status') != 'ok'
 
 
-def report_regressions(incoming, rows):
-    for commit in sorted({row['commit'] for row in incoming}):
-        ancestors = git('rev-list', '--first-parent', commit).splitlines()[1:]
-        for current in (row for row in incoming if row['commit'] == commit and row['status'] == 'ok'):
-            comparable = [row for row in rows if row['machine'] == current['machine'] and row['status'] == 'ok'
-                          and protocol(row) == protocol(current)]
-            same = [row for row in comparable if row['commit'] == commit]
-            baseline = {}
-            for row in comparable:
-                if row['fingerprint'] != current['fingerprint']:
-                    baseline.setdefault(row['commit'], []).append(row)
-            previous = next((old for old in ancestors if old in baseline), None)
-            if previous is None:
-                continue
-            for finding in regressions(metric_medians(baseline[previous]), metric_medians(same)).values():
-                print(f'::warning::{current["machine"]} {commit[:12]} vs {previous[:12]}: {finding}')
+def metrics_table(current, baseline=None):
+    def value(row, key):
+        reading = row.get(key)
+        return f'{reading:.3f}' if reading is not None else 'Unavailable'
+
+    lines = ['| Metric | Current | Baseline median |', '|---|---:|---:|']
+    for key in METRICS:
+        prior = value(baseline, key) if baseline is not None else '—'
+        lines.append(f'| `{key}` | {value(current, key)} | {prior} |')
+    return lines
+
+
+def review_measurement(current, rows):
+    machine, commit = current['machine'], current['commit']
+    heading = f'### Autocal {machine} at {commit[:12]}'
+    if current['status'] != 'ok':
+        return [heading, '', f'Benchmark status: **{current["status"]}**. See the benchmark artifact.']
+    candidates = [row for row in rows if row['machine'] == machine and row['status'] == 'ok']
+    if not candidates:
+        return [heading, '', 'No successful historical measurements are available.', '', *metrics_table(current)]
+    # The matrix jobs use a shallow checkout. Only the commit graph is needed here.
+    if git('rev-parse', '--is-shallow-repository') == 'true':
+        git('fetch', '--unshallow', '--filter=tree:0', '--no-tags', 'origin', commit)
+    ancestors = git('rev-list', '--first-parent', commit).splitlines()[1:]
+    by_commit = {}
+    for row in candidates:
+        by_commit.setdefault(row['commit'], []).append(row)
+    current_protocol = protocol(current)
+    compatible = next((row for ancestor in ancestors for row in by_commit.get(ancestor, [])
+                       if protocol(row) == current_protocol), None)
+    prior = compatible or next(
+        (by_commit[ancestor][-1] for ancestor in ancestors if ancestor in by_commit), None)
+    if prior is None:
+        return [heading, '', 'No successful first-parent baseline is available.', '', *metrics_table(current)]
+    prior_protocol = protocol(prior)
+    baseline = [row for row in by_commit[prior['commit']] if protocol(row) == prior_protocol]
+    medians = metric_medians(baseline)
+    findings = regressions(medians, current)
+    reference = f'Baseline: {prior["commit"][:12]} ({len(baseline)} successful measurements).'
+    caveat = '' if compatible else 'The benchmark protocols differ or are unknown. Treat this comparison as exploratory.'
+    lines = [heading, '', reference, caveat, '', *metrics_table(current, medians), '']
+    for finding in findings.values():
+        print(f'::warning::{machine} {commit[:12]} vs {prior["commit"][:12]}: {finding}' +
+              (' (mixed or unknown protocol)' if caveat else ''))
+        lines.append(f'- {finding}')
+    return lines if findings else lines + ['No review thresholds crossed.']
 
 
 def history_commit(parent, rows):
     blobs = []
-    for name, content in [('results.jsonl', results_text(rows)), ('summary.md', markdown_summary(rows))]:
+    for name, content in [('results.jsonl', results_text(rows)), ('summary.md', markdown_summary(rows)),
+                          ('by-fingerprint.md', markdown_summary(rows, by_fingerprint=True))]:
         blob = subprocess.run(['git', 'hash-object', '-w', '--stdin'], cwd=ROOT, text=True,
                               input=content, capture_output=True, check=True).stdout.strip()
         blobs.append(f'100644 blob {blob}\t{name}\n')
@@ -65,12 +103,15 @@ def history_commit(parent, rows):
 
 
 def collect(artifacts):
-    incoming = [row for path in sorted(artifacts.rglob('*.jsonl')) for row in read_results(path)]
-    contributed = read_results(CONTRIBUTIONS)
+    incoming = [row for path in sorted(artifacts.glob('*/*.jsonl')) for row in read_results(path)]
+    contributed = read_results(BACKFILL_DIR / 'results.jsonl') + read_results(BACKFILL_DIR / 'retry.jsonl')
     if not incoming and not contributed:
         return
     parent, previous = remote_history()
-    archived = {json.dumps(row, sort_keys=True) for row in previous}
+    # Archived rows have full SHAs. Legacy backfill files can retain abbreviated SHAs.
+    widths = {len(row['commit']) for row in contributed + incoming}
+    archived = {json.dumps(dict(row, commit=row['commit'][:width]), sort_keys=True)
+                for row in previous for width in widths}
     if all(json.dumps(row, sort_keys=True) in archived for row in contributed + incoming):
         return
     if git('rev-parse', '--is-shallow-repository') == 'true':
@@ -90,7 +131,6 @@ def collect(artifacts):
         if attempt == 4 or next_parent == parent:
             push.check_returncode()
         parent = next_parent
-    report_regressions(incoming, rows)
 
 
 def main():
@@ -101,11 +141,20 @@ def main():
     missing = actions.add_parser('missing')
     missing.add_argument('machine', choices=MACHINES)
     missing.add_argument('output', type=Path)
+    review = actions.add_parser('review')
+    review.add_argument('result', type=Path)
     merge = actions.add_parser('collect')
     merge.add_argument('artifacts', type=Path)
     args = parser.parse_args()
     if args.action == 'collect':
         collect(args.artifacts)
+        return
+    if args.action == 'review':
+        current, = read_results(args.result)
+        rows = remote_history()[1] if current['status'] == 'ok' else []
+        summary = review_measurement(current, rows)
+        with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+            output.write('\n'.join(summary) + '\n')
         return
     commit = git('rev-parse', 'HEAD')
     row = measurement(commit, args.machine, ci=True)
@@ -116,7 +165,11 @@ def main():
         with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
             output.write(f'run={str(run).lower()}\n')
         if not run:
-            print(f'{args.machine}: an earlier CI run measured the unchanged inputs.')
+            message = f'{args.machine}: an earlier CI run measured the unchanged inputs.'
+            print(message)
+            if summary_path := os.environ.get('GITHUB_STEP_SUMMARY'):
+                with open(summary_path, 'a') as output:
+                    output.write(message + '\n')
     else:
         path = args.output / f'{args.machine}.jsonl'
         if not path.exists():

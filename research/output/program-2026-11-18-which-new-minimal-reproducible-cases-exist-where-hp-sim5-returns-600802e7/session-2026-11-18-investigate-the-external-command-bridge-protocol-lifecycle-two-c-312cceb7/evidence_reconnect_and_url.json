@@ -1,0 +1,90 @@
+{
+  "normalize": [
+    {
+      "raw": "ws://localhost:8790",
+      "normalized": "ws://localhost:8790"
+    },
+    {
+      "raw": "wss://h/ws",
+      "normalized": "wss://h/ws"
+    },
+    {
+      "raw": " localhost:8790",
+      "normalized": "ws://localhost:8790"
+    },
+    {
+      "raw": "/gcode",
+      "normalized": "ws://gcode"
+    },
+    {
+      "raw": "//gcode",
+      "normalized": "ws://gcode"
+    },
+    {
+      "raw": "http://localhost:8790",
+      "normalized": "ws://http://localhost:8790"
+    },
+    {
+      "raw": "https://localhost:8790",
+      "normalized": "ws://https://localhost:8790"
+    },
+    {
+      "raw": "localhost:8790/stream",
+      "normalized": "ws://localhost:8790/stream"
+    },
+    {
+      "raw": "",
+      "normalized": null
+    },
+    {
+      "raw": "   ",
+      "normalized": null
+    },
+    {
+      "raw": null,
+      "normalized": null
+    },
+    {
+      "raw": 42,
+      "normalized": null
+    }
+  ],
+  "lifecycle": {
+    "socketsAfterFirstConnect": 1,
+    "sendBeforeOpen": false,
+    "connecting": true,
+    "sendAfterOpen": true,
+    "sentPayloads": 1,
+    "connectingAfterOpen": false,
+    "payloads": 1,
+    "socketsImmediatelyAfterClose": 1,
+    "sendWhileDown": false,
+    "socketsAfterReconnectDelay": 2,
+    "newSocketIsFreshInstance": true,
+    "secondSocketOpenedAutomatically": true,
+    "socketsAfterRedundantConnect": 2,
+    "erroredSocketClosed": true,
+    "socketsAfterErrorReconnect": 3,
+    "logsAfterRetries": [
+      "hp-sim-3d: external G-code stream connected: ws://stub",
+      "hp-sim-3d: external G-code stream connected: ws://stub",
+      "hp-sim-3d: tried external G-code stream 10 times (connection closed). Continuing to retry every 5ms"
+    ],
+    "totalSockets": 13
+  },
+  "reconnect": {
+    "hungHandshake": {
+      "socketsCreated": 1,
+      "connecting": true
+    },
+    "closeThrows": {
+      "socketsCreated": 1,
+      "hasSocket": true,
+      "connecting": true
+    },
+    "constructorThrows": {
+      "connecting": false,
+      "hasSocket": false
+    }
+  }
+}

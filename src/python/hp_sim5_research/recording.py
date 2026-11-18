@@ -11,7 +11,7 @@ def _rgb(color):
     return [int(value[index:index + 2], 16) for index in (0, 2, 4)]
 
 
-def blueprint():
+def blueprint(*, timeline='sim_time'):
     import rerun.blueprint as rrb
     metrics = [
         rrb.TimeSeriesView(origin='/line_lengths', name='Line lengths (m)'),
@@ -21,7 +21,7 @@ def blueprint():
     return rrb.Blueprint(
         rrb.Horizontal(rrb.Spatial3DView(origin='/world', name='Hangprinter'),
                        rrb.Vertical(*metrics), column_shares=[2, 1]),
-        rrb.TimePanel(timeline='sim_time', play_state=rrb.components.PlayState.Following),
+        rrb.TimePanel(timeline=timeline, play_state=rrb.components.PlayState.Following),
     )
 
 
@@ -40,7 +40,7 @@ class RerunSystem:
     def flush(self):
         self.recording.flush(timeout_sec=5)
 
-    def update(self, world, dt):
+    def update(self, world, dt, *, recording_step=None):
         import rerun as rr
         if not math.isfinite(dt):
             raise ValueError('Recording timestep must be finite')
@@ -51,7 +51,12 @@ class RerunSystem:
         if dt > 0 and not (pause is not None and getattr(pause, 'paused', False)):
             self.elapsed += dt
             self.step += 1
-        self.recording.set_time('sim_step', sequence=self.step)
+        if recording_step is None:
+            recording_step = self.step
+        else:
+            self.recording.set_time('scene_generation', sequence=world.get_resource('sceneGeneration'))
+            self.recording.set_time('sim_step_in_generation', sequence=self.step)
+        self.recording.set_time('sim_step', sequence=recording_step)
         self.recording.set_time(self.timeline, duration=self.elapsed)
         snapshot = mirror.capture_snapshot(world)
         for frame in snapshot['frames']:
@@ -72,12 +77,14 @@ class RerunSystem:
                     vectors=[[value * .01 for value in segment['force_vector_n']] for segment in segments],
                     colors=[[255, 90, 90]] * len(segments)))
             for name, value in cable['lengths'].items():
-                if value is None:
-                    continue
-                if name in ('actual', 'commanded', 'geometric'):
-                    self.recording.log(f'line_lengths/{key}/{name}', rr.Scalars(value))
-                if name in ('error', 'stretch'):
-                    self.recording.log(f'line_errors/{key}/{name}', rr.Scalars(value))
+                namespace = 'line_errors' if name in ('error', 'stretch') else 'line_lengths'
+                path = f'{namespace}/{key}/{name}'
+                if value is not None:
+                    self.recording.log(path, rr.Scalars(value))
+                    self._series.add(path)
+                elif path in self._series:
+                    self.recording.log(path, rr.Clear.flat())
+                    self._series.remove(path)
             for segment in segments:
                 self.recording.log(f"cable_forces/{key}/{segment['name']}", rr.Scalars(segment['force_n']))
         return snapshot

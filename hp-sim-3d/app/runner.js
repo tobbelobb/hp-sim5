@@ -229,6 +229,8 @@ export function runGame(world, internalSetupScene, options = {}) {
     clock.step += 1;
     clock.time += dt;
     world.setResource('researchClock', clock);
+    // The spool system dequeues commands before physics and its diagnostics run.
+    getRemoteSystem()?.afterPhysicsStep();
   };
 
   const advanceFixedSteps = async (steps) => {
@@ -496,6 +498,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const resetGame = ({ autoPause = true } = {}) => {
+    getRemoteSystem()?.cancelWorkerDrain();
     internalSetupScene();
     world.setResource('researchClock', { generation: world.getResource('sceneGeneration'), step: 0, time: 0 });
     for (const system of world.systems) {

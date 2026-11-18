@@ -1,0 +1,94 @@
+{
+  "investigation": "session-2026-11-18-investigate-bookkeeping-and-telemetry-conservation-including-ext-b4ebb599",
+  "date": "2026-11-18",
+  "revision": "74ecdc951666821ac1ba44250fb69badfbc46c26",
+  "dirty": {"submodules": ["RRF/ReprapFirmware", "klipper", "flex-compensation-dev/hangprinter-flex-compensation", "forward-transform-dev/hangprinter-forward-transform"]},
+  "environment": {
+    "node": "v26.13.0",
+    "python": "3.12 (.venv)",
+    "physics": "rust-native / checked-in public/wasm/cable_solver.wasm for the cross-language probe",
+    "native_artifact_sha256": "4dda8987d8ca2d10f1468c65a9671247adb92da9ac818a9cdeac636638eea870",
+    "native_artifact_note": "The checkout's native artifact was stale by source hash at the start of this session; running the production Python path auto-rebuilt it (14 s, one core) before this measurement. The Wasm probe and the native probe agree to 1e-9 m on the reported values.",
+    "available_memory_before_after": ">= 1.5 GiB available throughout; no run exceeded ~90 MB RSS"
+  },
+  "finding_1_length_telemetry_alias": {
+    "source": "src/python/hp_sim5_research/mirror.py:capture_snapshot (lengths dict)",
+    "js_source": "hp-sim-3d/app/flightRecorderSnapshot.js:collectCables",
+    "scene": "public/usd_scenes/slideprinter.usda, lineLayeringEnabled=false, dt=0.002",
+    "position_mode_probe": {
+      "command": "Move A=0.5 rad then 4 steps",
+      "cable": "CablePathA",
+      "js_commanded_m": 1.9172657923403649,
+      "js_actual_m": 1.902179130091503,
+      "js_error_m": -0.015086662248861904,
+      "python_commanded_m": 1.902179130091503,
+      "python_actual_m": 1.902179130091503,
+      "python_error_m": 0.0
+    },
+    "torque_mode_probe": {
+      "command": "SetTorqueMode C torqueNm=0.02 then 2 steps",
+      "cable": "CablePathC",
+      "js_commanded": null,
+      "js_error": null,
+      "python_commanded_m": 1.9023086674033467,
+      "python_error_m": 0.0
+    },
+    "agreement_of_other_fields": {"actual_max_abs_diff_m": 0.0, "geometric_max_abs_diff_m": 2.220446049250313e-16, "stretch_max_abs_diff_m": 2.220446049250313e-16},
+    "production_run_experiment": {
+      "run_id": "492c707f966648e8b9e5ac2e1aecd478",
+      "steps": 6,
+      "physics_engine": "rust-native",
+      "peak_abs_length_error_m": 0.0,
+      "peak_abs_tracking_error_rad": 0.5032862095081682,
+      "total_missed_step_slips": 4,
+      "note": "metrics.peak_abs_length_error_m is always 0 because the mirror's error is actual-actual"
+    }
+  },
+  "finding_2_gcode_extrusion_bookkeeping": {
+    "source": "hp-sim-3d/app/workers/moveCommander.js",
+    "reference": "hp-sim-3d/app/inspectionToolsController.js:parseGcodeText",
+    "synthetic_cases": [
+      {"name": "control M82 absolute", "reference_mm": 10, "simulation_mm": 10, "ratio": 1.0},
+      {"name": "no M82 (firmware absolute default)", "reference_mm": 10, "simulation_mm": 15, "ratio": 1.5},
+      {"name": "mid-file G92 E0 reset", "reference_mm": 15, "simulation_mm": 10, "ratio": 0.6666666667},
+      {"name": "M82 then M83", "reference_mm": 10, "simulation_mm": 5, "ratio": 0.5},
+      {"name": "second job on same worker", "reference_mm": 5, "simulation_mm": 0, "ratio": 0.0}
+    ],
+    "shipped_file": {
+      "path": "public/gcode/Hangprinter_logo6.gcode",
+      "g92_e_lines": 123,
+      "g92_e_resets_with_following_e_move": 121,
+      "reference_positive_extrusion_mm": 49950.46023999879,
+      "simulation_positive_extrusion_mm": 49719.253159998785,
+      "difference_mm": -231.2070800000074,
+      "relative_difference": -0.00462872772120854,
+      "tolerance_mm": 0.01,
+      "resets_losing_unretract_mm": 119,
+      "sum_loss_at_resets_mm": -233.20708,
+      "resets_over_counting_mm": 1,
+      "sum_gain_at_resets_mm": 2.0,
+      "derived_quality_monitor_final_progress": 0.9953712723
+    },
+    "no_m82_hypothetical_on_shipped_file": {"total_mm": 16835596.183380112, "ratio_vs_reference": 337.04586709490786},
+    "rrf_can_negative_control": {
+      "path": "public/RRF_CAN_commands/Hangprinter_logo6_hp4_no_buildup.can",
+      "extruder_driver": 44,
+      "reference_positive_extrusion_mm": 49950.46023999879,
+      "can_positive_extrusion_mm": 49950.45878269834,
+      "difference_mm": -0.0014573004500279426,
+      "relative_difference": -2.917e-8,
+      "can_net_extrusion_mm": 49708.458788816996
+    }
+  },
+  "finding_3_missing_native_extrusion_telemetry": {
+    "doc": "hp-sim-3d/FLIGHT_RECORDER.md: 'Total deposited length | No | extrusion_lengths/MACHINE' and 'Tool center/root/tip/cold-end points and extrusion deposits | No | world/machines/MACHINE/tool_points and extrusions'",
+    "code": "No 'extrusion_lengths' or 'tool_points' string exists in shipped src/ or hp-sim-3d/; RerunSystem logs only frames and cables; mirror.capture_snapshot ignores ExtruderComponent.extrusions."
+  },
+  "negative_results": {
+    "rrf_preset_conserves_extrusion": true,
+    "js_python_actual_geometric_stretch_agree": true,
+    "power_energy_odometer_accumulators_exist": false,
+    "reset_clears_extrusion_and_remote_history": true,
+    "pause_does_not_consume_commands": true
+  }
+}

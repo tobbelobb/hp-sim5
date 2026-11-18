@@ -1,0 +1,1084 @@
+{
+ "generated": "2026-11-18T17:01:04.663Z",
+ "node": "v26.13.0",
+ "wasm": "public/wasm/cable_solver.wasm (checked-in)",
+ "defaults": {
+  "production": [
+   {
+    "scene": "hp4",
+    "dt": 0.002,
+    "substeps": 1,
+    "solverIterations": 10,
+    "pathIterations": [
+     10
+    ]
+   },
+   {
+    "scene": "hp3",
+    "dt": 0.002,
+    "substeps": 1,
+    "solverIterations": 1,
+    "pathIterations": [
+     1
+    ]
+   },
+   {
+    "scene": "cubecorners",
+    "dt": 0.002,
+    "substeps": 1,
+    "solverIterations": 5,
+    "pathIterations": [
+     5
+    ]
+   },
+   {
+    "scene": "slideprinter",
+    "dt": 0.002,
+    "substeps": 1,
+    "solverIterations": 1,
+    "pathIterations": [
+     1
+    ]
+   }
+  ]
+ },
+ "cases": {
+  "freeMass": {
+   "runs": [
+    {
+     "dt": 0.008,
+     "steps": 15,
+     "t": 0.12,
+     "y": -0.07534079999999996,
+     "v": -1.1771999999999998,
+     "exactY": -0.070632,
+     "exactV": -1.1772,
+     "posErr": -0.0047087999999999575,
+     "velErr": 2.220446049250313e-16
+    },
+    {
+     "dt": 0.004,
+     "steps": 30,
+     "t": 0.12,
+     "y": -0.07298639999999991,
+     "v": -1.1771999999999962,
+     "exactY": -0.070632,
+     "exactV": -1.1772,
+     "posErr": -0.0023543999999999093,
+     "velErr": 3.774758283725532e-15
+    },
+    {
+     "dt": 0.002,
+     "steps": 60,
+     "t": 0.12,
+     "y": -0.07180920000000025,
+     "v": -1.1772000000000102,
+     "exactY": -0.070632,
+     "exactV": -1.1772,
+     "posErr": -0.001177200000000253,
+     "velErr": -1.021405182655144e-14
+    },
+    {
+     "dt": 0.001,
+     "steps": 120,
+     "t": 0.12,
+     "y": -0.07122059999999876,
+     "v": -1.1771999999999616,
+     "exactY": -0.070632,
+     "exactV": -1.1772,
+     "posErr": -0.0005885999999987596,
+     "velErr": 3.8413716652030416e-14
+    },
+    {
+     "dt": 0.0005,
+     "steps": 240,
+     "t": 0.12,
+     "y": -0.07092629999999746,
+     "v": -1.1771999999999616,
+     "exactY": -0.070632,
+     "exactV": -1.1772,
+     "posErr": -0.0002942999999974577,
+     "velErr": 3.8413716652030416e-14
+    }
+   ],
+   "substeps": [
+    {
+     "substeps": 1,
+     "y": -0.05003099999999997,
+     "posErr": -0.000980999999999961,
+     "velErr": -9.547918011776346e-15
+    },
+    {
+     "substeps": 2,
+     "y": -0.04954049999999951,
+     "posErr": -0.0004904999999994983,
+     "velErr": 3.2085445411667024e-14
+    },
+    {
+     "substeps": 4,
+     "y": -0.04929524999999838,
+     "posErr": -0.00024524999999837177,
+     "velErr": 4.596323321948148e-14
+    },
+    {
+     "substeps": 8,
+     "y": -0.04917262499999806,
+     "posErr": -0.00012262499999805138,
+     "velErr": 4.596323321948148e-14
+    },
+    {
+     "substeps": 16,
+     "y": -0.049111312500057194,
+     "posErr": -0.00006131250005718403,
+     "velErr": -2.871036741680655e-13
+    }
+   ],
+   "substepGateWithoutRigidBody": [
+    {
+     "substeps": 1,
+     "y": -0.05003099999999997
+    },
+    {
+     "substeps": 16,
+     "y": -0.05003099999999997
+    }
+   ],
+   "order": 1.0000000000031124
+  },
+  "dampedOscillator": {
+   "softDt": [
+    {
+     "m": 1,
+     "L": 1,
+     "EA": 1000,
+     "B": 6.324555320336759,
+     "A": 0.001,
+     "dt": 0.008,
+     "iterations": 4,
+     "substeps": 1,
+     "dummy": false,
+     "T": 1,
+     "xeq": 1.0099071895292822,
+     "w0": 31.31255716322128,
+     "zeta": 0.1,
+     "exactPeriod": 0.20167113152335445,
+     "periods": [
+      0.21188165666600559,
+      0.20902477173222372,
+      0.21490648106060606,
+      0.20353504134906847
+     ],
+     "periodErrPct": 3.499416553912371,
+     "maxAbsErr": 0.00028529702490882815,
+     "minSlack": 0.009419832975231746,
+     "finite": true
+    },
+    {
+     "m": 1,
+     "L": 1,
+     "EA": 1000,
+     "B": 6.324555320336759,
+     "A": 0.001,
+     "dt": 0.002,
+     "iterations": 4,
+     "substeps": 1,
+     "dummy": false,
+     "T": 1,
+     "xeq": 1.0099071895292822,
+     "w0": 31.31255716322128,
+     "zeta": 0.1,
+     "exactPeriod": 0.20167113152335445,
+     "periods": [
+      0.20321470039091574,
+      0.203178226559194,
+      0.20324263800459674,
+      0.20313057798149164
+     ],
+     "periodErrPct": 0.7453498607979725,
+     "maxAbsErr": 0.0001006694931085103,
+     "minSlack": 0.009247197607937352,
+     "finite": true
+    },
+    {
+     "m": 1,
+     "L": 1,
+     "EA": 1000,
+     "B": 6.324555320336759,
+     "A": 0.001,
+     "dt": 0.0005,
+     "iterations": 4,
+     "substeps": 1,
+     "dummy": false,
+     "T": 1,
+     "xeq": 1.0099071895292822,
+     "w0": 31.31255716322128,
+     "zeta": 0.1,
+     "exactPeriod": 0.20167113152335445,
+     "periods": [
+      0.2019959282165952,
+      0.20200851153200067,
+      0.20200107510077037,
+      0.20200423058288663
+     ],
+     "periodErrPct": 0.16425481824728916,
+     "maxAbsErr": 0.00002803818629262914,
+     "minSlack": 0.00919616891944619,
+     "finite": true
+    }
+   ],
+   "softIterations": [
+    {
+     "m": 1,
+     "L": 1,
+     "EA": 1000,
+     "B": 6.324555320336759,
+     "A": 0.001,
+     "dt": 0.002,
+     "iterations": 1,
+     "substeps": 1,
+     "dummy": false,
+     "T": 1,
+     "xeq": 1.0099071895292822,
+     "w0": 31.31255716322128,
+     "zeta": 0.1,
+     "exactPeriod": 0.20167113152335445,
+     "periods": [
+      0.20321470039091574,
+      0.203178226559194,
+      0.20324263800459674,
+      0.20313057798149164
+     ],
+     "periodErrPct": 0.7453498607979725,
+     "maxAbsErr": 0.0001006694931085103,
+     "minSlack": 0.009247197607937352,
+     "finite": true
+    },
+    {
+     "m": 1,
+     "L": 1,
+     "EA": 1000,
+     "B": 6.324555320336759,
+     "A": 0.001,
+     "dt": 0.002,
+     "iterations": 4,
+     "substeps": 1,
+     "dummy": false,
+     "T": 1,
+     "xeq": 1.0099071895292822,
+     "w0": 31.31255716322128,
+     "zeta": 0.1,
+     "exactPeriod": 0.20167113152335445,
+     "periods": [
+      0.20321470039091574,
+      0.203178226559194,
+      0.20324263800459674,
+      0.20313057798149164
+     ],
+     "periodErrPct": 0.7453498607979725,
+     "maxAbsErr": 0.0001006694931085103,
+     "minSlack": 0.009247197607937352,
+     "finite": true
+    },
+    {
+     "m": 1,
+     "L": 1,
+     "EA": 1000,
+     "B": 6.324555320336759,
+     "A": 0.001,
+     "dt": 0.002,
+     "iterations": 64,
+     "substeps": 1,
+     "dummy": false,
+     "T": 1,
+     "xeq": 1.0099071895292822,
+     "w0": 31.31255716322128,
+     "zeta": 0.1,
+     "exactPeriod": 0.20167113152335445,
+     "periods": [
+      0.20321470039091574,
+      0.203178226559194,
+      0.20324263800459674,
+      0.20313057798149164
+     ],
+     "periodErrPct": 0.7453498607979725,
+     "maxAbsErr": 0.0001006694931085103,
+     "minSlack": 0.009247197607937352,
+     "finite": true
+    }
+   ],
+   "production": [
+    {
+     "m": 0.081,
+     "L": 2,
+     "EA": 20000,
+     "B": 5,
+     "A": 0.00001,
+     "dt": 0.002,
+     "iterations": 10,
+     "substeps": 1,
+     "dummy": false,
+     "T": 0.5,
+     "xeq": 2.0000794641571504,
+     "w0": 351.3502245884225,
+     "zeta": 0.04392052305789416,
+     "exactPeriod": 0.01790024260632584,
+     "periods": [
+      0.021041534766029404,
+      0.021089506484410735,
+      0.021082622805707867,
+      0.020676789748083964
+     ],
+     "periodErrPct": 16.03467272434682,
+     "maxAbsErr": 0.000006778893559183355,
+     "minSlack": 0.00007621287184678138,
+     "finite": true
+    }
+   ],
+   "productionSubsteps": [
+    {
+     "m": 0.081,
+     "L": 2,
+     "EA": 20000,
+     "B": 5,
+     "A": 0.00001,
+     "dt": 0.002,
+     "iterations": 10,
+     "substeps": 1,
+     "dummy": true,
+     "T": 0.5,
+     "xeq": 2.0000794641571504,
+     "w0": 351.3502245884225,
+     "zeta": 0.04392052305789416,
+     "exactPeriod": 0.01790024260632584,
+     "periods": [
+      0.021041534766029404,
+      0.021089506484410735,
+      0.021082622805707867,
+      0.020676789748083964
+     ],
+     "periodErrPct": 16.03467272434682,
+     "maxAbsErr": 0.000006778893559183355,
+     "minSlack": 0.00007621287184678138,
+     "finite": true
+    },
+    {
+     "m": 0.081,
+     "L": 2,
+     "EA": 20000,
+     "B": 5,
+     "A": 0.00001,
+     "dt": 0.002,
+     "iterations": 10,
+     "substeps": 4,
+     "dummy": true,
+     "T": 0.5,
+     "xeq": 2.0000794641571504,
+     "w0": 351.3502245884225,
+     "zeta": 0.04392052305789416,
+     "exactPeriod": 0.01790024260632584,
+     "periods": [
+      0.018215230271595786,
+      0.01821631970850019,
+      0.018210116109893024,
+      0.018250005539244267
+     ],
+     "periodErrPct": 1.6700168775972246,
+     "maxAbsErr": 0.000003815548420384881,
+     "minSlack": 0.00007311963501566154,
+     "finite": true
+    },
+    {
+     "m": 0.081,
+     "L": 2,
+     "EA": 20000,
+     "B": 5,
+     "A": 0.00001,
+     "dt": 0.002,
+     "iterations": 10,
+     "substeps": 16,
+     "dummy": true,
+     "T": 0.5,
+     "xeq": 2.0000794641571504,
+     "w0": 351.3502245884225,
+     "zeta": 0.04392052305789416,
+     "exactPeriod": 0.01790024260632584,
+     "periods": [
+      0.017946381233802603,
+      0.017947768675481996,
+      0.017945934124097878,
+      0.01794800972261191
+     ],
+     "periodErrPct": 0.2518277800299673,
+     "maxAbsErr": 0.0000014640711971553125,
+     "minSlack": 0.00007175018498895014,
+     "finite": true
+    }
+   ],
+   "productionIterations": [
+    {
+     "m": 0.081,
+     "L": 2,
+     "EA": 20000,
+     "B": 5,
+     "A": 0.00001,
+     "dt": 0.002,
+     "iterations": 1,
+     "substeps": 1,
+     "dummy": false,
+     "T": 0.5,
+     "xeq": 2.0000794641571504,
+     "w0": 351.3502245884225,
+     "zeta": 0.04392052305789416,
+     "exactPeriod": 0.01790024260632584,
+     "periods": [
+      0.021041534766029404,
+      0.021089506484410735,
+      0.021082622805707867,
+      0.020676789748083964
+     ],
+     "periodErrPct": 16.03467272434682,
+     "maxAbsErr": 0.000006778893559183355,
+     "minSlack": 0.00007621287184678138,
+     "finite": true
+    },
+    {
+     "m": 0.081,
+     "L": 2,
+     "EA": 20000,
+     "B": 5,
+     "A": 0.00001,
+     "dt": 0.002,
+     "iterations": 10,
+     "substeps": 1,
+     "dummy": false,
+     "T": 0.5,
+     "xeq": 2.0000794641571504,
+     "w0": 351.3502245884225,
+     "zeta": 0.04392052305789416,
+     "exactPeriod": 0.01790024260632584,
+     "periods": [
+      0.021041534766029404,
+      0.021089506484410735,
+      0.021082622805707867,
+      0.020676789748083964
+     ],
+     "periodErrPct": 16.03467272434682,
+     "maxAbsErr": 0.000006778893559183355,
+     "minSlack": 0.00007621287184678138,
+     "finite": true
+    }
+   ]
+  },
+  "pendulum": {
+   "dt": [
+    {
+     "dt": 0.008,
+     "iterations": 2,
+     "substeps": 1,
+     "dummy": false,
+     "T": 4.1,
+     "periods": [
+      2.006766146293831,
+      2.0067445382490314
+     ],
+     "periodErrPct": 0.018698786600301887,
+     "energyLoss": 0.0033881568028171216,
+     "maxRadialStretch": 9.839773131847807e-7
+    },
+    {
+     "dt": 0.002,
+     "iterations": 2,
+     "substeps": 1,
+     "dummy": false,
+     "T": 4.1,
+     "periods": [
+      2.0063982617187963,
+      2.006392323097365
+     ],
+     "periodErrPct": 0.0007535403253378092,
+     "energyLoss": 0.0009584356279592754,
+     "maxRadialStretch": 0.0000010025475429831232
+    },
+    {
+     "dt": 0.0005,
+     "iterations": 2,
+     "substeps": 1,
+     "dummy": false,
+     "T": 4.1,
+     "periods": [
+      2.0063804915280805,
+      2.0063789613854635
+     ],
+     "periodErrPct": -0.0000222822985951332,
+     "energyLoss": 0.00025403748811214655,
+     "maxRadialStretch": 0.0000011283161824859889
+    }
+   ],
+   "iterations": [
+    {
+     "dt": 0.002,
+     "iterations": 1,
+     "substeps": 1,
+     "dummy": false,
+     "T": 4.1,
+     "periods": [
+      2.006398261718835,
+      2.0063923230974696
+     ],
+     "periodErrPct": 0.0007535403289349318,
+     "energyLoss": 0.0009584356279539463,
+     "maxRadialStretch": 0.0000010025475427610786
+    },
+    {
+     "dt": 0.002,
+     "iterations": 64,
+     "substeps": 1,
+     "dummy": false,
+     "T": 4.1,
+     "periods": [
+      2.006398261718988,
+      2.0063923230954623
+     ],
+     "periodErrPct": 0.0007535402827052451,
+     "energyLoss": 0.0009584356280125661,
+     "maxRadialStretch": 0.0000010025475429831232
+    }
+   ],
+   "substeps": [
+    {
+     "dt": 0.002,
+     "iterations": 2,
+     "substeps": 1,
+     "dummy": true,
+     "T": 1.05,
+     "periods": [],
+     "periodErrPct": null,
+     "energyLoss": 0.0002599199746669001,
+     "maxRadialStretch": 0.0000010025475429831232
+    },
+    {
+     "dt": 0.002,
+     "iterations": 2,
+     "substeps": 16,
+     "dummy": true,
+     "T": 1.05,
+     "periods": [],
+     "periodErrPct": null,
+     "energyLoss": 0.000025397547483763105,
+     "maxRadialStretch": 9.834515990458925e-7
+    }
+   ]
+  },
+  "atwood": [
+   {
+    "r": 0.05,
+    "I": 0,
+    "m1": 2,
+    "m2": 1,
+    "aMeasured": 3.270000000003149,
+    "aNoInertia": 3.27,
+    "aWithInertia": 3.27
+   },
+   {
+    "r": 0.05,
+    "I": 0.0025,
+    "m1": 2,
+    "m2": 1,
+    "aMeasured": 3.270000000003149,
+    "aNoInertia": 3.27,
+    "aWithInertia": 2.4525
+   },
+   {
+    "r": 0.05,
+    "I": 0.01,
+    "m1": 2,
+    "m2": 1,
+    "aMeasured": 3.270000000003149,
+    "aNoInertia": 3.27,
+    "aWithInertia": 1.4014285714285717
+   },
+   {
+    "r": 0.0065,
+    "I": 5e-7,
+    "m1": 0.081,
+    "m2": 0.0405,
+    "aMeasured": 3.2700000000021263,
+    "aNoInertia": 3.2700000000000005,
+    "aWithInertia": 2.979765460314643
+   },
+   {
+    "r": 0.0065,
+    "I": 0.000002,
+    "m1": 0.081,
+    "m2": 0.0405,
+    "aMeasured": 3.2700000000021263,
+    "aNoInertia": 3.2700000000000005,
+    "aWithInertia": 2.3531829253333805
+   }
+  ],
+  "freeRotation": {
+   "control": {
+    "T": 0.5,
+    "dt": 0.002,
+    "omega0": [
+     2,
+     0,
+     0
+    ],
+    "I0": [
+     [
+      0.002,
+      0,
+      0
+     ],
+     [
+      0,
+      0.502,
+      0
+     ],
+     [
+      0,
+      0,
+      0.502
+     ]
+    ],
+    "errVsConstantOmega": 0,
+    "errVsExactFreeBody": 0,
+    "angularMomentumDirectionErrRad": 0
+   },
+   "generic": {
+    "T": 0.5,
+    "dt": 0.002,
+    "omega0": [
+     1,
+     2,
+     0.5
+    ],
+    "I0": [
+     [
+      0.002,
+      0,
+      0
+     ],
+     [
+      0,
+      0.502,
+      0
+     ],
+     [
+      0,
+      0,
+      0.502
+     ]
+    ],
+    "errVsConstantOmega": 0,
+    "errVsExactFreeBody": 0.2476218898940395,
+    "angularMomentumDirectionErrRad": 0.4756878783614166
+   },
+   "generic2": {
+    "T": 0.5,
+    "dt": 0.002,
+    "omega0": [
+     3,
+     1,
+     -2
+    ],
+    "I0": [
+     [
+      0.002,
+      0,
+      0
+     ],
+     [
+      0,
+      0.502,
+      0
+     ],
+     [
+      0,
+      0,
+      0.502
+     ]
+    ],
+    "errVsConstantOmega": 0,
+    "errVsExactFreeBody": 0.7622700872348268,
+    "angularMomentumDirectionErrRad": 1.3961169740109272
+   }
+  },
+  "guideCount": [
+   {
+    "guides": 0,
+    "maxDiffVsZeroGuides": 0
+   },
+   {
+    "guides": 1,
+    "maxDiffVsZeroGuides": 5.995204332975845e-15
+   },
+   {
+    "guides": 3,
+    "maxDiffVsZeroGuides": 0
+   }
+  ],
+  "solverIterations": [
+   {
+    "iterations": 1,
+    "y": -1.0003345349232662
+   },
+   {
+    "iterations": 2,
+    "y": -1.0003431856517893
+   },
+   {
+    "iterations": 4,
+    "y": -1.0003428162070354
+   },
+   {
+    "iterations": 8,
+    "y": -1.0003428154687046
+   },
+   {
+    "iterations": 64,
+    "y": -1.0003428154687029
+   }
+  ]
+ },
+ "summary": {
+  "checks": 19,
+  "failed": 0,
+  "failedNames": []
+ },
+ "checks": [
+  {
+   "name": "free mass position error = 0.5 g t dt at 2 ms",
+   "ok": true,
+   "detail": {
+    "measured": -0.001177200000000253
+   }
+  },
+  {
+   "name": "free mass velocity exact",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "free mass position order ~1",
+   "ok": true,
+   "detail": {
+    "slope": 1.0000000000031124
+   }
+  },
+  {
+   "name": "substeps reduce free-mass position error as 1/n",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "substeps are ignored without a RigidBodyComponent (reported API gate)",
+   "ok": true,
+   "detail": [
+    {
+     "substeps": 1,
+     "y": -0.05003099999999997
+    },
+    {
+     "substeps": 16,
+     "y": -0.05003099999999997
+    }
+   ]
+  },
+  {
+   "name": "oscillator finite and never slack",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "oscillator period error < 2% at 2 ms",
+   "ok": true,
+   "detail": {
+    "pct": 0.7453498607979725
+   }
+  },
+  {
+   "name": "oscillator period error decreases with dt and substeps",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "solver iterations do not change a single-row oscillator",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "pendulum period within 0.01% at 2 ms",
+   "ok": true,
+   "detail": {
+    "pct": 0.0007535403253378092
+   }
+  },
+  {
+   "name": "pendulum period converges with dt",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "pendulum energy loss is first order and substeps reduce it",
+   "ok": true,
+   "detail": {
+    "losses": [
+     0.0033881568028171216,
+     0.0009584356279592754,
+     0.00025403748811214655
+    ],
+    "substepLosses": [
+     0.0002599199746669001,
+     0.000025397547483763105
+    ]
+   }
+  },
+  {
+   "name": "Atwood matches the massless-pulley formula",
+   "ok": true,
+   "detail": [
+    {
+     "r": 0.05,
+     "I": 0,
+     "m1": 2,
+     "m2": 1,
+     "aMeasured": 3.270000000003149,
+     "aNoInertia": 3.27,
+     "aWithInertia": 3.27
+    },
+    {
+     "r": 0.05,
+     "I": 0.0025,
+     "m1": 2,
+     "m2": 1,
+     "aMeasured": 3.270000000003149,
+     "aNoInertia": 3.27,
+     "aWithInertia": 2.4525
+    },
+    {
+     "r": 0.05,
+     "I": 0.01,
+     "m1": 2,
+     "m2": 1,
+     "aMeasured": 3.270000000003149,
+     "aNoInertia": 3.27,
+     "aWithInertia": 1.4014285714285717
+    },
+    {
+     "r": 0.0065,
+     "I": 5e-7,
+     "m1": 0.081,
+     "m2": 0.0405,
+     "aMeasured": 3.2700000000021263,
+     "aNoInertia": 3.2700000000000005,
+     "aWithInertia": 2.979765460314643
+    },
+    {
+     "r": 0.0065,
+     "I": 0.000002,
+     "m1": 0.081,
+     "m2": 0.0405,
+     "aMeasured": 3.2700000000021263,
+     "aNoInertia": 3.2700000000000005,
+     "aWithInertia": 2.3531829253333805
+    }
+   ]
+  },
+  {
+   "name": "Atwood ignores authored pulley inertia (reported model limitation)",
+   "ok": true,
+   "detail": [
+    {
+     "r": 0.05,
+     "I": 0,
+     "m1": 2,
+     "m2": 1,
+     "aMeasured": 3.270000000003149,
+     "aNoInertia": 3.27,
+     "aWithInertia": 3.27
+    },
+    {
+     "r": 0.05,
+     "I": 0.0025,
+     "m1": 2,
+     "m2": 1,
+     "aMeasured": 3.270000000003149,
+     "aNoInertia": 3.27,
+     "aWithInertia": 2.4525
+    },
+    {
+     "r": 0.05,
+     "I": 0.01,
+     "m1": 2,
+     "m2": 1,
+     "aMeasured": 3.270000000003149,
+     "aNoInertia": 3.27,
+     "aWithInertia": 1.4014285714285717
+    },
+    {
+     "r": 0.0065,
+     "I": 5e-7,
+     "m1": 0.081,
+     "m2": 0.0405,
+     "aMeasured": 3.2700000000021263,
+     "aNoInertia": 3.2700000000000005,
+     "aWithInertia": 2.979765460314643
+    },
+    {
+     "r": 0.0065,
+     "I": 0.000002,
+     "m1": 0.081,
+     "m2": 0.0405,
+     "aMeasured": 3.2700000000021263,
+     "aNoInertia": 3.2700000000000005,
+     "aWithInertia": 2.3531829253333805
+    }
+   ]
+  },
+  {
+   "name": "axis-aligned free rotation is exact",
+   "ok": true,
+   "detail": {
+    "T": 0.5,
+    "dt": 0.002,
+    "omega0": [
+     2,
+     0,
+     0
+    ],
+    "I0": [
+     [
+      0.002,
+      0,
+      0
+     ],
+     [
+      0,
+      0.502,
+      0
+     ],
+     [
+      0,
+      0,
+      0.502
+     ]
+    ],
+    "errVsConstantOmega": 0,
+    "errVsExactFreeBody": 0,
+    "angularMomentumDirectionErrRad": 0
+   }
+  },
+  {
+   "name": "generic free rotation holds omega constant (engine model)",
+   "ok": true,
+   "detail": {
+    "T": 0.5,
+    "dt": 0.002,
+    "omega0": [
+     1,
+     2,
+     0.5
+    ],
+    "I0": [
+     [
+      0.002,
+      0,
+      0
+     ],
+     [
+      0,
+      0.502,
+      0
+     ],
+     [
+      0,
+      0,
+      0.502
+     ]
+    ],
+    "errVsConstantOmega": 0,
+    "errVsExactFreeBody": 0.2476218898940395,
+    "angularMomentumDirectionErrRad": 0.4756878783614166
+   }
+  },
+  {
+   "name": "generic free rotation violates exact torque-free motion (reported limitation)",
+   "ok": true,
+   "detail": {
+    "T": 0.5,
+    "dt": 0.002,
+    "omega0": [
+     1,
+     2,
+     0.5
+    ],
+    "I0": [
+     [
+      0.002,
+      0,
+      0
+     ],
+     [
+      0,
+      0.502,
+      0
+     ],
+     [
+      0,
+      0,
+      0.502
+     ]
+    ],
+    "errVsConstantOmega": 0,
+    "errVsExactFreeBody": 0.2476218898940395,
+    "angularMomentumDirectionErrRad": 0.4756878783614166
+   }
+  },
+  {
+   "name": "guide count does not change the dynamics",
+   "ok": true,
+   "detail": [
+    {
+     "guides": 0,
+     "maxDiffVsZeroGuides": 0
+    },
+    {
+     "guides": 1,
+     "maxDiffVsZeroGuides": 5.995204332975845e-15
+    },
+    {
+     "guides": 3,
+     "maxDiffVsZeroGuides": 0
+    }
+   ]
+  },
+  {
+   "name": "solver iterations reduce a two-cable static residual",
+   "ok": true,
+   "detail": [
+    {
+     "iterations": 1,
+     "y": -1.0003345349232662
+    },
+    {
+     "iterations": 2,
+     "y": -1.0003431856517893
+    },
+    {
+     "iterations": 4,
+     "y": -1.0003428162070354
+    },
+    {
+     "iterations": 8,
+     "y": -1.0003428154687046
+    },
+    {
+     "iterations": 64,
+     "y": -1.0003428154687029
+    }
+   ]
+  }
+ ]
+}

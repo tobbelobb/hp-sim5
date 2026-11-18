@@ -115,6 +115,12 @@ jobs:
           MACHINE: ${{ matrix.machine }}
           AUTOCAL_BENCHMARK_OUTPUT: ${{ runner.temp }}/autocal-benchmark
         run: python3 scripts/autocal_benchmark_ci.py missing "$MACHINE" "$AUTOCAL_BENCHMARK_OUTPUT"
+      - name: Review benchmark against history
+        if: "!cancelled() && steps.benchmark.outputs.run == 'true'"
+        env:
+          MACHINE: ${{ matrix.machine }}
+          AUTOCAL_BENCHMARK_OUTPUT: ${{ runner.temp }}/autocal-benchmark
+        run: python3 scripts/autocal_benchmark_ci.py review "$AUTOCAL_BENCHMARK_OUTPUT/$MACHINE.jsonl"
       - name: Upload benchmark result and log
         if: "!cancelled() && steps.benchmark.outputs.run == 'true'"
         uses: actions/upload-artifact@v4

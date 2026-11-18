@@ -1,0 +1,11 @@
+{
+  "with_record": "edb3936e50cf4b309ece4ff336071410",
+  "without_record": "7387f83c7fc640a7a8a2fdf04cedbf55",
+  "rows": [
+    11,
+    11
+  ],
+  "differing_step_sections": [],
+  "n_differing": 0,
+  "same_metrics": true
+}

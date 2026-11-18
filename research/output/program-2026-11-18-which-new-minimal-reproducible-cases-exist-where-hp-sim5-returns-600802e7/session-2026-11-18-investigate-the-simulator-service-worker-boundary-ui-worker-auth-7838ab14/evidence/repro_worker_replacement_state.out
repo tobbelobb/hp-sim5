@@ -1,0 +1,43 @@
+{
+  "sourceDrift": [],
+  "job1": {
+    "sent": [
+      "set_asap_mode",
+      "set_fast_mode"
+    ],
+    "fastModeMessages": 1
+  },
+  "betweenJobs": {
+    "fastModeActive": true,
+    "wasPaused": false,
+    "queued": 200
+  },
+  "job2": {
+    "sent": [
+      "set_asap_mode"
+    ],
+    "fastModeMessages": 0,
+    "queuedWhenBelowLowWaterMark": 159
+  },
+  "controlFreshMirror": {
+    "sent": [
+      "set_asap_mode",
+      "set_fast_mode"
+    ],
+    "fastModeMessages": 1
+  },
+  "lateSupersededWorker": {
+    "afterLateFromA": 0,
+    "afterCurrentWorker": 1
+  },
+  "pauseSemantics": {
+    "whilePaused": {
+      "queued": 2,
+      "executed": 0
+    },
+    "afterResume": {
+      "queued": 1,
+      "executed": 1
+    }
+  }
+}

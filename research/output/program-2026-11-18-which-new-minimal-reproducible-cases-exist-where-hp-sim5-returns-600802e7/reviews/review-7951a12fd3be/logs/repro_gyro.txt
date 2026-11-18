@@ -1,0 +1,7 @@
+body inertia diag: 0.002000, 0.502000, 0.502000 kg m^2
+initial omega: 1, 2, 0.5 rad/s, no torque, 0.5 s at 2 ms
+orientation error vs exact torque-free solution: 0.247622 rad (14.19 deg)
+angular-momentum direction change (should be 0): 0.475688 rad (27.25 deg)
+
+FAIL: the engine holds omega constant in the world frame instead of integrating Euler's equations.
+Control: omega along the symmetry axis (2,0,0) is exact, so this is the missing gyroscopic term.

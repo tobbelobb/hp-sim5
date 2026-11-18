@@ -1,0 +1,69 @@
+{
+  "twoClients": {
+    "firstCommands": 1,
+    "secondCommands": 2,
+    "firstRequests": 0,
+    "secondRequests": 1,
+    "angles": [
+      22
+    ],
+    "encoderAskIsNewestOnly": true
+  },
+  "silentNewest": {
+    "results": [
+      {
+        "attempt": 0,
+        "ok": false,
+        "error": "Browser simulator did not answer encoder request (X) within 40 ms; the browser may be busy or suspended",
+        "ms": 50
+      },
+      {
+        "attempt": 1,
+        "ok": false,
+        "error": "Browser simulator did not answer encoder request (X) within 40 ms; the browser may be busy or suspended",
+        "ms": 48
+      },
+      {
+        "attempt": 2,
+        "ok": false,
+        "error": "Browser simulator did not answer encoder request (X) within 40 ms; the browser may be busy or suspended",
+        "ms": 41
+      }
+    ],
+    "healthyRequests": 0,
+    "silentRequests": 3,
+    "healthyAbstracted": "healthy client was ready the whole time and would have answered in <5 ms"
+  },
+  "pendingOverflow": {
+    "sentWithNoClient": 5003,
+    "deliveredOnAttach": 5000,
+    "firstDelivered": 3,
+    "lastDelivered": 5002,
+    "dropped": 3,
+    "warningsLogged": 0,
+    "note": "overflow evicts the oldest silently; the sender is not told"
+  },
+  "secondAttachReplays": {
+    "firstClient": [
+      1,
+      2
+    ],
+    "secondClientMessagesOnAttach": 0,
+    "secondClientAfterNextBroadcast": [
+      2
+    ]
+  },
+  "detachReconnect": {
+    "remainingClients": 1,
+    "newClientGetsCommand": 2,
+    "oldClientGetsCommand": 0,
+    "encoderRequestWentToNewClient": 1
+  },
+  "malformedClientMessages": {
+    "servedBeforeRequests": 0,
+    "resolvedAngles": [
+      1
+    ],
+    "note": "junk is ignored; the first duplicate reply wins, later ones are dropped"
+  }
+}

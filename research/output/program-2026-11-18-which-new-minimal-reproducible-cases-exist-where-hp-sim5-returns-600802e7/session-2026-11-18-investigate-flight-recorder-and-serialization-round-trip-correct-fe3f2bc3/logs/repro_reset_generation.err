@@ -1,0 +1,6 @@
+
+FAIL (reset is not a distinct, replayable generation):
+  - reset kept scene_generation=1 while epoch went 0 -> 1
+  - the .rrd has no scene_generation timeline
+  - sim_step values repeat across the reset ([0, 50]); two poses differ by 4.118 mm at the same index
+  - events.jsonl scene_generation values never change: [1]

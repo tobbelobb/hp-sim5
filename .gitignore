@@ -55,7 +55,11 @@ autocal/data/fine_old_datasets/
 /autocal/data/*.replay_tmp.json
 /autocal/data/*.replay_tmp.active_sweep_cfg.*.txt
 /autocal/data/*.active_sweep_cfg.default.restore_points.txt
-/output
+/output/*
+!/output/autocal-benchmark-backfill/
+/output/autocal-benchmark-backfill/*
+!/output/autocal-benchmark-backfill/results.jsonl
+!/output/autocal-benchmark-backfill/retry.jsonl
 /.playwright-cli
 klipper_terminal_debug.log
 klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak

@@ -1,0 +1,38 @@
+{
+  "overflowDrip": {
+    "sent": 5003,
+    "queueLimit": 5000,
+    "landedCount": 5000,
+    "firstLandedSeq": 3,
+    "lastLandedSeq": 5002,
+    "droppedSeqs": [
+      0,
+      1,
+      2
+    ],
+    "droppedCount": 3,
+    "warnings": 0
+  },
+  "oversizeBatch": {
+    "sent": 6000,
+    "queueLimit": 5000,
+    "landed": 6000,
+    "queuedBeyondLimit": 1000
+  },
+  "resetVersusParked": {
+    "beforeReset": {
+      "remoteQueue": 0
+    },
+    "justAfterReset": {
+      "remoteQueue": 0,
+      "resets": 1
+    },
+    "afterRebuildFlush": [
+      null,
+      0,
+      1,
+      2
+    ],
+    "replayedPreResetCommands": 4
+  }
+}

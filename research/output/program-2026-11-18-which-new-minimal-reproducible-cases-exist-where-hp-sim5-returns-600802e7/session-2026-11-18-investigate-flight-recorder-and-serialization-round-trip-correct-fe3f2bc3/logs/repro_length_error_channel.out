@@ -1,0 +1,17 @@
+{
+  "metrics": {
+    "effector_displacement_m": {
+      "world/machines/default/effector": 0.00016135843702602952
+    },
+    "peak_cable_force_n": 5.900638867027283,
+    "peak_abs_length_error_m": 0.0,
+    "peak_abs_tracking_error_rad": 0.1346034201416437,
+    "total_missed_step_slips": 4
+  },
+  "truth_peak_abs_error_m": 0.006326360746657045,
+  "telemetry_cables_with_fabricated_error": 54,
+  "telemetry_cables_total": 54,
+  "rrd_error_scalars": 54,
+  "rrd_max_abs_error": 0.0,
+  "trajectory_roundtrip_max_abs_error_m": 1.8934233347867035e-09
+}
