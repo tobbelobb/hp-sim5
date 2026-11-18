@@ -3,6 +3,7 @@
 #include <node_api.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define PATH_HEADER 9
@@ -12,7 +13,7 @@
 typedef struct PhysicsWorld PhysicsWorld;
 extern PhysicsWorld *engine_create(const double *, size_t, const double *, size_t);
 extern void engine_destroy(PhysicsWorld *);
-extern void engine_step(PhysicsWorld *, double);
+extern size_t engine_step(PhysicsWorld *, double);
 extern double *engine_entities(PhysicsWorld *);
 extern double *engine_options(PhysicsWorld *);
 extern double *engine_path(PhysicsWorld *, size_t);
@@ -114,7 +115,12 @@ static napi_value step(napi_env env, napi_callback_info info) {
         napi_throw_range_error(env, NULL, "Native timestep must be nonnegative and finite"); return NULL;
     }
     uint32_t before = engine_topology_version(host->world);
-    engine_step(host->world, dt);
+    size_t invalid_row = engine_step(host->world, dt);
+    if (invalid_row) {
+        char message[96];
+        snprintf(message, sizeof message, "Non-finite physics position at entity row %zu", invalid_row - 1);
+        napi_throw_range_error(env, NULL, message); return NULL;
+    }
     uint32_t after = engine_topology_version(host->world);
     // Rust can reallocate path storage during split/merge. JS cannot run during
     // this synchronous call; detach old views before returning to JS.

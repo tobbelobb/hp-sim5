@@ -32,11 +32,15 @@ pub unsafe extern "C" fn engine_create(
 pub unsafe extern "C" fn engine_destroy(world: *mut PhysicsWorld) {
     drop(Box::from_raw(world));
 }
+/// Returns zero on success or the one-based row of a non-finite position.
 /// # Safety
 /// `world` must be live and exclusively owned. Views must not be used during step.
 #[no_mangle]
-pub unsafe extern "C" fn engine_step(world: *mut PhysicsWorld, dt: f64) {
-    (*world).step(dt);
+pub unsafe extern "C" fn engine_step(world: *mut PhysicsWorld, dt: f64) -> usize {
+    match (*world).step(dt) {
+        Ok(()) => 0,
+        Err(error) => error.row + 1,
+    }
 }
 /// # Safety
 /// `world` must be live. The view lasts until engine_destroy.

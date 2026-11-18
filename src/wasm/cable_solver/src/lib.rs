@@ -1054,7 +1054,7 @@ pub(crate) fn solve_row(
 }
 #[no_mangle]
 pub extern "C" fn abi_version() -> u32 {
-    2
+    3
 }
 #[no_mangle]
 pub extern "C" fn alloc_buffer(len: usize) -> *mut f64 {

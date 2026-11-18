@@ -530,6 +530,11 @@ fn rotate_entity(es: &mut [Entity], id: usize, axis: V, angle: f64) {
     update_local(es, id);
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct InvalidPosition {
+    pub row: usize,
+}
+
 /// One continuing world, usable directly from native Rust as well as the C ABI.
 pub struct PhysicsWorld {
     pub entities: Vec<Entity>,
@@ -596,7 +601,13 @@ impl PhysicsWorld {
     pub fn path_count(&self) -> usize {
         self.cables.len()
     }
-    pub fn step(&mut self, dt: f64) {
+    /// Rejects a non-finite current position before modifying the world.
+    pub fn step(&mut self, dt: f64) -> Result<(), InvalidPosition> {
+        if let Some(row) = self.entities.iter().position(|e| {
+            e[51] != 0.0 && !(e[0].is_finite() && e[1].is_finite() && e[2].is_finite())
+        }) {
+            return Err(InvalidPosition { row });
+        }
         self.sync_shared(None);
         self.previous();
         self.motors(dt, false);
@@ -651,6 +662,7 @@ impl PhysicsWorld {
         self.motors(dt, true);
         self.encoders();
         self.diagnostics();
+        Ok(())
     }
     fn sync_shared(&mut self, source: Option<usize>) {
         for owners in &self.shared {

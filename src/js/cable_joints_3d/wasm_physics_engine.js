@@ -14,7 +14,7 @@ export class WasmPhysicsEngine extends RustPhysicsEngine {
   physicsEngine = 'rust-wasm';
   constructor(module) {
     const exports = new WebAssembly.Instance(module, {}).exports;
-    if (exports.abi_version() !== 2) throw new Error('Unsupported Rust physics Wasm ABI');
+    if (exports.abi_version() !== 3) throw new Error('Unsupported Rust physics Wasm ABI');
     let handle = 0, buffer;
     super({
       create(bodies, paths, count) {
@@ -28,7 +28,11 @@ export class WasmPhysicsEngine extends RustPhysicsEngine {
       entities: () => new Float64Array(exports.memory.buffer, exports.engine_entities(handle), exports.engine_entity_count(handle) * 160),
       options: () => new Float64Array(exports.memory.buffer, exports.engine_options(handle), exports.engine_options_len()),
       path: index => new Float64Array(exports.memory.buffer, exports.engine_path(handle, index), exports.engine_path_len(handle, index)),
-      step(dt) { exports.engine_step(handle, dt); return exports.engine_topology_version(handle); },
+      step(dt) {
+        const invalidRow = exports.engine_step(handle, dt) >>> 0;
+        if (invalidRow) throw new RangeError(`Non-finite physics position at entity row ${invalidRow - 1}`);
+        return exports.engine_topology_version(handle);
+      },
       destroy() { if (handle) exports.engine_destroy(handle); handle = 0; },
       refresh(regions) {
         if (buffer === exports.memory.buffer) return;

@@ -82,7 +82,10 @@ use a native profiler to inspect Rust frames. Record plain timings separately.
 
 Native callers use `hp_sim5_cable_solver::engine::PhysicsWorld::new(entities,
 paths)`, set `options`, then call `step(dt)`. The core retains state and exposes
-entity records and `path_data(index)` for observations or edits. There are no
+entity records and `path_data(index)` for observations or edits. A non-finite
+current position returns `InvalidPosition` with the zero-based entity row
+before physics changes any state. The JavaScript hosts throw a `RangeError`
+with that row. Repair the position and call `step` again. There are no
 browser callbacks, JS transcendental imports, scene parsers, sockets or logging
 dependencies in this API. The C ABI in `abi.rs` only allocates/accesses that world.
 The Node-API adapter in `native/node_bridge.c` supplies the same prepared scene
