@@ -78,3 +78,7 @@ if [[ "${RUN_SIM_E2E:-0}" == "1" ]]; then
   (cd "$ROOT" && node autocal/control/tests/e2e/return_to_origin_all_at_once.e2e.test.mjs --sim)
   (cd "$ROOT" && node autocal/control/tests/e2e/calibrate_encoder_noise.e2e.test.mjs --sim)
 fi
+
+echo "== HP5 headless collection, convergence, precision and accuracy budgets =="
+(cd "$ROOT" && OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python -m pytest \
+  -s -m heavy autocal/tests/test_extra_sensor_headless.py)

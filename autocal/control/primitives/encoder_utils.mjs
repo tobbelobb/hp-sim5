@@ -397,5 +397,7 @@ export async function sendHpSimSettings(bridgeCtx, settings) {
   if (settings.recordingUrl && applied && (applied.recordingError || !applied.recording)) {
     throw new Error(`Rerun recording could not start: ${applied.recordingError ?? 'not connected'}`);
   }
+  // Settings can rebuild the scene while the bridge stays connected.
+  if (response?.simulationClock) bridgeCtx.simulationClock?.observe?.(response.simulationClock);
   return applied;
 }

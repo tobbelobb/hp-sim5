@@ -79,6 +79,7 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
     path = tmp_path / 'sweeps.json'
     _write_dataset(path, sweeps=3)
     fits, collects, replans, sent = [], [], [], []
+    collectors = set()
     def fitted(data_path, **kwargs):
         data = ac._load_json(data_path)
         fits.append(len(data['sweeps']))
@@ -91,10 +92,8 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
         assert len(frozen['dataset']['acquisition_rejections']) == 1
         replans.append(frozen)
         return {**frozen, 'collect_command': ['node', 'collector', '--output-file', str(kwargs['collector_output'])]}
-    real_run = ac.subprocess.run
-    def collect(command, **kwargs):
-        if command[0] != 'node':
-            return real_run(command, **kwargs)
+    def collect(self, command):
+        collectors.add(self)
         collects.append(command)
         if transport_failure:
             raise subprocess.CalledProcessError(1, command)
@@ -112,7 +111,7 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
     monkeypatch.setattr(ac, '_plan_hits_underconstrained_penalty', lambda *a: False)
     monkeypatch.setattr(ac.StoppingPolicy, 'update', lambda *a, **kw: StopDecision(1, True, False, None, 'accept' if 4 in fits else 'collect'))
     monkeypatch.setattr(selection, 'score_future_sweeps', lambda *a, **kw: (.1, 1))
-    monkeypatch.setattr(ac.subprocess, 'run', collect)
+    monkeypatch.setattr(ac.BrowserCollector, 'collect', collect)
     monkeypatch.setattr(ac.RRFFirmwareProvider, 'send_gcode', lambda *a: sent.append(a) or '')
     code = ac.main(['--sim', '--machine-type', 'slideprinter', '--dataset', str(path), '--max-steps', '4',
                     '--collector-args', '--server', 'http://127.0.0.1:12345'])
@@ -122,6 +121,7 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
         assert len(data['sweeps']) == 3
     else:
         assert code == 0 and len(sent) == 1 and len(collects) == 2 and len(replans) == 1
+        assert len(collectors) == 1
         assert fits[0] == 3 and all(count == 4 for count in fits[1:])
         assert len(data['sweeps']) == 4 and len(data['acquisition_rejections']) == 1
         assert path.with_name('sweeps.new_001.json').exists()
@@ -336,22 +336,14 @@ def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypa
     assert len(sent) == 0
 
 
-def test_full_auto_loop_registers_cleanup_for_keyboard_interrupt_before_main_loop(
+def test_full_auto_loop_closes_collection_and_firmware_on_bootstrap_interrupt(
     tmp_path,
     monkeypatch,
 ):
     dataset = tmp_path / "missing_dataset.json"
 
     fake_proc = object()
-    registered_callbacks = []
     stopped = []
-
-    def fake_register(callback, *args, **kwargs):
-        registered_callbacks.append(callback)
-        return callback
-
-    def fake_start(*_args, **_kwargs):
-        return fake_proc
 
     def fake_wait(*_args, **_kwargs):
         return None
@@ -359,10 +351,14 @@ def test_full_auto_loop_registers_cleanup_for_keyboard_interrupt_before_main_loo
     def interrupting_run(*_args, **_kwargs):
         raise KeyboardInterrupt
 
-    monkeypatch.setattr(ac.atexit, "register", fake_register)
+    def close_collector(self):
+        if "collector" not in stopped:
+            stopped.append("collector")
+
     monkeypatch.setattr(ac.RRFFirmwareProvider, "start_simulator", lambda *args, **kwargs: fake_proc)
     monkeypatch.setattr(ac.RRFFirmwareProvider, "wait_for_ready", fake_wait)
-    monkeypatch.setattr(ac.subprocess, "run", interrupting_run)
+    monkeypatch.setattr(ac.BrowserCollector, "collect", interrupting_run)
+    monkeypatch.setattr(ac.BrowserCollector, "close", close_collector)
     monkeypatch.setattr(ac, "_stop_process", lambda proc: stopped.append(proc))
 
     result = ac.full_auto_loop(
@@ -414,8 +410,7 @@ def test_full_auto_loop_registers_cleanup_for_keyboard_interrupt_before_main_loo
     )
     assert result == 130
 
-    assert len(registered_callbacks) == 1
-    assert stopped == [fake_proc]
+    assert stopped == ["collector", fake_proc]
 
 
 def test_write_bootstrap_sweep_config_uses_machine_specific_constraints(tmp_path):

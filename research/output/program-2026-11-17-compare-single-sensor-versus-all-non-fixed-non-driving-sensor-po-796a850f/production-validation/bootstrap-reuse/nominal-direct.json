@@ -1,0 +1,79 @@
+{
+  "bootstrap_configurations": 4,
+  "rough_last_sample_s": 1156.7739999864698,
+  "profiled_last_sample_s": 2398.2079999571138,
+  "rows": [
+    {
+      "policy": "rough",
+      "stiffness": null,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 11.917856148641704,
+      "aligned_mm": 9.834500966035876,
+      "heldout_constraints_rms_mm": 0.4530125058162621
+    },
+    {
+      "policy": "rough",
+      "stiffness": null,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 2.7488528604403655,
+      "aligned_mm": 2.841552712406883,
+      "heldout_constraints_rms_mm": null
+    },
+    {
+      "policy": "rough",
+      "stiffness": 20000.0,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 2.0318634292168554,
+      "aligned_mm": 1.5575210968244846,
+      "heldout_constraints_rms_mm": 0.07112174743784314
+    },
+    {
+      "policy": "rough",
+      "stiffness": 20000.0,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 1.1811971556091976,
+      "aligned_mm": 0.9511033128794221,
+      "heldout_constraints_rms_mm": null
+    },
+    {
+      "policy": "profiled",
+      "stiffness": null,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 0.9918755102294199,
+      "aligned_mm": 0.7257749106383926,
+      "heldout_constraints_rms_mm": 0.06028551186476274
+    },
+    {
+      "policy": "profiled",
+      "stiffness": null,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 1.3814104590992429,
+      "aligned_mm": 1.112926953810987,
+      "heldout_constraints_rms_mm": null
+    },
+    {
+      "policy": "profiled",
+      "stiffness": 20000.0,
+      "appended": 0,
+      "points": 80,
+      "max_error_mm": 0.8093127245606411,
+      "aligned_mm": 0.6357557369994858,
+      "heldout_constraints_rms_mm": 0.027739546382844264
+    },
+    {
+      "policy": "profiled",
+      "stiffness": 20000.0,
+      "appended": 1,
+      "points": 100,
+      "max_error_mm": 0.8836677039987535,
+      "aligned_mm": 0.6097328103090542,
+      "heldout_constraints_rms_mm": null
+    }
+  ]
+}

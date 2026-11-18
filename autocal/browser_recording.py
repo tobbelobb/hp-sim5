@@ -31,7 +31,7 @@ def browser_recording(dataset):
     process = None
 
     def interrupt(signum, frame):
-        raise KeyboardInterrupt
+        raise SystemExit(128 + signum)
 
     try:
         with (directory / 'recorder.log').open('w') as log:
