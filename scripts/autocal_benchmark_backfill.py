@@ -2,7 +2,7 @@
 """Run the headless autocal benchmark on past main commits, several in parallel.
 
 For each selected first-parent commit, check it out in a temporary worktree
-(RRF submodules as submodule worktrees, shared .venv and node_modules), build or
+(submodule worktrees, shared .venv and node_modules), build or
 reuse a cached rrf_simulator and native physics addon, run full-auto autocal for
 each machine and score it with the *current* autocal/tools/autocal_benchmark.py.
 
@@ -32,11 +32,12 @@ import traceback
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from autocal.tools.benchmark_history import (  # noqa: E402
-    CONTRIBUTIONS, MACHINES, MAX_PHYSICS_STEPS, fingerprint, git, markdown_summary, measurement,
-    merge_results, read_results, run_autocal, settings, verified_results, write_results,
+    CONTRIBUTIONS, FINGERPRINT_VERSION, LEGACY_TRANSFORM, MACHINES, MAX_PHYSICS_STEPS, dependency_environment,
+    fingerprint, git, markdown_summary, measurement,
+    merge_results, protocol, read_results, run_autocal, settings, scorer_fingerprint, verified_results, write_results,
 )
 
-RRF_SUBMODULES = ('RRF/ReprapFirmware', 'RRF/RRFLibraries', 'RRF/CANlib')
+SUBMODULES = ('RRF/ReprapFirmware', 'RRF/RRFLibraries', 'RRF/CANlib', LEGACY_TRANSFORM)
 LOCK = threading.Lock()
 
 
@@ -89,7 +90,7 @@ def build_native(commit, worktree, out):
 
 def prepare(commit, out, threads, worktree):
     git('worktree', 'add', '--detach', str(worktree), commit)
-    for sub in RRF_SUBMODULES:
+    for sub in git('ls-tree', '--name-only', commit, '--', *SUBMODULES).splitlines():
         sha = git('rev-parse', f'{commit}:{sub}')
         if subprocess.run(['git', 'cat-file', '-e', f'{sha}^{{commit}}'], cwd=ROOT / sub).returncode:
             git('fetch', 'origin', sha, cwd=ROOT / sub)
@@ -104,7 +105,7 @@ def prepare(commit, out, threads, worktree):
 def remove_worktree(worktree):
     if not worktree.exists():
         return
-    for sub in RRF_SUBMODULES:
+    for sub in SUBMODULES:
         if (worktree / sub / '.git').exists():
             subprocess.run(['git', 'worktree', 'remove', '--force', str(worktree / sub)], cwd=ROOT / sub)
     subprocess.run(['git', 'worktree', 'remove', '--force', str(worktree)], cwd=ROOT)
@@ -121,6 +122,7 @@ def benchmark(commit, machine, repeat, worktree, out, timeout_s, max_steps):
     log = directory / 'autocal.log'
     row['run_dir'] = str(directory.relative_to(out))
     try:
+        row['environment'] = dependency_environment((worktree / 'node_modules').resolve())
         code = run_autocal(machine, dataset, worktree, log, timeout_s, max_steps)
         details = log.read_text(errors='replace')[-2000:]
         if code:
@@ -159,7 +161,9 @@ def record_result(out, record):
 
 
 def write_summary(out):
-    (out / 'summary.md').write_text(markdown_summary(merge_results(read_results(out / 'results.jsonl'))))
+    rows = merge_results(read_results(out / 'results.jsonl'))
+    (out / 'summary.md').write_text(markdown_summary(rows))
+    (out / 'by-fingerprint.md').write_text(markdown_summary(rows, by_fingerprint=True))
     print(f'Wrote {out / "summary.md"}')
 
 
@@ -209,10 +213,11 @@ def main():
 
 
 def run_backfill(args, out):
+    current = dict(settings=settings(args.max_physics_steps), scorer=scorer_fingerprint(ROOT),
+                   environment=dependency_environment((ROOT / 'node_modules').resolve()))
     known = {(row['machine'], row['fingerprint']) for row in read_results(out / 'results.jsonl')
              if row['status'] not in {'retry', 'timeout', 'interrupted', 'setup-failed'}
-             and (row.get('settings') == settings(args.max_physics_steps)
-                  or ('settings' not in row and args.max_physics_steps == MAX_PHYSICS_STEPS))}
+             and row.get('fingerprint_version') == FINGERPRINT_VERSION and protocol(row) == protocol(current)}
     selection = [(c, m, fingerprint(c, m)) for c in dict.fromkeys(select_commits(args))
                  for m in dict.fromkeys(args.machines)]
     if args.stride > 1:
