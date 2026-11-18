@@ -51,7 +51,6 @@ def fit_ellipse_dataset(
     fit_home_offsets: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
-    fit_structure: Optional[Sequence[int]] = None,
     initial_guess: Optional[np.ndarray] = None,
     initial_radii_mm: Optional[np.ndarray] = None,
     initial_buildup_factor: Optional[np.ndarray] = None,
@@ -82,7 +81,6 @@ def fit_ellipse_dataset(
         fit_home_offsets = False
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
-    fit_structure_levels = _parse_fit_structure_levels(fit_structure)
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_radii = _spool_mode_enabled(find_radii_mode)
     search_buildup = _spool_mode_enabled(find_buildup_mode)
@@ -240,7 +238,6 @@ def fit_ellipse_dataset(
                 robust_debug=bool(robust_debug),
                 low_anchor_z=low_anchor_z,
                 prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
-                fit_structure_levels=fit_structure_levels,
                 filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
                 objective_schedule=_parse_objective_schedule(
                     objective_schedule,
@@ -342,7 +339,6 @@ def fit_ellipse_dataset(
                 )
             ],
             "theta0_mode": theta0_mode_norm,
-            "fit_structure_levels": [int(v) for v in fit_structure_levels],
             "radii_fit": radii_fit,
             "spool_fit": radii_fit,
         }
@@ -551,7 +547,6 @@ def fit_ellipse_dataset(
         "spool_model_params": spool_params,
         "line_width_mm": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
-        "fit_structure_levels": [int(v) for v in fit_structure_levels],
         "dataset_for_estimation": dataset_for_estimation,
         "pose_fit": pose_fit,
         "home_offsets_mm": home_offsets_mm,

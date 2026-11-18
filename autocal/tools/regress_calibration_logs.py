@@ -290,7 +290,7 @@ _RE_ANCHORS = re.compile(r"Anchors:\s*(\[\[.*\]\])")
 _RE_EFFECTIVE = re.compile(r"effective=\[([^\]]+)\]")
 _RE_LEGACY_FIT_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
 _RE_SELECTED_FIT_SCORE_UI = re.compile(r"\b(?:fit_score_ui|score_ui)=([0-9.+-eE]+)\b")
-_RE_SELECTED_RANK_SCORE = re.compile(r"\brank_score=([0-9.+-eE]+)\b")
+_RE_SELECTED_RANK_SCORE = re.compile(r"\b(?:rank_score|anchor_uncertainty_mm)=([0-9.+-eE]+)\b")
 _RE_SELECTED_HISTORY_RANK_SCORE = re.compile(r"\b(?:history_rank_score|selection_rank)=([0-9.+-eE]+)\b")
 _RE_REPLAY_START = re.compile(r"; full-auto replay: starting from (\d+) sweeps, replaying (\d+) additional sweeps")
 _RE_REPLAYED_SWEEP_TOTAL = re.compile(r"; replayed sweep \d+/\d+ -> .*? sweeps=(\d+)\s*$")
@@ -298,7 +298,7 @@ _RE_COLLECTED_SWEEP = re.compile(r"Collected sweep nr (\d+)\b")
 _NUM_PATTERN = r"[+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?"
 _RE_M669_PARTS = re.compile(rf"([A-Z])\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
 _RE_M666_R = re.compile(rf"\bR\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
-_RE_FIT_SCORE = re.compile(r"Fit(?:/UI)? quality score.*?:\s*([0-9.+-eE]+)\s*$")
+_RE_FIT_SCORE = re.compile(r"(?:Fit(?:/UI)? quality score|Anchor uncertainty).*?:\s*([0-9.+-eE]+)\s*$")
 _RE_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 

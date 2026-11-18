@@ -3,7 +3,7 @@ usage: autocal.py [-h] --machine-type {slideprinter,hangprinter_3,hangprinter_4,
                   [--patience PATIENCE] [--stable-step-mm STABLE_STEP_MM] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
                   [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
                   [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
-                  [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--theta0-mode {infer,zero}] [--fit-structure FIT_STRUCTURE] [--filter-schedule FILTER_SCHEDULE]
+                  [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--theta0-mode {infer,zero}] [--filter-schedule FILTER_SCHEDULE]
                   [--objective-schedule OBJECTIVE_SCHEDULE] [--pointwise-residual {sampson,euclidean}] [--pointwise-filtering] [--no-pointwise-filtering] [--pointwise-global-mad] [--pointwise-per-sweep-mad] [--sweep-wise-filtering]
                   [--no-sweep-wise-filtering] [--sweep-metric {mad,median_abs,outlier_ratio}] [--sigma-source {auto,point,origin,min}] [--use-noise-mean | --use-raw-lengths] [--robust-debug] [--no-robust-debug] [--residuals-csv RESIDUALS_CSV]
                   [--report] [--candidate-deltas CANDIDATE_DELTAS] [--candidate-count CANDIDATE_COUNT] [--delta-min DELTA_MIN] [--delta-max DELTA_MAX] [--fd-eps-mm FD_EPS_MM] [--regularization REGULARIZATION] [--no-exclude-existing]
@@ -47,7 +47,7 @@ KEEP  --dataset DATASET     Dataset file updated each iteration (default: autoca
   --solve-optimizer {lbfgsb,lm,trf}
                         Anchor solver: lbfgsb (default), trf, or lm.
   --trf-solver-fallback, --no-trf-solver-fallback
-                        Retry unsuccessful or invalid lbfgsb restarts with bounded trf (default: disabled; can change the final consensus).
+                        Retry unsuccessful or invalid lbfgsb restarts with bounded trf (default: disabled).
   --optimizer-mode {fast,fast-fd,legacy}
                         Optimization mode: 'fast' (JAX exact Jacobian), 'fast-fd' (JAX value + SciPy finite differences), or 'legacy' (no JAX + SciPy finite differences).
 KEEP  --find-radii [{off,global,per-anchor}]
@@ -75,8 +75,6 @@ KEEP  --b-bounds B_BOUNDS   Bounds for fitted buildup factor as 'min,max' (defau
                         Outer iterations for spool parameter refinement.
   --theta0-mode {infer,zero}
                         Theta offset mode for spool model: infer | zero (default: zero).
-  --fit-structure FIT_STRUCTURE
-                        Enable fit-structure rank penalties by id (comma-separated): 1=tail_ratio, 2=sweep_bias_directionality, 3=tail_factor (default: 3).
   --filter-schedule FILTER_SCHEDULE
                         Explicit filter-pass schedule as comma-separated words or numbers. Words: warmup,dynamic,constant. Numbers: 0=warmup, 1=dynamic, 2=constant. Default: warmup,warmup,warmup,dynamic.
   --objective-schedule OBJECTIVE_SCHEDULE
@@ -198,7 +196,7 @@ The original inventory and handoffs remain historical research records.
 `--plot-residual-histogram` has been removed because it was parsed without a
 consumer. Keep using `autocal/plot_residual_hist.py` with exported residual CSVs.
 The help text above is the original audit snapshot, not current CLI help.
-Ranking/consensus defaults are unchanged. See [integration findings](research/autocal-ranking-lane04-integration.md).
+See [integration findings](research/autocal-ranking-lane04-integration.md).
 
 ## Lane 05 integration, 2026-10-22
 

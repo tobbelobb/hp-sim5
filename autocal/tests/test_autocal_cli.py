@@ -83,7 +83,6 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["objective_schedule"] == [1, 1, 1, 1]
     assert opts["line_width"] == 1.25
     assert opts["sigma_floor_mm"] == 0.05
-    assert opts["fit_structure"] == [3]
 
 
 def test_spool_cli_flags_without_value_default_to_per_anchor():
@@ -147,18 +146,6 @@ def test_spool_cli_rejects_unknown_objective_schedule_alias():
 
 def test_spool_cli_rejects_constant_without_dynamic_since_last_warmup():
     parser, args = _parse_spool_args("--filter-schedule", "warmup,constant")
-    with pytest.raises(SystemExit):
-        _resolve_spool_cli_options(parser, args)
-
-
-def test_spool_cli_parses_fit_structure_levels():
-    parser, args = _parse_spool_args("--fit-structure", "1,3")
-    opts = _resolve_spool_cli_options(parser, args)
-    assert opts["fit_structure"] == [1, 3]
-
-
-def test_spool_cli_rejects_invalid_fit_structure_level():
-    parser, args = _parse_spool_args("--fit-structure", "4")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 

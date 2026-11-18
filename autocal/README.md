@@ -178,10 +178,8 @@ For replay without new measurements:
 
 Recovery orchestration lives in `fit_recovery.py`: restore filtered sweeps/points,
 then optionally seed from an endpoint-preserving sparse subset and refine on the
-full data. `stopping.py` owns training-history patience, spread agreement and the
-stop-file check. The main loop still handles collection, final held-out selection
-and applying the chosen calibration. This extraction preserves the existing
-policies and diagnostics.
+full data. `stopping.py` owns stable-estimate stopping, uncertainty patience and the
+stop-file check. The main loop handles collection and applies the newest fit.
 
 ## Python dependencies
 
@@ -389,9 +387,7 @@ The one-click loop composes independently callable stages:
 | Transform encoder observations into modeled lengths | `spool_model.dataset_with_modeled_lengths` | No |
 | Fit and assess anchors/spools | `fit_stage.fit_ellipse_dataset` | Yes |
 | Plan the next sweep from a frozen fit | `planning_pass.plan_ellipse_sweep` | No |
-| Evaluate frozen history models on future sweeps | `history_selection.evaluate_history_candidates` | No |
-| Rank already evaluated candidates | `history_selection.rank_history_candidates` | No |
-| Reduce candidates to the applied geometry | `history_selection.consensus_anchor_estimate` | No |
+| Estimate anchor uncertainty in mm | `anchor_uncertainty.plan_anchor_uncertainty_mm` | Yes, one point fit per sweep |
 
 Existing collection backends and inner initialization, refinement, filter-pass
 and scale-polish modules remain separate. `plan_next_ellipse_sweep` composes fit
@@ -455,11 +451,18 @@ planner's most informative candidate, must each move every anchor coordinate by
 at most `--stable-step-mm` (0.5 mm; 0 disables). Fit cost is not a progress
 measure here, because it rises as sweeps reach harder poses, and expected
 information gain shrinks like 1/n without ever reaching a plateau. Stability is
-not accuracy: a systematic bias moves no estimate. Three non-improving
-iterations (`--patience`) remain a fallback.
-Ctrl-C during the loop requests best-so-far acceptance.
-Final selection favors successful held-out predictions when available.
-These scores measure fit and prediction quality. They do not prove anchor accuracy.
+not accuracy: a systematic bias moves no estimate. Three iterations
+(`--patience`) without a new lowest anchor uncertainty remain a fallback.
+Ctrl-C during the loop accepts the newest fit.
+
+The loop applies the newest admissible fit, which uses all the data. Variants of
+one iteration fit the same data, so the lowest cost picks among them; costs of
+fits to different data are not compared. The reported quality is the anchor
+uncertainty in mm: the largest coordinate standard deviation of point fits that
+each leave out one sweep. Up to 1 mm is good, up to 3 mm usable, above that poor.
+It misses bias that every sweep shares, such as unmodelled line stretch or wrong
+reeving geometry; on HP4 the true error is about 2.7 times the reported value.
+See `anchor_uncertainty.py` for the evidence.
 
 Collection checks the latest 1.5 seconds of encoder readings for quiet settling,
 with a range limit scaled to the longer 5-second vibration window's drift allowance.
@@ -563,15 +566,6 @@ than replayed with changed semantics. Outer budgets, priors and objective schedu
 remain available because their investigations are mixed or incomplete.
 See [validation and integration evidence](../research/autocal-spool-lane03-integration.md).
 
-### History selection replay
-
-History `rank` replay exports both `chosen_iteration` (the best-ranked single fit)
-and `applied_anchors` (which can be a consensus). `summary_meta` records the
-consensus members/spread alongside the single-fit diagnostics, using the same
-selection function as full-auto. Saved history candidate plans retain noise
-metrics at `plan.calibration.details.noise_metrics` when provided by the fit;
-inspect those before scheduling new fits for a scoring-only experiment.
-
 ### Planning controls
 
 Use `--candidate-count` (default 41) and `--delta-min`/`--delta-max` for the
@@ -588,8 +582,7 @@ research overrides. `--regularization` keeps its 1e-6 default and requires a
 finite positive value; the resulting covariance is not calibrated uncertainty.
 
 `--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3 as a fallback
-to the `--stable-step-mm` stop. Final history-selection logs identify the
-held-out-selected iteration/run separately from the running training-rank best.
+to the `--stable-step-mm` stop.
 
 ## Headless benchmark history
 

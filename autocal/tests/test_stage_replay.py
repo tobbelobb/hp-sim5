@@ -7,7 +7,6 @@ import pytest
 
 import autocal.active_learning as al
 import autocal.fit_stage as fs
-from autocal.history_selection import rank_history_candidates
 from autocal.planning_pass import plan_ellipse_sweep
 from autocal.spool_model import build_spool_model_params, sweep_configs_with_modeled_lengths
 from autocal.stage_artifacts import read_stage_artifact, write_stage_artifact
@@ -109,25 +108,6 @@ def test_planning_enables_layering_from_fitted_buildup(tmp_path, buildup, enable
     assert ("--line-layering" in plan["collect_command"]) is enabled
 
 
-def test_history_ranking_preserves_veto_and_unvalidated_fallback(tmp_path):
-    def item(iteration, prediction, key):
-        return ((key,), {"iteration": iteration}, {"prediction_score": prediction})
-
-    unvalidated = item(3, None, 0.0)
-    failed = item(1, float("inf"), 1.0)
-    valid = item(2, 2.0, 2.0)
-    assert rank_history_candidates([unvalidated, failed, valid]) == [valid]
-    assert rank_history_candidates([unvalidated, failed]) == []
-    assert rank_history_candidates([unvalidated]) == [unvalidated]
-    path = tmp_path / "history.json"
-    write_stage_artifact(path, "history", {"evaluated": [unvalidated, failed, valid]})
-    main(["rank", str(path), "--output", str(tmp_path / "rank.json")])
-    payload = read_stage_artifact(tmp_path / "rank.json")["payload"]
-    assert payload["chosen_iteration"] == 2
-    assert payload["failed_predictions"] is False
-    assert rank_history_candidates([]) == []
-
-
 def test_artifacts_reject_wrong_stage_and_version(tmp_path):
     path = tmp_path / "data.json"
     write_stage_artifact(path, "history", {})
@@ -168,38 +148,6 @@ def test_fit_replay_reads_old_artifacts_without_removed_options(tmp_path, monkey
     override.write_text(json.dumps({"residual_threshold": 0.01}))
     with pytest.raises(SystemExit):
         main(["fit", str(artifact), "--options", str(override), "--output", str(output)])
-
-
-def test_history_replay_migrates_flex_disabled_options_but_rejects_corrections(tmp_path):
-    source = tmp_path / 'history.json'
-    output = tmp_path / 'evaluated.json'
-    payload = {'candidates': [], 'validation_options': {'use_flex': False, 'spring_k_multiplier': 1.0}}
-    write_stage_artifact(source, 'history', payload)
-    assert main(['evaluate', str(source), '--output', str(output)]) == 0
-    assert read_stage_artifact(output)['payload']['validation_options'] == {}
-    payload['candidates'] = [{'settings': {'use_flex': True}}]
-    write_stage_artifact(source, 'history', payload)
-    with pytest.raises(SystemExit):
-        main(['evaluate', str(source), '--output', str(output)])
-
-
-def test_rank_replay_exports_applied_consensus_separately_from_selected_fit(tmp_path):
-    first = np.array([[0., -1900.], [1645., 950.], [-1645., 950.]])
-    newest = first.copy()
-    newest[0, 1] += 2.0
-    evaluated = [
-        ((0.,), {"iteration": 1, "plan": {"anchors": first}}, {"prediction_score": 0.1}),
-        ((1.,), {"iteration": 2, "plan": {"anchors": newest}}, {"prediction_score": None}),
-    ]
-    source = tmp_path / "history.json"
-    output = tmp_path / "rank.json"
-    write_stage_artifact(source, "history", {"evaluated": evaluated})
-    assert main(["rank", str(source), "--output", str(output)]) == 0
-    result = read_stage_artifact(output)["payload"]
-    assert result["chosen_iteration"] == 1
-    np.testing.assert_array_equal(result["applied_anchors"], (first + newest) / 2.)
-    assert result["summary_meta"]["history_consensus_members"] == [1, 2]
-    assert result["summary_meta"]["heldout_prediction_score"] == 0.1
 
 
 @pytest.mark.parametrize("minimum,maximum,expected", [

@@ -118,8 +118,7 @@ Acceptance inside refinement compares spool rank first, then data cost plus prio
 `--solve-optimizer` accepts `lbfgsb` (default), `lm`, and `trf`.
 The optional `--trf-solver-fallback` retries unsuccessful or invalid `lbfgsb`
 restarts with bounded `trf`, including restarts that reach their iteration limit.
-It is off by default because changing the candidate fits can worsen the final
-consensus. `--no-trf-solver-fallback` explicitly disables it.
+It is off by default. `--no-trf-solver-fallback` explicitly disables it.
 Choosing `--solve-optimizer trf` runs `trf` directly.
 `--optimizer-mode fast` uses CPU JAX derivatives when available.
 It falls back to numerical gradients when JAX is unavailable.
@@ -143,9 +142,8 @@ If recovery fails, the loop continues toward more data.
 
 ## Stopping and final selection
 
-`history_rank_score` controls "The best try so far" and patience.
-It combines the plan's `rank_score` with iteration and retained-data adjustments.
-The default patience is three non-improving iterations.
+Patience counts iterations without a new lowest anchor uncertainty.
+The default patience is three.
 Collection also stops once two consecutive sweeps each move every anchor
 coordinate by at most `--stable-step-mm` (0.5 mm). Stability does not establish
 accuracy. Cost/std stopping thresholds have been removed because
@@ -153,51 +151,22 @@ their scales were not calibrated to physical error. The manifest reason for
 patience acceptance is `patience`.
 Ctrl-C during the loop or a `<dataset-stem>.full_auto.stop` file requests acceptance.
 
-At acceptance, each saved model predicts whole sweeps absent from its training IDs.
-The check uses the latest saved history plan's datasets.
-It keeps anchors and spool parameters frozen and turns filtering off.
-A robust loss scores every valid observation. Invalid or incomplete predictions fail.
-Sweeps removed during training still count as training sweeps.
-Unreplayed sweeps are not used.
-
-Final selection uses two prediction scores:
-
-- `heldout_prediction` evaluates raw data with each candidate's own spool and
-  measurement-model settings. A finite value is required when validation is available.
-- `anchor_comparison` evaluates anchors on the latest plan's transformed dataset.
-  Candidates share that length model and the validation helper's default settings.
-  This is the first ranking key among candidates that pass validation.
-
-Then selection compares own-model prediction, history rank, raw rank,
-relative uncertainty, primary cost, and iteration recency.
-The latest model usually has no held-out sweeps.
-If older models predict successfully, they take priority over that unvalidated model.
-If all attempted predictions fail, no calibration is applied.
-If no held-out data exists, selection falls back to history ranking.
+At acceptance, the newest admissible fit is applied. It uses all the data.
 
 The summary prints M669 anchors and fitted M666 spool settings.
 It sends M669 to RRF, but does not send M666.
 Klipper skips M669. `--sim --no-collect` skips sending unless a server was supplied.
-Reaching `--max-steps` ends the loop without final selection or calibration send.
+Reaching `--max-steps` applies the newest admissible fit.
 The default limit is 20 iterations.
 
-## Fit quality scores
+## Anchor uncertainty
 
-`raw_fit_score_ui` describes the current plan.
-`rank_score` orders run variants in the current iteration.
-`history_rank_score` controls patience across iterations.
-In layered spool fitting, displayed `fit_score_ui` is mapped from history rank.
-Otherwise, it equals the raw plan score.
-Neither displayed score is derived from held-out prediction costs.
-
-The displayed bands are below `2` (ideal), `2` to below `5` (good),
-`5` to below `10` (usable), and `10` or above (concerning).
-These bands describe fit quality. They do not prove anchor accuracy.
-Prediction candidates can also have different held-out sweep sets.
-
-The calibration-log regression tool reports score/ground-truth disagreements
-and selection regret separately from reference-log comparisons.
-See [objective_functions_overview](objective_functions_overview) for score details.
+Each iteration reports `anchor_uncertainty_mm`, the largest anchor-coordinate
+standard deviation of point fits that each leave out one sweep. The summary labels
+up to 1 mm good, up to 3 mm usable and anything above poor. Patience counts sweeps
+without a new lowest uncertainty. Fit cost only picks between variants that fit the
+same data. The uncertainty misses bias that every sweep shares; see
+`anchor_uncertainty.py`.
 
 ## Residuals and logs
 
@@ -232,17 +201,10 @@ Existing log files get a unique suffix.
 | `line_model_filter_schedule` | Filter pass order and results |
 | `underconstrained_recovery` | Retries that restore constraints |
 | `next_sweep score=...` | Information gain for a proposed movement |
-| `selected run=...` | Current iteration's selected variant and fit scores |
-| `history_select` | Final single-fit ranking and a separate geometric consensus |
-| `history_validate ... failed_prediction=True` | A candidate failed own-model validation |
+| `selected run=...` | Current iteration's selected variant, its cost and anchor uncertainty |
 
-The final history ordering prioritizes held-out anchor comparison, then own-model
-prediction, then rank-score tie-breakers. `--fit-structure` also affects fitting
-and per-iteration variant selection; it is not solely a final-history rank knob.
-Consensus can include the newest fit without held-out observations. Reported fit
-scores and prediction diagnostics describe the best-ranked single candidate;
-the applied anchors may instead be the consensus mean. The consensus log lists
-its members and spread. These diagnostics do not validate the averaged geometry.
+Full-auto applies the newest admissible fit. Its anchor uncertainty is the spread
+of point fits that each leave out one sweep; it misses bias shared by all sweeps.
 
 ## Manual utilities
 

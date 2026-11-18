@@ -313,10 +313,7 @@ def attempt_underconstrained_recovery(
     if valid_results:
         best = min(
             valid_results,
-            key=lambda item: (
-                float(item["metrics"].get("rank_score", float("inf"))),
-                float(item["metrics"].get("primary_cost", float("inf"))),
-            ),
+            key=lambda item: float(item["metrics"].get("primary_cost", float("inf"))),
         )
         recovery_info["success"] = True
         recovery_info["valid_candidates"] = int(len(valid_results))

@@ -191,7 +191,7 @@ class AutocalJobs:
                     row = json.loads(line)
                 except ValueError:
                     continue
-                progress.update({key: row[key] for key in ('iteration', 'decision', 'selected_run', 'best_iteration', 'best_score_ui') if key in row})
+                progress.update({key: row[key] for key in ('iteration', 'decision', 'selected_run', 'anchor_uncertainty_mm') if key in row})
                 break
         journals = list(directory.glob('*.partial-points.jsonl'))
         if journals:

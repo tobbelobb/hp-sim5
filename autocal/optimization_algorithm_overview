@@ -4,7 +4,6 @@
 `fit_stage.py` fits and assesses the current dataset.
 `planning_pass.py` ranks possible next sweeps from that frozen fit;
 `plan_next_ellipse_sweep(...)` composes both stages for existing callers.
-`history_selection.py` separates frozen prediction evaluation from pure ordering.
 The opt-in `--stage-artifacts` snapshots and `tools/replay_stage.py` let each
 stage run independently; see README.md for commands.
 Spool fitting is optional. Both `--find-radii` and `--find-buildup-factor`
@@ -50,15 +49,13 @@ Each planning pass recalibrates from the current data.
 Ordinary iterations do not warm-start from the previous iteration's solution.
 Filter passes and recovery attempts do use warm starts.
 
-Run validity requires finite cost, rank, and covariance diagnostics.
-Selection prefers constrained runs, then lower `rank_score`.
-Relative uncertainty, primary cost, and run ID break ties.
-Only the selected constrained plan from each iteration enters history.
+Run validity requires finite cost and covariance diagnostics.
+Variants fit the same data, so selection prefers constrained runs, then lower
+primary cost; run ID breaks ties. Only the selected constrained plan from each
+iteration enters history, with its anchor uncertainty (leave-one-sweep-out spread, mm).
 
-Patience uses `history_rank_score`.
-It resets when the current plan ranks first in history.
+Patience resets when the current plan has the lowest anchor uncertainty so far.
 The default patience is three non-improving iterations.
-Optional cost or uncertainty thresholds can also request acceptance.
 An underconstrained selection continues toward more data after recovery attempts.
 
 If continuing, replay adds one stored sweep.
@@ -67,44 +64,16 @@ Live collection uses the selected plan's suggested command and merges its output
 `--no-collect` stops before live collection. It requires an existing dataset to
 avoid the initial bootstrap.
 
-Acceptance runs final history selection, prints the summary, and sends M669 to RRF.
+Acceptance applies the newest admissible fit, prints the summary, and sends M669 to RRF.
 The summary prints fitted M666 parameters but does not send them.
 Klipper skips M669. `--sim --no-collect` also skips sending unless a server was
 explicitly supplied.
 Ctrl-C during the fitting/collection loop requests best-so-far acceptance.
 A `<dataset-stem>.full_auto.stop` file requests the same action.
-Reaching `--max-steps` only ends the loop. It does not run final history selection
-or send a calibration. The default limit is 20 iterations.
+Reaching `--max-steps` also applies the newest admissible fit.
+The default limit is 20 iterations.
 
-## Prediction at final acceptance
-
-Commit `4daac40c` added prediction-based history selection.
-Commit `517523e5` added model-specific validation and a shared anchor comparison.
-These checks run at acceptance. They do not run before each new sweep.
-They do not change within-iteration selection, next-sweep ranking, or patience.
-
-For each saved candidate, validation excludes all of its training sweep IDs.
-It scores the remaining whole sweeps from the latest saved history plan.
-Anchors and spool parameters stay frozen.
-Filtering stays off, and a robust loss keeps every valid observation in the score.
-Invalid geometry, missing residuals, or nonfinite results fail validation.
-
-The own-model score uses raw data, the candidate's spool transform, and its
-measurement-model settings. It is logged as `heldout_prediction`.
-The shared comparison uses the latest plan's transformed estimation dataset
-and the validation helper's default settings. It is logged as `anchor_comparison`.
-
-Candidates with a finite own-model prediction take priority over candidates
-with failed or unavailable predictions.
-If predictions were attempted but all failed, no calibration is applied.
-If none has held-out data, selection uses the history score.
-
-Final ordering compares `anchor_comparison`, `heldout_prediction`,
-`history_rank_score`, `rank_score`, relative uncertainty, primary cost,
-and then prefers a later iteration. Each candidate can have a different
-held-out sweep set. Unreplayed sweeps are not used for this check.
-
-See `objective_functions_overview` for score definitions and display mappings.
+See `objective_functions_overview` and `anchor_uncertainty.py` for the evidence behind this.
 
 ## Planning pass
 
@@ -283,8 +252,7 @@ This is separate from the mask shared across `dynamic` and `constant` filter pas
 
 `--solve-optimizer` selects `lbfgsb` (default), `lm`, or `trf`.
 `--trf-solver-fallback` optionally retries unsuccessful or invalid `lbfgsb`
-restarts with bounded `trf`. It is off by default because better intermediate
-fits can still change consensus selection for the worse.
+restarts with bounded `trf`. It is off by default.
 `--no-trf-solver-fallback` explicitly disables it; `--solve-optimizer trf`
 selects `trf` directly.
 `--optimizer-mode fast` uses CPU JAX derivatives when available.
@@ -293,8 +261,5 @@ selects `trf` directly.
 
 `line_model_fit` reports alternating and coordinate budgets.
 `line_model_filter_schedule` reports pass order.
-Selected-run logs distinguish `raw_fit_score_ui`, `rank_score`,
-`history_rank_score`, and displayed `fit_score_ui`.
-`history_select` records the final prediction-based choice.
-The displayed quality score still comes from fit/history scoring.
-It does not measure anchor accuracy.
+Selected-run logs report cost and `anchor_uncertainty_mm`.
+The uncertainty misses bias that every sweep shares.

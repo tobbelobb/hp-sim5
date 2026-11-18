@@ -25,7 +25,7 @@ _RESEARCH = {
     },
     "Research: spool model and objectives": {
         "sigma_floor_mm", "low_anchor_z", "fit_home_offsets", "equal_strain", "r0_prior_sigma_mm", "b_prior_sigma",
-        "spool_outer_iters", "theta0_mode", "fit_structure", "filter_schedule",
+        "spool_outer_iters", "theta0_mode", "filter_schedule",
         "objective_schedule",
     },
     "Research: residuals and filtering": {

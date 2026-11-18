@@ -6,7 +6,7 @@ import autocal.stopping as stopping
 
 
 def _candidate(iteration, score):
-    return {"iteration": iteration, "rank_score": score, "cost": score, "rel_std": 1.0}
+    return {"iteration": iteration, "anchor_uncertainty_mm": score, "cost": score, "rel_std": 1.0}
 
 
 def test_patience_only_advances_for_admissible_history_and_resets_on_improvement(tmp_path):
@@ -158,3 +158,10 @@ def test_hp5_weak_flat_fits_do_not_count_towards_two_good_fits(tmp_path):
         result=policy.update(history,iteration=iteration,admissible=True,underconstrained=False,log_line=lambda _:None)
         if iteration<4:assert result.decision=='collect'
     assert result.reason=='good-fit'
+
+
+def test_uncertainty_rank_prefers_newer_ties_and_puts_unknown_last():
+    history = [_candidate(1, 0.5), _candidate(2, None), _candidate(3, 0.5)]
+    assert stopping.history_rank_position(history, iteration=3) == 1
+    assert stopping.history_rank_position(history, iteration=1) == 2
+    assert stopping.history_rank_position(history, iteration=2) == 3

@@ -281,7 +281,6 @@ def plan_next_ellipse_sweep(
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
-    fit_structure: Optional[Sequence[int]] = None,
     stage_artifact: Optional[Path] = None,
     candidate_deltas: Optional[List[float]] = None,
     fd_eps_mm: float = 1.0,
