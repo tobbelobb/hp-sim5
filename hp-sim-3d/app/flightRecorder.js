@@ -115,7 +115,7 @@ export class FlightRecorder {
   }
 
   disconnect() {
-    this.flushEvents();
+    if (!this.error) this.flushEvents();
     clearTimeout(this.eventTimer);
     this.eventTimer = null;
     this.socket?.close();
@@ -166,7 +166,8 @@ export class FlightRecorder {
 
   // Backpressure applies to sampled physics, never to G-code dispatch.
   readyForStep() {
-    return !this.error && (!this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS));
+    if (this.error) return this.nonFatal;
+    return !this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS);
   }
 
   async drain(timeoutMs = 10000, { all = true, wallTimeoutMs = 120000 } = {}) {
@@ -176,7 +177,9 @@ export class FlightRecorder {
     let deadline = performance.now() + timeoutMs;
     const wallDeadline = performance.now() + wallTimeoutMs;
     while (true) {
-      if (!socket || this.socket !== socket || socket.readyState !== 1) throw new Error(this.error || 'Flight recorder disconnected');
+      if (this.error || !socket || this.socket !== socket || socket.readyState !== 1) {
+        throw new Error(this.error || 'Flight recorder disconnected');
+      }
       if (all ? !this.pending && !this.pendingEvents : this.readyForStep()) return;
       if (sequence !== this.ackSequence) {
         sequence = this.ackSequence;
@@ -243,7 +246,7 @@ export class FlightRecorder {
   }
 
   update(world, dt) {
-    if (this.stopping) return;
+    if (this.stopping || this.error) return;
     if (!this.socket || this.socket.readyState !== 1) return;
     const generation = world.getResource('sceneGeneration') || 0;
     if (generation !== this.generation) {

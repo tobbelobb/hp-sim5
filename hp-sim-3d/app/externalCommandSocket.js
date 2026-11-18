@@ -147,6 +147,16 @@ export function createExternalCommandController({
   let recordingError = null;
   let settingsError = null;
 
+  function recordEvent(type, payload) {
+    const recorder = world.getResource('flightRecorder');
+    if (!recorder || recorder.error) return;
+    try {
+      recorder.recordEvent(type, payload);
+    } catch (error) {
+      logger.warn('hp-sim-3d: flight recorder event failed:', error);
+    }
+  }
+
   function getRemoteSystem() {
     return commands?.getRemoteSystem?.() || null;
   }
@@ -224,7 +234,7 @@ export function createExternalCommandController({
         wall_time_ms: Date.now(), source: world.getResource('researchClock')?.source || 'browser.researchClock',
       },
     };
-    if (axes.length) world.getResource('flightRecorder')?.recordEvent('encoder_response_sent', payload);
+    if (axes.length) recordEvent('encoder_response_sent', payload);
     socketController?.send?.(payload);
   }
 
@@ -232,15 +242,14 @@ export function createExternalCommandController({
     if (!payload) {
       return;
     }
-    // A new collection must be able to configure/reconnect after an earlier
-    // recording failed. Otherwise recordEvent throws before settings are handled.
+    // Clear the failed recording so a new collection can reconnect.
     const recorder = world.getResource('flightRecorder');
     if (payload.type === 'simulation_settings' && recorder?.error) {
       logger.warn('hp-sim-3d: clearing failed recording before simulator configuration:', recorder.error);
       recorder.disconnect();
     }
     if (payload.type !== 'encoder_request' || payload.axes?.length) {
-      world.getResource('flightRecorder')?.recordEvent('external_payload_received', payload);
+      recordEvent('external_payload_received', payload);
     }
     if (payload.type === 'encoder_request') {
       if (payload.requestId != null && Array.isArray(payload.axes)) {
@@ -287,7 +296,7 @@ export function createExternalCommandController({
           if (featureFlags) featureFlags.setClosedLoopMotorsEnabledState(payload.closedLoopMotorsEnabled);
           else setClosedLoopMotorFeatureFlags(world, payload.closedLoopMotorsEnabled);
         }
-        world.getResource('flightRecorder')?.recordEvent('simulation_settings_applied', payload);
+        recordEvent('simulation_settings_applied', payload);
       };
       if (payload.machineType) {
         recordingReady = Promise.resolve(recordingReady).then(async () => {

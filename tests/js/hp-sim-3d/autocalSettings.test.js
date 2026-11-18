@@ -24,6 +24,7 @@ class Socket extends EventTarget {
   send(value) { this.samples.push(JSON.parse(value)); }
   close() { this.readyState = 3; this.dispatchEvent(new Event('close')); }
   open() { this.readyState = 1; this.dispatchEvent(new Event('open')); }
+  deliver(payload) { this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(payload) })); }
 }
 
 test('solver iteration menu and remote settings update a live backend and restore machine defaults', () => {
@@ -124,6 +125,61 @@ test('failed recorder connection releases physics backpressure', async () => {
   await expect(pending).rejects.toThrow('timed out');
   expect(recorder.socket).toBeNull();
   expect(recorder.readyForStep()).toBe(true);
+});
+
+test('bridge commands, encoders and clock survive the optional Rerun receiver stopping or failing to open', async () => {
+  const world = new World();
+  const recorder = new FlightRecorder({ world, WebSocketClass: Socket, recordPhysics: false, nonFatal: true });
+  recorder.extendedReference = true;
+  world.setResource('flightRecorder', recorder);
+  const pushExternalCommands = jest.fn(() => true);
+  const controller = createExternalCommandController({ world, url: 'ws://bridge', WebSocketCtor: Socket,
+    commands: { pushExternalCommands }, logger: { log: jest.fn(), warn: jest.fn() } });
+  controller.connect();
+  const bridge = Socket.last;
+  bridge.open();
+
+  const expectBridgeTraffic = requestId => {
+    const command = { type: 'Move', B: 0.02 };
+    const clockRequestId = requestId + 100;
+    pushExternalCommands.mockClear();
+    bridge.deliver({ type: 'command', command });
+    bridge.deliver({ type: 'encoder_request', requestId, axes: ['B'] });
+    bridge.deliver({ type: 'encoder_request', requestId: clockRequestId, axes: [] });
+    expect(pushExternalCommands).toHaveBeenCalledTimes(1);
+    expect(pushExternalCommands).toHaveBeenCalledWith([command]);
+    expect(bridge.samples.slice(-2)).toMatchObject([
+      { type: 'encoder_response', requestId, axes: ['B'] },
+      { type: 'encoder_response', requestId: clockRequestId, axes: [] },
+    ]);
+  };
+
+  expectBridgeTraffic(1);
+  recorder.connect();
+  const receiver = Socket.last;
+  receiver.open();
+  receiver.deliver({ type: 'ack' });
+  expectBridgeTraffic(2);
+  recorder.flushEvents();
+  expect(receiver.samples.at(-1).events.map(event => event.kind)).toEqual([
+    'scene_context', 'external_payload_received', 'external_payload_received', 'encoder_response_sent',
+  ]);
+
+  receiver.close();
+  expect(recorder.error).toBe('Flight recorder disconnected');
+  expect(recorder.readyForStep()).toBe(true);
+  expectBridgeTraffic(3);
+
+  recorder.extendedReference = false;
+  recorder.connect();
+  expect(recorder.readyForStep()).toBe(false);
+  Socket.last.dispatchEvent(new Event('error'));
+  expect(recorder.error).toBe('Flight recorder connection error');
+  expect(recorder.readyForStep()).toBe(true);
+  await expect(recorder.drain()).rejects.toThrow('Flight recorder connection error');
+  expectBridgeTraffic(4);
+  Socket.last.close();
+  expectBridgeTraffic(5);
 });
 
 test.each([
