@@ -9,6 +9,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 daf2711f048f74674685 | 2026-11-18T21:19 | 1/1 | 0.96 | 1.22 | 3574 | **5265 ▲** | 9 | stable-estimate | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| d0bcec359b | v2 601c1ee74abcc697f5b3 | 2026-11-18T21:18 | 1/1 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #116 from tobbelobb/t3/fix-length-telemetry |
 | f373f1f010 | v2 a86ca215a4df1b6c8760 | 2026-11-18T21:17 | 1/1 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #114 from tobbelobb/t3/isolate-recorder-failures |
 | f2be134944 | v2 83c9b259b9ba93896b0a | 2026-11-18T21:16 | 1/1 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 5cb6a2120b678a5e1b10 | 2026-11-18T18:17 | 1/1 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
@@ -84,6 +85,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 034990ae1e90591c1630 | 2026-11-18T21:19 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| d0bcec359b | v2 15b43ba5bce10236973f | 2026-11-18T21:18 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #116 from tobbelobb/t3/fix-length-telemetry |
 | f373f1f010 | v2 2234bd438f698ff07c56 | 2026-11-18T21:17 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #114 from tobbelobb/t3/isolate-recorder-failures |
 | f2be134944 | v2 52a29666a46f60479f53 | 2026-11-18T21:16 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 fdc9c52ee787dbdde295 | 2026-11-18T18:17 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
@@ -159,6 +161,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 c0f8c96686e0b9124e17 | 2026-11-18T21:19 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| d0bcec359b | v2 d59e9b7b9a19fb96e6d0 | 2026-11-18T21:18 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #116 from tobbelobb/t3/fix-length-telemetry |
 | f373f1f010 | v2 41f48cc42e74eaa75cfa | 2026-11-18T21:17 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #114 from tobbelobb/t3/isolate-recorder-failures |
 | f2be134944 | v2 6969effe4a19ee84a039 | 2026-11-18T21:16 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 c9af9758cc9c363ae274 | 2026-11-18T18:17 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
@@ -234,6 +237,7 @@ Rows group measurements by tested commit and scoring protocol. Values are median
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
 | 7a1b0e84c1 | v2 e461e15ee118b9f2a873 | 2026-11-18T21:19 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
+| d0bcec359b | v2 fdb5882b6936f53ddb36 | 2026-11-18T21:18 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #116 from tobbelobb/t3/fix-length-telemetry |
 | f373f1f010 | v2 27a3b76de8c462d1f830 | 2026-11-18T21:17 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #114 from tobbelobb/t3/isolate-recorder-failures |
 | f2be134944 | v2 494a309671e53c1297b9 | 2026-11-18T21:16 | 1/1 | 2.57 | 0.63 | 4132 | 4201 | 6 | good-fit | ok | Merge pull request #113 from tobbelobb/t3/fix-noop-payload-resume |
 | 20da983feb | v2 1a2005fcdd1766204c2c | 2026-11-18T18:17 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #109 from tobbelobb/codex/autocal-benchmark-history-review |
