@@ -81,10 +81,12 @@ force tracking and unequal compliance can still bias the observations.
 Fresh HP5 and HP5 pulley-reduced runs measure the remaining free low line from
 **the first sweep**. Pullout and travel keep the low compliant force, so a line
 can visibly sag during those phases. Before recording a measurement, both sensor
-lines are preloaded and held at the measurement force: by default five times the
-tuned start force, capped at the tuned maximum. Each extra range must resolve a
-reversible local encoder-coupling probe. Frozen, hysteretic and untestable ranges
-are excluded; their commanded forces remain part of the static load model.
+lines are preloaded. The spare sensor holds five times the tuned start force,
+capped at the tuned maximum. The collector checks its encoder during ordinary
+sweep motion. After two consecutive steps with a same-direction response above
+the measured noise, the current fifth range enters the fit. A frozen encoder,
+a change of direction or a gap in the samples breaks that sequence. Rejected
+ranges still contribute their commanded force to the static load model.
 
 HP5 fits use every accepted range with its physical anchor identity, home offset,
 reeving and per-pose stretch correction. Checked bootstrap ranges are reused for

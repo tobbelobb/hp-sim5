@@ -1165,6 +1165,22 @@ function normalizeSweepConfig(config, machineConfig) {
   return { ...config, fixedAnchors, driveAnchor, sensorAnchor };
 }
 
+// Check the spare encoder on two consecutive ordinary sweep steps. The first
+// two readings establish a history. After a plateau or a turning point, wait
+// for two resolved steps again. Keep this history local to one loaded sub-sweep.
+function spareRangeMoved(points, anchor, sigmaFloorDeg) {
+  if (points.length < 3) return false;
+  const [a, b, c] = points.slice(-3);
+  if (b.step_index !== a.step_index + 1 || c.step_index !== b.step_index + 1) return false;
+  const resolvedStep = (from, to) => {
+    const change = to.mu[anchor] - from.mu[anchor];
+    const noise = Math.hypot(Math.max(sigmaFloorDeg, from.sigma[anchor]),
+                             Math.max(sigmaFloorDeg, to.sigma[anchor]));
+    return Math.abs(change) > 5 * noise ? Math.sign(change) : 0;
+  };
+  return resolvedStep(a, b) * resolvedStep(b, c) === 1;
+}
+
 export async function performForceSweep(sendFn, sweepConfig, options) {
   const {
     axes,
@@ -1352,7 +1368,6 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   // With a profile the sensor force follows the drive setpoint; otherwise it stays constant.
   let sensorCollectionForce = constantSensorForce;
   let measurementClockMs = null;
-  let extraProbes = [];
   const dataPoints = [];
   const validateMeasurementAngles = angles => {
     if (angles.length !== motorIds.length || !angles.every(Number.isFinite)) {
@@ -1394,8 +1409,8 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         Number.isFinite(target) ? angles[idx] - target / mmPerDeg[idx] : null
       )),
       sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
-      ...(extraAnchors.length ? { extra_sensor_ranges: extraAnchors.map((anchor, index) => ({
-        anchor, force_n: extraForce, length_mm: lengths[anchor], ...extraProbes[index],
+      ...(extraAnchors.length ? { extra_sensor_ranges: extraAnchors.map(anchor => ({
+        anchor, force_n: extraForce, length_mm: lengths[anchor], accepted: false,
       })) } : {}),
       spool_reserve_method: reserveProbe.accepted ? 'local_encoder_coupling' : 'half_turn',
     };
@@ -1423,13 +1438,14 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     let settledMeasurement = null;
     let settledNoiseStats = null;
     measurementClockMs = null;
-    if (probeSpoolReserve) {
+    if (probeSpoolReserve || extraAnchors.length) {
       const force = forceAt(target);
-      let sample = await moveForReserve(target, force);
+      // The half-turn search already sampled the first target under this load.
+      let sample = reserved && stepIdx === 1 ? reserved : await moveForReserve(target, force);
       reserveProbe = { accepted: false, reason: 'measured half-turn reserve' };
       const rewind = sensorPayoutMm - sample.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor];
       const margin = 5 * Math.max(noiseSigmaFloorDeg, sample.sigmaByMotorDeg[sensorAnchor]) * mmPerDeg[sensorAnchor];
-      if (rewind < sensorReserveMm + margin) {
+      if (probeSpoolReserve && rewind < sensorReserveMm + margin) {
         const radius = Math.min(initialStepMm, Math.abs(target - driveEndPointMm), Math.abs(target - driveStartPointMm)) / 2;
         const tested = await probeSpoolInterval(value => moveForReserve(value, force), {
           start: target, away: target + stepDirection * radius, toward: target - stepDirection * radius,
@@ -1486,28 +1502,6 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       // Moving the drive leaves the sensor's measurement force unchanged.
       if (measurementPreloadActive && !sensorForceProfile) settledMeasurement = settled;
     }
-    extraProbes = [];
-    if (extraAnchors.length) {
-      const force = forceAt(target);
-      const radius = Math.min(initialStepMm, Math.abs(target - driveEndPointMm), Math.abs(target - driveStartPointMm)) / 2;
-      for (const anchor of extraAnchors) {
-        let evidence = { accepted: false, reason: 'no interior interval for extra sensor probe' };
-        if (radius > DEFAULT_FIXED_TOLERANCE_MM) {
-          const { sample, ...result } = await probeSpoolInterval(value => moveForReserve(value, force), {
-            start: target, away: target + stepDirection * radius, toward: target - stepDirection * radius,
-            driveAnchor, sensorAnchor: anchor, mmPerDeg, sigmaFloorDeg: noiseSigmaFloorDeg,
-            driveToleranceMm: DEFAULT_FIXED_TOLERANCE_MM + (stepMmByAnchor[driveAnchor] ?? 0),
-          });
-          evidence = result;
-        }
-        extraProbes.push(evidence);
-      }
-      // Reuse the settled reading at the restored target, without another preload.
-      const sample = await moveForReserve(target, force);
-      settledMeasurement = sample.stableData;
-      settledNoiseStats = sample;
-      measurementClockMs = sample.measuredClockMs;
-    }
     // eslint-disable-next-line no-await-in-loop
     const collected = await collectDataPoint(sendFn, {
       motorIds,
@@ -1562,7 +1556,11 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
         if (Number.isFinite(muLengths[sensorAnchor])) {
           point.l_sensor_mu = muLengths[sensorAnchor];
         }
-        for (const extra of point.extra_sensor_ranges ?? []) extra.length_mu_mm = muLengths[extra.anchor];
+        for (const extra of point.extra_sensor_ranges ?? []) {
+          extra.length_mu_mm = muLengths[extra.anchor];
+          extra.accepted = spareRangeMoved(dataPoints, extra.anchor, noiseSigmaFloorDeg);
+          extra.reason = extra.accepted ? 'encoder followed consecutive sweep steps' : 'insufficient resolved sweep motion';
+        }
       }
       const warnings = summarizeNoiseWarnings(noiseStats, {
         minSamples: noiseMinSamples,

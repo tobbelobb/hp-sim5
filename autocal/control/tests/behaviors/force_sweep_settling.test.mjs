@@ -223,13 +223,20 @@ test('sensor force profile interpolates, holds its end values and must match the
 });
 
 
-test.each([0, 2])('extra sensor with gain %s is tensioned only for measurement and must pass its own probe', async extraGain => {
+test.each([0, 0.00001, -2, 2])('spare sensor with gain %s uses normal sweep motion under measurement load', async extraGain => {
   const trial = movingPullout({ extraGain, sweepPoints: 5,
     sensorForceProfile: { drive_mm: [-600, 0], force_n: [1, 3], extra_sensor_force_n: 2 } });
   const result = await trial.run();
   const extras = result.dataPoints.map(point => point.extra_sensor_ranges[0]);
   expect(extras.every(extra => extra.anchor === 4 && extra.force_n === 2)).toBe(true);
-  expect(extras.some(extra => extra.accepted)).toBe(extraGain !== 0);
+  expect(extras.map(extra => extra.accepted)).toEqual([false, false, ...Array(3).fill(Math.abs(extraGain) === 2)]);
+  const driveMoves = trial.commands.map(({line}) => line.match(/^G1 H2 Y([-\d.]+)/))
+    .filter(Boolean).map(match => Number(match[1]));
+  expect(driveMoves.every(move => move > 0)).toBe(true);
+  // Once the first point is sampled, the next four points cost exactly four moves.
+  const remainingMoves = trial.commands.filter(({line, now}) =>
+    now > result.dataPoints[0].clock_time_ms && /^G1 H2 Y/.test(line));
+  expect(remainingMoves).toHaveLength(4);
   expect(extras.every(extra => Number.isFinite(extra.length_mu_mm))).toBe(true);
   const modes = trial.commands.filter(({line}) => line.startsWith('M569.4'))
     .map(({line}) => line.split(' T')[1].split(':').map(Number));
