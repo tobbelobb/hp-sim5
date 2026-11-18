@@ -126,8 +126,6 @@ class DatasetSpec:
     find_radii: str
     extra_args: Tuple[str, ...] = ()
     reference_log_names: Tuple[str, ...] = field(default_factory=tuple)
-    # Headless benchmark datasets were collected with home-offset fitting.
-    fit_home_offsets: bool = False
 
 
 DATASETS = [
@@ -255,7 +253,6 @@ DATASETS = [
             find_radii="off",
             true_anchors=anchors,
             true_radii=[30.0] * len(anchors),
-            fit_home_offsets=True,
         )
         for machine, anchors in (
             ("hangprinter_3", SIM_3D_TRUE_ANCHORS),
@@ -755,8 +752,6 @@ def run_autocal(
         "--buildup-factor",
         dataset_spec.buildup_factor,
         "--no-collect",
-        # The older frozen references predate home-offset fitting.
-        *(() if dataset_spec.fit_home_offsets else ("--no-fit-home-offsets",)),
         *(('--sparse-recovery',) if sparse_recovery else ()),
         *extra_args,
     ]

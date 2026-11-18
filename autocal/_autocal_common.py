@@ -3342,11 +3342,11 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--fit-home-offsets",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
         help="Fit home length offsets with the point-based fit and apply them before the ellipse fit. "
              "They absorb the difference between slack lines at the encoder origin and tensioned lines "
-             "during measurement (default: enabled). Not available together with --find-radii or --find-buildup-factor; "
-             "use --no-fit-home-offsets for those experiments.",
+             "during measurement (default: enabled, except with --find-radii or --find-buildup-factor, "
+             "which do not support them).",
     )
     parser.add_argument(
         "--r0-bounds",
@@ -3866,6 +3866,14 @@ def _resolve_spool_cli_options(
             parser.error("--sigma-floor-mm must be numeric")
         if not np.isfinite(sigma_floor_mm) or sigma_floor_mm <= 0.0:
             parser.error("--sigma-floor-mm must be finite and > 0")
+
+    # Joint spool/offset fitting is not implemented, so spool fitting turns offsets off.
+    spool_fit = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+    if getattr(args, "fit_home_offsets", None) is None:
+        args.fit_home_offsets = not spool_fit
+    elif args.fit_home_offsets and spool_fit:
+        parser.error("Home-offset and spool fitting are not jointly supported; "
+                     "--fit-home-offsets cannot be combined with --find-radii or --find-buildup-factor")
 
     return {
         "find_radii": str(find_radii_mode),

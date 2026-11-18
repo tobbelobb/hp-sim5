@@ -90,7 +90,7 @@ def fit_ellipse_dataset(
     if is_equal_strain(dataset) and (search_radii or search_buildup):
         raise ValueError("Spool fitting on profiled sweeps is not supported; use a constant-force dataset")
     if fit_home_offsets and (search_radii or search_buildup):
-        raise ValueError("Home-offset and spool fitting are not jointly supported; use --no-fit-home-offsets with --find-radii or --find-buildup-factor")
+        raise ValueError("Home-offset and spool fitting are not jointly supported")
     if r0_bounds is not None and not _spool_mode_enabled(find_radii_mode):
         warnings.append("r0_bounds_ignored_without_find_radii")
     if r0_prior_sigma_mm is not None and not _spool_mode_enabled(find_radii_mode):

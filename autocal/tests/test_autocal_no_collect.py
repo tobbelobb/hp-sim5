@@ -992,7 +992,7 @@ def test_spool_fitting_run_stops_when_every_future_prediction_fails(tmp_path, mo
     rc = ac.main([
         "--sim", "--machine-type", "slideprinter", "--dataset", str(dataset),
         "--no-collect", "--max-steps", "3", "--find-radii", "global", "--base-radii", "30",
-        "--buildup-factor", "0", "--no-fit-home-offsets",
+        "--buildup-factor", "0",
     ])
 
     assert rc == 2

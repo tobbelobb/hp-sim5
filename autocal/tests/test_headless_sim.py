@@ -27,7 +27,7 @@ def test_headless_implies_sim_and_keeps_fitting_options(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ac, '_run_full_auto', run)
     assert ac.main(['--headless-sim', '--machine-type', 'hangprinter_3', '--no-collect',
-                    '--dataset', str(tmp_path / 'sweeps.json'), '--no-fit-home-offsets', '--find-radii', 'global',
+                    '--dataset', str(tmp_path / 'sweeps.json'), '--find-radii', 'global',
                     '--base-radii', '30', '--r0-bounds', '39,40']) == 0
     assert captured == dict(sim=True, machine='hangprinter_3', radii='global', bounds=(39., 40.),
                             no_collect=True, headless=None)
@@ -378,7 +378,7 @@ def test_fresh_hp3_full_auto_global_radii_and_matched_browser_collection(tmp_pat
     with log.open('w') as output:
         result = subprocess.run([sys.executable, 'autocal/autocal.py', '--headless-sim', '--extended-reference',
                                  '--machine-type', 'hangprinter_3', '--dataset', str(dataset),
-                                 '--no-fit-home-offsets', '--find-radii', 'global', '--base-radii', '30',
+                                 '--find-radii', 'global', '--base-radii', '30',
                                  '--buildup-factor', '0.636619', '--r0-bounds', '39,40'],
                                 cwd=ROOT, stdout=output, stderr=output, timeout=1800)
     assert result.returncode == 0, log.read_text()[-4000:]
@@ -432,7 +432,7 @@ def test_interrupted_bootstrap_preserves_points_and_stops_owned_services(tmp_pat
     dataset = tmp_path / 'sweeps.json'
     output = (tmp_path / 'stdout.log').open('w')
     process = subprocess.Popen([sys.executable, 'autocal/autocal.py', '--headless-sim', '--extended-reference',
-        '--machine-type', 'hangprinter_3', '--dataset', str(dataset), '--no-fit-home-offsets', '--find-radii', 'global',
+        '--machine-type', 'hangprinter_3', '--dataset', str(dataset), '--find-radii', 'global',
         '--base-radii', '30', '--buildup-factor', '0.636619', '--r0-bounds', '39,40', '--collector-args',
         '--no-auto-tune-force', '--force-low', '0.01', '--force-mid', '0.23', '--force-max', '9.2',
         '--max-travel-mm', '300'], cwd=ROOT, stdout=output, stderr=output)

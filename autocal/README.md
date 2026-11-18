@@ -110,8 +110,8 @@ stable-estimate stopping. HP3/HP4 retain their existing stopping rules.
 home-length offsets with the independent point fitter before the ellipse fit.
 Both fitters remain active, with their anchors and difference logged each pass.
 Use `--no-fit-home-offsets` and `--no-equal-strain` for ablation comparisons.
-Joint spool/offset fitting is not implemented: spool searches require
-`--no-fit-home-offsets` and retain constant-force collection. Historical projected
+Joint spool/offset fitting is not implemented: spool searches turn offset fitting
+off (an explicit `--fit-home-offsets` is an error) and retain constant-force collection. Historical projected
 datasets remain replayable, but `--project-zero-tension` collection is retired.
 
 Fitted home-length offsets do not identify a physical-home translation; that
@@ -491,8 +491,8 @@ Useful options:
   restart with bounded `trf`. It is off by default: changing the candidate fits
   can worsen the final consensus. `--no-trf-solver-fallback` explicitly disables it.
 - `--find-radii` and `--find-buildup-factor` enable spool fitting.
-  Each accepts `global` or `per-anchor`. Both default to `off` and require
-  `--no-fit-home-offsets` with a constant-force dataset.
+  Each accepts `global` or `per-anchor`. Both default to `off`, turn off home-offset
+  fitting and need a constant-force dataset.
 - `--sparse-recovery` adds a sparse seed fit during underconstrained recovery.
 - `--shotgun` adds solver variants from `shotgun.conf`.
 

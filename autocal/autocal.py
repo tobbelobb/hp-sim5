@@ -1433,8 +1433,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if error := profile_policy_error(_load_json(args.dataset)):
             parser.error(error)
     spool_opts = _resolve_spool_cli_options(parser, args)
-    if args.fit_home_offsets and any(_spool_mode_enabled(spool_opts[name]) for name in ("find_radii", "find_buildup_factor")):
-        parser.error("Home-offset and spool fitting are not jointly supported; use --no-fit-home-offsets with --find-radii or --find-buildup-factor")
     machine_type = _normalize_machine_type(str(args.machine_type))
     full_auto_runs = list(args.full_auto_run or [])
     if bool(args.shotgun):
