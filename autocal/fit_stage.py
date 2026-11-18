@@ -551,4 +551,5 @@ def fit_ellipse_dataset(
         "pose_fit": pose_fit,
         "home_offsets_mm": home_offsets_mm,
         "home_offsets_fitted": bool(fit_home_offsets),
+        "use_noise_mean": bool(use_noise_mean),
     }

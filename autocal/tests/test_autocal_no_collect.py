@@ -672,7 +672,7 @@ def test_full_auto_skips_a_newest_fit_whose_uncertainty_diverged(tmp_path, monke
 
     assert rc == 0
     out = capsys.readouterr().out
-    assert "newest fit diverged" in out
+    assert "newest fit failed or diverged" in out
     assert "M669 iter_2" in out
 
 

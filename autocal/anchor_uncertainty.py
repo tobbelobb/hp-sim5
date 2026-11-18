@@ -20,10 +20,15 @@ import numpy as np
 from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares
 
 MIN_SWEEPS = 3
+# A newest fit more uncertain than both of these has diverged. A ratio of 10 changed
+# no choice in the recorded corpus; 2-5 picked worse early fits. The floor keeps a
+# near-zero early value from rejecting every later fit that is still usable.
+DIVERGED_UNCERTAINTY_RATIO = 10.0
+DIVERGED_UNCERTAINTY_FLOOR_MM = 3.0
 
 
 def sweep_jackknife_mm(dataset: dict, anchors, *, fit_home_offsets: bool = True,
-                       low_anchor_z: Optional[float] = None) -> Optional[float]:
+                       low_anchor_z: Optional[float] = None, use_noise_mean: bool = True) -> Optional[float]:
     """Largest anchor-coordinate jackknife standard deviation, in mm.
 
     None means too few sweeps to leave one out. Infinity means a refit failed,
@@ -39,6 +44,7 @@ def sweep_jackknife_mm(dataset: dict, anchors, *, fit_home_offsets: bool = True,
             fit = fit_pose_least_squares(
                 subset, np.asarray(anchors, dtype=float), fit_home_offsets=fit_home_offsets,
                 home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM, low_anchor_z=low_anchor_z,
+                use_noise_mean=use_noise_mean,
             )
         except (ValueError, np.linalg.LinAlgError):
             return float("inf")
@@ -53,16 +59,31 @@ def sweep_jackknife_mm(dataset: dict, anchors, *, fit_home_offsets: bool = True,
 
 def plan_anchor_uncertainty_mm(plan: dict) -> Optional[float]:
     """Jackknife uncertainty of a fitted plan, on the lengths its fit used."""
-    dataset = plan.get("dataset_for_estimation") or plan.get("dataset")
+    # Home offsets are refitted per fold from the unshifted lengths, so a left-out
+    # sweep cannot influence them. Spool-corrected lengths keep the full-data spool fit.
+    fit_home_offsets = bool(plan.get("home_offsets_fitted", False))
+    dataset = plan.get("dataset") if fit_home_offsets else plan.get("dataset_for_estimation")
     if not isinstance(dataset, dict) or plan.get("anchors") is None:
         return None
     return sweep_jackknife_mm(
-        dataset, plan["anchors"],
-        # The estimation dataset already includes fitted home offsets; refit them
-        # per subset so each fold carries the same nuisance freedom as the full fit.
-        fit_home_offsets=bool(plan.get("home_offsets_fitted", False)),
-        low_anchor_z=dataset.get("_low_anchor_z"),
+        dataset, plan["anchors"], fit_home_offsets=fit_home_offsets,
+        low_anchor_z=dataset.get("_low_anchor_z"), use_noise_mean=bool(plan.get("use_noise_mean", True)),
     )
+
+
+def newest_trusted_index(uncertainties_mm) -> Optional[int]:
+    """Index of the newest fit to apply, given each fit's uncertainty in fitting order.
+
+    None (too few sweeps) is acceptable; a failed jackknife (non-finite) never is.
+    Returns None when no fit qualifies.
+    """
+    finite = [value for value in uncertainties_mm if value is not None and np.isfinite(value)]
+    limit = max(DIVERGED_UNCERTAINTY_FLOOR_MM, DIVERGED_UNCERTAINTY_RATIO * min(finite)) if finite else None
+    for index in reversed(range(len(uncertainties_mm))):
+        value = uncertainties_mm[index]
+        if value is None or (limit is not None and np.isfinite(value) and value <= limit):
+            return index
+    return None
 
 
 def uncertainty_label(uncertainty_mm: Optional[float]) -> str:

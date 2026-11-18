@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import signal
 import sys
+import time
 from contextlib import nullcontext, ExitStack
 from pathlib import Path
 
@@ -17,13 +18,10 @@ from autocal.rough_bootstrap import (
     MAX_EXTRA_ROUGH_SWEEPS, assess_rough_geometry, next_rough_sweep,
     bootstrap_state_error, write_bootstrap_state,
 )
-from autocal.anchor_uncertainty import plan_anchor_uncertainty_mm, uncertainty_label
+from autocal.anchor_uncertainty import newest_trusted_index, plan_anchor_uncertainty_mm, uncertainty_label
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
-
-# A ratio of 10 changed no choice in the recorded corpus; 2-5 picked worse early fits.
-NEWEST_FIT_MAX_UNCERTAINTY_RATIO = 10.0
 
 
 class BrowserCollector:
@@ -696,17 +694,18 @@ def _full_auto_loop(
         # Apply the fit to all admissible data. Across 69 distinct recorded headless
         # runs the newest fit was within 0.8 mm of the best candidate on average and no
         # worse than fit-cost, held-out or consensus selection. A newest fit whose
-        # uncertainty is more than NEWEST_FIT_MAX_UNCERTAINTY_RATIO times the lowest
-        # one has diverged; the replayed 23_april_2026 dataset ends with such fits.
+        # jackknife failed or diverged is skipped; the replayed 23_april_2026 dataset
+        # ends with diverged fits.
         if history_candidates:
-            known = [_float_or_none(c.get("anchor_uncertainty_mm")) for c in history_candidates]
-            finite = [value for value in known if value is not None and np.isfinite(value)]
-            limit = NEWEST_FIT_MAX_UNCERTAINTY_RATIO * min(finite) if finite else float("inf")
-            newest = next((c for c, value in zip(reversed(history_candidates), reversed(known))
-                           if value is None or value <= limit), history_candidates[-1])
+            index = newest_trusted_index([c.get("anchor_uncertainty_mm") for c in history_candidates])
+            if index is None:
+                _log_console("; full-auto: no fit has a usable anchor uncertainty.")
+                return None, None
+            newest = history_candidates[index]
             if newest is not history_candidates[-1]:
-                _log_console(f"; full-auto: newest fit diverged (anchor uncertainty above "
-                             f"{_fmt_float(limit, suffix=' mm')}); applying iteration {newest['iteration']}.")
+                _log_console(f"; full-auto: newest fit failed or diverged (anchor uncertainty "
+                             f"{_fmt_float(history_candidates[-1].get('anchor_uncertainty_mm'), suffix=' mm')}); "
+                             f"applying iteration {newest['iteration']}.")
             return newest["plan"], dict(newest["summary_meta"])
         if fallback_plan is not None:
             return fallback_plan, dict(fallback_meta or {})
@@ -1048,8 +1047,9 @@ def _full_auto_loop(
                 return _finalize(2)
 
             def _sort_key(entry: Dict[str, object]) -> Tuple[float, float, str]:
-                # Variants fit the same data with the same objective, so their
-                # costs compare; costs of fits to different data do not.
+                # Cold and warm starts of one run spec share an objective, so their
+                # costs compare. --shotgun specs that change the sigma source or
+                # filtering do not share one; main ranked those by cost as well.
                 metrics = entry["metrics"]
                 underconstrained = bool(metrics.get("underconstrained_penalty", False))
                 cost = float(metrics.get("primary_cost", float("inf")))
@@ -1079,7 +1079,9 @@ def _full_auto_loop(
             selected_rel_std = metrics.get("rel_std")
             selected_warnings = list(metrics.get("warnings") or [])
             history_admissible = (not selected_underconstrained) and np.isfinite(selected_cost)
+            uncertainty_started = time.perf_counter()
             selected_uncertainty = plan_anchor_uncertainty_mm(plan) if history_admissible else None
+            uncertainty_seconds = time.perf_counter() - uncertainty_started
             selected_summary_meta = {
                 "iteration": step,
                 "run_id": selected_id,
@@ -1204,6 +1206,7 @@ def _full_auto_loop(
                     "decision": stop.decision,
                     "cost": selected_cost,
                     "anchor_uncertainty_mm": selected_uncertainty,
+                    "uncertainty_compute_seconds": uncertainty_seconds,
                     "uncertainty_rank": stop.rank,
                     "no_improve_count": stopping.no_improve,
                     "patience": stopping.patience,

@@ -1,6 +1,8 @@
 import numpy as np
 
-from autocal.anchor_uncertainty import plan_anchor_uncertainty_mm, sweep_jackknife_mm, uncertainty_label
+from autocal.anchor_uncertainty import (
+    newest_trusted_index, plan_anchor_uncertainty_mm, sweep_jackknife_mm, uncertainty_label,
+)
 
 ANCHORS = np.array([[0.0, -1900.0, -280.0], [1645.4, 950.0, -280.0], [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]])
 
@@ -52,6 +54,28 @@ def test_plan_uncertainty_uses_the_estimation_dataset():
     plan = {"anchors": ANCHORS, "dataset": {"sweeps": []}, "dataset_for_estimation": _dataset(),
             "home_offsets_fitted": False}
     assert plan_anchor_uncertainty_mm(plan) < 1e-3
+
+
+def test_plan_with_fitted_home_offsets_refits_them_from_unshifted_lengths():
+    plan = {"anchors": ANCHORS, "dataset": _dataset(), "dataset_for_estimation": {"sweeps": []},
+            "home_offsets_fitted": True}
+    assert plan_anchor_uncertainty_mm(plan) < 1e-2
+
+
+def test_failed_jackknife_is_never_applied():
+    assert newest_trusted_index([1.0, float("inf")]) == 0
+    assert newest_trusted_index([float("inf"), float("inf")]) is None
+    assert newest_trusted_index([float("nan")]) is None
+
+
+def test_diverged_newest_fit_falls_back_to_the_newest_trusted_one():
+    assert newest_trusted_index([1.0, 4.0, 25.0]) == 1
+    assert newest_trusted_index([None, 1.0, None]) == 2
+
+
+def test_near_zero_early_uncertainty_does_not_lock_selection():
+    assert newest_trusted_index([0.0, 0.2]) == 1
+    assert newest_trusted_index([0.01, 2.9]) == 1
 
 
 def test_labels_follow_millimetre_thresholds():
