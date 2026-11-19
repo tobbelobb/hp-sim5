@@ -8,6 +8,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 923c2baaa0 | v2 9bf824b3cb4bb9eb78b2 | 2026-11-19T14:17 | 1/1 | 0.81 | 1.53 | 3574 | 5516 | 10 | stable-estimate | ok | Replaces ellipse fit with point fit |
 | e0b0999401 | v2 a6a8f9c907fed41c7491 | 2026-11-18T23:19 | 3/3 | 0.96 | 2.27 | 3574 | 4547 | 7 | stable-estimate | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 30db440fefb61681cd67 | 2026-11-18T23:18 | 1/1 | 0.96 | 1.22 | 3574 | 5265 | 9 | stable-estimate | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
 | 7a1b0e84c1 | v2 daf2711f048f74674685 | 2026-11-18T21:19 | 1/1 | 0.96 | 1.22 | 3574 | 5265 | 9 | stable-estimate | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
@@ -86,6 +87,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 923c2baaa0 | v2 227e1c2863552581b659 | 2026-11-19T14:17 | 1/1 | 0.55 | 1.10 | 4233 | 4896 | 7 | stable-estimate | ok | Replaces ellipse fit with point fit |
 | e0b0999401 | v2 d3c297a6acca1c763837 | 2026-11-18T23:19 | 3/3 | 0.71 | 1.15 | 4233 | 5579 | 9 | stable-estimate | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 220c770e2b794210ab93 | 2026-11-18T23:18 | 1/1 | 0.69 | 1.12 | 4232 | 5572 | 9 | stable-estimate | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
 | 7a1b0e84c1 | v2 034990ae1e90591c1630 | 2026-11-18T21:19 | 1/1 | 5.75 | 0.94 | unavailable | 4693 | 8 | stable-estimate | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
@@ -164,6 +166,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 923c2baaa0 | v2 6e9b8916096fdd846521 | 2026-11-19T14:17 | 1/1 | 0.73 | 0.55 | 3422 | 3766 | 5 | good-fit | ok | Replaces ellipse fit with point fit |
 | e0b0999401 | v2 93dd8c59b1c60958be4e | 2026-11-18T23:19 | 3/3 | 0.70 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 81b6484ca521eafe3dd7 | 2026-11-18T23:18 | 1/1 | 0.83 | 0.69 | 3423 | 3767 | 5 | good-fit | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
 | 7a1b0e84c1 | v2 c0f8c96686e0b9124e17 | 2026-11-18T21:19 | 1/1 | 0.83 | 0.69 | 3424 | 3768 | 5 | good-fit | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
@@ -242,6 +245,7 @@ Rows group measurements by runtime fingerprint and scoring protocol. Values are 
 
 | Commit | Fingerprint | Date | OK / runs | Accuracy | Precision | Converged | Total | Sweeps | Stop | Status | Subject |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 923c2baaa0 | v2 8222d194fb8522fdfff0 | 2026-11-19T14:17 | 1/1 | 1.30 | 1.19 | 3963 | 4673 | 6 | good-fit | ok | Replaces ellipse fit with point fit |
 | e0b0999401 | v2 9f8d355b6e49c9c5845a | 2026-11-18T23:19 | 3/3 | 1.31 | 1.17 | 3961 | 4671 | 6 | good-fit | ok | Merge pull request #111 from tobbelobb/autocal-simpler-ranking-and-score |
 | c067590e8a | v2 73dd3187ee4a4d433fe6 | 2026-11-18T23:18 | 1/1 | 1.45 | 1.17 | 3961 | 4671 | 6 | good-fit | ok | Merge pull request #119 from tobbelobb/hp4-roll-slack-parallel-lines |
 | 7a1b0e84c1 | v2 e461e15ee118b9f2a873 | 2026-11-18T21:19 | 1/1 | 2.57 | 0.63 | 4133 | 4202 | 6 | good-fit | ok | Merge pull request #117 from tobbelobb/t3/fix-worker-quality-history-timing |
