@@ -651,10 +651,16 @@ ellipsoid in squared-length space; points are grouped by which lines they
 measured, so HP5 rows with and without an accepted spare range both count. The
 fit also estimates home offsets with the point fit's prior and guards: offsets of
 0.2 mm cost about 16 mm of anchor error when ignored. After each mesh the fit is
-repeated from the blind seed and from the previous fit. The run stops when two
-consecutive meshes move no anchor coordinate by more than `--stable-step-mm`
-(after at least three meshes), when the stop file appears, or after the eighth
-mesh. The reported uncertainty is the largest anchor shift when one row is left
+repeated from the blind seed (at 1x, 2x and 4x scale, since the seed
+underestimates the anchor distances and HP5 otherwise settles two metres off)
+and from the previous fit; the lowest rms wins. Line stretch is corrected at
+the recorded constant forces, also on HP3/HP4, whose point fit leaves stretch to
+equal-strain collection; without it the HP3/HP4 meshes end 1.2-2.2 mm off. The
+run stops when two consecutive meshes move no anchor coordinate by more than
+`--stable-step-mm` (after at least three meshes), when the stop file appears,
+after the eighth mesh, or when a collection fails after three meshes (the fit
+so far is kept).
+The reported uncertainty is the largest anchor shift when one row is left
 out. `--no-collect` replays a dataset mesh by mesh; sweeps of older datasets that
 hold the same line at the same length are treated as one sphere.
 

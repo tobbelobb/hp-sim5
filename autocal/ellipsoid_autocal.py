@@ -11,14 +11,17 @@ range itself, as the bootstrap sweeps always have.
 
 The anchors come from the ellipse fit alone (ellipse_fit.py): each mesh's points
 lie on one ellipsoid in squared-length space, and the fit also estimates home
-offsets and corrects line stretch at the recorded constant forces. The point fit is never used. After each mesh the fit is repeated; the
-run stops when two consecutive meshes moved no anchor coordinate by more than
-the stable step, when the stop file appears, or after the last scheduled mesh.
+offsets and corrects line stretch at the recorded constant forces. The point
+fit is never used. After each mesh the fit is repeated; the run stops when two
+consecutive meshes moved no anchor coordinate by more than the stable step, when
+the stop file appears, after the last scheduled mesh, or when a collection fails
+once MIN_MESHES meshes are fitted (the fit so far is kept).
 The reported uncertainty is the spread of fits that leave out one row at a time.
 """
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence
@@ -38,7 +41,8 @@ HOME_OFFSET_PRIOR_SIGMA_MM = 5.0
 SEED_SCALES = (1.0, 2.0, 4.0)
 # (held, level) lengths as fractions of the measured travel. The held line only
 # shortens. Level lines lengthen on HP3/HP4 and shorten on HP5, like the bootstrap.
-SCHEDULE = [(0.0, 1.0), (-1.0, 0.5), (-0.5, 1.0), (-1.5, 0.0), (0.0, 0.5), (-0.5, 0.0), (-1.0, 1.0), (-2.0, 0.5)]
+# HP5's top line cannot shorten by twice the travel, so the schedule stays within 1.5.
+SCHEDULE = [(0.0, 1.0), (-1.0, 0.5), (-0.5, 1.0), (-1.5, 0.0), (0.0, 0.5), (-0.5, 0.0), (-1.0, 1.0), (-0.5, 0.5)]
 
 
 def mesh_rows(machine_type: str, held_fraction: float, level_fraction: float, travel_mm: float) -> List[str]:
@@ -163,7 +167,15 @@ def run_ellipsoid_autocal(
         if no_collect:
             dataset = dict(recorded, sweeps=[recorded["sweeps"][i] for group in replay[:index + 1] for i in group])
         else:
-            dataset = collect(index, dataset)
+            try:
+                dataset = collect(index, dataset)
+            except subprocess.CalledProcessError as error:
+                # A collection that fails after enough meshes keeps the fit so far.
+                if len(history) < MIN_MESHES:
+                    raise
+                log_console(f"; mesh {index + 1} collection failed ({error}); keeping the fit so far")
+                reason = "collection-failed"
+                break
         if not dataset["sweeps"]:
             continue
         seed = build_anchor_initial_guess(dataset, machine_type=machine_type) if seed is None else seed
