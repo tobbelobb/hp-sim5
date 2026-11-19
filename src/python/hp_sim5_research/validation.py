@@ -6,7 +6,8 @@ import numpy as np
 
 def validate_collection(path, anchors=None):
     from autocal.json_schema import load_json_file
-    from autocal.dataset_roles import _validate_sweep_roles, normalize_dataset_point_roles
+    from autocal.dataset_roles import (_validate_sweep_roles, measurement_groups, mesh_metadata,
+                                       normalize_dataset_point_roles)
     from autocal.spool_model import validate_dataset_has_raw_angles
     from autocal.pose_fit import consistency_residuals, dataset_line_lengths
 
@@ -20,18 +21,22 @@ def validate_collection(path, anchors=None):
     spans = []
     sensor_spans = []
     count = 0
-    for sweep in dataset['sweeps']:
-        points = sweep['data_points']
-        count += len(points)
-        for point in points:
+    # A sphere mesh is one collection unit stored as one-point records.
+    for group in measurement_groups(dataset):
+        members = [(dataset['sweeps'][index], point) for index in group for point in dataset['sweeps'][index]['data_points']]
+        count += len(members)
+        for sweep, point in members:
             lengths = np.asarray(point['raw_angles_deg']) * scale
             np.testing.assert_allclose([point['l_drive'], point['l_sensor']],
                                        lengths[[sweep['drive_anchor'], sweep['sensor_anchor']]], rtol=1e-10, atol=1e-8)
             if not point.get('sample_count') or len(point.get('sigma', [])) != axis_count:
                 raise ValueError('Missing collector noise statistics')
-        spans.append(float(np.ptp([point['l_drive'] for point in points])))
+        mesh = mesh_metadata(members[0][0])
+        drives = mesh['drive_anchors'] if mesh else [members[0][0]['drive_anchor']]
+        spans.append(max(float(np.ptp([point['raw_angles_deg'][drive] * scale[drive] for _, point in members]))
+                         for drive in drives))
         directions = {}
-        for point in points:
+        for sweep, point in members:
             drive = point.get('source_drive_anchor', sweep['drive_anchor'])
             sensor = point.get('source_sensor_anchor', sweep['sensor_anchor'])
             directions.setdefault((drive, sensor), []).append(float(point['raw_angles_deg'][sensor] * scale[sensor]))

@@ -635,26 +635,52 @@ to the `--stable-step-mm` stop.
 of sweeps once three sweeps are in, on Hangprinters with equal-strain data.
 A mesh holds one line (D, or the top line on HP5), so the effector stays on a
 sphere around its anchor; two drive lines in position control pick each point and
-the remaining lines measure it under force. `mesh_planning.py` searches held
-lengths and drive/sensor roles, keeps every commanded and predicted length inside
-the lengths already measured on that axis, keeps the sweep planner's pretension
-and 10% anchor clearance rules, requires the three position lines to fix the pose
-(smallest direction singular value 0.25), sets an equal-strain sensor force per
-point, picks up to 20 points greedily by information and orders them as a short
-closed tour from the point nearest home.
+the remaining lines measure it under force.
 
-The collector (`--mesh-plan`) first checks reversible sensor coupling to a small
-drive move at the first point, then visits the points and returns to the first
-before going home. An uncoupled sensor or a blocked drive rejects the mesh as
-boundary evidence, and the planner does not plan it again. Each point is stored
-as a one-point record holding the held line and the first drive, with the shared
-`metadata.mesh`; uncertainty, the HP5 stop rule, replay and the benchmark count a
-mesh as one unit, and the ellipse reference fit uses its ellipsoids.
+`mesh_planning.py` searches held lengths and drive/sensor roles. Every planned
+pose, and the poses sampled along each move of the tour, the move back to its
+first point and the coupling probe, must keep the commanded and predicted lengths
+inside the lengths already measured on that axis, keep the sweep planner's
+pretension and 10% anchor clearance rules, let the three position lines fix the
+pose (smallest direction singular value 0.25), and keep all line tensions positive
+under the sensor force set before the move. Point forces are set for equal strain
+and never exceed the largest sensor force the dataset has already applied. Up to
+20 points are picked greedily by information and visited as a short closed tour
+from the point nearest home. The move from the positioning pose to the first
+point is not checked, as for sweeps. Poses are planned with rigid lengths; stretch
+moves the reached pose by a fraction of a millimetre, and the records keep the
+measured encoder lengths.
 
-Live headless runs on 2026-11-19, one per machine, sweeps then meshes:
-HP3 0.81 / 0.83 mm (5516 / 4494 s simulated), HP4 0.56 / 0.22 mm (4897 / 5290 s),
-HP5 0.85 / 0.77 mm, HP5 pulley-reduced 1.30 / 1.65 mm. A mesh takes about 250-280 s
-against about 365 s for a sweep. Meshes never extend the measured workspace.
+The collector (`--mesh-plan`) requires a positive encoder conversion on every
+participating axis, checks reversible sensor coupling to the planned probe moves
+at the first point, and then requires the sensor to follow each planned move
+(same direction, within a factor of two). A sensor that stops following ends the
+mesh, which is kept if it has `min_points` points and rejected otherwise. Spare
+HP5 ranges count only after following a planned move. A held-line slip, an
+uncoupled sensor or a blocked drive rejects the mesh as boundary evidence, without
+a retry at the same loads, and the planner does not plan it again. The collector
+returns to the first point and then home with the held line in position control.
+
+Each point is stored as a one-point record holding the held line and the first
+drive, with the shared `metadata.mesh`. Uncertainty, the HP5 stop rule, replay,
+validation, the diagnostics' sweep limits and the benchmark count a mesh as one
+unit; circle-sweep novelty and exploration ignore mesh records; merging renames a
+mesh id that is already in use; replay plans without the recorded rejections.
+The ellipse reference fit fits each mesh's ellipsoids, with each point's own held
+length.
+
+Live headless runs on 2026-11-19, one per machine, max anchor coordinate error:
+
+| Machine | Sweeps | Meshes (before review fixes) | Meshes |
+| --- | --- | --- | --- |
+| HP3 | 0.81 mm, 5516 s | 0.83 mm, 4494 s | 0.84 mm, 5285 s |
+| HP4 | 0.56 mm, 4897 s | 0.22 mm, 5290 s | 0.41 mm, 5012 s |
+| HP5 | 0.85 mm, 3762 s | 0.77 mm, 3919 s | 1.39 mm, 3767 s |
+| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.65 mm, 4783 s | 1.69 mm, 4683 s |
+
+The force ceiling and move checks removed the high-load, wide meshes that gave the
+earlier HP4 result. Meshes are not a uniform improvement, so they stay opt-in.
+A mesh takes about 250-280 s of simulated time against about 365 s for a sweep.
 
 ## Headless benchmark history
 

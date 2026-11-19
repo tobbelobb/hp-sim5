@@ -33,20 +33,8 @@ class InfeasibleForceProfileError(ValueError):
     """A candidate has no usable interval under the requested line loads."""
 
 
-def equal_strain_tensions(
-    anchors: np.ndarray,
-    position: np.ndarray,
-    lines: Sequence[int],
-    *,
-    strand_tension_n: float,
-    mover_weight_n: float,
-    strands: np.ndarray,
-    extra_line_length_mm: np.ndarray,
-    mechanical_advantage: np.ndarray | None = None,
-    compliant_force_n: float = 0.0,
-) -> np.ndarray:
-    """Tensions of the given lines at a position whose weighted mean tension per strand is `strand_tension_n`."""
-    lines = list(lines)
+def _carrying_and_pretension(anchors, position, lines, mover_weight_n, compliant_force_n):
+    """Static line tensions of the d+1 active lines: one particular solution and the self-stress mode."""
     if len(lines) != np.asarray(anchors).shape[1] + 1:
         raise ValueError("Equal-strain sweeps require d+1 active lines with known loads on the remaining lines")
     to_anchor = np.asarray(anchors, dtype=float)[lines] - np.asarray(position, dtype=float)
@@ -63,7 +51,31 @@ def equal_strain_tensions(
         load -= compliant_force_n * np.sum(passive / np.linalg.norm(passive, axis=1)[:, None], axis=0)
     carrying = np.linalg.lstsq(directions, load, rcond=None)[0]
     pretension = np.linalg.svd(directions)[2][-1]
-    pretension = pretension * np.sign(np.sum(pretension))
+    return carrying, pretension * np.sign(np.sum(pretension)), distance
+
+
+def tensions_at_sensor_force(anchors, position, lines, *, sensor_force_n: float, mover_weight_n: float,
+                             compliant_force_n: float = 0.0) -> np.ndarray:
+    """Static tensions of the active lines when the last one (the sensor) pulls with `sensor_force_n`."""
+    carrying, pretension, _ = _carrying_and_pretension(anchors, position, list(lines), mover_weight_n, compliant_force_n)
+    return carrying + (sensor_force_n - carrying[-1]) / pretension[-1] * pretension
+
+
+def equal_strain_tensions(
+    anchors: np.ndarray,
+    position: np.ndarray,
+    lines: Sequence[int],
+    *,
+    strand_tension_n: float,
+    mover_weight_n: float,
+    strands: np.ndarray,
+    extra_line_length_mm: np.ndarray,
+    mechanical_advantage: np.ndarray | None = None,
+    compliant_force_n: float = 0.0,
+) -> np.ndarray:
+    """Tensions of the given lines at a position whose weighted mean tension per strand is `strand_tension_n`."""
+    lines = list(lines)
+    carrying, pretension, distance = _carrying_and_pretension(anchors, position, lines, mover_weight_n, compliant_force_n)
     advantage = np.ones(len(anchors)) if mechanical_advantage is None else np.broadcast_to(
         np.asarray(mechanical_advantage, dtype=float), (len(anchors),))
     advantage = advantage[lines]

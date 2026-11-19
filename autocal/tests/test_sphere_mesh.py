@@ -136,3 +136,48 @@ def test_mesh_command_owns_geometry_and_forces(tmp_path):
     assert cmd[cmd.index("--mesh-plan") + 1] == str(tmp_path / "plan.json")
     assert "--sensor-force-profile" not in cmd and "--fixed-targets" not in cmd and "--hp-sim-reset" not in cmd
     assert cmd[cmd.index("--force-low") + 1] == "0.1" and cmd[cmd.index("--completed-sweeps") + 1] == "4"
+
+
+@pytest.mark.parametrize("machine", sorted(TRUTH))
+def test_planned_forces_stay_below_the_largest_applied_force(machine):
+    dataset, _, plan = _plan(machine)
+    applied = max(point["sensor_force_n"] for sweep in dataset["sweeps"] for point in sweep["data_points"])
+    assert plan["max_sensor_force_n"] == pytest.approx(applied)
+    assert all(point["sensor_force_n"] <= applied for point in plan["points"])
+    assert plan["probe"]["away_mm"] > plan["points"][0]["drive_mm"][1] > plan["probe"]["toward_mm"]
+    assert 1 <= plan["min_points"] <= len(plan["points"])
+
+
+def test_merging_meshes_with_the_same_id_keeps_them_separate():
+    from autocal._autocal_common import _merge_sweep_datasets
+    _, anchors, plan = _plan("hangprinter_4")
+    base = {"machine_type": "hangprinter_4", "num_anchors": 4, "dimensions": 3, "config": {},
+            "sweeps": _mesh_records(plan, anchors, "mesh_001")}
+    new = dict(base, sweeps=_mesh_records(plan, anchors, "mesh_001"))
+    merged = _merge_sweep_datasets(base, new)
+    groups = measurement_groups(merged)
+    assert len(groups) == 2 and [len(group) for group in groups] == [len(plan["points"])] * 2
+    assert {merged["sweeps"][group[0]]["metadata"]["mesh"]["id"] for group in groups} == {"mesh_001", "mesh_001_2"}
+
+
+def test_exploration_ignores_mesh_records():
+    from autocal.workspace import exploration_grid
+    dataset = _load("benchmark_923c2baa_hangprinter_4")
+    _, anchors, plan = _plan("hangprinter_4")
+    with_mesh = dict(dataset, sweeps=[*dataset["sweeps"], *_mesh_records(plan, anchors, "mesh_009")])
+    assert exploration_grid(with_mesh, 41) == exploration_grid(dataset, 41)
+
+
+@pytest.mark.heavy
+def test_replay_does_not_duplicate_recorded_rejections(tmp_path):
+    import subprocess, sys
+    source = _load("mesh_benchmark_ac9000fe_hangprinter_4")
+    assert len(source.get("acquisition_rejections", [])) >= 1
+    path = tmp_path / "mesh.json"
+    path.write_text(json.dumps(source))
+    subprocess.run([sys.executable, "-m", "autocal.autocal", "--sim", "--machine-type", "hangprinter_4", "--dataset", str(path),
+                    "--find-radii", "off", "--base-radii", "30", "--buildup-factor", "0", "--no-collect"],
+                   check=True, capture_output=True, cwd=str(__import__("pathlib").Path(__file__).resolve().parents[2]))
+    replayed = json.loads(path.with_suffix(".replay_tmp.json").read_text())
+    assert not replayed.get("acquisition_rejections")
+    assert len(measurement_groups(replayed)) == len(measurement_groups(source))

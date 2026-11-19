@@ -64,24 +64,30 @@ def _sweep_ellipses(dataset: dict, lengths: np.ndarray) -> List[dict]:
 def _ellipsoid_misfits(anchors: np.ndarray, unit: dict, lengths: np.ndarray, norms: np.ndarray):
     """Held line h at radius R: squared lengths y_j of lines j are affine in the
     effector position p, y_j = R^2 - |A_h|^2 + |A_j|^2 + 2 p.(A_h - A_j). With
-    p = A_h + R u, |u| = 1, three such lines satisfy |M^-1 (y - c)| = R."""
+    p = A_h + R u, |u| = 1, three such lines satisfy g = |M^-1 (y - c)|^2 - R^2 = 0,
+    c = R^2 + |A_j|^2 - |A_h|^2 + M A_h. R is each point's own measured held length,
+    so the first-order distance divides g by its gradient over all four lengths."""
     rows, held = unit["rows"], unit["held"]
-    radius = norms[held] + float(np.nanmean(lengths[rows, held]))
     for other in unit["others"]:
         lines = [*unit["drives"], other]
-        mask = np.all(np.isfinite(lengths[np.ix_(rows, lines)]), axis=1)
+        mask = np.all(np.isfinite(lengths[np.ix_(rows, [held, *lines])]), axis=1)
+        radius = lengths[rows[mask], held] + norms[held]
         absolute = lengths[np.ix_(rows[mask], lines)] + norms[lines]
         matrix = 2.0 * (anchors[held] - anchors[lines])
-        offset = radius ** 2 - norms[held] ** 2 + norms[lines] ** 2 + matrix @ anchors[held]
         try:
             inverse = np.linalg.inv(matrix)
         except np.linalg.LinAlgError:
             yield rows[mask], np.full(int(mask.sum()), _NO_CIRCLE_MM)
             continue
+        offset = (radius ** 2)[:, None] + (norms[lines] ** 2 - norms[held] ** 2 + matrix @ anchors[held])[None, :]
         unit_vectors = (absolute ** 2 - offset) @ inverse.T
         value = np.sum(unit_vectors ** 2, axis=1) - radius ** 2
-        gradient = (2.0 * unit_vectors @ inverse) * 2.0 * absolute
-        yield rows[mask], value / np.maximum(np.linalg.norm(gradient, axis=1), 1e-12)
+        weights = 2.0 * unit_vectors @ inverse           # dg/dy for each line's squared length
+        gradient_lines = weights * 2.0 * absolute
+        # c moves with R^2 in every line: dg/dR = -2 R (sum of dg/dy) - 2 R.
+        gradient_held = -2.0 * radius * np.sum(weights, axis=1) - 2.0 * radius
+        gradient = np.hypot(np.linalg.norm(gradient_lines, axis=1), gradient_held)
+        yield rows[mask], value / np.maximum(gradient, 1e-12)
 
 
 def ellipse_misfits(anchors: np.ndarray, sweeps: List[dict], lengths: np.ndarray):

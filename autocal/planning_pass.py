@@ -51,7 +51,10 @@ def plan_ellipse_sweep(
     num_anchors = int(fit["num_anchors"])
     dimensions = int(fit["dimensions"])
     spool_params = fit["spool_model_params"]
-    sweeps_obs = dataset_sweep_configs(dataset)
+    # Circle-sweep novelty, spacing and exploration concern circle sweeps only; mesh
+    # points still contribute their information through the fit.
+    circle_sweeps = [sweep for sweep in dataset.get("sweeps", []) if mesh_metadata(sweep) is None]
+    sweeps_obs = dataset_sweep_configs({"sweeps": circle_sweeps})
     sweep_configs_for_info = fit["sweep_configs_for_info"]
     l2_scale = l2_scale_for_machine(machine_type, num_anchors, dimensions)
     info_settings = fit["information_settings"]
@@ -78,7 +81,7 @@ def plan_ellipse_sweep(
     exploration_bounds = None
     if candidate_deltas is None:
         if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and delta_min is None and delta_max is None:
-            candidate_deltas, exploration_bounds = exploration_grid(dataset, candidate_count)
+            candidate_deltas, exploration_bounds = exploration_grid({**dataset, "sweeps": circle_sweeps}, candidate_count)
         else:
             default_range = _default_delta_range(max_travel_mm=max_travel_mm, observed_deltas=observed_deltas)
             lo, hi = default_range or (-600.0, 600.0)
@@ -96,7 +99,8 @@ def plan_ellipse_sweep(
         fixed_delta_bounds_by_anchor=exploration_bounds,
     )
     if exclude_existing:
-        rejected = dataset_sweep_configs({"sweeps": dataset.get("acquisition_rejections", [])})
+        rejected = dataset_sweep_configs({"sweeps": [entry for entry in dataset.get("acquisition_rejections", [])
+                                                     if not entry.get("mesh")]})
         rejected_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in rejected}
         candidates = [cfg for cfg in candidates if cfg.normalized_key(tol_mm=existing_tol_mm) not in rejected_keys]
         existing_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in sweeps_obs}
@@ -222,7 +226,9 @@ def plan_ellipse_sweep(
             anchors, dataset, fit["dataset_for_estimation"], machine_type=machine_type,
             home_offsets_mm=np.asarray(fit["home_offsets_mm"], dtype=float),
             low_anchor_z=dataset.get("_low_anchor_z"), sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
-            regularization=float(regularization), measure_extra_ranges=has_extra_sensor_data(dataset),
+            regularization=float(regularization),
+            # The collector's spare-line policy decides, not the recorded data alone.
+            measure_extra_ranges=has_extra_sensor_data(dataset) and "--no-extra-sensors" not in collector_args_eff,
             observed_stretch=dataset_stretch(fit["dataset_for_estimation"]))
     if mesh is not None:
         mesh_path = cfg_path.with_suffix(".mesh_plan.json")

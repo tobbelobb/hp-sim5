@@ -705,6 +705,9 @@ def _full_auto_loop(
             dataset_work = dict(dataset_full)
             dataset_work["timestamp"] = datetime.now().isoformat()
             dataset_work["sweeps"] = initial
+            # Recorded rejections happened at unknown later points of the original
+            # run; replay plans without them rather than seeing the future.
+            dataset_work.pop("acquisition_rejections", None)
             _renumber_sweeps(initial)
             _write_json(work_path, dataset_work)
             _log_line(
@@ -1373,6 +1376,7 @@ def _full_auto_loop(
                     new_dataset = dict(base_dataset)
                     new_dataset["timestamp"] = datetime.now().isoformat()
                     new_dataset["sweeps"] = list(next_sweep)
+                    new_dataset.pop("acquisition_rejections", None)
                     merged = _merge_sweep_datasets(base_dataset, new_dataset)
                     _write_json(work_path, merged)
                     sweeps = merged.get("sweeps", [])

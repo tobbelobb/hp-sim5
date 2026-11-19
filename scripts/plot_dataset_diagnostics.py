@@ -48,7 +48,10 @@ def _subset_dataset(dataset: dict, *, limit_sweeps: Optional[int]) -> dict:
     subset = dict(dataset)
     sweeps = subset.get("sweeps")
     if isinstance(sweeps, list):
-        subset["sweeps"] = sweeps[: max(0, int(limit_sweeps))]
+        # Count collection units: a sphere mesh's records stay together.
+        from autocal.dataset_roles import measurement_groups
+        groups = measurement_groups(subset)[: max(0, int(limit_sweeps))]
+        subset["sweeps"] = [sweeps[index] for group in groups for index in group]
     return subset
 
 

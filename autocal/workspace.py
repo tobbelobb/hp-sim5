@@ -13,7 +13,8 @@ def exploration_grid(dataset: dict, count: int):
     """
     values = [[0.0] for _ in range(int(dataset["num_anchors"]))]
     for sweep in dataset.get("sweeps", []):
-        if not sweep.get("data_points"):
+        # Sphere-mesh records hold a drive line, not a circle sweep's fixed target.
+        if not sweep.get("data_points") or (sweep.get("metadata") or {}).get("mesh"):
             continue
         for anchor, delta in zip(sweep["fixed_anchors"], sweep["fixed_lengths"]):
             if np.isfinite(delta):
