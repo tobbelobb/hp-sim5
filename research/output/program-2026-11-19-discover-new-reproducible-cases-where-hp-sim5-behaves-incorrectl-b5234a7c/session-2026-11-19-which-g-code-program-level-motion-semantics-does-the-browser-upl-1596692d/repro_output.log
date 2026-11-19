@@ -1,0 +1,243 @@
+########## node repro_arcs.mjs
+worker: MoveCommander is up
+--- trailing G2 arc (dt=0.002s)
+    G-code:
+      M82
+      G1 X10 Y0 E1 F600
+      G2 X20 Y10 I10 J0 E2 F600
+    commanded (RRF/Klipper semantics)  travel 25.706 mm  extrusion 2.000 mm  time 2.571 s  end (20.000, 10.000, 0.000)
+    simulated (moveCommander)          travel 10.000 mm  extrusion 1.000 mm  time 1.000 s  end (10.000, 0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 10.000 mm  extrusion 1.000 mm  end (10.000, 0.000, 0.000)  (1 segments)
+    error: travel -61.1%  extrusion -50.0%  time -61.1%  end error 14.142 mm  max path deviation 0.000 mm  (500 emitted steps)
+
+Contract (RRF/Klipper): 10 mm line + quarter arc of r=10 (15.708 mm)
+  = 25.708 mm travel, 2 mm extrusion, ending at (20, 10).
+  FAIL  travel (mm): expected 25.708 (±0.257), got 10.0000
+  FAIL  final X (mm): expected 20 (±0.0500), got 10.0000
+  FAIL  final Y (mm): expected 10 (±0.0500), got 0.0000
+  FAIL  extruded filament (mm): expected 2 (±0.0500), got 1.0000
+--- mid-file G3 arc (dt=0.002s)
+    G-code:
+      M82
+      G3 X20 Y0 I10 J0 E2 F600
+      G1 X20 Y20 E3 F600
+    commanded (RRF/Klipper semantics)  travel 51.413 mm  extrusion 3.000 mm  time 5.141 s  end (20.000, 20.000, 0.000)
+    simulated (moveCommander)          travel 28.284 mm  extrusion 3.000 mm  time 2.830 s  end (20.000, 20.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 28.284 mm  extrusion 3.000 mm  end (20.000, 20.000, 0.000)  (1 segments)
+    error: travel -45.0%  extrusion 0.0%  time -45.0%  end error 0.000 mm  max path deviation 9.993 mm  (1415 emitted steps)
+
+Contract (RRF/Klipper): half circle r=10 (31.416 mm) + 20 mm = 51.416 mm travel.
+  FAIL  mid-file travel (mm): expected 51.416 (±0.514), got 28.2843
+  FAIL  mid-file max deviation from commanded path (mm): expected <= 0.5, got 9.9929
+
+RESULT: BUG PRESENT [G2/G3 arcs dropped] - 6 contract violation(s)
+exit=1
+########## node repro_dwell.mjs
+worker: MoveCommander is up
+--- G4 P1000 dwell (dt=0.002s)
+    G-code:
+      M82
+      G1 X10 Y0 E1 F600
+      G4 P1000
+      G1 X20 Y0 E2 F600
+    commanded (RRF/Klipper semantics)  travel 20.000 mm  extrusion 2.000 mm  time 3.000 s  end (20.000, 0.000, 0.000)
+    simulated (moveCommander)          travel 20.000 mm  extrusion 2.000 mm  time 2.000 s  end (20.000, -0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 20.000 mm  extrusion 2.000 mm  end (20.000, 0.000, 0.000)  (2 segments)
+    error: travel 0.0%  extrusion 0.0%  time -33.3%  end error 0.000 mm  max path deviation 0.000 mm  (1000 emitted steps)
+
+Contract (RRF/Klipper): 1.0 s move + 1.0 s dwell + 1.0 s move = 3.0 s total.
+  FAIL  duration (s): expected 3 (±0.0500), got 2.0000
+  pass  travel (mm): expected 20 (±0.200), got 20.0000
+  pass  extruded filament (mm): expected 2 (±0.0500), got 2.0000
+
+RESULT: BUG PRESENT [G4 dwell not simulated] - 1 contract violation(s)
+exit=1
+########## node repro_feedrate_default.mjs
+worker: MoveCommander is up
+--- default feed rate (no F word) (dt=0.002s)
+    G-code:
+      M82
+      G1 X10 Y0 E1
+      G1 X20 Y0 E2
+    commanded (RRF/Klipper semantics)  travel 20.000 mm  extrusion 2.000 mm  time 0.400 s  end (20.000, 0.000, 0.000)
+    simulated (moveCommander)          travel 20.000 mm  extrusion 2.000 mm  time 1.200 s  end (20.000, 0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 20.000 mm  extrusion 2.000 mm  end (20.000, 0.000, 0.000)  (2 segments)
+    error: travel 0.0%  extrusion 0.0%  time 200.0%  end error 0.000 mm  max path deviation 0.000 mm  (600 emitted steps)
+
+Contract: no F word -> firmware default feed rate.
+  RRF 3000 mm/min -> 0.4000 s; Klipper 1500 mm/min -> 0.8000 s; simulated -> 1.2000 s
+  simulated/commanded = 3.00x (RRF) and 1.50x (Klipper)
+  FAIL  duration: expected <= 0.8080 s (Klipper default), got 1.2000 s
+
+RESULT: BUG PRESENT [default feed rate 1000 mm/min] - 1 contract violation(s)
+exit=1
+########## node repro_g0.mjs
+worker: MoveCommander is up
+--- G0 rapids dropped (dt=0.002s)
+    G-code:
+      M82
+      G0 X10 Y0 F9000
+      G1 X10 Y10 E1 F600
+      G0 X20 Y10 F9000
+      G1 X20 Y20 E2 F600
+    commanded (RRF/Klipper semantics)  travel 40.000 mm  extrusion 2.000 mm  time 2.133 s  end (20.000, 20.000, 0.000)
+    simulated (moveCommander)          travel 28.284 mm  extrusion 2.000 mm  time 2.832 s  end (20.000, 20.000, -0.000)
+    app reference overlay (parseGcodeText)  travel 20.000 mm  extrusion 2.000 mm  end (20.000, 20.000, 0.000)  (2 segments)
+    error: travel -29.3%  extrusion 0.0%  time 32.7%  end error 0.000 mm  max path deviation 5.000 mm  (1416 emitted steps)
+
+Contract (RRF/Klipper): 4 moves of 10 mm = 40 mm travel;
+  time = 2x(10 mm / 150 mm/s) + 2x(10 mm / 10 mm/s) = 0.1333 + 2.0 = 2.1333 s;
+  every simulated point lies on the commanded path.
+  FAIL  travel (mm): expected 40 (±0.400), got 28.2843
+  FAIL  duration (s): expected 2.1333 (±0.0427), got 2.8320
+  pass  extruded filament (mm): expected 2 (±0.0500), got 2.0000
+  FAIL  max deviation from commanded path (mm): expected <= 0.5, got 5.0000
+  pass  reference overlay travel (mm): expected 20 (±0.200), got 20.0000
+--- G0 carries the modal feed rate (dt=0.002s)
+    G-code:
+      M82
+      G0 F9000
+      G1 X10 Y0 E1
+    commanded (RRF/Klipper semantics)  travel 10.000 mm  extrusion 1.000 mm  time 0.067 s  end (10.000, 0.000, 0.000)
+    simulated (moveCommander)          travel 10.000 mm  extrusion 1.000 mm  time 0.600 s  end (10.000, -0.000, -0.000)
+    app reference overlay (parseGcodeText)  travel 10.000 mm  extrusion 1.000 mm  end (10.000, 0.000, 0.000)  (1 segments)
+    error: travel 0.0%  extrusion -0.0%  time 800.0%  end error 0.000 mm  max path deviation 0.000 mm  (300 emitted steps)
+
+Contract (RRF/Klipper): F9000 on the G0 sets the modal feed rate,
+  so the 10 mm G1 takes 10/150 = 0.0667 s.
+  FAIL  duration after G0 F9000 (s): expected 0.0667 (±0.00500), got 0.6000
+
+RESULT: BUG PRESENT [G0 rapids dropped] - 4 contract violation(s)
+exit=1
+########## node repro_g01.mjs
+worker: MoveCommander is up
+--- G01 numeric spelling (dt=0.002s)
+    G-code:
+      M82
+      G01 X10 Y0 E1 F600
+      G01 X20 Y0 E2 F600
+    commanded (RRF/Klipper semantics)  travel 20.000 mm  extrusion 2.000 mm  time 2.000 s  end (20.000, 0.000, 0.000)
+    simulated (moveCommander)          travel 0.000 mm  extrusion 0.000 mm  time 0.000 s  end (0.000, 0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 20.000 mm  extrusion 2.000 mm  end (20.000, 0.000, 0.000)  (2 segments)
+    error: travel -100.0%  extrusion -100.0%  time -100.0%  end error 20.000 mm  max path deviation 0.000 mm  (0 emitted steps)
+
+Contract (RRF): G01 == G1, so 2 x 10 mm moves = 20 mm, 2 mm extrusion, 2.0 s.
+  FAIL  travel (mm): expected 20 (±0.200), got 0.0000
+  FAIL  final X (mm): expected 20 (±0.0500), got 0.0000
+  FAIL  extruded filament (mm): expected 2 (±0.0500), got 0.0000
+  pass  reference overlay travel (mm): expected 20 (±0.200), got 20.0000
+--- G00 numeric spelling (dt=0.002s)
+    G-code:
+      M82
+      G00 X10 Y0 F9000
+      G1 X10 Y10 E1 F600
+    commanded (RRF/Klipper semantics)  travel 20.000 mm  extrusion 1.000 mm  time 1.067 s  end (10.000, 10.000, 0.000)
+    simulated (moveCommander)          travel 14.142 mm  extrusion 1.000 mm  time 1.416 s  end (10.000, 10.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 10.000 mm  extrusion 1.000 mm  end (10.000, 10.000, 0.000)  (1 segments)
+    error: travel -29.3%  extrusion -0.0%  time 32.7%  end error 0.000 mm  max path deviation 5.000 mm  (708 emitted steps)
+
+Contract (RRF): G00 to (10, 0) then G1 to (10, 10) = 10 + 10 = 20 mm of travel,
+  with the filament laid along the vertical leg.
+  FAIL  G00 travel (mm): expected 20 (±0.200), got 14.1421
+  FAIL  G00 max deviation from commanded path (mm): expected <= 0.5, got 5.0000
+
+RESULT: BUG PRESENT [G00/G01 numeric spellings dropped] - 5 contract violation(s)
+exit=1
+########## node repro_g20.mjs
+worker: MoveCommander is up
+--- G20 inches (dt=0.002s)
+    G-code:
+      M82
+      G20
+      G1 X1 Y0 E1 F600
+      G1 X1.5 Y0 E2 F600
+    commanded (RRF/Klipper semantics)  travel 38.100 mm  extrusion 50.800 mm  time 0.150 s  end (38.100, 0.000, 0.000)
+    simulated (moveCommander)          travel 1.500 mm  extrusion 2.000 mm  time 0.150 s  end (1.500, -0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 1.500 mm  extrusion 2.000 mm  end (1.500, 0.000, 0.000)  (2 segments)
+    error: travel -96.1%  extrusion -96.1%  time 0.0%  end error 36.600 mm  max path deviation 0.000 mm  (75 emitted steps)
+
+Contract (RRF): X1 = 25.4 mm and X1.5 = 38.1 mm, so 38.1 mm of travel;
+  E is scaled the same way, so extrusion = 2 in = 50.8 mm.
+  Extrusion *density* is 50.8/38.1 = 2.0/1.5 = 1.333 mm/mm in both, so the
+  error is a uniform 25.4x shrink of the whole program, not a density error.
+  FAIL  travel (mm): expected 38.1 (±0.381), got 1.5000
+  FAIL  final X (mm): expected 38.1 (±0.0500), got 1.5000
+  FAIL  extruded filament (mm): expected 50.8 (±0.508), got 2.0000
+
+RESULT: BUG PRESENT [G20 inches treated as mm] - 3 contract violation(s)
+exit=1
+########## node repro_g91.mjs
+worker: MoveCommander is up
+--- G91 relative positioning (dt=0.002s)
+    G-code:
+      M82
+      G91
+      G1 X10 Y0 E1 F600
+      G1 X10 Y0 E2 F600
+    commanded (RRF/Klipper semantics)  travel 20.000 mm  extrusion 2.000 mm  time 2.000 s  end (20.000, 0.000, 0.000)
+    simulated (moveCommander)          travel 10.000 mm  extrusion 2.000 mm  time 1.002 s  end (10.000, 0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 20.000 mm  extrusion 2.000 mm  end (20.000, 0.000, 0.000)  (2 segments)
+    error: travel -50.0%  extrusion 0.0%  time -49.9%  end error 10.000 mm  max path deviation 0.000 mm  (501 emitted steps)
+
+Contract (RRF/Klipper): 2 x 10 mm relative moves at F600 = 20 mm travel in 2.0 s
+  FAIL  travel (mm): expected 20 (±0.200), got 10.0000
+  FAIL  final X (mm): expected 20 (±0.0500), got 10.0000
+  pass  extruded filament (mm): expected 2 (±0.0500), got 2.0000
+  FAIL  duration (s): expected 2 (±0.0500), got 1.0020
+  pass  reference overlay travel (mm): expected 20 (±0.200), got 20.0000
+  FAIL  steps for move 2: expected 500 (±5.00), got 1.0000
+
+RESULT: BUG PRESENT [G91 relative positioning ignored] - 4 contract violation(s)
+exit=1
+########## node repro_line_numbers.mjs
+Input lines carry valid N-line-numbers and XOR checksums:
+  N10 G1 X10 Y0 E1 F600*45
+  N20 G1 X20 Y0 E2 F600*46
+
+worker: MoveCommander is up
+--- N line numbers + checksums (dt=0.002s)
+    G-code:
+      M82
+      N10 G1 X10 Y0 E1 F600*45
+      N20 G1 X20 Y0 E2 F600*46
+    commanded (RRF/Klipper semantics)  travel 20.000 mm  extrusion 2.000 mm  time 2.000 s  end (20.000, 0.000, 0.000)
+    simulated (moveCommander)          travel 0.000 mm  extrusion 0.000 mm  time 0.000 s  end (0.000, 0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 0.000 mm  extrusion 0.000 mm  end (0.000, 0.000, 0.000)  (0 segments)
+    error: travel -100.0%  extrusion -100.0%  time -100.0%  end error 20.000 mm  max path deviation 0.000 mm  (0 emitted steps)
+
+Contract (RRF/Klipper): 2 x 10 mm moves = 20 mm travel, 2 mm extrusion, 2.0 s.
+  FAIL  travel (mm): expected 20 (±0.200), got 0.0000
+  FAIL  final X (mm): expected 20 (±0.0500), got 0.0000
+  FAIL  extruded filament (mm): expected 2 (±0.0500), got 0.0000
+--- N line numbers only (dt=0.002s)
+    G-code:
+      M82
+      N10 G1 X10 Y0 E1 F600
+      N20 G1 X20 Y0 E2 F600
+    commanded (RRF/Klipper semantics)  travel 20.000 mm  extrusion 2.000 mm  time 2.000 s  end (20.000, 0.000, 0.000)
+    simulated (moveCommander)          travel 0.000 mm  extrusion 0.000 mm  time 0.000 s  end (0.000, 0.000, 0.000)
+    app reference overlay (parseGcodeText)  travel 0.000 mm  extrusion 0.000 mm  end (0.000, 0.000, 0.000)  (0 segments)
+    error: travel -100.0%  extrusion -100.0%  time -100.0%  end error 20.000 mm  max path deviation 0.000 mm  (0 emitted steps)
+  FAIL  N-only travel (mm): expected 20 (±0.200), got 0.0000
+
+  note: the app reference overlay for the same file is 0 segments, 0.000 mm travel
+
+RESULT: BUG PRESENT [N line numbers / checksums dropped] - 4 contract violation(s)
+exit=1
+########## node _controls.mjs
+  pass  endX: expected 20 (±0.0500), got 20.0000
+  pass  endY: expected 10 (±0.0500), got 10.0000
+  pass  ext: expected 2 (±0.0500), got 2.0000
+  pass  maxDev: expected <= 0.5, got 0.0000
+  (16-chord control travel vs analytic arc: -0.02%)
+PASS  control G2 (16-chord polyline)
+  pass  time without dwell: expected 2 (±0.0400), got 2.0000
+PASS  control G4 (dwell-free file matches oracle)
+  pass  time at F3000: expected 0.4 (±0.00800), got 0.4000
+PASS  control feedrate (F3000 present)
+
+8/8 controls pass
+########## node _negatives.mjs
+  commanded time 2.000 s, sim 2.000 s (0.00%)
+
+11/11 negative controls match

@@ -1,0 +1,24 @@
+import { QualityMonitor, polylineSegments, feed } from './harness.mjs';
+const MM = 0.001; const mm = (v) => v * MM;
+const segsL = polylineSegments([[0, 0, 0], [mm(50), 0, 0], [mm(50), mm(50), 0]]);
+const pts = [];
+for (let x = 0; x <= 49.5; x += 0.5) pts.push([mm(x), 0, 0]);
+pts.push([mm(49.8), 0, 0]);
+pts.push([mm(50), mm(0.2), 0]);
+for (let y = 0.7; y <= 49.5; y += 0.5) pts.push([mm(50), mm(y), 0]);
+pts.push([mm(50), mm(50), 0]);
+const totalE = segsL.reduce((a, s) => a + s.extrusion, 0);
+const eStep = totalE / pts.length;
+
+const m = new QualityMonitor();
+m.setReferenceSegments(segsL);
+let i = -1;
+const origLoc = m._locateIntended.bind(m);
+const origOff = m._updateOffsetEstimate.bind(m);
+const origAcc = m._accumulateCorners.bind(m);
+m._locateIntended = (...a) => { i += 1; return origLoc(...a); };
+m._updateOffsetEstimate = () => { const o = origOff(); if (i >= 99 && i <= 104) console.log('sample', i, 'offset(mm)', Array.from(o).map((v) => v * 1000), 'intended(mm)', [m._intendedX * 1000, m._intendedY * 1000]); return o; };
+m._accumulateCorners = (x, y, z, arc) => { if (i >= 99 && i <= 104) console.log('   corner input(mm)', [x * 1000, y * 1000], 'arc', arc * 1000); return origAcc(x, y, z, arc); };
+feed(m, pts.map((p) => ({ pos: p, E: eStep })));
+m.runFinalCheck();
+console.log('dev', m.getMetrics().cornerDeviationMax * 1000);

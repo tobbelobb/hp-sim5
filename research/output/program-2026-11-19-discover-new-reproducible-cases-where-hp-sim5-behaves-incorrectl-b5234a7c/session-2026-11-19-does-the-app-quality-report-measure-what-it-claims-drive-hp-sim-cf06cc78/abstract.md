@@ -1,0 +1,3 @@
+# Does the app quality report measure what it claims?
+
+The 3-D quality report's rms, max, log-histogram p95 (≤1.97 % high, never low), corner-deviation geometry (0 error on a 0.141421356 mm bevel), 45° corner threshold, lag handling, units and score formula are exact, but a rigidly shifted perfect print can report `Corner overshoot 1.00 mm` instead of 0.00 mm (and 0.00 mm on the perpendicular control on the same print), `Path within 0.50 mm` reports a time share (52.6 %) instead of the path share (10.0 %), and when the reference describes three times the path the machine executed (a `G0`+E parser mismatch) the card headlines `Quality 100` with no deductions while showing `Progress 33.3 %` — see [report.md](report.md).

@@ -1,0 +1,536 @@
+{
+  "generatedBy": "measure_all.mjs",
+  "gitHead": "56a66f77d3bfa58e52621d06f6273d5a1f3501f5",
+  "node": "v26.13.0",
+  "claims": [
+    {
+      "id": "histogram",
+      "quote": "Distances binned on a log scale (2 % wide bins from 0.1 um to 10 m), so any percentile is read off to within one bin, in O(1) memory and time per sample.",
+      "at": "hp-sim-3d/app/quality-monitor.js:58-59"
+    },
+    {
+      "id": "corner",
+      "quote": "per sharp corner (after removing the mean offset): deviation of the attained path from the corner point, the largest deviation after it, and the distance travelled until the path stays within tolerance",
+      "at": "hp-sim-3d/app/quality-monitor.js:128-131"
+    },
+    {
+      "id": "corner-shape",
+      "quote": "Corners are judged on shape too: rounding and overshoot, not the offset.",
+      "at": "hp-sim-3d/app/quality-monitor.js:681"
+    },
+    {
+      "id": "score",
+      "quote": "Each term deducts weight * (1 - exp(-value / scale)) points; weights sum to 100.",
+      "at": "hp-sim-3d/app/quality-monitor.js:137"
+    },
+    {
+      "id": "score-shift",
+      "quote": "a rigidly shifted but otherwise perfect print still scores high",
+      "at": "hp-sim-3d/app/quality-monitor.js:132-135"
+    },
+    {
+      "id": "path",
+      "quote": "path deviation: distance to the intended path near that point (contour error, as ISO 9283 path accuracy), split into horizontal and vertical",
+      "at": "hp-sim-3d/app/quality-monitor.js:126-127"
+    },
+    {
+      "id": "hud-within",
+      "quote": "metric(`Path within ${formatLengthMm(m.tolerance)} mm`, formatPercent(m.withinTolerance))",
+      "at": "hp-sim-3d/app/quality-monitor.js:934"
+    },
+    {
+      "id": "hud-overshoot",
+      "quote": "metric('Corner overshoot avg / max', pair(m.cornerOvershootAvg, m.cornerOvershootMax))",
+      "at": "hp-sim-3d/app/quality-monitor.js:940"
+    }
+  ],
+  "findings": {
+    "cornerOvershootReportsOffset": {
+      "path": "L, 50 mm +X then 50 mm +Y, 0.1 mm samples, print exactly on the path",
+      "rows": [
+        {
+          "case": "along +X (first move)",
+          "offsetMm": [
+            1,
+            0,
+            0
+          ],
+          "offsetProjectionOnFirstMoveMm": 1,
+          "expectedCornerOvershootMaxMm": 0,
+          "reportedCornerOvershootMaxMm": 1.0000000000000009,
+          "expectedSettleMaxMm": 0,
+          "reportedSettleMaxMm": 0.10000000000040532,
+          "cornerDeviationMaxMm": 0,
+          "shapeP95Mm": 0.00009999999999999999,
+          "meanOffsetMm": [
+            0.999998000004001,
+            0,
+            0
+          ],
+          "score": 89.79767106700248,
+          "hudOvershoot": "1.00 / 1.00 mm",
+          "hudScore": "90"
+        },
+        {
+          "case": "across +Y",
+          "offsetMm": [
+            0,
+            1,
+            0
+          ],
+          "offsetProjectionOnFirstMoveMm": 0,
+          "expectedCornerOvershootMaxMm": 0,
+          "reportedCornerOvershootMaxMm": 8.673617379884035e-16,
+          "expectedSettleMaxMm": 0,
+          "reportedSettleMaxMm": 0,
+          "cornerDeviationMaxMm": 9.999989994055603e-7,
+          "shapeP95Mm": 0.00009999999999999999,
+          "meanOffsetMm": [
+            0,
+            0.9999980000040007,
+            0
+          ],
+          "score": 97.15600461188502,
+          "hudOvershoot": "0.00 / 0.00 mm",
+          "hudScore": "97"
+        },
+        {
+          "case": "across +Z",
+          "offsetMm": [
+            0,
+            0,
+            1
+          ],
+          "offsetProjectionOnFirstMoveMm": 0,
+          "expectedCornerOvershootMaxMm": 0,
+          "reportedCornerOvershootMaxMm": 9.999989996224007e-7,
+          "expectedSettleMaxMm": 0,
+          "reportedSettleMaxMm": 0,
+          "cornerDeviationMaxMm": 9.999989994055603e-7,
+          "shapeP95Mm": 0.00009999999999999999,
+          "meanOffsetMm": [
+            0,
+            0,
+            0.9999990000010006
+          ],
+          "score": 97.15600297417795,
+          "hudOvershoot": "0.00 / 0.00 mm",
+          "hudScore": "97"
+        },
+        {
+          "case": "45 deg",
+          "offsetMm": [
+            0.7071067811865476,
+            0.7071067811865476,
+            0
+          ],
+          "offsetProjectionOnFirstMoveMm": 0.7071067811865476,
+          "expectedCornerOvershootMaxMm": 0,
+          "reportedCornerOvershootMaxMm": 0.707106781186545,
+          "expectedSettleMaxMm": 0,
+          "reportedSettleMaxMm": 0.10000000000040532,
+          "cornerDeviationMaxMm": 7.071060685766295e-7,
+          "shapeP95Mm": 0.00009999999999999999,
+          "meanOffsetMm": [
+            0.707105366975819,
+            0.7071053669758196,
+            0
+          ],
+          "score": 91.5988332621452,
+          "hudOvershoot": "0.71 / 0.71 mm",
+          "hudScore": "92"
+        }
+      ],
+      "scoreDifferenceSameOffset": 7.358333544882541,
+      "mechanism": "offset estimate is taken before the current sample joins the normal equations (:646 vs :659-667), so the first sample of the first new direction is compared without that direction's offset and its shape distance (= offset projection) is recorded as overshoot (:772-773) / ringing (:775-777).",
+      "genuineOvershootUnderReport": {
+        "path": "L with a 0.5 mm overshoot bulge just after the corner (5 samples)",
+        "exactMaxDistanceToReferencePathMm": 0.5,
+        "finalMeanOffsetMm": 0.009708718729418435,
+        "expectedOvershootAfterRemovingMeanOffsetMm": 0.4902912812705816,
+        "reportedOvershootMaxMm": 0.37500637467489245,
+        "note": "the transient bulge is partly absorbed by the running offset estimate"
+      },
+      "triggerSweep": {
+        "offsetMm": 1,
+        "thresholdMm": 0.5,
+        "triggered": 11,
+        "of": 18,
+        "rows": [
+          {
+            "stepsPerLeg": 100,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.5000000000000351,
+            "score": 88.91679185040425
+          },
+          {
+            "stepsPerLeg": 137,
+            "overshootMaxMm": 0.00013798095863104543,
+            "settleMaxMm": 0,
+            "score": 95.87848448024488
+          },
+          {
+            "stepsPerLeg": 200,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.2500000000000349,
+            "score": 89.46096901759773
+          },
+          {
+            "stepsPerLeg": 250,
+            "overshootMaxMm": 0.00025093701480627395,
+            "settleMaxMm": 0,
+            "score": 96.0870586810899
+          },
+          {
+            "stepsPerLeg": 300,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.1666666666668773,
+            "score": 89.6470263500613
+          },
+          {
+            "stepsPerLeg": 333,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.1501501501503591,
+            "score": 89.68410181674905
+          },
+          {
+            "stepsPerLeg": 400,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.1250000000000348,
+            "score": 89.74098725155031
+          },
+          {
+            "stepsPerLeg": 500,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.10000000000040532,
+            "score": 89.79767106700248
+          },
+          {
+            "stepsPerLeg": 640,
+            "overshootMaxMm": 0.0006405893822059028,
+            "settleMaxMm": 0,
+            "score": 96.23976279243571
+          },
+          {
+            "stepsPerLeg": 800,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.06250000000003475,
+            "score": 89.88313859164715
+          },
+          {
+            "stepsPerLeg": 1000,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.050000000000917366,
+            "score": 89.91174756497445
+          },
+          {
+            "stepsPerLeg": 1024,
+            "overshootMaxMm": 0.0010239504507902897,
+            "settleMaxMm": 0,
+            "score": 96.27399505650132
+          },
+          {
+            "stepsPerLeg": 1500,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.033333333334995,
+            "score": 89.94998746590954
+          },
+          {
+            "stepsPerLeg": 1600,
+            "overshootMaxMm": 0.001598440896123654,
+            "settleMaxMm": 0,
+            "score": 96.29116160340244
+          },
+          {
+            "stepsPerLeg": 2000,
+            "overshootMaxMm": 0.0019970039950023555,
+            "settleMaxMm": 0,
+            "score": 96.2953413764168
+          },
+          {
+            "stepsPerLeg": 2499,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.02000800320255819,
+            "score": 89.98063945365837
+          },
+          {
+            "stepsPerLeg": 2500,
+            "overshootMaxMm": 0.002494760603731494,
+            "settleMaxMm": 0,
+            "score": 96.29690707797344
+          },
+          {
+            "stepsPerLeg": 2501,
+            "overshootMaxMm": 1.0000000000000009,
+            "settleMaxMm": 0.01999200319950656,
+            "score": 89.9806764297816
+          }
+        ],
+        "note": "fires when the E accumulator at the corner is a float epsilon past the vertex: exact binary E steps do not fire (1024, 1600, 2000, 2500) while the neighbouring non-exact counts do (2499, 2501) -- a pure floating-point coin flip"
+      }
+    },
+    "withinToleranceIsTimeShare": {
+      "path": "100 mm line: 10 mm at F300 (5 mm/s) on path, 90 mm at F3000 (50 mm/s) 1 mm off path",
+      "samplesOnPath": 1000,
+      "samplesOffPath": 900,
+      "totalSamples": 1900,
+      "sampleRmsMm": 0.6882472016116912,
+      "pathLengthWeightedRmsMm": 0.9486832980505138,
+      "sampleRmsNote": "0.688 mm is the correct sample RMS for the metric computed; the 0.949 mm path-length-weighted RMS is a different quantity and is NOT claimed by the code. Only the within-tolerance share is the wrong-metric issue.",
+      "reportedWithin0_5mmPercent": 52.63157894736842,
+      "reportedWithin0_25mmPercent": 52.63157894736842,
+      "pathLengthShareWithin0_5mmPercent": 10,
+      "disagreementPercentagePoints": 42.63157894736842,
+      "hudLine": "52.6%",
+      "hudScore": "61",
+      "note": "extrusion samples are emitted once per executed command / sim step (2 ms per step in the HP4 scene, public/usd_scenes/hp4.usda:7), so sample density is proportional to time, not to path length; the percentages do not depend on the tick"
+    },
+    "quality100OnReferenceOverrun": {
+      "path": "G-code with G1 X50 E5 then two G0 lines carrying E; reference 150 mm / 15 mm E, executed 50 mm / 5 mm E",
+      "referenceLengthMm": 150,
+      "referenceExtrusionMm": 15,
+      "executedLengthMm": 50,
+      "executedExtrusionMm": 5,
+      "progress": 0.33333333333333365,
+      "cornersAssessed": 0,
+      "cornersInPath": 2,
+      "score": 99.99999999999962,
+      "hudQuality": "100",
+      "hudProgress": "33.3%",
+      "hudDeductions": "none",
+      "note": "the card also shows Progress 33.3 %, so this is classified misleading, not wrong; a plain abort of a print whose reference and executed paths agree does not produce this card"
+    }
+  },
+  "negatives": {
+    "histogram": {
+      "cases": 60,
+      "worstP95OverReportRelative": 0.019733842851153514,
+      "worstP95OverReportAbsMm": 31.16511752852236,
+      "worstCaseN": 317,
+      "worstRmsRelativeError": 0,
+      "worstMaxRelativeError": 0,
+      "anyUnderReport": false,
+      "verdict": "p95 is the upper edge of the 2 %-wide log bin holding the nearest-rank order statistic: never below exact, at most 1.91 % above; rms and max are exact."
+    },
+    "histogramEdges": {
+      "allZero": {
+        "p95": 1.3877787807814457e-17,
+        "rms": 5.6653479992487724e-18,
+        "max": 1.3877787807814457e-17,
+        "score": 99.99999999999919
+      },
+      "aboveTopBin_20m": {
+        "exactP95": 20,
+        "reportedP95": 10.156870385599406,
+        "reportedMax": 20
+      },
+      "belowBottomBin_0_05um": {
+        "exactP95": 5e-8,
+        "reportedP95": 5e-8
+      }
+    },
+    "rmsMax": {
+      "samples": 800,
+      "contourRmsExact": 0.00004011634685514177,
+      "contourRmsReported": 0.00004015410231569401,
+      "rel": 0.0009411490205869308,
+      "contourMaxExact": 0.00006941349939826918,
+      "contourMaxReported": 0.00006941349939826918,
+      "p95Exact": 0.00005963303815296636,
+      "p95Reported": 0.000059959151598241345,
+      "cornerCountReported": 3,
+      "cornersInClosedSquare": 4,
+      "note": "the seam corner at the path start/end is not assessed by design"
+    },
+    "cornerDeviationClosedForm": {
+      "input": "L with a 0.2 mm bevel at the corner, 0.5 mm samples",
+      "exactVertexToAttainedPolylineMm": 0.14142135623731358,
+      "reportedCornerDeviationMaxMm": 0.14142135623731358,
+      "absErrorMm": 0
+    },
+    "cornerThreshold": {
+      "thresholdDeg": 45,
+      "rows": [
+        {
+          "turnDeg": 30,
+          "cornerCount": 0
+        },
+        {
+          "turnDeg": 44,
+          "cornerCount": 0
+        },
+        {
+          "turnDeg": 44.9,
+          "cornerCount": 0
+        },
+        {
+          "turnDeg": 45,
+          "cornerCount": 1
+        },
+        {
+          "turnDeg": 45.1,
+          "cornerCount": 1
+        },
+        {
+          "turnDeg": 60,
+          "cornerCount": 1
+        },
+        {
+          "turnDeg": 90,
+          "cornerCount": 1
+        }
+      ]
+    },
+    "lag": {
+      "rows": [
+        {
+          "lagMm": 0,
+          "contourP95Mm": 2.7755575615628914e-14,
+          "contourMaxMm": 2.7755575615628914e-14,
+          "meanLagMm": -3.539605674535151e-14,
+          "withinTolerance": 1
+        },
+        {
+          "lagMm": 2,
+          "contourP95Mm": 0.00009999999999999999,
+          "contourMaxMm": 2,
+          "meanLagMm": 1.9999999999999696,
+          "withinTolerance": 0.9925
+        },
+        {
+          "lagMm": 4.9,
+          "contourP95Mm": 0.00009999999999999999,
+          "contourMaxMm": 4.9,
+          "meanLagMm": 4.899999999999946,
+          "withinTolerance": 0.9775
+        },
+        {
+          "lagMm": 5.5,
+          "contourP95Mm": 0.00009999999999999999,
+          "contourMaxMm": 5.5,
+          "meanLagMm": 5.499999999999954,
+          "withinTolerance": 0.975
+        },
+        {
+          "lagMm": 10,
+          "contourP95Mm": 0.00009999999999999999,
+          "contourMaxMm": 10,
+          "meanLagMm": 9.999999999999904,
+          "withinTolerance": 0.9525
+        }
+      ],
+      "note": "the attained point is on the line for a pure lag, so contour rms/p95 stay ~0; the reported max is the lag of the first samples that fall before the path start (a real distance to the nominal path, not a window artefact)"
+    },
+    "endToEnd": {
+      "gcodeSummary": "travel, retract, Z-only prime with E, 90 deg corner after a travel",
+      "parsedSegments": [
+        {
+          "start": [
+            0,
+            0,
+            0.2
+          ],
+          "end": [
+            50,
+            0,
+            0.2
+          ],
+          "E": 5,
+          "len": 50
+        },
+        {
+          "start": [
+            50,
+            0,
+            0.2
+          ],
+          "end": [
+            50,
+            50,
+            0.2
+          ],
+          "E": 5,
+          "len": 50
+        },
+        {
+          "start": [
+            0,
+            0,
+            0.2
+          ],
+          "end": [
+            0,
+            0,
+            0.4
+          ],
+          "E": 1,
+          "len": 0.2
+        },
+        {
+          "start": [
+            0,
+            0,
+            0.4
+          ],
+          "end": [
+            40,
+            0,
+            0.4
+          ],
+          "E": 4,
+          "len": 40
+        }
+      ],
+      "parsedBoundsMm": {
+        "minX": 0,
+        "minY": 0,
+        "minZ": 0.2,
+        "maxX": 50,
+        "maxY": 50,
+        "maxZ": 0.4
+      },
+      "expectedOffsetMm": 0.2,
+      "reportedContourMaxMm": 0.2,
+      "reportedContourP95Mm": 0.2,
+      "reportedMeanOffsetMm": [
+        0,
+        0.19999973333368806,
+        0
+      ],
+      "reportedVerticalRmsMm": 6.639355251516202e-18,
+      "reportedProgress": 0.9999999999999933,
+      "note": "the +Y offset is along the (Y) second segment, so 1 of 4 segments correctly reports zero contour deviation; rms is therefore 0.2*sqrt(3/4) = 0.1732 mm"
+    },
+    "scoreFormula": {
+      "reported": 96.265708960896,
+      "recomputedFromReportedMetrics": 96.265708960896,
+      "absoluteDifference": 0,
+      "deductions": [
+        {
+          "label": "Shape 95%",
+          "points": 0.004499775007499873
+        },
+        {
+          "label": "Shape RMS",
+          "points": 0.44225070158839586
+        },
+        {
+          "label": "Corners",
+          "points": 2.5918177931828335
+        },
+        {
+          "label": "Ringing",
+          "points": 0
+        },
+        {
+          "label": "Offset",
+          "points": 0.695722769325271
+        },
+        {
+          "label": "Missed steps",
+          "points": 0
+        }
+      ]
+    }
+  }
+}

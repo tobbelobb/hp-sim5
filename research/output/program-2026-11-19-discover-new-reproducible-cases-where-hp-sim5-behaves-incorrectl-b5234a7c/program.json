@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "id": "program-2026-11-19-discover-new-reproducible-cases-where-hp-sim5-behaves-incorrectl-b5234a7c",
+  "question": "Discover new, reproducible cases where hp-sim5 behaves incorrectly. For each case: smallest possible reproducer plus quantitative evidence of the failure. Do not fix bugs.",
+  "agents": [
+    {
+      "id": "session-2026-11-19-which-g-code-program-level-motion-semantics-does-the-browser-upl-1596692d",
+      "question": "Which G-code program-level motion semantics does the browser Upload path (hp-sim-3d/app/workers/moveCommander.js) silently get wrong - relative positioning G91/G90, rapid G0, units G20/G21, arcs G2/G3, dwell G4, modal feedrate, line numbers/checksums, multiple commands per line - compared with the app own reference parser (inspectionToolsController.js parseGcodeText) and with RRF/Klipper defaults? Find the smallest one-file reproducer per divergence and quantify the wrong motion (mm of travel, deposited extrusion, time).",
+      "directory": "session-2026-11-19-which-g-code-program-level-motion-semantics-does-the-browser-upl-1596692d"
+    },
+    {
+      "id": "session-2026-11-19-does-the-app-quality-report-measure-what-it-claims-drive-hp-sim-cf06cc78",
+      "question": "Does the app quality report measure what it claims? Drive hp-sim-3d/app/quality-monitor.js and qualityController.js plus the reference-path overlay (inspectionToolsController.js parseGcodeText) with synthetic deposition paths and reference G-code whose true deviation, rms, percentile, corner count and score are known in closed form. Quantify every disagreement (reported vs exact), including histogram quantile/bin errors, NaN or zero-distance samples, corner-detection thresholds, extrusion accounting, bounds and matched-segment selection. Find the smallest reproducer and state whether the wrong number is shipped and user-visible.",
+      "directory": "session-2026-11-19-does-the-app-quality-report-measure-what-it-claims-drive-hp-sim-cf06cc78"
+    },
+    {
+      "id": "session-2026-11-19-do-the-app-two-shipped-playback-paths-for-the-same-g-code-file-a-4a9e9720",
+      "question": "Do the app two shipped playback paths for the same G-code file agree? Use the app own RRF CAN player (integrations/rrf/rrfCanPlayer.js) to decode the compiled plans in public/RRF_CAN_commands/*.can that the preset buttons play, and compare them G-code-move by G-code-move with the Upload path (hp-sim-3d/app/workers/moveCommander.js with the same machine RRF config) for HP4 non-layered as the control, HP4 layered (Q=0.6366197723675814, R=46.6045), and the shipped G6 file public/gcode/tighten.gcode. Quantify any disagreement in motor angles, per-motor line length, effector path and total travel (mm and %), decide whether it is a wrong result in a shipped path or an explained model difference, and produce the smallest reproducer. Beware: the layered catalog-vs-RRF radius difference (0.47-0.85 percent) is already known from 2026-11-17, so report only what that does not explain.",
+      "directory": "session-2026-11-19-do-the-app-two-shipped-playback-paths-for-the-same-g-code-file-a-4a9e9720"
+    }
+  ]
+}

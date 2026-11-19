@@ -1,0 +1,1311 @@
+{
+  "investigation": "session-2026-11-19-which-g-code-program-level-motion-semantics-does-the-browser-upl-1596692d",
+  "generatedAt": "2026-11-19T09:52:19.927Z",
+  "repo": "/home/torbjorn/repos/hp-sim5",
+  "commit": "56a66f77",
+  "node": "v26.13.0",
+  "sources": {
+    "worker": "hp-sim-3d/app/workers/moveCommander.js",
+    "referenceParser": "hp-sim-3d/app/inspectionToolsController.js",
+    "consumer": "hp-sim-3d/app/remoteSpoolSystem.js",
+    "sha256": [
+      {
+        "path": "hp-sim-3d/app/workers/moveCommander.js",
+        "sha256": "121d0cc393ec74cf4630903666ef8c9802678bd7d34f2609d0d047205f839170"
+      },
+      {
+        "path": "hp-sim-3d/app/inspectionToolsController.js",
+        "sha256": "a6ad6963087afaf1111746eac60f6d00cedc06696f4927986c527d28afbbf190"
+      },
+      {
+        "path": "hp-sim-3d/app/remoteSpoolSystem.js",
+        "sha256": "26e7d124f2aa7d9d9c2374520cf4a54de02433893c06380ebb0e1a96c1ace64e"
+      }
+    ]
+  },
+  "method": {
+    "dtSec": 0.002,
+    "dtSource": "public/usd_scenes/hp4.usda timeCodesPerSecond = 500",
+    "kinematicsConfig": "M669 A0:-2000:1000 B1689.39746:975:1000 C-1689.39746:975:1000\nM666 R30:30:30",
+    "spoolRadiusMm": [
+      30,
+      30,
+      30
+    ],
+    "oracle": "harness.mjs oracle(): RRF/Klipper semantics, constant-feed time model (no acceleration)",
+    "timeModel": "simulated time = emitted commands x dt (remoteSpoolSystem consumes one command per physics step)",
+    "pathModel": "simulated travel = polyline through per-step effector positions inverted from the emitted motor angles"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "title": "G91 relative positioning silently ignored",
+      "classification": "a (shipped, user-visible: reference overlay and simulated motion disagree)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:209-224 (only G1/G6/G92/M82/M83 recognised)",
+        "hp-sim-3d/app/workers/moveCommander.js:229-234 (X/Y/Z always absolute)",
+        "hp-sim-3d/app/inspectionToolsController.js:96-103 (reference parser DOES implement G91)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/GCodes/GCodes2.cpp:573-576",
+        "klipper/klippy/extras/gcode_move.py:174-176"
+      ],
+      "reproducer": "repro_g91.mjs",
+      "gcode": [
+        "M82",
+        "G91",
+        "G1 X10 Y0 E1 F600",
+        "G1 X10 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 10.000000000000176,
+        "extrusionMm": 2.000000000000001,
+        "timeSec": 1.002,
+        "endMm": [
+          10.000000000000176,
+          2.79428213072398e-13,
+          1.585491107246764e-13
+        ],
+        "emittedCommands": 501,
+        "beliefMm": [
+          10,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 9.999999999999824
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": -49.999999999999126,
+        "extrusion": 4.440892098500626e-14,
+        "time": -49.9
+      }
+    },
+    {
+      "id": "F2",
+      "title": "G0 rapid lines dropped (and F on a G0 line is lost)",
+      "classification": "a (shipped, user-visible: reference overlay and simulated path disagree)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:214 (only literal \"G1\" is a move)",
+        "hp-sim-3d/app/workers/moveCommander.js:222-224 and 330 (position bookkeeping skipped)",
+        "hp-sim-3d/app/workers/moveCommander.js:124-128 (F only read on G1 lines)",
+        "hp-sim-3d/app/inspectionToolsController.js:124 (reference parser treats G0 == G1)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/GCodes/GCodes2.cpp:230-233",
+        "klipper/klippy/gcode.py:46 (G0 -> cmd_G1)"
+      ],
+      "reproducer": "repro_g0.mjs",
+      "gcode": [
+        "M82",
+        "G0 X10 Y0 F9000",
+        "G1 X10 Y10 E1 F600",
+        "G0 X20 Y10 F9000",
+        "G1 X20 Y20 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 40,
+        "extrusionMm": 2,
+        "timeSec": 2.1333333333333333,
+        "endMm": [
+          20,
+          20,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 28.284271247461668,
+        "extrusionMm": 2.0000000000000364,
+        "timeSec": 2.832,
+        "endMm": [
+          19.999999999999893,
+          19.99999999999971,
+          -2.463390212899348e-13
+        ],
+        "emittedCommands": 1416,
+        "beliefMm": [
+          20,
+          20,
+          0
+        ],
+        "maxPathDeviationMm": 5.000000000000005,
+        "endErrorMm": 3.961203378678793e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          20,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": -29.28932188134583,
+        "extrusion": 1.8207657603852567e-12,
+        "time": 32.74999999999999
+      },
+      "subCase": {
+        "label": "F on a G0 line is lost",
+        "gcode": [
+          "M82",
+          "G0 F9000",
+          "G1 X10 Y0 E1",
+          ""
+        ],
+        "dt": 0.002,
+        "commanded": {
+          "travelMm": 10,
+          "extrusionMm": 1,
+          "timeSec": 0.06666666666666667,
+          "endMm": [
+            10,
+            0,
+            0
+          ]
+        },
+        "simulated": {
+          "travelMm": 10.0000000000003,
+          "extrusionMm": 0.9999999999999961,
+          "timeSec": 0.6,
+          "endMm": [
+            10.0000000000003,
+            -2.8569451508455526e-13,
+            -5.66422455712198e-14
+          ],
+          "emittedCommands": 300,
+          "beliefMm": [
+            10,
+            0,
+            0
+          ],
+          "maxPathDeviationMm": 1.314651676484288e-12,
+          "endErrorMm": 4.182730270873545e-13
+        },
+        "referenceOverlay": {
+          "segments": 1,
+          "travelMm": 10,
+          "extrusionMm": 1,
+          "endMm": [
+            10,
+            0,
+            0
+          ]
+        },
+        "errorPct": {
+          "travel": 3.002043058586423e-12,
+          "extrusion": -3.885780586188048e-13,
+          "time": 800
+        }
+      }
+    },
+    {
+      "id": "F3",
+      "title": "Numeric spellings G00/G01/G02/G03 dropped",
+      "classification": "a (shipped, user-visible: reference overlay and simulated motion disagree)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:209-220 (string comparison with \"G1\"/\"G6\"/\"G92\")",
+        "hp-sim-3d/app/inspectionToolsController.js:84-86,124 (parseInt command number, so G01 == G1)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/GCodes/GCodeBuffer/StringParser.cpp:985-1032",
+        "Klipper rejects G01 (handler keys are \"G1\") - limitation"
+      ],
+      "reproducer": "repro_g01.mjs",
+      "gcode": [
+        "M82",
+        "G01 X10 Y0 E1 F600",
+        "G01 X20 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 0,
+        "extrusionMm": 0,
+        "timeSec": 0,
+        "endMm": [
+          0,
+          0,
+          0
+        ],
+        "emittedCommands": 0,
+        "beliefMm": [
+          0,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 0,
+        "endErrorMm": 20
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": -100,
+        "extrusion": -100,
+        "time": -100
+      },
+      "subCase": {
+        "label": "G00 rapid also dropped -> next G1 cuts the diagonal",
+        "gcode": [
+          "M82",
+          "G00 X10 Y0 F9000",
+          "G1 X10 Y10 E1 F600",
+          ""
+        ],
+        "dt": 0.002,
+        "commanded": {
+          "travelMm": 20,
+          "extrusionMm": 1,
+          "timeSec": 1.0666666666666667,
+          "endMm": [
+            10,
+            10,
+            0
+          ]
+        },
+        "simulated": {
+          "travelMm": 14.142135623730871,
+          "extrusionMm": 0.999999999999987,
+          "timeSec": 1.416,
+          "endMm": [
+            10.000000000000057,
+            9.99999999999981,
+            2.2496490813530222e-13
+          ],
+          "emittedCommands": 708,
+          "beliefMm": [
+            10,
+            10,
+            0
+          ],
+          "maxPathDeviationMm": 5.000000000000005,
+          "endErrorMm": 2.999450919345267e-13
+        },
+        "referenceOverlay": {
+          "segments": 1,
+          "travelMm": 10,
+          "extrusionMm": 1,
+          "endMm": [
+            10,
+            10,
+            0
+          ]
+        },
+        "errorPct": {
+          "travel": -29.289321881345643,
+          "extrusion": -1.2989609388114332e-12,
+          "time": 32.74999999999999
+        }
+      }
+    },
+    {
+      "id": "F4",
+      "title": "Lines with N<line number> (and *checksum) dropped wholesale",
+      "classification": "a (shipped, wrong motion, but rare in uploaded files)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:209-224 (first token \"N10\" is not a command)",
+        "hp-sim-3d/app/inspectionToolsController.js:84-124 (same; reference overlay empty too)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/GCodes/GCodeBuffer/StringParser.cpp:123-141 (N prefix), 186-192 / 272-285 (checksum)",
+        "klipper/klippy/gcode.py:199-205 (line number skipped)"
+      ],
+      "reproducer": "repro_line_numbers.mjs",
+      "gcode": [
+        "M82",
+        "N10 G1 X10 Y0 E1 F600*45",
+        "N20 G1 X20 Y0 E2 F600*46",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 0,
+        "extrusionMm": 0,
+        "timeSec": 0,
+        "endMm": [
+          0,
+          0,
+          0
+        ],
+        "emittedCommands": 0,
+        "beliefMm": [
+          0,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 0,
+        "endErrorMm": 20
+      },
+      "referenceOverlay": {
+        "segments": 0,
+        "travelMm": 0,
+        "extrusionMm": 0,
+        "endMm": [
+          0,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": -100,
+        "extrusion": -100,
+        "time": -100
+      }
+    },
+    {
+      "id": "F5",
+      "title": "G20 inches interpreted as millimetres (25.4x under-travel)",
+      "classification": "a (shipped, wrong motion; Klipper instead raises an error)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:222-224 (G20 skipped)",
+        "hp-sim-3d/app/inspectionToolsController.js:88-126 (no G20 case either)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/GCodes/GCodes2.cpp:376-380 (UseInches)",
+        "RRF/ReprapFirmware/src/GCodes/GCodeBuffer/GCodeBuffer.cpp:1013-1016 (x25.4)",
+        "klipper/klippy/extras/gcode_move.py:159-161 (explicit error)"
+      ],
+      "reproducer": "repro_g20.mjs",
+      "gcode": [
+        "M82",
+        "G20",
+        "G1 X1 Y0 E1 F600",
+        "G1 X1.5 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 38.099999999999994,
+        "extrusionMm": 50.8,
+        "timeSec": 0.14999999999999997,
+        "endMm": [
+          38.099999999999994,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 1.4999999999997091,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 0.15,
+        "endMm": [
+          1.4999999999997091,
+          -4.201496668984317e-13,
+          2.5439408188836273e-13
+        ],
+        "emittedCommands": 75,
+        "beliefMm": [
+          1.5,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 7.74843809293152e-13,
+        "endErrorMm": 36.600000000000286
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 1.5,
+        "extrusionMm": 2,
+        "endMm": [
+          1.5,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": -96.06299212598502,
+        "extrusion": -96.06299212598425,
+        "time": 1.8503717077085944e-14
+      }
+    },
+    {
+      "id": "F6",
+      "title": "G2/G3 arcs dropped (travel and extrusion lost)",
+      "classification": "a (shipped, wrong motion; overlay agrees with the sim, both disagree with the machine)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:214-224 (G2/G3 not moves)",
+        "hp-sim-3d/app/workers/moveCommander.js:236-240 (arc E never reaches last_e)",
+        "hp-sim-3d/app/inspectionToolsController.js:124 (reference parser also skips G2/G3)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/GCodes/GCodes2.cpp:251-277 (DoArcMove)",
+        "klipper/klippy/extras/gcode_arcs.py:36-37"
+      ],
+      "reproducer": "repro_arcs.mjs",
+      "gcode": [
+        "M82",
+        "G1 X10 Y0 E1 F600",
+        "G2 X20 Y10 I10 J0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 25.70638625466386,
+        "extrusionMm": 2,
+        "timeSec": 2.5706386254663864,
+        "endMm": [
+          20,
+          10,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 10.000000000000176,
+        "extrusionMm": 1.0000000000000007,
+        "timeSec": 1,
+        "endMm": [
+          10.000000000000176,
+          2.79428213072398e-13,
+          1.585491107246764e-13
+        ],
+        "emittedCommands": 500,
+        "beliefMm": [
+          10,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 14.14213562373063
+      },
+      "referenceOverlay": {
+        "segments": 1,
+        "travelMm": 10,
+        "extrusionMm": 1,
+        "endMm": [
+          10,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": -61.09916072631214,
+        "extrusion": -49.999999999999964,
+        "time": -61.09916072631283
+      },
+      "subCase": {
+        "label": "mid-file half circle G3",
+        "gcode": [
+          "M82",
+          "G3 X20 Y0 I10 J0 E2 F600",
+          "G1 X20 Y20 E3 F600",
+          ""
+        ],
+        "dt": 0.002,
+        "commanded": {
+          "travelMm": 51.412671589971836,
+          "extrusionMm": 3,
+          "timeSec": 5.141267158997184,
+          "endMm": [
+            20,
+            20,
+            0
+          ]
+        },
+        "simulated": {
+          "travelMm": 28.28427124746181,
+          "extrusionMm": 3.0000000000000946,
+          "timeSec": 2.83,
+          "endMm": [
+            20.00000000000015,
+            19.999999999999787,
+            1.4929930422491563e-13
+          ],
+          "emittedCommands": 1415,
+          "beliefMm": [
+            20,
+            20,
+            0
+          ],
+          "maxPathDeviationMm": 9.99293286219118,
+          "endErrorMm": 2.9998913408944005e-13
+        },
+        "referenceOverlay": {
+          "segments": 1,
+          "travelMm": 28.284271247461902,
+          "extrusionMm": 3,
+          "endMm": [
+            20,
+            20,
+            0
+          ]
+        },
+        "errorPct": {
+          "travel": -44.98579752276728,
+          "extrusion": 3.1530333899354446e-12,
+          "time": -44.955204378992086
+        }
+      }
+    },
+    {
+      "id": "F7",
+      "title": "G4 dwell contributes no simulated time",
+      "classification": "b (silent unsupported command; timing only, no wrong motion)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:209-224 (G4 skipped)",
+        "hp-sim-3d/app/remoteSpoolSystem.js:439-449 (one command = one physics step = one dt of simulated time)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/GCodes/GCodes.cpp:3742-3790",
+        "klipper/klippy/toolhead.py:554-557"
+      ],
+      "reproducer": "repro_dwell.mjs",
+      "gcode": [
+        "M82",
+        "G1 X10 Y0 E1 F600",
+        "G4 P1000",
+        "G1 X20 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 3,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": -33.33333333333333
+      }
+    },
+    {
+      "id": "F8",
+      "title": "Initial modal feed rate 1000 mm/min vs RRF 3000 / Klipper 1500",
+      "classification": "b (timing only, no wrong motion)",
+      "codePaths": [
+        "hp-sim-3d/app/workers/moveCommander.js:32 (last_speed_mm_per_min = 1000.0)"
+      ],
+      "firmwareCitations": [
+        "RRF/ReprapFirmware/src/Config/Configuration.h:220 (DefaultFeedRate = 3000.0)",
+        "klipper/klippy/extras/gcode_move.py:55 (25 mm/s = 1500 mm/min)"
+      ],
+      "reproducer": "repro_feedrate_default.mjs",
+      "gcode": [
+        "M82",
+        "G1 X10 Y0 E1",
+        "G1 X20 Y0 E2",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 0.4,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.000000000000114,
+        "extrusionMm": 2.000000000000019,
+        "timeSec": 1.2,
+        "endMm": [
+          20.000000000000114,
+          1.945533404878185e-13,
+          1.0011062763022111e-14
+        ],
+        "emittedCommands": 600,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.314651676484288e-12,
+        "endErrorMm": 2.2555691242734117e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 5.684341886080801e-13,
+        "extrusion": 9.547918011776346e-13,
+        "time": 199.99999999999997
+      }
+    }
+  ],
+  "negatives": [
+    {
+      "name": "explicit G21 (mm)",
+      "gcode": [
+        "M82",
+        "G21",
+        "G1 X10 Y0 E1 F600",
+        "G1 X20 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "explicit G90 (absolute)",
+      "gcode": [
+        "M82",
+        "G90",
+        "G1 X10 Y0 E1 F600",
+        "G1 X20 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "CRLF, no final newline",
+      "gcode": [
+        "M82\r",
+        "G1 X10 Y0 E1 F600\r",
+        "G1 X20 Y0 E2 F600"
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "lowercase",
+      "gcode": [
+        "m82",
+        "g1 x10 y0 e1 f600",
+        "g1 x20 y0 e2 f600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "tab separators",
+      "gcode": [
+        "M82",
+        "G1\tX10\tY0\tE1\tF600",
+        "G1\tX20\tY0\tE2\tF600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "checksum without line number",
+      "gcode": [
+        "M82",
+        "G1 X10 Y0 E1*45 F600",
+        "G1 X20 Y0 E2 F600*46",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "semicolon comments",
+      "gcode": [
+        "M82 ; c",
+        "G1 X10 Y0 E1 F600 ; a",
+        "G1 X20 Y0 E2 F600 ; b",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "parenthesised inline comment",
+      "gcode": [
+        "M82",
+        "G1 X10 Y0 E1 F600 (a)",
+        "G1 X20 Y0 E2 F600(b)",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "feedrate-only G1 line",
+      "gcode": [
+        "M82",
+        "G1 F600",
+        "G1 X10 Y0 E1",
+        "G1 X20 Y0 E2",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "two commands on one line (invalid input)",
+      "gcode": [
+        "M82 G1 X10 Y0 E1 F600",
+        "G1 X20 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 1,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    },
+    {
+      "name": "blank lines / comment-only lines",
+      "gcode": [
+        "M82",
+        "",
+        ";",
+        "   ",
+        "G1 X10 Y0 E1 F600",
+        "",
+        "G1 X20 Y0 E2 F600",
+        ""
+      ],
+      "dt": 0.002,
+      "commanded": {
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "timeSec": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "simulated": {
+        "travelMm": 20.00000000000032,
+        "extrusionMm": 2.0000000000000013,
+        "timeSec": 2,
+        "endMm": [
+          20.00000000000032,
+          -8.682910384812643e-14,
+          3.015943110919954e-13
+        ],
+        "emittedCommands": 1000,
+        "beliefMm": [
+          20,
+          0,
+          0
+        ],
+        "maxPathDeviationMm": 1.1042793715355582e-12,
+        "endErrorMm": 4.480343681848159e-13
+      },
+      "referenceOverlay": {
+        "segments": 2,
+        "travelMm": 20,
+        "extrusionMm": 2,
+        "endMm": [
+          20,
+          0,
+          0
+        ]
+      },
+      "errorPct": {
+        "travel": 1.5987211554602254e-12,
+        "extrusion": 6.661338147750939e-14,
+        "time": 0
+      }
+    }
+  ]
+}

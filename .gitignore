@@ -27,6 +27,13 @@ RRF/.cache
 RRF/run/vsd/logs/
 # Research evidence archives are not read directly. Keep the raw files instead.
 *.tar.gz
+# Raw recordings and binaries stay out of Git; cite them by durable URI + checksum.
+/research/output/**/*.rrd
+/research/output/**/*.mcap
+/research/output/**/*.bin
+/research/output/**/*.zip
+/research/output/**/*.mp4
+/research/output/**/*.wasm
 research/output/*/recovery-originals/
 autocal/data/*.png
 autocal/tests/data/*.png
