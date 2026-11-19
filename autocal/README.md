@@ -633,41 +633,33 @@ to the `--stable-step-mm` stop.
 
 `--collection-shape mesh` (default `sweep`) collects sphere-sector meshes instead
 of sweeps once three sweeps are in, on Hangprinters with equal-strain data.
-A mesh holds one line (D, or the top line on HP5), so the effector stays on a
-sphere around its anchor; two drive lines in position control pick each point and
-the remaining lines measure it under force.
+A mesh is a sweep of sweeps. It holds one line (D, or the top line on HP5) for the
+whole mesh, so the effector stays on a sphere around that anchor. Each of its rows
+also holds a first drive line at one level, which makes the row an ordinary circle
+sweep: the second drive steps along it and the remaining lines measure under
+force. Each row's lengths trace an ellipse, and all rows lie on one ellipsoid.
 
-`mesh_planning.py` searches held lengths and drive/sensor roles. Every planned
-pose, and the poses sampled along each move of the tour, the move back to its
-first point and the coupling probe, must keep the commanded and predicted lengths
-inside the lengths already measured on that axis, keep the sweep planner's
-pretension and 10% anchor clearance rules, let the three position lines fix the
-pose (smallest direction singular value 0.25), and keep all line tensions positive
-under the sensor force set before the move. Point forces are set for equal strain
-and never exceed the largest sensor force the dataset has already applied. Up to
-20 points are picked greedily by information and visited as a short closed tour
-from the point nearest home. The move from the positioning pose to the first
-point is not checked, as for sweeps. Poses are planned with rigid lengths; stretch
-moves the reached pose by a fraction of a millimetre, and the records keep the
-measured encoder lengths.
+`mesh_planning.py` searches held lengths, drive/sensor roles and row levels. Row
+points keep the commanded and predicted lengths inside the lengths already
+measured on that axis, keep the sweep planner's pretension and 10% anchor
+clearance rules, let the three position lines fix the pose (smallest direction
+singular value 0.25), and get an equal-strain sensor force of at most 16 N. Rows
+are picked greedily by information (four rows of five points) and visited as a
+serpentine from the end nearest home.
 
-The collector (`--mesh-plan`) requires a positive encoder conversion on every
-participating axis, checks reversible sensor coupling to the planned probe moves
-at the first point, and then requires the sensor to follow each planned move
-(same direction, within a factor of two). A sensor that stops following ends the
-mesh, which is kept if it has `min_points` points and rejected otherwise. Spare
-HP5 ranges count only after following a planned move. A held-line slip, an
-uncoupled sensor or a blocked drive rejects the mesh as boundary evidence, without
-a retry at the same loads, and the planner does not plan it again. The collector
-returns to the first point and then home with the held line in position control.
+The collector (`--mesh-plan`) positions the held line once, probes reversible
+sensor coupling by jogging the stepping drive near the start (as later sweeps do),
+and steps through the rows. A point it cannot measure, because a drive is blocked
+or the held line slips, is skipped and the rest of the mesh kept; the fit's outlier
+rejection judges the points that remain. The mesh is rejected only if its sensor
+never couples or fewer than `min_points` points remain. Each row is recorded as an
+ordinary sweep record sharing `metadata.mesh`.
 
-Each point is stored as a one-point record holding the held line and the first
-drive, with the shared `metadata.mesh`. Uncertainty, the HP5 stop rule, replay,
-validation, the diagnostics' sweep limits and the benchmark count a mesh as one
-unit; circle-sweep novelty and exploration ignore mesh records; merging renames a
-mesh id that is already in use; replay plans without the recorded rejections.
-The ellipse reference fit fits each mesh's ellipsoids, with each point's own held
-length.
+Uncertainty, the HP5 stop rule, replay, validation, the diagnostics' sweep limits
+and the benchmark count a mesh as one unit; circle-sweep novelty and exploration
+ignore mesh rows; merging renames a mesh id that is already in use; replay plans
+without the recorded rejections. The ellipse reference fit fits each mesh's
+ellipsoid, the joint form of its row ellipses, with each point's own held length.
 
 Live headless runs on 2026-11-19, one per machine, max anchor coordinate error:
 

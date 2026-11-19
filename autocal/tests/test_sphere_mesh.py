@@ -27,32 +27,37 @@ def _plan(machine, dataset=None):
 
 
 def _mesh_records(plan, anchors, mesh_id, noise=0.0, rng=None):
-    """Records as the collector writes them, from the true geometry."""
+    """Row records as the collector writes them, measured at the true geometry."""
     home = np.linalg.norm(anchors, axis=1)
-    held, (first, second), sensor = plan["held_anchor"], plan["drive_anchors"], plan["sensor_anchor"]
+    held, (level_drive, step_drive), sensor = plan["held_anchor"], plan["drive_anchors"], plan["sensor_anchor"]
+    rows = sorted({point["row"] for point in plan["points"]}, key=[p["row"] for p in plan["points"]].index)
     records = []
-    for index, planned in enumerate(plan["points"]):
-        lines = np.array([held, first, second])
-        commanded = np.array([plan["held_length_mm"], *planned["drive_mm"]])
-        position = _solve_position(anchors, lines, home[lines] + commanded, np.asarray(planned["position_mm"]))
-        reading = lambda axis: float(np.linalg.norm(position - anchors[axis]) - home[axis]
-                                     + (rng.normal(0, noise) if rng is not None else 0.0))
-        point = {"l_drive": float(commanded[2]), "l_drive_mu": float(commanded[2]),
-                 "l_sensor": reading(sensor), "sensor_force_n": float("nan"), "step_index": index}
-        point["l_sensor_mu"] = point["l_sensor"]
-        if plan["extra_anchors"]:
-            point["extra_sensor_ranges"] = [{"anchor": axis, "force_n": plan["extra_sensor_force_n"],
-                                             "length_mm": reading(axis), "accepted": True}
-                                            for axis in plan["extra_anchors"]]
-            for extra in point["extra_sensor_ranges"]:
-                extra["length_mu_mm"] = extra["length_mm"]
-        records.append({"id": f"{mesh_id}_p{index:02d}", "fixed_anchors": [held, first],
-                        "fixed_lengths": [plan["held_length_mm"], planned["drive_mm"][0]],
-                        "drive_anchor": second, "sensor_anchor": sensor, "data_points": [point],
-                        "metadata": {"sweep_method": "sphere-mesh", "mesh": {
-                            "id": mesh_id, "held_anchor": held, "held_length_mm": plan["held_length_mm"],
-                            "drive_anchors": [first, second], "sensor_anchor": sensor,
-                            "extra_anchors": plan["extra_anchors"], "index": index, "count": len(plan["points"])}}})
+    for row in rows:
+        planned_row = [point for point in plan["points"] if point["row"] == row]
+        points = []
+        for step, planned in enumerate(planned_row):
+            lines = np.array([held, level_drive, step_drive])
+            commanded = np.array([plan["held_length_mm"], *planned["drive_mm"]])
+            position = _solve_position(anchors, lines, home[lines] + commanded, np.asarray(planned["position_mm"]))
+            reading = lambda axis: float(np.linalg.norm(position - anchors[axis]) - home[axis]
+                                         + (rng.normal(0, noise) if rng is not None else 0.0))
+            point = {"l_drive": float(commanded[2]), "l_drive_mu": float(commanded[2]),
+                     "l_sensor": reading(sensor), "sensor_force_n": float("nan"), "step_index": step}
+            point["l_sensor_mu"] = point["l_sensor"]
+            if plan["extra_anchors"]:
+                point["extra_sensor_ranges"] = [{"anchor": axis, "force_n": plan["extra_sensor_force_n"],
+                                                 "length_mm": reading(axis), "accepted": True}
+                                                for axis in plan["extra_anchors"]]
+                for extra in point["extra_sensor_ranges"]:
+                    extra["length_mu_mm"] = extra["length_mm"]
+            points.append(point)
+        records.append({"id": f"{mesh_id}_r{row}", "fixed_anchors": [held, level_drive],
+                        "fixed_lengths": [plan["held_length_mm"], planned_row[0]["drive_mm"][0]],
+                        "drive_anchor": step_drive, "sensor_anchor": sensor, "data_points": points,
+                        "metadata": {"sweep_method": "sphere-mesh-row", "mesh": {
+                            "id": mesh_id, "row": row, "held_anchor": held, "held_length_mm": plan["held_length_mm"],
+                            "drive_anchors": [level_drive, step_drive], "sensor_anchor": sensor,
+                            "extra_anchors": plan["extra_anchors"]}}})
     return records
 
 
@@ -77,9 +82,12 @@ def test_planned_mesh_stays_in_the_measured_workspace(machine):
         assert np.all(predicted[checked] >= low[checked] - 1e-9) and np.all(predicted[checked] <= high[checked] + 1e-9)
         assert point["drive_mm"] == pytest.approx(predicted[plan["drive_anchors"]].tolist())
         assert point["sensor_force_n"] >= force_planning_parameters(dataset)["minimum_force_n"]
-    # The path starts at the planned point nearest home.
-    positions = np.array([point["position_mm"] for point in plan["points"]])
-    assert np.argmin(np.linalg.norm(positions, axis=1)) == 0
+    # A sweep of sweeps: each row holds the level drive at one length and is visited in one run.
+    rows = [point["row"] for point in plan["points"]]
+    assert rows == sorted(rows) and len(set(rows)) >= 2
+    for row in set(rows):
+        levels = {point["drive_mm"][0] for point in plan["points"] if point["row"] == row}
+        assert len(levels) == 1
 
 
 def test_rejected_mesh_is_not_planned_again():
@@ -98,25 +106,19 @@ def test_no_mesh_before_the_first_sweeps():
 
 @pytest.mark.parametrize("machine", ["hangprinter_4", "hangprinter_5"])
 def test_point_and_ellipsoid_fits_recover_exact_mesh_geometry(machine):
-    _, anchors, plan = _plan(machine)
+    source, anchors, plan = _plan(machine)
+    # A second, different mesh: the next best once the first counts as rejected.
+    source["acquisition_rejections"] = [{"mesh": {key: plan[key] for key in
+                                                  ("held_anchor", "held_length_mm", "drive_anchors", "sensor_anchor")}}]
+    _, _, other = _plan(machine, source)
     dataset = {"machine_type": machine, "num_anchors": len(anchors), "dimensions": 3, "config": {},
-               "sweeps": [*_mesh_records(plan, anchors, "mesh_001"), *_mesh_records(plan, anchors, "mesh_002")]}
-    # A second held length gives the meshes depth; reuse the plan on a shorter held line.
-    shorter = copy.deepcopy(plan)
-    shorter["held_length_mm"] -= 150.0
-    home = np.linalg.norm(anchors, axis=1)
-    for point in shorter["points"]:
-        position = np.asarray(point["position_mm"])
-        towards = position - anchors[plan["held_anchor"]]
-        position = position - 150.0 * towards / np.linalg.norm(towards)
-        point["position_mm"] = position.tolist()
-        point["drive_mm"] = [float(np.linalg.norm(position - anchors[axis]) - home[axis]) for axis in plan["drive_anchors"]]
-    dataset["sweeps"][len(plan["points"]):] = _mesh_records(shorter, anchors, "mesh_002")
+               "sweeps": [*_mesh_records(plan, anchors, "mesh_001"), *_mesh_records(other, anchors, "mesh_002")]}
     start = anchors + np.random.default_rng(0).normal(0, 15, anchors.shape)
     point_fit = fit_pose_least_squares(dataset, start, fit_home_offsets=False, home_offset_prior_sigma_mm=5)
     assert np.max(np.linalg.norm(point_fit["anchors"] - anchors, axis=1)) < 0.05
     ellipsoids = fit_ellipses(dataset, point_fit["anchors"])
-    assert ellipsoids["num_ellipsoids"] == 2 * (1 + len(plan["extra_anchors"])) and ellipsoids["num_ellipses"] == 0
+    assert ellipsoids["num_ellipsoids"] == 2 + len(plan["extra_anchors"]) + len(other["extra_anchors"])
+    assert ellipsoids["num_ellipses"] == 0
     assert np.max(np.linalg.norm(ellipsoids["anchors"] - anchors, axis=1)) < 0.05
 
 
@@ -139,13 +141,12 @@ def test_mesh_command_owns_geometry_and_forces(tmp_path):
 
 
 @pytest.mark.parametrize("machine", sorted(TRUTH))
-def test_planned_forces_stay_below_the_largest_applied_force(machine):
+def test_planned_forces_stay_below_the_mesh_ceiling(machine):
+    from autocal.mesh_planning import MESH_MAX_SENSOR_FORCE_N
     dataset, _, plan = _plan(machine)
-    applied = max(point["sensor_force_n"] for sweep in dataset["sweeps"] for point in sweep["data_points"])
-    assert plan["max_sensor_force_n"] == pytest.approx(applied)
-    assert all(point["sensor_force_n"] <= applied for point in plan["points"])
-    assert plan["probe"]["away_mm"] > plan["points"][0]["drive_mm"][1] > plan["probe"]["toward_mm"]
-    assert 1 <= plan["min_points"] <= len(plan["points"])
+    assert plan["max_sensor_force_n"] == MESH_MAX_SENSOR_FORCE_N
+    assert all(point["sensor_force_n"] <= MESH_MAX_SENSOR_FORCE_N for point in plan["points"])
+    assert plan["probe_radius_mm"] > 0 and 1 <= plan["min_points"] <= len(plan["points"])
 
 
 def test_merging_meshes_with_the_same_id_keeps_them_separate():
@@ -156,7 +157,8 @@ def test_merging_meshes_with_the_same_id_keeps_them_separate():
     new = dict(base, sweeps=_mesh_records(plan, anchors, "mesh_001"))
     merged = _merge_sweep_datasets(base, new)
     groups = measurement_groups(merged)
-    assert len(groups) == 2 and [len(group) for group in groups] == [len(plan["points"])] * 2
+    rows = len({point["row"] for point in plan["points"]})
+    assert len(groups) == 2 and [len(group) for group in groups] == [rows] * 2
     assert {merged["sweeps"][group[0]]["metadata"]["mesh"]["id"] for group in groups} == {"mesh_001", "mesh_001_2"}
 
 
