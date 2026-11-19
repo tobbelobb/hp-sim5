@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
-from autocal.filter_pass import estimate_effective_radii_with_spool_model
+from autocal.slideprinter_2d.filter_pass import estimate_effective_radii_with_spool_model
 from autocal.equal_strain import is_equal_strain
 from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths, dataset_stretch
 from autocal.projection_mode import resolve_projection_mode
+from autocal.ellipse_fit import fit_ellipses
+from autocal.spool_fit import fit_spools
 from autocal.pose_planning import pose_information
 
 
@@ -101,13 +103,12 @@ def fit_ellipse_dataset(
     if b_prior_sigma is not None and not _spool_mode_enabled(find_buildup_mode):
         warnings.append("b_prior_sigma_ignored_without_find_buildup_factor")
 
-    # The point fit is primary on Hangprinters: it uses every range, the force-aware
+    # Hangprinter anchors come from the point fit: it uses every range, the force-aware
     # stretch model and per-point outlier rejection, and accepts any poses. The ellipse
-    # fit is a reference for fixed-line circle sweeps, and the only fit that searches
-    # spool parameters. HP5's ellipses ignore its extra ranges and stretch.
-    # Retired projected-angle datasets keep the ellipse fit, which reads their angles.
-    range_fit = (machine_type.startswith("hangprinter_") and not (search_radii or search_buildup)
-                 and not ellipse_reference_fit and not prefer_zero_tension_angles)
+    # reference fit (ellipse_fit.py) can replace it for fixed-line circle sweeps; both
+    # share the point model's information and cost. Spool searches and retired
+    # projected-angle datasets keep the legacy ellipse calibration.
+    point_model = machine_type.startswith("hangprinter_") and not prefer_zero_tension_angles
 
     est_buildup = _resolve_buildup_factor_seed(
         dataset,
@@ -193,111 +194,135 @@ def fit_ellipse_dataset(
         initial_radii_seed = _resolve_spool_seed(initial_radii_mm, positive=True)
         initial_buildup_seed = _resolve_spool_seed(initial_buildup_factor)
 
-        seed_restarts = max(1, min(2, int(solve_restarts)))
-        seed_iterations = max(60, min(200, int(solve_iterations)))
-        seed_cal = calibrate_elliptical(
-            dataset,
-            output_path=None,
-            num_restarts=int(seed_restarts),
-            max_iterations=int(seed_iterations),
-            method=str(solve_optimizer),
-            verbose=False,
-            use_parallel=False,
-            pointwise_residual_mode=str(pointwise_residual_mode),
-            robust_debug=False,
-            pointwise_filtering=bool(pointwise_filtering),
-            pointwise_global_mad=bool(pointwise_global_mad),
-            sweep_wise_filtering=bool(sweep_wise_filtering),
-            sweep_metric=str(sweep_metric),
-            use_noise_mean=bool(use_noise_mean),
-            sigma_source=str(sigma_source),
-            generate_report=False,
-            residuals_csv=None,
-            initial_guess=anchor_initial_guess,
-            low_anchor_z=low_anchor_z,
-        )
-        seed_anchors = np.asarray(seed_cal["anchors"], dtype=float)
-        effective_radii_mm, _fit_anchors, spool_params, dataset_for_estimation, radii_fit = (
-            estimate_effective_radii_with_spool_model(
-                dataset,
-                seed_anchors,
-                find_radii_mode=find_radii_mode,
-                find_buildup_mode=find_buildup_mode,
-                base_radii_mm=base_radii_mm,
-                modeled_buildup_factor=modeled_buildup,
-                spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
-                mechanical_advantage=mechanical_advantage,
+        if machine_type.startswith("hangprinter_"):
+            spool = fit_spools(
+                dataset, anchor_initial_guess, fit_radii=find_radii_mode, fit_buildup=find_buildup_mode,
+                base_radii_mm=base_radii_mm, buildup_factor=modeled_buildup,
+                gearing=spool_to_motor_gearing_factor, mechanical_advantage=mechanical_advantage,
                 lines_per_spool=lines_per_spool,
-                r0_bounds=r0_bounds,
-                b_bounds=b_bounds,
-                r0_prior_sigma_mm=r0_prior_sigma_mm,
-                b_prior_sigma=b_prior_sigma,
-                spool_outer_iters=int(spool_outer_iters),
-                theta0_mode=theta0_mode_norm,
-                solve_restarts=int(solve_restarts),
-                solve_iterations=int(solve_iterations),
-                solve_optimizer=str(solve_optimizer),
-                pointwise_residual_mode=str(pointwise_residual_mode),
-                pointwise_filtering=bool(pointwise_filtering),
-                pointwise_global_mad=bool(pointwise_global_mad),
-                sweep_wise_filtering=bool(sweep_wise_filtering),
-                sweep_metric=str(sweep_metric),
-                use_noise_mean=bool(use_noise_mean),
-                sigma_source=str(sigma_source),
-                robust_debug=bool(robust_debug),
-                low_anchor_z=low_anchor_z,
-                prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
-                filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
-                objective_schedule=_parse_objective_schedule(
-                    objective_schedule,
-                    label="objective_schedule",
-                ),
-                initial_radii_mm=initial_radii_seed,
-                initial_buildup_factor=initial_buildup_seed,
+                radius_bounds=(_resolve_r0_bounds(base_radii_mm, find_radii_mode=find_radii_mode, r0_bounds=r0_bounds)
+                               if search_radii else (np.zeros(0), np.zeros(0))),
+                buildup_bounds=_resolve_b_bounds(modeled_buildup, find_buildup_mode=find_buildup_mode, b_bounds=b_bounds),
+                radius_prior_sigma_mm=r0_prior_sigma_mm, buildup_prior_sigma=b_prior_sigma,
+                initial_radii_mm=initial_radii_seed, initial_buildup_factor=initial_buildup_seed,
+                low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
             )
-        )
-        _ = _fit_anchors
-        fitted_buildup = np.asarray(
-            radii_fit.get("best_modeled_buildup_factor", modeled_buildup.tolist()),
-            dtype=float,
-        ).reshape(-1)
-        if fitted_buildup.size != int(num_anchors):
-            fitted_buildup = np.asarray(modeled_buildup, dtype=float).reshape(-1)
-        k_summary = float(np.median(fitted_buildup)) if fitted_buildup.size else float(est_buildup)
-        sweep_configs_for_info = sweep_configs_with_modeled_lengths(
-            sweep_configs_for_info,
-            spool_params,
-        )
-        final_filter_schedule_cal = (
-            radii_fit.get("filter_schedule_final_calibration")
-            if isinstance(radii_fit, dict)
-            else None
-        )
-        if isinstance(final_filter_schedule_cal, dict):
-            cal = final_filter_schedule_cal
+            if not spool["success"]:
+                raise ValueError("Spool point fit did not converge: " + spool["message"])
+            spool_params, dataset_for_estimation = spool["spool_params"], spool["dataset"]
+            effective_radii_mm, fitted_buildup = spool["radii_mm"], spool["buildup_factor"]
+            radii_fit = {"method": "point_fit", "rejected_points": int(len(spool["rejected_points"]))}
+            k_summary = float(np.median(fitted_buildup))
+            sweep_configs_for_info = sweep_configs_with_modeled_lengths(sweep_configs_for_info, spool_params)
+            primary_pose_fit = primary_fit = spool
+            cal = {"anchors": spool["anchors"], "cost": 0., "details": {}}
         else:
-            cal = calibrate_elliptical(
-                dataset_for_estimation,
+            # Legacy 2D slideprinter autocal: the ellipse spool pipeline.
+            seed_restarts = max(1, min(2, int(solve_restarts)))
+            seed_iterations = max(60, min(200, int(solve_iterations)))
+            seed_cal = calibrate_elliptical(
+                dataset,
                 output_path=None,
-                num_restarts=int(solve_restarts),
-                max_iterations=int(solve_iterations),
+                num_restarts=int(seed_restarts),
+                max_iterations=int(seed_iterations),
                 method=str(solve_optimizer),
                 verbose=False,
                 use_parallel=False,
                 pointwise_residual_mode=str(pointwise_residual_mode),
-                robust_debug=bool(robust_debug),
+                robust_debug=False,
                 pointwise_filtering=bool(pointwise_filtering),
                 pointwise_global_mad=bool(pointwise_global_mad),
                 sweep_wise_filtering=bool(sweep_wise_filtering),
                 sweep_metric=str(sweep_metric),
                 use_noise_mean=bool(use_noise_mean),
                 sigma_source=str(sigma_source),
-                generate_report=bool(generate_report),
-                residuals_csv=residuals_csv,
-                report_base_path=dataset_path,
-                initial_guess=seed_anchors,
+                generate_report=False,
+                residuals_csv=None,
+                initial_guess=anchor_initial_guess,
                 low_anchor_z=low_anchor_z,
             )
+            seed_anchors = np.asarray(seed_cal["anchors"], dtype=float)
+            effective_radii_mm, _fit_anchors, spool_params, dataset_for_estimation, radii_fit = (
+                estimate_effective_radii_with_spool_model(
+                    dataset,
+                    seed_anchors,
+                    find_radii_mode=find_radii_mode,
+                    find_buildup_mode=find_buildup_mode,
+                    base_radii_mm=base_radii_mm,
+                    modeled_buildup_factor=modeled_buildup,
+                    spool_to_motor_gearing_factor=spool_to_motor_gearing_factor,
+                    mechanical_advantage=mechanical_advantage,
+                    lines_per_spool=lines_per_spool,
+                    r0_bounds=r0_bounds,
+                    b_bounds=b_bounds,
+                    r0_prior_sigma_mm=r0_prior_sigma_mm,
+                    b_prior_sigma=b_prior_sigma,
+                    spool_outer_iters=int(spool_outer_iters),
+                    theta0_mode=theta0_mode_norm,
+                    solve_restarts=int(solve_restarts),
+                    solve_iterations=int(solve_iterations),
+                    solve_optimizer=str(solve_optimizer),
+                    pointwise_residual_mode=str(pointwise_residual_mode),
+                    pointwise_filtering=bool(pointwise_filtering),
+                    pointwise_global_mad=bool(pointwise_global_mad),
+                    sweep_wise_filtering=bool(sweep_wise_filtering),
+                    sweep_metric=str(sweep_metric),
+                    use_noise_mean=bool(use_noise_mean),
+                    sigma_source=str(sigma_source),
+                    robust_debug=bool(robust_debug),
+                    low_anchor_z=low_anchor_z,
+                    prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+                    filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
+                    objective_schedule=_parse_objective_schedule(
+                        objective_schedule,
+                        label="objective_schedule",
+                    ),
+                    initial_radii_mm=initial_radii_seed,
+                    initial_buildup_factor=initial_buildup_seed,
+                )
+            )
+            _ = _fit_anchors
+            fitted_buildup = np.asarray(
+                radii_fit.get("best_modeled_buildup_factor", modeled_buildup.tolist()),
+                dtype=float,
+            ).reshape(-1)
+            if fitted_buildup.size != int(num_anchors):
+                fitted_buildup = np.asarray(modeled_buildup, dtype=float).reshape(-1)
+            k_summary = float(np.median(fitted_buildup)) if fitted_buildup.size else float(est_buildup)
+            sweep_configs_for_info = sweep_configs_with_modeled_lengths(
+                sweep_configs_for_info,
+                spool_params,
+            )
+            final_filter_schedule_cal = (
+                radii_fit.get("filter_schedule_final_calibration")
+                if isinstance(radii_fit, dict)
+                else None
+            )
+            if isinstance(final_filter_schedule_cal, dict):
+                cal = final_filter_schedule_cal
+            else:
+                cal = calibrate_elliptical(
+                    dataset_for_estimation,
+                    output_path=None,
+                    num_restarts=int(solve_restarts),
+                    max_iterations=int(solve_iterations),
+                    method=str(solve_optimizer),
+                    verbose=False,
+                    use_parallel=False,
+                    pointwise_residual_mode=str(pointwise_residual_mode),
+                    robust_debug=bool(robust_debug),
+                    pointwise_filtering=bool(pointwise_filtering),
+                    pointwise_global_mad=bool(pointwise_global_mad),
+                    sweep_wise_filtering=bool(sweep_wise_filtering),
+                    sweep_metric=str(sweep_metric),
+                    use_noise_mean=bool(use_noise_mean),
+                    sigma_source=str(sigma_source),
+                    generate_report=bool(generate_report),
+                    residuals_csv=residuals_csv,
+                    report_base_path=dataset_path,
+                    initial_guess=seed_anchors,
+                    low_anchor_z=low_anchor_z,
+                )
 
         length_model = {
             "coord_planning": "L_base_mm",
@@ -367,7 +392,7 @@ def fit_ellipse_dataset(
             home_offsets_mm = offset_fit["home_offsets_mm"]
             dataset_for_estimation = shift_dataset_home_offsets(dataset, home_offsets_mm)
         sweep_configs_for_info = dataset_sweep_configs(dataset_for_estimation)
-        if range_fit:
+        if point_model:
             primary_pose_fit = fit_pose_least_squares(
                 dataset_for_estimation,
                 offset_fit["anchors"] if fit_home_offsets else anchor_initial_guess,
@@ -376,7 +401,11 @@ def fit_ellipse_dataset(
             )
             if not primary_pose_fit["success"]:
                 raise ValueError("Point fit did not converge: " + primary_pose_fit["message"])
-            cal = {"anchors": primary_pose_fit["anchors"], "cost": 0., "details": {}}
+            primary_fit = primary_pose_fit
+            if ellipse_reference_fit:
+                primary_fit = fit_ellipses(dataset_for_estimation, primary_pose_fit["anchors"],
+                                           low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean))
+            cal = {"anchors": primary_fit["anchors"], "cost": 0., "details": {}}
         else:
             cal = calibrate_elliptical(
                 dataset_for_estimation,
@@ -402,9 +431,9 @@ def fit_ellipse_dataset(
 
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
-    # Beside the ellipse fit, the point fit sees the same lengths, starting from both
-    # the shared seed and the ellipse result, so the two answers can always be compared.
-    if range_fit:
+    # Beside an ellipse fit, the point fit sees the same lengths, so the two answers
+    # can always be compared.
+    if point_model:
         pose_fit = primary_pose_fit
     else:
         pose_fit = fit_pose_least_squares(
@@ -416,9 +445,9 @@ def fit_ellipse_dataset(
             use_noise_mean=bool(use_noise_mean),
             extra_initial_anchors=[anchors],
         )
-    if range_fit:
+    if point_model:
         lengths = dataset_line_lengths(dataset_for_estimation, use_noise_mean=bool(use_noise_mean))["lengths_mm"]
-        sigma = float(pose_fit["robust_scale_mm"])
+        sigma = float(primary_fit["robust_scale_mm"])
         info_obs = pose_information(anchors, lengths, machine_type=machine_type,
                                    low_anchor_z=low_anchor_z, sigma_mm=sigma,
                                    stretch=dataset_stretch(dataset_for_estimation))
@@ -429,7 +458,7 @@ def fit_ellipse_dataset(
             info_obs = info_obs[:-offsets, :-offsets]
         observations = int(np.isfinite(lengths).sum())
         residual_dof = observations - dimensions * len(lengths)
-        cost_raw = float(pose_fit["rms_mm"]**2 * len(lengths) / residual_dof)
+        cost_raw = float(primary_fit["rms_mm"]**2 * len(lengths) / residual_dof)
         cost = cost_raw / sigma**2
         cal["cost"] = cost
         cal["details"]["noise_metrics"] = {
@@ -472,7 +501,7 @@ def fit_ellipse_dataset(
             nm = details.get("noise_metrics")
             if isinstance(nm, dict):
                 noise_metrics = nm
-    if isinstance(noise_metrics, dict) and bool(search_radii or search_buildup):
+    if isinstance(noise_metrics, dict) and bool(search_radii or search_buildup) and not point_model:
         cost_fn = _build_ellipse_cost_function(
             dataset_for_estimation,
             pointwise_residual_mode=str(pointwise_residual_mode),
@@ -554,7 +583,8 @@ def fit_ellipse_dataset(
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "dataset_for_estimation": dataset_for_estimation,
         "pose_fit": pose_fit,
-        "fit_model": "point" if range_fit else "ellipse",
+        "fit_model": ("point" if point_model and (search_radii or search_buildup or not ellipse_reference_fit)
+                      else "ellipse"),
         "home_offsets_mm": home_offsets_mm,
         "home_offsets_fitted": bool(fit_home_offsets),
         "use_noise_mean": bool(use_noise_mean),

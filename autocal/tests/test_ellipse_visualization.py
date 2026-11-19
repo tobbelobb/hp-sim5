@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from autocal.ellipse_visualization import (
+from autocal.slideprinter_2d.ellipse_visualization import (
     create_calibration_report,
     plot_anchors_2d,
     plot_anchors_3d,

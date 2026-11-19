@@ -4,10 +4,10 @@ from typing import Dict, Iterable, Optional, Tuple
 
 import numpy as np
 
-from autocal.ellipse_cost import EllipseCostFunction
+from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 from autocal.projection_mode import resolve_projection_mode
 from autocal.spool_model import SpoolModelParams, dataset_with_modeled_lengths
-from autocal.pose_fit import (shift_dataset_home_offsets, uses_range_fit,
+from autocal.pose_fit import (shift_dataset_home_offsets,
                               dataset_line_lengths, dataset_stretch, consistency_residuals)
 
 
@@ -52,7 +52,7 @@ def score_future_sweeps(
             )
         if home_offsets_mm is not None:
             validation_data = shift_dataset_home_offsets(validation_data, home_offsets_mm)
-        if uses_range_fit(validation_data) and spool_params is None and not projected:
+        if str(validation_data["machine_type"]).startswith("hangprinter_") and not projected:
             lengths = dataset_line_lengths(validation_data, use_noise_mean=use_noise_mean)["lengths_mm"]
             measured = np.isfinite(lengths)
             dimensions = int(validation_data["dimensions"])

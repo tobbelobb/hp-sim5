@@ -4,7 +4,7 @@ from __future__ import annotations
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
 from autocal.equal_strain import InfeasibleForceProfileError, is_equal_strain, write_sensor_force_profile, profile_policy_error
-from autocal.pose_fit import dataset_line_lengths, has_extra_sensor_data, dataset_stretch, uses_range_fit
+from autocal.pose_fit import dataset_line_lengths, has_extra_sensor_data, dataset_stretch, has_spare_winches
 from autocal.pose_planning import rank_candidates_pose_information
 from autocal.workspace import exploration_grid
 
@@ -102,16 +102,18 @@ def plan_ellipse_sweep(
     needs_profile = (is_equal_strain(dataset) and spool_params is None
                      and machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"))
 
-    if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and spool_params is None:
-        # Position-based ranking: it values sweeps with a shortened D line, which the
-        # ellipse-geometry ranking below never picks.
+    if machine_type.startswith("hangprinter_"):
+        # Point-fit information. With a fitted spool model, candidates are placed by
+        # their modelled lengths but keep their commanded ones.
         estimation_dataset = fit["dataset_for_estimation"]
+        placed = candidates if spool_params is None else sweep_configs_with_modeled_lengths(candidates, spool_params)
+        commanded = {id(model): cfg for cfg, model in zip(candidates, placed)}
         ranked = rank_candidates_pose_information(
             anchors,
             machine_type=machine_type,
             low_anchor_z=dataset.get("_low_anchor_z"),
             observed_lengths_mm=dataset_line_lengths(estimation_dataset)["lengths_mm"],
-            candidates=candidates,
+            candidates=placed,
             points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
             sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
             regularization=float(regularization),
@@ -121,6 +123,7 @@ def plan_ellipse_sweep(
             measure_extra_ranges=has_extra_sensor_data(dataset),
             observed_stretch=dataset_stretch(estimation_dataset),
         )
+        ranked = [(score, commanded[id(cfg)]) for score, cfg in ranked]
     elif spool_params is not None:
         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
         id_map = {id(cfg_model): cfg_base for cfg_base, cfg_model in zip(candidates, candidates_model)}
@@ -181,7 +184,7 @@ def plan_ellipse_sweep(
     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
 
     collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
-    if uses_range_fit(dataset) and not has_extra_sensor_data(dataset) and not needs_profile and "--no-extra-sensors" not in collector_args_eff:
+    if has_spare_winches(dataset) and not has_extra_sensor_data(dataset) and not needs_profile and "--no-extra-sensors" not in collector_args_eff:
         collector_args_eff.append("--no-extra-sensors")
     collector_args_eff, _ = _inject_spool_collection_args(
         collector_args_eff,

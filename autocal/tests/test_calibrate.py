@@ -1,8 +1,8 @@
 import numpy as np
 import json
 
-from autocal import calibrate as calibrate_module
-from autocal.calibrate import _extract_motor_samples_from_sweep_dataset, calibrate_elliptical, main
+from autocal.slideprinter_2d import calibrate as calibrate_module
+from autocal.slideprinter_2d.calibrate import _extract_motor_samples_from_sweep_dataset, calibrate_elliptical, main
 from autocal.json_schema import write_json_file
 
 

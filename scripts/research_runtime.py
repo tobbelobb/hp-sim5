@@ -281,7 +281,7 @@ class Runtime:
             manifest['collector_options'] = collected['collectionOptions']
             from autocal.json_schema import load_json_file
             from autocal.spool_model import validate_dataset_has_raw_angles
-            from autocal.calibrate import _validate_sweep_roles
+            from autocal.dataset_roles import _validate_sweep_roles
             data = load_json_file(Path(artifacts['dataset']), schema='sweep_dataset')
             validate_dataset_has_raw_angles(data)
             _validate_sweep_roles(data)

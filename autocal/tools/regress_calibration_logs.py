@@ -252,9 +252,10 @@ DATASETS = [
     ),
     *(
         DatasetSpec(
-            # Headless benchmark sweeps from commit 0623060e22 (2026-11-18), copied from
-            # output/autocal-benchmark-backfill/runs/0623060e2227/<machine>/sweeps.json.
-            name=f"benchmark_0623060e22_{machine}",
+            # Live headless autocal sweeps (benchmark_history settings) from the working
+            # tree on top of 923c2baa (2026-11-19): point fit primary, equal-strain
+            # targets per strand (HP4 1.98 N, HP5 pulley-reduced 2.58 N).
+            name=f"benchmark_923c2baa_{machine}",
             machine_type=machine,
             base_radii="30",
             buildup_factor="0",
@@ -269,7 +270,7 @@ DATASETS = [
             # The benchmark sweeps above with two lines pushed aside over six points
             # and 3% single-point outliers: autocal/tools/disturb_dataset.py
             # --scenario mixed --seed 0. Events are listed under "disturbances".
-            name=f"disturbed_benchmark_0623060e22_{machine}",
+            name=f"disturbed_benchmark_923c2baa_{machine}",
             machine_type=machine,
             base_radii="30",
             buildup_factor="0",
@@ -283,7 +284,7 @@ DATASETS = [
         DatasetSpec(
             # The benchmark sweeps above with Gaussian length noise on every record:
             # autocal/tools/disturb_dataset.py --scenario noise --noise-mm 0.05/0.2/0.5.
-            name=f"noisy_{label}mm_benchmark_0623060e22_{machine}",
+            name=f"noisy_{label}mm_benchmark_923c2baa_{machine}",
             machine_type=machine,
             base_radii="30",
             buildup_factor="0",

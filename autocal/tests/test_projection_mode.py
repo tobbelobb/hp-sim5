@@ -2,7 +2,7 @@ import copy
 
 import pytest
 
-from autocal.ellipse_cost import EllipseCostFunction
+from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 from autocal.fit_stage import _uses_projected_angles
 from autocal.projection_mode import resolve_projection_mode
 

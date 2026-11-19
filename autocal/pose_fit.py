@@ -37,7 +37,7 @@ REJECT_SCALES = 10.0
 _REJECT_ROUNDS = 3
 
 
-def _robust_loss(kind: str, num_prior: int):
+def robust_loss(kind: str, num_prior: int):
     """scipy loss: robust on range misfits, quadratic on the trailing Gaussian prior terms.
 
     A bounded loss on a prior would cap its cost, and an offset the poses cannot
@@ -62,7 +62,7 @@ def _point_value(point: dict, mean_key: str, raw_key: str, use_noise_mean: bool)
     return float(point[raw_key])
 
 
-def uses_range_fit(dataset: dict) -> bool:
+def has_spare_winches(dataset: dict) -> bool:
     return (str(dataset.get("machine_type", "")).startswith("hangprinter_")
             and int(dataset["num_anchors"]) > int(dataset["dimensions"]) + 1)
 
@@ -162,6 +162,14 @@ def stretch_corrected_lengths(anchors, positions, absolute, measured, stretch):
 def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offsets_mm: np.ndarray, *, stretch=None) -> np.ndarray:
     """Per-point, per-line length misfit at each point's best effector position, in mm."""
     anchors = np.asarray(anchors, dtype=float)
+    positions, absolute = fit_point_positions(anchors, lengths_mm, home_offsets_mm, stretch=stretch)
+    measured = np.isfinite(lengths_mm)
+    return np.where(measured, np.linalg.norm(positions[:, None, :] - anchors[None, :, :], axis=2) - absolute, 0.0)
+
+
+def fit_point_positions(anchors: np.ndarray, lengths_mm: np.ndarray, home_offsets_mm, *, stretch=None):
+    """Each point's best effector position and its stretch-corrected absolute line lengths."""
+    anchors = np.asarray(anchors, dtype=float)
     dimensions = anchors.shape[1]
     measured = np.isfinite(lengths_mm)
     absolute = (np.linalg.norm(anchors, axis=1) + np.asarray(home_offsets_mm, dtype=float)
@@ -180,7 +188,7 @@ def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offs
         positions = positions - np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
     if stretch is not None:
         absolute = stretch_corrected_lengths(anchors, positions, absolute, measured, stretch)
-    return np.where(measured, np.linalg.norm(positions[:, None, :] - anchors[None, :, :], axis=2) - absolute, 0.0)
+    return positions, absolute
 
 
 def _hp4_home_strain(dataset: dict) -> Optional[tuple[float, np.ndarray]]:
@@ -268,8 +276,12 @@ def _fit_points(
     low_anchor_z: Optional[float],
     use_noise_mean: bool,
     extra_initial_anchors: Sequence[np.ndarray],
+    spool=None,
 ) -> Dict[str, object]:
     """Fit anchors, and optionally home length offsets, to all points of a sweep dataset.
+
+    `spool` (spool_fit.SpoolTerms) adds spool parameters that regenerate every length
+    from the recorded motor angles, with their own Gaussian priors.
 
     A soft-L1 pass sets the residual scale. A bounded arctan pass at three times that
     scale follows, so no bad point can pull harder than a fixed amount. Points whose
@@ -286,25 +298,31 @@ def _fit_points(
     stretch = dataset_stretch(dataset)
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
+    num_spool = 0 if spool is None else spool.start.size
+    num_prior = num_offsets + (0 if spool is None else spool.num_prior)
 
     home_strain = _hp4_home_strain(dataset) if fit_home_offsets and low_anchor_z is None else None
 
+    num_anchor_params = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)[0].size
+
     def unpack(x: np.ndarray):
-        anchor_vec = x[: x.size - num_offsets]
-        anchors = anchor_opt_vec_to_matrix(anchor_vec, machine_type, num_anchors, dimensions, low_anchor_z)
+        anchors = anchor_opt_vec_to_matrix(x[:num_anchor_params], machine_type, num_anchors, dimensions, low_anchor_z)
         offsets = np.zeros(num_anchors)
         if home_strain is not None:
             strain, extra_length = home_strain
             offsets[:3] = strain * (np.linalg.norm(anchors[:3], axis=1) + extra_length)
-        offsets[offset_lines] = x[x.size - num_offsets:]
+        offsets[offset_lines] = x[num_anchor_params:num_anchor_params + num_offsets]
         return anchors, offsets
 
     def residuals(x: np.ndarray, prior_weight: float, correct_stretch: bool = True, kept=None) -> np.ndarray:
         anchors, offsets = unpack(x)
-        used = lengths if kept is None else np.where(kept[:, None], lengths, np.nan)
+        spool_x = x[num_anchor_params + num_offsets:]
+        used = lengths if spool is None else spool.lengths(spool_x)
+        used = used if kept is None else np.where(kept[:, None], used, np.nan)
         return np.concatenate([
             consistency_residuals(anchors, used, offsets, stretch=stretch if correct_stretch else None).ravel(),
             offsets[offset_lines] * prior_weight,
+            *([] if spool is None else [spool.prior(spool_x)]),
         ])
 
     def point_misfit(x: np.ndarray) -> np.ndarray:
@@ -313,8 +331,9 @@ def _fit_points(
     # The same anchor bounds as the ellipse fit: they exclude mirrored layouts that
     # fit a small set of sweeps equally well.
     anchor_lb, anchor_ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
-    bounds = (np.concatenate([anchor_lb, np.full(num_offsets, -np.inf)]),
-              np.concatenate([anchor_ub, np.full(num_offsets, np.inf)]))
+    spool_lb, spool_ub = (np.zeros(0), np.zeros(0)) if spool is None else (spool.lower, spool.upper)
+    bounds = (np.concatenate([anchor_lb, np.full(num_offsets, -np.inf), spool_lb]),
+              np.concatenate([anchor_ub, np.full(num_offsets, np.inf), spool_ub]))
 
     def solve(start_anchors: np.ndarray):
         anchor_start = ((anchor_lb + anchor_ub) / 2.0 if start_anchors is None else
@@ -322,17 +341,19 @@ def _fit_points(
         start = np.concatenate([
             np.clip(anchor_start, anchor_lb, anchor_ub),
             np.zeros(num_offsets),
+            *([] if spool is None else [np.clip(spool.start, spool_lb, spool_ub)]),
         ])
-        x_scale = np.concatenate([np.full(start.size - num_offsets, 100.0), np.ones(num_offsets)])
+        x_scale = np.concatenate([np.full(num_anchor_params, 100.0), np.ones(num_offsets),
+                                  *([] if spool is None else [spool.x_scale])])
         if stretch is not None:
             # Far trial geometries can have singular static force systems. First
             # solve the well-behaved rigid problem, then refine its nearby fit.
             rigid = least_squares(residuals, start,
                 args=(_MIN_SCALE_MM / home_offset_prior_sigma_mm, False),
-                bounds=bounds, x_scale=x_scale, loss=_robust_loss("soft_l1", num_offsets), f_scale=1.0)
+                bounds=bounds, x_scale=x_scale, loss=robust_loss("soft_l1", num_prior), f_scale=1.0)
             start = rigid.x
         first = least_squares(residuals, start, args=(_MIN_SCALE_MM / home_offset_prior_sigma_mm,),
-                              bounds=bounds, x_scale=x_scale, loss=_robust_loss("soft_l1", num_offsets), f_scale=1.0)
+                              bounds=bounds, x_scale=x_scale, loss=robust_loss("soft_l1", num_prior), f_scale=1.0)
         kept = np.ones(len(lengths), dtype=bool)
         fit = first
         for _ in range(_REJECT_ROUNDS):
@@ -341,7 +362,7 @@ def _fit_points(
             line_residuals = fit.fun[: lengths.size].reshape(lengths.shape)[kept][np.isfinite(lengths[kept])]
             scale = max(1.4826 * float(np.median(np.abs(line_residuals - np.median(line_residuals)))), _MIN_SCALE_MM)
             fit = least_squares(residuals, fit.x, args=(scale / home_offset_prior_sigma_mm, True, kept),
-                                bounds=bounds, x_scale=x_scale, loss=_robust_loss("arctan", num_offsets), f_scale=3.0 * scale)
+                                bounds=bounds, x_scale=x_scale, loss=robust_loss("arctan", num_prior), f_scale=3.0 * scale)
             within = point_misfit(fit.x) <= REJECT_SCALES * scale
             # Too few points left means the fit, not the data, is bad.
             if np.array_equal(within, kept) or within.mean() < 0.5:
@@ -356,13 +377,14 @@ def _fit_points(
     # rejecting more points.
     def common_cost(solution):
         values = residuals(solution[0].x, scale / home_offset_prior_sigma_mm)
-        return float(np.sum(_robust_loss("arctan", num_offsets)((values / (3.0 * scale)) ** 2)[0]))
+        return float(np.sum(robust_loss("arctan", num_prior)((values / (3.0 * scale)) ** 2)[0]))
     converged = [solution for solution in solutions if solution[0].success]
     best, _, kept = min(converged or solutions, key=common_cost)
     anchors, offsets = unpack(best.x)
     per_point = point_misfit(best.x)
     return {
         "anchors": anchors,
+        "spool_x": best.x[num_anchor_params + num_offsets:],
         "home_offsets_mm": offsets,
         "rms_mm": float(np.sqrt(np.mean(per_point[kept] ** 2))),
         "robust_scale_mm": float(scale),

@@ -6,10 +6,9 @@ import numpy as np
 
 def validate_collection(path, anchors=None):
     from autocal.json_schema import load_json_file
-    from autocal.calibrate import _validate_sweep_roles
+    from autocal.dataset_roles import _validate_sweep_roles, normalize_dataset_point_roles
     from autocal.spool_model import validate_dataset_has_raw_angles
-    from autocal.ellipse_cost import EllipseCostFunction
-    from autocal.theoretical_ellipse import anchors_matrix_to_opt_vec
+    from autocal.pose_fit import consistency_residuals, dataset_line_lengths
 
     dataset = load_json_file(Path(path), schema='sweep_dataset')
     validate_dataset_has_raw_angles(dataset)
@@ -45,13 +44,12 @@ def validate_collection(path, anchors=None):
     anchors = np.asarray([config[axis] for axis in 'ABCDIJKLO' if axis in config] if anchors is None else anchors, dtype=float)
     if anchors.shape != (axis_count, 3) or not np.isfinite(anchors).all():
         raise ValueError('Collection must preserve all three firmware coordinates for each anchor')
-    objective = EllipseCostFunction(dataset, min_points=5,
-                                   pointwise_filtering=False, sweep_wise_filtering=False)
-    vector = anchors_matrix_to_opt_vec(anchors, dataset['machine_type'])
-    rows = objective.pointwise_residual_rows(vector)
-    residuals = np.asarray([row['residual_mm'] for row in rows])
-    if len(rows) != count or not np.isfinite(residuals).all():
+    normalize_dataset_point_roles(dataset)
+    lengths = dataset_line_lengths(dataset)['lengths_mm']
+    misfit = consistency_residuals(anchors, lengths, np.zeros(axis_count))
+    residuals = np.linalg.norm(misfit, axis=1)
+    if len(residuals) != count or not np.isfinite(residuals).all():
         raise ValueError('Autocal did not evaluate every collected measurement')
     return {'schema': dataset['version'], 'point_count': count, 'drive_span_mm': spans, 'physical_sensor_span_mm': sensor_spans,
-            'autocal_residual_count': len(rows), 'firmware_anchor_residual_rms_mm': float(np.sqrt(np.mean(residuals**2))),
+            'autocal_residual_count': len(residuals), 'firmware_anchor_residual_rms_mm': float(np.sqrt(np.mean(residuals**2))),
             'calibration_accuracy': 'Short preflight proves measurement ingestion; anchor fitting requires multiple held-out sweeps'}

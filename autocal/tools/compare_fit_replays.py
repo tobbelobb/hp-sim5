@@ -7,7 +7,7 @@ import sys
 
 from autocal.tools.sanity_battery import anchor_errors
 from autocal.stage_artifacts import read_stage_artifact
-from autocal.calibrate import build_anchor_initial_guess
+from autocal.anchor_seed import build_anchor_initial_guess
 from autocal.tools.joint_pose_baseline import fit_joint_ranges
 from autocal.projection_mode import resolve_projection_mode
 

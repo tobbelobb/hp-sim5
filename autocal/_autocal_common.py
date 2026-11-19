@@ -76,11 +76,12 @@ from autocal.active_learning import (
     rank_candidates_d_optimal,
     total_information_matrix,
 )
-from autocal.calibrate import build_anchor_initial_guess, calibrate_elliptical
+from autocal.anchor_seed import build_anchor_initial_guess
+from autocal.slideprinter_2d.calibrate import calibrate_elliptical
 from autocal.dataset_roles import normalize_dataset_point_roles as _normalize_dataset_point_roles
-from autocal.ellipse_cost import EllipseCostFunction
+from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 from autocal.ellipse_fitting import fit_ellipse_from_sweep
-from autocal.ellipse_solver import format_anchor_matrix_plain
+from autocal.anchor_format import format_anchor_matrix_plain
 from autocal.json_schema import append_jsonl_line, load_json_file, write_json_file
 from autocal.projection_mode import resolve_projection_mode
 from autocal.spool_model import (
@@ -3346,9 +3347,9 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--ellipse-reference-fit",
         action="store_true",
-        help="Use the ellipse fit instead of the point fit for Hangprinter anchors. The ellipse fit "
-             "is a reference for datasets of fixed-line circle sweeps; the point fit accepts any "
-             "poses and is the default. Spool searches always use the ellipse fit.",
+        help="Fit Hangprinter anchors to each sweep's predicted ellipses (ellipse_fit.py) instead of "
+             "with the point fit. A reference for datasets of fixed-line circle sweeps; the point "
+             "fit accepts any poses and is the default. Spool searches keep the legacy ellipse fit.",
     )
     parser.add_argument(
         "--fit-home-offsets",
@@ -3981,9 +3982,9 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--low-anchor-z", type=float, default=None)
     parser.add_argument("--fit-home-offsets", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--ellipse-reference-fit", action="store_true", default=None, help="Use the ellipse fit instead of the point fit for Hangprinter anchors. The ellipse fit "
-             "is a reference for datasets of fixed-line circle sweeps; the point fit accepts any "
-             "poses and is the default. Spool searches always use the ellipse fit.")
+    parser.add_argument("--ellipse-reference-fit", action="store_true", default=None, help="Fit Hangprinter anchors to each sweep's predicted ellipses (ellipse_fit.py) instead of "
+             "with the point fit. A reference for datasets of fixed-line circle sweeps; the point "
+             "fit accepts any poses and is the default. Spool searches keep the legacy ellipse fit.")
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
     parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default=None)

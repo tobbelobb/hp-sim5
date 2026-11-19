@@ -7,7 +7,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from autocal.ellipse_cost import canonicalize_geometry
+from autocal.slideprinter_2d.ellipse_cost import canonicalize_geometry
 from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import (
     anchors_matrix_to_vec,

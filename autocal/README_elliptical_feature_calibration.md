@@ -4,9 +4,10 @@
 It can also fit spool radii and buildup from raw encoder angles.
 Final acceptance checks saved models on sweeps absent from their training data.
 
-The ellipse fit described here is a reference fit for fixed-line circle sweeps
-(`--ellipse-reference-fit`) and the fit for spool searches. Hangprinter anchors
-otherwise come from the point fit in `pose_fit.py`; see [README.md](README.md).
+The legacy ellipse calibration described here now serves spool searches, the
+slideprinter and retired projected-angle datasets only. Hangprinter anchors come
+from the point fit in `pose_fit.py`, or from the ellipse reference fit in
+`ellipse_fit.py`; see [README.md](README.md).
 
 ## Quick start
 

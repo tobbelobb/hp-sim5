@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 import numpy as np
+from autocal.sweep_types import MachineConfig, MachineType
 
 
 def normalize_dataset_point_roles(dataset: Dict[str, object]) -> int:
@@ -98,3 +99,34 @@ def normalize_dataset_point_roles(dataset: Dict[str, object]) -> int:
             swapped_points += 1
 
     return int(swapped_points)
+
+
+def _validate_sweep_roles(dataset: dict) -> None:
+    """Fast validation for carrying anchors and role duplication."""
+    machine_type = str(dataset.get("machine_type", "hangprinter_4"))
+    try:
+        mt = MachineType(machine_type)
+    except ValueError as exc:
+        raise ValueError(f"Unsupported machine_type {machine_type!r}") from exc
+
+    config = MachineConfig.from_type(mt)
+    sweeps = dataset.get("sweeps", [])
+    if not isinstance(sweeps, list) or not sweeps:
+        raise ValueError("Dataset contains no sweeps")
+
+    errors = []
+    for sweep in sweeps:
+        fixed = list(sweep.get("fixed_anchors", []))
+        drive = sweep.get("drive_anchor")
+        sensor = sweep.get("sensor_anchor")
+        if sensor in (config.carrying_anchors or []):
+            errors.append(f"{sweep.get('id','<unnamed>')}: carrying anchors cannot be Sensor")
+        all_indices = fixed + [drive, sensor]
+        if len(set(all_indices)) != len(all_indices):
+            errors.append(f"{sweep.get('id','<unnamed>')}: duplicate anchor indices in roles")
+        if len(fixed) != config.constraints_for_1dof:
+            errors.append(
+                f"{sweep.get('id','<unnamed>')}: expected {config.constraints_for_1dof} fixed anchors"
+            )
+    if errors:
+        raise ValueError("Invalid sweep dataset:\n" + "\n".join(errors))

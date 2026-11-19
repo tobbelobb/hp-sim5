@@ -123,11 +123,26 @@ bounded loss limits each point's pull, and points whose misfit exceeds
 `REJECT_SCALES` robust scales are dropped and the fit repeated. Each point has
 n - d spare ranges, so a line pushed aside or a glitch shows in that point alone.
 
-The ellipse fit remains as a reference for fixed-line circle sweeps
-(`--ellipse-reference-fit`), and as the fit for spool searches and retired
-projected-angle datasets. The point fit then runs beside it and its difference
-is logged. On HP3/HP4 the two use the same information per point and reach the
-same accuracy; on HP5 the ellipse fit ignores the extra ranges and line stretch.
+`--ellipse-reference-fit` fits the anchors with `ellipse_fit.py` instead: each
+point's distance in mm to its sweep's predicted drive/sensor ellipse and, on HP5,
+to one drive/extra-range ellipse per accepted extra range, after the same stretch
+correction, robust loss and point rejection. It needs sweeps with two held lines,
+takes held lines at their commanded lengths, and is a reference: the point fit
+runs beside it and their difference is logged. Accuracy is within about 0.5 mm of
+the point fit on recorded benchmark sweeps, but worse with encoder noise on held
+lines, which the ellipse model cannot attribute.
+
+Spool searches (`--find-radii`, `--find-buildup-factor`) on Hangprinters use the
+point fit too (`spool_fit.py`): every length is recomputed from the recorded motor
+angle with the firmware spool formula, a global radius is profiled on a grid with
+the anchors refitted at each value, then radii and anchors are refined jointly.
+
+The 2D slideprinter and retired projected-angle datasets use the legacy ellipse
+autocal in `autocal/slideprinter_2d/`, including its own spool search. Each 2D
+sweep holds one line, so its circle in the plane constrains the geometry more than
+a 3D sweep's circle does; the point fit was clearly worse on the six recorded
+slideprinter spool datasets (28-64 vs 5-27 mm summed anchor and radius error on
+the same full data), so that package is kept for them only.
 `tools/disturb_dataset.py` injects disturbances: the `disturbed_benchmark_*`
 regression datasets hold two pushed lines and 3% outliers, and the
 `noisy_*mm_benchmark_*` ones Gaussian encoder noise of 0.05, 0.2 and 0.5 mm.
