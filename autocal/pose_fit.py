@@ -1,4 +1,7 @@
-"""Point-based least-squares anchor fit, kept beside the ellipse fitter for comparison.
+"""Point-based least-squares anchor fit.
+
+It is the anchor fit on every Hangprinter, and estimates the home offsets used by
+the ellipse reference fit and the spool searches.
 
 Every data point holds one length change per line. A rigid machine with n lines
 and d effector coordinates leaves n - d consistency conditions on those lengths.
@@ -28,6 +31,29 @@ from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix
 HOME_OFFSET_PRIOR_SIGMA_MM = 5.0
 _POSITION_ITERATIONS = 25
 _MIN_SCALE_MM = 0.02
+# Disturbed points sit tens of scales out, clean ones within a few. Anything from
+# 8 to 15 rejects the same points on the robustness datasets.
+REJECT_SCALES = 10.0
+_REJECT_ROUNDS = 3
+
+
+def _robust_loss(kind: str, num_prior: int):
+    """scipy loss: robust on range misfits, quadratic on the trailing Gaussian prior terms.
+
+    A bounded loss on a prior would cap its cost, and an offset the poses cannot
+    pin down would then run off and carry the anchors with it.
+    """
+    def rho(z: np.ndarray) -> np.ndarray:
+        out = np.empty((3, z.size))
+        if kind == "soft_l1":
+            t = 1.0 + z
+            out[0], out[1], out[2] = 2.0 * (np.sqrt(t) - 1.0), t ** -0.5, -0.5 * t ** -1.5
+        else:
+            out[0], out[1], out[2] = np.arctan(z), 1.0 / (1.0 + z ** 2), -2.0 * z / (1.0 + z ** 2) ** 2
+        if num_prior:
+            out[0, -num_prior:], out[1, -num_prior:], out[2, -num_prior:] = z[-num_prior:], 1.0, 0.0
+        return out
+    return rho
 
 
 def _point_value(point: dict, mean_key: str, raw_key: str, use_noise_mean: bool) -> float:
@@ -190,12 +216,67 @@ def fit_pose_least_squares(
     use_noise_mean: bool = True,
     extra_initial_anchors: Sequence[np.ndarray] = (),
 ) -> Dict[str, object]:
+    """Fit anchors, and home length offsets once the data determines them.
+
+    Few sweeps can leave an offset free to trade against an anchor: three HP3
+    sweeps that all hold D let D's height run to its bound for a slightly smaller
+    misfit. So offsets are fitted only when their posterior standard deviation at
+    the offset-free fit is below half the prior's, and dropped again if they land
+    beyond two prior sigmas. `home_offsets_skipped` then says why.
+    """
+    options = dict(low_anchor_z=low_anchor_z, use_noise_mean=use_noise_mean,
+                   home_offset_prior_sigma_mm=home_offset_prior_sigma_mm)
+    rigid = _fit_points(dataset, initial_anchors, fit_home_offsets=False,
+                        extra_initial_anchors=extra_initial_anchors, **options)
+    if not fit_home_offsets:
+        return rigid
+    from autocal.pose_planning import pose_information
+    num_offsets = int(dataset["num_anchors"]) - int(dataset["dimensions"])
+    lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
+    info = pose_information(rigid["anchors"], lengths, machine_type=str(dataset["machine_type"]),
+                            low_anchor_z=low_anchor_z, sigma_mm=rigid["robust_scale_mm"],
+                            stretch=dataset_stretch(dataset))
+    info[-num_offsets:, -num_offsets:] += np.eye(num_offsets) / home_offset_prior_sigma_mm ** 2
+    offset_std = np.sqrt(np.diag(np.linalg.pinv(info))[-num_offsets:])
+    if np.any(offset_std > 0.5 * home_offset_prior_sigma_mm):
+        return {**rigid, "home_offsets_skipped": "undetermined"}
+    fit = _fit_points(dataset, initial_anchors, fit_home_offsets=True,
+                      extra_initial_anchors=[*extra_initial_anchors, rigid["anchors"]], **options)
+    if np.any(np.abs(fit["home_offsets_mm"][-num_offsets:]) > 2.0 * home_offset_prior_sigma_mm):
+        return {**rigid, "home_offsets_skipped": "implausible"}
+    if _at_far_bound(fit["anchors"], dataset, low_anchor_z) and not _at_far_bound(rigid["anchors"], dataset, low_anchor_z):
+        return {**rigid, "home_offsets_skipped": "anchor at bound"}
+    return {**fit, "home_offsets_skipped": None}
+
+
+def _at_far_bound(anchors: np.ndarray, dataset: dict, low_anchor_z: Optional[float]) -> bool:
+    """An anchor coordinate on a workspace-sized bound, which no measurement put there."""
+    machine_type, num_anchors, dimensions = str(dataset["machine_type"]), int(dataset["num_anchors"]), int(dataset["dimensions"])
+    lower, upper = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+    vector = anchors_matrix_to_opt_vec(np.asarray(anchors, dtype=float), machine_type, low_anchor_z)
+    # Near-zero bounds only fix the layout's sign convention.
+    far = lambda bound: np.abs(bound) > 100.0
+    return bool(np.any(far(lower) & (vector - lower < 1.0)) or np.any(far(upper) & (upper - vector < 1.0)))
+
+
+def _fit_points(
+    dataset: dict,
+    initial_anchors: np.ndarray,
+    *,
+    fit_home_offsets: bool,
+    home_offset_prior_sigma_mm: float,
+    low_anchor_z: Optional[float],
+    use_noise_mean: bool,
+    extra_initial_anchors: Sequence[np.ndarray],
+) -> Dict[str, object]:
     """Fit anchors, and optionally home length offsets, to all points of a sweep dataset.
 
-    A soft-L1 pass sets the residual scale; a Cauchy pass at three times that scale
-    then lets isolated bad points lose their influence. Offsets carry a Gaussian prior of
-    `home_offset_prior_sigma_mm`, which keeps them near zero when the poses cannot
-    tell an offset from an anchor move.
+    A soft-L1 pass sets the residual scale. A bounded arctan pass at three times that
+    scale follows, so no bad point can pull harder than a fixed amount. Points whose
+    misfit then exceeds `REJECT_SCALES` scales are dropped and the fit is repeated,
+    which removes a line pushed aside for a few points as well as isolated glitches.
+    Offsets carry a Gaussian prior of `home_offset_prior_sigma_mm`, which keeps them
+    near zero when the poses cannot tell an offset from an anchor move.
     """
     machine_type = str(dataset["machine_type"])
     num_anchors, dimensions = int(dataset["num_anchors"]), int(dataset["dimensions"])
@@ -218,12 +299,16 @@ def fit_pose_least_squares(
         offsets[offset_lines] = x[x.size - num_offsets:]
         return anchors, offsets
 
-    def residuals(x: np.ndarray, prior_weight: float, correct_stretch: bool = True) -> np.ndarray:
+    def residuals(x: np.ndarray, prior_weight: float, correct_stretch: bool = True, kept=None) -> np.ndarray:
         anchors, offsets = unpack(x)
+        used = lengths if kept is None else np.where(kept[:, None], lengths, np.nan)
         return np.concatenate([
-            consistency_residuals(anchors, lengths, offsets, stretch=stretch if correct_stretch else None).ravel(),
+            consistency_residuals(anchors, used, offsets, stretch=stretch if correct_stretch else None).ravel(),
             offsets[offset_lines] * prior_weight,
         ])
+
+    def point_misfit(x: np.ndarray) -> np.ndarray:
+        return np.linalg.norm(residuals(x, 0.0)[: lengths.size].reshape(lengths.shape), axis=1)
 
     # The same anchor bounds as the ellipse fit: they exclude mirrored layouts that
     # fit a small set of sweeps equally well.
@@ -244,34 +329,48 @@ def fit_pose_least_squares(
             # solve the well-behaved rigid problem, then refine its nearby fit.
             rigid = least_squares(residuals, start,
                 args=(_MIN_SCALE_MM / home_offset_prior_sigma_mm, False),
-                bounds=bounds, x_scale=x_scale, loss="soft_l1", f_scale=1.0)
+                bounds=bounds, x_scale=x_scale, loss=_robust_loss("soft_l1", num_offsets), f_scale=1.0)
             start = rigid.x
         first = least_squares(residuals, start, args=(_MIN_SCALE_MM / home_offset_prior_sigma_mm,),
-                              bounds=bounds, x_scale=x_scale, loss="soft_l1", f_scale=1.0)
-        point_residuals = first.fun[: lengths.size].reshape(lengths.shape)[np.isfinite(lengths)]
-        scale = max(1.4826 * float(np.median(np.abs(point_residuals - np.median(point_residuals)))), _MIN_SCALE_MM)
-        return least_squares(residuals, first.x, args=(scale / home_offset_prior_sigma_mm,),
-                             bounds=bounds, x_scale=x_scale, loss="cauchy", f_scale=3.0 * scale, xtol=1e-12, ftol=1e-12), scale
+                              bounds=bounds, x_scale=x_scale, loss=_robust_loss("soft_l1", num_offsets), f_scale=1.0)
+        kept = np.ones(len(lengths), dtype=bool)
+        fit = first
+        for _ in range(_REJECT_ROUNDS):
+            # Bad points drag the previous fit and inflate every residual, so
+            # measure the scale on the kept points of the latest fit.
+            line_residuals = fit.fun[: lengths.size].reshape(lengths.shape)[kept][np.isfinite(lengths[kept])]
+            scale = max(1.4826 * float(np.median(np.abs(line_residuals - np.median(line_residuals)))), _MIN_SCALE_MM)
+            fit = least_squares(residuals, fit.x, args=(scale / home_offset_prior_sigma_mm, True, kept),
+                                bounds=bounds, x_scale=x_scale, loss=_robust_loss("arctan", num_offsets), f_scale=3.0 * scale)
+            within = point_misfit(fit.x) <= REJECT_SCALES * scale
+            # Too few points left means the fit, not the data, is bad.
+            if np.array_equal(within, kept) or within.mean() < 0.5:
+                break
+            kept = within
+        return fit, scale, kept
 
     solutions = [solve(start) for start in [initial_anchors, *extra_initial_anchors]]
-    # Starts can estimate different scales. Compare them with one common Cauchy
-    # objective, rather than rewarding a solution for choosing a smaller scale.
+    # Starts can estimate different scales. Compare them with one common arctan
     scale = min(solution[1] for solution in solutions)
+    # objective, rather than rewarding a solution for choosing a smaller scale or
+    # rejecting more points.
     def common_cost(solution):
         values = residuals(solution[0].x, scale / home_offset_prior_sigma_mm)
-        return float(np.sum(np.log1p((values / (3.0 * scale)) ** 2)))
+        return float(np.sum(_robust_loss("arctan", num_offsets)((values / (3.0 * scale)) ** 2)[0]))
     converged = [solution for solution in solutions if solution[0].success]
-    best, _ = min(converged or solutions, key=common_cost)
+    best, _, kept = min(converged or solutions, key=common_cost)
     anchors, offsets = unpack(best.x)
-    per_point = np.linalg.norm(best.fun[: lengths.size].reshape(lengths.shape), axis=1)
+    per_point = point_misfit(best.x)
     return {
         "anchors": anchors,
         "home_offsets_mm": offsets,
-        "rms_mm": float(np.sqrt(np.mean(per_point ** 2))),
+        "rms_mm": float(np.sqrt(np.mean(per_point[kept] ** 2))),
         "robust_scale_mm": float(scale),
         "point_residuals_mm": per_point,
+        "rejected_points": np.flatnonzero(~kept),
         "num_points": int(lengths.shape[0]),
         "fit_home_offsets": bool(fit_home_offsets),
+        "home_offsets_skipped": None,
         "stretch_corrected": stretch is not None,
         "success": bool(best.success),
         "status": int(best.status),

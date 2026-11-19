@@ -1,0 +1,285 @@
+; reference_provenance: {"candidate_revision": "a81595cdd173cf155befb7878219698e6850d8e2", "command": "python autocal/tools/generate_reference_runs.py", "dataset": "noisy_0p05mm_benchmark_0623060e22_hangprinter_3", "dataset_sha256": "7c0a63fbab5f58e59f1fd8d19a99598c5df3684ed765728bca37b01196f32c6b", "dependencies": {"jax": "0.9.2", "jaxlib": "0.9.2", "numpy": "2.4.3", "scipy": "1.17.1"}, "interpreter": "/home/torbjorn/repos/hp-sim5/.venv/bin/python", "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]", "thread_environment": {"MKL_NUM_THREADS": "1 (runner default)", "NUMEXPR_NUM_THREADS": "1 (runner default)", "OMP_NUM_THREADS": "1 (runner default)", "OPENBLAS_NUM_THREADS": "1 (runner default)"}}
+; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_3 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.json --find-radii off --base-radii 30 --buildup-factor 0 --no-collect --full-auto-log /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.full_auto_log.jsonl
+Wrote to console: Writing additional info to log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.full_auto.log
+; full-auto replay: starting from 3 sweeps, replaying 6 additional sweeps
+; full-auto replay: using /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json (original /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.json left untouched)
+; full-auto log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.full_auto_log.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.full_auto.stop to request stop (cross-platform)
+Wrote to console: ; full-auto: stops when 2 consecutive sweeps each move every anchor coordinate by at most 0.5 mm (--stable-step-mm 0 disables)
+
+; === full-auto iteration 1/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 1/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=0.00278 cost_noise_normalized=4.995 J=4.995 chi2_red=5.994
+; Active point calibration
+; Anchors: [[0.00, -1907.61, -277.15], [1653.75, 954.82, -277.15], [-1653.10, 954.05, -277.15], [0.15, 0.01, 1874.24]]
+; cost=0.00278 cost_noise_normalized=4.995 origin_norms=[1927.641, 1929.605, 1928.670, 1874.236] pairwise=[d01=3305.812, d02=3304.822, d03=2875.326, d12=3306.853, d13=2876.546, d23=2876.089]
+; point_fit: rms=0.0527mm points=60 rejected=0
+; noise_cost: J=4.995 chi2_red=5.994 |z|_med=n/a |z|_p95=n/a outlier_ratio=n/a N=240 mode=sigma lengths=n/a J_trim=n/a chi2_red_trim=n/a N_trim=n/a
+; noise_norm_floor: min_sigma=n/a model_sigma=0.02359mm used_sigma=n/a floor_deg=n/a source=n/a
+; noise_sigma_mm: encoder=n/a friction_cogging=n/a flex=n/a floor=n/a non_layered=n/a layer_changes=n/a mode_add=n/a total=n/a model=0.02359mm used=n/a layered=n/a mode=n/a mode_factor=n/a line_width=n/a base_radius=n/a 
+; info rank: 10/10 std(p8=117mm, p0=33.4mm, p4=28.9mm, p2=28.8mm, p1=20.9mm, p5=16.7mm)
+; covariance_scaled: chi2_red=5.994 std_scaled(p8=286mm, p0=81.7mm, p4=70.7mm, p2=70.6mm, p1=51.2mm, p5=40.8mm)
+; CI95: max_std=286.4mm max_ci=561.3mm workspace=1454 rel_std=0.197 rel_ci=0.386 scale=chi2_red=5.994
+; encoder_noise: points=60/60 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=60 sigma_nonfinite=0
+; next_sweep score=21.159 fixed=[2, 3] targets=[524.6941442368504, -419.7502888412347] pair=[0,1]
+; top_candidates:
+;   21.159 fixed=[2, 3] targets=[524.6941442368504, -419.7502888412347] pair=[0,1]
+;   21.1568 fixed=[1, 3] targets=[524.6941442368504, -419.7502888412347] pair=[0,2]
+;   20.9979 fixed=[0, 3] targets=[524.6941442368504, -419.7502888412347] pair=[1,2]
+;   20.9109 fixed=[2, 3] targets=[493.2126631342476, -419.7502888412347] pair=[0,1]
+;   20.9088 fixed=[1, 3] targets=[493.2126631342476, -419.7502888412347] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 524.6941442368504,-419.7502888412347 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.new_001.json --completed-sweeps 3 --solver-iterations 20 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0 --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 2.3957486715903054 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.sensor_force_profile.json
+; reusing force tuning: low=0.02227N mid=0.4455N max=2.396N
+; stable_stop step_mm=n/a limit_mm=0.5 streak=0/2 good_fits=0/2
+; selected run=default anchor_uncertainty_mm=544.5 cost=4.995 rel_std=0.197 max_std=286.4mm
+Wrote to console: Anchor uncertainty 544.5 mm, the lowest so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 1/6 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json sweeps=4
+Wrote to console: Collected sweep nr 4
+
+; === full-auto iteration 2/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 2/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=0.002586 cost_noise_normalized=6.306 J=6.306 chi2_red=7.207
+; full-auto run default.warm: flags=''
+; full-auto run default.warm: cost_raw=0.002586 cost_noise_normalized=6.31 J=6.31 chi2_red=7.212
+; Active point calibration
+; Anchors: [[0.00, -1900.91, -281.24], [1646.93, 950.89, -281.24], [-1646.71, 950.47, -281.24], [0.12, -0.03, 1897.92]]
+; cost=0.002586 cost_noise_normalized=6.306 origin_norms=[1921.605, 1922.406, 1922.017, 1897.925] pairwise=[d01=3293.194, d02=3292.724, d03=2891.734, d12=3293.639, d13=2892.226, d23=2892.099]
+; point_fit: rms=0.0509mm points=80 rejected=0
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.000]
+; noise_cost: J=6.306 chi2_red=7.207 |z|_med=n/a |z|_p95=n/a outlier_ratio=n/a N=320 mode=sigma lengths=n/a J_trim=n/a chi2_red_trim=n/a N_trim=n/a
+; noise_norm_floor: min_sigma=n/a model_sigma=0.02025mm used_sigma=n/a floor_deg=n/a source=n/a
+; noise_sigma_mm: encoder=n/a friction_cogging=n/a flex=n/a floor=n/a non_layered=n/a layer_changes=n/a mode_add=n/a total=n/a model=0.02025mm used=n/a layered=n/a mode=n/a mode_factor=n/a line_width=n/a base_radius=n/a 
+; info rank: 10/10 std(p4=1.23mm, p0=0.839mm, p5=0.761mm, p2=0.749mm, p8=0.507mm, p3=0.398mm)
+; covariance_scaled: chi2_red=7.207 std_scaled(p4=3.31mm, p0=2.25mm, p5=2.04mm, p2=2.01mm, p8=1.36mm, p3=1.07mm)
+; CI95: max_std=3.306mm max_ci=6.48mm workspace=1454 rel_std=0.002274 rel_ci=0.004457 scale=chi2_red=7.207
+; encoder_noise: points=80/80 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=80 sigma_nonfinite=0
+; next_sweep score=9.27804 fixed=[0, 3] targets=[543.0796345635767, -839.5037192751229] pair=[1,2]
+; top_candidates:
+;   9.27804 fixed=[0, 3] targets=[543.0796345635767, -839.5037192751229] pair=[1,2]
+;   9.20629 fixed=[1, 3] targets=[543.0796345635767, -794.904256248068] pair=[0,2]
+;   9.18872 fixed=[1, 3] targets=[543.0796345635767, -839.5037192751229] pair=[0,2]
+;   9.11507 fixed=[0, 3] targets=[543.0796345635767, -794.904256248068] pair=[1,2]
+;   9.03115 fixed=[1, 3] targets=[543.0796345635767, -750.3047932210133] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 543.0796345635767,-839.5037192751229 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.new_002.json --completed-sweeps 4 --solver-iterations 20 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0 --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 2.3957486715903054 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.sensor_force_profile.json
+; reusing force tuning: low=0.02227N mid=0.4455N max=2.396N
+; stable_stop step_mm=23.69 limit_mm=0.5 streak=0/2 good_fits=0/2
+; selected run=default anchor_uncertainty_mm=17.4 cost=6.306 rel_std=0.002274 max_std=3.306mm
+Wrote to console: Anchor uncertainty 17.4 mm, the lowest so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 2/6 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json sweeps=5
+Wrote to console: Collected sweep nr 5
+
+; === full-auto iteration 3/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 3/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=0.002712 cost_noise_normalized=6.779 J=6.779 chi2_red=7.533
+; full-auto run default.warm: flags=''
+; full-auto run default.warm: cost_raw=0.002712 cost_noise_normalized=6.779 J=6.779 chi2_red=7.533
+; Active point calibration
+; Anchors: [[0.00, -1900.18, -281.05], [1645.84, 950.25, -281.05], [-1645.74, 949.92, -281.05], [0.13, 0.01, 1898.40]]
+; cost=0.002712 cost_noise_normalized=6.779 origin_norms=[1920.854, 1921.134, 1920.881, 1898.401] pairwise=[d01=3291.467, d02=3291.130, d03=2891.493, d12=3291.577, d13=2891.589, d23=2891.574]
+; point_fit: rms=0.0521mm points=100 rejected=0
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.069]
+; noise_cost: J=6.779 chi2_red=7.533 |z|_med=n/a |z|_p95=n/a outlier_ratio=n/a N=400 mode=sigma lengths=n/a J_trim=n/a chi2_red_trim=n/a N_trim=n/a
+; noise_norm_floor: min_sigma=n/a model_sigma=0.02mm used_sigma=n/a floor_deg=n/a source=n/a
+; noise_sigma_mm: encoder=n/a friction_cogging=n/a flex=n/a floor=n/a non_layered=n/a layer_changes=n/a mode_add=n/a total=n/a model=0.02mm used=n/a layered=n/a mode=n/a mode_factor=n/a line_width=n/a base_radius=n/a 
+; info rank: 10/10 std(p0=0.593mm, p2=0.39mm, p4=0.379mm, p8=0.306mm, p3=0.225mm, p5=0.219mm)
+; covariance_scaled: chi2_red=7.533 std_scaled(p0=1.63mm, p2=1.07mm, p4=1.04mm, p8=0.839mm, p3=0.618mm, p5=0.6mm)
+; CI95: max_std=1.628mm max_ci=3.19mm workspace=1454 rel_std=0.001119 rel_ci=0.002194 scale=chi2_red=7.533
+; encoder_noise: points=100/100 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=100 sigma_nonfinite=0
+; next_sweep score=5.16176 fixed=[2, 3] targets=[629.5365785496328, -1203.7043929955216] pair=[0,1]
+; top_candidates:
+;   5.16176 fixed=[2, 3] targets=[629.5365785496328, -1203.7043929955216] pair=[0,1]
+;   5.13022 fixed=[2, 3] targets=[629.5365785496328, -1259.2571497090112] pair=[0,1]
+;   4.96581 fixed=[1, 3] targets=[629.5365785496328, -1203.7043929955216] pair=[0,2]
+;   4.93078 fixed=[1, 3] targets=[629.5365785496328, -1259.2571497090112] pair=[0,2]
+;   4.68199 fixed=[2, 3] targets=[573.9838218361433, -1203.7043929955216] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.warm.txt --fixed-targets 629.5365785496328,-1203.7043929955216 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.new_003.json --completed-sweeps 5 --solver-iterations 20 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0 --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 2.3957486715903054 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.warm.sensor_force_profile.json
+; reusing force tuning: low=0.02227N mid=0.4455N max=2.396N
+; stable_stop step_mm=1.084 limit_mm=0.5 streak=0/2 good_fits=0/2
+; selected run=default.warm anchor_uncertainty_mm=3.669 cost=6.779 rel_std=0.001119 max_std=1.628mm
+Wrote to console: Anchor uncertainty 3.669 mm, the lowest so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 3/6 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json sweeps=6
+Wrote to console: Collected sweep nr 6
+
+; === full-auto iteration 4/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 4/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=0.002965 cost_noise_normalized=6.529 J=6.529 chi2_red=7.128
+; full-auto run default.warm: flags=''
+; full-auto run default.warm: cost_raw=0.002965 cost_noise_normalized=6.53 J=6.53 chi2_red=7.129
+; Active point calibration
+; Anchors: [[0.00, -1899.89, -280.92], [1645.19, 949.85, -280.92], [-1645.55, 949.83, -280.92], [0.18, 0.06, 1898.70]]
+; cost=0.002965 cost_noise_normalized=6.529 origin_norms=[1920.547, 1920.357, 1920.659, 1898.702] pairwise=[d01=3290.543, d02=3290.709, d03=2891.461, d12=3290.735, d13=2891.180, d23=2891.579]
+; point_fit: rms=0.0545mm points=119 rejected=0
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.081]
+; noise_cost: J=6.529 chi2_red=7.128 |z|_med=n/a |z|_p95=n/a outlier_ratio=n/a N=476 mode=sigma lengths=n/a J_trim=n/a chi2_red_trim=n/a N_trim=n/a
+; noise_norm_floor: min_sigma=n/a model_sigma=0.02131mm used_sigma=n/a floor_deg=n/a source=n/a
+; noise_sigma_mm: encoder=n/a friction_cogging=n/a flex=n/a floor=n/a non_layered=n/a layer_changes=n/a mode_add=n/a total=n/a model=0.02131mm used=n/a layered=n/a mode=n/a mode_factor=n/a line_width=n/a base_radius=n/a 
+; info rank: 10/10 std(p8=0.282mm, p4=0.267mm, p0=0.263mm, p2=0.241mm, p5=0.154mm, p3=0.122mm)
+; covariance_scaled: chi2_red=7.128 std_scaled(p8=0.754mm, p4=0.714mm, p0=0.702mm, p2=0.643mm, p5=0.411mm, p3=0.326mm)
+; CI95: max_std=0.7539mm max_ci=1.478mm workspace=1454 rel_std=0.0005185 rel_ci=0.001016 scale=chi2_red=7.128
+; encoder_noise: points=119/119 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=119 sigma_nonfinite=0
+; next_sweep score=2.78702 fixed=[1, 3] targets=[581.5401375661904, -19.824077962682168] pair=[0,2]
+; top_candidates:
+;   2.78702 fixed=[1, 3] targets=[581.5401375661904, -19.824077962682168] pair=[0,2]
+;   2.77528 fixed=[2, 3] targets=[581.5401375661904, -19.824077962682168] pair=[0,1]
+;   2.73452 fixed=[0, 3] targets=[581.5401375661904, -19.824077962682168] pair=[1,2]
+;   2.71649 fixed=[0, 3] targets=[781.9948760758148, -1623.461986039676] pair=[1,2]
+;   2.63781 fixed=[1, 3] targets=[781.9948760758148, -1623.461986039676] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 581.5401375661904,-19.824077962682168 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.new_004.json --completed-sweeps 6 --solver-iterations 20 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0 --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 2.3957486715903054 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.sensor_force_profile.json
+; reusing force tuning: low=0.02227N mid=0.4455N max=2.396N
+; stable_stop step_mm=0.6549 limit_mm=0.5 streak=0/2 good_fits=0/2
+; selected run=default anchor_uncertainty_mm=1.323 cost=6.529 rel_std=0.0005185 max_std=0.7539mm
+Wrote to console: Anchor uncertainty 1.323 mm, the lowest so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 4/6 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json sweeps=7
+Wrote to console: Collected sweep nr 7
+
+; === full-auto iteration 5/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 5/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=0.003048 cost_noise_normalized=6.144 J=6.144 chi2_red=6.62
+; full-auto run default.warm: flags=''
+; full-auto run default.warm: cost_raw=0.003048 cost_noise_normalized=6.144 J=6.144 chi2_red=6.62
+; Active point calibration
+; Anchors: [[0.00, -1899.23, -280.85], [1645.27, 949.93, -280.85], [-1645.60, 949.98, -280.85], [0.19, -0.17, 1898.54]]
+; cost=0.003048 cost_noise_normalized=6.144 origin_norms=[1919.881, 1920.456, 1920.764, 1898.541] pairwise=[d01=3290.077, d02=3290.283, d03=2890.703, d12=3290.867, d13=2891.146, d23=2891.571]
+; point_fit: rms=0.0552mm points=139 rejected=0
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.080]
+; noise_cost: J=6.144 chi2_red=6.62 |z|_med=n/a |z|_p95=n/a outlier_ratio=n/a N=556 mode=sigma lengths=n/a J_trim=n/a chi2_red_trim=n/a N_trim=n/a
+; noise_norm_floor: min_sigma=n/a model_sigma=0.02227mm used_sigma=n/a floor_deg=n/a source=n/a
+; noise_sigma_mm: encoder=n/a friction_cogging=n/a flex=n/a floor=n/a non_layered=n/a layer_changes=n/a mode_add=n/a total=n/a model=0.02227mm used=n/a layered=n/a mode=n/a mode_factor=n/a line_width=n/a base_radius=n/a 
+; info rank: 10/10 std(p8=0.256mm, p2=0.248mm, p0=0.232mm, p4=0.225mm, p5=0.145mm, p3=0.125mm)
+; covariance_scaled: chi2_red=6.62 std_scaled(p8=0.657mm, p2=0.638mm, p0=0.597mm, p4=0.58mm, p5=0.372mm, p3=0.322mm)
+; CI95: max_std=0.6575mm max_ci=1.289mm workspace=1454 rel_std=0.0004522 rel_ci=0.0008862 scale=chi2_red=6.62
+; encoder_noise: points=139/139 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=139 sigma_nonfinite=0
+; next_sweep score=2.55912 fixed=[0, 3] targets=[781.9948760758148, -1623.461986039676] pair=[1,2]
+; top_candidates:
+;   2.55912 fixed=[0, 3] targets=[781.9948760758148, -1623.461986039676] pair=[1,2]
+;   2.49202 fixed=[1, 3] targets=[781.9948760758148, -1623.461986039676] pair=[0,2]
+;   2.42651 fixed=[1, 3] targets=[715.17662990594, -1489.8254936999265] pair=[0,2]
+;   2.40804 fixed=[1, 3] targets=[648.3583837360652, -1289.3707551903024] pair=[0,2]
+;   2.40618 fixed=[2, 3] targets=[781.9948760758148, -1623.461986039676] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 781.9948760758148,-1623.461986039676 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.new_005.json --completed-sweeps 7 --solver-iterations 20 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0 --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 2.3957486715903054 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.sensor_force_profile.json
+; reusing force tuning: low=0.02227N mid=0.4455N max=2.396N
+; stable_stop step_mm=0.6635 limit_mm=0.5 streak=0/2 good_fits=0/2
+; selected run=default anchor_uncertainty_mm=1.129 cost=6.144 rel_std=0.0004522 max_std=0.6575mm
+Wrote to console: Anchor uncertainty 1.129 mm, the lowest so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 5/6 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json sweeps=8
+Wrote to console: Collected sweep nr 8
+
+; === full-auto iteration 6/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 6/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=0.003179 cost_noise_normalized=5.587 J=5.587 chi2_red=5.962
+; full-auto run default.warm: flags=''
+; full-auto run default.warm: cost_raw=0.003179 cost_noise_normalized=5.587 J=5.587 chi2_red=5.962
+; Active point calibration
+; Anchors: [[0.00, -1899.24, -280.81], [1644.96, 949.74, -280.81], [-1645.63, 950.03, -280.81], [0.23, -0.15, 1899.19]]
+; cost=0.003179 cost_noise_normalized=5.587 origin_norms=[1919.889, 1920.091, 1920.810, 1899.188] pairwise=[d01=3289.770, d02=3290.354, d03=2891.186, d12=3290.591, d13=2891.337, d23=2892.076]
+; point_fit: rms=0.0564mm points=159 rejected=0
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.054]
+; noise_cost: J=5.587 chi2_red=5.962 |z|_med=n/a |z|_p95=n/a outlier_ratio=n/a N=636 mode=sigma lengths=n/a J_trim=n/a chi2_red_trim=n/a N_trim=n/a
+; noise_norm_floor: min_sigma=n/a model_sigma=0.02385mm used_sigma=n/a floor_deg=n/a source=n/a
+; noise_sigma_mm: encoder=n/a friction_cogging=n/a flex=n/a floor=n/a non_layered=n/a layer_changes=n/a mode_add=n/a total=n/a model=0.02385mm used=n/a layered=n/a mode=n/a mode_factor=n/a line_width=n/a base_radius=n/a 
+; info rank: 10/10 std(p8=0.254mm, p0=0.228mm, p2=0.224mm, p4=0.191mm, p5=0.116mm, p3=0.116mm)
+; covariance_scaled: chi2_red=5.962 std_scaled(p8=0.62mm, p0=0.557mm, p2=0.548mm, p4=0.467mm, p5=0.284mm, p3=0.283mm)
+; CI95: max_std=0.6203mm max_ci=1.216mm workspace=1454 rel_std=0.0004266 rel_ci=0.0008361 scale=chi2_red=5.962
+; encoder_noise: points=159/159 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=159 sigma_nonfinite=0
+; next_sweep score=1.82534 fixed=[2, 3] targets=[147.16419030610678, -582.9483826531007] pair=[0,1]
+; top_candidates:
+;   1.82534 fixed=[2, 3] targets=[147.16419030610678, -582.9483826531007] pair=[0,1]
+;   1.81783 fixed=[2, 3] targets=[147.16419030610678, -501.8247634354111] pair=[0,1]
+;   1.80725 fixed=[1, 3] targets=[552.7822863945557, -907.4428595238599] pair=[0,2]
+;   1.80318 fixed=[2, 3] targets=[228.28780952379657, -582.9483826531007] pair=[0,1]
+;   1.80263 fixed=[2, 3] targets=[228.28780952379657, -664.0720018707905] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.warm.txt --fixed-targets 147.16419030610678,-582.9483826531007 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.new_006.json --completed-sweeps 8 --solver-iterations 20 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0 --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 2.3957486715903054 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.warm.sensor_force_profile.json
+; reusing force tuning: low=0.02227N mid=0.4455N max=2.396N
+; stable_stop step_mm=0.6472 limit_mm=0.5 streak=0/2 good_fits=0/2
+; selected run=default.warm anchor_uncertainty_mm=0.9504 cost=5.587 rel_std=0.0004266 max_std=0.6203mm
+Wrote to console: Anchor uncertainty 0.9504 mm, the lowest so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 6/6 -> /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json sweeps=9
+Wrote to console: Collected sweep nr 9
+
+; === full-auto iteration 7/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 7/20 dataset=/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.json ===
+; full-auto run default: flags=''
+; full-auto run default: cost_raw=0.003006 cost_noise_normalized=5.758 J=5.758 chi2_red=6.098
+; full-auto run default.warm: flags=''
+; full-auto run default.warm: cost_raw=0.003006 cost_noise_normalized=5.757 J=5.757 chi2_red=6.097
+; Active point calibration
+; Anchors: [[0.00, -1899.40, -280.89], [1645.16, 949.83, -280.89], [-1645.81, 950.15, -280.89], [0.23, -0.16, 1899.52]]
+; cost=0.003006 cost_noise_normalized=5.757 origin_norms=[1920.059, 1920.323, 1921.033, 1899.516] pairwise=[d01=3290.092, d02=3290.689, d03=2891.590, d12=3290.968, d13=2891.794, d23=2892.522]
+; point_fit: rms=0.0548mm points=179 rejected=0
+; home_offsets_mm: [0.000, 0.000, 0.000, 1.033]
+; noise_cost: J=5.757 chi2_red=6.097 |z|_med=n/a |z|_p95=n/a outlier_ratio=n/a N=716 mode=sigma lengths=n/a J_trim=n/a chi2_red_trim=n/a N_trim=n/a
+; noise_norm_floor: min_sigma=n/a model_sigma=0.02285mm used_sigma=n/a floor_deg=n/a source=n/a
+; noise_sigma_mm: encoder=n/a friction_cogging=n/a flex=n/a floor=n/a non_layered=n/a layer_changes=n/a mode_add=n/a total=n/a model=0.02285mm used=n/a layered=n/a mode=n/a mode_factor=n/a line_width=n/a base_radius=n/a 
+; info rank: 10/10 std(p0=0.185mm, p2=0.175mm, p4=0.158mm, p8=0.153mm, p3=0.0942mm, p5=0.0893mm)
+; covariance_scaled: chi2_red=6.097 std_scaled(p0=0.456mm, p2=0.432mm, p4=0.39mm, p8=0.378mm, p3=0.233mm, p5=0.221mm)
+; CI95: max_std=0.456mm max_ci=0.8937mm workspace=1454 rel_std=0.0003136 rel_ci=0.0006146 scale=chi2_red=6.097
+; encoder_noise: points=179/179 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=179 sigma_nonfinite=0
+; next_sweep score=1.52465 fixed=[2, 3] targets=[-177.33028656465194, -664.0720018707905] pair=[0,1]
+; top_candidates:
+;   1.52465 fixed=[2, 3] targets=[-177.33028656465194, -664.0720018707905] pair=[0,1]
+;   1.49825 fixed=[0, 3] targets=[-177.33028656465194, -664.0720018707905] pair=[1,2]
+;   1.46552 fixed=[2, 3] targets=[-96.20666734696215, -745.1956210884803] pair=[0,1]
+;   1.45312 fixed=[0, 3] targets=[-96.20666734696215, -745.1956210884803] pair=[1,2]
+;   1.44039 fixed=[2, 3] targets=[552.7822863945557, -96.20666734696215] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_3 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.warm.txt --fixed-targets -177.33028656465194,-664.0720018707905 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.new_007.json --completed-sweeps 9 --solver-iterations 20 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0 --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 2.3957486715903054 --no-auto-tune-force --return-to-origin --sensor-force-profile /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/noisy_0p05mm_benchmark_0623060e22_hangprinter_3_61c432d3/noisy_0p05mm_benchmark_0623060e22_hangprinter_3.replay_tmp.active_sweep_cfg.default.warm.sensor_force_profile.json
+; reusing force tuning: low=0.02227N mid=0.4455N max=2.396N
+; stable_stop step_mm=0.3276 limit_mm=0.5 streak=1/2 good_fits=0/2
+; selected run=default.warm anchor_uncertainty_mm=0.8429 cost=5.757 rel_std=0.0003136 max_std=0.456mm
+Wrote to console: Anchor uncertainty 0.8429 mm, the lowest so far.
+Wrote to console: Patience reset.
+Wrote to console: ; full-auto replay: no more sweeps to replay; switching to live collection.
+; full-auto replay: no more sweeps to replay; switching to live collection.
+; --no-collect set; stopping before live collection.
+Wrote to console: ; --no-collect set; stopping before live collection.
+Wrote to console: 
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of good quality
+Wrote to console: Anchor uncertainty (mm, lower is better): 0.8429
+Wrote to console: ; Spread of anchors refitted without one sweep at a time. It misses bias that every sweep shares, such as unmodelled line stretch.
+Wrote to console: Anchors (M669): M669 A0.00:-1899.40:-280.89 B1645.16:949.83:-280.89 C-1645.81:950.15:-280.89 D0.23:-0.16:1899.52
+Wrote to console: ; --sim + --no-collect set; skipping M669 send.

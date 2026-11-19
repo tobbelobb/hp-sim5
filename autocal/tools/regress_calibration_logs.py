@@ -115,6 +115,14 @@ SIM_HP5_TRUE_ANCHORS: List[Coord] = [
 ]
 
 
+BENCHMARK_MACHINES = (
+    ("hangprinter_3", SIM_3D_TRUE_ANCHORS),
+    ("hangprinter_4", SIM_3D_TRUE_ANCHORS),
+    ("hangprinter_5", SIM_HP5_TRUE_ANCHORS),
+    ("hangprinter_5_pulley_reduced", SIM_HP5_TRUE_ANCHORS),
+)
+
+
 @dataclass(frozen=True)
 class DatasetSpec:
     name: str
@@ -254,12 +262,37 @@ DATASETS = [
             true_anchors=anchors,
             true_radii=[30.0] * len(anchors),
         )
-        for machine, anchors in (
-            ("hangprinter_3", SIM_3D_TRUE_ANCHORS),
-            ("hangprinter_4", SIM_3D_TRUE_ANCHORS),
-            ("hangprinter_5", SIM_HP5_TRUE_ANCHORS),
-            ("hangprinter_5_pulley_reduced", SIM_HP5_TRUE_ANCHORS),
+        for machine, anchors in BENCHMARK_MACHINES
+    ),
+    *(
+        DatasetSpec(
+            # The benchmark sweeps above with two lines pushed aside over six points
+            # and 3% single-point outliers: autocal/tools/disturb_dataset.py
+            # --scenario mixed --seed 0. Events are listed under "disturbances".
+            name=f"disturbed_benchmark_0623060e22_{machine}",
+            machine_type=machine,
+            base_radii="30",
+            buildup_factor="0",
+            find_radii="off",
+            true_anchors=anchors,
+            true_radii=[30.0] * len(anchors),
         )
+        for machine, anchors in BENCHMARK_MACHINES
+    ),
+    *(
+        DatasetSpec(
+            # The benchmark sweeps above with Gaussian length noise on every record:
+            # autocal/tools/disturb_dataset.py --scenario noise --noise-mm 0.05/0.2/0.5.
+            name=f"noisy_{label}mm_benchmark_0623060e22_{machine}",
+            machine_type=machine,
+            base_radii="30",
+            buildup_factor="0",
+            find_radii="off",
+            true_anchors=anchors,
+            true_radii=[30.0] * len(anchors),
+        )
+        for label in ("0p05", "0p2", "0p5")
+        for machine, anchors in BENCHMARK_MACHINES
     ),
 ]
 

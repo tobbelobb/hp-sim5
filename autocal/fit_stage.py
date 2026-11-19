@@ -49,6 +49,7 @@ def fit_ellipse_dataset(
     collector_args: Sequence[str],
     low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
+    ellipse_reference_fit: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     initial_guess: Optional[np.ndarray] = None,
@@ -99,6 +100,14 @@ def fit_ellipse_dataset(
         warnings.append("b_bounds_ignored_without_find_buildup_factor")
     if b_prior_sigma is not None and not _spool_mode_enabled(find_buildup_mode):
         warnings.append("b_prior_sigma_ignored_without_find_buildup_factor")
+
+    # The point fit is primary on Hangprinters: it uses every range, the force-aware
+    # stretch model and per-point outlier rejection, and accepts any poses. The ellipse
+    # fit is a reference for fixed-line circle sweeps, and the only fit that searches
+    # spool parameters. HP5's ellipses ignore its extra ranges and stretch.
+    # Retired projected-angle datasets keep the ellipse fit, which reads their angles.
+    range_fit = (machine_type.startswith("hangprinter_") and not (search_radii or search_buildup)
+                 and not ellipse_reference_fit and not prefer_zero_tension_angles)
 
     est_buildup = _resolve_buildup_factor_seed(
         dataset,
@@ -358,9 +367,6 @@ def fit_ellipse_dataset(
             home_offsets_mm = offset_fit["home_offsets_mm"]
             dataset_for_estimation = shift_dataset_home_offsets(dataset, home_offsets_mm)
         sweep_configs_for_info = dataset_sweep_configs(dataset_for_estimation)
-        # An opposing low pair can trace a degenerate squared-length ellipse.
-        # With redundant winches, fit the actual ranges rather than ellipse shape.
-        range_fit = machine_type.startswith("hangprinter_") and num_anchors > dimensions + 1
         if range_fit:
             primary_pose_fit = fit_pose_least_squares(
                 dataset_for_estimation,
@@ -369,7 +375,7 @@ def fit_ellipse_dataset(
                 low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
             )
             if not primary_pose_fit["success"]:
-                raise ValueError("Range fit did not converge: " + primary_pose_fit["message"])
+                raise ValueError("Point fit did not converge: " + primary_pose_fit["message"])
             cal = {"anchors": primary_pose_fit["anchors"], "cost": 0., "details": {}}
         else:
             cal = calibrate_elliptical(
@@ -396,9 +402,8 @@ def fit_ellipse_dataset(
 
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
-    # The point-based fit sees the same lengths as the ellipse fit, starting from both
+    # Beside the ellipse fit, the point fit sees the same lengths, starting from both
     # the shared seed and the ellipse result, so the two answers can always be compared.
-    range_fit = not (search_radii or search_buildup) and machine_type.startswith("hangprinter_") and num_anchors > dimensions + 1
     if range_fit:
         pose_fit = primary_pose_fit
     else:
@@ -549,6 +554,7 @@ def fit_ellipse_dataset(
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "dataset_for_estimation": dataset_for_estimation,
         "pose_fit": pose_fit,
+        "fit_model": "point" if range_fit else "ellipse",
         "home_offsets_mm": home_offsets_mm,
         "home_offsets_fitted": bool(fit_home_offsets),
         "use_noise_mean": bool(use_noise_mean),

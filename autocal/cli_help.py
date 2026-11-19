@@ -21,7 +21,7 @@ _EVERYDAY = {
 _RESEARCH = {
     "Research: solver and recovery": {
         "solve_restarts", "solve_iterations", "solve_optimizer", "optimizer_mode",
-        "trf_solver_fallback", "sparse_recovery",
+        "trf_solver_fallback", "sparse_recovery", "ellipse_reference_fit",
     },
     "Research: spool model and objectives": {
         "sigma_floor_mm", "low_anchor_z", "fit_home_offsets", "equal_strain", "r0_prior_sigma_mm", "b_prior_sigma",

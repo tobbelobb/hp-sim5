@@ -127,6 +127,7 @@ def _full_auto_loop(
     verbose: bool,
     low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
+    ellipse_reference_fit: bool = False,
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -681,6 +682,7 @@ def _full_auto_loop(
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "low_anchor_z": (None if low_anchor_z is None else float(low_anchor_z)),
         "fit_home_offsets": bool(fit_home_offsets),
+        "ellipse_reference_fit": bool(ellipse_reference_fit),
     }
 
     history_candidates: List[Dict[str, object]] = []
@@ -882,6 +884,7 @@ def _full_auto_loop(
                     else float(settings.get("low_anchor_z"))
                 ),
                 fit_home_offsets=bool(settings["fit_home_offsets"]),
+                ellipse_reference_fit=bool(settings["ellipse_reference_fit"]),
                 equal_strain=bool(equal_strain),
                 candidate_count=int(candidate_count),
                 delta_min=delta_min,
@@ -1511,6 +1514,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
+        ellipse_reference_fit=bool(args.ellipse_reference_fit),
         equal_strain=bool(args.equal_strain),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,

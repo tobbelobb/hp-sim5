@@ -2725,7 +2725,8 @@ def _print_ellipse_plan(
     length_model = plan.get("length_model")
     noise_summary = _summarize_encoder_noise(plan.get("dataset") if isinstance(plan, dict) else None)
 
-    print("; Active ellipse calibration")
+    point_primary = plan.get("fit_model") == "point"
+    print("; Active point calibration" if point_primary else "; Active ellipse calibration (reference fit)")
     gcode = str(cal.get("gcode", "")) if isinstance(cal, dict) else ""
     anchor_line = f"; Anchors: {format_anchor_matrix_plain(anchors)}" if anchors.size else ""
     if anchor_line and gcode.strip() != anchor_line:
@@ -2738,7 +2739,10 @@ def _print_ellipse_plan(
         f"; cost={cost_raw_str} cost_noise_normalized={cost_norm_str} {_format_anchor_stats(anchors)}"
     )
     pose_fit = plan.get("pose_fit")
-    if isinstance(pose_fit, dict):
+    if isinstance(pose_fit, dict) and point_primary:
+        print(f"; point_fit: rms={pose_fit['rms_mm']:.4f}mm points={pose_fit['num_points']} "
+              f"rejected={len(pose_fit.get('rejected_points', []))}")
+    elif isinstance(pose_fit, dict):
         pose_anchors = np.asarray(pose_fit["anchors"], dtype=float)
         print(
             f"; pose_fit: anchors={format_anchor_matrix_plain(pose_anchors)} "
@@ -3340,10 +3344,17 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         help="Use a checked rough pass and per-point sensor forces on Hangprinter (default: enabled). Disable for constant-force comparisons.",
     )
     parser.add_argument(
+        "--ellipse-reference-fit",
+        action="store_true",
+        help="Use the ellipse fit instead of the point fit for Hangprinter anchors. The ellipse fit "
+             "is a reference for datasets of fixed-line circle sweeps; the point fit accepts any "
+             "poses and is the default. Spool searches always use the ellipse fit.",
+    )
+    parser.add_argument(
         "--fit-home-offsets",
         action=argparse.BooleanOptionalAction,
         default=None,
-        help="Fit home length offsets with the point-based fit and apply them before the ellipse fit. "
+        help="Fit home length offsets with the point fit and apply them before the anchor fit. "
              "They absorb the difference between slack lines at the encoder origin and tensioned lines "
              "during measurement (default: enabled, except with --find-radii or --find-buildup-factor, "
              "which do not support them).",
@@ -3970,6 +3981,9 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--low-anchor-z", type=float, default=None)
     parser.add_argument("--fit-home-offsets", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--ellipse-reference-fit", action="store_true", default=None, help="Use the ellipse fit instead of the point fit for Hangprinter anchors. The ellipse fit "
+             "is a reference for datasets of fixed-line circle sweeps; the point fit accepts any "
+             "poses and is the default. Spool searches always use the ellipse fit.")
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
     parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default=None)

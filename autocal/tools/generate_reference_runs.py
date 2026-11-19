@@ -85,6 +85,8 @@ def main() -> int:
     parser.add_argument("--ref-dir", type=Path, default=Path("autocal/data/references"))
     parser.add_argument("--date", type=date.fromisoformat, default=date.today(), help="Run date (YYYY-MM-DD).")
     parser.add_argument("--only", choices=sorted({dataset.machine_type for dataset in DATASETS}))
+    parser.add_argument("--dataset-name", action="append", choices=[d.name for d in DATASETS],
+                        help="Generate only these named fixtures (repeatable).")
     parser.add_argument("--sparse-recovery", action="store_true")
     args = parser.parse_args()
 
@@ -97,7 +99,8 @@ def main() -> int:
         print(f"ERROR: repo_root={repo_root} does not contain autocal/autocal.py", file=sys.stderr)
         return 1
 
-    datasets = [d for d in DATASETS if args.only is None or d.machine_type == args.only]
+    datasets = [d for d in DATASETS if (args.only is None or d.machine_type == args.only)
+                and (not args.dataset_name or d.name in args.dataset_name)]
     # A filtered run still needs a collision-free label for the whole selected set.
     suffix = None
     while True:
