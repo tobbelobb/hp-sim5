@@ -7,7 +7,7 @@ M83              ; ...but relative extruder moves
 M584 X40.0 Y41.0 Z42.0 E43.0 P3 ; map ABCE-axes to CAN addresses, and set three visible axes. Please excuse that ABC motors are called XYZ here.
 M669 K6                         ; "This is a Hangprinter"
 M669 N3                         ; This Hangprinter has three anchors (is a Slideprinter)
-M666 A2                         ; anchorMode=HangprinterAnchorMode::AllOnTop, // 0=None, 1=last-top, 2=all-top, 3-half-top, etc
+M666 A2                         ; anchorMode=HangprinterAnchorMode::AllOnTop, // 0=None, 1=last-top, 2=all-top, 3=CubeCorner
 M669 S130 T0.5                  ; Segments per second and min segment length
 
 ; Anchor Location

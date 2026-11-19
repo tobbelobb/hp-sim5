@@ -134,7 +134,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 0)
             double3 xformOp:translate = (-0.25, -0.27, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeAL_top" (
@@ -164,7 +164,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 0)
             double3 xformOp:translate = (-0.25, -0.27, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeAL_bottom" (
@@ -194,7 +194,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 0)
             double3 xformOp:translate = (0.25, -0.27, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeAR_top" (
@@ -224,7 +224,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 0)
             double3 xformOp:translate = (0.25, -0.27, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeAR_bottom" (
@@ -422,7 +422,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 90)
             double3 xformOp:translate = (0.27, -0.25, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeBL_top" (
@@ -452,7 +452,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 90)
             double3 xformOp:translate = (0.27, -0.25, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeBL_bottom" (
@@ -482,7 +482,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 90)
             double3 xformOp:translate = (0.27, 0.24999999999999997, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeBR_top" (
@@ -512,7 +512,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 90)
             double3 xformOp:translate = (0.27, 0.24999999999999997, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeBR_bottom" (
@@ -710,7 +710,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 180)
             double3 xformOp:translate = (0.25000000000000006, 0.26999999999999996, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeCL_top" (
@@ -740,7 +740,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 180)
             double3 xformOp:translate = (0.25000000000000006, 0.26999999999999996, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeCL_bottom" (
@@ -770,7 +770,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 180)
             double3 xformOp:translate = (-0.24999999999999997, 0.2700000000000001, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeCR_top" (
@@ -800,7 +800,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 180)
             double3 xformOp:translate = (-0.24999999999999997, 0.2700000000000001, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeCR_bottom" (
@@ -998,7 +998,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 270)
             double3 xformOp:translate = (-0.26999999999999996, 0.25000000000000006, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeDL_top" (
@@ -1028,7 +1028,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 270)
             double3 xformOp:translate = (-0.26999999999999996, 0.25000000000000006, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeDL_bottom" (
@@ -1058,7 +1058,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 270)
             double3 xformOp:translate = (-0.2700000000000001, -0.24999999999999994, 0.09275)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeDR_top" (
@@ -1088,7 +1088,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 270)
             double3 xformOp:translate = (-0.2700000000000001, -0.24999999999999994, 0.04775)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "PinholeDR_bottom" (
@@ -1253,7 +1253,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 315)
             double3 xformOp:translate = (-0.252121318826663, -0.24787867946879819, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI0_right_top" (
@@ -1269,7 +1269,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 315)
             double3 xformOp:translate = (-0.24787867965314422, -0.2521213203412754, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI0_left_bottom" (
@@ -1286,7 +1286,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 315)
             double3 xformOp:translate = (-0.252121318826663, -0.24787867946879819, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI0_right_bottom" (
@@ -1303,7 +1303,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 315)
             double3 xformOp:translate = (-0.24787867965314422, -0.2521213203412754, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "AttachI0" (
@@ -1315,7 +1315,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (-0.2411611652351689, -0.2496464466094073, 2)
+            double3 xformOp:translate = (-0.24752512626584777, -0.2432824855787283, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
@@ -1383,7 +1383,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 405)
             double3 xformOp:translate = (0.24787867946879819, -0.252121318826663, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI1_right_top" (
@@ -1399,7 +1399,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 405)
             double3 xformOp:translate = (0.2521213203412754, -0.24787867965314422, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI1_left_bottom" (
@@ -1416,7 +1416,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 405)
             double3 xformOp:translate = (0.24787867946879819, -0.252121318826663, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI1_right_bottom" (
@@ -1433,7 +1433,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 405)
             double3 xformOp:translate = (0.2521213203412754, -0.24787867965314422, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "AttachI1" (
@@ -1445,7 +1445,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (0.2496464466094073, -0.2411611652351689, 2)
+            double3 xformOp:translate = (0.2432824855787283, -0.24752512626584777, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
@@ -1513,7 +1513,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 495)
             double3 xformOp:translate = (0.252121318826663, 0.24787867946879819, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI2_right_top" (
@@ -1529,7 +1529,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 495)
             double3 xformOp:translate = (0.24787867965314422, 0.2521213203412754, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI2_left_bottom" (
@@ -1546,7 +1546,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 495)
             double3 xformOp:translate = (0.252121318826663, 0.24787867946879819, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI2_right_bottom" (
@@ -1563,7 +1563,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 495)
             double3 xformOp:translate = (0.24787867965314422, 0.2521213203412754, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "AttachI2" (
@@ -1575,7 +1575,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (0.2411611652351689, 0.2496464466094073, 2)
+            double3 xformOp:translate = (0.24752512626584777, 0.2432824855787283, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
@@ -1643,7 +1643,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 585)
             double3 xformOp:translate = (-0.24787867946879819, 0.252121318826663, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI3_right_top" (
@@ -1659,7 +1659,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 585)
             double3 xformOp:translate = (-0.2521213203412754, 0.24787867965314422, 2)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI3_left_bottom" (
@@ -1676,7 +1676,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 585)
             double3 xformOp:translate = (-0.24787867946879819, 0.252121318826663, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "WheelI3_right_bottom" (
@@ -1693,7 +1693,7 @@ def Xform "World"
             double radius = 0.0065
             double3 xformOp:rotateXYZ = (0, 90, 585)
             double3 xformOp:translate = (-0.2521213203412754, 0.24787867965314422, 0.1)
-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
         }
 
         def Circle "AttachI3" (
@@ -1705,7 +1705,7 @@ def Xform "World"
             float physics:mass = -1
             vector3f physics:velocity = (0, 0, 0)
             double radius = 0.001
-            double3 xformOp:translate = (-0.2496464466094073, 0.2411611652351689, 2)
+            double3 xformOp:translate = (-0.2432824855787283, 0.24752512626584777, 2)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
         }
 
