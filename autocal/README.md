@@ -278,9 +278,9 @@ Run complete simulated full-auto calibration without a browser:
 `--headless-sim` implies `--sim` and requires the built RRF simulator and Node
 dependencies. It starts RRF and the production JavaScript physics/collector in
 Node. `hangprinter_3`/`hp3` select the HP3 scene and firmware configuration;
-`hangprinter_4`/`hp4` select HP4. Slideprinter, Cubecorners and Skycam also have
-scene/config pairs. There is currently no headless preset for `hangprinter_5`
-or Klipper. The fitting model still calls both HP3 and HP4 `hangprinter_4`.
+`hangprinter_4`/`hp4` select HP4; `hangprinter_5` and
+`hangprinter_5_pulley_reduced` select HP5. Slideprinter, Cubecorners and Skycam
+also have scene/config pairs. There is no headless preset for Klipper.
 
 Bootstrap, force autotuning, default point counts/noise sampling, fitting,
 adaptive sweep selection and automatic stopping use the existing full-auto
