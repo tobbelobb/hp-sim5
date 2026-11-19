@@ -223,6 +223,7 @@ export function parseBridgeArgs(argv) {
     sensorForce: null,
     sensorCollectionForce: null,
     sensorForceProfile: null,
+    meshPlan: null,
     noExtraSensors: false,
     forceLow: null,
     forceMid: null,
@@ -348,6 +349,8 @@ export function parseBridgeArgs(argv) {
       args.sensorCollectionForce = argv[++i] || null;
     } else if (arg === '--sensor-force-profile') {
       args.sensorForceProfile = argv[++i] || null;
+    } else if (arg === '--mesh-plan') {
+      args.meshPlan = argv[++i] || null;
     } else if (arg === '--no-extra-sensors') {
       args.noExtraSensors = true;
     } else if (arg === '--torque') {
@@ -441,6 +444,8 @@ Options:
   --sensor-force-profile <file>
                               JSON table of sensor force against drive length change;
                               replaces the constant measurement force at every point
+  --mesh-plan <file>          Collect one sphere-sector mesh (one held line, two drives) from a
+                              planner JSON instead of sweeps; see autocal/mesh_planning.py
   --sim, --simulation        Enable simulation mode (autostarts Klippy in --firmware klipper)
   --preserve-buildup-factor  Keep current M666 Q (default behavior when no Q override is provided)
   --force-buildup-factor <k> Force M666 Q to this value before collection

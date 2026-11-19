@@ -130,3 +130,29 @@ def _validate_sweep_roles(dataset: dict) -> None:
             )
     if errors:
         raise ValueError("Invalid sweep dataset:\n" + "\n".join(errors))
+
+
+def mesh_metadata(sweep: dict) -> Optional[dict]:
+    """The sphere-mesh description of a one-point mesh record, or None for a sweep."""
+    mesh = (sweep.get("metadata") or {}).get("mesh")
+    return mesh if isinstance(mesh, dict) else None
+
+
+def measurement_groups(dataset: dict) -> List[List[int]]:
+    """Indices of the dataset's sweeps, grouped into collection units.
+
+    A sweep is one unit. A sphere mesh is stored as one record per point, all
+    sharing `metadata.mesh.id`; together they are one unit, like a sweep.
+    """
+    groups: List[List[int]] = []
+    by_mesh: Dict[str, List[int]] = {}
+    for index, sweep in enumerate(dataset.get("sweeps", [])):
+        mesh = mesh_metadata(sweep)
+        if mesh is None:
+            groups.append([index])
+        elif str(mesh["id"]) in by_mesh:
+            by_mesh[str(mesh["id"])].append(index)
+        else:
+            by_mesh[str(mesh["id"])] = [index]
+            groups.append(by_mesh[str(mesh["id"])])
+    return groups

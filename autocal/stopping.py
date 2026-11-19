@@ -1,6 +1,8 @@
 """Stable-estimate, patience and stop-file policy for the calibration loop."""
 from __future__ import annotations
 
+from autocal.dataset_roles import measurement_groups
+
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
@@ -118,7 +120,7 @@ class StoppingPolicy:
         hp5 = (plan.get("machine_type") in ("hangprinter_5", "hangprinter_5_pulley_reduced")
                and any(point.get("extra_sensor_ranges") for point in points))
         good = (hp5 and admissible and not underconstrained and self.stable_step_mm > 0
-                and len(dataset.get("sweeps", [])) >= 4 and extra_coverage >= 0.5
+                and len(measurement_groups(dataset)) >= 4 and extra_coverage >= 0.5
                 and not plan.get("info_rank_deficient", True)
                 and (plan.get("pose_fit") or {}).get("stretch_corrected", False)
                 and std is not None and std <= HP5_GOOD_STD_MM

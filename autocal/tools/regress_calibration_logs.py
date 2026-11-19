@@ -295,6 +295,22 @@ DATASETS = [
         for label in ("0p05", "0p2", "0p5")
         for machine, anchors in BENCHMARK_MACHINES
     ),
+    *(
+        DatasetSpec(
+            # Live headless autocal with --collection-shape mesh from the working tree
+            # on top of ac9000fe (2026-11-19): three sweeps, then sphere-sector meshes
+            # stored as one-point records sharing metadata.mesh. Replays a whole mesh
+            # per iteration.
+            name=f"mesh_benchmark_ac9000fe_{machine}",
+            machine_type=machine,
+            base_radii="30",
+            buildup_factor="0",
+            find_radii="off",
+            true_anchors=anchors,
+            true_radii=[30.0] * len(anchors),
+        )
+        for machine, anchors in BENCHMARK_MACHINES
+    ),
 ]
 
 

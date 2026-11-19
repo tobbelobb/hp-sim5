@@ -25,6 +25,7 @@ from autocal.anchor_uncertainty import newest_trusted_index, plan_anchor_uncerta
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
+from autocal.dataset_roles import measurement_groups
 
 
 class BrowserCollector:
@@ -182,6 +183,7 @@ def _full_auto_loop(
     write_cfg: Optional[Path],
     collector_args: Sequence[str],
     sim: bool,
+    collection_shape: str = "sweep",
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     sweep_points: Optional[int],
@@ -685,18 +687,21 @@ def _full_auto_loop(
                 return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
 
     replay_mode = False
-    replay_sweeps: List[dict] = []
+    # Replay units: one sweep, or every record of one sphere mesh.
+    replay_sweeps: List[List[dict]] = []
     replay_index = 0
     replay_work_path: Optional[Path] = None
     if dataset_path.exists():
         dataset_full = _load_json(dataset_path)
         sweeps_full = dataset_full.get("sweeps")
-        if not collected_bootstrap and isinstance(sweeps_full, list) and len(sweeps_full) > 3:
+        units = ([[sweeps_full[index] for index in group] for group in measurement_groups(dataset_full)]
+                 if isinstance(sweeps_full, list) else [])
+        if not collected_bootstrap and len(units) > 3:
             replay_mode = True
             replay_work_path = dataset_path.with_suffix(".replay_tmp.json")
             work_path = replay_work_path
-            initial = [s for s in sweeps_full[:3] if isinstance(s, dict)]
-            replay_sweeps = [s for s in sweeps_full[3:] if isinstance(s, dict)]
+            initial = [s for unit in units[:3] for s in unit if isinstance(s, dict)]
+            replay_sweeps = [[s for s in unit if isinstance(s, dict)] for unit in units[3:]]
             dataset_work = dict(dataset_full)
             dataset_work["timestamp"] = datetime.now().isoformat()
             dataset_work["sweeps"] = initial
@@ -976,6 +981,7 @@ def _full_auto_loop(
                 delta_max=delta_max,
                 regularization=float(regularization),
                 min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
+                collection_shape=str(collection_shape),
                 write_cfg=cfg_path,
                 collector_output=collector_output,
                 collector_args=collector_args_eff,
@@ -1300,7 +1306,8 @@ def _full_auto_loop(
                     "timestamp": datetime.now().isoformat(),
                     "iteration": step,
                     "dataset": str(dataset_path),
-                    "num_sweeps": len((plan.get("dataset") or {}).get("sweeps", [])),
+                    # Collection units: a sphere mesh counts once, like a sweep.
+                    "num_sweeps": len(measurement_groups(plan.get("dataset") or {})),
                     "runs": [
                         {
                             "id": r["id"],
@@ -1365,7 +1372,7 @@ def _full_auto_loop(
                     base_dataset = _load_json(work_path)
                     new_dataset = dict(base_dataset)
                     new_dataset["timestamp"] = datetime.now().isoformat()
-                    new_dataset["sweeps"] = [next_sweep]
+                    new_dataset["sweeps"] = list(next_sweep)
                     merged = _merge_sweep_datasets(base_dataset, new_dataset)
                     _write_json(work_path, merged)
                     sweeps = merged.get("sweeps", [])
@@ -1374,7 +1381,7 @@ def _full_auto_loop(
                         f"; replayed sweep {replay_index}/{len(replay_sweeps)} "
                         f"-> {work_path} sweeps={count}"
                     )
-                    _log_console(f"Collected sweep nr {count}")
+                    _log_console(f"Collected sweep nr {len(measurement_groups(merged))}")
                     continue
 
             if no_collect:
@@ -1426,7 +1433,7 @@ def _full_auto_loop(
                 if stopping.stop_requested():
                     return _accept_best("stop-file")
                 if new_dataset.get("sweeps"):
-                    _log_console(f"Collected sweep nr {len(merged['sweeps'])}")
+                    _log_console(f"Collected sweep nr {len(measurement_groups(merged))}")
                     if collector_output != work_path:
                         collector_output.unlink(missing_ok=True)
                     break
@@ -1445,6 +1452,7 @@ def _full_auto_loop(
                     min_fixed_delta_spacing_mm=min_fixed_delta_spacing_mm,
                     write_cfg=plan.get("cfg_path"), collector_output=collector_output,
                     collector_args=collector_args_eff, equal_strain=equal_strain,
+                    collection_shape=collection_shape,
                 )
     except KeyboardInterrupt:
         if applying_solution:
@@ -1603,6 +1611,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         delta_max=args.delta_max,
         regularization=float(args.regularization),
         min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
+        collection_shape=str(args.collection_shape),
         write_cfg=args.write_sweep_config,
         collector_args=collector_args,
         sim=bool(args.sim),

@@ -1721,6 +1721,35 @@ def _suggested_collect_command(
     return cmd
 
 
+def _suggested_mesh_command(
+    mesh_path: Path,
+    *,
+    machine_type: str,
+    output_file: Optional[Path] = None,
+    completed_sweeps: Optional[int] = None,
+    extra_args: Sequence[str] = (),
+) -> List[str]:
+    """Collector command for one planned sphere mesh."""
+    cmd = ["node", "autocal/control/cli/collect_sweep_data.mjs", "--machineType", str(machine_type),
+           "--mesh-plan", str(mesh_path)]
+    if output_file is not None:
+        cmd.extend(["--output-file", str(output_file)])
+    if completed_sweeps is not None:
+        cmd.extend(["--completed-sweeps", str(int(completed_sweeps))])
+    # The mesh plan owns geometry and per-point forces; sweep inputs must not leak in.
+    owned = {"--machineType", "--machine-type", "--sweep-config-file", "--sweep-config", "--sweepFile",
+             "--fixed-targets", "--fixedTargets", "--fixed-target", "--mesh-plan", "--sensor-force-profile",
+             "--output-file", "--output", "--out", "--completed-sweeps"}
+    forwarded = iter(extra_args)
+    for arg in forwarded:
+        if str(arg).split("=", 1)[0] in owned:
+            if "=" not in str(arg):
+                next(forwarded, None)
+        elif str(arg) != "--hp-sim-reset":
+            cmd.append(str(arg))
+    return cmd
+
+
 def _parse_csv_floats(spec: Optional[str]) -> Optional[List[float]]:
     if spec is None:
         return None
@@ -3514,6 +3543,11 @@ def _add_candidate_args(parser: argparse.ArgumentParser) -> None:
         type=float,
         default=20.0,
         help="Minimum spacing (mm) from previously collected fixed deltas with the same sign",
+    )
+    parser.add_argument(
+        "--collection-shape", choices=("sweep", "mesh"), default="sweep",
+        help="After the first sweeps, collect circle sweeps (two held lines) or sphere-sector meshes "
+             "(one held line, two drives; Hangprinters with equal-strain data). Default: sweep.",
     )
 
 

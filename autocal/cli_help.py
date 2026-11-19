@@ -33,7 +33,7 @@ _RESEARCH = {
         "sweep_wise_filtering", "sweep_metric", "sigma_source", "use_noise_mean",
     },
     "Research: planning and run comparisons": {
-        "candidate_count", "delta_min", "delta_max", "regularization",
+        "candidate_count", "delta_min", "delta_max", "regularization", "collection_shape",
         "min_fixed_delta_spacing_mm", "full_auto_run", "shotgun",
     },
     "Diagnostics and advanced configuration": {

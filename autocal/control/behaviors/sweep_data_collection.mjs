@@ -610,6 +610,7 @@ function validateSweepCollectionInput(context) {
     fixedTargets,
     maxTravelMm,
     sweepConfigFile: args.sweepConfigFile ?? null,
+    meshPlanFile: args.meshPlan ?? null,
     sensorForceProfileFile: args.sensorForceProfile ?? null,
     extraSensors: config.numAnchors === 5 && config.dimensions === 3 && !args.noExtraSensors,
     completedSweeps: parseOptionalNumber(args.completedSweeps, 'completed-sweeps', { integer: true }) ?? 0,
@@ -1589,6 +1590,227 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       coupling_probes: couplingProbes } };
 }
 
+// Sphere-sector meshes: one held line keeps the effector on a sphere around its
+// anchor, two drive lines in position control pick each point on it, and the
+// remaining lines measure it under force. The planner (autocal/mesh_planning.py)
+// supplies drive targets inside already measured lengths and an equal-strain
+// sensor force per point.
+export function validateMeshPlan(plan, machineConfig) {
+  const anchorCount = machineConfig.numAnchors;
+  const isAnchor = value => Number.isInteger(value) && value >= 0 && value < anchorCount;
+  if (!plan || typeof plan !== 'object') throw new Error('Mesh plan must be a JSON object');
+  const drives = plan.drive_anchors;
+  const extras = plan.extra_anchors ?? [];
+  if (!isAnchor(plan.held_anchor) || !Array.isArray(drives) || drives.length !== 2 || !drives.every(isAnchor)
+      || !isAnchor(plan.sensor_anchor) || !Array.isArray(extras) || !extras.every(isAnchor)) {
+    throw new Error('Mesh plan needs a held anchor, two drive anchors, a sensor anchor and valid extra anchors');
+  }
+  const roles = [plan.held_anchor, ...drives, plan.sensor_anchor, ...extras];
+  if (new Set(roles).size !== roles.length) throw new Error('Mesh plan roles must use distinct anchors');
+  if (roles.length - extras.length !== machineConfig.dimensions + 1) {
+    throw new Error(`Mesh plan needs ${machineConfig.dimensions + 1} active lines`);
+  }
+  const mustBeFixed = getMustBeInFixedSet(machineConfig);
+  if (mustBeFixed.some(anchor => anchor !== plan.held_anchor)) {
+    throw new Error(`Mesh plan must hold anchor ${mustBeFixed.join(', ')}`);
+  }
+  if (!Number.isFinite(plan.held_length_mm)
+      || plan.held_length_mm !== constrainFixedTarget(machineConfig, plan.held_anchor, plan.held_length_mm)) {
+    throw new Error('Mesh plan held length is missing or outside the fixed-target bounds');
+  }
+  if (extras.length && !(Number.isFinite(plan.extra_sensor_force_n) && plan.extra_sensor_force_n > 0)) {
+    throw new Error('Mesh plan extra sensors need a positive extra_sensor_force_n');
+  }
+  if (!Array.isArray(plan.points) || plan.points.length === 0) throw new Error('Mesh plan has no points');
+  for (const point of plan.points) {
+    if (!Array.isArray(point?.drive_mm) || point.drive_mm.length !== 2 || !point.drive_mm.every(Number.isFinite)
+        || !(Number.isFinite(point.sensor_force_n) && point.sensor_force_n > 0)) {
+      throw new Error('Each mesh point needs two finite drive lengths and a positive sensor force');
+    }
+  }
+  if (!Number.isFinite(plan.strand_tension_n) || typeof plan.strain_model !== 'string') {
+    throw new Error('Mesh plan needs its equal-strain target and strain model');
+  }
+  return plan;
+}
+
+export async function loadMeshPlan(filePath, machineConfig) {
+  return validateMeshPlan(JSON.parse(await fs.readFile(filePath, 'utf8')), machineConfig);
+}
+
+const MESH_BLOCKED_MOVE_MM = 2;
+
+// A spare range counts once its encoder followed a mesh move by more than the noise.
+function meshRangeMoved(points, anchor, sigmaFloorDeg) {
+  if (points.length < 2) return false;
+  const [from, to] = points.slice(-2);
+  const noise = Math.hypot(Math.max(sigmaFloorDeg, from.sigma[anchor]), Math.max(sigmaFloorDeg, to.sigma[anchor]));
+  return Math.abs(to.mu[anchor] - from.mu[anchor]) > 5 * noise;
+}
+
+export async function performSphereMesh(sendFn, plan, options) {
+  const {
+    axes, motorIds, mmPerDeg, feed, speedup, stepMmByAnchor = [], datasetStartMs,
+    forceLow, forceMid, forceMax, noiseSampleCount, noiseSampleIntervalMs, noiseMinSamples, noiseSigmaFloorDeg,
+    forbiddenForceAnchors = [], meshId, baseRadiusMm = null, settleMs = DEFAULT_SETTLE_MS, collectionAttempt = 0,
+  } = options;
+  const held = plan.held_anchor;
+  const [firstDrive, secondDrive] = plan.drive_anchors;
+  const sensor = plan.sensor_anchor;
+  const extras = plan.extra_anchors ?? [];
+  const positionAnchors = new Set([held, firstDrive, secondDrive, ...forbiddenForceAnchors]);
+  const heldTargets = buildFixedTargetByAnchor([held], [plan.held_length_mm], motorIds.length);
+  const settleOptions = {
+    validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor: heldTargets, mmPerDeg }),
+  };
+  const travelOptions = {
+    ...settleOptions, timeoutMs: FORCE_TRAVEL_TIMEOUT_MS, wallTimeoutMs: FORCE_TRAVEL_TIMEOUT_MS + 30000,
+  };
+  const modesFor = sensorForce => motorIds.map((_, idx) => {
+    if (positionAnchors.has(idx)) return 'position';
+    if (idx === sensor) return sensorForce;
+    if (extras.includes(idx)) return plan.extra_sensor_force_n;
+    return forceLow;
+  });
+  console.log(`; sphere mesh ${meshId}: hold ${held} at ${plan.held_length_mm.toFixed(3)} mm, drive ${firstDrive}+${secondDrive}, `
+    + `sensor ${sensor}${extras.length ? `, extra [${extras.join(', ')}]` : ''}, ${plan.points.length} points`);
+
+  await prepareSweepPositioning(sendFn, { fixedAnchors: [held], driveAnchor: firstDrive, sensorAnchor: sensor }, {
+    motorIds, axes, mmPerDeg, forceMid, forceLow, forceMax, forbiddenForceAnchors,
+    fixedTargets: [plan.held_length_mm], feed, speedup,
+  });
+  await waitForStableEncoders(sendFn, motorIds, speedup, {
+    ...travelOptions, onProgress: message => console.log(`; mesh positioning: ${message.replace(/^; /, '')}`),
+  });
+
+  // Move both drives to their targets in one move and wait for the effector to settle there.
+  const moveDrives = async (targets, sensorForce) => {
+    await applyForceModeState(sendFn, { motorIds, modes: modesFor(sensorForce) });
+    await enforceFixedAnchors(sendFn, { motorIds, axes, mmPerDeg, fixedTargetByAnchor: heldTargets, feed, speedup });
+    const current = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+    const parts = [[firstDrive, targets[0]], [secondDrive, targets[1]]]
+      .map(([anchor, target]) => [anchor, target - current[anchor]])
+      .filter(([, delta]) => Math.abs(delta) > 1e-6)
+      .map(([anchor, delta]) => `${axes[anchor]}${delta.toFixed(3)}`);
+    if (parts.length) await runMoveWithWait(sendFn, `G1 H2 ${parts.join(' ')} F${feed}`, speedup, { axes });
+    const stable = await waitForStableEncoders(sendFn, motorIds, speedup, travelOptions);
+    const measuredClockMs = sendFn.simulationClock?.now() ?? Date.now();
+    const sample = await sampleEncoderNoise(sendFn, motorIds, {
+      sampleCount: noiseSampleCount, sampleIntervalMs: noiseSampleIntervalMs, speedup,
+    });
+    if (sample.sampleCount < noiseMinSamples || sample.muByMotorDeg.length !== motorIds.length
+        || !sample.muByMotorDeg.every(Number.isFinite)) {
+      throw new UnmeasurableSweepError('Insufficient encoder evidence at a mesh point', { targets });
+    }
+    settleOptions.validateAngles(sample.muByMotorDeg);
+    // Held drives settle a few tenths of a millimetre short under load, and the
+    // records keep their measured lengths. Only a blocked move is a failure.
+    for (const [anchor, target] of [[firstDrive, targets[0]], [secondDrive, targets[1]]]) {
+      const reached = sample.muByMotorDeg[anchor] * mmPerDeg[anchor];
+      if (Math.abs(reached - target) > MESH_BLOCKED_MOVE_MM + (stepMmByAnchor[anchor] ?? 0)) {
+        throw new UnmeasurableSweepError(`Mesh drive ${anchor} did not track its target: target ${target.toFixed(3)} mm, `
+          + `reached ${reached.toFixed(3)} mm`, { anchor, target, reached });
+      }
+    }
+    return { ...sample, stableData: stable, measuredClockMs };
+  };
+
+  const records = [];
+  const points = [];
+  for (let index = 0; index < plan.points.length; index += 1) {
+    const planned = plan.points[index];
+    const force = planned.sensor_force_n;
+    let sample = await moveDrives(planned.drive_mm, force);
+    if (index === 0) {
+      // The sensor's spool occupancy is unknown here: require reversible encoder
+      // coupling to a small move of one drive before taking any mesh data.
+      const radius = computeInitialForceSweepStepMm(baseRadiusMm) / 2;
+      const target = planned.drive_mm[1];
+      const probe = await probeSpoolInterval(value => moveDrives([planned.drive_mm[0], value], force), {
+        start: target, away: target + radius, toward: target - radius,
+        driveAnchor: secondDrive, sensorAnchor: sensor, mmPerDeg, sigmaFloorDeg: noiseSigmaFloorDeg,
+        driveToleranceMm: DEFAULT_FIXED_TOLERANCE_MM + (stepMmByAnchor[secondDrive] ?? 0),
+      });
+      if (!probe.accepted) {
+        throw new UnmeasurableSweepError(`Mesh sensor ${sensor} is not coupled at the first point: ${probe.reason}`,
+          { coupling_probe: { ...probe, sample: undefined } });
+      }
+      sample = probe.sample;
+    }
+    const angles = sample.stableData.anglesDeg;
+    const lengths = angles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+    const muLengths = sample.muByMotorDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+    const targetAngles = motorIds.map((_, idx) => {
+      if (idx === held) return plan.held_length_mm / mmPerDeg[idx];
+      if (idx === firstDrive) return planned.drive_mm[0] / mmPerDeg[idx];
+      return null;
+    });
+    const point = {
+      l_drive: lengths[secondDrive],
+      l_sensor: lengths[sensor],
+      l_drive_mu: muLengths[secondDrive],
+      l_sensor_mu: muLengths[sensor],
+      timestamp_ms: sample.measuredClockMs - datasetStartMs,
+      clock_time_ms: sample.measuredClockMs,
+      clock_source: sendFn.simulationClock ? 'simulation' : 'wall',
+      raw_angles_deg: angles,
+      drive_setpoint_mm: planned.drive_mm[1],
+      step_index: index,
+      step_count: plan.points.length,
+      collection_attempt: collectionAttempt,
+      fixed_target_angles_deg: targetAngles,
+      fixed_error_angles_deg: targetAngles.map((target, idx) => (Number.isFinite(target) ? angles[idx] - target : null)),
+      fixed_error_angles_mu_deg: targetAngles.map((target, idx) => (
+        Number.isFinite(target) ? sample.muByMotorDeg[idx] - target : null)),
+      sensor_force_n: force,
+      mu: sample.muByMotorDeg,
+      sigma: sample.sigmaByMotorDeg,
+      sample_count: sample.sampleCount,
+      sampling_hz: sample.samplingHz,
+      sample_duration_ms: sample.durationMs,
+      spool_reserve_method: 'local_encoder_coupling',
+    };
+    points.push(point);
+    if (extras.length) {
+      point.extra_sensor_ranges = extras.map(anchor => {
+        const accepted = meshRangeMoved(points, anchor, noiseSigmaFloorDeg);
+        return {
+          anchor, force_n: plan.extra_sensor_force_n, length_mm: lengths[anchor], length_mu_mm: muLengths[anchor],
+          accepted, reason: accepted ? 'encoder followed the mesh move' : 'insufficient resolved mesh motion',
+        };
+      });
+    }
+    const record = {
+      id: `${meshId}_p${String(index).padStart(2, '0')}`,
+      fixed_anchors: [held, firstDrive],
+      fixed_lengths: [plan.held_length_mm, planned.drive_mm[0]],
+      drive_anchor: secondDrive,
+      sensor_anchor: sensor,
+      drive_range: { start: point.l_drive, end: point.l_drive, unit: 'mm' },
+      data_points: [point],
+      metadata: {
+        sweep_method: 'sphere-mesh',
+        feed_rate: feed,
+        sensor_force_n: force,
+        sensor_force_profile: true,
+        sensor_force_profile_model: plan.strain_model,
+        strand_tension_n: plan.strand_tension_n,
+        settle_ms: settleMs,
+        mesh: {
+          id: meshId, held_anchor: held, held_length_mm: plan.held_length_mm, drive_anchors: [firstDrive, secondDrive],
+          sensor_anchor: sensor, extra_anchors: extras, index, count: plan.points.length,
+        },
+      },
+    };
+    records.push(record);
+    await options.onPoint?.(point, record);
+  }
+  // The planned loop ends beside its first point, which lies nearest home. Going
+  // back there leaves the one-motor-at-a-time return a pose it can undo.
+  if (plan.points.length > 1) await moveDrives(plan.points[0].drive_mm, plan.points[0].sensor_force_n);
+  return { records };
+}
+
 // Collect sweeps for each config once; fixed anchors use explicit targets or size-tuned travel.
 export async function collectSweepData(send, context) {
   const input = validateSweepCollectionInput(context);
@@ -1623,7 +1845,8 @@ export async function collectSweepData(send, context) {
   let { forceLow, forceMid, forceMax, sensorCollectionForce } = options;
   const outputFile = outputFileOverride || `sweep_data_${machineType}_${Date.now()}.json`;
 
-  const sweepConfigs = await resolveSweepConfigs({
+  const meshPlan = options.meshPlanFile ? await loadMeshPlan(options.meshPlanFile, machineConfig) : null;
+  const sweepConfigs = meshPlan ? [] : await resolveSweepConfigs({
     sweepConfigFile: options.sweepConfigFile,
     machineType,
     machineConfig,
@@ -1794,7 +2017,7 @@ export async function collectSweepData(send, context) {
   const useFixedTargets = fixedTargetsSpec !== null;
   let maxTravelMm = Number.isFinite(maxTravelOverride) ? maxTravelOverride : null;
   let sizeTunePair = null;
-  if (!useFixedTargets && maxTravelOverride === null) {
+  if (!useFixedTargets && maxTravelOverride === null && !meshPlan) {
     sizeTunePair = selectSizeTunePair(sweepConfigs, getForceForbiddenAnchors(machineConfig), machineConfig.numAnchors);
     if (!sizeTunePair) {
       console.log('; size-tune skipped (no force-capable anchor pair)');
@@ -1841,6 +2064,47 @@ export async function collectSweepData(send, context) {
   const maxTravelMeta = useFixedTargets ? undefined : maxTravelMm;
   const totalPlannedSweeps = sweepConfigs.length;
   let sweepOrdinal = 0;
+
+  if (meshPlan) {
+    const meshId = `mesh_${String(options.completedSweeps + 1).padStart(3, '0')}`;
+    const returnHome = midForce => returnMotorsToOriginOneAtATime(send, {
+      motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup, midForce,
+      forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+      returnFirstAnchors: machineConfig.numAnchors > machineConfig.dimensions + 1 ? getForceForbiddenAnchors(machineConfig) : [],
+    });
+    try {
+      const result = await collectWithSlipRecovery(send, async (forces, attempt) => {
+        if (attempt > 0) await returnHome(forces.forceLow);
+        return performSphereMesh(send, meshPlan, {
+          axes: machineConfig.axes, motorIds, mmPerDeg, feed, speedup, stepMmByAnchor, datasetStartMs, ...forces,
+          noiseSampleCount, noiseSampleIntervalMs, noiseMinSamples, noiseSigmaFloorDeg,
+          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig), meshId, settleMs,
+          baseRadiusMm: Array.isArray(m666ForCollection?.R) ? m666ForCollection.R[meshPlan.drive_anchors[1]] : m666ForCollection?.R,
+          collectionAttempt: attempt, onPoint: context.onPoint,
+        });
+      }, {
+        motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
+        onRecovery: recovery => context.onRecovery?.({ ...recovery, mesh: meshId }),
+      });
+      for (const record of result.records) record.metadata.slip_recoveries = result.recoveries;
+      sweeps.push(...result.records);
+      console.log(`  Collected ${result.records.length} sphere-mesh points`);
+    } catch (error) {
+      if (!(error instanceof UnmeasurableSweepError)) throw error;
+      await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
+      await returnHome(forceLow);
+      const [firstDrive, secondDrive] = meshPlan.drive_anchors;
+      rejectedSweeps.push({
+        fixed_anchors: [meshPlan.held_anchor, firstDrive],
+        fixed_lengths: [meshPlan.held_length_mm, meshPlan.points[0].drive_mm[0]],
+        drive_anchor: secondDrive, sensor_anchor: meshPlan.sensor_anchor,
+        mesh: { id: meshId, held_anchor: meshPlan.held_anchor, held_length_mm: meshPlan.held_length_mm,
+          drive_anchors: meshPlan.drive_anchors, sensor_anchor: meshPlan.sensor_anchor },
+        reason: error.message, evidence: error.evidence,
+      });
+      console.log(`; rejected unmeasurable sphere mesh after returning to origin: ${error.message}`);
+    }
+  }
 
   for (const sweepConfig of sweepConfigs) {
     sweepOrdinal += 1;

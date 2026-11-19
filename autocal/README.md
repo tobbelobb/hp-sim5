@@ -629,6 +629,33 @@ finite positive value; the resulting covariance is not calibrated uncertainty.
 `--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3 as a fallback
 to the `--stable-step-mm` stop.
 
+### Sphere-sector meshes
+
+`--collection-shape mesh` (default `sweep`) collects sphere-sector meshes instead
+of sweeps once three sweeps are in, on Hangprinters with equal-strain data.
+A mesh holds one line (D, or the top line on HP5), so the effector stays on a
+sphere around its anchor; two drive lines in position control pick each point and
+the remaining lines measure it under force. `mesh_planning.py` searches held
+lengths and drive/sensor roles, keeps every commanded and predicted length inside
+the lengths already measured on that axis, keeps the sweep planner's pretension
+and 10% anchor clearance rules, requires the three position lines to fix the pose
+(smallest direction singular value 0.25), sets an equal-strain sensor force per
+point, picks up to 20 points greedily by information and orders them as a short
+closed tour from the point nearest home.
+
+The collector (`--mesh-plan`) first checks reversible sensor coupling to a small
+drive move at the first point, then visits the points and returns to the first
+before going home. An uncoupled sensor or a blocked drive rejects the mesh as
+boundary evidence, and the planner does not plan it again. Each point is stored
+as a one-point record holding the held line and the first drive, with the shared
+`metadata.mesh`; uncertainty, the HP5 stop rule, replay and the benchmark count a
+mesh as one unit, and the ellipse reference fit uses its ellipsoids.
+
+Live headless runs on 2026-11-19, one per machine, sweeps then meshes:
+HP3 0.81 / 0.83 mm (5516 / 4494 s simulated), HP4 0.56 / 0.22 mm (4897 / 5290 s),
+HP5 0.85 / 0.77 mm, HP5 pulley-reduced 1.30 / 1.65 mm. A mesh takes about 250-280 s
+against about 365 s for a sweep. Meshes never extend the measured workspace.
+
 ## Headless benchmark history
 
 CI runs fast tests, slow integration tests, and the four autocal benchmarks in

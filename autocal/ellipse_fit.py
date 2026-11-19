@@ -1,10 +1,14 @@
-"""Ellipse reference fit for fixed-line circle sweeps on Hangprinters.
+"""Ellipse reference fit for fixed-line circle sweeps and sphere meshes on Hangprinters.
 
 With two lines held, the effector moves on a circle. Along it, the squared lengths
 of the drive line and of any other measured line trace an ellipse that the anchors
 predict. Each point's distance to its predicted ellipses, in mm, is its misfit:
 drive against the sensor line and, on HP5, drive against every accepted extra
 range. Held lines are taken at their commanded lengths.
+
+A sphere mesh holds one line, so the effector moves on a sphere and the squared
+lengths of its two drives and any third measured line trace an ellipsoid; each
+mesh point's distance in mm to that ellipsoid is its misfit.
 
 Lengths are first corrected for line stretch with the force-aware model, at the
 start anchors and again at the fitted ones. The robust loss and point rejection
@@ -17,6 +21,7 @@ from typing import Dict, List, Optional
 import numpy as np
 from scipy.optimize import least_squares
 
+from autocal.dataset_roles import measurement_groups, mesh_metadata
 from autocal.pose_fit import (REJECT_SCALES, _MIN_SCALE_MM, _REJECT_ROUNDS, dataset_line_lengths,
                               dataset_stretch, fit_point_positions, robust_loss)
 from autocal.theoretical_ellipse import (anchor_opt_vec_to_matrix, anchors_matrix_to_opt_vec,
@@ -30,17 +35,53 @@ _STRETCH_PASSES = 2
 
 
 def _sweep_ellipses(dataset: dict, lengths: np.ndarray) -> List[dict]:
-    """Per sweep: held lines, their lengths, and one (drive, other) pair per ellipse."""
-    sweeps, start = [], 0
-    for sweep in dataset["sweeps"]:
-        rows = np.arange(start, start + len(sweep["data_points"]))
-        start = rows[-1] + 1 if rows.size else start
+    """Per collection unit, the conics its points must lie on.
+
+    A sweep: its held lines and one (drive, other) pair per ellipse. A sphere
+    mesh: its held line, its two drives and one other measured line per ellipsoid.
+    """
+    first_row = np.cumsum([0] + [len(sweep["data_points"]) for sweep in dataset["sweeps"]])
+    units = []
+    for group in measurement_groups(dataset):
+        rows = np.concatenate([np.arange(first_row[index], first_row[index + 1]) for index in group])
+        sweep = dataset["sweeps"][group[0]]
+        mesh = mesh_metadata(sweep)
+        if mesh is not None:
+            held, drives = int(mesh["held_anchor"]), [int(axis) for axis in mesh["drive_anchors"]]
+            others = [anchor for anchor in range(lengths.shape[1]) if anchor != held and anchor not in drives
+                      and np.sum(np.isfinite(lengths[rows, anchor])) >= 4]
+            units.append(dict(kind="ellipsoid", rows=rows, held=held, drives=drives, others=others))
+            continue
         drive = int(sweep["drive_anchor"])
         others = [anchor for anchor in range(lengths.shape[1])
                   if anchor != drive and anchor not in sweep["fixed_anchors"]
                   and np.sum(np.isfinite(lengths[rows, anchor])) >= 3]
-        sweeps.append(dict(rows=rows, fixed=[int(a) for a in sweep["fixed_anchors"]], drive=drive, others=others))
-    return sweeps
+        units.append(dict(kind="ellipse", rows=rows, fixed=[int(a) for a in sweep["fixed_anchors"]],
+                          drive=drive, others=others))
+    return units
+
+
+def _ellipsoid_misfits(anchors: np.ndarray, unit: dict, lengths: np.ndarray, norms: np.ndarray):
+    """Held line h at radius R: squared lengths y_j of lines j are affine in the
+    effector position p, y_j = R^2 - |A_h|^2 + |A_j|^2 + 2 p.(A_h - A_j). With
+    p = A_h + R u, |u| = 1, three such lines satisfy |M^-1 (y - c)| = R."""
+    rows, held = unit["rows"], unit["held"]
+    radius = norms[held] + float(np.nanmean(lengths[rows, held]))
+    for other in unit["others"]:
+        lines = [*unit["drives"], other]
+        mask = np.all(np.isfinite(lengths[np.ix_(rows, lines)]), axis=1)
+        absolute = lengths[np.ix_(rows[mask], lines)] + norms[lines]
+        matrix = 2.0 * (anchors[held] - anchors[lines])
+        offset = radius ** 2 - norms[held] ** 2 + norms[lines] ** 2 + matrix @ anchors[held]
+        try:
+            inverse = np.linalg.inv(matrix)
+        except np.linalg.LinAlgError:
+            yield rows[mask], np.full(int(mask.sum()), _NO_CIRCLE_MM)
+            continue
+        unit_vectors = (absolute ** 2 - offset) @ inverse.T
+        value = np.sum(unit_vectors ** 2, axis=1) - radius ** 2
+        gradient = (2.0 * unit_vectors @ inverse) * 2.0 * absolute
+        yield rows[mask], value / np.maximum(np.linalg.norm(gradient, axis=1), 1e-12)
 
 
 def ellipse_misfits(anchors: np.ndarray, sweeps: List[dict], lengths: np.ndarray):
@@ -48,6 +89,11 @@ def ellipse_misfits(anchors: np.ndarray, sweeps: List[dict], lengths: np.ndarray
     norms = np.linalg.norm(anchors, axis=1)
     values, points = [], []
     for sweep in sweeps:
+        if sweep["kind"] == "ellipsoid":
+            for rows, misfit in _ellipsoid_misfits(anchors, sweep, lengths, norms):
+                points.append(rows)
+                values.append(misfit)
+            continue
         rows, drive = sweep["rows"], sweep["drive"]
         # Held lengths are commanded once per sweep; their per-point stretch varies by
         # hundredths of a millimetre, so the sweep mean stands for all points.
@@ -91,7 +137,7 @@ def fit_ellipses(
     num_anchors, dimensions = int(dataset["num_anchors"]), int(dataset["dimensions"])
     if not machine_type.startswith("hangprinter_") or dimensions != 3:
         raise ValueError("The ellipse reference fit supports three-dimensional Hangprinters")
-    if any(len(sweep["fixed_anchors"]) != 2 for sweep in dataset["sweeps"]):
+    if any(len(sweep["fixed_anchors"]) != 2 for sweep in dataset["sweeps"] if mesh_metadata(sweep) is None):
         raise ValueError("The ellipse reference fit needs sweeps with exactly two held lines")
     recorded = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
     stretch = dataset_stretch(dataset)
@@ -133,7 +179,8 @@ def fit_ellipses(
         "point_residuals_mm": per_point,
         "rejected_points": np.flatnonzero(~kept),
         "num_points": int(len(lengths)),
-        "num_ellipses": int(sum(len(sweep["others"]) for sweep in sweeps)),
+        "num_ellipses": int(sum(len(sweep["others"]) for sweep in sweeps if sweep["kind"] == "ellipse")),
+        "num_ellipsoids": int(sum(len(sweep["others"]) for sweep in sweeps if sweep["kind"] == "ellipsoid")),
         "stretch_corrected": stretch is not None,
         "success": bool(fit.success),
         "message": str(fit.message),

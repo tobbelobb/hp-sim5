@@ -94,6 +94,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         delta_max=args.delta_max,
         regularization=float(args.regularization),
         min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
+        collection_shape=str(args.collection_shape),
         write_cfg=args.write_sweep_config,
         collector_output=args.collector_output,
         collector_args=collector_args,
