@@ -7,15 +7,12 @@ from autocal.equal_strain import InfeasibleForceProfileError, is_equal_strain, w
 from autocal.pose_fit import dataset_line_lengths, has_extra_sensor_data, dataset_stretch, has_spare_winches
 from autocal.pose_planning import rank_candidates_pose_information
 from autocal.workspace import exploration_grid
-from autocal.dataset_roles import measurement_groups, mesh_metadata
-from autocal.mesh_planning import plan_sphere_mesh
 
 _PLANNING_ONLY = (
     "candidate_deltas", "candidate_count", "delta_min", "delta_max",
     "exclude_existing", "existing_tol_mm", "min_fixed_delta_spacing_mm",
-    "top_k", "write_cfg", "collector_output", "equal_strain", "collection_shape",
+    "top_k", "write_cfg", "collector_output", "equal_strain",
 )
-COLLECTION_SHAPES = ("sweep", "mesh")
 _PLANNING_OPTIONS = _PLANNING_ONLY + ("fd_eps_mm", "regularization", "collector_args")
 
 
@@ -35,26 +32,15 @@ def plan_ellipse_sweep(
     collector_output: Optional[Path] = None,
     collector_args: Sequence[str] = (),
     equal_strain: bool = True,
-    collection_shape: str = "sweep",
 ) -> Dict[str, object]:
-    """Plan from a frozen fit; no optimizer or measurement collection is run.
-
-    With collection_shape "mesh", Hangprinters collect sphere-sector meshes
-    (mesh_planning.py) once the first sweeps are in, and fall back to a sweep
-    when no mesh fits the measured workspace.
-    """
-    if collection_shape not in COLLECTION_SHAPES:
-        raise ValueError(f"collection_shape must be one of {COLLECTION_SHAPES}")
+    """Plan from a frozen fit; no optimizer or measurement collection is run."""
     dataset = fit["dataset"]
     anchors = np.asarray(fit["anchors"], dtype=float)
     machine_type = str(fit["machine_type"])
     num_anchors = int(fit["num_anchors"])
     dimensions = int(fit["dimensions"])
     spool_params = fit["spool_model_params"]
-    # Circle-sweep novelty, spacing and exploration concern circle sweeps only; mesh
-    # points still contribute their information through the fit.
-    circle_sweeps = [sweep for sweep in dataset.get("sweeps", []) if mesh_metadata(sweep) is None]
-    sweeps_obs = dataset_sweep_configs({"sweeps": circle_sweeps})
+    sweeps_obs = dataset_sweep_configs(dataset)
     sweep_configs_for_info = fit["sweep_configs_for_info"]
     l2_scale = l2_scale_for_machine(machine_type, num_anchors, dimensions)
     info_settings = fit["information_settings"]
@@ -81,7 +67,7 @@ def plan_ellipse_sweep(
     exploration_bounds = None
     if candidate_deltas is None:
         if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and delta_min is None and delta_max is None:
-            candidate_deltas, exploration_bounds = exploration_grid({**dataset, "sweeps": circle_sweeps}, candidate_count)
+            candidate_deltas, exploration_bounds = exploration_grid(dataset, candidate_count)
         else:
             default_range = _default_delta_range(max_travel_mm=max_travel_mm, observed_deltas=observed_deltas)
             lo, hi = default_range or (-600.0, 600.0)
@@ -99,8 +85,7 @@ def plan_ellipse_sweep(
         fixed_delta_bounds_by_anchor=exploration_bounds,
     )
     if exclude_existing:
-        rejected = dataset_sweep_configs({"sweeps": [entry for entry in dataset.get("acquisition_rejections", [])
-                                                     if not entry.get("mesh")]})
+        rejected = dataset_sweep_configs({"sweeps": dataset.get("acquisition_rejections", [])})
         rejected_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in rejected}
         candidates = [cfg for cfg in candidates if cfg.normalized_key(tol_mm=existing_tol_mm) not in rejected_keys]
         existing_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in sweeps_obs}
@@ -129,8 +114,7 @@ def plan_ellipse_sweep(
             low_anchor_z=dataset.get("_low_anchor_z"),
             observed_lengths_mm=dataset_line_lengths(estimation_dataset)["lengths_mm"],
             candidates=placed,
-            points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]
-                                            if mesh_metadata(sweep) is None] or [20])),
+            points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
             sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
             regularization=float(regularization),
             # Keep the complete ordering until a force-feasible candidate is
@@ -218,25 +202,7 @@ def plan_ellipse_sweep(
     cmd = None
     collection_error = None
     profile_path = None
-    completed = len(measurement_groups(dataset))
-    mesh = None
-    if (collection_shape == "mesh" and machine_type.startswith("hangprinter_") and needs_profile
-            and spool_params is None and equal_strain and profile_policy_error(dataset) is None):
-        mesh = plan_sphere_mesh(
-            anchors, dataset, fit["dataset_for_estimation"], machine_type=machine_type,
-            home_offsets_mm=np.asarray(fit["home_offsets_mm"], dtype=float),
-            low_anchor_z=dataset.get("_low_anchor_z"), sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
-            regularization=float(regularization),
-            # The collector's spare-line policy decides, not the recorded data alone.
-            measure_extra_ranges=has_extra_sensor_data(dataset) and "--no-extra-sensors" not in collector_args_eff,
-            observed_stretch=dataset_stretch(fit["dataset_for_estimation"]))
-    if mesh is not None:
-        mesh_path = cfg_path.with_suffix(".mesh_plan.json")
-        mesh_path.write_text(json.dumps(mesh), encoding="utf-8")
-        cmd = _suggested_mesh_command(mesh_path, machine_type=machine_type, output_file=collector_output,
-                                      completed_sweeps=completed, extra_args=collector_args_eff)
-        best_cfg = None
-    elif best_cfg is not None:
+    if best_cfg is not None:
         if needs_profile:
             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
             if error := profile_policy_error(dataset):
@@ -265,11 +231,11 @@ def plan_ellipse_sweep(
             cmd = _suggested_collect_command(
                 cfg_path, best_cfg, machine_type=machine_type,
                 output_file=collector_output,
-                completed_sweeps=completed,
+                completed_sweeps=sum(bool(sweep.get("data_points")) for sweep in dataset.get("sweeps", [])),
                 extra_args=collector_args_eff,
             )
 
-    return {**fit, "ranked": ranked, "best_cfg": best_cfg, "cfg_path": cfg_path, "mesh_plan": mesh,
+    return {**fit, "ranked": ranked, "best_cfg": best_cfg, "cfg_path": cfg_path,
             "collection_fallback": collection_fallback,
             "collect_command": cmd, "force_tuning": force_tuning,
             "collection_error": collection_error,
@@ -317,7 +283,6 @@ def plan_next_ellipse_sweep(
     fit_home_offsets: bool = True,
     ellipse_reference_fit: bool = False,
     equal_strain: bool = True,
-    collection_shape: str = "sweep",
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     stage_artifact: Optional[Path] = None,

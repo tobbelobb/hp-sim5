@@ -324,7 +324,7 @@ def _full_auto_loop(
             _log_console(f"Anchors: {anchor_str}")
         if m666:
             _log_console(f"Spools (M666): {m666}")
-        if has_variants:
+        if full_auto_runs:
             best_flags = str(meta_for_summary.get("flags", "")).strip()
             best_run = str(meta_for_summary.get("run_id", "")).strip()
             label = best_flags or best_run or "default"
@@ -538,6 +538,36 @@ def _full_auto_loop(
                 raise subprocess.CalledProcessError(code, cmd)
         finally:
             _stop_process(process)
+
+    if collection_shape == "mesh":
+        from autocal.ellipsoid_autocal import run_ellipsoid_autocal
+        owned = {"--output-file", "--output", "--out", "--machineType", "--machine-type", "--sweep-config-file",
+                 "--sweep-config", "--fixed-targets", "--fixedTargets", "--max-travel-mm", "--sweepPoints",
+                 "--sweep-points", "--completed-sweeps"}
+        mesh_args = [arg for index, arg in enumerate(collector_args_eff)
+                     if arg not in owned and (index == 0 or collector_args_eff[index - 1] not in owned)]
+        if reset_pending and "--hp-sim-reset" not in mesh_args:
+            mesh_args.append("--hp-sim-reset")
+
+        def _collect_mesh(cmd):
+            with _log_context():
+                _run_collection_command(cmd)
+
+        try:
+            accepted = run_ellipsoid_autocal(
+                dataset_path, machine_type=str(machine_type), collector_args=mesh_args,
+                run_collection=_collect_mesh, log_line=_log_line, log_console=_log_console,
+                append_log=lambda row: _append_jsonl(log_path, row), no_collect=bool(no_collect),
+                low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+                stable_step_mm=float(stable_step_mm), stop_file=_full_auto_stop_path(dataset_path))
+        except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
+            _log_console(f"; ellipsoid autocal stopped: {error!r}; data so far: {dataset_path}")
+            return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
+        if accepted is None:
+            return _finalize(2)
+        if headless_sim is not None:
+            headless_sim.manifest["stop_reason"] = accepted["reason"]
+        return _emit_summary_and_send(accepted["plan"], summary_meta=accepted["meta"])
 
     checked_hp5_seed = None
     collected_bootstrap = not dataset_path.exists()
@@ -984,7 +1014,6 @@ def _full_auto_loop(
                 delta_max=delta_max,
                 regularization=float(regularization),
                 min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
-                collection_shape=str(collection_shape),
                 write_cfg=cfg_path,
                 collector_output=collector_output,
                 collector_args=collector_args_eff,
@@ -1456,7 +1485,6 @@ def _full_auto_loop(
                     min_fixed_delta_spacing_mm=min_fixed_delta_spacing_mm,
                     write_cfg=plan.get("cfg_path"), collector_output=collector_output,
                     collector_args=collector_args_eff, equal_strain=equal_strain,
-                    collection_shape=collection_shape,
                 )
     except KeyboardInterrupt:
         if applying_solution:

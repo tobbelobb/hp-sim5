@@ -629,52 +629,34 @@ finite positive value; the resulting covariance is not calibrated uncertainty.
 `--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3 as a fallback
 to the `--stable-step-mm` stop.
 
-### Sphere-sector meshes
+### Ellipsoid autocal (sphere meshes)
 
-`--collection-shape mesh` (default `sweep`) collects sphere-sector meshes instead
-of sweeps once three sweeps are in, on Hangprinters with equal-strain data.
-A mesh is a sweep of sweeps. It holds one line (D, or the top line on HP5) for the
-whole mesh, so the effector stays on a sphere around that anchor. Each of its rows
-also holds a first drive line at one level, which makes the row an ordinary circle
-sweep: the second drive steps along it and the remaining lines measure under
-force. Each row's lengths trace an ellipse, and all rows lie on one ellipsoid.
+`--collection-shape mesh` (default `sweep`) runs a separate Hangprinter autocal,
+`ellipsoid_autocal.py`, that neither plans from a model nor uses the point fit.
 
-`mesh_planning.py` searches held lengths, drive/sensor roles and row levels. Row
-points keep the commanded and predicted lengths inside the lengths already
-measured on that axis, keep the sweep planner's pretension and 10% anchor
-clearance rules, let the three position lines fix the pose (smallest direction
-singular value 0.25), and get an equal-strain sensor force of at most 16 N. Rows
-are picked greedily by information (four rows of five points) and visited as a
-serpentine from the end nearest home.
+A mesh holds one line (D, or the top line on HP5) at one length, so the effector
+stays on a sphere around that anchor. Each row also holds one more line, the
+level line, and is an ordinary force sweep: the drive pulls out in force mode
+until it stalls, then steps back to its start with the sensor in force mode. The
+rows of a mesh hold each free line as level line in turn, with five points per
+direction (30 points per HP4 mesh, 40 on HP5). Held and level lengths follow a
+fixed schedule of fractions of the travel measured while the first mesh is
+size-tuned, so the collector finds every reachable range itself. The collector
+takes one held length per row from the sweep config file (`[0,3] 1 2 fixed=430,-215`).
+A row it cannot measure after the first mesh is recorded as a rejection and the
+rest of the mesh is kept.
 
-The collector (`--mesh-plan`) positions the held line once, probes reversible
-sensor coupling by jogging the stepping drive near the start (as later sweeps do),
-and steps through the rows. A point it cannot measure, because a drive is blocked
-or the held line slips, is skipped and the rest of the mesh kept; the fit's outlier
-rejection judges the points that remain. The mesh is rejected only if its sensor
-never couples or fewer than `min_points` points remain. Each row is recorded as an
-ordinary sweep record sharing `metadata.mesh`.
-
-Uncertainty, the HP5 stop rule, replay, validation, the diagnostics' sweep limits
-and the benchmark count a mesh as one unit; circle-sweep novelty and exploration
-ignore mesh rows; merging renames a mesh id that is already in use; replay plans
-without the recorded rejections. The ellipse reference fit fits each mesh's
-ellipsoid, the joint form of its row ellipses, with each point's own held length.
-
-Live headless runs on 2026-11-19, one per machine, max anchor coordinate error:
-
-| Machine | Sweeps | Row meshes | Meshes in the run |
-| --- | --- | --- | --- |
-| HP3 | 0.81 mm, 5516 s | 0.80 mm, 4860 s | 3 |
-| HP4 | 0.56 mm, 4897 s | 0.70 mm, 5262 s | 3 |
-| HP5 | 0.85 mm, 3762 s | 0.81 mm, 3887 s | 1 |
-| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.51 mm, 4586 s | 2 |
-
-No point was skipped and no mesh was rejected. On the same data the point fit
-beat the ellipsoid fit on every machine (HP3 0.80/0.81, HP4 0.70/0.82, HP5
-0.81/1.33, HP5r 1.51/2.55 mm). Treating each row as an independent ellipse was
-worse still (1.04, 0.83, 1.40, 2.88 mm). Meshes are not a uniform improvement,
-so they stay opt-in.
+The anchors come from `ellipse_fit.py` alone. Every point of a mesh lies on one
+ellipsoid in squared-length space; points are grouped by which lines they
+measured, so HP5 rows with and without an accepted spare range both count. The
+fit also estimates home offsets with the point fit's prior and guards: offsets of
+0.2 mm cost about 16 mm of anchor error when ignored. After each mesh the fit is
+repeated from the blind seed and from the previous fit. The run stops when two
+consecutive meshes move no anchor coordinate by more than `--stable-step-mm`
+(after at least three meshes), when the stop file appears, or after the eighth
+mesh. The reported uncertainty is the largest anchor shift when one row is left
+out. `--no-collect` replays a dataset mesh by mesh; sweeps of older datasets that
+hold the same line at the same length are treated as one sphere.
 
 ## Headless benchmark history
 
