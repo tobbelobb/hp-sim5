@@ -664,6 +664,19 @@ The reported uncertainty is the largest anchor shift when one row is left
 out. `--no-collect` replays a dataset mesh by mesh; sweeps of older datasets that
 hold the same line at the same length are treated as one sphere.
 
+Live headless runs on 2026-11-19/20, one per machine, max anchor coordinate error
+and simulated time (blind collection is deterministic, so reruns repeat the data):
+
+| Machine | Sweeps, point fit | Ellipsoid autocal | Meshes |
+| --- | --- | --- | --- |
+| HP3 | 0.81 mm, 5516 s | 0.29 mm, 5177 s | 6 |
+| HP4 | 0.56 mm, 4897 s | 0.31 mm, 6491 s | 7 |
+| HP5 | 0.85 mm, 3762 s | 0.56 mm, 8326 s | 8 |
+| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.16 mm, 8347 s | 6 |
+
+The ellipsoid autocal is more accurate on every machine but up to twice as slow
+on HP5, where a mesh takes about 900-1400 s.
+
 ## Headless benchmark history
 
 CI runs fast tests, slow integration tests, and the four autocal benchmarks in
