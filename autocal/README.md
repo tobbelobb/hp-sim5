@@ -663,16 +663,18 @@ ellipsoid, the joint form of its row ellipses, with each point's own held length
 
 Live headless runs on 2026-11-19, one per machine, max anchor coordinate error:
 
-| Machine | Sweeps | Meshes (before review fixes) | Meshes |
+| Machine | Sweeps | Row meshes | Meshes in the run |
 | --- | --- | --- | --- |
-| HP3 | 0.81 mm, 5516 s | 0.83 mm, 4494 s | 0.84 mm, 5285 s |
-| HP4 | 0.56 mm, 4897 s | 0.22 mm, 5290 s | 0.41 mm, 5012 s |
-| HP5 | 0.85 mm, 3762 s | 0.77 mm, 3919 s | 1.39 mm, 3767 s |
-| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.65 mm, 4783 s | 1.69 mm, 4683 s |
+| HP3 | 0.81 mm, 5516 s | 0.80 mm, 4860 s | 3 |
+| HP4 | 0.56 mm, 4897 s | 0.70 mm, 5262 s | 3 |
+| HP5 | 0.85 mm, 3762 s | 0.81 mm, 3887 s | 1 |
+| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.51 mm, 4586 s | 2 |
 
-The force ceiling and move checks removed the high-load, wide meshes that gave the
-earlier HP4 result. Meshes are not a uniform improvement, so they stay opt-in.
-A mesh takes about 250-280 s of simulated time against about 365 s for a sweep.
+No point was skipped and no mesh was rejected. On the same data the point fit
+beat the ellipsoid fit on every machine (HP3 0.80/0.81, HP4 0.70/0.82, HP5
+0.81/1.33, HP5r 1.51/2.55 mm). Treating each row as an independent ellipse was
+worse still (1.04, 0.83, 1.40, 2.88 mm). Meshes are not a uniform improvement,
+so they stay opt-in.
 
 ## Headless benchmark history
 
