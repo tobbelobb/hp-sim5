@@ -123,7 +123,7 @@ bounded loss limits each point's pull, and points whose misfit exceeds
 `REJECT_SCALES` robust scales are dropped and the fit repeated. Each point has
 n - d spare ranges, so a line pushed aside or a glitch shows in that point alone.
 
-`--ellipse-reference-fit` fits the anchors with `ellipse_fit.py` instead: each
+`--ellipse-fit` fits the anchors with `ellipse_fit.py` instead: each
 point's distance in mm to its sweep's predicted drive/sensor ellipse and, on HP5,
 to one drive/extra-range ellipse per accepted extra range, after the same stretch
 correction, robust loss and point rejection. It needs sweeps with two held lines,

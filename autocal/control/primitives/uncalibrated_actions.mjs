@@ -544,6 +544,53 @@ function formatAxisDelta(axis, delta) {
   return `${axis}${delta.toFixed(3)}`;
 }
 
+// A held motor's commanded position can differ from its encoder: a saturated
+// motor stops short and keeps straining towards its command. After a move,
+// one correction from the encoders removes any such earlier mismatch. A motor
+// still short after it is saturated where it is: its command is backed off past
+// the reached length by three times its miss, or `backoffShare` of the distance
+// it moved if more, so it holds without straining at the edge of what it can
+// reach. The lengths the motors then hold are returned.
+export async function settleOnTargets(sendFn, {
+  motorIds, axes, mmPerDeg, targets, starts, feed, speedup, delayFn,
+  toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG, backoffShare = 0.02,
+} = {}) {
+  const read = async () => anglesToLengths((await waitForStableEncoders(sendFn, motorIds, speedup)).anglesDeg, mmPerDeg);
+  const missed = lengths => targets.map((target, idx) => Number.isFinite(target)
+    && Math.abs(target - lengths[idx]) / mmPerDeg[idx] > toleranceDeg);
+  const move = async deltas => {
+    const parts = deltas.map((delta, idx) => (delta ? formatAxisDelta(axes[idx], delta) : null)).filter(Boolean);
+    if (parts.length > 0) await runMoveWithWait(sendFn, `G1 H2 ${parts.join(' ')} F${feed}`, speedup, { axes, delayFn });
+  };
+  let lengths = await read();
+  if (!missed(lengths).some(Boolean)) return lengths;
+  const correction = missed(lengths).map((miss, idx) => (miss ? targets[idx] - lengths[idx] : 0));
+  await move(correction);
+  lengths = await read();
+  const saturated = missed(lengths);
+  if (!saturated.some(Boolean)) return lengths;
+  const commanded = targets.map((target, idx) => target + correction[idx]);
+  const backoff = saturated.map((miss, idx) => {
+    if (!miss) return 0;
+    const direction = Math.sign(targets[idx] - starts[idx]);
+    const margin = Math.max(3 * Math.abs(targets[idx] - lengths[idx]), backoffShare * Math.abs(lengths[idx] - starts[idx]));
+    return lengths[idx] - direction * margin - commanded[idx];
+  });
+  await move(backoff);
+  const held = await read();
+  saturated.forEach((miss, idx) => {
+    if (!miss) return;
+    const expected = commanded[idx] + backoff[idx];
+    if (Math.abs(held[idx] - expected) / mmPerDeg[idx] > toleranceDeg) {
+      throw new Error(`Axis ${axes[idx]} cannot hold ${expected.toFixed(3)} mm after backing off from `
+        + `${targets[idx].toFixed(3)} mm (encoder ${held[idx].toFixed(3)} mm)`);
+    }
+    console.log(`; axis ${axes[idx]} saturated at ${lengths[idx].toFixed(3)} mm on its way to `
+      + `${targets[idx].toFixed(3)} mm; holding ${held[idx].toFixed(3)} mm instead`);
+  });
+  return held;
+}
+
 export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
   const {
     motorIds,
@@ -611,6 +658,16 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
         { axes, delayFn },
       );
     }
+    // The move lands on the firmware's command, which a saturated motor can have
+    // left ahead of its encoder: correct once from the encoder, under the same modes.
+    const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
+    if (Math.abs(delta) > 1e-6) {
+      const reached = (await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions)).anglesDeg[anchorIdx];
+      if (Number.isFinite(reached) && Math.abs(reached) > toleranceDeg) {
+        await runMoveWithWait(sendFn, `G1 H2 ${formatAxisDelta(axis, -reached * mmPerDeg[anchorIdx])} F${feed}`,
+          speedup, { axes, delayFn });
+      }
+    }
     // Also hold after a zero-distance return: its other motors entered force mode.
     await applyForceModeState(sendFn, {
       motorIds,
@@ -620,7 +677,6 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     // quiet but unmoved encoder is not evidence that the return succeeded.
     stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
     const angle = stableAfter.anglesDeg[anchorIdx];
-    const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
     if (!Number.isFinite(angle) || Math.abs(angle) > toleranceDeg) {
       throw new Error(`Return on axis ${axis} did not reach its encoder origin (${angle}deg; limit ${toleranceDeg}deg)`);
     }

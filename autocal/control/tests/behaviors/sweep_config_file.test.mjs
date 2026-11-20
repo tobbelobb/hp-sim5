@@ -23,6 +23,13 @@ describe('sweep config files', () => {
   });
 
   test('held lengths need one value per fixed anchor', async () => {
-    await expect(load('[0,3] 1 2 fixed=430\n')).rejects.toThrow('one length per fixed anchor');
+    await expect(load('[0,3] 1 2 fixed=430\n')).rejects.toThrow('per fixed anchor');
+    await expect(load('[0,3] 1 2 fixed=x,0\n')).rejects.toThrow('per fixed anchor');
+  });
+
+  test('natural held lengths carry their offsets', async () => {
+    const configs = await load('[3,0] 1 2 fixed=-300,n+150\n[1,3] 0 2 fixed=n,-300\n');
+    expect(configs[0]).toMatchObject({ fixedAnchors: [0, 3], fixedTargets: [{ natural: 150 }, -300] });
+    expect(configs[1].fixedTargets).toEqual([{ natural: 0 }, -300]);
   });
 });

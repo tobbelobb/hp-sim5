@@ -67,8 +67,26 @@ describe('returnMotorsToOriginOneAtATime', () => {
     await expect(returnMotorsToOriginOneAtATime(send, {
       motorIds: ['40.0', '41.0'], axes: ['X', 'Y'], mmPerDeg: [1, 1], feed: 1000,
     })).rejects.toThrow('Return on axis Y did not reach its encoder origin');
-    expect(sent.filter(line => line.startsWith('G1'))).toHaveLength(1);
+    // The return and one correction from the encoder, then no further axis.
+    expect(sent.filter(line => line.startsWith('G1'))).toEqual(['G1 H2 Y-200.000 F1000', 'G1 H2 Y-200.000 F1000']);
     expect(sent.at(-1)).toMatch(/^M569.3/);
+  });
+
+  test('a return that lands on a stale command is corrected from the encoder', async () => {
+    // A saturated motor left its command 15 mm short of its encoder; relative moves land on the command.
+    const angles = [0, -600];
+    let commandY = -615;
+    let now = 0;
+    const send = async line => {
+      const move = line.match(/G1 H2 Y([-\d.]+)/);
+      if (move) { commandY += Number(move[1]); angles[1] = commandY; }
+      return { reply: line.startsWith('M569.3') ? angles.join(' ') : '' };
+    };
+    send.simulationClock = { now: () => now, sleep: async ms => { now += ms; } };
+    await returnMotorsToOriginOneAtATime(send, {
+      motorIds: ['40.0', '41.0'], axes: ['X', 'Y'], mmPerDeg: [1, 1], feed: 1000,
+    });
+    expect(angles[1]).toBeCloseTo(0);
   });
 
   test.each([[1, 0], [1, NaN], [1]])('refuses invalid encoder conversions %s', async (...values) => {

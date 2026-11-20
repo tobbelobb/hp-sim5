@@ -3257,6 +3257,22 @@ def _print_ellipse_plan(
         )
 
 
+# Which fits each data shape supports: an ellipsoid sweep is made of ellipse
+# sweeps, and every shape is made of points. The ellipse fit of ellipsoid data
+# is not implemented.
+SHAPE_FITS = {"ellipse": ("point", "ellipse"), "ellipsoid": ("ellipsoid", "point")}
+
+
+def resolve_fit(shape: str, fit: Optional[str]) -> str:
+    """The fit for a data shape: its first supported fit by default."""
+    if fit is None:
+        return SHAPE_FITS[shape][0]
+    if fit not in SHAPE_FITS[shape]:
+        raise ValueError(f"--{fit}-fit does not fit --{shape}-shape data; use one of "
+                         + ", ".join(f"--{option}-fit" for option in SHAPE_FITS[shape]))
+    return fit
+
+
 def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--solve-restarts", type=int, default=4,
@@ -3343,14 +3359,18 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         default=True,
         help="Use a checked rough pass and per-point sensor forces on Hangprinter (default: enabled). Disable for constant-force comparisons.",
     )
-    parser.add_argument(
-        "--ellipse-reference-fit",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help="Fit Hangprinter anchors to each sweep's predicted ellipses and each mesh's ellipsoids "
-             "(ellipse_fit.py) instead of with the point fit. Default: on for --collection-shape mesh, "
-             "off for sweeps. Spool searches keep the legacy ellipse fit.",
-    )
+    fits = parser.add_mutually_exclusive_group()
+    fits.add_argument("--point-fit", dest="fit", action="store_const", const="point", default=None,
+                      help="Fit anchors to every point (pose_fit.py); accepts any data shape. "
+                           "The default for --ellipse-shape.")
+    fits.add_argument("--ellipse-fit", dest="fit", action="store_const", const="ellipse",
+                      help="Fit Hangprinter anchors to each sweep's predicted ellipses (ellipse_fit.py); "
+                           "needs --ellipse-shape. Spool searches keep the legacy ellipse fit.")
+    fits.add_argument("--ellipsoid-fit", dest="fit", action="store_const", const="ellipsoid",
+                      help="Fit Hangprinter anchors to each sphere mesh's ellipsoids (ellipse_fit.py); "
+                           "needs --ellipsoid-shape, where it is the default.")
+    fits.add_argument("--no-ellipsoid-fit", dest="fit", action="store_const", const="point",
+                      help="Same as --point-fit.")
     parser.add_argument(
         "--fit-home-offsets",
         action=argparse.BooleanOptionalAction,
@@ -3795,12 +3815,12 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     )
     _add_solver_args(parser)
     _add_candidate_args(parser)
-    parser.add_argument(
-        "--collection-shape", choices=("sweep", "mesh"), default="sweep",
-        help="sweep: circle sweeps fitted by the point fit (default). mesh: Hangprinter ellipsoid "
-             "autocal, blind sphere meshes fitted by the ellipse fit (ellipsoid_autocal.py); "
-             "--no-ellipse-reference-fit fits them with the point fit instead.",
-    )
+    shapes = parser.add_mutually_exclusive_group()
+    shapes.add_argument("--ellipse-shape", dest="shape", action="store_const", const="ellipse", default="ellipse",
+                        help="Collect planned flat sweeps, each a circle of poses (default).")
+    shapes.add_argument("--ellipsoid-shape", dest="shape", action="store_const", const="ellipsoid",
+                        help="Hangprinter ellipsoid autocal (ellipsoid_autocal.py): blind sphere meshes "
+                             "at the lowest, a middle and the highest reachable height.")
     _add_output_args(parser)
     parser.add_argument(
         "--write-sweep-config",
@@ -3988,9 +4008,9 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--low-anchor-z", type=float, default=None)
     parser.add_argument("--fit-home-offsets", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--ellipse-reference-fit", action="store_true", default=None, help="Fit Hangprinter anchors to each sweep's predicted ellipses (ellipse_fit.py) instead of "
-             "with the point fit. A reference for datasets of fixed-line circle sweeps; the point "
-             "fit accepts any poses and is the default. Spool searches keep the legacy ellipse fit.")
+    parser.add_argument("--ellipse-fit", dest="ellipse_reference_fit", action="store_true", default=None,
+                        help="Fit Hangprinter anchors to each sweep's predicted ellipses (ellipse_fit.py) "
+                             "instead of with the point fit. Spool searches keep the legacy ellipse fit.")
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
     parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default=None)

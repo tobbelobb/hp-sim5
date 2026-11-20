@@ -1,4 +1,4 @@
-"""Ellipsoid autocal: blind sphere-mesh rows, backfilled spheres, fits with home offsets, the replay loop."""
+"""Ellipsoid autocal: sphere-mesh rows, planned heights, fits with home offsets, the replay loop."""
 import json
 
 import numpy as np
@@ -6,24 +6,29 @@ import pytest
 
 from autocal.dataset_roles import measurement_groups
 from autocal.ellipse_fit import fit_ellipses
-from autocal.ellipsoid_autocal import SCHEDULE, SPHERES, fit, mesh_rows, run_ellipsoid_autocal, tag_mesh, visits
+from autocal.ellipsoid_autocal import fit, highest_held_mm, mesh_rows, next_held_mm, run_ellipsoid_autocal, tag_mesh, visits
 from autocal.tests.test_disturbed_robustness import TRUTH, _load
 from autocal.theoretical_ellipse import compute_constraint_circle_3d
 
 
 def test_mesh_rows_hold_each_free_line_once():
-    rows = mesh_rows("hangprinter_4", -0.5, 1.0, 400.0)
-    assert rows == ["[0,3] 1 2 fixed=400.000,-200.000", "[1,3] 0 2 fixed=400.000,-200.000",
-                    "[2,3] 0 1 fixed=400.000,-200.000"]
-    hp5 = mesh_rows("hangprinter_5", 0.0, 0.5, 300.0)
-    assert len(hp5) == 4 and all(row.endswith("fixed=-150.000,0.000") for row in hp5)
+    assert mesh_rows("hangprinter_4", None) == ["[0,3] 1 2", "[1,3] 0 2", "[2,3] 0 1"]
+    assert mesh_rows("hangprinter_4", -800.0) == ["[0,3] 1 2 fixed=n,-800.000", "[1,3] 0 2 fixed=n,-800.000",
+                                                  "[2,3] 0 1 fixed=n,-800.000"]
+    hp5 = mesh_rows("hangprinter_5", -150.0)
+    assert len(hp5) == 4 and all(row.endswith("fixed=n,-150.000") for row in hp5)
 
 
-def test_schedule_backfills_each_sphere_once_per_level():
-    assert SCHEDULE[0] == (0.0, 1.0)
-    assert len(set(SCHEDULE)) == len(SCHEDULE)
-    assert [held for held, _ in SCHEDULE[:len(SPHERES)]] == list(SPHERES)
-    assert len({level for _, level in SCHEDULE[:len(SPHERES)]}) == len(SPHERES)
+def test_heights_go_low_middle_highest_then_split_the_largest_gap():
+    anchors = np.asarray(TRUTH["hangprinter_4"], dtype=float)
+    top = highest_held_mm(anchors, 3)
+    # The effector stops a tenth of the anchor's home distance below it.
+    assert top == pytest.approx(-0.9 * 1900.0)
+    assert next_held_mm(0, None, 3, []) is None
+    assert next_held_mm(1, anchors, 3, [0.0]) == pytest.approx(0.5 * top)
+    assert next_held_mm(2, anchors, 3, [0.0, 0.5 * top]) == pytest.approx(top)
+    assert next_held_mm(3, anchors, 3, [0.0, -900.0, -1700.0]) == pytest.approx(-450.0)
+    assert next_held_mm(4, anchors, 3, [0.0, -900.0, -1700.0, -450.0]) == pytest.approx(-1300.0)
 
 
 def _blind_mesh(anchors, offsets, held_length, level_length, mesh_id, visit=1):
@@ -75,8 +80,8 @@ def test_backfilled_spheres_share_a_mesh_and_replay_by_visit():
     assert len(measurement_groups(dataset)) == 3
     assert visits(dataset) == [list(range(3 * k, 3 * k + 3)) for k in range(len(schedule))]
     start = anchors + np.random.default_rng(1).normal(0, 20, anchors.shape)
-    for point_fit in (False, True):
-        result = fit(dataset, [start], None, True, point_fit)
+    for model in ("ellipsoid", "point"):
+        result = fit(dataset, [start], None, True, model)
         assert np.max(np.abs(result["anchors"] - anchors)) < 0.05
         assert result["home_offsets_mm"][3] == pytest.approx(0.4, abs=0.02)
 

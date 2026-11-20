@@ -183,7 +183,7 @@ def _full_auto_loop(
     write_cfg: Optional[Path],
     collector_args: Sequence[str],
     sim: bool,
-    collection_shape: str = "sweep",
+    shape: str = "ellipse",
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     sweep_points: Optional[int],
@@ -195,7 +195,7 @@ def _full_auto_loop(
     verbose: bool,
     low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
-    ellipse_reference_fit: Optional[bool] = None,
+    fit: str = "point",
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -539,7 +539,8 @@ def _full_auto_loop(
         finally:
             _stop_process(process)
 
-    if collection_shape == "mesh":
+    ellipse_reference_fit = fit == "ellipse"
+    if shape == "ellipsoid":
         from autocal.ellipsoid_autocal import run_ellipsoid_autocal
         owned = {"--output-file", "--output", "--out", "--machineType", "--machine-type", "--sweep-config-file",
                  "--sweep-config", "--fixed-targets", "--fixedTargets", "--max-travel-mm", "--sweepPoints",
@@ -560,7 +561,7 @@ def _full_auto_loop(
                 append_log=lambda row: _append_jsonl(log_path, row), no_collect=bool(no_collect),
                 low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
                 stable_step_mm=float(stable_step_mm), stop_file=_full_auto_stop_path(dataset_path),
-                point_fit=ellipse_reference_fit is False)
+                model=fit)
         except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
             _log_console(f"; ellipsoid autocal stopped: {error!r}; data so far: {dataset_path}")
             return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
@@ -1517,6 +1518,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--headless-sim", action="store_true",
                         help='Collect in the headless production simulator; implies --sim')
     args = parser.parse_args(argv)
+    try:
+        args.fit = resolve_fit(args.shape, args.fit)
+    except ValueError as error:
+        parser.error(str(error))
     if not np.isfinite(args.stable_step_mm) or args.stable_step_mm < 0:
         parser.error("--stable-step-mm must be a finite nonnegative distance")
     if args.project_zero_tension and not args.no_collect:
@@ -1637,14 +1642,14 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
-        ellipse_reference_fit=args.ellipse_reference_fit,
+        fit=args.fit,
         equal_strain=bool(args.equal_strain),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
         delta_max=args.delta_max,
         regularization=float(args.regularization),
         min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
-        collection_shape=str(args.collection_shape),
+        shape=str(args.shape),
         write_cfg=args.write_sweep_config,
         collector_args=collector_args,
         sim=bool(args.sim),
