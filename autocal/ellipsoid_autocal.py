@@ -43,9 +43,11 @@ STABLE_VISITS = 2
 HOME_OFFSET_PRIOR_SIGMA_MM = 5.0
 SEED_SCALES = (1.0, 2.0, 4.0)
 # Held and level lengths as fractions of the measured travel. The held line only
-# shortens; HP5's top line cannot shorten by twice the travel. Level lines
-# lengthen on HP3/HP4 and shorten on HP5, like the bootstrap.
-SPHERES = (0.0, -0.5, -1.0, -1.5)
+# shortens. Level lines lengthen on HP3/HP4 and shorten on HP5, like the bootstrap.
+# HP5's top line slips when held and level lines together shorten by more than
+# about twice the travel (held -1.5 with level 0.75 failed), so the held line
+# shortens at most by the travel.
+SPHERES = (0.0, -1 / 3, -2 / 3, -1.0)
 LEVELS = (1.0, 0.5, 0.0, 0.75, 0.25)
 # Visit k adds to sphere k % 4, at a level that rotates through LEVELS, so every
 # (sphere, level) pair comes once and early visits already differ in level.

@@ -78,7 +78,7 @@ from autocal.active_learning import (
 )
 from autocal.anchor_seed import build_anchor_initial_guess
 from autocal.slideprinter_2d.calibrate import calibrate_elliptical
-from autocal.dataset_roles import mesh_metadata, normalize_dataset_point_roles as _normalize_dataset_point_roles
+from autocal.dataset_roles import normalize_dataset_point_roles as _normalize_dataset_point_roles
 from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 from autocal.ellipse_fitting import fit_ellipse_from_sweep
 from autocal.anchor_format import format_anchor_matrix_plain
@@ -1589,25 +1589,8 @@ def _merge_sweep_datasets(base: dict, new: dict) -> dict:
     for s in base_sweeps:
         if isinstance(s, dict):
             merged_sweeps.append(s)
-    # Separately collected meshes can share an id; a mesh is one collection unit,
-    # so an incoming id already in use is renamed for all of that mesh's records.
-    used = {str(mesh_metadata(s)["id"]) for s in merged_sweeps if mesh_metadata(s) is not None}
-    renamed: Dict[str, str] = {}
-    for s in new_sweeps:
-        if not isinstance(s, dict):
-            continue
-        mesh = mesh_metadata(s)
-        if mesh is not None:
-            old_id = str(mesh["id"])
-            if old_id not in renamed:
-                new_id, suffix = old_id, 2
-                while new_id in used:
-                    new_id, suffix = f"{old_id}_{suffix}", suffix + 1
-                renamed[old_id] = new_id
-                used.add(new_id)
-            if renamed[old_id] != old_id:
-                s = {**s, "metadata": {**s["metadata"], "mesh": {**mesh, "id": renamed[old_id]}}}
-        merged_sweeps.append(s)
+    # Records with the same mesh id lie on one sphere, also when collected separately.
+    merged_sweeps.extend(s for s in new_sweeps if isinstance(s, dict))
 
     # Renumber sweeps to avoid duplicate ids (collector restarts at sweep_001 each run).
     for idx, sweep in enumerate(merged_sweeps, start=1):

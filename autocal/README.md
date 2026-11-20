@@ -637,7 +637,7 @@ fit; `--no-ellipse-reference-fit` fits the same meshes with the point fit instea
 
 A mesh holds one line (D, or the top line on HP5) at one length, so the effector
 stays on a sphere around that anchor. There are four meshes, with the held line
-shortened by 0, 0.5, 1 and 1.5 times the travel, and they are backfilled: each
+shortened by 0, 1/3, 2/3 and 1 times the travel, and they are backfilled: each
 visit adds one row per free line to one sphere, in turn. A row also holds that
 free line, the level line, and is an ordinary force sweep: the drive pulls out
 in force mode until it stalls, then steps back to its start with the sensor in
@@ -669,17 +669,23 @@ out. `--no-collect` replays a dataset visit by visit; sweeps of older datasets t
 hold the same line at the same length are treated as one sphere.
 
 Live headless runs on 2026-11-19/20, one per machine, max anchor coordinate error
-and simulated time (blind collection is deterministic, so reruns repeat the data):
+and simulated time (blind collection is deterministic, so reruns repeat the data).
+"Distinct" is the earlier schedule, where every mesh held a new length (0, -1,
+-0.5, -1.5, 0, -0.5, -1, -0.5 x travel, with levels 1, 0.5, 1, 0, 0.5, 0, 1, 0.5),
+so meshes at a repeated length stayed separate. "Backfill" is the current one.
 
-| Machine | Sweeps, point fit | Ellipsoid autocal | Meshes |
+| Machine | Sweeps, point fit | Distinct meshes | Backfill, 4 spheres to -1x |
 | --- | --- | --- | --- |
-| HP3 | 0.81 mm, 5516 s | 0.29 mm, 5177 s | 6 |
-| HP4 | 0.56 mm, 4897 s | 0.31 mm, 6491 s | 7 |
-| HP5 | 0.85 mm, 3762 s | 0.56 mm, 8326 s | 8 |
-| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.16 mm, 8347 s | 6 |
+| HP3 | 0.81 mm, 5516 s | 0.29 mm, 5177 s, 6 meshes | 1.21 mm, 5024 s, 6 visits |
+| HP4 | 0.56 mm, 4897 s | 0.31 mm, 6491 s, 7 meshes | 0.61 mm, 8622 s, 10 visits |
+| HP5 | 0.85 mm, 3762 s | 0.56 mm, 8326 s, 8 meshes | 1.15 mm, 9054 s, 8 visits |
+| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.16 mm, 8347 s, 6 meshes | 0.61 mm, 13731 s, 10 visits |
 
-The ellipsoid autocal is more accurate on every machine but up to twice as slow
-on HP5, where a mesh takes about 900-1400 s.
+Backfilling spheres down to -1.5x travel ended at 1.55 mm (HP3), 0.85 mm (HP4)
+and 0.79 mm (HP5 pulley-reduced); HP5 lost its run when held -1.5 with level
+-0.75 slipped the top line. On HP3/HP4/HP5 the backfill's error stays at about
+1 mm while its row jackknife falls to 0.3-1 mm: a bias that more rows on the same
+four spheres do not remove. Both fits agree on the backfill data to 0.01 mm.
 
 ## Headless benchmark history
 
