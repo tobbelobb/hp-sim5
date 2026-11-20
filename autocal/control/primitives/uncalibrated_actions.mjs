@@ -563,13 +563,16 @@ export async function settleOnTargets(sendFn, {
     const parts = deltas.map((delta, idx) => (delta ? formatAxisDelta(axes[idx], delta) : null)).filter(Boolean);
     if (parts.length > 0) await runMoveWithWait(sendFn, `G1 H2 ${parts.join(' ')} F${feed}`, speedup, { axes, delayFn });
   };
+  // A line that reached its target holds the target: force profiles and records are keyed by it.
+  const held = lengths => lengths.map((length, idx) => (Number.isFinite(targets[idx]) && !missed(lengths)[idx]
+    ? targets[idx] : length));
   let lengths = await read();
-  if (!missed(lengths).some(Boolean)) return lengths;
+  if (!missed(lengths).some(Boolean)) return held(lengths);
   const correction = missed(lengths).map((miss, idx) => (miss ? targets[idx] - lengths[idx] : 0));
   await move(correction);
   lengths = await read();
   const saturated = missed(lengths);
-  if (!saturated.some(Boolean)) return lengths;
+  if (!saturated.some(Boolean)) return held(lengths);
   const commanded = targets.map((target, idx) => target + correction[idx]);
   const backoff = saturated.map((miss, idx) => {
     if (!miss) return 0;
@@ -579,18 +582,18 @@ export async function settleOnTargets(sendFn, {
     return lengths[idx] - direction * margin - commanded[idx];
   });
   await move(backoff);
-  const held = await read();
+  const reached = await read();
   saturated.forEach((miss, idx) => {
     if (!miss) return;
     const expected = commanded[idx] + backoff[idx];
-    if (Math.abs(held[idx] - expected) / mmPerDeg[idx] > toleranceDeg) {
+    if (Math.abs(reached[idx] - expected) / mmPerDeg[idx] > toleranceDeg) {
       throw new Error(`Axis ${axes[idx]} cannot hold ${expected.toFixed(3)} mm after backing off from `
-        + `${targets[idx].toFixed(3)} mm (encoder ${held[idx].toFixed(3)} mm)`);
+        + `${targets[idx].toFixed(3)} mm (encoder ${reached[idx].toFixed(3)} mm)`);
     }
     console.log(`; axis ${axes[idx]} saturated at ${lengths[idx].toFixed(3)} mm on its way to `
-      + `${targets[idx].toFixed(3)} mm; holding ${held[idx].toFixed(3)} mm instead`);
+      + `${targets[idx].toFixed(3)} mm; holding ${reached[idx].toFixed(3)} mm instead`);
   });
-  return held;
+  return held(reached);
 }
 
 export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
@@ -660,25 +663,25 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
         { axes, delayFn },
       );
     }
-    // The move lands on the firmware's command, which a saturated motor can have
-    // left ahead of its encoder: correct once from the encoder, under the same modes.
-    const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
-    if (Math.abs(delta) > 1e-6) {
-      const reached = (await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions)).anglesDeg[anchorIdx];
-      if (Number.isFinite(reached) && Math.abs(reached) > toleranceDeg) {
-        await runMoveWithWait(sendFn, `G1 H2 ${formatAxisDelta(axis, -reached * mmPerDeg[anchorIdx])} F${feed}`,
-          speedup, { axes, delayFn });
-      }
-    }
     // Also hold after a zero-distance return: its other motors entered force mode.
-    await applyForceModeState(sendFn, {
-      motorIds,
-      modes: motorIds.map(() => 'position')
-    });
+    // Encoders settle only once every motor holds position.
+    const holdAndRead = async () => {
+      await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
+      stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+      return stableAfter.anglesDeg[anchorIdx];
+    };
+    const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
+    let angle = await holdAndRead();
+    // The move lands on the firmware's command, which a saturated motor can have
+    // left ahead of its encoder: correct once from the encoder, under the return's modes.
+    if (Math.abs(delta) > 1e-6 && Number.isFinite(angle) && Math.abs(angle) > toleranceDeg) {
+      await applyForceModeState(sendFn, { motorIds, modes });
+      await runMoveWithWait(sendFn, `G1 H2 ${formatAxisDelta(axis, -angle * mmPerDeg[anchorIdx])} F${feed}`,
+        speedup, { axes, delayFn });
+      angle = await holdAndRead();
+    }
     // Check this axis before a later return puts it back into force mode. A
     // quiet but unmoved encoder is not evidence that the return succeeded.
-    stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-    const angle = stableAfter.anglesDeg[anchorIdx];
     if (!Number.isFinite(angle) || Math.abs(angle) > toleranceDeg) {
       throw new Error(`Return on axis ${axis} did not reach its encoder origin (${angle}deg; limit ${toleranceDeg}deg)`);
     }

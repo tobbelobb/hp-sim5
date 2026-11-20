@@ -27,6 +27,13 @@ describe('settleOnTargets', () => {
     expect(sent.some(line => line.startsWith('G1'))).toBe(false);
   });
 
+  test('a line within tolerance holds its planned target, not the encoder read', async () => {
+    // Force profiles are keyed by the planned target; a 0.005 mm read difference must not change it.
+    const { send } = motor({ command: -300.005, limit: -1000 });
+    const held = await settleOnTargets(send, { ...options, targets: [null, -300], starts: [0, 0] });
+    expect(held[1]).toBe(-300);
+  });
+
   test('a saturated motor backs off and reports the length it holds', async () => {
     // Commanded to -620, it stopped at -600 and keeps straining.
     const { send, state, encoder } = motor({ command: -620, limit: -600 });

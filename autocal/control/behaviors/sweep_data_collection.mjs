@@ -1993,13 +1993,11 @@ export async function collectSweepData(send, context) {
 
     if (rejected) continue;
 
-    const lengths = await getCurrentLengths(send, motorIds, mmPerDeg);
-    const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
-      if (Number.isFinite(lengths[idx])) {
-        return lengths[idx];
-      }
-      return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
-    });
+    // Each point's fixed_error_angles_deg is measured from these targets, so a
+    // held line's length is target + error. A later encoder read would count
+    // the line's drift during the sweep twice.
+    const fixedLengths = sweepConfig.fixedAnchors.map((_, anchorIdx) => (
+      Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0));
 
     const driveRangeValues = aggregatedPoints
       .map((p) => (Number.isFinite(p?.l_drive) ? p.l_drive : null))

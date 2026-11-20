@@ -267,3 +267,18 @@ test.each([1, 2])('redundant-machine returns keep the top held and other low win
     }
   } finally { rmSync(directory, {recursive: true, force: true}); }
 });
+
+test('held lengths are the targets the fixed error angles refer to, not a later encoder read', async () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'held-lengths-'));
+  const outputFile = path.join(directory, 'sweeps.json');
+  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
+  const point = { l_drive: 10, l_sensor: 20, fixed_error_angles_deg: [0.1, null, null, -0.1] };
+  collectWithSlipRecovery.mockResolvedValue({ dataPoints: [point], recoveries: [], spoolReserve: {},
+    forces: { forceMid: .2, forceMax: 2, sensorCollectionForce: 1 } });
+  try {
+    // The mocked encoders read [1, 2, 3, 0] after the sweep: the held lines drifted from the targets.
+    await interruptedCollection(outputFile, { fixedTargets: '5,-7' }, false);
+    const dataset = JSON.parse(readFileSync(outputFile, 'utf8'));
+    expect(dataset.sweeps[0].fixed_lengths).toEqual([5, -7]);
+  } finally { rmSync(directory, {recursive: true, force: true}); }
+});

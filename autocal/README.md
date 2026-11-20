@@ -672,27 +672,40 @@ anchor coordinate by more than `--stable-step-mm` and leaving out any one row
 moves none by more than twice that. The reported uncertainty is that row
 jackknife. `--no-collect` replays a dataset ellipsoid by ellipsoid.
 
-Live headless runs, 2026-11-20, one per machine, max anchor coordinate error and
-simulated time. Collection is deterministic, so a rerun repeats a row.
+Live headless runs, 2026-11-20, one per machine. Each machine scores max anchor
+coordinate error x simulated time: twice the time costs as much as twice the
+accuracy gains. The disturbed score uses the geometric mean of the clean error
+and the mean error under pulls with outliers, 0.05 mm and 0.2 mm encoder noise, and
+both together (offline refits, `autocal/tools/disturb_dataset.py`). The last row is
+the geometric mean over the machines.
 
-| Machine | Sweeps, point fit | Earlier fixed schedule | Planned heights |
+| Machine | Sweeps, point fit (default) | Earlier fixed schedule | Planned heights |
 | --- | --- | --- | --- |
-| HP3 | 0.81 mm, 5516 s | 0.29 mm, 5177 s, 6 meshes | 0.83 mm, 6160 s, 6 ellipsoids |
-| HP4 | 0.56 mm, 4897 s | 0.31 mm, 6491 s, 7 meshes | 0.81 mm, 5460 s, 5 ellipsoids |
-| HP5 | 0.85 mm, 3762 s | 0.56 mm, 8326 s, 8 meshes | 1.73 mm, 7667 s, 5 ellipsoids |
-| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.16 mm, 8347 s, 6 meshes | 1.79 mm, 7763 s, 5 ellipsoids |
+| HP3 | 0.97 mm, 4587 s | 0.29 mm, 5177 s | 2.60 mm, 6068 s |
+| HP4 | 0.74 mm, 4924 s | 0.31 mm, 6491 s | 0.46 mm, 4622 s |
+| HP5 | 1.04 mm, 3778 s | 0.56 mm, 8326 s | 1.27 mm, 6094 s |
+| HP5 pulley-reduced | 0.93 mm, 4686 s | 1.16 mm, 8347 s | 2.90 mm, 6495 s |
+| Clean / disturbed score | 4077 / 7623 | 3421 / 8910 | 8350 / 12105 |
 
-The earlier fixed schedule held the line at 0 to -1.5 x travel with level lines
-shortened or lengthened from home; its HP5 run lost its last mesh to the
-saturation that the collector now handles. Planned heights lose no rows to
-failures, but are less accurate. The error sits in the held anchor's height (HP5
-top z +1.7 mm, HP4 D.z -0.8 mm). The data fits the true anchors to 0.02-0.03 mm
-rms with no length-scale error, and every dataset's posterior std for that
-coordinate is 0.3-0.5 mm, whatever the plan: a systematic misfit of a few
-hundredths of a millimetre, amplified about 15 times, decides the result more
-than the plan does. On these datasets the point fit matches the ellipsoid fit to
-0.1 mm, clean and with pulls, outliers or encoder noise added; with 0.2 mm noise
-both reach about 4 mm, as the point fit does on the sweep benchmark.
+Sweeps with the point fit win once disturbances count, and stay the default.
+The earlier fixed schedule wins on clean data only, with the old open-loop
+collector. On the closed-loop collector the same schedule scores 7447 / 12892:
+data that differs by at most 0.12 mm in three held lengths moves HP3 from 0.29
+to 1.11 mm.
+
+That sensitivity has one cause. The held anchor's height trades exactly against
+the scale of the free lines' stretch correction. Scaling it by 10% moves that
+height about 0.85 mm, and the fit rms does not change. The errors above vanish
+at about 0.9x on HP4 and 1.2x on HP5, so the stretch correction's tensions or
+compliance are off, not the plan. See
+`research/output/session-2026-11-20-ellipsoid-autocal/report.md`.
+
+Until 2026-11-20 a sweep recorded each held line's length from an encoder read
+after the sweep, while each point's fixed error angle refers to the positioning
+target. The fit adds the two, which counted the line's drift twice (up to 0.05 mm
+in the sweep benchmark, 0.35 mm in some ellipsoid runs). Datasets now record the
+target. The sweep and planned-height columns are live runs of this code; the
+fixed schedule column is its own commit, `140dcbf4`.
 
 ## Headless benchmark history
 
