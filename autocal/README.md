@@ -631,61 +631,68 @@ to the `--stable-step-mm` stop.
 
 ### Ellipsoid autocal (sphere meshes)
 
-`--collection-shape mesh` (default `sweep`) runs a separate Hangprinter autocal,
-`ellipsoid_autocal.py`, that never plans from a model. It fits with the ellipse
-fit; `--no-ellipse-reference-fit` fits the same meshes with the point fit instead.
+`--ellipsoid-shape` runs a separate Hangprinter autocal, `ellipsoid_autocal.py`.
+It fits with `--ellipsoid-fit` by default; `--point-fit` (or `--no-ellipsoid-fit`)
+fits the same data with the point fit. The default `--ellipse-shape` collects
+planned flat sweeps and fits them with `--point-fit` or `--ellipse-fit`. An
+ellipsoid fit needs ellipsoid data; the ellipse fit of ellipsoid data is not
+implemented.
 
-A mesh holds one line (D, or the top line on HP5) at one length, so the effector
-stays on a sphere around that anchor. There are four meshes, with the held line
-shortened by 0, 1/3, 2/3 and 1 times the travel, and they are backfilled: each
-visit adds one row per free line to one sphere, in turn. A row also holds that
-free line, the level line, and is an ordinary force sweep: the drive pulls out
-in force mode until it stalls, then steps back to its start with the sensor in
-force mode. Each visit holds the level lines at a new fraction of the travel
-(1, 0.5, 0, 0.75, 0.25, rotated so the first four visits all differ), so it
-covers a new band of its sphere. Rows have five points per direction (30 points
-per HP4 visit, 40 on HP5). The travel is measured while the first visit is
-size-tuned, so the collector finds every reachable range itself. The collector
-takes one held length per row from the sweep config file (`[0,3] 1 2 fixed=430,-215`).
-A row it cannot measure after the first visit is recorded as a rejection and the
-rest of the visit is kept.
+An ellipsoid sweep holds one line (D, or the top line on HP5) at one length, so
+the effector stays on a sphere around that anchor. It has one row per free line;
+a row also holds that free line, the level line, and is an ordinary force sweep
+with five points per direction. The heights:
 
-The anchors come from `ellipse_fit.py` by default. Every point of a mesh lies on one
-ellipsoid in squared-length space; points are grouped by which lines they
-measured, so HP5 rows with and without an accepted spare range both count. The
-fit also estimates home offsets with the point fit's prior and guards: offsets of
-0.2 mm cost about 16 mm of anchor error when ignored. After each visit the fit is
-repeated from the blind seed (at 1x, 2x and 4x scale, since the seed
-underestimates the anchor distances and HP5 otherwise settles two metres off)
-and from the previous fit; the lowest rms wins. Line stretch is corrected at
-the recorded constant forces of any mesh data, by both fits, also on HP3/HP4,
-whose sweep autocal leaves stretch to equal-strain collection; without it the
-HP3/HP4 meshes end 1.2-2.2 mm off. The run stops when two consecutive visits
-move no anchor coordinate by more than `--stable-step-mm` (once every sphere has
-a visit), when the stop file appears, after all twenty visits, or when a
-collection fails once every sphere has a visit (the fit so far is kept).
-The reported uncertainty is the largest anchor shift when one row is left
-out. `--no-collect` replays a dataset visit by visit; sweeps of older datasets that
-hold the same line at the same length are treated as one sphere.
+1. the bootstrap rows, with the held line at home (the lowest sphere);
+2. half way up to the highest the held anchor's clearance allows (the effector
+   stays 10% of the anchor's home distance away), by the fit of the first;
+3. that highest sphere, by the fit of the first two;
+4. further ellipsoids split the largest gap between the held lengths so far,
+   tried ones included, up to six.
 
-Live headless runs on 2026-11-19/20, one per machine, max anchor coordinate error
-and simulated time (blind collection is deterministic, so reruns repeat the data).
-"Distinct" is the earlier schedule, where every mesh held a new length (0, -1,
--0.5, -1.5, 0, -0.5, -1, -0.5 x travel, with levels 1, 0.5, 1, 0, 0.5, 0, 1, 0.5),
-so meshes at a repeated length stayed separate. "Backfill" is the current one.
+From the second on, each level line first settles with every free line idling
+(the effector hangs below the held anchor), then shortens half way to the
+shortest it can be on that sphere (`fixed=n-184,-850` in the sweep config). Left
+at its idle length a level line is nearly slack, which biased HP5 by 3 mm;
+shortened all the way, a row's circle shrinks to a point and the row is
+unmeasurable.
 
-| Machine | Sweeps, point fit | Distinct meshes | Backfill, 4 spheres to -1x |
+The collector checks every positioning move against the encoders. A relative
+move lands on the firmware's command, and a saturated motor leaves its command
+ahead of its encoder, so one correction from the encoders follows each move and
+each return to origin. A held motor still short after it is saturated: its
+command is backed off past the reached length (three times the miss, at most a
+quarter of the move) and the length it holds is recorded. A row whose drive then
+finds no measurable interval is rejected and the run goes on.
+
+The fit estimates home offsets, corrects line stretch at the recorded constant
+forces (also on HP3/HP4) and starts from the blind seed at 1x, 2x and 4x scale.
+From the third ellipsoid on, the run stops when the last ellipsoid moved no
+anchor coordinate by more than `--stable-step-mm` and leaving out any one row
+moves none by more than twice that. The reported uncertainty is that row
+jackknife. `--no-collect` replays a dataset ellipsoid by ellipsoid.
+
+Live headless runs, 2026-11-20, one per machine, max anchor coordinate error and
+simulated time. Collection is deterministic, so a rerun repeats a row.
+
+| Machine | Sweeps, point fit | Earlier fixed schedule | Planned heights |
 | --- | --- | --- | --- |
-| HP3 | 0.81 mm, 5516 s | 0.29 mm, 5177 s, 6 meshes | 1.21 mm, 5024 s, 6 visits |
-| HP4 | 0.56 mm, 4897 s | 0.31 mm, 6491 s, 7 meshes | 0.61 mm, 8622 s, 10 visits |
-| HP5 | 0.85 mm, 3762 s | 0.56 mm, 8326 s, 8 meshes | 1.15 mm, 9054 s, 8 visits |
-| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.16 mm, 8347 s, 6 meshes | 0.61 mm, 13731 s, 10 visits |
+| HP3 | 0.81 mm, 5516 s | 0.29 mm, 5177 s, 6 meshes | 0.83 mm, 6160 s, 6 ellipsoids |
+| HP4 | 0.56 mm, 4897 s | 0.31 mm, 6491 s, 7 meshes | 0.81 mm, 5460 s, 5 ellipsoids |
+| HP5 | 0.85 mm, 3762 s | 0.56 mm, 8326 s, 8 meshes | 1.73 mm, 7667 s, 5 ellipsoids |
+| HP5 pulley-reduced | 1.30 mm, 4672 s | 1.16 mm, 8347 s, 6 meshes | 1.79 mm, 7763 s, 5 ellipsoids |
 
-Backfilling spheres down to -1.5x travel ended at 1.55 mm (HP3), 0.85 mm (HP4)
-and 0.79 mm (HP5 pulley-reduced); HP5 lost its run when held -1.5 with level
--0.75 slipped the top line. On HP3/HP4/HP5 the backfill's error stays at about
-1 mm while its row jackknife falls to 0.3-1 mm: a bias that more rows on the same
-four spheres do not remove. On HP3's backfill data both fits agree to 0.01 mm.
+The earlier fixed schedule held the line at 0 to -1.5 x travel with level lines
+shortened or lengthened from home; its HP5 run lost its last mesh to the
+saturation that the collector now handles. Planned heights lose no rows to
+failures, but are less accurate. The error sits in the held anchor's height (HP5
+top z +1.7 mm, HP4 D.z -0.8 mm). The data fits the true anchors to 0.02-0.03 mm
+rms with no length-scale error, and every dataset's posterior std for that
+coordinate is 0.3-0.5 mm, whatever the plan: a systematic misfit of a few
+hundredths of a millimetre, amplified about 15 times, decides the result more
+than the plan does. On these datasets the point fit matches the ellipsoid fit to
+0.1 mm, clean and with pulls, outliers or encoder noise added; with 0.2 mm noise
+both reach about 4 mm, as the point fit does on the sweep benchmark.
 
 ## Headless benchmark history
 

@@ -12,9 +12,12 @@ The heights follow the reachable volume rather than a fixed schedule:
    by the fit of the first;
 3. that highest sphere, by the fit of the first two.
 Later ellipsoids, when the fit has not settled, split the largest gap between
-held lengths so far. From the second on, each level line holds where it settles
-once the held line is in place ('n' in the sweep config), so no level length
-fights a held one. A held line that cannot reach its length holds where it can
+held lengths so far. From the second on, each level line settles once the held
+line is in place, with every free line idling, and is then shortened from there
+('n-<mm>' in the sweep config) half way to the shortest it can be on that
+sphere, by the latest fit. Idling, it would be nearly slack; shortened all the
+way, its row's circle would shrink to a point. Half way it stays taut, pulls the
+effector out towards its anchor and leaves a wide circle. A held line that cannot reach its length holds where it can
 (the collector backs it off its saturation), and the recorded lengths are used.
 
 The anchors come from the ellipse fit (ellipse_fit.py): each sphere's points lie
@@ -53,11 +56,11 @@ SEED_SCALES = (1.0, 2.0, 4.0)
 FITS = ("ellipsoid", "point")
 
 
-def mesh_rows(machine_type: str, held_mm: Optional[float]) -> List[str]:
+def mesh_rows(machine_type: str, held_mm: Optional[float], level_mm: Optional[Dict[int, float]] = None) -> List[str]:
     """Sweep config lines for one ellipsoid: one row per free line held as level line.
 
     None gives the bootstrap rows (the collector's default targets). Otherwise the
-    held line holds `held_mm` and each level line holds where it settles.
+    held line holds `held_mm` and each level line `level_mm[line]` from where it settles.
     """
     configs = generate_sweep_configs(MachineConfig.from_type(MachineType(machine_type)))
     held = held_anchor(machine_type)
@@ -66,7 +69,8 @@ def mesh_rows(machine_type: str, held_mm: Optional[float]) -> List[str]:
         fixed = sorted(int(anchor) for anchor in config["fixed_anchors"])
         row = f"[{','.join(map(str, fixed))}] {config['drive_anchor']} {config['sensor_anchor']}"
         if held_mm is not None:
-            row += " fixed=" + ",".join(f"{held_mm:.3f}" if anchor == held else "n" for anchor in fixed)
+            row += " fixed=" + ",".join(f"{held_mm:.3f}" if anchor == held
+                                        else f"n{(level_mm or {}).get(anchor, 0.0):+.3f}" for anchor in fixed)
         lines.append(row)
     return lines
 
@@ -82,6 +86,24 @@ def highest_held_mm(anchors: np.ndarray, held: int) -> float:
     Home is the origin, so the held line's home length is the anchor's distance.
     """
     return -(1.0 - ANCHOR_CLEARANCE_SHARE) * float(np.linalg.norm(anchors[held]))
+
+
+def level_offsets_mm(anchors: np.ndarray, held: int, held_mm: float) -> Dict[int, float]:
+    """Per level line: half the way from its idle length to its shortest on the held sphere.
+
+    Idling, the effector hangs straight below the held anchor. The shortest a
+    level line can be is where the sphere comes closest to its anchor.
+    """
+    top = anchors[held]
+    radius = float(np.linalg.norm(top)) + held_mm
+    hanging = top - np.array([0.0, 0.0, radius])
+    offsets = {}
+    for line in range(len(anchors)):
+        if line != held:
+            idle = float(np.linalg.norm(anchors[line] - hanging))
+            shortest = float(np.linalg.norm(anchors[line] - top)) - radius
+            offsets[line] = -0.5 * (idle - shortest)
+    return offsets
 
 
 def next_held_mm(index: int, anchors: Optional[np.ndarray], held: int, used: Sequence[float]) -> Optional[float]:
@@ -164,7 +186,8 @@ def run_ellipsoid_autocal(
         name = f"ellipsoid_{index + 1:03d}"
         cfg = dataset_path.with_suffix(f".{name}.cfg.txt")
         out = dataset_path.with_suffix(f".{name}.json")
-        cfg.write_text("\n".join(mesh_rows(machine_type, held_mm)) + "\n")
+        levels = None if held_mm is None else level_offsets_mm(history[-1], held, held_mm)
+        cfg.write_text("\n".join(mesh_rows(machine_type, held_mm, levels)) + "\n")
         args = list(collector_args)
         if dataset:
             args, _, _ = _inject_force_args(dataset, [a for a in args if a != "--hp-sim-reset"])

@@ -6,17 +6,28 @@ import pytest
 
 from autocal.dataset_roles import measurement_groups
 from autocal.ellipse_fit import fit_ellipses
-from autocal.ellipsoid_autocal import fit, highest_held_mm, mesh_rows, next_held_mm, run_ellipsoid_autocal, tag_mesh, visits
+from autocal.ellipsoid_autocal import fit, highest_held_mm, level_offsets_mm, mesh_rows, next_held_mm, run_ellipsoid_autocal, tag_mesh, visits
 from autocal.tests.test_disturbed_robustness import TRUTH, _load
 from autocal.theoretical_ellipse import compute_constraint_circle_3d
 
 
 def test_mesh_rows_hold_each_free_line_once():
     assert mesh_rows("hangprinter_4", None) == ["[0,3] 1 2", "[1,3] 0 2", "[2,3] 0 1"]
-    assert mesh_rows("hangprinter_4", -800.0) == ["[0,3] 1 2 fixed=n,-800.000", "[1,3] 0 2 fixed=n,-800.000",
-                                                  "[2,3] 0 1 fixed=n,-800.000"]
+    assert mesh_rows("hangprinter_4", -800.0, {0: -430.0, 1: -20.0, 2: 0.0}) == [
+        "[0,3] 1 2 fixed=n-430.000,-800.000", "[1,3] 0 2 fixed=n-20.000,-800.000", "[2,3] 0 1 fixed=n+0.000,-800.000"]
     hp5 = mesh_rows("hangprinter_5", -150.0)
-    assert len(hp5) == 4 and all(row.endswith("fixed=n,-150.000") for row in hp5)
+    assert len(hp5) == 4 and all(row.endswith("fixed=n+0.000,-150.000") for row in hp5)
+
+
+def test_level_lines_shorten_half_way_to_their_shortest():
+    anchors = np.asarray(TRUTH["hangprinter_4"], dtype=float)
+    offsets = level_offsets_mm(anchors, 3, -850.0)
+    radius = 1900.0 - 850.0
+    hanging = np.array([0.0, 0.0, 1900.0 - radius])
+    idle = np.linalg.norm(anchors[0] - hanging)
+    shortest = np.linalg.norm(anchors[0] - anchors[3]) - radius
+    assert offsets[0] == pytest.approx(-0.5 * (idle - shortest))
+    assert set(offsets) == {0, 1, 2} and all(offset < 0 for offset in offsets.values())
 
 
 def test_heights_go_low_middle_highest_then_split_the_largest_gap():

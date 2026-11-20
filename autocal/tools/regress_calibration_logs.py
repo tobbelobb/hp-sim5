@@ -297,7 +297,7 @@ DATASETS = [
     ),
     *(
         DatasetSpec(
-            # Live headless autocal with --collection-shape mesh from the working tree
+            # Live headless autocal with --ellipsoid-shape from the working tree
             # on top of ac9000fe (2026-11-19): three sweeps, then sphere-sector meshes
             # stored as one-point records sharing metadata.mesh. Replays a whole mesh
             # per iteration.

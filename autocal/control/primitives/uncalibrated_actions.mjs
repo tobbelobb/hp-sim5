@@ -549,8 +549,9 @@ function formatAxisDelta(axis, delta) {
 // one correction from the encoders removes any such earlier mismatch. A motor
 // still short after it is saturated where it is: its command is backed off past
 // the reached length by three times its miss, or `backoffShare` of the distance
-// it moved if more, so it holds without straining at the edge of what it can
-// reach. The lengths the motors then hold are returned.
+// it moved if more, but at most a quarter of that distance, so it holds without
+// straining at the edge of what it can reach. The lengths the motors then hold
+// are returned.
 export async function settleOnTargets(sendFn, {
   motorIds, axes, mmPerDeg, targets, starts, feed, speedup, delayFn,
   toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG, backoffShare = 0.02,
@@ -573,7 +574,8 @@ export async function settleOnTargets(sendFn, {
   const backoff = saturated.map((miss, idx) => {
     if (!miss) return 0;
     const direction = Math.sign(targets[idx] - starts[idx]);
-    const margin = Math.max(3 * Math.abs(targets[idx] - lengths[idx]), backoffShare * Math.abs(lengths[idx] - starts[idx]));
+    const moved = Math.abs(lengths[idx] - starts[idx]);
+    const margin = Math.min(0.25 * moved, Math.max(3 * Math.abs(targets[idx] - lengths[idx]), backoffShare * moved));
     return lengths[idx] - direction * margin - commanded[idx];
   });
   await move(backoff);
