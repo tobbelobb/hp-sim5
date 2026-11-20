@@ -26,8 +26,10 @@ def test_headless_implies_sim_and_keeps_fitting_options(tmp_path, monkeypatch):
         return 0
 
     monkeypatch.setattr(ac, '_run_full_auto', run)
+    dataset = tmp_path / 'sweeps.json'
+    dataset.write_text('{}')
     assert ac.main(['--headless-sim', '--machine-type', 'hangprinter_3', '--no-collect',
-                    '--dataset', str(tmp_path / 'sweeps.json'), '--find-radii', 'global',
+                    '--dataset', str(dataset), '--find-radii', 'global',
                     '--base-radii', '30', '--r0-bounds', '39,40']) == 0
     assert captured == dict(sim=True, machine='hangprinter_3', radii='global', bounds=(39., 40.),
                             no_collect=True, headless=None)
@@ -491,3 +493,11 @@ def test_scene_override_is_recorded(tmp_path, monkeypatch):
     service = HeadlessSimulation(args, [])
     assert service.scene == scene
     assert service.manifest['scene'] == str(scene)
+
+
+def test_simulated_seconds_follows_latest_service_snapshot(tmp_path):
+    service = HeadlessSimulation.__new__(HeadlessSimulation)
+    service.directory = tmp_path
+    assert service.simulated_seconds() is None
+    (tmp_path / 'clock.json').write_text(json.dumps(dict(simulated_s=5.5, wall_s=1.)))
+    assert service.simulated_seconds() == 5.5

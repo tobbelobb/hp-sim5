@@ -159,3 +159,19 @@ def test_sample_theoretical_raw_curve_returns_finite_points_for_slideprinter_swe
     assert len(curve) >= 32
     assert all(np.isfinite(x) and np.isfinite(y) for x, y in curve)
     assert all(x > 0.0 and y > 0.0 for x, y in curve)
+
+
+def test_plot_reader_accepts_formatted_iteration_lines():
+    import autocal.autocal as autocal_module
+
+    raw = (
+        "; Anchors: [[0.0, -1900.0], [1645.4, 950.0], [-1645.4, 950.0]]\n"
+        "; line_model: ... effective=[39.1, 39.1, 39.1]\n"
+        "; selected run=default fit_score_ui=0.8264 rank_score=4.351\n"
+    )
+    formatted = "\n".join(
+        autocal_module._format_log_entry(line, wall_s=2.0, sim_s=0.5) for line in raw.splitlines()
+    )
+
+    assert len(_parse_iteration_models_from_log_text(raw)) == 1
+    assert len(_parse_iteration_models_from_log_text(formatted)) == 1

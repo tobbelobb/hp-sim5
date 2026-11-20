@@ -3778,7 +3778,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help='Print per-iteration anchors, spool settings and rank diagnostics.',
+        help="Print every log entry to the console, with its wall and simulation timestamps.",
     )
     parser.add_argument(
         "--patience",
