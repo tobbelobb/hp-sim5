@@ -147,7 +147,6 @@ def fit_ellipses(
     use_noise_mean: bool = True,
     fit_home_offsets: bool = False,
     home_offset_prior_sigma_mm: float = 5.0,
-    correct_constant_force: bool = False,
 ) -> Dict[str, object]:
     """Fit anchors to every sweep's predicted ellipses and every mesh's ellipsoids.
 
@@ -157,11 +156,8 @@ def fit_ellipses(
     prior and the same guards: dropped when the data leaves them undetermined
     (posterior std above half the prior), implausible (beyond two prior sigmas)
     or when they push an anchor onto a far bound.
-
-    `correct_constant_force` corrects line stretch on constant-force data too,
-    which the point fit leaves to equal-strain collection on HP3/HP4.
     """
-    options = (low_anchor_z, use_noise_mean, home_offset_prior_sigma_mm, correct_constant_force)
+    options = (low_anchor_z, use_noise_mean, home_offset_prior_sigma_mm)
     rigid = _fit(dataset, initial_anchors, False, *options)
     if not fit_home_offsets:
         return rigid
@@ -176,8 +172,7 @@ def fit_ellipses(
     return fit
 
 
-def _fit(dataset, initial_anchors, fit_home_offsets, low_anchor_z, use_noise_mean, home_offset_prior_sigma_mm,
-         correct_constant_force):
+def _fit(dataset, initial_anchors, fit_home_offsets, low_anchor_z, use_noise_mean, home_offset_prior_sigma_mm):
     machine_type = str(dataset["machine_type"])
     num_anchors, dimensions = int(dataset["num_anchors"]), int(dataset["dimensions"])
     if not machine_type.startswith("hangprinter_") or dimensions != 3:
@@ -185,7 +180,7 @@ def _fit(dataset, initial_anchors, fit_home_offsets, low_anchor_z, use_noise_mea
     if any(len(sweep["fixed_anchors"]) != 2 for sweep in dataset["sweeps"] if mesh_metadata(sweep) is None):
         raise ValueError("The ellipse reference fit needs sweeps with exactly two held lines")
     recorded = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
-    stretch = dataset_stretch(dataset, constant_force=correct_constant_force)
+    stretch = dataset_stretch(dataset)
     sweeps = _sweep_ellipses(dataset, recorded)
     lower, upper = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
     num_params = lower.size

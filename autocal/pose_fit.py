@@ -105,19 +105,20 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
     }
 
 
-def dataset_stretch(dataset: dict, *, constant_force: bool = False):
+def dataset_stretch(dataset: dict):
     """Recorded sensor loads plus firmware compliance for per-pose range correction.
 
     Static equilibrium and every commanded torque determine the line loads.
     A rejected extra range still contributes its commanded force.
-    Historical constant-force records without extra load evidence retain the rigid
-    fit, unless `constant_force` asks for the correction on any constant-force
-    data: the ellipsoid autocal's blind meshes on HP3/HP4 rely on it.
+    Historical constant-force sweep records without extra load evidence retain the
+    rigid fit. Sphere meshes are always corrected unless collected at equal strain:
+    the ellipsoid autocal's constant-force meshes on HP3/HP4 rely on it.
     """
+    from autocal.dataset_roles import mesh_metadata
     from autocal.equal_strain import is_equal_strain
     # Only redundant machines use this range model as their primary objective.
     # Equal-strain collection otherwise turns stretch into rigid home offsets.
-    if constant_force:
+    if any(mesh_metadata(sweep) is not None for sweep in dataset.get("sweeps", [])):
         if is_equal_strain(dataset):
             return None
     elif (int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1

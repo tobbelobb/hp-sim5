@@ -1,4 +1,4 @@
-"""Ellipsoid autocal: blind sphere-mesh rows, ellipsoid fit with home offsets, the replay loop."""
+"""Ellipsoid autocal: blind sphere-mesh rows, backfilled spheres, fits with home offsets, the replay loop."""
 import json
 
 import numpy as np
@@ -6,7 +6,7 @@ import pytest
 
 from autocal.dataset_roles import measurement_groups
 from autocal.ellipse_fit import fit_ellipses
-from autocal.ellipsoid_autocal import mesh_rows, run_ellipsoid_autocal, tag_mesh
+from autocal.ellipsoid_autocal import SCHEDULE, SPHERES, fit, mesh_rows, run_ellipsoid_autocal, tag_mesh, visits
 from autocal.tests.test_disturbed_robustness import TRUTH, _load
 from autocal.theoretical_ellipse import compute_constraint_circle_3d
 
@@ -19,7 +19,14 @@ def test_mesh_rows_hold_each_free_line_once():
     assert len(hp5) == 4 and all(row.endswith("fixed=-150.000,0.000") for row in hp5)
 
 
-def _blind_mesh(anchors, offsets, held_length, level_length, mesh_id):
+def test_schedule_backfills_each_sphere_once_per_level():
+    assert SCHEDULE[0] == (0.0, 1.0)
+    assert len(set(SCHEDULE)) == len(SCHEDULE)
+    assert [held for held, _ in SCHEDULE[:len(SPHERES)]] == list(SPHERES)
+    assert len({level for _, level in SCHEDULE[:len(SPHERES)]}) == len(SPHERES)
+
+
+def _blind_mesh(anchors, offsets, held_length, level_length, mesh_id, visit=1):
     """Rows as the collector records them, measured exactly at the true geometry."""
     norms = np.linalg.norm(anchors, axis=1)
     held = len(anchors) - 1
@@ -39,7 +46,7 @@ def _blind_mesh(anchors, offsets, held_length, level_length, mesh_id):
                            "l_sensor_mu": reading(sensor), "step_index": len(points)})
         records.append({"fixed_anchors": [level, held], "fixed_lengths": [level_length, held_length],
                         "drive_anchor": drive, "sensor_anchor": sensor, "data_points": points})
-    tag_mesh(records, mesh_id, held)
+    tag_mesh(records, mesh_id, held, visit)
     return records
 
 
@@ -56,6 +63,22 @@ def test_ellipsoid_fit_recovers_anchors_and_home_offsets():
     assert fit["home_offsets_mm"][3] == pytest.approx(0.4, abs=0.02)
     # Ignoring the offset biases the anchors by far more than the offset itself.
     assert np.max(np.abs(fit_ellipses(dataset, start)["anchors"] - anchors)) > 1.0
+
+
+def test_backfilled_spheres_share_a_mesh_and_replay_by_visit():
+    anchors = np.asarray(TRUTH["hangprinter_4"], dtype=float)
+    offsets = np.array([0.0, 0.0, 0.0, 0.4])
+    schedule = [(0, 400), (-200, 200), (-400, 0), (0, 200), (-200, 0)]
+    sweeps = [record for visit, (held, level) in enumerate(schedule, start=1)
+              for record in _blind_mesh(anchors, offsets, held, level, f"sphere_{held}", visit)]
+    dataset = {"machine_type": "hangprinter_4", "num_anchors": 4, "dimensions": 3, "config": {}, "sweeps": sweeps}
+    assert len(measurement_groups(dataset)) == 3
+    assert visits(dataset) == [list(range(3 * k, 3 * k + 3)) for k in range(len(schedule))]
+    start = anchors + np.random.default_rng(1).normal(0, 20, anchors.shape)
+    for point_fit in (False, True):
+        result = fit(dataset, [start], None, True, point_fit)
+        assert np.max(np.abs(result["anchors"] - anchors)) < 0.05
+        assert result["home_offsets_mm"][3] == pytest.approx(0.4, abs=0.02)
 
 
 @pytest.mark.heavy

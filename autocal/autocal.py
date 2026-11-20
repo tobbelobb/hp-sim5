@@ -195,7 +195,7 @@ def _full_auto_loop(
     verbose: bool,
     low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
-    ellipse_reference_fit: bool = False,
+    ellipse_reference_fit: Optional[bool] = None,
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -559,7 +559,8 @@ def _full_auto_loop(
                 run_collection=_collect_mesh, log_line=_log_line, log_console=_log_console,
                 append_log=lambda row: _append_jsonl(log_path, row), no_collect=bool(no_collect),
                 low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
-                stable_step_mm=float(stable_step_mm), stop_file=_full_auto_stop_path(dataset_path))
+                stable_step_mm=float(stable_step_mm), stop_file=_full_auto_stop_path(dataset_path),
+                point_fit=ellipse_reference_fit is False)
         except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
             _log_console(f"; ellipsoid autocal stopped: {error!r}; data so far: {dataset_path}")
             return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
@@ -1636,7 +1637,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
-        ellipse_reference_fit=bool(args.ellipse_reference_fit),
+        ellipse_reference_fit=args.ellipse_reference_fit,
         equal_strain=bool(args.equal_strain),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,

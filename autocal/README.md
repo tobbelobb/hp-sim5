@@ -632,36 +632,40 @@ to the `--stable-step-mm` stop.
 ### Ellipsoid autocal (sphere meshes)
 
 `--collection-shape mesh` (default `sweep`) runs a separate Hangprinter autocal,
-`ellipsoid_autocal.py`, that neither plans from a model nor uses the point fit.
+`ellipsoid_autocal.py`, that never plans from a model. It fits with the ellipse
+fit; `--no-ellipse-reference-fit` fits the same meshes with the point fit instead.
 
 A mesh holds one line (D, or the top line on HP5) at one length, so the effector
-stays on a sphere around that anchor. Each row also holds one more line, the
-level line, and is an ordinary force sweep: the drive pulls out in force mode
-until it stalls, then steps back to its start with the sensor in force mode. The
-rows of a mesh hold each free line as level line in turn, with five points per
-direction (30 points per HP4 mesh, 40 on HP5). Held and level lengths follow a
-fixed schedule of fractions of the travel measured while the first mesh is
+stays on a sphere around that anchor. There are four meshes, with the held line
+shortened by 0, 0.5, 1 and 1.5 times the travel, and they are backfilled: each
+visit adds one row per free line to one sphere, in turn. A row also holds that
+free line, the level line, and is an ordinary force sweep: the drive pulls out
+in force mode until it stalls, then steps back to its start with the sensor in
+force mode. Each visit holds the level lines at a new fraction of the travel
+(1, 0.5, 0, 0.75, 0.25, rotated so the first four visits all differ), so it
+covers a new band of its sphere. Rows have five points per direction (30 points
+per HP4 visit, 40 on HP5). The travel is measured while the first visit is
 size-tuned, so the collector finds every reachable range itself. The collector
 takes one held length per row from the sweep config file (`[0,3] 1 2 fixed=430,-215`).
-A row it cannot measure after the first mesh is recorded as a rejection and the
-rest of the mesh is kept.
+A row it cannot measure after the first visit is recorded as a rejection and the
+rest of the visit is kept.
 
-The anchors come from `ellipse_fit.py` alone. Every point of a mesh lies on one
+The anchors come from `ellipse_fit.py` by default. Every point of a mesh lies on one
 ellipsoid in squared-length space; points are grouped by which lines they
 measured, so HP5 rows with and without an accepted spare range both count. The
 fit also estimates home offsets with the point fit's prior and guards: offsets of
-0.2 mm cost about 16 mm of anchor error when ignored. After each mesh the fit is
+0.2 mm cost about 16 mm of anchor error when ignored. After each visit the fit is
 repeated from the blind seed (at 1x, 2x and 4x scale, since the seed
 underestimates the anchor distances and HP5 otherwise settles two metres off)
 and from the previous fit; the lowest rms wins. Line stretch is corrected at
-the recorded constant forces, also on HP3/HP4, whose point fit leaves stretch to
-equal-strain collection; without it the HP3/HP4 meshes end 1.2-2.2 mm off. The
-run stops when two consecutive meshes move no anchor coordinate by more than
-`--stable-step-mm` (after at least three meshes), when the stop file appears,
-after the eighth mesh, or when a collection fails after three meshes (the fit
-so far is kept).
+the recorded constant forces of any mesh data, by both fits, also on HP3/HP4,
+whose sweep autocal leaves stretch to equal-strain collection; without it the
+HP3/HP4 meshes end 1.2-2.2 mm off. The run stops when two consecutive visits
+move no anchor coordinate by more than `--stable-step-mm` (once every sphere has
+a visit), when the stop file appears, after all twenty visits, or when a
+collection fails once every sphere has a visit (the fit so far is kept).
 The reported uncertainty is the largest anchor shift when one row is left
-out. `--no-collect` replays a dataset mesh by mesh; sweeps of older datasets that
+out. `--no-collect` replays a dataset visit by visit; sweeps of older datasets that
 hold the same line at the same length are treated as one sphere.
 
 Live headless runs on 2026-11-19/20, one per machine, max anchor coordinate error
