@@ -999,3 +999,70 @@ def test_spool_fitting_run_stops_when_every_future_prediction_fails(tmp_path, mo
     output = capsys.readouterr().out
     assert "all held-out predictions failed" in output
     assert "== Calibration summary ==" not in output
+
+
+def test_no_collect_does_not_bootstrap_if_the_dataset_disappears_after_the_early_check(tmp_path, monkeypatch):
+    dataset = tmp_path / "vanishing_dataset.json"
+    _write_dataset(dataset, sweeps=5)
+
+    def move_dataset_away(_path):
+        dataset.unlink()
+        return None
+
+    def collection_started(*_args, **_kwargs):
+        raise AssertionError("bootstrap collection started with --no-collect")
+
+    monkeypatch.setattr(ac, "bootstrap_state_error", move_dataset_away)
+    monkeypatch.setattr(ac.subprocess, "Popen", collection_started)
+    monkeypatch.setattr(ac.subprocess, "run", collection_started)
+
+    rc = ac.full_auto_loop(
+        work_dataset=dataset,
+        machine_type="slideprinter",
+        max_steps=1,
+        solve_restarts=1,
+        solve_iterations=1,
+        solve_optimizer="L-BFGS-B",
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        residuals_csv=None,
+        generate_report=False,
+        find_radii="off",
+        find_buildup_factor="off",
+        base_radii=None,
+        buildup_factor=None,
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        theta0_mode="zero",
+        line_width=0.4,
+        sigma_floor_mm=None,
+        candidate_count=16,
+        delta_min=None,
+        delta_max=None,
+        regularization=0.0,
+        min_fixed_delta_spacing_mm=0.0,
+        write_cfg=None,
+        collector_args=[],
+        sim=False,
+        keep_sim_alive=False,
+        hp_sim_reset=False,
+        sweep_points=None,
+        output_with_explanations=False,
+        full_auto_runs=None,
+        full_auto_log=None,
+        patience=20,
+        verbose=False,
+        no_collect=True,
+    )
+
+    assert rc == 2
+    assert not dataset.exists()

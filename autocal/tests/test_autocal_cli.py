@@ -313,7 +313,7 @@ def test_stable_step_must_be_a_finite_nonnegative_distance(tmp_path, value):
 
 def test_log_entries_put_wall_and_sim_time_before_the_message():
     line = ac._format_log_entry("; full-auto: stopping", wall_s=1.5, sim_s=None)
-    assert line == "     1.50s           -  | full-auto: stopping"
+    assert line == "     1.50s           -  | ; full-auto: stopping"
     assert ac._format_log_entry("x", wall_s=12.0, sim_s=3.25).startswith("    12.00s       3.25s  | x")
 
 
@@ -340,3 +340,22 @@ def test_no_collect_refuses_a_missing_dataset_without_collecting(tmp_path, monke
     assert refused.value.code == 2
     assert "--no-collect needs an existing dataset" in capsys.readouterr().err
     assert not dataset.parent.exists()
+
+
+def test_collector_prompt_without_newline_is_yielded_while_waiting():
+    import subprocess
+    import sys
+
+    child = subprocess.Popen(
+        [sys.executable, "-c",
+         "import sys, time; sys.stdout.write('Enter to send'); sys.stdout.flush(); "
+         "time.sleep(2); print('done')"],
+        stdout=subprocess.PIPE,
+    )
+    try:
+        lines = ac._collector_output_lines(child.stdout)
+        assert next(lines) == "Enter to send"
+        assert child.poll() is None  # the prompt arrived while the collector was still waiting
+        assert list(lines) == ["done"]
+    finally:
+        child.wait()

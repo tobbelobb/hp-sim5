@@ -635,3 +635,20 @@ def test_parse_summary_reads_anchor_uncertainty_as_the_score():
     summary = rcl.parse_summary(text, [30.0] * 5)
     assert summary.fit_score_ui == pytest.approx(0.5896)
     assert len(summary.anchors) == 5
+
+
+def test_formatted_log_lines_still_parse_as_iterations():
+    import autocal.autocal as autocal_module
+
+    raw = """
+; Anchors: [[0.0, -1900.0], [1645.4, 950.0], [-1645.4, 950.0]]
+; line_model: ... effective=[39.1, 39.1, 39.1]
+; selected run=default fit_score_ui=0.8264 score_basis=layered-calibrated cost=143.7 rel_std=5.376 max_std=1.159e+04mm rank_score=4.351 iteration_adjust=-0.1557 coverage_adjust=-0.2892 history_rank_score=4.379
+""".strip()
+    formatted = "\n".join(
+        autocal_module._format_log_entry(line, wall_s=1.0, sim_s=None) for line in raw.splitlines()
+    )
+
+    assert len(rcl.parse_iterations(raw)) == 1
+    assert len(rcl.parse_iterations(formatted)) == 1
+    assert rcl.parse_iterations(formatted)[0].fit_score_ui == 0.8264

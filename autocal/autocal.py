@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import select
 import signal
 import sys
 import time
@@ -78,8 +79,30 @@ LOG_COLUMN_HEADER = f"{'wall':>10}  {'sim':>10}  | message"
 def _format_log_entry(msg: str, *, wall_s: float, sim_s: Optional[float]) -> str:
     """Timestamp columns first, so the messages line up and can be scanned down the file."""
     sim = "-" if sim_s is None else f"{sim_s:.2f}s"
-    text = msg[2:] if msg.startswith("; ") else msg
-    return f"{wall_s:9.2f}s  {sim:>10}  | {text}"
+    # Keep the message verbatim: log readers match markers such as "; selected run=".
+    return f"{wall_s:9.2f}s  {sim:>10}  | {msg}"
+
+
+def _collector_output_lines(stream, idle_s: float = 0.25):
+    """Yield a collector's output line by line. A fragment that stops arriving, such as a
+    prompt waiting for Enter, is yielded as soon as the pipe goes idle rather than held back."""
+    fd = stream.fileno()
+    pending = b""
+    while True:
+        ready, _, _ = select.select([fd], [], [], idle_s)
+        if not ready:
+            if pending:
+                yield pending.decode("utf-8", "replace")
+                pending = b""
+            continue
+        chunk = os.read(fd, 65536)
+        if not chunk:
+            break
+        *lines, pending = (pending + chunk).split(b"\n")
+        for line in lines:
+            yield line.rstrip(b"\r").decode("utf-8", "replace")
+    if pending:
+        yield pending.decode("utf-8", "replace")
 
 
 class _LineSink:
@@ -484,14 +507,14 @@ def _full_auto_loop(
         owns_session = (headless_sim is not None or extended_reference.enabled()) and not os.environ.get('HP_SIM5_AUTOCAL_JOB')
         process = subprocess.Popen(
             cmd, stdin=None if headless_sim is None else subprocess.DEVNULL,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             start_new_session=owns_session,
         )
         if headless_sim is not None:
             headless_sim.track_process('collector', process)
         try:
-            for line in process.stdout:
-                _log_line(line.rstrip("\n"))
+            for line in _collector_output_lines(process.stdout):
+                _log_line(line)
             code = process.wait()
             extended_reference.emit("collection_exit", returncode=code)
             extended_reference.artifact(work_path)
@@ -503,6 +526,9 @@ def _full_auto_loop(
     checked_hp5_seed = None
     collected_bootstrap = not dataset_path.exists()
     if collected_bootstrap:
+        if no_collect:
+            _log_console(f"; --no-collect set but {dataset_path} is missing; not collecting.")
+            return _finalize(2)
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
         checked_bootstrap = (equal_strain and str(machine_type) in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced")
                              and not (_spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)))
