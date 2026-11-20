@@ -13,6 +13,23 @@ and evidence in Git; prefer those links when continuing in another environment.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Ellipsoid autocal: sweeps still win; stretch scale decides accuracy
+
+Status: complete, 2026-11-20. Topics: autocalibration, sphere meshes, ellipsoid fit, point fit, stretch, collector, disturbances, HP3, HP4, HP5.
+
+Sphere-mesh collection was scored by max anchor error × simulated time, with and without offline disturbances, against the default flat sweeps. Six planners were tried.
+- Sweeps with the point fit win once disturbances count.
+- The earlier fixed schedule's 0.3 mm on HP3/HP4 is a knife-edge: held lengths changed by ≤0.12 mm give 1.1 mm.
+- Cause: the held anchor's height is exactly degenerate with the free lines' stretch-correction scale (rms flat, ~8.5 mm per unit). Zero error needs ×0.9 on HP4 and ×1.2 on HP5; HP5 pulley-reduced sweeps also improve from 1.30 to 0.72 mm at ×1.1.
+
+Two collector bugs were fixed:
+- relative moves after motor saturation (the HP5 "slip");
+- held lengths recorded from a post-sweep encoder read, which double-counted drift in every dataset by up to 0.05 mm, and 0.35 mm in some meshes.
+
+Simulation only. Next: attribute free-line tensions or compliance by exact pose/force replay.
+
+[Report and evidence](output/session-2026-11-20-ellipsoid-autocal/report.md).
+
 ## HP4 autocal D.z bias: effector roll and slack parallel lines
 
 Status: complete, 2026-11-18. Topics: autocalibration, HP4, HP5 pulley-reduced, reeving, equal strain, effector rotation.

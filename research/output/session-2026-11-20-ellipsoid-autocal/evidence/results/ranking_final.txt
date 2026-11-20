@@ -1,0 +1,12 @@
+variant    machine                         time s  clean          mixed      noise0.05       noise0.2 mixed+noise0.2  err gm  clean*t     gm*t
+fixellipsoid hangprinter_3                     6068   2.60           2.60           2.38           2.36           3.67    2.69    15768    16293
+fixellipsoid hangprinter_4                     4622   0.46           0.55           0.77           2.41           3.32    1.09     2110     5039
+fixellipsoid hangprinter_5                     6094   1.27           1.16           1.54           2.53           3.81    1.85     7770    11297
+fixellipsoid hangprinter_5_pulley_reduced      6495   2.90           2.51           3.07           4.17           6.18    3.56    18810    23148
+fixsweeps  hangprinter_3                     4587   0.97           0.93           0.95           2.34           2.06    1.33     4434     6086
+fixsweeps  hangprinter_4                     4924   0.74           0.75           1.12           3.08           2.92    1.41     3627     6939
+fixsweeps  hangprinter_5                     3778   1.04           1.16           1.55           4.59           7.57    2.30     3925     8693
+fixsweeps  hangprinter_5_pulley_reduced      4686   0.93           0.91           1.40           4.28           5.72    1.96     4378     9198
+
+fixellipsoid geometric mean over machines: clean err*time    8350, disturbed-inclusive err*time   12105
+fixsweeps  geometric mean over machines: clean err*time    4077, disturbed-inclusive err*time    7623

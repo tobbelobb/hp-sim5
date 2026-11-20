@@ -1,0 +1,15 @@
+ 0 ellipsoid_001 held      0.0 fixed [0, 4] [-413.7, 0] drive 1 rms 0.017 max 0.026
+ 1 ellipsoid_001 held      0.0 fixed [1, 4] [-413.7, 0] drive 0 rms 0.017 max 0.026
+ 2 ellipsoid_001 held      0.0 fixed [2, 4] [-413.7, 0] drive 1 rms 0.020 max 0.039
+ 3 ellipsoid_001 held      0.0 fixed [3, 4] [-413.7, 0] drive 0 rms 0.020 max 0.039
+ 4 ellipsoid_002 held   -870.4 fixed [3, 4] [118.6, -870.4] drive 0 rms 0.029 max 0.051
+ 5 ellipsoid_003 held  -1712.8 fixed [2, 4] [808.3, -1712.8] drive 1 rms 0.013 max 0.019
+ 6 ellipsoid_003 held  -1712.8 fixed [3, 4] [812.2, -1712.8] drive 0 rms 0.019 max 0.032
+ 7 ellipsoid_004 held   -435.3 fixed [0, 4] [-192.4, -435.3] drive 1 rms 0.027 max 0.044
+ 8 ellipsoid_004 held   -435.3 fixed [1, 4] [-192.4, -435.3] drive 0 rms 0.036 max 0.054
+ 9 ellipsoid_004 held   -435.2 fixed [2, 4] [-192.5, -435.2] drive 1 rms 0.018 max 0.031
+10 ellipsoid_004 held   -435.3 fixed [3, 4] [-192.6, -435.3] drive 0 rms 0.028 max 0.060
+11 ellipsoid_005 held  -1291.8 fixed [0, 4] [455.2, -1291.8] drive 1 rms 0.051 max 0.082
+12 ellipsoid_005 held  -1291.7 fixed [1, 4] [455.2, -1291.7] drive 0 rms 0.029 max 0.050
+13 ellipsoid_005 held  -1291.8 fixed [2, 4] [455.1, -1291.8] drive 1 rms 0.060 max 0.098
+14 ellipsoid_005 held  -1291.8 fixed [3, 4] [455.2, -1291.8] drive 0 rms 0.050 max 0.085

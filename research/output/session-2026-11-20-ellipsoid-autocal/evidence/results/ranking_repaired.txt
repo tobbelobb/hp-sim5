@@ -1,0 +1,27 @@
+variant    machine                         time s  clean          mixed      noise0.05       noise0.2 mixed+noise0.2  err gm  clean*t     gm*t
+backfill2  hangprinter_3                     5024   1.43           1.30           1.67           4.30           4.12    2.23     7189    11199
+backfill2  hangprinter_4                     8622   0.60           0.69           0.94           4.00           3.54    1.41     5157    12128
+backfill2  hangprinter_5                     9054   1.10           1.18           1.84           5.56           5.65    2.37     9924    21442
+backfill2  hangprinter_5_pulley_reduced     13731   1.10           1.13           1.68           6.71           6.70    2.48    15088    34053
+heights4   hangprinter_3                     6160   0.96           0.76           1.15           3.12           3.61    1.57     5891     9665
+heights4   hangprinter_4                     5460   0.86           1.07           1.11           2.68           3.05    1.53     4716     8352
+heights4   hangprinter_5                     7667   1.60           1.64           1.89           2.70           2.59    2.03    12241    15570
+heights4   hangprinter_5_pulley_reduced      7763   1.61           1.40           1.55           3.15           3.50    2.08    12525    16136
+orig       hangprinter_3                     5177   0.29           0.50           0.80           3.45           3.88    1.09     1488     5641
+orig       hangprinter_4                     6491   0.31           0.42           0.93           3.41           4.62    1.14     2034     7410
+orig       hangprinter_5                     8326   0.56           0.47           0.85           1.92           2.27    0.99     4661     8284
+orig       hangprinter_5_pulley_reduced      8347   1.16           1.17           1.19           4.71           6.42    2.18     9712    18204
+sched      hangprinter_3                     6635   0.79           0.83           0.75           2.80           3.61    1.38     5263     9149
+sched      hangprinter_4                     5909   0.57           0.62           1.08           3.66           3.82    1.40     3387     8284
+sched      hangprinter_5                     6901   2.37           2.55           2.54           3.05           2.83    2.66    16371    18345
+sched      hangprinter_5_pulley_reduced      8549   1.23           1.30           1.34           4.86           6.52    2.32    10537    19867
+sweeps     hangprinter_3                     5516   0.88           0.90           0.97           2.58           2.99    1.42     4831     7853
+sweeps     hangprinter_4                     4897   0.68           0.63           1.10           3.08           2.96    1.34     3341     6550
+sweeps     hangprinter_5                     3762   0.91           1.07           1.53           4.57           7.47    2.20     3430     8258
+sweeps     hangprinter_5_pulley_reduced      4672   1.11           1.04           1.65           4.37           3.91    2.01     5166     9371
+
+backfill2  geometric mean over machines: clean err*time    8632, disturbed-inclusive err*time   17746
+heights4   geometric mean over machines: clean err*time    8079, disturbed-inclusive err*time   11934
+orig       geometric mean over machines: clean err*time    3421, disturbed-inclusive err*time    8910
+sched      geometric mean over machines: clean err*time    7447, disturbed-inclusive err*time   12892
+sweeps     geometric mean over machines: clean err*time    4112, disturbed-inclusive err*time    7943

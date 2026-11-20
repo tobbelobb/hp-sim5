@@ -49,3 +49,10 @@ offsets through consensus. Two good agreeing fits can stop collection. Fresh
 stock simulations used six total sweeps and three refinement fits; final replay
 applied 1.16/1.92 mm worst-coordinate anchors. This is limited simulation
 validation, with model bias and hardware behaviour still open.
+
+The [ellipsoid autocal investigation](../output/session-2026-11-20-ellipsoid-autocal/report.md) (2026-11-20, simulation) locates the remaining ~1–2 mm error of sphere-mesh collection in the held anchor's height. That height is exactly degenerate with the scale of the *free* lines' stretch correction.
+- Rescaling that correction moves the held anchor's z about 8.5 mm per unit scale while the fit rms stays constant to 0.0002 mm.
+- Zero error needs the free lines ×0.9 on HP4 and about ×1.19 on HP5. On the sweep benchmark, HP5 pulley-reduced also improves, from 1.30 to 0.72 mm, with free lines ×1.1.
+- Scaling the held line itself barely matters.
+
+The residual, the jackknife and the covariance cannot detect this error. The tension estimate (static equilibrium from commanded forces), the flex-model compliance (`autocal/flex.py`: `S`, `U`, `N`, `Y`) or slack parallel pairs must be made right physically. More or wider data will not fix it. The scene stiffness (`stiffnessPerUnitLength = 20000`) matches M666 `S`. The guy lengths, the MA power, and per-strand tension under roll are unchecked.

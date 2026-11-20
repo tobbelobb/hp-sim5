@@ -1,0 +1,32 @@
+backfill  hangprinter_3                  visits 6 final 1.55 mm  per-visit [7.01, 1.34, 2.39, 1.7, 1.53, 1.55]  sim 4994 s  stable-estimate
+backfill  hangprinter_4                  visits 7 final 0.85 mm  per-visit [11.04, 3.37, 3.03, 1.88, 1.37, 1.09, 0.85]  sim 6403 s  stable-estimate
+backfill  hangprinter_5                  visits 3 final 0.85 mm  per-visit [38.03, 1.17, 0.85]  sim 4101 s  None
+backfill  hangprinter_5_pulley_reduced   visits 9 final 0.79 mm  per-visit [13.24, 2.02, 2.75, 1.79, 1.39, 1.03, 1.06, 1.22, 0.79]  sim 12018 s  stable-estimate
+backfill2  hangprinter_3                  visits 6 final 1.21 mm  per-visit [7.01, 5.38, 2.11, 1.19, 1.01, 1.21]  sim 5024 s  stable-estimate
+backfill2  hangprinter_4                  visits 10 final 0.61 mm  per-visit [11.04, 2.76, 2.85, 1.39, 1.36, 0.72, 1.03, 1.07, 0.8, 0.61]  sim 8622 s  stable-estimate
+backfill2  hangprinter_5                  visits 8 final 1.15 mm  per-visit [38.03, 1.12, 1.35, 1.2, 1.07, 1.5, 1.26, 1.15]  sim 9054 s  stable-estimate
+backfill2  hangprinter_5_pulley_reduced   visits 10 final 0.61 mm  per-visit [13.24, 1.58, 2.49, 0.53, 0.78, 1.38, 1.37, 0.6, 0.56, 0.61]  sim 13731 s  stable-estimate
+heights  hangprinter_3                  visits 6 final 0.56 mm  per-visit [6.85, 15.73, 0.72, 1.44, 0.61, 0.56]  sim 6384 s  max-ellipsoids
+heights  hangprinter_4                  visits 3 final 0.54 mm  per-visit [10.97, 0.61, 0.54]  sim 4499 s  stable-estimate
+heights  hangprinter_5                  visits 6 final 4.66 mm  per-visit [34.48, 1.96, 4.66, 4.66, 4.66, 4.66]  sim 7491 s  max-ellipsoids
+heights  hangprinter_5_pulley_reduced   visits 6 final 2.52 mm  per-visit [12.27, 2.04, 3.03, 2.96, 2.52, 2.52]  sim 8739 s  max-ellipsoids
+heights2  hangprinter_3                  visits 6 final 1.17 mm  per-visit [6.85, 2.15, 0.86, 1.36, 1.59, 1.17]  sim 6281 s  max-ellipsoids
+heights2  hangprinter_4                  visits 5 final 0.42 mm  per-visit [10.97, 1.33, 0.58, 0.44, 0.42]  sim 5484 s  stable-estimate
+heights2  hangprinter_5                  visits 6 final 3.22 mm  per-visit [34.48, 1.97, 2.07, 2.53, 2.5, 3.22]  sim 9278 s  max-ellipsoids
+heights2  hangprinter_5_pulley_reduced   visits 6 final 1.89 mm  per-visit [12.27, 2.9, 2.57, 2.01, 1.89, 1.89]  sim 8527 s  max-ellipsoids
+heights3  hangprinter_3                  visits 3 final 6.85 mm  per-visit [6.85, 6.85, 6.85]  sim 5887 s  collection-failed
+heights3  hangprinter_4                  visits 6 final 1.89 mm  per-visit [10.97, 6.49, 6.49, 6.49, 1.89, 1.89]  sim 7089 s  max-ellipsoids
+heights3  hangprinter_5                  visits 6 final 3.75 mm  per-visit [34.48, 34.48, 34.48, 3.75, 3.75, 3.75]  sim 12161 s  max-ellipsoids
+heights3  hangprinter_5_pulley_reduced   visits 5 final 0.40 mm  per-visit [12.27, 3.45, 3.45, 3.04, 0.4]  sim 8075 s  collection-failed
+heights4  hangprinter_3                  visits 6 final 0.83 mm  per-visit [6.85, 5.19, 1.11, 1.23, 1.24, 0.83]  sim 6160 s  max-ellipsoids
+heights4  hangprinter_4                  visits 5 final 0.81 mm  per-visit [10.97, 1.93, 0.88, 1.15, 0.81]  sim 5460 s  stable-estimate
+heights4  hangprinter_5                  visits 5 final 1.73 mm  per-visit [34.48, 3.11, 1.41, 1.6, 1.73]  sim 7667 s  stable-estimate
+heights4  hangprinter_5_pulley_reduced   visits 5 final 1.79 mm  per-visit [12.27, 2.63, 2.05, 1.77, 1.79]  sim 7763 s  stable-estimate
+hangprinter_3                  visits 8 final 0.95 mm  per-visit [6.85, 2.06, 1.28, 1.11, 0.75, 0.75, 0.97, 0.95]  sim 6635 s  stable-estimate
+hangprinter_4                  visits 6 final 0.88 mm  per-visit [10.97, 1.15, 1.29, 1.31, 1.05, 0.88]  sim 5909 s  stable-estimate
+hangprinter_5                  visits 6 final 2.22 mm  per-visit [34.48, 1.33, 2.66, 2.63, 2.4, 2.22]  sim 6901 s  stable-estimate
+hangprinter_5_pulley_reduced   visits 6 final 1.15 mm  per-visit [12.27, 2.14, 1.83, 1.24, 1.47, 1.15]  sim 8549 s  stable-estimate
+hangprinter_3                  visits 6 final 0.29 mm  per-visit [7.01, 1.95, 0.54, 0.72, 0.52, 0.29]  sim 5177 s  stable-estimate
+hangprinter_4                  visits 7 final 0.31 mm  per-visit [11.04, 1.33, 1.78, 1.04, 0.56, 0.54, 0.31]  sim 6491 s  stable-estimate
+hangprinter_5                  visits 8 final 0.56 mm  per-visit [38.03, 1.1, 1.36, 1.35, 1.32, 0.92, 0.61, 0.56]  sim 8326 s  stable-estimate
+hangprinter_5_pulley_reduced   visits 6 final 1.16 mm  per-visit [13.24, 2.59, 2.1, 1.35, 1.43, 1.16]  sim 8347 s  stable-estimate

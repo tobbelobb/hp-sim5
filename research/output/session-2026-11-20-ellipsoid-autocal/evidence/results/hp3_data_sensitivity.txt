@@ -1,0 +1,15 @@
+HP3, fixed schedule: original 140dcbf4 collector vs the same schedule on the closed-loop collector (port).
+Same fit (ellipsoid_autocal.fit), first 18 rows (6 ellipsoids) of each dataset.
+The two datasets differ only in rows 6-7 (drive range starts 0.6 mm apart) and rows 15-17 (held lengths <= 0.12 mm apart).
+
+original, 18 rows                                           err 0.29 D.z -0.04 rms 0.0304
+port, first 18 rows                                         err 0.75 D.z +0.72 rms 0.0387
+original with port's held lengths in rows 15-17 (<=0.12 mm) err 1.11 D.z -0.07 rms 0.0419
+original with port's rows 6-7                               err 0.56 D.z +0.56 rms 0.0295
+
+Held lengths of rows 15-17 (anchor 0, anchor 3), mm:
+15 original [0.0052, -209.8741]  port [-0.0524, -209.9317]
+16 original [0.0052, -209.8741]  port [-0.0524, -209.9317]
+17 original [0.0052, -209.8741]  port [-0.1152, -209.9945]
+The port's values were the post-sweep encoder read (double-counted drift, see report 5.4); the targets were -209.8741 / 0.0.
+Old (140dcbf4) and new fit code give identical results on the port's datasets (HP3 0.95, HP4 0.88).
