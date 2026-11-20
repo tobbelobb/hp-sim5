@@ -72,6 +72,35 @@ class BrowserCollector:
                     self.log_line(line.rstrip("\n"))
 
 
+LOG_COLUMN_HEADER = f"{'wall':>10}  {'sim':>10}  | message"
+
+
+def _format_log_entry(msg: str, *, wall_s: float, sim_s: Optional[float]) -> str:
+    """Timestamp columns first, so the messages line up and can be scanned down the file."""
+    sim = "-" if sim_s is None else f"{sim_s:.2f}s"
+    text = msg[2:] if msg.startswith("; ") else msg
+    return f"{wall_s:9.2f}s  {sim:>10}  | {text}"
+
+
+class _LineSink:
+    """File-like stand-in for redirected stdout/stderr that logs each complete line."""
+
+    def __init__(self, log_line):
+        self.log_line = log_line
+        self.pending = ""
+
+    def write(self, text):
+        *lines, self.pending = (self.pending + text).split("\n")
+        for line in lines:
+            self.log_line(line)
+        return len(text)
+
+    def close(self):
+        if self.pending:
+            self.log_line(self.pending)
+            self.pending = ""
+
+
 def full_auto_loop(**kwargs) -> int:
     with ExitStack() as resources:
         return _full_auto_loop(resources, **kwargs)
@@ -145,6 +174,9 @@ def _full_auto_loop(
         dataset_path = Path(work_dataset)
     else:
         dataset_path = Path("autocal/data/default_dataset.json")
+    if no_collect and not dataset_path.exists():
+        print(f"; --no-collect needs an existing dataset; {dataset_path} does not exist", file=sys.stderr)
+        return 2
     work_path = dataset_path
     applying_solution = False
     if error := bootstrap_state_error(dataset_path):
@@ -161,20 +193,40 @@ def _full_auto_loop(
     text_log_path.parent.mkdir(parents=True, exist_ok=True)
     text_log_path.write_text("", encoding="utf-8")
     log_handle = resources.enter_context(text_log_path.open("a", encoding="utf-8"))
+    log_handle.write(LOG_COLUMN_HEADER + "\n")
+    console = sys.stdout
+    run_started = time.monotonic()
     if extended_reference.enabled():
         log_handle = extended_reference.EventLog(log_handle, text_log_path)
         extended_reference.emit("run_start", argv=sys.argv)
         extended_reference.artifact(dataset_path)
 
-    def _log_line(msg: str) -> None:
-        log_handle.write(str(msg) + "\n")
-        log_handle.flush()
+    def _sim_seconds() -> Optional[float]:
+        return None if headless_sim is None else headless_sim.simulated_seconds()
 
-    _log_line(f"; command: {shlex.join(sys.argv)}")
+    def _write_entry(msg: str) -> str:
+        line = _format_log_entry(str(msg), wall_s=time.monotonic() - run_started, sim_s=_sim_seconds())
+        log_handle.write(line + "\n")
+        log_handle.flush()
+        return line
+
+    def _log_line(msg: str) -> None:
+        line = _write_entry(msg)
+        if verbose:
+            print(line, file=console)
+
+    def _log_event(payload: Dict[str, object]) -> None:
+        sim_s = _sim_seconds()
+        _append_jsonl(log_path, {
+            **payload, "wall_s": round(time.monotonic() - run_started, 3),
+            "sim_s": None if sim_s is None else round(sim_s, 3),
+        })
+
+    _log_line(f"command: {shlex.join(sys.argv)}")
 
     def _log_console(msg: str) -> None:
-        print(msg)
-        _log_line(f"Wrote to console: {msg}")
+        line = _write_entry(msg)
+        print(line if verbose else msg, file=console)
 
     if extended_reference.enabled() and stage_artifacts is None:
         stage_artifacts = dataset_path.with_name(f"{dataset_path.stem}.stages")
@@ -184,9 +236,11 @@ def _full_auto_loop(
         _log_console(f"Writing stage artifacts to: {stage_artifacts}")
 
     def _log_context():
+        sink = _LineSink(_log_line)
         stack = contextlib.ExitStack()
-        stack.enter_context(redirect_stdout(log_handle))
-        stack.enter_context(redirect_stderr(log_handle))
+        stack.enter_context(redirect_stdout(sink))
+        stack.enter_context(redirect_stderr(sink))
+        stack.callback(sink.close)
         return stack
 
     def _emit_summary_and_send(
@@ -212,7 +266,7 @@ def _full_auto_loop(
             anchor_str = str(np.asarray(anchors))
         meta_for_summary = dict(summary_meta or {})
         uncertainty = _float_or_none(meta_for_summary.get("anchor_uncertainty_mm"))
-        _append_jsonl(log_path, {
+        _log_event({
             "timestamp": datetime.now().isoformat(), "dataset": str(work_path),
             "event": "summary", "m669": m669, "m666": m666,
             "anchors": np.asarray(anchors, dtype=float).tolist(),
@@ -426,29 +480,21 @@ def _full_auto_loop(
                 extended_reference.emit("collection_exit", returncode=code)
                 extended_reference.artifact(work_path)
             return
-        if extended_reference.enabled():
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       text=True, start_new_session=not bool(os.environ.get('HP_SIM5_AUTOCAL_JOB')))
-            if headless_sim is not None:
-                headless_sim.track_process('collector', process)
-            try:
-                for line in process.stdout:
-                    _log_line(line.rstrip("\n"))
-                code = process.wait()
-                extended_reference.emit("collection_exit", returncode=code)
-                extended_reference.artifact(work_path)
-                if code:
-                    raise subprocess.CalledProcessError(code, cmd)
-            finally:
-                _stop_process(process)
-            return
-        if headless_sim is None:
-            subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
-            return
-        process = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=log_handle,
-                                   stderr=log_handle, start_new_session=not bool(os.environ.get('HP_SIM5_AUTOCAL_JOB')))
+        # Plain collection stays in the terminal's foreground group so Ctrl-C reaches it directly, as before.
+        owns_session = (headless_sim is not None or extended_reference.enabled()) and not os.environ.get('HP_SIM5_AUTOCAL_JOB')
+        process = subprocess.Popen(
+            cmd, stdin=None if headless_sim is None else subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
+            start_new_session=owns_session,
+        )
+        if headless_sim is not None:
+            headless_sim.track_process('collector', process)
         try:
+            for line in process.stdout:
+                _log_line(line.rstrip("\n"))
             code = process.wait()
+            extended_reference.emit("collection_exit", returncode=code)
+            extended_reference.artifact(work_path)
             if code:
                 raise subprocess.CalledProcessError(code, cmd)
         finally:
@@ -627,8 +673,7 @@ def _full_auto_loop(
 
     runs = _build_full_auto_runs(full_auto_runs)
     stop_file = _full_auto_stop_path(dataset_path)
-    _append_jsonl(
-        log_path,
+    _log_event(
         {
             "timestamp": datetime.now().isoformat(),
             "event": "start",
@@ -922,9 +967,8 @@ def _full_auto_loop(
                 break
             if stopping.stop_requested():
                 return _accept_best(f"stop-file {stop_file}")
-            _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
             _log_console("")
-            _log_console(f"; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+            _log_console(f"== iteration {step}/{max_steps} - {work_path.name} ==")
             collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
             run_results: List[Dict[str, object]] = []
 
@@ -1050,8 +1094,7 @@ def _full_auto_loop(
 
             valid_runs = [r for r in run_results if r["metrics"]["valid"]]
             if not valid_runs:
-                _append_jsonl(
-                    log_path,
+                _log_event(
                     {
                         "timestamp": datetime.now().isoformat(),
                         "event": "stop",
@@ -1069,7 +1112,6 @@ def _full_auto_loop(
                         ],
                     },
                 )
-                _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
                 _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
                 if history_candidates:
                     return _accept_best("no-valid-runs")
@@ -1185,7 +1227,6 @@ def _full_auto_loop(
             )
             _log_line(selected_summary_line)
             if verbose:
-                _log_console(selected_summary_line)
                 if m669:
                     _log_console(f"Anchors (M669): {m669}")
                 elif anchor_str:
@@ -1214,8 +1255,7 @@ def _full_auto_loop(
                     f"limit {_fmt_float(stopping.stable_step_mm, suffix='mm')})."
                 )
 
-            _append_jsonl(
-                log_path,
+            _log_event(
                 {
                     "timestamp": datetime.now().isoformat(),
                     "iteration": step,
@@ -1298,7 +1338,6 @@ def _full_auto_loop(
                     continue
 
             if no_collect:
-                _log_line("; --no-collect set; stopping before live collection.")
                 _log_console("; --no-collect set; stopping before live collection.")
                 summary_plan, summary_meta = _newest_candidate(
                     fallback_plan=plan if isinstance(plan, dict) else None,
@@ -1375,7 +1414,6 @@ def _full_auto_loop(
             return _finalize(130)
         return _accept_best("Ctrl-C")
 
-    _log_line(f"; reached max steps; dataset={work_path}")
     if headless_sim is not None:
         headless_sim.manifest["stop_reason"] = "max-steps"
     _log_console(f"; reached max steps; dataset={work_path}")
@@ -1465,6 +1503,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")
+    if args.no_collect and not (args.dataset or Path("autocal/data/default_dataset.json")).exists():
+        parser.error("--no-collect needs an existing dataset; pass --dataset to one that exists")
+    if args.dataset is not None:
+        args.dataset.parent.mkdir(parents=True, exist_ok=True)
     context = HeadlessSimulation(args, collector_args) if args.headless_sim and not args.no_collect else nullcontext()
     with ExitStack() as stack:
         if args.extended_recording and not args.headless_sim and not extended_reference.enabled():

@@ -309,3 +309,34 @@ def test_stable_step_reaches_the_loop(monkeypatch, tmp_path, args, expected):
 def test_stable_step_must_be_a_finite_nonnegative_distance(tmp_path, value):
     with pytest.raises(SystemExit):
         ac.main(["--machine-type", "hp3", "--dataset", str(tmp_path / "d.json"), "--stable-step-mm", value])
+
+
+def test_log_entries_put_wall_and_sim_time_before_the_message():
+    line = ac._format_log_entry("; full-auto: stopping", wall_s=1.5, sim_s=None)
+    assert line == "     1.50s           -  | full-auto: stopping"
+    assert ac._format_log_entry("x", wall_s=12.0, sim_s=3.25).startswith("    12.00s       3.25s  | x")
+
+
+def test_redirected_output_is_logged_one_complete_line_at_a_time():
+    lines = []
+    sink = ac._LineSink(lines.append)
+    sink.write("a\nb")
+    sink.write("c\n")
+    sink.write("tail")
+    assert lines == ["a", "bc"]
+    sink.close()
+    assert lines == ["a", "bc", "tail"]
+
+
+def test_no_collect_refuses_a_missing_dataset_without_collecting(tmp_path, monkeypatch, capsys):
+    def collection_started(*args, **kwargs):
+        raise AssertionError("collection started")
+
+    monkeypatch.setattr(ac.subprocess, "Popen", collection_started)
+    monkeypatch.setattr(ac.subprocess, "run", collection_started)
+    dataset = tmp_path / "new" / "data.json"
+    with pytest.raises(SystemExit) as refused:
+        ac.main(["--machine-type", "hangprinter_5", "--dataset", str(dataset), "--no-collect"])
+    assert refused.value.code == 2
+    assert "--no-collect needs an existing dataset" in capsys.readouterr().err
+    assert not dataset.parent.exists()

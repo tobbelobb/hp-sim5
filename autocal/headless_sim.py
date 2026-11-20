@@ -73,6 +73,13 @@ class HeadlessSimulation:
         self.manifest["autocal_source_sha256"] = source_hash(("autocal",), (".py",))
         self.manifest["git_revision"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True).strip()
 
+    def simulated_seconds(self):
+        """Simulated time at the service's latest snapshot; None until it has written one."""
+        try:
+            return float(json.loads((self.directory / "clock.json").read_text())["simulated_s"])
+        except (OSError, ValueError, KeyError):
+            return None
+
     def write_manifest(self):
         temporary = self.directory / 'manifest.tmp'
         temporary.write_text(json.dumps(self.manifest, indent=2) + "\n")

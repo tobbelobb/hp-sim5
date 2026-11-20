@@ -38,7 +38,7 @@ KEEP  --dataset DATASET     Dataset file updated each iteration (default: autoca
                         Save frozen fit/history JSON artifacts for independent stage experiments (opt-in).
   --full-auto-log FULL_AUTO_LOG
                         Write full-auto JSONL logs to this path (default: <dataset>.full_auto_log.jsonl).
-  --verbose             Enable verbose iteration output, including anchors, M666, and rank scoring.
+  --verbose             Print every log line to the console, with its timestamps.
   --patience PATIENCE   Number of non-improving full-auto iterations to allow (default: 3).
   --stable-step-mm STABLE_STEP_MM
                         Stop once two consecutive sweeps each move every anchor coordinate by at most this (default: 0.5; 0 disables).

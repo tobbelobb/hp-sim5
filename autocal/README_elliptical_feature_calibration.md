@@ -193,9 +193,10 @@ The unused `--plot-residual-histogram` option has been removed. Use the standalo
 histogram command above with a residual CSV.
 
 Detailed output goes to `<dataset-stem>.full_auto.log`.
-Machine-readable iteration events go to `<dataset-stem>.full_auto_log.jsonl`.
+Each line starts with wall-clock seconds since the run started and simulation seconds (`-` when no headless simulator is running).
+Machine-readable iteration events go to `<dataset-stem>.full_auto_log.jsonl`, with the same `wall_s` and `sim_s` fields.
 Existing log files get a unique suffix.
-`--verbose` adds anchors and score details to the console.
+`--verbose` prints every log line to the console, with the same timestamps.
 
 | Log field or prefix | Meaning |
 | --- | --- |
