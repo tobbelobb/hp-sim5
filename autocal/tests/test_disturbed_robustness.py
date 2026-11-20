@@ -14,9 +14,8 @@ from autocal.tools.regress_calibration_logs import BENCHMARK_MACHINES
 REFERENCES = Path(__file__).resolve().parents[1] / "data" / "references"
 TRUTH = dict(BENCHMARK_MACHINES)
 # Max anchor error of the same fit on the undisturbed benchmark sweeps, plus 0.5 mm.
-# HP4 carries its known D.z bias.
-LIMIT_MM = {"hangprinter_3": 1.5, "hangprinter_4": 5.7,
-            "hangprinter_5": 1.2, "hangprinter_5_pulley_reduced": 2.3}
+LIMIT_MM = {"hangprinter_3": 1.45, "hangprinter_4": 1.2,
+            "hangprinter_5": 1.4, "hangprinter_5_pulley_reduced": 1.8}
 
 
 def _load(name):
@@ -47,7 +46,7 @@ def _fit(dataset):
 
 @pytest.mark.parametrize("machine", sorted(TRUTH))
 def test_point_fit_rejects_disturbances_and_keeps_accuracy(machine):
-    dataset = _load(f"disturbed_benchmark_0623060e22_{machine}")
+    dataset = _load(f"disturbed_benchmark_923c2baa_{machine}")
     fit = _fit(dataset)
     error = np.max(np.linalg.norm(fit["anchors"] - np.asarray(TRUTH[machine]), axis=1))
     assert error <= LIMIT_MM[machine]
@@ -57,16 +56,15 @@ def test_point_fit_rejects_disturbances_and_keeps_accuracy(machine):
 @pytest.mark.parametrize("prefix", ["disturbed", "noisy_0p05mm", "noisy_0p2mm", "noisy_0p5mm"])
 @pytest.mark.parametrize("machine", sorted(TRUTH))
 def test_stored_disturbed_dataset_matches_generator(machine, prefix):
-    stored = _load(f"{prefix}_benchmark_0623060e22_{machine}")
-    regenerated = apply_events(_load(f"benchmark_0623060e22_{machine}"), TRUTH[machine], stored["disturbances"])
+    stored = _load(f"{prefix}_benchmark_923c2baa_{machine}")
+    regenerated = apply_events(_load(f"benchmark_923c2baa_{machine}"), TRUTH[machine], stored["disturbances"])
     assert regenerated["disturbances"] == stored["disturbances"]
     for regenerated_sweep, stored_sweep in zip(regenerated["sweeps"], stored["sweeps"], strict=True):
         for new, old in zip(regenerated_sweep["data_points"], stored_sweep["data_points"], strict=True):
             records = [(new, old, key) for key in ("l_drive", "l_drive_mu", "l_sensor", "l_sensor_mu")]
             records += [(a, b, "length_mm") for a, b in zip(new.get("extra_sensor_ranges", []),
                                                            old.get("extra_sensor_ranges", []), strict=True)]
-            # The stored HP3/HP4 disturbed sets used 1645.448 for the rounded 1645.45 anchor X.
-            assert all(a[key] == pytest.approx(b[key], abs=1e-3) for a, b, key in records)
+            assert all(a[key] == pytest.approx(b[key], abs=1e-9) for a, b, key in records)
 
 
 def _hp5_point():
@@ -110,4 +108,4 @@ def test_sensor_line_push_changes_only_that_record():
 @pytest.mark.parametrize("machine", sorted(TRUTH))
 def test_point_fit_keeps_points_with_ordinary_encoder_noise(machine):
     # Noise is not a disturbance: no point of a 0.2 mm noise set may be rejected.
-    assert _fit(_load(f"noisy_0p2mm_benchmark_0623060e22_{machine}"))["rejected_points"].size == 0
+    assert _fit(_load(f"noisy_0p2mm_benchmark_923c2baa_{machine}"))["rejected_points"].size == 0

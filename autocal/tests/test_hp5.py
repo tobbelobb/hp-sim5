@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from autocal.active_learning import generate_candidate_sweeps
-from autocal.calibrate import build_anchor_initial_guess
+from autocal.anchor_seed import build_anchor_initial_guess
 from autocal.pose_fit import dataset_line_lengths, fit_pose_least_squares, shift_dataset_home_offsets
 from autocal.pose_planning import ANCHOR_CLEARANCE_SHARE, predict_sweep_positions, SWEEP_PRETENSION_SHARE
 from autocal.sweep_config_generator import generate_sweep_configs, select_representative_configs
@@ -46,7 +46,7 @@ def test_bootstrap_and_planner_keep_the_top_fixed_and_opposing_held_low_complian
 @pytest.mark.parametrize('machine', ['hangprinter_5', 'hangprinter_5_pulley_reduced'])
 @pytest.mark.parametrize('low_z', [None, -280.])
 def test_numpy_and_jax_reduced_anchor_layouts_agree(machine, low_z):
-    from autocal.ellipse_objective_jax import _anchors_from_opt_vec
+    from autocal.slideprinter_2d.ellipse_objective_jax import _anchors_from_opt_vec
     from autocal.theoretical_ellipse import anchor_opt_constraint_mode
     import jax.numpy as jnp
     vector = anchors_matrix_to_opt_vec(ANCHORS, machine, low_z)

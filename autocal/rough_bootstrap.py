@@ -13,7 +13,7 @@ from pathlib import Path
 from autocal.json_schema import load_json_file
 
 from autocal.active_learning import dataset_sweep_configs, generate_candidate_sweeps
-from autocal.calibrate import build_anchor_initial_guess
+from autocal.anchor_seed import build_anchor_initial_guess
 from autocal.pose_fit import (
     HOME_OFFSET_PRIOR_SIGMA_MM, consistency_residuals, dataset_line_lengths,
     fit_pose_least_squares,

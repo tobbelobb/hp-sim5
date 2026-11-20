@@ -3,9 +3,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-import autocal.alternating_refinement as alternating_refinement
-import autocal.filter_pass as ac
-import autocal.initialize_pass as initialize_pass
+import autocal.slideprinter_2d.alternating_refinement as alternating_refinement
+import autocal.slideprinter_2d.filter_pass as ac
+import autocal.slideprinter_2d.initialize_pass as initialize_pass
 
 
 if not hasattr(ac, "_estimate_effective_radii_with_spool_model"):

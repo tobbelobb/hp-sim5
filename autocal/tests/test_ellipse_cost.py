@@ -2,7 +2,7 @@ import copy
 from typing import Optional
 
 import numpy as np
-from autocal.ellipse_cost import (
+from autocal.slideprinter_2d.ellipse_cost import (
     EllipseCostFunction,
     canonicalize_geometry,
 )

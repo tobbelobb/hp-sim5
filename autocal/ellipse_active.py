@@ -13,6 +13,7 @@ from typing import Optional, Sequence
 
 from autocal._autocal_common import (
     _add_candidate_args,
+    resolve_fit,
     _add_collector_args,
     _add_output_args,
     _add_solver_args,
@@ -99,7 +100,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_args=collector_args,
         low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
-        ellipse_reference_fit=bool(args.ellipse_reference_fit),
+        ellipse_reference_fit=resolve_fit("ellipse", args.fit) == "ellipse",
         equal_strain=bool(args.equal_strain),
         filter_schedule=spool_options["filter_schedule"],
         objective_schedule=spool_options["objective_schedule"],

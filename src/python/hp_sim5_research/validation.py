@@ -6,10 +6,10 @@ import numpy as np
 
 def validate_collection(path, anchors=None):
     from autocal.json_schema import load_json_file
-    from autocal.calibrate import _validate_sweep_roles
+    from autocal.dataset_roles import (_validate_sweep_roles, measurement_groups, mesh_metadata,
+                                       normalize_dataset_point_roles)
     from autocal.spool_model import validate_dataset_has_raw_angles
-    from autocal.ellipse_cost import EllipseCostFunction
-    from autocal.theoretical_ellipse import anchors_matrix_to_opt_vec
+    from autocal.pose_fit import consistency_residuals, dataset_line_lengths
 
     dataset = load_json_file(Path(path), schema='sweep_dataset')
     validate_dataset_has_raw_angles(dataset)
@@ -21,18 +21,22 @@ def validate_collection(path, anchors=None):
     spans = []
     sensor_spans = []
     count = 0
-    for sweep in dataset['sweeps']:
-        points = sweep['data_points']
-        count += len(points)
-        for point in points:
+    # A sphere mesh is one collection unit stored as one-point records.
+    for group in measurement_groups(dataset):
+        members = [(dataset['sweeps'][index], point) for index in group for point in dataset['sweeps'][index]['data_points']]
+        count += len(members)
+        for sweep, point in members:
             lengths = np.asarray(point['raw_angles_deg']) * scale
             np.testing.assert_allclose([point['l_drive'], point['l_sensor']],
                                        lengths[[sweep['drive_anchor'], sweep['sensor_anchor']]], rtol=1e-10, atol=1e-8)
             if not point.get('sample_count') or len(point.get('sigma', [])) != axis_count:
                 raise ValueError('Missing collector noise statistics')
-        spans.append(float(np.ptp([point['l_drive'] for point in points])))
+        mesh = mesh_metadata(members[0][0])
+        drives = mesh['drive_anchors'] if mesh else [members[0][0]['drive_anchor']]
+        spans.append(max(float(np.ptp([point['raw_angles_deg'][drive] * scale[drive] for _, point in members]))
+                         for drive in drives))
         directions = {}
-        for point in points:
+        for sweep, point in members:
             drive = point.get('source_drive_anchor', sweep['drive_anchor'])
             sensor = point.get('source_sensor_anchor', sweep['sensor_anchor'])
             directions.setdefault((drive, sensor), []).append(float(point['raw_angles_deg'][sensor] * scale[sensor]))
@@ -45,13 +49,12 @@ def validate_collection(path, anchors=None):
     anchors = np.asarray([config[axis] for axis in 'ABCDIJKLO' if axis in config] if anchors is None else anchors, dtype=float)
     if anchors.shape != (axis_count, 3) or not np.isfinite(anchors).all():
         raise ValueError('Collection must preserve all three firmware coordinates for each anchor')
-    objective = EllipseCostFunction(dataset, min_points=5,
-                                   pointwise_filtering=False, sweep_wise_filtering=False)
-    vector = anchors_matrix_to_opt_vec(anchors, dataset['machine_type'])
-    rows = objective.pointwise_residual_rows(vector)
-    residuals = np.asarray([row['residual_mm'] for row in rows])
-    if len(rows) != count or not np.isfinite(residuals).all():
+    normalize_dataset_point_roles(dataset)
+    lengths = dataset_line_lengths(dataset)['lengths_mm']
+    misfit = consistency_residuals(anchors, lengths, np.zeros(axis_count))
+    residuals = np.linalg.norm(misfit, axis=1)
+    if len(residuals) != count or not np.isfinite(residuals).all():
         raise ValueError('Autocal did not evaluate every collected measurement')
     return {'schema': dataset['version'], 'point_count': count, 'drive_span_mm': spans, 'physical_sensor_span_mm': sensor_spans,
-            'autocal_residual_count': len(rows), 'firmware_anchor_residual_rms_mm': float(np.sqrt(np.mean(residuals**2))),
+            'autocal_residual_count': len(residuals), 'firmware_anchor_residual_rms_mm': float(np.sqrt(np.mean(residuals**2))),
             'calibration_accuracy': 'Short preflight proves measurement ingestion; anchor fitting requires multiple held-out sweeps'}

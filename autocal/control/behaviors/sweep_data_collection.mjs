@@ -28,6 +28,7 @@ import {
   primeEncoders,
   returnMotorsToOriginOneAtATime,
   resolveCollectionForce,
+  settleOnTargets,
   waitForStableEncoders,
 } from '../primitives/uncalibrated_actions.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
@@ -228,11 +229,15 @@ function parseFixedTargetsSpec(spec) {
   return values;
 }
 
+// A natural target, { natural: offset }, holds a line where it settles once the
+// other held lines are in place, plus the offset (mm).
+const isNaturalTarget = target => Number.isFinite(target?.natural);
+
 function normalizeFixedTargets(values, fixedCount) {
   if (!Array.isArray(values) || fixedCount <= 0) {
     return [];
   }
-  const normalized = values.slice(0, fixedCount).map((val) => (Number.isFinite(val) ? val : 0));
+  const normalized = values.slice(0, fixedCount).map((val) => (Number.isFinite(val) || isNaturalTarget(val) ? val : 0));
   while (normalized.length < fixedCount) {
     normalized.push(0);
   }
@@ -505,7 +510,8 @@ export function resolveFixedTargets(fixedAnchors, explicitTargets, maxTravelMm, 
     targets = fixedAnchors.map(axis => getMustBeInFixedSet(machineConfig).includes(axis) ? 0
       : value * (machineConfig?.defaultFixedTargetScale ?? 1));
   }
-  return targets.map((target, idx) => constrainFixedTarget(machineConfig, fixedAnchors[idx], target));
+  return targets.map((target, idx) => (isNaturalTarget(target) ? target
+    : constrainFixedTarget(machineConfig, fixedAnchors[idx], target)));
 }
 
 export function scaleMeasuredMaxTravelMm(machineConfig, measuredMaxTravelMm) {
@@ -896,6 +902,12 @@ function remapDataPointsToCanonical(dataPoints, canonicalConfig, actualConfig) {
 }
 
 
+// Moves the held lines to their targets and returns the lengths they hold, in
+// fixed-anchor order. Numeric targets move first. With natural targets, every
+// free line then idles at the low force, so the effector hangs where the held
+// lines leave it, not at the drive's pulled-in end, and the natural-target lines
+// move by their offsets from where they settled. A line that cannot reach its target holds where it could
+// (settleOnTargets), and that length is returned instead.
 async function prepareSweepPositioning(sendFn, sweepConfig, options) {
   const {
     motorIds,
@@ -913,38 +925,37 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
     motorIds,
     modes: motorIds.map(() => 'position'),
   });
-  const measured = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-  const moveParts = [];
-  const formatDelta = (axis, delta) => `${axis}${delta.toFixed(3)}`;
-
   const fixedAnchors = sweepConfig.fixedAnchors || [];
-  const movingAnchors = new Set();
-  for (let i = 0; i < fixedAnchors.length; i += 1) {
-    const anchorIdx = fixedAnchors[i];
-    const target = Number.isFinite(fixedTargets[i]) ? fixedTargets[i] : 0;
-    const delta = target - (measured[anchorIdx] ?? 0);
-    if (Math.abs(delta) > 1e-6) {
-      moveParts.push(formatDelta(axes[anchorIdx], delta));
-      movingAnchors.add(anchorIdx);
-    }
-  }
-
-  if (moveParts.length > 0) {
-    const preMoveModes = buildSymmetricPulloutModes({
+  const targetOf = idx => (Number.isFinite(fixedTargets[idx]) ? fixedTargets[idx] : 0);
+  const numeric = fixedAnchors.filter((_, idx) => !isNaturalTarget(fixedTargets[idx]));
+  const natural = numeric.length < fixedAnchors.length;
+  const moveHeld = async (targetByAnchor, heldAnchors) => {
+    const starts = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+    const targets = motorIds.map((_, idx) => (Number.isFinite(targetByAnchor[idx]) ? targetByAnchor[idx] : null));
+    const moving = new Set(targets.flatMap((target, idx) => (target !== null && Math.abs(target - starts[idx]) > 1e-6 ? [idx] : [])));
+    if (moving.size === 0) return starts;
+    await applyForceModeState(sendFn, {
       motorIds,
-      movingAnchors,
-      fixedAnchors,
-      forbiddenForceAnchors,
-      forceMid,
-      forceMax,
-      forceLow,
-      activeAnchors: [sweepConfig.driveAnchor, sweepConfig.sensorAnchor],
+      modes: buildSymmetricPulloutModes({
+        motorIds, movingAnchors: moving, fixedAnchors: heldAnchors, forbiddenForceAnchors,
+        forceMid, forceMax, forceLow, activeAnchors: natural ? [] : [sweepConfig.driveAnchor, sweepConfig.sensorAnchor],
+      }),
     });
-    await applyForceModeState(sendFn, { motorIds, modes: preMoveModes });
-    await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
+    const parts = [...moving].map(idx => `${axes[idx]}${(targets[idx] - starts[idx]).toFixed(3)}`);
+    await runMoveWithWait(sendFn, `G1 H2 ${parts.join(' ')} F${feed}`, speedup, { axes });
+    return settleOnTargets(sendFn, { motorIds, axes, mmPerDeg, targets, starts, feed, speedup });
+  };
+  const first = new Array(motorIds.length).fill(null);
+  fixedAnchors.forEach((anchor, idx) => { if (!isNaturalTarget(fixedTargets[idx])) first[anchor] = targetOf(idx); });
+  let lengths = await moveHeld(first, numeric);
+  if (natural) {
+    const second = new Array(motorIds.length).fill(null);
+    fixedAnchors.forEach((anchor, idx) => {
+      second[anchor] = isNaturalTarget(fixedTargets[idx]) ? lengths[anchor] + fixedTargets[idx].natural : lengths[anchor];
+    });
+    lengths = await moveHeld(second, fixedAnchors);
   }
-
-  return;
+  return fixedAnchors.map(anchor => lengths[anchor]);
 }
 
 function buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorCount) {
@@ -1091,7 +1102,7 @@ function parseSweepConfigLine(line, lineNumber) {
   }
   const parts = trimmed.split(/\s+/);
   if (parts.length < 3) {
-    throw new Error(`Invalid sweep config line ${lineNumber}: expected fixedAnchors drive sensor`);
+    throw new Error(`Invalid sweep config line ${lineNumber}: expected fixedAnchors drive sensor [fixed=targets]`);
   }
   const fixedToken = parts[0].replace(/^\[/, '').replace(/\]$/, '');
   const fixedAnchors = fixedToken.length > 0
@@ -1102,7 +1113,18 @@ function parseSweepConfigLine(line, lineNumber) {
   if (fixedAnchors.some((val) => !Number.isFinite(val)) || !Number.isFinite(driveAnchor) || !Number.isFinite(sensorAnchor)) {
     throw new Error(`Invalid sweep config line ${lineNumber}: anchors must be integers`);
   }
-  return { fixedAnchors, driveAnchor, sensorAnchor };
+  // Optional per-line held lengths, in the listed fixed-anchor order: "fixed=430,-215".
+  // "n", "n+200" or "n-50" holds a line where it settles after the others moved, plus an offset.
+  if (parts.length < 4) return { fixedAnchors, driveAnchor, sensorAnchor };
+  const fixedTargets = parts[3].replace(/^fixed=/, '').split(',').map((token) => {
+    const natural = /^n([+-]\d+(?:\.\d+)?)?$/.exec(token);
+    return natural ? { natural: Number(natural[1] ?? 0) } : Number(token);
+  });
+  if (!parts[3].startsWith('fixed=') || fixedTargets.length !== fixedAnchors.length
+      || !fixedTargets.every(target => Number.isFinite(target) || isNaturalTarget(target))) {
+    throw new Error(`Invalid sweep config line ${lineNumber}: expected fixed=<one length or n[+-offset] per fixed anchor>`);
+  }
+  return { fixedAnchors, driveAnchor, sensorAnchor, fixedTargets };
 }
 
 export async function loadSweepConfigFile(filePath, machineConfig) {
@@ -1115,7 +1137,7 @@ export async function loadSweepConfigFile(filePath, machineConfig) {
     const parsed = parseSweepConfigLine(line, i + 1);
     if (parsed) {
       const normalized = normalizeSweepConfig(parsed, machineConfig);
-      const key = `${normalized.fixedAnchors.join(',')}|${normalized.driveAnchor}|${normalized.sensorAnchor}`;
+      const key = `${normalized.fixedAnchors.join(',')}|${normalized.driveAnchor}|${normalized.sensorAnchor}|${JSON.stringify(normalized.fixedTargets ?? null)}`;
       if (seen.has(key)) {
         // Skip duplicates after canonicalization to avoid repeated sweeps.
         // eslint-disable-next-line no-continue
@@ -1158,11 +1180,13 @@ function normalizeSweepConfig(config, machineConfig) {
   if (!config || !machineConfig) {
     return config;
   }
-  const fixedAnchors = Array.isArray(config.fixedAnchors)
-    ? [...config.fixedAnchors].sort((a, b) => a - b)
-    : [];
+  const order = (config.fixedAnchors ?? []).map((_, idx) => idx)
+    .sort((a, b) => config.fixedAnchors[a] - config.fixedAnchors[b]);
+  const fixedAnchors = order.map(idx => config.fixedAnchors[idx]);
   const [driveAnchor, sensorAnchor] = canonicalDriveSensorPair(config.driveAnchor, config.sensorAnchor);
-  return { ...config, fixedAnchors, driveAnchor, sensorAnchor };
+  const normalized = { ...config, fixedAnchors, driveAnchor, sensorAnchor };
+  if (config.fixedTargets) normalized.fixedTargets = order.map(idx => config.fixedTargets[idx]);
+  return normalized;
 }
 
 // Check the spare encoder on two consecutive ordinary sweep steps. The first
@@ -1589,7 +1613,6 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       coupling_probes: couplingProbes } };
 }
 
-// Collect sweeps for each config once; fixed anchors use explicit targets or size-tuned travel.
 export async function collectSweepData(send, context) {
   const input = validateSweepCollectionInput(context);
   const options = applySweepDefaults(input);
@@ -1791,7 +1814,8 @@ export async function collectSweepData(send, context) {
   });
   await waitForStableEncoders(send, motorIds, speedup);
 
-  const useFixedTargets = fixedTargetsSpec !== null;
+  const useFixedTargets = fixedTargetsSpec !== null
+    || (sweepConfigs.length > 0 && sweepConfigs.every(cfg => cfg.fixedTargets));
   let maxTravelMm = Number.isFinite(maxTravelOverride) ? maxTravelOverride : null;
   let sizeTunePair = null;
   if (!useFixedTargets && maxTravelOverride === null) {
@@ -1844,14 +1868,14 @@ export async function collectSweepData(send, context) {
 
   for (const sweepConfig of sweepConfigs) {
     sweepOrdinal += 1;
-    const fixedTargets = resolveFixedTargets(
+    let fixedTargets = resolveFixedTargets(
       sweepConfig.fixedAnchors,
-      fixedTargetsSpec,
+      sweepConfig.fixedTargets ?? fixedTargetsSpec,
       maxTravelMm,
       machineConfig,
     );
     const fixedDesc = useFixedTargets
-      ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
+      ? fixedTargets.map((val) => (isNaturalTarget(val) ? `n${val.natural >= 0 ? '+' : ''}${val.natural}` : val.toFixed(3))).join(', ')
       : '';
     const fixedInfo = fixedDesc.length > 0 ? `, fixed targets [${fixedDesc}]` : '';
 
@@ -1890,7 +1914,8 @@ export async function collectSweepData(send, context) {
               returnFirstAnchors: machineConfig.numAnchors > machineConfig.dimensions + 1 ? getForceForbiddenAnchors(machineConfig) : [],
             });
           }
-          await prepareSweepPositioning(send, subCfg, {
+          // Both directions and every retry share the lengths the first positioning held.
+          fixedTargets = await prepareSweepPositioning(send, subCfg, {
             motorIds,
             axes: machineConfig.axes,
             mmPerDeg,
@@ -1968,13 +1993,11 @@ export async function collectSweepData(send, context) {
 
     if (rejected) continue;
 
-    const lengths = await getCurrentLengths(send, motorIds, mmPerDeg);
-    const fixedLengths = sweepConfig.fixedAnchors.map((idx, anchorIdx) => {
-      if (Number.isFinite(lengths[idx])) {
-        return lengths[idx];
-      }
-      return Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0;
-    });
+    // Each point's fixed_error_angles_deg is measured from these targets, so a
+    // held line's length is target + error. A later encoder read would count
+    // the line's drift during the sweep twice.
+    const fixedLengths = sweepConfig.fixedAnchors.map((_, anchorIdx) => (
+      Number.isFinite(fixedTargets[anchorIdx]) ? fixedTargets[anchorIdx] : 0));
 
     const driveRangeValues = aggregatedPoints
       .map((p) => (Number.isFinite(p?.l_drive) ? p.l_drive : null))

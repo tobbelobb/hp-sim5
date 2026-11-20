@@ -448,7 +448,7 @@ Options:
   --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
   --no-extra-sensors        Keep unused HP5 lines compliant (legacy collection)
   --no-auto-tune-force       skip auto-tuning and use provided/default forces
-  --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
+  --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor [fixed=lengths] per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
   --solver-iterations <count> Cable solver iterations per integration, 1–64 (default: simulator setting)

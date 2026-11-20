@@ -17,6 +17,7 @@ from typing import Optional
 
 import numpy as np
 
+from autocal.dataset_roles import measurement_groups
 from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares
 
 MIN_SWEEPS = 3
@@ -31,15 +32,17 @@ def sweep_jackknife_mm(dataset: dict, anchors, *, fit_home_offsets: bool = True,
                        low_anchor_z: Optional[float] = None, use_noise_mean: bool = True) -> Optional[float]:
     """Largest anchor-coordinate jackknife standard deviation, in mm.
 
-    None means too few sweeps to leave one out. Infinity means a refit failed,
-    so at least one sweep is needed to locate the anchors.
+    Each refit leaves out one collection unit: a sweep, or a whole sphere mesh.
+    None means too few units to leave one out. Infinity means a refit failed,
+    so at least one unit is needed to locate the anchors.
     """
     sweeps = dataset.get("sweeps") or []
-    if len(sweeps) < MIN_SWEEPS:
+    groups = measurement_groups(dataset)
+    if len(groups) < MIN_SWEEPS:
         return None
     estimates = []
-    for left_out in range(len(sweeps)):
-        subset = dict(dataset, sweeps=[s for i, s in enumerate(sweeps) if i != left_out])
+    for left_out in groups:
+        subset = dict(dataset, sweeps=[s for i, s in enumerate(sweeps) if i not in left_out])
         try:
             fit = fit_pose_least_squares(
                 subset, np.asarray(anchors, dtype=float), fit_home_offsets=fit_home_offsets,

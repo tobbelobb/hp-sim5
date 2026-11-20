@@ -9,7 +9,7 @@ _EVERYDAY = {
     "Calibration": {
         "help", "help_research", "machine_type", "dataset", "no_collect",
         "max_steps", "patience", "find_radii", "find_buildup_factor",
-        "base_radii", "buildup_factor", "line_width", "r0_bounds", "b_bounds",
+        "base_radii", "buildup_factor", "line_width", "r0_bounds", "b_bounds", "shape", "fit",
     },
     "Collection and simulation": {
         "firmware", "config", "sim", "headless_sim", "collector_args", "speedup", "sweep_points",
@@ -21,7 +21,7 @@ _EVERYDAY = {
 _RESEARCH = {
     "Research: solver and recovery": {
         "solve_restarts", "solve_iterations", "solve_optimizer", "optimizer_mode",
-        "trf_solver_fallback", "sparse_recovery", "ellipse_reference_fit",
+        "trf_solver_fallback", "sparse_recovery",
     },
     "Research: spool model and objectives": {
         "sigma_floor_mm", "low_anchor_z", "fit_home_offsets", "equal_strain", "r0_prior_sigma_mm", "b_prior_sigma",

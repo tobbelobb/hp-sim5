@@ -123,11 +123,26 @@ bounded loss limits each point's pull, and points whose misfit exceeds
 `REJECT_SCALES` robust scales are dropped and the fit repeated. Each point has
 n - d spare ranges, so a line pushed aside or a glitch shows in that point alone.
 
-The ellipse fit remains as a reference for fixed-line circle sweeps
-(`--ellipse-reference-fit`), and as the fit for spool searches and retired
-projected-angle datasets. The point fit then runs beside it and its difference
-is logged. On HP3/HP4 the two use the same information per point and reach the
-same accuracy; on HP5 the ellipse fit ignores the extra ranges and line stretch.
+`--ellipse-fit` fits the anchors with `ellipse_fit.py` instead: each
+point's distance in mm to its sweep's predicted drive/sensor ellipse and, on HP5,
+to one drive/extra-range ellipse per accepted extra range, after the same stretch
+correction, robust loss and point rejection. It needs sweeps with two held lines,
+takes held lines at their commanded lengths, and is a reference: the point fit
+runs beside it and their difference is logged. Accuracy is within about 0.5 mm of
+the point fit on recorded benchmark sweeps, but worse with encoder noise on held
+lines, which the ellipse model cannot attribute.
+
+Spool searches (`--find-radii`, `--find-buildup-factor`) on Hangprinters use the
+point fit too (`spool_fit.py`): every length is recomputed from the recorded motor
+angle with the firmware spool formula, a global radius is profiled on a grid with
+the anchors refitted at each value, then radii and anchors are refined jointly.
+
+The 2D slideprinter and retired projected-angle datasets use the legacy ellipse
+autocal in `autocal/slideprinter_2d/`, including its own spool search. Each 2D
+sweep holds one line, so its circle in the plane constrains the geometry more than
+a 3D sweep's circle does; the point fit was clearly worse on the six recorded
+slideprinter spool datasets (28-64 vs 5-27 mm summed anchor and radius error on
+the same full data), so that package is kept for them only.
 `tools/disturb_dataset.py` injects disturbances: the `disturbed_benchmark_*`
 regression datasets hold two pushed lines and 3% outliers, and the
 `noisy_*mm_benchmark_*` ones Gaussian encoder noise of 0.05, 0.2 and 0.5 mm.
@@ -263,9 +278,9 @@ Run complete simulated full-auto calibration without a browser:
 `--headless-sim` implies `--sim` and requires the built RRF simulator and Node
 dependencies. It starts RRF and the production JavaScript physics/collector in
 Node. `hangprinter_3`/`hp3` select the HP3 scene and firmware configuration;
-`hangprinter_4`/`hp4` select HP4. Slideprinter, Cubecorners and Skycam also have
-scene/config pairs. There is currently no headless preset for `hangprinter_5`
-or Klipper. The fitting model still calls both HP3 and HP4 `hangprinter_4`.
+`hangprinter_4`/`hp4` select HP4; `hangprinter_5` and
+`hangprinter_5_pulley_reduced` select HP5. Slideprinter, Cubecorners and Skycam
+also have scene/config pairs. There is no headless preset for Klipper.
 
 Bootstrap, force autotuning, default point counts/noise sampling, fitting,
 adaptive sweep selection and automatic stopping use the existing full-auto
@@ -614,6 +629,84 @@ finite positive value; the resulting covariance is not calibrated uncertainty.
 `--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3 as a fallback
 to the `--stable-step-mm` stop.
 
+### Ellipsoid autocal (sphere meshes)
+
+`--ellipsoid-shape` runs a separate Hangprinter autocal, `ellipsoid_autocal.py`.
+It fits with `--ellipsoid-fit` by default; `--point-fit` (or `--no-ellipsoid-fit`)
+fits the same data with the point fit. The default `--ellipse-shape` collects
+planned flat sweeps and fits them with `--point-fit` or `--ellipse-fit`. An
+ellipsoid fit needs ellipsoid data; the ellipse fit of ellipsoid data is not
+implemented.
+
+An ellipsoid sweep holds one line (D, or the top line on HP5) at one length, so
+the effector stays on a sphere around that anchor. It has one row per free line;
+a row also holds that free line, the level line, and is an ordinary force sweep
+with five points per direction. The heights:
+
+1. the bootstrap rows, with the held line at home (the lowest sphere);
+2. half way up to the highest the held anchor's clearance allows (the effector
+   stays 10% of the anchor's home distance away), by the fit of the first;
+3. that highest sphere, by the fit of the first two;
+4. further ellipsoids split the largest gap between the held lengths so far,
+   tried ones included, up to six.
+
+From the second on, each level line first settles with every free line idling
+(the effector hangs below the held anchor), then shortens half way to the
+shortest it can be on that sphere (`fixed=n-184,-850` in the sweep config). Left
+at its idle length a level line is nearly slack, which biased HP5 by 3 mm;
+shortened all the way, a row's circle shrinks to a point and the row is
+unmeasurable.
+
+The collector checks every positioning move against the encoders. A relative
+move lands on the firmware's command, and a saturated motor leaves its command
+ahead of its encoder, so one correction from the encoders follows each move and
+each return to origin. A held motor still short after it is saturated: its
+command is backed off past the reached length (three times the miss, at most a
+quarter of the move) and the length it holds is recorded. A row whose drive then
+finds no measurable interval is rejected and the run goes on.
+
+The fit estimates home offsets, corrects line stretch at the recorded constant
+forces (also on HP3/HP4) and starts from the blind seed at 1x, 2x and 4x scale.
+From the third ellipsoid on, the run stops when the last ellipsoid moved no
+anchor coordinate by more than `--stable-step-mm` and leaving out any one row
+moves none by more than twice that. The reported uncertainty is that row
+jackknife. `--no-collect` replays a dataset ellipsoid by ellipsoid.
+
+Live headless runs, 2026-11-20, one per machine. Each machine scores max anchor
+coordinate error x simulated time: twice the time costs as much as twice the
+accuracy gains. The disturbed score uses the geometric mean of the clean error
+and the mean error under pulls with outliers, 0.05 mm and 0.2 mm encoder noise, and
+both together (offline refits, `autocal/tools/disturb_dataset.py`). The last row is
+the geometric mean over the machines.
+
+| Machine | Sweeps, point fit (default) | Earlier fixed schedule | Planned heights |
+| --- | --- | --- | --- |
+| HP3 | 0.97 mm, 4587 s | 0.29 mm, 5177 s | 2.60 mm, 6068 s |
+| HP4 | 0.74 mm, 4924 s | 0.31 mm, 6491 s | 0.46 mm, 4622 s |
+| HP5 | 1.04 mm, 3778 s | 0.56 mm, 8326 s | 1.27 mm, 6094 s |
+| HP5 pulley-reduced | 0.93 mm, 4686 s | 1.16 mm, 8347 s | 2.90 mm, 6495 s |
+| Clean / disturbed score | 4077 / 7623 | 3421 / 8910 | 8350 / 12105 |
+
+Sweeps with the point fit win once disturbances count, and stay the default.
+The earlier fixed schedule wins on clean data only, with the old open-loop
+collector. On the closed-loop collector the same schedule scores 7447 / 12892:
+data that differs by at most 0.12 mm in three held lengths moves HP3 from 0.29
+to 1.11 mm.
+
+That sensitivity has one cause. The held anchor's height trades exactly against
+the scale of the free lines' stretch correction. Scaling it by 10% moves that
+height about 0.85 mm, and the fit rms does not change. The errors above vanish
+at about 0.9x on HP4 and 1.2x on HP5, so the stretch correction's tensions or
+compliance are off, not the plan. See
+`research/output/session-2026-11-20-ellipsoid-autocal/report.md`.
+
+Until 2026-11-20 a sweep recorded each held line's length from an encoder read
+after the sweep, while each point's fixed error angle refers to the positioning
+target. The fit adds the two, which counted the line's drift twice (up to 0.05 mm
+in the sweep benchmark, 0.35 mm in some ellipsoid runs). Datasets now record the
+target. The sweep and planned-height columns are live runs of this code; the
+fixed schedule column is its own commit, `140dcbf4`.
+
 ## Headless benchmark history
 
 CI runs fast tests, slow integration tests, and the four autocal benchmarks in
@@ -647,6 +740,11 @@ their medians. Increase the sample count if the result is still ambiguous.
   --revs OLD_SHA NEW_SHA --machines hangprinter_4 --repeat 3
 git add output/autocal-benchmark-backfill/results.jsonl
 ```
+
+The backfill runs one simulation per four CPU cores by default: the RRF host,
+headless physics and Python fit together use about four. More at once can fail
+on wall-clock G-code timeouts that are not code regressions. `--threads` and
+`--threads-per-run` override this.
 
 Commit the results file directly. CI reads it when the commit reaches the
 default branch, verifies the recorded fingerprints, and adds the observations

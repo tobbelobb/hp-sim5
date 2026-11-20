@@ -11,7 +11,7 @@ import re
 
 import numpy as np
 
-from autocal.dataset_roles import normalize_dataset_point_roles
+from autocal.dataset_roles import measurement_groups, normalize_dataset_point_roles
 from autocal.pose_fit import fit_pose_least_squares, shift_dataset_home_offsets, HOME_OFFSET_PRIOR_SIGMA_MM
 from autocal.tools.anchor_errors import anchor_errors
 
@@ -41,8 +41,9 @@ def _config_m669(path):
 
 
 def _convergence_sim_s(data, rows, truth):
-    """Simulated time when the first selected fit reached CONVERGED_MM. Older logs lack
-    num_sweeps; each later iteration then follows exactly one newly collected sweep."""
+    """Simulated time when the first selected fit reached CONVERGED_MM. num_sweeps counts
+    collection units (sweeps or whole sphere meshes); older logs lack it, and each later
+    iteration then follows exactly one newly collected unit."""
     fits = [r for r in rows if 'selected_run' in r]
     if not fits:
         return None
@@ -53,8 +54,11 @@ def _convergence_sim_s(data, rows, truth):
         if anchors is None:
             return None
         if np.max(np.abs(np.asarray(anchors) - truth)) <= CONVERGED_MM:
-            sweeps = row.get('num_sweeps', len(data['sweeps']) - (last - row['iteration']))
-            times = [p.get('clock_time_ms') for s in data['sweeps'][:sweeps] for p in s['data_points']]
+            # One collection unit (sweep or sphere mesh) per iteration.
+            groups = measurement_groups(data)
+            units = row.get('num_sweeps', len(groups) - (last - row['iteration']))
+            times = [p.get('clock_time_ms') for group in groups[:units]
+                     for index in group for p in data['sweeps'][index]['data_points']]
             # Before 2026-11-15 points carry only per-collection timestamps.
             return None if None in times else max(times) / 1000
     return None
@@ -78,5 +82,5 @@ def benchmark_metrics(dataset, repo_root):
         precision = None
     return dict(total_sim_s=manifest.get('simulated_s'), convergence_sim_s=_convergence_sim_s(data, rows, truth),
                 precision_mm=precision, accuracy_mm=error['max_abs_coordinate_mm'],
-                sweeps=len(data['sweeps']), stop_reason=manifest.get('stop_reason'),
+                sweeps=len(measurement_groups(data)), stop_reason=manifest.get('stop_reason'),
                 wall_s=manifest.get('wall_s'))

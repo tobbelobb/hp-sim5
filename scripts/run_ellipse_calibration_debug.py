@@ -30,8 +30,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from autocal.ellipse_fitting import fit_all_sweeps
-from autocal.ellipse_solver import solve_anchors
-from autocal.ellipse_visualization import (
+from autocal.slideprinter_2d.ellipse_solver import solve_anchors
+from autocal.slideprinter_2d.ellipse_visualization import (
     create_calibration_report,
     plot_all_sweeps,
     plot_anchors_2d,
@@ -307,7 +307,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
         def _cb(xk: np.ndarray, _conv: Optional[float]) -> None:
             # Recompute cost to store history.
-            from autocal.ellipse_cost import EllipseCostFunction
+            from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 
             cost_fn = EllipseCostFunction(
                 dataset,

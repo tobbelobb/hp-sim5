@@ -1,6 +1,6 @@
 import numpy as np
 
-from autocal.scale_polish import apply_final_scale_polish, run_uniform_scale_polish
+from autocal.slideprinter_2d.scale_polish import apply_final_scale_polish, run_uniform_scale_polish
 
 
 def test_run_uniform_scale_polish_skips_when_find_radii_off():

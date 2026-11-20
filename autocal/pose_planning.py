@@ -84,6 +84,49 @@ def predict_sweep_positions(
     return curve[stretch[np.round(np.linspace(0, stretch.size - 1, points)).astype(int)]]
 
 
+def point_informations(
+    anchors: np.ndarray,
+    lengths_mm: np.ndarray,
+    positions: np.ndarray,
+    *,
+    machine_type: str,
+    low_anchor_z: Optional[float],
+    sigma_mm: float,
+) -> np.ndarray:
+    """Information of each point, at known positions, about the anchors and home offsets.
+
+    Each point's d pose coordinates are eliminated analytically. NaN lengths are
+    unmeasured lines.
+    """
+    anchors = np.asarray(anchors, dtype=float)
+    num_anchors, dimensions = anchors.shape
+    num_offsets = num_anchors - dimensions
+    anchor_vec = anchors_matrix_to_opt_vec(anchors, machine_type, low_anchor_z)
+    # Candidate poses are already known exactly. Eliminate their d nuisance
+    # coordinates analytically rather than re-solving them from home for
+    # every parameter perturbation (which can select another sphere branch).
+    mapping = np.empty((num_anchors, dimensions, anchor_vec.size))
+    for index in range(anchor_vec.size):
+        step = np.zeros(anchor_vec.size)
+        step[index] = _FD_STEP_MM
+        plus = anchor_opt_vec_to_matrix(anchor_vec + step, machine_type, num_anchors, dimensions, low_anchor_z)
+        minus = anchor_opt_vec_to_matrix(anchor_vec - step, machine_type, num_anchors, dimensions, low_anchor_z)
+        mapping[:, :, index] = (plus - minus) / (2 * _FD_STEP_MM)
+    vector = np.asarray(positions)[:, None, :] - anchors[None, :, :]
+    direction = vector / np.linalg.norm(vector, axis=2)[:, :, None]
+    home_direction = anchors / np.linalg.norm(anchors, axis=1)[:, None]
+    jacobian = np.einsum('pnd,ndk->pnk', -direction - home_direction, mapping)
+    offset_jacobian = -np.eye(num_anchors)[:, -num_offsets:]
+    jacobian = np.concatenate([jacobian, np.broadcast_to(offset_jacobian, (*lengths_mm.shape, num_offsets))], axis=2)
+    measured = np.isfinite(lengths_mm)[:, :, None]
+    direction = direction * measured
+    jacobian *= measured
+    normal = np.einsum('pni,pnj->pij', direction, direction) + 1e-9*np.eye(dimensions)
+    pose_step = np.linalg.solve(normal, np.einsum('pni,pnk->pik', direction, jacobian))
+    jacobian -= np.einsum('pni,pik->pnk', direction, pose_step)
+    return np.einsum('pnk,pnl->pkl', jacobian, jacobian) / sigma_mm**2
+
+
 def pose_information(
     anchors: np.ndarray,
     lengths_mm: np.ndarray,
@@ -101,30 +144,8 @@ def pose_information(
     anchor_vec = anchors_matrix_to_opt_vec(anchors, machine_type, low_anchor_z)
 
     if positions is not None:
-        # Candidate poses are already known exactly. Eliminate their d nuisance
-        # coordinates analytically rather than re-solving them from home for
-        # every parameter perturbation (which can select another sphere branch).
-        mapping = np.empty((num_anchors, dimensions, anchor_vec.size))
-        for index in range(anchor_vec.size):
-            step = np.zeros(anchor_vec.size)
-            step[index] = _FD_STEP_MM
-            plus = anchor_opt_vec_to_matrix(anchor_vec + step, machine_type, num_anchors, dimensions, low_anchor_z)
-            minus = anchor_opt_vec_to_matrix(anchor_vec - step, machine_type, num_anchors, dimensions, low_anchor_z)
-            mapping[:, :, index] = (plus - minus) / (2 * _FD_STEP_MM)
-        vector = np.asarray(positions)[:, None, :] - anchors[None, :, :]
-        direction = vector / np.linalg.norm(vector, axis=2)[:, :, None]
-        home_direction = anchors / np.linalg.norm(anchors, axis=1)[:, None]
-        jacobian = np.einsum('pnd,ndk->pnk', -direction - home_direction, mapping)
-        offset_jacobian = -np.eye(num_anchors)[:, -num_offsets:]
-        jacobian = np.concatenate([jacobian, np.broadcast_to(offset_jacobian, (*lengths_mm.shape, num_offsets))], axis=2)
-        measured = np.isfinite(lengths_mm)[:, :, None]
-        direction = direction * measured
-        jacobian *= measured
-        normal = np.einsum('pni,pnj->pij', direction, direction) + 1e-9*np.eye(dimensions)
-        pose_step = np.linalg.solve(normal, np.einsum('pni,pnk->pik', direction, jacobian))
-        jacobian -= np.einsum('pni,pik->pnk', direction, pose_step)
-        jacobian = jacobian.reshape(-1, anchor_vec.size + num_offsets)
-        return jacobian.T @ jacobian / sigma_mm**2
+        return np.sum(point_informations(anchors, lengths_mm, positions, machine_type=machine_type,
+                                         low_anchor_z=low_anchor_z, sigma_mm=sigma_mm), axis=0)
 
     def residuals(step: np.ndarray) -> np.ndarray:
         moved = anchor_opt_vec_to_matrix(anchor_vec + step[:anchor_vec.size], machine_type, num_anchors,

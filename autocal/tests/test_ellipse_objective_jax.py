@@ -3,8 +3,8 @@ import copy
 import numpy as np
 import pytest
 
-from autocal.ellipse_cost import EllipseCostFunction
-from autocal.ellipse_objective_jax import _JAX_AVAILABLE, build_compiled_value_and_grad
+from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
+from autocal.slideprinter_2d.ellipse_objective_jax import _JAX_AVAILABLE, build_compiled_value_and_grad
 from autocal.theoretical_ellipse import (
     anchors_matrix_to_opt_vec,
     compute_constraint_circle_3d,

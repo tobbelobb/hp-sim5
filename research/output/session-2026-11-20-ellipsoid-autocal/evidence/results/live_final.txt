@@ -1,0 +1,10 @@
+fixsweeps     hangprinter_3                  err 0.97 sim 4587 stable-estimate
+fixsweeps     hangprinter_4                  err 0.74 sim 4924 stable-estimate
+fixsweeps     hangprinter_5                  err 1.04 sim 3778 good-fit
+fixsweeps     hangprinter_5_pulley_reduced   err 0.93 sim 4686 good-fit
+fixsweeps clean score 4082
+fixellipsoid  hangprinter_3                  err 2.60 sim 6068 stable-estimate
+fixellipsoid  hangprinter_4                  err 0.46 sim 4622 stable-estimate
+fixellipsoid  hangprinter_5                  err 1.27 sim 6094 stable-estimate
+fixellipsoid  hangprinter_5_pulley_reduced   err 2.90 sim 6495 stable-estimate
+fixellipsoid clean score 8362

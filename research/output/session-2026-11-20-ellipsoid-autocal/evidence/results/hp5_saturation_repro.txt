@@ -1,0 +1,7 @@
+run1: Failed to collect sweeps: Return on axis V did not reach its encoder origin (-15.19deg; limit 1.5deg)
+run1: exit 1 simulated_s 65.646
+run1: AttributeError: 'types.SimpleNamespace' object has no attribute 'keep_sim_alive'
+run2: Failed to collect sweeps: Return on axis V did not reach its encoder origin (-15.19deg; limit 1.5deg)
+run2: exit 1 simulated_s 65.646
+run3: ; axis V saturated at -617.763 mm on its way to -620.653 mm; holding -555.999 mm instead
+run3: exit 0 simulated_s 286.538

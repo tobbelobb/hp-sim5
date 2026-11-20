@@ -33,20 +33,8 @@ class InfeasibleForceProfileError(ValueError):
     """A candidate has no usable interval under the requested line loads."""
 
 
-def equal_strain_tensions(
-    anchors: np.ndarray,
-    position: np.ndarray,
-    lines: Sequence[int],
-    *,
-    strand_tension_n: float,
-    mover_weight_n: float,
-    strands: np.ndarray,
-    extra_line_length_mm: np.ndarray,
-    mechanical_advantage: np.ndarray | None = None,
-    compliant_force_n: float = 0.0,
-) -> np.ndarray:
-    """Tensions of the given lines at a position whose weighted mean tension per strand is `strand_tension_n`."""
-    lines = list(lines)
+def _carrying_and_pretension(anchors, position, lines, mover_weight_n, compliant_force_n):
+    """Static line tensions of the d+1 active lines: one particular solution and the self-stress mode."""
     if len(lines) != np.asarray(anchors).shape[1] + 1:
         raise ValueError("Equal-strain sweeps require d+1 active lines with known loads on the remaining lines")
     to_anchor = np.asarray(anchors, dtype=float)[lines] - np.asarray(position, dtype=float)
@@ -63,7 +51,31 @@ def equal_strain_tensions(
         load -= compliant_force_n * np.sum(passive / np.linalg.norm(passive, axis=1)[:, None], axis=0)
     carrying = np.linalg.lstsq(directions, load, rcond=None)[0]
     pretension = np.linalg.svd(directions)[2][-1]
-    pretension = pretension * np.sign(np.sum(pretension))
+    return carrying, pretension * np.sign(np.sum(pretension)), distance
+
+
+def tensions_at_sensor_force(anchors, position, lines, *, sensor_force_n: float, mover_weight_n: float,
+                             compliant_force_n: float = 0.0) -> np.ndarray:
+    """Static tensions of the active lines when the last one (the sensor) pulls with `sensor_force_n`."""
+    carrying, pretension, _ = _carrying_and_pretension(anchors, position, list(lines), mover_weight_n, compliant_force_n)
+    return carrying + (sensor_force_n - carrying[-1]) / pretension[-1] * pretension
+
+
+def equal_strain_tensions(
+    anchors: np.ndarray,
+    position: np.ndarray,
+    lines: Sequence[int],
+    *,
+    strand_tension_n: float,
+    mover_weight_n: float,
+    strands: np.ndarray,
+    extra_line_length_mm: np.ndarray,
+    mechanical_advantage: np.ndarray | None = None,
+    compliant_force_n: float = 0.0,
+) -> np.ndarray:
+    """Tensions of the given lines at a position whose weighted mean tension per strand is `strand_tension_n`."""
+    lines = list(lines)
+    carrying, pretension, distance = _carrying_and_pretension(anchors, position, lines, mover_weight_n, compliant_force_n)
     advantage = np.ones(len(anchors)) if mechanical_advantage is None else np.broadcast_to(
         np.asarray(mechanical_advantage, dtype=float), (len(anchors),))
     advantage = advantage[lines]
@@ -128,14 +140,18 @@ def sensor_force_profiles(
     return profiles
 
 
-def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, cfgs: Sequence[SweepConfig]) -> bool:
-    """Write the collector's force table for the sweeps. Needs the firmware's line description and tuned forces."""
+def force_planning_parameters(dataset: dict):
+    """Equal-strain inputs from the firmware line description and tuned forces, or None.
+
+    Keys: strand_tension_n, mover_weight_n, strands, extra_line_length_mm,
+    mechanical_advantage, compliant_force_n, minimum_force_n, extra_sensor_force_n.
+    """
     config = dataset["config"]
     line_description = config.get("m666_before_data_collection") or {}
     tuning = config.get("force_tuning") or {}
     required = [line_description.get(key) for key in ("W", "N", "Y", "U")] + [tuning.get("force_mid_n")]
     if any(value is None for value in required):
-        return False
+        return None
     strands = np.asarray(line_description["N"], dtype=float)
     advantage = np.broadcast_to(np.asarray(line_description["U"], dtype=float), strands.shape)
     if not np.all(np.isfinite(advantage) & (advantage > 0)):
@@ -157,20 +173,25 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
     if config.get("extra_sensors_enabled") and int(dataset["num_anchors"]) == 5:
         extra_force = min(float(tuning.get("force_max_n", np.inf)),
                           _COLLECTION_FORCE_MULTIPLE * start_force_n)
-    profiles = [
-        profile
-        for cfg in cfgs
-        for profile in sensor_force_profiles(
-            anchors, cfg,
-            strand_tension_n=strand_target,
-            mover_weight_n=float(line_description["W"]) * GRAVITY_M_PER_S2,
-            strands=strands,
-            extra_line_length_mm=np.asarray(line_description["Y"], dtype=float),
-            mechanical_advantage=advantage,
-            compliant_force_n=(extra_force if extra_force is not None else float(tuning.get("force_low_n", 0.0))),
-            minimum_force_n=start_force_n,
-        )
-    ]
+    return dict(
+        strand_tension_n=strand_target,
+        mover_weight_n=float(line_description["W"]) * GRAVITY_M_PER_S2,
+        strands=strands,
+        extra_line_length_mm=np.asarray(line_description["Y"], dtype=float),
+        mechanical_advantage=advantage,
+        compliant_force_n=(extra_force if extra_force is not None else float(tuning.get("force_low_n", 0.0))),
+        minimum_force_n=start_force_n,
+        extra_sensor_force_n=extra_force,
+    )
+
+
+def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, cfgs: Sequence[SweepConfig]) -> bool:
+    """Write the collector's force table for the sweeps. Needs the firmware's line description and tuned forces."""
+    params = force_planning_parameters(dataset)
+    if params is None:
+        return False
+    extra_force = params.pop("extra_sensor_force_n")
+    profiles = [profile for cfg in cfgs for profile in sensor_force_profiles(anchors, cfg, **params)]
     if extra_force is not None:
         for profile in profiles:
             profile["extra_sensor_force_n"] = extra_force

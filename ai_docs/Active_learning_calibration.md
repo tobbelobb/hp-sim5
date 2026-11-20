@@ -125,8 +125,8 @@ As you can guess from some of the option names, this procedure creates movements
 We have implemented two methods that run optimizations on the data in order to find the CDPR's configuration values, most notably the anchor point positions. They are invoked like this:
 
 ```
-python autocal/calibrate.py ellipse autocal/data/big_even_pattern.json
-python autocal/calibrate.py point autocal/data/big_even_pattern.json
+python autocal/slideprinter_2d/calibrate.py ellipse autocal/data/big_even_pattern.json
+python autocal/slideprinter_2d/calibrate.py point autocal/data/big_even_pattern.json
 ```
 
 The "ellipse" method takes advantage of the radial pattern in the data by inferring that distances to the sensor and drive motors must follow an elliptical relationship. It fits ellipses to each sweep, takes a guess at anchor positions, which implies some guessed ellipses, and measures the distance between the observed ellipses and the guessed ellipses. Moving anchor guesses closer to the true anchor positions reduces the difference between guessed ellipses and observed ellipses.

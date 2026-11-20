@@ -28,7 +28,7 @@ def test_jax_cache_and_native_logging_settings(tmp_path, mode):
     if mode == 'verbose':
         env['TF_CPP_MIN_LOG_LEVEL'] = '1'
     code = """
-from autocal import ellipse_objective_jax
+from autocal.slideprinter_2d import ellipse_objective_jax
 import json, os, warnings
 import jax
 import jax.numpy as jnp

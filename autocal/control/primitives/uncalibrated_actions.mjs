@@ -544,6 +544,58 @@ function formatAxisDelta(axis, delta) {
   return `${axis}${delta.toFixed(3)}`;
 }
 
+// A held motor's commanded position can differ from its encoder: a saturated
+// motor stops short and keeps straining towards its command. After a move,
+// one correction from the encoders removes any such earlier mismatch. A motor
+// still short after it is saturated where it is: its command is backed off past
+// the reached length by three times its miss, or `backoffShare` of the distance
+// it moved if more, but at most a quarter of that distance, so it holds without
+// straining at the edge of what it can reach. The lengths the motors then hold
+// are returned.
+export async function settleOnTargets(sendFn, {
+  motorIds, axes, mmPerDeg, targets, starts, feed, speedup, delayFn,
+  toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG, backoffShare = 0.02,
+} = {}) {
+  const read = async () => anglesToLengths((await waitForStableEncoders(sendFn, motorIds, speedup)).anglesDeg, mmPerDeg);
+  const missed = lengths => targets.map((target, idx) => Number.isFinite(target)
+    && Math.abs(target - lengths[idx]) / mmPerDeg[idx] > toleranceDeg);
+  const move = async deltas => {
+    const parts = deltas.map((delta, idx) => (delta ? formatAxisDelta(axes[idx], delta) : null)).filter(Boolean);
+    if (parts.length > 0) await runMoveWithWait(sendFn, `G1 H2 ${parts.join(' ')} F${feed}`, speedup, { axes, delayFn });
+  };
+  // A line that reached its target holds the target: force profiles and records are keyed by it.
+  const held = lengths => lengths.map((length, idx) => (Number.isFinite(targets[idx]) && !missed(lengths)[idx]
+    ? targets[idx] : length));
+  let lengths = await read();
+  if (!missed(lengths).some(Boolean)) return held(lengths);
+  const correction = missed(lengths).map((miss, idx) => (miss ? targets[idx] - lengths[idx] : 0));
+  await move(correction);
+  lengths = await read();
+  const saturated = missed(lengths);
+  if (!saturated.some(Boolean)) return held(lengths);
+  const commanded = targets.map((target, idx) => target + correction[idx]);
+  const backoff = saturated.map((miss, idx) => {
+    if (!miss) return 0;
+    const direction = Math.sign(targets[idx] - starts[idx]);
+    const moved = Math.abs(lengths[idx] - starts[idx]);
+    const margin = Math.min(0.25 * moved, Math.max(3 * Math.abs(targets[idx] - lengths[idx]), backoffShare * moved));
+    return lengths[idx] - direction * margin - commanded[idx];
+  });
+  await move(backoff);
+  const reached = await read();
+  saturated.forEach((miss, idx) => {
+    if (!miss) return;
+    const expected = commanded[idx] + backoff[idx];
+    if (Math.abs(reached[idx] - expected) / mmPerDeg[idx] > toleranceDeg) {
+      throw new Error(`Axis ${axes[idx]} cannot hold ${expected.toFixed(3)} mm after backing off from `
+        + `${targets[idx].toFixed(3)} mm (encoder ${reached[idx].toFixed(3)} mm)`);
+    }
+    console.log(`; axis ${axes[idx]} saturated at ${lengths[idx].toFixed(3)} mm on its way to `
+      + `${targets[idx].toFixed(3)} mm; holding ${reached[idx].toFixed(3)} mm instead`);
+  });
+  return held(reached);
+}
+
 export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
   const {
     motorIds,
@@ -612,15 +664,24 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
       );
     }
     // Also hold after a zero-distance return: its other motors entered force mode.
-    await applyForceModeState(sendFn, {
-      motorIds,
-      modes: motorIds.map(() => 'position')
-    });
+    // Encoders settle only once every motor holds position.
+    const holdAndRead = async () => {
+      await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
+      stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+      return stableAfter.anglesDeg[anchorIdx];
+    };
+    const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
+    let angle = await holdAndRead();
+    // The move lands on the firmware's command, which a saturated motor can have
+    // left ahead of its encoder: correct once from the encoder, under the return's modes.
+    if (Math.abs(delta) > 1e-6 && Number.isFinite(angle) && Math.abs(angle) > toleranceDeg) {
+      await applyForceModeState(sendFn, { motorIds, modes });
+      await runMoveWithWait(sendFn, `G1 H2 ${formatAxisDelta(axis, -angle * mmPerDeg[anchorIdx])} F${feed}`,
+        speedup, { axes, delayFn });
+      angle = await holdAndRead();
+    }
     // Check this axis before a later return puts it back into force mode. A
     // quiet but unmoved encoder is not evidence that the return succeeded.
-    stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-    const angle = stableAfter.anglesDeg[anchorIdx];
-    const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
     if (!Number.isFinite(angle) || Math.abs(angle) > toleranceDeg) {
       throw new Error(`Return on axis ${axis} did not reach its encoder origin (${angle}deg; limit ${toleranceDeg}deg)`);
     }

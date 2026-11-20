@@ -218,6 +218,8 @@ One result sentence per session; follow the report for evidence.
 
 - [session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea](program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/report.md) — No result summary available.
 
+- [Ellipsoid autocal: sweeps still win; the held anchor's height trades against stretch scale](session-2026-11-20-ellipsoid-autocal/report.md) — No result summary available.
+
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
 - [Saved HP4 recording Viewer inspection](session-338606b11fde452bb3886bb861a7e96c/report.md) — Retrospective summary of saved evidence, written 2026-10-08.

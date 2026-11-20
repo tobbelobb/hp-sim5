@@ -25,6 +25,7 @@ from autocal.anchor_uncertainty import newest_trusted_index, plan_anchor_uncerta
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
+from autocal.dataset_roles import measurement_groups
 
 
 class BrowserCollector:
@@ -182,6 +183,7 @@ def _full_auto_loop(
     write_cfg: Optional[Path],
     collector_args: Sequence[str],
     sim: bool,
+    shape: str = "ellipse",
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     sweep_points: Optional[int],
@@ -193,7 +195,7 @@ def _full_auto_loop(
     verbose: bool,
     low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
-    ellipse_reference_fit: bool = False,
+    fit: str = "point",
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -322,7 +324,7 @@ def _full_auto_loop(
             _log_console(f"Anchors: {anchor_str}")
         if m666:
             _log_console(f"Spools (M666): {m666}")
-        if has_variants:
+        if full_auto_runs:
             best_flags = str(meta_for_summary.get("flags", "")).strip()
             best_run = str(meta_for_summary.get("run_id", "")).strip()
             label = best_flags or best_run or "default"
@@ -537,6 +539,38 @@ def _full_auto_loop(
         finally:
             _stop_process(process)
 
+    ellipse_reference_fit = fit == "ellipse"
+    if shape == "ellipsoid":
+        from autocal.ellipsoid_autocal import run_ellipsoid_autocal
+        owned = {"--output-file", "--output", "--out", "--machineType", "--machine-type", "--sweep-config-file",
+                 "--sweep-config", "--fixed-targets", "--fixedTargets", "--max-travel-mm", "--sweepPoints",
+                 "--sweep-points", "--completed-sweeps"}
+        mesh_args = [arg for index, arg in enumerate(collector_args_eff)
+                     if arg not in owned and (index == 0 or collector_args_eff[index - 1] not in owned)]
+        if reset_pending and "--hp-sim-reset" not in mesh_args:
+            mesh_args.append("--hp-sim-reset")
+
+        def _collect_mesh(cmd):
+            with _log_context():
+                _run_collection_command(cmd)
+
+        try:
+            accepted = run_ellipsoid_autocal(
+                dataset_path, machine_type=str(machine_type), collector_args=mesh_args,
+                run_collection=_collect_mesh, log_line=_log_line, log_console=_log_console,
+                append_log=lambda row: _append_jsonl(log_path, row), no_collect=bool(no_collect),
+                low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+                stable_step_mm=float(stable_step_mm), stop_file=_full_auto_stop_path(dataset_path),
+                model=fit)
+        except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
+            _log_console(f"; ellipsoid autocal stopped: {error!r}; data so far: {dataset_path}")
+            return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
+        if accepted is None:
+            return _finalize(2)
+        if headless_sim is not None:
+            headless_sim.manifest["stop_reason"] = accepted["reason"]
+        return _emit_summary_and_send(accepted["plan"], summary_meta=accepted["meta"])
+
     checked_hp5_seed = None
     collected_bootstrap = not dataset_path.exists()
     if collected_bootstrap:
@@ -685,21 +719,27 @@ def _full_auto_loop(
                 return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
 
     replay_mode = False
-    replay_sweeps: List[dict] = []
+    # Replay units: one sweep, or every record of one sphere mesh.
+    replay_sweeps: List[List[dict]] = []
     replay_index = 0
     replay_work_path: Optional[Path] = None
     if dataset_path.exists():
         dataset_full = _load_json(dataset_path)
         sweeps_full = dataset_full.get("sweeps")
-        if not collected_bootstrap and isinstance(sweeps_full, list) and len(sweeps_full) > 3:
+        units = ([[sweeps_full[index] for index in group] for group in measurement_groups(dataset_full)]
+                 if isinstance(sweeps_full, list) else [])
+        if not collected_bootstrap and len(units) > 3:
             replay_mode = True
             replay_work_path = dataset_path.with_suffix(".replay_tmp.json")
             work_path = replay_work_path
-            initial = [s for s in sweeps_full[:3] if isinstance(s, dict)]
-            replay_sweeps = [s for s in sweeps_full[3:] if isinstance(s, dict)]
+            initial = [s for unit in units[:3] for s in unit if isinstance(s, dict)]
+            replay_sweeps = [[s for s in unit if isinstance(s, dict)] for unit in units[3:]]
             dataset_work = dict(dataset_full)
             dataset_work["timestamp"] = datetime.now().isoformat()
             dataset_work["sweeps"] = initial
+            # Recorded rejections happened at unknown later points of the original
+            # run; replay plans without them rather than seeing the future.
+            dataset_work.pop("acquisition_rejections", None)
             _renumber_sweeps(initial)
             _write_json(work_path, dataset_work)
             _log_line(
@@ -1300,7 +1340,8 @@ def _full_auto_loop(
                     "timestamp": datetime.now().isoformat(),
                     "iteration": step,
                     "dataset": str(dataset_path),
-                    "num_sweeps": len((plan.get("dataset") or {}).get("sweeps", [])),
+                    # Collection units: a sphere mesh counts once, like a sweep.
+                    "num_sweeps": len(measurement_groups(plan.get("dataset") or {})),
                     "runs": [
                         {
                             "id": r["id"],
@@ -1365,7 +1406,8 @@ def _full_auto_loop(
                     base_dataset = _load_json(work_path)
                     new_dataset = dict(base_dataset)
                     new_dataset["timestamp"] = datetime.now().isoformat()
-                    new_dataset["sweeps"] = [next_sweep]
+                    new_dataset["sweeps"] = list(next_sweep)
+                    new_dataset.pop("acquisition_rejections", None)
                     merged = _merge_sweep_datasets(base_dataset, new_dataset)
                     _write_json(work_path, merged)
                     sweeps = merged.get("sweeps", [])
@@ -1374,7 +1416,7 @@ def _full_auto_loop(
                         f"; replayed sweep {replay_index}/{len(replay_sweeps)} "
                         f"-> {work_path} sweeps={count}"
                     )
-                    _log_console(f"Collected sweep nr {count}")
+                    _log_console(f"Collected sweep nr {len(measurement_groups(merged))}")
                     continue
 
             if no_collect:
@@ -1426,7 +1468,7 @@ def _full_auto_loop(
                 if stopping.stop_requested():
                     return _accept_best("stop-file")
                 if new_dataset.get("sweeps"):
-                    _log_console(f"Collected sweep nr {len(merged['sweeps'])}")
+                    _log_console(f"Collected sweep nr {len(measurement_groups(merged))}")
                     if collector_output != work_path:
                         collector_output.unlink(missing_ok=True)
                     break
@@ -1476,6 +1518,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--headless-sim", action="store_true",
                         help='Collect in the headless production simulator; implies --sim')
     args = parser.parse_args(argv)
+    try:
+        args.fit = resolve_fit(args.shape, args.fit)
+    except ValueError as error:
+        parser.error(str(error))
     if not np.isfinite(args.stable_step_mm) or args.stable_step_mm < 0:
         parser.error("--stable-step-mm must be a finite nonnegative distance")
     if args.project_zero_tension and not args.no_collect:
@@ -1596,13 +1642,14 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
-        ellipse_reference_fit=bool(args.ellipse_reference_fit),
+        fit=args.fit,
         equal_strain=bool(args.equal_strain),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
         delta_max=args.delta_max,
         regularization=float(args.regularization),
         min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
+        shape=str(args.shape),
         write_cfg=args.write_sweep_config,
         collector_args=collector_args,
         sim=bool(args.sim),

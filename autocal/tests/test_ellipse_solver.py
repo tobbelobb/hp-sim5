@@ -3,7 +3,7 @@ import pytest
 from scipy.optimize import OptimizeResult
 from typing import Optional
 
-from autocal import ellipse_solver
+from autocal.slideprinter_2d import ellipse_solver
 
 
 class _QuadraticCost:
@@ -667,7 +667,7 @@ def test_trf_fallback_retries_failed_or_invalid_primary(
 
 @pytest.mark.parametrize("point_counts", [(10, 10), (10, 10, 9), (6, 6, 6)])
 def test_lbfgsb_skips_only_structurally_underconstrained_data(monkeypatch, point_counts):
-    from autocal.ellipse_cost import EllipseCostFunction
+    from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 
     dataset = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
                "sweeps": [dict(id=str(i), fixed_anchors=[0], fixed_lengths=[0.0],
@@ -693,7 +693,7 @@ def test_lbfgsb_skips_only_structurally_underconstrained_data(monkeypatch, point
 
 
 def test_lbfgsb_does_not_skip_repairable_invalid_geometry(monkeypatch):
-    from autocal.ellipse_cost import EllipseCostFunction
+    from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 
     dataset = {"machine_type": "hangprinter_4", "num_anchors": 4, "dimensions": 3,
                "sweeps": [dict(id=str(i), fixed_anchors=[0, 3], fixed_lengths=[-1e4, 0.0],
