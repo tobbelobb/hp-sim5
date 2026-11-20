@@ -359,3 +359,26 @@ def test_collector_prompt_without_newline_is_yielded_while_waiting():
         assert list(lines) == ["done"]
     finally:
         child.wait()
+
+
+def test_collector_output_reader_works_for_high_descriptor_numbers():
+    import os
+    import subprocess
+    import sys
+
+    child = subprocess.Popen(
+        [sys.executable, "-c", "print('first'); print('second')"], stdout=subprocess.PIPE,
+    )
+    high_fd = 2000  # select.select() rejects descriptors of 1024 and above on Linux
+    os.dup2(child.stdout.fileno(), high_fd)
+
+    class HighDescriptor:
+        def fileno(self):
+            return high_fd
+
+    try:
+        assert list(ac._collector_output_lines(HighDescriptor())) == ["first", "second"]
+    finally:
+        os.close(high_fd)
+        child.wait()
+        child.stdout.close()

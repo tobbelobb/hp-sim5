@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
-import select
+import queue
 import signal
 import sys
+import threading
 import time
 from contextlib import nullcontext, ExitStack
 from pathlib import Path
@@ -85,18 +86,31 @@ def _format_log_entry(msg: str, *, wall_s: float, sim_s: Optional[float]) -> str
 
 def _collector_output_lines(stream, idle_s: float = 0.25):
     """Yield a collector's output line by line. A fragment that stops arriving, such as a
-    prompt waiting for Enter, is yielded as soon as the pipe goes idle rather than held back."""
+    prompt waiting for Enter, is yielded once the pipe has been idle for idle_s.
+
+    A reader thread does the blocking reads, so this works on any platform and for any
+    descriptor number; select.select() supports neither on all of them."""
     fd = stream.fileno()
+    chunks: "queue.Queue[Optional[bytes]]" = queue.Queue()
+
+    def pump():
+        try:
+            while chunk := os.read(fd, 65536):
+                chunks.put(chunk)
+        finally:
+            chunks.put(None)
+
+    threading.Thread(target=pump, name="collector-output", daemon=True).start()
     pending = b""
     while True:
-        ready, _, _ = select.select([fd], [], [], idle_s)
-        if not ready:
+        try:
+            chunk = chunks.get(timeout=idle_s)
+        except queue.Empty:
             if pending:
                 yield pending.decode("utf-8", "replace")
                 pending = b""
             continue
-        chunk = os.read(fd, 65536)
-        if not chunk:
+        if chunk is None:
             break
         *lines, pending = (pending + chunk).split(b"\n")
         for line in lines:
@@ -236,7 +250,7 @@ def _full_auto_loop(
     def _log_line(msg: str) -> None:
         line = _write_entry(msg)
         if verbose:
-            print(line, file=console)
+            print(line, file=console, flush=True)
 
     def _log_event(payload: Dict[str, object]) -> None:
         sim_s = _sim_seconds()
@@ -249,7 +263,7 @@ def _full_auto_loop(
 
     def _log_console(msg: str) -> None:
         line = _write_entry(msg)
-        print(line if verbose else msg, file=console)
+        print(line if verbose else msg, file=console, flush=True)
 
     if extended_reference.enabled() and stage_artifacts is None:
         stage_artifacts = dataset_path.with_name(f"{dataset_path.stem}.stages")
