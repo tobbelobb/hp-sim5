@@ -741,6 +741,11 @@ their medians. Increase the sample count if the result is still ambiguous.
 git add output/autocal-benchmark-backfill/results.jsonl
 ```
 
+The backfill runs one simulation per four CPU cores by default: the RRF host,
+headless physics and Python fit together use about four. More at once can fail
+on wall-clock G-code timeouts that are not code regressions. `--threads` and
+`--threads-per-run` override this.
+
 Commit the results file directly. CI reads it when the commit reaches the
 default branch, verifies the recorded fingerprints, and adds the observations
 to the history branch. The default output directory also allows committing

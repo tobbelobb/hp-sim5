@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 import fcntl
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -174,9 +175,11 @@ def main():
                         help="run every Nth distinct runtime input per machine; skipped inputs' commits are not reported")
     parser.add_argument('--machines', nargs='+', default=MACHINES, choices=MACHINES)
     # A run keeps about 1.5 cores busy (physics 1, rrf_simulator 0.5): 12 runs ~ 85% of 20 cores.
-    parser.add_argument('--threads', type=int, default=24)
+    parser.add_argument('--threads', type=int, default=os.cpu_count() or 4)
     parser.add_argument('--mem-gb', type=float, default=50)
-    parser.add_argument('--threads-per-run', type=int, default=2, help='python fit + native physics')
+    # Measured: RRF host ~1.6 cores, headless physics ~0.9, the Python fit ~0.5.
+    # Oversubscribed runs hit wall-clock G-code timeouts.
+    parser.add_argument('--threads-per-run', type=int, default=4, help='RRF host + native physics + python fit')
     parser.add_argument('--mem-gb-per-run', type=float, default=4)
     # HEAD needs at most ~3M steps (HP4); broken older revisions otherwise burn 6M.
     parser.add_argument('--max-physics-steps', type=int, default=MAX_PHYSICS_STEPS)
