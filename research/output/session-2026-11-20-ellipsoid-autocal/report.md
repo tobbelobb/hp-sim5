@@ -368,7 +368,26 @@ An ellipsoid costs 1000–1400 simulated s. The time goes into positioning, sett
 - The final live runs are in `output/fixsweeps-*` and `output/fixellipsoid-*`, which are not committed.
 - Simulation only. Real encoder noise, real stretch and real friction are unknown.
 
-## 9. Reproduction
+## 9. CI confirmation and where its data lives
+
+GitHub Actions run 44794416329 on `f54ef580` ran the default sweep benchmark
+(`autocal/tests/test_autocal_benchmark.py`, one job per machine). It reproduced
+the final local sweep runs to within 3 simulated seconds:
+
+| Machine | Error | Simulated time |
+| --- | --- | --- |
+| HP3 | 0.97 mm | 4584 s |
+| HP4 | 0.74 mm | 4922 s |
+| HP5 | 1.04 mm | 3781 s |
+| HP5r | 0.93 mm | 4685 s |
+
+Where the data lives:
+- **Branch runs:** artifacts only, `benchmark-<machine>-<attempt>` with results, logs and the headless manifest. Fetch them with `gh run download <run id> -R tobbelobb/hp-sim5 -p 'benchmark-*'`. They expire after 90 days, for this run on 2027-02-18.
+- **Default branch:** after a merge to main, the `collect-benchmark-history` job appends the measurements to `results.jsonl`, `summary.md` and `by-fingerprint.md` on the `benchmark-history` branch. Compare against that history (`git fetch origin benchmark-history`).
+
+CI does not benchmark `--ellipsoid-shape`, and it never runs the disturbance refits. Those numbers exist only in this report's evidence.
+
+## 10. Reproduction
 
 ```bash
 # live run of one variant (from the variant's commit)
