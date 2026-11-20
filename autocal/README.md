@@ -685,7 +685,7 @@ Backfilling spheres down to -1.5x travel ended at 1.55 mm (HP3), 0.85 mm (HP4)
 and 0.79 mm (HP5 pulley-reduced); HP5 lost its run when held -1.5 with level
 -0.75 slipped the top line. On HP3/HP4/HP5 the backfill's error stays at about
 1 mm while its row jackknife falls to 0.3-1 mm: a bias that more rows on the same
-four spheres do not remove. Both fits agree on the backfill data to 0.01 mm.
+four spheres do not remove. On HP3's backfill data both fits agree to 0.01 mm.
 
 ## Headless benchmark history
 
