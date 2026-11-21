@@ -116,6 +116,13 @@ anchor onto its bound. With the first three HP3/HP4 sweeps, which all hold D,
 D's offset trades against D's height and is skipped.
 Use `--no-fit-home-offsets` and `--no-equal-strain` for ablation comparisons.
 
+On HP3, `--fit-force-ripple` tries a periodic sensor-force correction when the
+point fit has enough equal-strain sweeps with fitted home offsets and encoder
+angles. It uses a single frequency shared by the sensor motors, with a separate
+amplitude and phase per motor. If the period or improvement fails validation
+across sweeps, autocal uses the ordinary home-offset fit. The correction applies
+to the fit's ranges and leaves the recorded forces and configured stiffness intact.
+
 The point fit (`pose_fit.py`) is the anchor fit on every Hangprinter. It uses all
 ranges, including HP5's extra ones, and the force-aware stretch model, and it
 does not need sweeps of any particular shape. It tolerates disturbed data: a

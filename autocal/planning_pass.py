@@ -279,6 +279,7 @@ def plan_next_ellipse_sweep(
     collector_output: Optional[Path],
     collector_args: Sequence[str],
     fit_home_offsets: bool = True,
+    fit_force_ripple: bool = False,
     ellipse_reference_fit: bool = False,
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,

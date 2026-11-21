@@ -99,6 +99,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_output=args.collector_output,
         collector_args=collector_args,
         fit_home_offsets=bool(args.fit_home_offsets),
+        fit_force_ripple=bool(args.fit_force_ripple),
         ellipse_reference_fit=resolve_fit("ellipse", args.fit) == "ellipse",
         equal_strain=bool(args.equal_strain),
         filter_schedule=spool_options["filter_schedule"],

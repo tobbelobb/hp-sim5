@@ -194,6 +194,7 @@ def _full_auto_loop(
     stable_step_mm: float = 0.5,
     verbose: bool,
     fit_home_offsets: bool = True,
+    fit_force_ripple: bool = False,
     fit: str = "point",
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
@@ -808,6 +809,7 @@ def _full_auto_loop(
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "fit_home_offsets": bool(fit_home_offsets),
+        "fit_force_ripple": bool(fit_force_ripple),
         "ellipse_reference_fit": bool(ellipse_reference_fit),
     }
 
@@ -893,6 +895,7 @@ def _full_auto_loop(
                 "pose_fit_rms_mm": float(pose_fit["rms_mm"]),
                 "pose_fit_max_diff_mm": float(np.max(np.abs(pose_anchors - np.asarray(plan["anchors"], dtype=float)))),
                 "home_offsets_mm": np.asarray(plan["home_offsets_mm"], dtype=float).tolist(),
+                **({"force_ripple": plan["force_ripple"]} if plan.get("force_ripple") is not None else {}),
             }
         return {
             **pose_fit_metrics,
@@ -1005,6 +1008,7 @@ def _full_auto_loop(
                     else float(settings.get("sigma_floor_mm"))
                 ),
                 fit_home_offsets=bool(settings["fit_home_offsets"]),
+                fit_force_ripple=bool(settings["fit_force_ripple"]),
                 ellipse_reference_fit=bool(settings["ellipse_reference_fit"]),
                 equal_strain=bool(equal_strain),
                 candidate_count=int(candidate_count),
@@ -1635,6 +1639,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         line_width=float(spool_opts["line_width"]),
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         fit_home_offsets=bool(args.fit_home_offsets),
+        fit_force_ripple=bool(args.fit_force_ripple),
         fit=args.fit,
         equal_strain=bool(args.equal_strain),
         candidate_count=int(args.candidate_count),

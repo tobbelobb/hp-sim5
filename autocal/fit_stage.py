@@ -4,7 +4,9 @@ from __future__ import annotations
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.slideprinter_2d.filter_pass import estimate_effective_radii_with_spool_model
 from autocal.equal_strain import is_equal_strain
-from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths, dataset_stretch
+from autocal.force_ripple import correct_hp3_force_ripple
+from autocal.pose_fit import (HOME_OFFSET_PRIOR_SIGMA_MM, _at_far_bound, dataset_line_lengths,
+                              dataset_stretch, fit_pose_least_squares, shift_dataset_home_offsets)
 from autocal.projection_mode import resolve_projection_mode
 from autocal.ellipse_fit import fit_ellipses
 from autocal.spool_fit import fit_spools
@@ -50,6 +52,7 @@ def fit_ellipse_dataset(
     regularization: float,
     collector_args: Sequence[str],
     fit_home_offsets: bool = True,
+    fit_force_ripple: bool = False,
     ellipse_reference_fit: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -144,6 +147,7 @@ def fit_ellipse_dataset(
     length_model: Optional[Dict[str, object]] = None
     spool_params: Optional[SpoolModelParams] = None
     home_offsets_mm = np.zeros(int(num_anchors))
+    force_ripple = None
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
     _annotate_dataset_noise_model(
@@ -383,6 +387,12 @@ def fit_ellipse_dataset(
             )
             if not primary_pose_fit["success"]:
                 raise ValueError("Point fit did not converge: " + primary_pose_fit["message"])
+            if (fit_force_ripple and fit_home_offsets and not ellipse_reference_fit
+                    and not offset_fit.get("home_offsets_skipped")):
+                correction = _refit_force_ripple(dataset, primary_pose_fit, home_offsets_mm, bool(use_noise_mean))
+                if correction is not None:
+                    primary_pose_fit, dataset_for_estimation, home_offsets_mm, force_ripple = correction
+                    sweep_configs_for_info = dataset_sweep_configs(dataset_for_estimation)
             primary_fit = primary_pose_fit
             if ellipse_reference_fit:
                 primary_fit = fit_ellipses(dataset_for_estimation, primary_pose_fit["anchors"], use_noise_mean=bool(use_noise_mean))
@@ -564,6 +574,35 @@ def fit_ellipse_dataset(
         "fit_model": ("point" if point_model and (search_radii or search_buildup or not ellipse_reference_fit)
                       else "ellipse"),
         "home_offsets_mm": home_offsets_mm,
+        "force_ripple": force_ripple,
         "home_offsets_fitted": bool(fit_home_offsets),
         "use_noise_mean": bool(use_noise_mean),
     }
+
+
+def _refit_force_ripple(dataset, baseline, home_offsets_mm, use_noise_mean):
+    if dataset["machine_type"] != "hangprinter_3" or _at_far_bound(baseline["anchors"], dataset):
+        return None
+    try:
+        correction = correct_hp3_force_ripple(dataset, baseline, home_offsets_mm, use_noise_mean=use_noise_mean)
+        if correction is None:
+            return None
+        corrected, diagnostics = correction
+        options = dict(home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM, use_noise_mean=use_noise_mean)
+        offsets = fit_pose_least_squares(corrected, baseline["anchors"], fit_home_offsets=True, **options)
+        if not offsets["success"] or offsets.get("home_offsets_skipped"):
+            return None
+        home = offsets["home_offsets_mm"]
+        shifted = shift_dataset_home_offsets(corrected, home)
+        trial = fit_pose_least_squares(shifted, offsets["anchors"], fit_home_offsets=False, **options)
+    except (IndexError, KeyError, TypeError, ValueError, np.linalg.LinAlgError):
+        return None
+    kept = np.ones(baseline["num_points"], dtype=bool)
+    kept[baseline["rejected_points"]] = False
+    previous = np.linalg.norm(baseline["point_residuals_mm"][kept])
+    current = np.linalg.norm(trial["point_residuals_mm"][kept])
+    if (not trial["success"] or _at_far_bound(trial["anchors"], dataset)
+            or np.any(kept[trial["rejected_points"]])
+            or not current < 0.5 * previous):
+        return None
+    return trial, shifted, home, diagnostics
