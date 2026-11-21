@@ -159,7 +159,7 @@ All long trials used native Rust headless physics and speedup 10; routine eviden
 
 ## Source references
 
-- [Motor integration](../../../../hp-sim-3d/app/torqueModeSystem.js) and [native engine](../../../../src/wasm/cable_solver/src/engine.rs), revision 3b3a7fec: the slowing equation and integration order.
+- The motor integration at revision `3b3a7fec` is available via `git show 3b3a7fec:hp-sim-3d/app/torqueModeSystem.js`. The [native engine](../../../../src/wasm/cable_solver/src/engine.rs) also records the integration order.
 - [Firmware force conversion](../../../../RRF/ReprapFirmware/src/Movement/Kinematics/HangprinterKinematics.cpp): force-to-torque conversion through mechanical advantage and radius.
 - [HP3 scene](../../../../public/usd_scenes/hp3_rigid_body.usda) and [HP4 scene](../../../../public/usd_scenes/hp4_rigid_body.usda): masses, geometry, pulley inertias and solver passes.
 - [Headless owner](../../../../scripts/autocal_headless.mjs) and [collector wait](../../../../autocal/control/behaviors/sweep_data_collection.mjs): retained corrections.

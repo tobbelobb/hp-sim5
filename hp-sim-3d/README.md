@@ -238,7 +238,7 @@ The cable solver maps ordinary rigid-body-member endpoints to the parent body,
 applies translational and tensor-based angular corrections, and treats supported
 spool endpoints as a special one-axis rotational degree of freedom. For
 torque-mode spools it also records cable load torque and, where available,
-effective stiffness and damping for `TorqueModeSystem`.
+effective stiffness and damping for the motor update in the Rust engine.
 
 ## Rigid Bodies and Members
 
@@ -273,11 +273,10 @@ has one rotational degree of freedom. hp-sim-3d represents that behavior with a
 specialized member model:
 
 - `SpoolStateComponent` stores the spool axis and reference orientation.
-- `StepperMotorSystem` handles position-commanded motors. Open-loop mode uses
-  holding and damping torque; closed-loop mode directly projects to the target
-  twist.
-- `TorqueModeSystem` handles torque-commanded motors after the cable solve and
-  includes the solver's cable load.
+- The Rust engine handles position-commanded motors. Open-loop mode uses
+  holding and damping torque. Closed-loop mode projects to the target twist.
+- The same engine updates torque-commanded motors after the cable solve with
+  the solver's cable load.
 - Rigid-body-member spools integrate their free twist in member-local space.
 - `RigidBodySyncSystem` recomposes the world orientation from the parent body
   and local member orientation.
