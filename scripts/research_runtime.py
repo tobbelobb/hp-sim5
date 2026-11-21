@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
 
 from hp_sim5_research.experiments import encode, write_json
-from hp_sim5_research.services import free_port, request, stop_process, wait_ready, register_test_process
+from hp_sim5_research.services import free_port, free_ports, request, stop_process, wait_ready, register_test_process
 from hp_sim5_research.services import process_live
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.browser import BrowserConnection
@@ -138,7 +138,7 @@ class Runtime:
                 vsd = Path(self.vsd_temp.name)
                 shutil.copytree(ROOT / 'RRF/run/vsd/sys', vsd / 'sys')
                 shutil.copyfile(directory / 'firmware-config.g', vsd / 'sys/research.g')
-                rrf_port, ws_port, collector_port = [free_port() for _ in range(3)]
+                rrf_port, ws_port, collector_port = free_ports(3)
                 self.rrf_url = f'http://127.0.0.1:{rrf_port}'
                 self.collector_url = f'http://127.0.0.1:{collector_port}'
                 self.spawn('rrf', [str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(vsd),

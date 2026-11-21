@@ -1,4 +1,5 @@
 """Parent-owned services and the narrow HTTP client used by sandboxed MCP."""
+from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
@@ -14,9 +15,19 @@ from urllib.request import Request, urlopen
 
 
 def free_port():
-    with socket.socket() as listener:
-        listener.bind(('127.0.0.1', 0))
-        return listener.getsockname()[1]
+    return free_ports(1)[0]
+
+
+def free_ports(count):
+    # Keep the sockets bound until all ports are selected so the kernel cannot
+    # give two services in the same world the same port.
+    with ExitStack() as stack:
+        ports = []
+        for _ in range(count):
+            listener = stack.enter_context(socket.socket())
+            listener.bind(('127.0.0.1', 0))
+            ports.append(listener.getsockname()[1])
+        return ports
 
 
 def process_identity(pid):
