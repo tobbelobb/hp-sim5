@@ -22,13 +22,6 @@ export async function collectWithSlipRecovery(send, collect, {
       if (Math.abs(error.driftDeg) > GROSS_DRIFT_DEG) {
         throw new Error(`Stopping with all motors held: ${error.message}, more than one full turn, which no force reduction can explain`);
       }
-      if (attempt >= maxRetries) {
-        const message = `Slip recovery exhausted after ${maxRetries} retries: ${error.message}`;
-        if (profiled) {
-          throw new UnmeasurableSweepError(message, { anchor: error.anchor, drift_deg: error.driftDeg, recoveries });
-        }
-        throw new Error(message);
-      }
       const lower = force => Math.min(force, Math.max(forceLow, force * .5));
       const reduced = {
         forceLow,
@@ -37,9 +30,16 @@ export async function collectWithSlipRecovery(send, collect, {
         sensorCollectionForce: !profiled && Number.isFinite(forces.sensorCollectionForce)
           ? lower(forces.sensorCollectionForce) : forces.sensorCollectionForce,
       };
-      if (reduced.forceMid === forces.forceMid && reduced.forceMax === forces.forceMax
-        && reduced.sensorCollectionForce === forces.sensorCollectionForce) {
-        throw new Error(`Cannot reduce sweep forces below idle preload: ${error.message}`);
+      const atIdle = reduced.forceMid === forces.forceMid && reduced.forceMax === forces.forceMax
+        && reduced.sensorCollectionForce === forces.sensorCollectionForce;
+      if (attempt >= maxRetries || atIdle) {
+        const reason = attempt >= maxRetries ? `Slip recovery exhausted after ${maxRetries} retries`
+          : 'Cannot reduce sweep forces below idle preload';
+        const message = `${reason}: ${error.message}`;
+        if (profiled) {
+          throw new UnmeasurableSweepError(message, { anchor: error.anchor, drift_deg: error.driftDeg, recoveries });
+        }
+        throw new Error(message);
       }
       const recovery = { discarded_attempt: attempt, anchor: error.anchor, drift_deg: error.driftDeg,
         previous_forces: forces, reduced_forces: reduced };
