@@ -24,6 +24,10 @@ STABLE_STEP_MM = 0.5
 HP5_GOOD_STEP_MM = 2.0
 HP5_GOOD_STD_MM = 1.0
 HP5_GOOD_RMS_MM = 0.05
+# Raised motor ripple leaves a larger range residual even after the anchors
+# settle. Require repeatable anchor estimates and a sweep jackknife in this case.
+HP5_STABLE_RMS_MM = 0.12
+HP5_STABLE_UNCERTAINTY_MM = 2.0
 
 
 def history_rank_position(history_candidates, *, iteration: int) -> Optional[int]:
@@ -69,6 +73,7 @@ class StoppingPolicy:
     previous_anchors: Optional[np.ndarray] = field(default=None, init=False)
     good_fit_streak: int = field(default=0, init=False)
     last_good_points: int = field(default=0, init=False)
+    last_hp5_groups: int = field(default=0, init=False)
 
     def __post_init__(self):
         self.patience = max(1, int(self.patience))
@@ -92,6 +97,8 @@ class StoppingPolicy:
             if self.machine_type in ("hangprinter_5", "hangprinter_5_pulley_reduced"):
                 log_console(f"; HP5 also accepts two good fits: range RMS <={HP5_GOOD_RMS_MM:g} mm, "
                             f"estimated anchor std <={HP5_GOOD_STD_MM:g} mm, agreement <={HP5_GOOD_STEP_MM:g} mm")
+                log_console(f"; HP5 stable-fit fallback: range RMS <={HP5_STABLE_RMS_MM:g} mm, "
+                            f"sweep jackknife <={HP5_STABLE_UNCERTAINTY_MM:g} mm")
 
     def _step(self, history, iteration: int) -> Optional[float]:
         current = next((c for c in reversed(history) if int(c.get("iteration", -1)) == int(iteration)), None)
@@ -117,28 +124,37 @@ class StoppingPolicy:
                               for point in points) / len(points)) if points else 0.
         std = _float_or_none(current.get("max_std_mm"))
         rms = _float_or_none((plan.get("pose_fit") or {}).get("rms_mm"))
-        hp5 = (plan.get("machine_type") in ("hangprinter_5", "hangprinter_5_pulley_reduced")
-               and any(point.get("extra_sensor_ranges") for point in points))
-        good = (hp5 and admissible and not underconstrained and self.stable_step_mm > 0
-                and len(measurement_groups(dataset)) >= 4 and extra_coverage >= 0.5
-                and not plan.get("info_rank_deficient", True)
-                and (plan.get("pose_fit") or {}).get("stretch_corrected", False)
-                and std is not None and std <= HP5_GOOD_STD_MM
-                and rms is not None and rms <= HP5_GOOD_RMS_MM)
+        hp5 = (self.last_hp5_groups > 0
+               or (plan.get("machine_type") in ("hangprinter_5", "hangprinter_5_pulley_reduced")
+                   and any(point.get("extra_sensor_ranges") for point in points)))
+        groups = len(measurement_groups(dataset)) if hp5 else 0
+        qualified = (hp5 and admissible and not underconstrained and self.stable_step_mm > 0
+                     and groups >= 4 and extra_coverage >= 0.5
+                     and not plan.get("info_rank_deficient", True)
+                     and (plan.get("pose_fit") or {}).get("stretch_corrected", False)
+                     and std is not None and std <= HP5_GOOD_STD_MM and rms is not None)
         if admissible:
             self.no_improve = 0 if improved else self.no_improve + 1
             step_mm = self._step(history, iteration)
             stable = step_mm is not None and step_mm <= self.stable_step_mm
+            if hp5:
+                uncertainty = _float_or_none(current.get("anchor_uncertainty_mm"))
+                stable = (stable and qualified and groups > self.last_hp5_groups and rms <= HP5_STABLE_RMS_MM
+                          and uncertainty is not None and uncertainty <= HP5_STABLE_UNCERTAINTY_MM)
             self.stable_streak = self.stable_streak + 1 if stable else 0
-        if good:
+        elif hp5:
+            self.stable_streak = 0
+        if qualified and rms <= HP5_GOOD_RMS_MM:
             self.good_fit_streak = (self.good_fit_streak + 1
                                     if step_mm is not None and step_mm <= HP5_GOOD_STEP_MM
                                     and len(points) > self.last_good_points else 1)
             self.last_good_points = len(points)
         else:
             self.good_fit_streak = 0
+        if hp5:
+            self.last_hp5_groups = max(groups, self.last_hp5_groups)
         good_fit_hit = self.good_fit_streak >= 2
-        stable_hit = self.stable_step_mm > 0.0 and self.stable_streak >= STABLE_SWEEPS and (not hp5 or good_fit_hit)
+        stable_hit = self.stable_step_mm > 0.0 and self.stable_streak >= STABLE_SWEEPS
         log_line(
             f"; stable_stop step_mm={_fmt_float(step_mm)} limit_mm={self.stable_step_mm:g} "
             f"streak={self.stable_streak}/{STABLE_SWEEPS}"

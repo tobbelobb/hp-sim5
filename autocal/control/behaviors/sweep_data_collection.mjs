@@ -1991,6 +1991,7 @@ export async function collectSweepData(send, context) {
           });
         }, {
           motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
+          profiled: sensorForceProfiles !== null,
           onRecovery: recovery => context.onRecovery?.({ ...recovery, sweep: subCfg, direction: i }),
         });
       } catch (error) {

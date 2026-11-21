@@ -160,6 +160,21 @@ def test_hp5_weak_flat_fits_do_not_count_towards_two_good_fits(tmp_path):
     assert result.reason=='good-fit'
 
 
+def test_hp5_noisy_fits_need_stable_new_sweeps_and_low_jackknife(tmp_path):
+    policy = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop")
+    history = []
+    # High uncertainty, repeated data, and an excessive residual each break the streak.
+    for iteration, (sweeps, uncertainty, rms) in enumerate(
+        [(4, 1.5, .08), (5, 3., .08), (6, 1.5, .08), (6, 1.5, .08),
+         (7, 1.5, .08), (8, 1.5, .2), (9, 1.5, .08), (10, 1.5, .08)], start=1,
+    ):
+        candidate = _hp5_fit(iteration, .1 * iteration, rms=rms, sweeps=sweeps)
+        history.append({**candidate, "anchor_uncertainty_mm": uncertainty})
+        decision = policy.update(history, iteration=iteration, admissible=True,
+                                 underconstrained=False, log_line=lambda _: None)
+        assert decision.reason == ("stable-estimate" if iteration == 8 else None)
+
+
 def test_uncertainty_rank_prefers_newer_ties_and_puts_unknown_last():
     history = [_candidate(1, 0.5), _candidate(2, None), _candidate(3, 0.5)]
     assert stopping.history_rank_position(history, iteration=3) == 1
