@@ -70,7 +70,6 @@ def fit_spools(
     buildup_prior_sigma: Optional[float] = None,
     initial_radii_mm: Optional[Sequence[float]] = None,
     initial_buildup_factor: Optional[Sequence[float]] = None,
-    low_anchor_z: Optional[float] = None,
     use_noise_mean: bool = True,
 ) -> Dict[str, object]:
     """Fit anchors with spool radii ("global"/"per-anchor") and/or buildup factors.
@@ -117,8 +116,7 @@ def fit_spools(
             lengths=lengths, prior=lambda x: np.concatenate([p(x) for p in priors]) if priors else np.zeros(0),
             num_prior=(num_r if free_r and radius_prior_sigma_mm else 0) + (num_b if num_b and buildup_prior_sigma else 0))
 
-    options = dict(fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
-                   low_anchor_z=low_anchor_z, use_noise_mean=use_noise_mean, extra_initial_anchors=())
+    options = dict(fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM, use_noise_mean=use_noise_mean, extra_initial_anchors=())
     start = np.asarray(initial_anchors, dtype=float)
     if num_r == 1:
         # Anchors scale with the radius; profile it before refining everything jointly.

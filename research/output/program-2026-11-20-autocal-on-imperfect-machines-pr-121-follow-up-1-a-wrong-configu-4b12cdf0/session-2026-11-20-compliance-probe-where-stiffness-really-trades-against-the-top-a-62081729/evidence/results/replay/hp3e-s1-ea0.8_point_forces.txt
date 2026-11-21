@@ -1,0 +1,5 @@
+hp3e-s1-ea0.8: 120 line-points matched
+  line A: n 40, commanded 2.227 N, realised/commanded median 0.9937, offset mean +0.026 sd 0.214 N
+  line B: n 45, commanded 2.227 N, realised/commanded median 1.0172, offset mean +0.028 sd 0.228 N
+  line C: n 35, commanded 2.227 N, realised/commanded median 0.9721, offset mean -0.019 sd 0.214 N
+  all: realised/commanded median 1.0033, mean offset +0.014 N

@@ -102,7 +102,15 @@ jobs:
         run: scripts/run_ci_tests.sh
       - name: Slow integration tests
         if: matrix.suite == 'slow'
-        run: .venv/bin/python -m pytest -v --durations=10 -o faulthandler_timeout=60 -m "slow and not heavy"
+        run: .venv/bin/python -m pytest -v --durations=10 -o faulthandler_timeout=60 -m "slow and not heavy" --basetemp="${{ runner.temp }}/slow-integration"
+      - name: Upload simulator startup logs
+        if: failure() && matrix.suite == 'slow'
+        uses: actions/upload-artifact@v4
+        with:
+          name: slow-integration-startup-logs
+          path: |
+            ${{ runner.temp }}/slow-integration/**/collector.log
+            ${{ runner.temp }}/slow-integration/**/rrf.log
       - name: Autocal benchmark
         if: steps.benchmark.outputs.run == 'true'
         env:

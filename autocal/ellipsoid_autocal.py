@@ -138,24 +138,24 @@ def visits(dataset: dict) -> List[List[int]]:
     return list(order.values())
 
 
-def fit(dataset: dict, starts: Sequence[np.ndarray], low_anchor_z: Optional[float], use_noise_mean: bool,
+def fit(dataset: dict, starts: Sequence[np.ndarray], use_noise_mean: bool,
         model: str = "ellipsoid") -> dict:
     """Best fit, with home offsets, over the given starts (lowest rms)."""
-    options = dict(low_anchor_z=low_anchor_z, use_noise_mean=use_noise_mean, fit_home_offsets=True,
+    options = dict(use_noise_mean=use_noise_mean, fit_home_offsets=True,
                    home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM)
     if model == "point":
         return fit_pose_least_squares(dataset, starts[0], extra_initial_anchors=starts[1:], **options)
     return min((fit_ellipses(dataset, start, **options) for start in starts), key=lambda result: result["rms_mm"])
 
 
-def row_jackknife_mm(dataset: dict, anchors: np.ndarray, low_anchor_z, use_noise_mean, model="ellipsoid") -> Optional[float]:
+def row_jackknife_mm(dataset: dict, anchors: np.ndarray, use_noise_mean, model="ellipsoid") -> Optional[float]:
     """Largest anchor coordinate shift when one row is left out."""
     if len(dataset["sweeps"]) < 3:
         return None
     shifts = []
     for index in range(len(dataset["sweeps"])):
         subset = dict(dataset, sweeps=[s for i, s in enumerate(dataset["sweeps"]) if i != index])
-        refit = fit(subset, [anchors], low_anchor_z, use_noise_mean, model)["anchors"]
+        refit = fit(subset, [anchors], use_noise_mean, model)["anchors"]
         shifts.append(np.max(np.abs(refit - anchors)))
     return float(np.max(shifts))
 
@@ -170,7 +170,6 @@ def run_ellipsoid_autocal(
     log_console: Callable[[str], None],
     append_log: Callable[[dict], None],
     no_collect: bool,
-    low_anchor_z: Optional[float],
     use_noise_mean: bool,
     stable_step_mm: float,
     stop_file: Path,
@@ -251,11 +250,11 @@ def run_ellipsoid_autocal(
         seed = build_anchor_initial_guess(dataset, machine_type=machine_type) if seed is None else seed
         # The blind seed underestimates the anchor distances; on HP5 its own scale can
         # settle in a far minimum, so larger copies start too and the lowest rms wins.
-        result = fit(dataset, [seed * scale for scale in SEED_SCALES] + history[-1:], low_anchor_z, use_noise_mean,
+        result = fit(dataset, [seed * scale for scale in SEED_SCALES] + history[-1:], use_noise_mean,
                      model)
         step = float(np.max(np.abs(result["anchors"] - history[-1]))) if history else None
         history.append(result["anchors"])
-        uncertainty = row_jackknife_mm(dataset, result["anchors"], low_anchor_z, use_noise_mean, model)
+        uncertainty = row_jackknife_mm(dataset, result["anchors"], use_noise_mean, model)
         lengths = sorted({round(mesh_metadata(s)["held_length_mm"], 1) for s in dataset["sweeps"]})
         log_console(f"; ellipsoid {index + 1}: {len(dataset['sweeps'])} rows, held lengths {lengths} mm, "
                     f"{model} fit rms {result['rms_mm']:.3f} mm, step "

@@ -36,7 +36,7 @@ def test_analytic_candidate_information_matches_range_residual_differences(count
     lengths = np.linalg.norm(anchors[None,:,:] - positions[:,None,:], axis=2) - np.linalg.norm(anchors, axis=1)
     if count == 5:
         lengths[:,2] = np.nan
-    options = dict(machine_type=f'hangprinter_{count}', low_anchor_z=None, sigma_mm=.02)
+    options = dict(machine_type=f'hangprinter_{count}', sigma_mm=.02)
     finite_difference = pose_information(anchors, lengths, **options)
     analytic = pose_information(anchors, lengths, positions=positions, **options)
     np.testing.assert_allclose(analytic, finite_difference, rtol=1e-3, atol=1e-3)
@@ -65,7 +65,7 @@ def test_data_on_one_d_sphere_makes_a_shortened_d_line_the_best_next_sweep():
         machine_type="hangprinter_3",
     )
     ranked = rank_candidates_pose_information(
-        ANCHORS, machine_type="hangprinter_3", low_anchor_z=None, observed_lengths_mm=_lengths(observed),
+        ANCHORS, machine_type="hangprinter_3", observed_lengths_mm=_lengths(observed),
         candidates=candidates, points_per_sweep=20, sigma_mm=0.05, regularization=1e-6, top_k=3,
     )
     assert len(ranked) == 3
@@ -146,7 +146,7 @@ def test_forecast_counts_the_information_in_the_fifth_range():
     cfg=SweepConfig((0,4),(-340.,0.),1,3)
     positions=predict_sweep_positions(anchors,cfg,12,SWEEP_PRETENSION_SHARE)
     lengths=np.linalg.norm(anchors[None,:,:]-positions[:,None,:],axis=2)-np.linalg.norm(anchors,axis=1)
-    options=dict(machine_type='hangprinter_5',low_anchor_z=None,observed_lengths_mm=lengths,
+    options=dict(machine_type='hangprinter_5',observed_lengths_mm=lengths,
         candidates=[cfg],points_per_sweep=12,sigma_mm=.02,regularization=1e-6,top_k=1)
     four=rank_candidates_pose_information(anchors,**options)
     five=rank_candidates_pose_information(anchors,measure_extra_ranges=True,**options)

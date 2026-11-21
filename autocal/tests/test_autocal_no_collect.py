@@ -477,7 +477,7 @@ def test_full_auto_applies_newest_fit_after_patience(tmp_path, monkeypatch, caps
         return "ok"
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
-    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty", lambda plan: (fake_cost(plan), []))
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
@@ -610,7 +610,7 @@ def test_full_auto_skips_a_newest_fit_whose_uncertainty_diverged(tmp_path, monke
         return "ok"
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
-    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty", lambda plan: (fake_cost(plan), []))
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
@@ -737,7 +737,7 @@ def test_full_auto_underconstrained_recovery_reuses_warm_start_and_keeps_collect
         return "ok"
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan_next)
-    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty", lambda plan: (fake_cost(plan), []))
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
@@ -905,7 +905,7 @@ def test_full_auto_underconstrained_recovery_still_replays_next_sweep(
         return 1.0, 1.0, True
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
-    monkeypatch.setattr(ac, "plan_anchor_uncertainty_mm", fake_cost)
+    monkeypatch.setattr(ac, "plan_anchor_uncertainty", lambda plan: (fake_cost(plan), []))
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
     monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])

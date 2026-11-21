@@ -1,0 +1,562 @@
+{
+  "machine": "hangprinter_3",
+  "seed": 5,
+  "imperfection": {
+    "seed": 5,
+    "shifts_mm": {
+      "A": [
+        0.0,
+        0.0,
+        18.30017542472281
+      ],
+      "B": [
+        0.0,
+        0.0,
+        18.476447384189626
+      ],
+      "C": [
+        0.0,
+        0.0,
+        0.9195336625285186
+      ],
+      "D": [
+        13.477469366111057,
+        4.750146485767988,
+        0.0
+      ]
+    },
+    "stiffness_scale": 0.9533475523142073,
+    "ranges": {
+      "low_dz_max_mm": 30.0,
+      "top_offset_max_mm": 50.0,
+      "stiffness_error": 0.2
+    },
+    "machine": "hangprinter_3",
+    "source_scene": "public/usd_scenes/hp3.usda",
+    "moved_prims": {
+      "A": [
+        "SpoolA",
+        "AnchorAL",
+        "AnchorAR"
+      ],
+      "B": [
+        "SpoolB",
+        "AnchorBL",
+        "AnchorBR"
+      ],
+      "C": [
+        "SpoolC",
+        "AnchorCL",
+        "AnchorCR"
+      ],
+      "D": [
+        "SpoolD",
+        "AnchorD0",
+        "AnchorD1",
+        "AnchorD2"
+      ]
+    },
+    "truth_mm": {
+      "A": [
+        0.0,
+        -1900.0,
+        -261.699825
+      ],
+      "B": [
+        1645.448267,
+        950.0,
+        -261.523553
+      ],
+      "C": [
+        -1645.448267,
+        950.0,
+        -279.080466
+      ],
+      "D": [
+        13.477469,
+        4.750146,
+        1900.0
+      ]
+    },
+    "nominal_mm": {
+      "A": [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      "B": [
+        1645.44826719,
+        950.0,
+        -280.0
+      ],
+      "C": [
+        -1645.44826719,
+        950.0,
+        -280.0
+      ],
+      "D": [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    },
+    "overrides": {
+      "low_dz_mm": null,
+      "top_offset_mm": null,
+      "stiffness_scale": null
+    },
+    "ellipsoid_shape": true,
+    "cogging_scale": null,
+    "cogging_freq": 137.0
+  },
+  "status": "complete",
+  "stop_reason": "max-ellipsoids",
+  "normal_completion": false,
+  "simulated_s": 6656.7660000000005,
+  "wall_s": 466.1014866510013,
+  "git_revision": "1e2413f3fe6326295aa44e790a05146cfa46b195",
+  "anchor_names": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "truth_mm": [
+    [
+      0.0,
+      -1900.0,
+      -261.699825
+    ],
+    [
+      1645.448267,
+      950.0,
+      -261.523553
+    ],
+    [
+      -1645.448267,
+      950.0,
+      -279.080466
+    ],
+    [
+      13.477469,
+      4.750146,
+      1900.0
+    ]
+  ],
+  "truth_frame_mm": [
+    [
+      -0.0,
+      -1899.3407,
+      -266.4424
+    ],
+    [
+      1648.1902,
+      949.0113,
+      -247.4697
+    ],
+    [
+      -1642.4973,
+      952.3296,
+      -288.3691
+    ],
+    [
+      0.0,
+      0.0,
+      1900.0537
+    ]
+  ],
+  "truth_frame_tilt_deg": 0.4309185137766497,
+  "gauge_truth_mm": [
+    [
+      0.0,
+      -1899.202,
+      -267.4296
+    ],
+    [
+      1643.3302,
+      952.0198,
+      -267.4296
+    ],
+    [
+      -1647.6122,
+      949.6006,
+      -267.4296
+    ],
+    [
+      23.6143,
+      -0.9669,
+      1899.9067
+    ]
+  ],
+  "low_plane_tilt_deg": 0.3511975004968385,
+  "iterations": [
+    {
+      "iteration": 1,
+      "num_sweeps": 1,
+      "sim_s": null,
+      "decision": null,
+      "frame_error_mm": [
+        [
+          0.0,
+          -1.3515,
+          -2.4386
+        ],
+        [
+          1.3304,
+          0.756,
+          -2.4934
+        ],
+        [
+          -2.407,
+          1.4395,
+          -2.4961
+        ],
+        [
+          -0.0,
+          -0.0,
+          10.4026
+        ]
+      ],
+      "max_abs_frame_error_mm": 10.402627710126353,
+      "max_abs_raw_error_mm": 13.477469,
+      "max_abs_gauge_error_mm": 23.6143385738531,
+      "max_abs_rigid_error_mm": 9.657963111660365,
+      "anchor_uncertainty_mm": null,
+      "cost": null,
+      "pose_fit_rms_mm": null,
+      "chi2_red": null,
+      "max_std_mm": null
+    },
+    {
+      "iteration": 2,
+      "num_sweeps": 2,
+      "sim_s": null,
+      "decision": null,
+      "frame_error_mm": [
+        [
+          0.0,
+          -1.8343,
+          -0.6206
+        ],
+        [
+          1.8949,
+          1.2267,
+          -0.6201
+        ],
+        [
+          -1.8096,
+          1.0018,
+          -0.7655
+        ],
+        [
+          -0.0,
+          -0.0,
+          1.3534
+        ]
+      ],
+      "max_abs_frame_error_mm": 1.8948903973487177,
+      "max_abs_raw_error_mm": 13.477469,
+      "max_abs_gauge_error_mm": 23.6143385738531,
+      "max_abs_rigid_error_mm": 1.9385289467543316,
+      "anchor_uncertainty_mm": null,
+      "cost": null,
+      "pose_fit_rms_mm": null,
+      "chi2_red": null,
+      "max_std_mm": null
+    },
+    {
+      "iteration": 3,
+      "num_sweeps": 3,
+      "sim_s": null,
+      "decision": null,
+      "frame_error_mm": [
+        [
+          0.0,
+          -1.8334,
+          -0.6204
+        ],
+        [
+          1.8942,
+          1.2263,
+          -0.6198
+        ],
+        [
+          -1.8089,
+          1.0014,
+          -0.7653
+        ],
+        [
+          -0.0,
+          -0.0,
+          1.353
+        ]
+      ],
+      "max_abs_frame_error_mm": 1.8941944247849278,
+      "max_abs_raw_error_mm": 13.477469,
+      "max_abs_gauge_error_mm": 23.6143385738531,
+      "max_abs_rigid_error_mm": 1.9376923599547808,
+      "anchor_uncertainty_mm": null,
+      "cost": null,
+      "pose_fit_rms_mm": null,
+      "chi2_red": null,
+      "max_std_mm": null
+    },
+    {
+      "iteration": 4,
+      "num_sweeps": 4,
+      "sim_s": null,
+      "decision": null,
+      "frame_error_mm": [
+        [
+          0.0,
+          -1.1066,
+          -0.1403
+        ],
+        [
+          0.601,
+          0.5375,
+          -0.2611
+        ],
+        [
+          -0.4701,
+          0.2338,
+          -0.2949
+        ],
+        [
+          -0.0,
+          -0.0,
+          0.9225
+        ]
+      ],
+      "max_abs_frame_error_mm": 1.1065926003509503,
+      "max_abs_raw_error_mm": 13.792824832672778,
+      "max_abs_gauge_error_mm": 23.6143385738531,
+      "max_abs_rigid_error_mm": 0.996549272880884,
+      "anchor_uncertainty_mm": null,
+      "cost": null,
+      "pose_fit_rms_mm": null,
+      "chi2_red": null,
+      "max_std_mm": null
+    },
+    {
+      "iteration": 5,
+      "num_sweeps": 5,
+      "sim_s": null,
+      "decision": null,
+      "frame_error_mm": [
+        [
+          0.0,
+          0.4616,
+          0.1378
+        ],
+        [
+          0.2143,
+          0.25,
+          -0.1172
+        ],
+        [
+          -0.2075,
+          0.0384,
+          -0.1729
+        ],
+        [
+          -0.0,
+          -0.0,
+          1.7095
+        ]
+      ],
+      "max_abs_frame_error_mm": 1.7095166087783582,
+      "max_abs_raw_error_mm": 13.93666811998267,
+      "max_abs_gauge_error_mm": 23.6143385738531,
+      "max_abs_rigid_error_mm": 1.3206198585710354,
+      "anchor_uncertainty_mm": null,
+      "cost": null,
+      "pose_fit_rms_mm": null,
+      "chi2_red": null,
+      "max_std_mm": null
+    },
+    {
+      "iteration": 6,
+      "num_sweeps": 6,
+      "sim_s": null,
+      "decision": null,
+      "frame_error_mm": [
+        [
+          0.0,
+          0.5743,
+          0.1747
+        ],
+        [
+          0.2251,
+          0.2812,
+          -0.1413
+        ],
+        [
+          -0.1774,
+          -0.008,
+          -0.1638
+        ],
+        [
+          -0.0,
+          -0.0,
+          1.4922
+        ]
+      ],
+      "max_abs_frame_error_mm": 1.4922167163720133,
+      "max_abs_raw_error_mm": 13.912608550689924,
+      "max_abs_gauge_error_mm": 23.6143385738531,
+      "max_abs_rigid_error_mm": 1.1523578471267228,
+      "anchor_uncertainty_mm": null,
+      "cost": null,
+      "pose_fit_rms_mm": null,
+      "chi2_red": null,
+      "max_std_mm": null
+    }
+  ],
+  "fitted_mm": [
+    [
+      0.0,
+      -1898.7663948492054,
+      -266.2677580899391
+    ],
+    [
+      1648.4152709430768,
+      949.292445859251,
+      -247.61094444931007
+    ],
+    [
+      -1642.6746793707991,
+      952.3216464331175,
+      -288.5328972240522
+    ],
+    [
+      0.0,
+      0.0,
+      1901.5459543926693
+    ]
+  ],
+  "fitted_frame_mm": [
+    [
+      0.0,
+      -1898.7664,
+      -266.2678
+    ],
+    [
+      1648.4153,
+      949.2924,
+      -247.6109
+    ],
+    [
+      -1642.6747,
+      952.3216,
+      -288.5329
+    ],
+    [
+      0.0,
+      0.0,
+      1901.546
+    ]
+  ],
+  "fitted_frame_tilt_deg": 0.0,
+  "selection": {
+    "anchor_uncertainty_mm": 1.2919705643844281,
+    "fit_model": "ellipsoid"
+  },
+  "frame_error_mm": [
+    [
+      0.0,
+      0.5743,
+      0.1747
+    ],
+    [
+      0.2251,
+      0.2812,
+      -0.1413
+    ],
+    [
+      -0.1774,
+      -0.008,
+      -0.1638
+    ],
+    [
+      -0.0,
+      -0.0,
+      1.4922
+    ]
+  ],
+  "max_abs_frame_error_mm": 1.4922167163720133,
+  "worst_frame_coordinate": "D.z",
+  "raw_error_mm": [
+    [
+      0.0,
+      1.2336,
+      -4.5679
+    ],
+    [
+      2.967,
+      -0.7076,
+      13.9126
+    ],
+    [
+      2.7736,
+      2.3216,
+      -9.4524
+    ],
+    [
+      -13.4775,
+      -4.7501,
+      1.546
+    ]
+  ],
+  "max_abs_raw_error_mm": 13.912608550689924,
+  "worst_raw_coordinate": "B.z",
+  "gauge_error_mm": [
+    [
+      -0.0,
+      0.4356,
+      1.1618
+    ],
+    [
+      5.085,
+      -2.7274,
+      19.8186
+    ],
+    [
+      4.9376,
+      2.7211,
+      -21.1033
+    ],
+    [
+      -23.6143,
+      0.9669,
+      1.6392
+    ]
+  ],
+  "max_abs_gauge_error_mm": 23.6143385738531,
+  "worst_gauge_coordinate": "D.x",
+  "rigid_error_mm": [
+    [
+      -0.0922,
+      0.372,
+      -0.2015
+    ],
+    [
+      0.2443,
+      0.0128,
+      -0.4754
+    ],
+    [
+      -0.1581,
+      -0.1455,
+      -0.4754
+    ],
+    [
+      0.0059,
+      -0.2394,
+      1.1524
+    ]
+  ],
+  "max_abs_rigid_error_mm": 1.1523578471267228,
+  "worst_rigid_coordinate": "D.z",
+  "split_fit_difference_mm": 0.9417071184714132
+}

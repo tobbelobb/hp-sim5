@@ -22,19 +22,18 @@ def fit_joint_ranges(dataset, initial_anchors, *, fit_home_offsets=True, use_noi
     if resolve_projection_mode(dataset) is True:
         raise ValueError("Joint baseline comparison of projected data is not validated")
     n, d = int(dataset["num_anchors"]), int(dataset["dimensions"])
-    low_z = dataset.get("_low_anchor_z")
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
     if not lengths.size or np.any(np.sum(np.isfinite(lengths), axis=1) < d+1):
         raise ValueError("Joint baseline needs finite point measurements")
     measured = np.isfinite(lengths)
     lengths = np.where(measured, lengths, 0.0)
     count = len(lengths)
-    lb, ub = get_anchor_opt_bounds(machine, n, d, low_z)
-    vector = np.clip(anchors_matrix_to_opt_vec(initial_anchors, machine, low_z), lb, ub)
+    lb, ub = get_anchor_opt_bounds(machine, n, d)
+    vector = np.clip(anchors_matrix_to_opt_vec(initial_anchors, machine), lb, ub)
     m, o = len(vector), n - d if fit_home_offsets else 0
 
     def anchors_of(x):
-        return anchor_opt_vec_to_matrix(x[:m], machine, n, d, low_z)
+        return anchor_opt_vec_to_matrix(x[:m], machine, n, d)
 
     anchors = anchors_of(vector)
     mapping = np.stack([anchors_of(vector + step) - anchors for step in np.eye(m)], axis=-1)

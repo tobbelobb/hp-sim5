@@ -1,0 +1,6 @@
+hp3e-s1-ea0.8: 48 steps; medians (ratio to k_true): {'k_probe': 0.9329, 'k_true_tensions': 0.9984, 'k_all_true_tensions': 0.9984, 'k_true_geometry': 0.9734, 'k_true_geometry_tension': 0.9991, 'sensor_force_ratio': 0.9745}
+  replay check max |dm - d(g - s)| mm: 0.1063
+  line A: compliance sim/model median 1.0809 (n 48), held dT true/model median 0.9296, geometry residual median +0.0020 mm
+  line B: compliance sim/model median 1.0795 (n 48), held dT true/model median 0.9493, geometry residual median +0.0025 mm
+  line C: compliance sim/model median 1.0857 (n 48), held dT true/model median 0.9302, geometry residual median -0.0002 mm
+  line D: compliance sim/model median 1.2656 (n 48), held dT true/model median 0.9472, geometry residual median +0.0015 mm

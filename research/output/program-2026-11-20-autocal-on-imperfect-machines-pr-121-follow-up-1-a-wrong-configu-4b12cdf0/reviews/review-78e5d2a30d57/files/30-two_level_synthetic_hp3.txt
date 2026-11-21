@@ -1,0 +1,7 @@
+trial k 1.00: rms 0.04594 max 1.198 Dz -1.198 lowz -0.255
+trial k 1.10: rms 0.03673 max 1.056 Dz -1.056 lowz -0.116
+trial k 1.20: rms 0.02779 max 0.915 Dz -0.915 lowz +0.024
+trial k 1.25: rms 0.02353 max 0.847 Dz -0.847 lowz +0.095
+trial k 1.30: rms 0.01952 max 0.778 Dz -0.778 lowz +0.165
+trial k 1.40: rms 0.01321 max 0.639 Dz -0.639 lowz +0.306
+trial k 1.50: rms 0.01237 max 0.500 Dz -0.500 lowz +0.446

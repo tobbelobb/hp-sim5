@@ -1,0 +1,1 @@
+{"machine": "hangprinter_5_pulley_reduced", "dataset": "fixsweeps-hangprinter_5_pulley_reduced", "fitter": "sweep", "dDz_dk_mm": -0.267, "rows": [{"k": 0.9, "Dz": -0.4801, "low_z": -0.3546, "max": 2.0021, "rms": 0.0284, "corrected": true}]}

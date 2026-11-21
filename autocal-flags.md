@@ -2,7 +2,7 @@ usage: autocal.py [-h] --machine-type {slideprinter,hangprinter_3,hangprinter_4,
                   [--plot-residual-histogram] [--max-steps MAX_STEPS] [--stop-cost STOP_COST] [--stop-std-mm STOP_STD_MM] [--full-auto-run FULL_AUTO_RUN] [--shotgun] [--stage-artifacts STAGE_ARTIFACTS] [--full-auto-log FULL_AUTO_LOG] [--verbose]
                   [--patience PATIENCE] [--stable-step-mm STABLE_STEP_MM] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
                   [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
-                  [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
+                  [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
                   [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--theta0-mode {infer,zero}] [--filter-schedule FILTER_SCHEDULE]
                   [--objective-schedule OBJECTIVE_SCHEDULE] [--pointwise-residual {sampson,euclidean}] [--pointwise-filtering] [--no-pointwise-filtering] [--pointwise-global-mad] [--pointwise-per-sweep-mad] [--sweep-wise-filtering]
                   [--no-sweep-wise-filtering] [--sweep-metric {mad,median_abs,outlier_ratio}] [--sigma-source {auto,point,origin,min}] [--use-noise-mean | --use-raw-lengths] [--robust-debug] [--no-robust-debug] [--residuals-csv RESIDUALS_CSV]
@@ -62,8 +62,6 @@ KEEP  --line-width LINE_WIDTH
                         Estimated line width in mm used by the layered noise model (default: 1.0).
   --sigma-floor-mm SIGMA_FLOOR_MM
                         Override the base sigma floor (mm) used in the composite noise model.
-  --low-anchor-z LOW_ANCHOR_Z
-                        For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.
 KEEP  --r0-bounds R0_BOUNDS
                         Bounds for fitted r0 in mm as 'min,max' (default [base_radius, 1.5*base_radius]).
 KEEP  --b-bounds B_BOUNDS   Bounds for fitted buildup factor as 'min,max' (default: 0,1).
@@ -198,13 +196,19 @@ consumer. Keep using `autocal/plot_residual_hist.py` with exported residual CSVs
 The help text above is the original audit snapshot, not current CLI help.
 See [integration findings](research/autocal-ranking-lane04-integration.md).
 
+## Free low-anchor heights, 2026-11-21
+
+Removed `--low-anchor-z`. Hangprinter fits no longer give the low anchors one shared
+height: every anchor coordinate is fitted except A.x and the top anchor's x and y.
+The frame convention is origin at home, top anchor straight above it, A on -Y.
+
 ## Lane 05 integration, 2026-10-22
 
 Removed `--flex` and `--spring-k-multiplier` from the ellipse/autocal pipeline,
 including full-auto variants, fitting and history-validation plumbing. The
 collector never supplied the per-point tensions this correction required.
 Legacy point calibration and the explicit flex plotting helper remain separate.
-`--theta0-mode` and `--low-anchor-z` are retained with their existing defaults.
+`--theta0-mode` is retained with its existing default.
 `--project-zero-tension` now rejects failed projections and requires projected
 angle fields during fitting instead of silently using raw angles.
 

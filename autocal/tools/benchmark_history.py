@@ -207,13 +207,15 @@ def settings(max_steps=MAX_PHYSICS_STEPS):
                 omp_threads=1, blas_threads=1, xla_cpu_multi_thread_eigen=False)
 
 
-def run_autocal(machine, dataset, repo, log, timeout_s, max_steps=MAX_PHYSICS_STEPS):
-    env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG', 'LD_LIBRARY_PATH') if key in os.environ}
+def run_autocal(machine, dataset, repo, log, timeout_s, max_steps=MAX_PHYSICS_STEPS, scene=None, extra_args=()):
+    env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG', 'LD_LIBRARY_PATH', 'HP_SIM5_COMPLIANCE_PROBE') if key in os.environ}
+    if scene is not None:
+        env['HP_SIM5_AUTOCAL_SCENE'] = str(scene)
     env.update(OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1',
                XLA_FLAGS='--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1',
                HP_SIM5_AUTOCAL_JOB='1', HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS=str(max_steps))
     command = [sys.executable, 'autocal/autocal.py', '--headless-sim', '--machine-type', machine,
-               '--dataset', str(dataset), '--recording-mode', 'none', '--patience', str(PATIENCE)]
+               '--dataset', str(dataset), '--recording-mode', 'none', '--patience', str(PATIENCE), *extra_args]
     with log.open('w') as output, subprocess.Popen(
             command, cwd=repo, env=env, stdout=output, stderr=subprocess.STDOUT, start_new_session=True) as process:
         try:

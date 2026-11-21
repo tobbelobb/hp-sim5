@@ -1,0 +1,365 @@
+{
+  "version": 1,
+  "claim": "A fixed-pose compliance probe (sensor force stepped to 2x/3x at the last pose of each sweep direction, other lines held) estimates the true/configured stiffness ratio k on HP3 within about ±4%; feeding probe k into a home-stretch term removes the stiffness/home-reference D.z and low-z error (D.z gap to true-stiffness fit ≤0.041 mm; worst-coordinate error 1.07→0.44 mm on average), at ~3% time cost. A wrong stiffness moves D.z strongly only on HP5 pulley-reduced sweeps and in the ellipsoid shape.",
+  "scope": "Simulation only. HP3 live runs (9, true stiffness x0.8-1.2, some with random geometry) refitted offline; slope scans on existing nominal datasets for HP3/HP4/HP5/HP5r. No hardware.",
+  "limitations": [
+    "Fit change only tested as offline refit; live sweep selection/stopping used today's fit",
+    "Only HP3 live",
+    "Motor cogging ±0.36 N leaves -0.35..+0.65 mm D.z",
+    "Frame convention: origin below D, Dx=Dy=0"
+  ],
+  "candidate_revision": "6c9cd4635cd1c9eca7d78b8303d267c48d6e9784",
+  "candidate_tree": "cb1972ec18e8547fc29de145f66970f0959e0619",
+  "base_revision": "b249a1a532542001e3b3a23ab5c582dfe2d375d4",
+  "files": [
+    {
+      "path": "files/00-abstract.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/abstract.md",
+      "blob": "6138a4e24a646a3d49b8990ff3e7b791380ae1b8",
+      "sha256": "d2999b7a6acdee2bf47f07ec827855b26cc1a38b93f5956eefed7193dc2575e8"
+    },
+    {
+      "path": "files/01-attrib_fixsweeps_hp3.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/attrib_fixsweeps_hp3.txt",
+      "blob": "30110e5f3ad3f8356d569933f1c7906f96ccc771",
+      "sha256": "4905eb0309d07d014c56e706430a95aa4adca4dc8be3ad760f7912da43cc79b1"
+    },
+    {
+      "path": "files/02-degeneracy_equilibrium_synthetic_hp3.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/degeneracy_equilibrium_synthetic_hp3.txt",
+      "blob": "4abf1e0d8e1fee9724c49acc3d13d536dd638cdd",
+      "sha256": "dadadb369682cc7e35fb424bc69fde0fb15c40322b162f54dcc8bc18044f88ad"
+    },
+    {
+      "path": "files/03-home_strain_scan_fixsweeps_hp3.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/home_strain_scan_fixsweeps_hp3.txt",
+      "blob": "16a5495971b71eaa06ed3c303c87dd9caf22e5bb",
+      "sha256": "204b0cb9060520ed6ca8c5586b101ffe9aab2af624a02af81e14e595bebc654b"
+    },
+    {
+      "path": "files/04-r1s080b_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/r1s080b_refit.json",
+      "blob": "f21736834636c67dcb98dfffa6d5a816dfbf7577",
+      "sha256": "84c611f52bad6ff784d295896115a0b80db765f0e79899f493d91b9fc168c123"
+    },
+    {
+      "path": "files/05-r2s120_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/r2s120_refit.json",
+      "blob": "aedd77b5884345b7e306671f4fd5de7839b82f38",
+      "sha256": "f59df12054c638142f97f49c3d8d9321d63390b4dcc15fb588418ca5d16285c3"
+    },
+    {
+      "path": "files/06-r3s120_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/r3s120_refit.json",
+      "blob": "dc3993b20738d10d20894031bb437d70cf4b2102",
+      "sha256": "6cc50aa4522707b589dd74999fd68ed9efe819967a2c561ee4ecfb98c6e2f778"
+    },
+    {
+      "path": "files/07-r4s080_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/r4s080_refit.json",
+      "blob": "3a6b4828d82fd9bbb54032cdb402c36c26a26e28",
+      "sha256": "024bf27f38b651abc85d6f9b08d565336a01de4f879d84b5b0761efaee29c53a"
+    },
+    {
+      "path": "files/08-s080_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/s080_refit.json",
+      "blob": "c1b194017a6a0aaa996a5d11814f07a07e0942a8",
+      "sha256": "37d8f182f4a3d043df509616f04cf3e193e7b5992e855e8bc139c310007760d8"
+    },
+    {
+      "path": "files/09-s090_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/s090_refit.json",
+      "blob": "243b44bc02ec5c1d4ab36e0772b9a9f694f12f8e",
+      "sha256": "251653a2737db50d76b4d48563b4d16bb3981c2b2edfa00503bebe464c097906"
+    },
+    {
+      "path": "files/10-s100_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/s100_refit.json",
+      "blob": "b06aa87eeadde95a21e83ee0f9a3120fe3a5b467",
+      "sha256": "ede4e19098d59987e6db2ffa73f061e70c190e10db0c2ea44d01cdfb99ca2db7"
+    },
+    {
+      "path": "files/11-s110_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/s110_refit.json",
+      "blob": "eee93d7a42f7a42730906532ebc1b603e37652ed",
+      "sha256": "0c56f85340599bba890af942bc03b7d22046a0de2ac4957d5885adf670f4c715"
+    },
+    {
+      "path": "files/12-s120_refit.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live/s120_refit.json",
+      "blob": "50c9e4b13382197b5e535e9731dd82dcb0529487",
+      "sha256": "24c38f9304c2a2a486361c380692ecefdb2c2f6785a1828fc2424c20977e0da5"
+    },
+    {
+      "path": "files/13-live_summary.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/live_summary.txt",
+      "blob": "f994cef96bdb0a488f18023aaf7f95d228f60c8d",
+      "sha256": "a2914b292141f62a0cb0eebb103e10810e90d6e6b72cd77b4fcf7f8d22cafbdf"
+    },
+    {
+      "path": "files/14-probe_structure.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/probe_structure.txt",
+      "blob": "c8df139a13987629355d7ac2ff7acd753c4a9569",
+      "sha256": "c1e438295b60828ab95c76329acc871397adea7b00e8a8d34af023478f2c3d5b"
+    },
+    {
+      "path": "files/15-probe_subsets.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/probe_subsets.txt",
+      "blob": "a3dc3b395ab2affb1bbbcd15026f1995f6009e0f",
+      "sha256": "2fdde3574d492ab03157cc93e87eaf7d01cb5d053895ff33d55d9e06987b0f40"
+    },
+    {
+      "path": "files/16-replay_fixsweeps_hp3.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/replay_fixsweeps_hp3.log",
+      "blob": "6516dc718e7295242e53bbdaa24a6ac8ef0e9e90",
+      "sha256": "45e7b927245ded12edc22f26c6e03947bab53f6ac2f4e9bbc2b75a48657f5d2b"
+    },
+    {
+      "path": "files/17-slope_ellipsoid_hangprinter_3.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_ellipsoid_hangprinter_3.json",
+      "blob": "5c0c5e574c5a761a5bc3b7efc68760459d4046c4",
+      "sha256": "00d58bd70f83e7b3d6db8bd8e7bf2e236b093710ae63030fb72c222536653c80"
+    },
+    {
+      "path": "files/18-slope_ellipsoid_hangprinter_4.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_ellipsoid_hangprinter_4.json",
+      "blob": "8df48283debd70660f3a9e938277cbdf542cc263",
+      "sha256": "f44d08bace82f7dc442be35576be63740a0ba4f76ae9bfebc56fefc24a800c3c"
+    },
+    {
+      "path": "files/19-slope_ellipsoid_hangprinter_5.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_ellipsoid_hangprinter_5.json",
+      "blob": "0344713932619c145d200b0af3c52c4f83aabb3a",
+      "sha256": "f43e330c4ea85fcfb726a0a4ded12f07d0a1f21c5e96102528837cd80874923b"
+    },
+    {
+      "path": "files/20-slope_ellipsoid_hangprinter_5_pulley_reduced.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_ellipsoid_hangprinter_5_pulley_reduced.json",
+      "blob": "105d20589bc56ed6b7d505717e9d29fcac2b094e",
+      "sha256": "76c3754d2eb8c473a08b4adee792a97a244f70a156f94c95d7da14603c442672"
+    },
+    {
+      "path": "files/21-slope_scan_summary.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_scan_summary.txt",
+      "blob": "cefad1e8840656d4751ee82a2b9665168fd2d4a6",
+      "sha256": "808920df60a7c72bd14cc110b6ab756f160c8fc18aebb00299e939245243dfe4"
+    },
+    {
+      "path": "files/22-slope_sweep_hangprinter_3.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_3.json",
+      "blob": "6be48b2520db4b8eb56a092bd85ddce90d2d4429",
+      "sha256": "85a489d945b4fd82d882ee69274b42f1a6df7c423a62e0c83302679df6c6a492"
+    },
+    {
+      "path": "files/23-slope_sweep_hangprinter_4.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_4.json",
+      "blob": "1c544fff57e3ae7a5fff613055a42df9dba98591",
+      "sha256": "e8084f28cd0922b1497d3c19024c79b1625dba305abd40081aa2684222c13a57"
+    },
+    {
+      "path": "files/24-slope_sweep_hangprinter_5.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_5.json",
+      "blob": "6c2b9bc550179208c441b810abe7e36aa1219a89",
+      "sha256": "be41c848e6e9194c2dab94ef39e8b77b7045dda1b84858da7b8a1882141a7fa6"
+    },
+    {
+      "path": "files/25-slope_sweep_hangprinter_5_k0.9.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_5_k0.9.json",
+      "blob": "f84a7667bc3e4fe3a9c0647423a18831bcb61bd9",
+      "sha256": "e08bde92c12acb4c0fad7f7a4bb51f90162ab005f2bc7c76f528f8a946bf3d0e"
+    },
+    {
+      "path": "files/26-slope_sweep_hangprinter_5_k1.1.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_5_k1.1.json",
+      "blob": "ef48305df6ef7ae492b887190068f05e68fbc2b5",
+      "sha256": "545a178564634f21b845f6c1d409e8188daef0052239f164fa7155ad7167856f"
+    },
+    {
+      "path": "files/27-slope_sweep_hangprinter_5_pulley_reduced.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_5_pulley_reduced.json",
+      "blob": "a06f20c651bd996b5a053005d33b35e6ed81c5ac",
+      "sha256": "46f3432c19f599989b2b2bbf056a915856ae6905ce6ed3d68d7a2fa4c820af07"
+    },
+    {
+      "path": "files/28-slope_sweep_hangprinter_5_pulley_reduced_k0.9.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_5_pulley_reduced_k0.9.json",
+      "blob": "dabd21e183c6a2003ac6422f768050da59df4a85",
+      "sha256": "00ff6b60aa8104d147ed63ec2ec1345b1e303b0a22e554ee3dec05c6a318a85f"
+    },
+    {
+      "path": "files/29-slope_sweep_hangprinter_5_pulley_reduced_k1.1.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/slope_sweep_hangprinter_5_pulley_reduced_k1.1.json",
+      "blob": "4bf1d58bb01bd3630015c9491da2b573ed391882",
+      "sha256": "574e73689143fb7f0291baaa55adf6d72b943224b863220bfa4629ffd2abc106"
+    },
+    {
+      "path": "files/30-two_level_synthetic_hp3.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/results/two_level_synthetic_hp3.txt",
+      "blob": "d8ddab696e75955a0d289bc18d4b5c5ecdf836aa",
+      "sha256": "b6f7d0e4ff78fe87edbedc3d795ad15be2fe8c2fe5e9deaee3d3b480a2de114f"
+    },
+    {
+      "path": "files/31-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/r1s080b/result.json",
+      "blob": "26234355a62bd075d0eac2195c16ee98bf574b81",
+      "sha256": "b56788baf375ec43166a77c8071cde5916efd55e59404569728a201c21ace33f"
+    },
+    {
+      "path": "files/32-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/r2s120/result.json",
+      "blob": "4e12379e0d4dd3379ffc026bd10673f40dd77fbb",
+      "sha256": "8693b6121d252d4796d19b9760c1e53c1f659344042f4a7396206b52c4335efa"
+    },
+    {
+      "path": "files/33-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/r3s120/result.json",
+      "blob": "aefbbc517276754d89e676c7ceff1e6f4aaeac84",
+      "sha256": "0925c8325cc48c403128c34f4f6404f5bda656b30639fb647160b3242473e07d"
+    },
+    {
+      "path": "files/34-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/r4s080/result.json",
+      "blob": "d4a34913dd7c8e706e49b3dc6b2a9f07130c0b9a",
+      "sha256": "f3daa6cbbbfa2a7173d4c9a1f945d5dacbba99f33f2856f27012ef7863fbd9cd"
+    },
+    {
+      "path": "files/35-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/s080/result.json",
+      "blob": "1c1c7337b41baab009899b0659b125f2933390eb",
+      "sha256": "ec345fc0a7721953f7bdd6d34ed8a8af132f3a7f58d0cdf2383b9a56c7f3c546"
+    },
+    {
+      "path": "files/36-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/s090/result.json",
+      "blob": "5a2b828050184c252f2a9260453dfeb89ca3725e",
+      "sha256": "d09588d4b9948b6c4118798fa578370b82845dc0125ffcb576ac1be482430505"
+    },
+    {
+      "path": "files/37-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/s100/result.json",
+      "blob": "cd51bd14a0186a174f191d303e25f429a4a43613",
+      "sha256": "af7129b5ed2b5a1282ace688cbe7a659d67412ab1ec809d1848ab880e9be3bf0"
+    },
+    {
+      "path": "files/38-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/s100np/result.json",
+      "blob": "97bd22c11276288cbc3d367ea41ee1f3c18fa499",
+      "sha256": "e2a171851a64ac2a08fc79e1a4360ba5445d384fcbea069d1f3fbdd9ba8e791f"
+    },
+    {
+      "path": "files/39-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/s110/result.json",
+      "blob": "32ea55b336578e9343fd8eb74f07702c1fb914f9",
+      "sha256": "4d82305bcb1eebf4f2971635b52652dc324a5b9dee57557859a1d81f647c41f3"
+    },
+    {
+      "path": "files/40-result.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/runs/s120/result.json",
+      "blob": "76cb92183c1451297338c74765f4580b11ba4bb1",
+      "sha256": "fdbbdbff990c26c23f6de4e7dce05df3b4b4a9254561fd612c3140e4ced73da4"
+    },
+    {
+      "path": "files/41-degeneracy.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/degeneracy.py",
+      "blob": "2738149f0294569c5a1bf9dfa91c6f3d971a1efc",
+      "sha256": "4211207919454eb9641658b775a5fe496fab61d8cc699c9519c5c240b5f8ee1b"
+    },
+    {
+      "path": "files/42-full_stretch.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/full_stretch.py",
+      "blob": "bc3296610203af796aa71aae36f59da441a13c51",
+      "sha256": "052a28a6154451bb3d267db53663e27034024f2dedd4f54e4af3247a1e523492"
+    },
+    {
+      "path": "files/43-home_strain_scan.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/home_strain_scan.py",
+      "blob": "7fe9db410f85b4b11fb73acaf3a63fd2b8c2fbe6",
+      "sha256": "b6379679cd46b60f6d193c37ed7012196c926bcee7c0df6a5e153df435061c34"
+    },
+    {
+      "path": "files/44-probe.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/probe.py",
+      "blob": "382693cadf82c5da4e0c3d3acd98b5926c6c9cbb",
+      "sha256": "c02df18b70dad34d0ed5280bec091d45b0ba0b7418bd1ecd02cb7b880bb1aa9b"
+    },
+    {
+      "path": "files/45-probe_structure.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/probe_structure.py",
+      "blob": "5b33bcbdc681b31c8dc386db799e70dd1a1bb34e",
+      "sha256": "67d88e602cf0eb3d80be084c17933ac8d56d555d627cfaf68e6c7bd2ada4135c"
+    },
+    {
+      "path": "files/46-probe_subsets.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/probe_subsets.py",
+      "blob": "a9d1645b9df74fbba2d3a59c44ab22f8ed90aafa",
+      "sha256": "d501462de78a01bc32030b934d9a47e18bf021200ee336867cbf23d5a42d22f4"
+    },
+    {
+      "path": "files/47-probe_time.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/probe_time.py",
+      "blob": "365e8c68434056ec0d802dd5dbdedbc8dccac8b6",
+      "sha256": "e154fa1a9e08aa2ce95c2444e75092b964da7ee42d0552871bc64aed453a1ce7"
+    },
+    {
+      "path": "files/48-queue.sh",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/queue.sh",
+      "blob": "dd290caab4ccbf0d92639f90891e77c98ce8d03f",
+      "sha256": "da53642dcb2737ae987103d4f93e280df3cd75786d58ce7ae2f0ad445cc53f15"
+    },
+    {
+      "path": "files/49-refit.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/refit.py",
+      "blob": "6ae7c7e156bbab9a02fdd463b27212aa9afcc9d9",
+      "sha256": "7e7d3f9fffe9db52a2a6554ff0b88907ef91fe3cb93e98fdb2285d7e366121ec"
+    },
+    {
+      "path": "files/50-replay_attrib.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/replay_attrib.py",
+      "blob": "73a6a32af25556be07f8d6751889cc9895836322",
+      "sha256": "2d33f877e16681dee0659ca02bd747347538a116793a3daa38738f7b249fe600"
+    },
+    {
+      "path": "files/51-replay_poses.mjs",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/replay_poses.mjs",
+      "blob": "cd2138354ff6370ff6935bbb4718aab212a17df6",
+      "sha256": "d4d4b177db07731515cc958a4a03694747f9727378a3b97a6633bfdfc7788f75"
+    },
+    {
+      "path": "files/52-show.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/show.py",
+      "blob": "6ca16123924280b72fba7293f1f995381503dc62",
+      "sha256": "91f5cd4b860ecd3e9aaf337795af66c2282620a9e66bbe0497559c135c386473"
+    },
+    {
+      "path": "files/53-slope_scan.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/slope_scan.py",
+      "blob": "17b191314cb3fb19c937a9d446bf402bd50de668",
+      "sha256": "f0e2f03e0fdb11024601e534aa3602d921bb668bc2400583019ef93fafafc4e1"
+    },
+    {
+      "path": "files/54-synth.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/synth.py",
+      "blob": "258a806faebfd8e6353e3147a10120247c0714ea",
+      "sha256": "7bc67b862df83e8986ab2dc0156bc48cb94b33f6700927f500f5aff715b3c50c"
+    },
+    {
+      "path": "files/55-table.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/table.py",
+      "blob": "bbdd2f2542e8b442fffb0fed26fd977445fe5e89",
+      "sha256": "52961655447988674751a8d9bfc2150419fc06d8501e048d75361deae08e086a"
+    },
+    {
+      "path": "files/56-two_level.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/evidence/scripts/two_level.py",
+      "blob": "41e02943bfd165b64a81d137ad4305e2c8efbf10",
+      "sha256": "87222e49fd22a2e993438202b5bbe25cbbf278f69fc748ad5a5fc42bddbb99ec"
+    },
+    {
+      "path": "files/57-report.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/report.md",
+      "blob": "5769cdbb76ea00a76dfd4da1673614a4c5d5321b",
+      "sha256": "6e925a0565b704f9b1e9b80c38fba48697df8939713ef090429e6dbc6b3efd8b"
+    }
+  ],
+  "patch_sha256": "77fc544ff090fa738e8a9f3ff419f4750e6f38f9593f5d3e64669d25a48f5093"
+}

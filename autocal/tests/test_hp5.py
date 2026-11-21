@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 
 from autocal.active_learning import generate_candidate_sweeps
-from autocal.anchor_seed import build_anchor_initial_guess
 from autocal.pose_fit import dataset_line_lengths, fit_pose_least_squares, shift_dataset_home_offsets
 from autocal.pose_planning import ANCHOR_CLEARANCE_SHARE, predict_sweep_positions, SWEEP_PRETENSION_SHARE
 from autocal.sweep_config_generator import generate_sweep_configs, select_representative_configs
@@ -44,19 +43,18 @@ def test_bootstrap_and_planner_keep_the_top_fixed_and_opposing_held_low_complian
 
 
 @pytest.mark.parametrize('machine', ['hangprinter_5', 'hangprinter_5_pulley_reduced'])
-@pytest.mark.parametrize('low_z', [None, -280.])
-def test_numpy_and_jax_reduced_anchor_layouts_agree(machine, low_z):
+def test_numpy_and_jax_reduced_anchor_layouts_agree(machine):
     from autocal.slideprinter_2d.ellipse_objective_jax import _anchors_from_opt_vec
     from autocal.theoretical_ellipse import anchor_opt_constraint_mode
     import jax.numpy as jnp
-    vector = anchors_matrix_to_opt_vec(ANCHORS, machine, low_z)
-    assert len(vector) == (11 if low_z is None else 10)
-    lb, ub = get_anchor_opt_bounds(machine, 5, 3, low_z)
-    restored = anchor_opt_vec_to_matrix(vector, machine, 5, 3, low_z)
-    np.testing.assert_allclose(restored, ANCHORS, atol=1e-10)
-    compiled = _anchors_from_opt_vec(jnp.asarray(vector), jnp.asarray(lb), jnp.asarray(ub),
-        jnp.asarray(low_z if low_z is not None else np.nan), num_anchors=5, dimensions=3,
-        constraint_mode=anchor_opt_constraint_mode(machine, 5, 3, low_z))
+    uneven = ANCHORS + [[0., 0., 3.], [0., 0., -2.], [0., 0., 5.], [0., 0., 0.], [0., 0., 0.]]
+    vector = anchors_matrix_to_opt_vec(uneven, machine)
+    assert len(vector) == 12
+    lb, ub = get_anchor_opt_bounds(machine, 5, 3)
+    restored = anchor_opt_vec_to_matrix(vector, machine, 5, 3)
+    np.testing.assert_allclose(restored, uneven, atol=1e-10)
+    compiled = _anchors_from_opt_vec(jnp.asarray(vector), jnp.asarray(lb), jnp.asarray(ub), num_anchors=5,
+        dimensions=3, constraint_mode=anchor_opt_constraint_mode(machine, 5, 3))
     np.testing.assert_allclose(compiled, restored, atol=1e-8)
 
 
@@ -78,8 +76,6 @@ def test_measured_lengths_recover_all_five_anchors(machine):
     mask = np.isfinite(measured)
     assert np.isnan(measured).sum() == 60
     np.testing.assert_allclose((shifted-measured)[mask], np.tile([1., 2., 3., 4., 5.], (60, 1))[mask])
-    seed = build_anchor_initial_guess(dataset, low_anchor_z=-280.)
-    assert np.all(seed[:-1, 2] == -280.)
     seed = ANCHORS * 1.08 + [0., 0., 40.]
     fit = fit_pose_least_squares(dataset, seed, fit_home_offsets=False, home_offset_prior_sigma_mm=5.)
     assert fit['success']

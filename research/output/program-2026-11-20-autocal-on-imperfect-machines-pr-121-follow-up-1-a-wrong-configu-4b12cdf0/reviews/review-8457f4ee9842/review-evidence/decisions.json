@@ -1,0 +1,2754 @@
+[
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-soft-verified/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience",
+  "key": "ffd27cea624314d6",
+  "P": 3,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   1.83,
+   1.83
+  ],
+  "sel_p0": [
+   4,
+   4,
+   1.83,
+   1.83
+  ],
+  "sel_p1": [
+   4,
+   4,
+   1.83,
+   1.83
+  ],
+  "err": 1.825379891008779,
+  "J0": 1.2488850028157552,
+  "J1": 0.9760254354906116
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-final/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience",
+  "key": "90003911f02e7849",
+  "P": 3,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   1.02,
+   1.02
+  ],
+  "sel_p0": [
+   7,
+   7,
+   1.02,
+   1.02
+  ],
+  "sel_p1": [
+   7,
+   7,
+   1.02,
+   1.02
+  ],
+  "err": 1.017839855318016,
+  "J0": 0.34568975819490255,
+  "J1": 0.36061380794506054
+ },
+ {
+  "f": "output/headless-extended-verification-no-ping/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience-or-threshold",
+  "key": "61ab603f6c16b59a",
+  "P": 3,
+  "last": 6,
+  "n": 6,
+  "stop_J0": 4,
+  "stop_J1": 4,
+  "sel_end": [
+   6,
+   6,
+   948.94,
+   948.94
+  ],
+  "sel_p0": [
+   4,
+   4,
+   1067.81,
+   1067.81
+  ],
+  "sel_p1": [
+   4,
+   4,
+   1067.81,
+   1067.81
+  ],
+  "err": 948.9374085760747,
+  "J0": 333.4014312929787,
+  "J1": 213.79897000391512
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/evidence/hp3-soft/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience",
+  "key": "eee8f42213eff2b1",
+  "P": 3,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   2.82,
+   2.82
+  ],
+  "sel_p0": [
+   4,
+   4,
+   2.82,
+   2.82
+  ],
+  "sel_p1": [
+   4,
+   4,
+   2.82,
+   2.82
+  ],
+  "err": 2.8247557866916395,
+  "J0": 6.490749672667638,
+  "J1": 6.234573914590243
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp3-12000/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience",
+  "key": "0a7098c9f94f3cd2",
+  "P": 3,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   1.9,
+   1.9
+  ],
+  "sel_p0": [
+   4,
+   4,
+   1.9,
+   1.9
+  ],
+  "sel_p1": [
+   4,
+   4,
+   1.9,
+   1.9
+  ],
+  "err": 1.9023055016558152,
+  "J0": 2.7040363884470224,
+  "J1": 3.480274178008774
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-worn-verified/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "patience",
+  "key": "588079c363cc6502",
+  "P": 3,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   1.31,
+   1.31
+  ],
+  "sel_p0": [
+   7,
+   7,
+   1.31,
+   1.31
+  ],
+  "sel_p1": [
+   7,
+   7,
+   1.31,
+   1.31
+  ],
+  "err": 1.3131634337275955,
+  "J0": 0.9771466727267072,
+  "J1": 1.192901433675574
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "patience",
+  "key": "d913dfc37105deb2",
+  "P": 3,
+  "last": 6,
+  "n": 6,
+  "stop_J0": 5,
+  "stop_J1": null,
+  "sel_end": [
+   6,
+   6,
+   4.25,
+   4.25
+  ],
+  "sel_p0": [
+   5,
+   5,
+   3.97,
+   3.97
+  ],
+  "sel_p1": [
+   6,
+   6,
+   4.25,
+   4.25
+  ],
+  "err": 4.253114728916444,
+  "J0": 0.984929458608454,
+  "J1": 0.7113597498150569
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp3-soft/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience",
+  "key": "9f8e910fbb28c2c4",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   9.47,
+   9.47
+  ],
+  "sel_p0": [
+   5,
+   5,
+   9.47,
+   9.47
+  ],
+  "sel_p1": [
+   5,
+   5,
+   9.47,
+   9.47
+  ],
+  "err": 9.465483514994919,
+  "J0": 14.269501195654685,
+  "J1": 11.633559561201231
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/f0efe6cc21bb/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "patience",
+  "key": "0fa180f4225ddebc",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   11,
+   3.72,
+   3.72
+  ],
+  "sel_p0": [
+   11,
+   11,
+   3.72,
+   3.72
+  ],
+  "sel_p1": [
+   11,
+   11,
+   3.72,
+   3.72
+  ],
+  "err": 3.7177010082866673,
+  "J0": 0.564632625383149,
+  "J1": 0.36403871176977726
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/f0efe6cc21bb/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience",
+  "key": "ecce43288047ed05",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": 11,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   11,
+   1.21,
+   1.21
+  ],
+  "sel_p0": [
+   11,
+   11,
+   1.21,
+   1.21
+  ],
+  "sel_p1": [
+   11,
+   11,
+   1.21,
+   1.21
+  ],
+  "err": 1.2075936501917017,
+  "J0": 0.829590399529453,
+  "J1": 0.5463679668608648
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/dfc0e3e3f47b/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "patience",
+  "key": "9a9a1b8b9efe12c6",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   11,
+   3.59,
+   3.59
+  ],
+  "sel_p0": [
+   11,
+   11,
+   3.59,
+   3.59
+  ],
+  "sel_p1": [
+   11,
+   11,
+   3.59,
+   3.59
+  ],
+  "err": 3.5893783700128097,
+  "J0": 1.0856934512121854,
+  "J1": 0.44611675368926257
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/6ab979c367c2/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "patience",
+  "key": "b93971e64968dc37",
+  "P": 8,
+  "last": 12,
+  "n": 12,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   12,
+   12,
+   4.81,
+   4.81
+  ],
+  "sel_p0": [
+   12,
+   12,
+   4.81,
+   4.81
+  ],
+  "sel_p1": [
+   12,
+   12,
+   4.81,
+   4.81
+  ],
+  "err": 4.8081194965805025,
+  "J0": 0.9833441049450454,
+  "J1": 0.4546736792964769
+ },
+ {
+  "f": "output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience-or-threshold",
+  "key": "0942a66f98c108be",
+  "P": 3,
+  "last": 9,
+  "n": 9,
+  "stop_J0": 4,
+  "stop_J1": 4,
+  "sel_end": [
+   9,
+   9,
+   904.99,
+   904.99
+  ],
+  "sel_p0": [
+   4,
+   4,
+   989.87,
+   989.87
+  ],
+  "sel_p1": [
+   4,
+   4,
+   989.87,
+   989.87
+  ],
+  "err": 904.9871465946278,
+  "J0": 264.51858111937753,
+  "J1": 219.65583174300372
+ },
+ {
+  "f": "output/headless-verification/pytest/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "patience-or-threshold",
+  "key": "91f03b7df39e90c0",
+  "P": 3,
+  "last": 6,
+  "n": 6,
+  "stop_J0": 4,
+  "stop_J1": 4,
+  "sel_end": [
+   6,
+   6,
+   975.22,
+   975.22
+  ],
+  "sel_p0": [
+   4,
+   4,
+   985.74,
+   985.74
+  ],
+  "sel_p1": [
+   4,
+   4,
+   985.74,
+   985.74
+  ],
+  "err": 975.2193325873607,
+  "J0": 374.0680850783547,
+  "J1": 388.5291425543573
+ },
+ {
+  "f": "output/extra-sensor-production/pass3/reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "patience",
+  "key": "20cae8a5db24c2a6",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   10,
+   2.94,
+   4.62
+  ],
+  "sel_p0": [
+   11,
+   10,
+   2.94,
+   4.62
+  ],
+  "sel_p1": [
+   11,
+   10,
+   2.94,
+   4.62
+  ],
+  "err": 2.9433219439221707,
+  "J0": 5.461511778331491,
+  "J1": 7.453314205317853
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/84645fdc2d39/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "patience",
+  "key": "0946fb3a49bf8588",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   11,
+   2.56,
+   2.56
+  ],
+  "sel_p0": [
+   11,
+   11,
+   2.56,
+   2.56
+  ],
+  "sel_p1": [
+   11,
+   11,
+   2.56,
+   2.56
+  ],
+  "err": 2.563065647354558,
+  "J0": 2.190928315805396,
+  "J1": 1.6944060219979409
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/f7b8845863ef/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "patience",
+  "key": "1832c591c165a47f",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   11,
+   2.77,
+   2.77
+  ],
+  "sel_p0": [
+   11,
+   11,
+   2.77,
+   2.77
+  ],
+  "sel_p1": [
+   11,
+   11,
+   2.77,
+   2.77
+  ],
+  "err": 2.7729157929636252,
+  "J0": 2.067593563455124,
+  "J1": 1.7940146287378573
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/e5593f448748/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "patience",
+  "key": "eba923f9e7c2bd5e",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   11,
+   2.31,
+   2.31
+  ],
+  "sel_p0": [
+   11,
+   11,
+   2.31,
+   2.31
+  ],
+  "sel_p1": [
+   11,
+   11,
+   2.31,
+   2.31
+  ],
+  "err": 2.3063520652167426,
+  "J0": 3.6860499352453773,
+  "J1": 2.900669133941728
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/682608717670/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "stable-estimate",
+  "key": "73101fb7365b2431",
+  "P": 8,
+  "last": 6,
+  "n": 6,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   6,
+   6,
+   0.96,
+   0.96
+  ],
+  "sel_p0": [
+   6,
+   6,
+   0.96,
+   0.96
+  ],
+  "sel_p1": [
+   6,
+   6,
+   0.96,
+   0.96
+  ],
+  "err": 0.9626454595791953,
+  "J0": 0.9698537658983171,
+  "J1": 0.9079456502301776
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "9fec1501e1556dd4",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   4.48,
+   4.48
+  ],
+  "sel_p0": [
+   5,
+   5,
+   4.48,
+   4.48
+  ],
+  "sel_p1": [
+   5,
+   5,
+   4.48,
+   4.48
+  ],
+  "err": 4.480785387985634,
+  "J0": 2.027756962717081,
+  "J1": 1.6978833790502554
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "0798da9ba22d62e2",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   4.47,
+   4.47
+  ],
+  "sel_p0": [
+   5,
+   5,
+   4.47,
+   4.47
+  ],
+  "sel_p1": [
+   5,
+   5,
+   4.47,
+   4.47
+  ],
+  "err": 4.470869920349514,
+  "J0": 1.9937258093996366,
+  "J1": 1.155883489855276
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-evaluate-the-hardened-candidate-on-full-hp3-hp4-compliance-and-b-3c7b0091/evidence/hp4-worn/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "24f0008cdbd6add7",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   2.87,
+   2.87
+  ],
+  "sel_p0": [
+   5,
+   5,
+   2.87,
+   2.87
+  ],
+  "sel_p1": [
+   5,
+   5,
+   2.87,
+   2.87
+  ],
+  "err": 2.8682870191764778,
+  "J0": 2.2880901044572255,
+  "J1": 3.275566303080051
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "Ctrl-C",
+  "key": "b7cccb5a3f2dd04e",
+  "P": 3,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   1.06,
+   1.06
+  ],
+  "sel_p0": [
+   4,
+   4,
+   1.06,
+   1.06
+  ],
+  "sel_p1": [
+   4,
+   4,
+   1.06,
+   1.06
+  ],
+  "err": 1.0642100019252263,
+  "J0": 1.3273845211356952,
+  "J1": 1.172388025022311
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-fixed/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": null,
+  "key": "19cbc44cb494146c",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   1.02,
+   1.02
+  ],
+  "sel_p0": [
+   5,
+   5,
+   1.02,
+   1.02
+  ],
+  "sel_p1": [
+   5,
+   5,
+   1.02,
+   1.02
+  ],
+  "err": 1.0215724894835603,
+  "J0": 0.49459469950224216,
+  "J1": 0.7142485027071555
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-test-one-bounded-terminal-validation-sweep-that-compares-frozen-43d8bbc3/evidence/hp3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "0a4bce6391710454",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   2.03,
+   2.03
+  ],
+  "sel_p0": [
+   5,
+   5,
+   2.03,
+   2.03
+  ],
+  "sel_p1": [
+   5,
+   5,
+   2.03,
+   2.03
+  ],
+  "err": 2.0282947258822706,
+  "J0": 1.5389463126965466,
+  "J1": 1.2352634898301376
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/682608717670/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "stable-estimate",
+  "key": "fa2d628086c4d248",
+  "P": 8,
+  "last": 10,
+  "n": 10,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   10,
+   10,
+   5.12,
+   5.12
+  ],
+  "sel_p0": [
+   10,
+   10,
+   5.12,
+   5.12
+  ],
+  "sel_p1": [
+   10,
+   10,
+   5.12,
+   5.12
+  ],
+  "err": 5.116013911650725,
+  "J0": 1.9074723746960733,
+  "J1": 0.9304949621588392
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-local/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": null,
+  "key": "13f2bf6efbb8f956",
+  "P": 3,
+  "last": 2,
+  "n": 2,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   2,
+   2,
+   4.67,
+   4.67
+  ],
+  "sel_p0": [
+   2,
+   2,
+   4.67,
+   4.67
+  ],
+  "sel_p1": [
+   2,
+   2,
+   4.67,
+   4.67
+  ],
+  "err": 4.672244057140006,
+  "J0": 1.243872976253155,
+  "J1": 1.6292550888676272
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "55e20fc38c7b7cd2",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   2.54,
+   2.54
+  ],
+  "sel_p0": [
+   5,
+   5,
+   2.54,
+   2.54
+  ],
+  "sel_p1": [
+   5,
+   5,
+   2.54,
+   2.54
+  ],
+  "err": 2.5361244391538094,
+  "J0": 2.7467657250542383,
+  "J1": 2.6203430869331963
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp3-local/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": null,
+  "key": "b3b54931a26849b9",
+  "P": 3,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.24,
+   1.24
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.24,
+   1.24
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.24,
+   1.24
+  ],
+  "err": 1.2408875111123052,
+  "J0": 0.8847923563453379,
+  "J1": 1.1169716614330258
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/678f76591172/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": null,
+  "key": "6ba361caa2fd5901",
+  "P": 8,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   4213.28,
+   4213.28
+  ],
+  "sel_p0": [
+   7,
+   7,
+   4213.28,
+   4213.28
+  ],
+  "sel_p1": [
+   7,
+   7,
+   4213.28,
+   4213.28
+  ],
+  "err": 4213.281519526794,
+  "J0": 425.0823228276102,
+  "J1": 417.95600951076995
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": null,
+  "key": "d5abe4c69820f08b",
+  "P": 3,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   6.34,
+   6.34
+  ],
+  "sel_p0": [
+   3,
+   3,
+   6.34,
+   6.34
+  ],
+  "sel_p1": [
+   3,
+   3,
+   6.34,
+   6.34
+  ],
+  "err": 6.34364807947577,
+  "J0": 2.3058829776222116,
+  "J1": 1.6025528762110353
+ },
+ {
+  "f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp4-worn/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "f914d4c2cb5d2e25",
+  "P": 3,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   2.86,
+   2.86
+  ],
+  "sel_p0": [
+   5,
+   5,
+   2.86,
+   2.86
+  ],
+  "sel_p1": [
+   5,
+   5,
+   2.86,
+   2.86
+  ],
+  "err": 2.8550742356451337,
+  "J0": 2.9753250692266033,
+  "J1": 2.7035958118485035
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/678f76591172/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "9c4fc59559d61479",
+  "P": 8,
+  "last": 6,
+  "n": 6,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   6,
+   6,
+   5.5,
+   5.5
+  ],
+  "sel_p0": [
+   6,
+   6,
+   5.5,
+   5.5
+  ],
+  "sel_p1": [
+   6,
+   6,
+   5.5,
+   5.5
+  ],
+  "err": 5.496722445999242,
+  "J0": 3.847085945991575,
+  "J1": 4.8409273905769705
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/876e22d2b0a8/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "stable-estimate",
+  "key": "7b16f3d235d14896",
+  "P": 8,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   1.34,
+   1.34
+  ],
+  "sel_p0": [
+   4,
+   4,
+   1.34,
+   1.34
+  ],
+  "sel_p1": [
+   4,
+   4,
+   1.34,
+   1.34
+  ],
+  "err": 1.3448554644210162,
+  "J0": 0.6783271778907605,
+  "J1": 0.5169919375852393
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/876e22d2b0a8/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "stable-estimate",
+  "key": "e354d1594f569e82",
+  "P": 8,
+  "last": 10,
+  "n": 10,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   10,
+   10,
+   4.58,
+   4.58
+  ],
+  "sel_p0": [
+   10,
+   10,
+   4.58,
+   4.58
+  ],
+  "sel_p1": [
+   10,
+   10,
+   4.58,
+   4.58
+  ],
+  "err": 4.5827014847216105,
+  "J0": 1.701930146643489,
+  "J1": 0.8229310771077454
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/d567ed2b7fa9/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": null,
+  "key": "26eba8932c02712a",
+  "P": 8,
+  "last": 12,
+  "n": 12,
+  "stop_J0": null,
+  "stop_J1": 11,
+  "sel_end": [
+   12,
+   12,
+   4255.84,
+   4255.84
+  ],
+  "sel_p0": [
+   12,
+   12,
+   4255.84,
+   4255.84
+  ],
+  "sel_p1": [
+   11,
+   11,
+   4227.02,
+   4227.02
+  ],
+  "err": 4255.843347816581,
+  "J0": 652.7830278566323,
+  "J1": 466.37043842102696
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0cfc3a593a43/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "34b46c81e0f5b1a0",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   4.88,
+   4.88
+  ],
+  "sel_p0": [
+   5,
+   5,
+   4.88,
+   4.88
+  ],
+  "sel_p1": [
+   5,
+   5,
+   4.88,
+   4.88
+  ],
+  "err": 4.8765391759393335,
+  "J0": 2.6604079591211582,
+  "J1": 1.8367344792307272
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0cfc3a593a43/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "7073253b8b6ee6bb",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   2.85,
+   2.85
+  ],
+  "sel_p0": [
+   5,
+   5,
+   2.85,
+   2.85
+  ],
+  "sel_p1": [
+   5,
+   5,
+   2.85,
+   2.85
+  ],
+  "err": 2.8526598539424306,
+  "J0": 1.008885994242033,
+  "J1": 0.9026551194726083
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/50e826bf77ee/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "fbf7c3b3624af690",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   4.73,
+   4.73
+  ],
+  "sel_p0": [
+   5,
+   5,
+   4.73,
+   4.73
+  ],
+  "sel_p1": [
+   5,
+   5,
+   4.73,
+   4.73
+  ],
+  "err": 4.727693054668634,
+  "J0": 1.0160099326288623,
+  "J1": 1.325113450934344
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/50e826bf77ee/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "4bde2146e0a696ff",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   4.4,
+   4.4
+  ],
+  "sel_p0": [
+   5,
+   5,
+   4.4,
+   4.4
+  ],
+  "sel_p1": [
+   5,
+   5,
+   4.4,
+   4.4
+  ],
+  "err": 4.400381864937117,
+  "J0": 2.3547250719169566,
+  "J1": 2.299961245566861
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/b497fbab0445/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "e17dd1ca19b28fae",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   5.57,
+   5.57
+  ],
+  "sel_p0": [
+   5,
+   5,
+   5.57,
+   5.57
+  ],
+  "sel_p1": [
+   5,
+   5,
+   5.57,
+   5.57
+  ],
+  "err": 5.574203579566756,
+  "J0": 3.2260655923774446,
+  "J1": 2.344739356861793
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0d700bade676/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "3eb73d48e11d3103",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   3.71,
+   3.71
+  ],
+  "sel_p0": [
+   5,
+   5,
+   3.71,
+   3.71
+  ],
+  "sel_p1": [
+   5,
+   5,
+   3.71,
+   3.71
+  ],
+  "err": 3.7055527095329612,
+  "J0": 9.373767790242713,
+  "J1": 4.932264525117164
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/b497fbab0445/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "c0747d4e02531a37",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   6.73,
+   6.73
+  ],
+  "sel_p0": [
+   5,
+   5,
+   6.73,
+   6.73
+  ],
+  "sel_p1": [
+   5,
+   5,
+   6.73,
+   6.73
+  ],
+  "err": 6.728858082801224,
+  "J0": 3.103207440650951,
+  "J1": 4.018974033999819
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/67f59ec841e6/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "Ctrl-C",
+  "key": "3c627fa5c17244c6",
+  "P": 8,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   4064.07,
+   4064.07
+  ],
+  "sel_p0": [
+   4,
+   4,
+   4064.07,
+   4064.07
+  ],
+  "sel_p1": [
+   4,
+   4,
+   4064.07,
+   4064.07
+  ],
+  "err": 4064.065110204205,
+  "J0": 443.65798067594403,
+  "J1": 428.3263333444425
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0d700bade676/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "a0029637746d6262",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   2.09,
+   2.09
+  ],
+  "sel_p0": [
+   5,
+   5,
+   2.09,
+   2.09
+  ],
+  "sel_p1": [
+   5,
+   5,
+   2.09,
+   2.09
+  ],
+  "err": 2.092070362628554,
+  "J0": 5.741721460093302,
+  "J1": 5.179750761758844
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/1254ef00dbd7/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "ee82c3d42e62ff85",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   3.25,
+   3.25
+  ],
+  "sel_p0": [
+   5,
+   5,
+   3.25,
+   3.25
+  ],
+  "sel_p1": [
+   5,
+   5,
+   3.25,
+   3.25
+  ],
+  "err": 3.248458993688473,
+  "J0": 3.1557447236872003,
+  "J1": 2.807340023910343
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/6ab979c367c2/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": null,
+  "key": "0c85bb48b438f37b",
+  "P": 8,
+  "last": 6,
+  "n": 6,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   6,
+   6,
+   1.0,
+   1.0
+  ],
+  "sel_p0": [
+   6,
+   6,
+   1.0,
+   1.0
+  ],
+  "sel_p1": [
+   6,
+   6,
+   1.0,
+   1.0
+  ],
+  "err": 0.9958160174048132,
+  "J0": 0.5754899189051291,
+  "J1": 0.5762295063514418
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/1254ef00dbd7/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "bafb92422afa42c2",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   5.07,
+   5.07
+  ],
+  "sel_p0": [
+   5,
+   5,
+   5.07,
+   5.07
+  ],
+  "sel_p1": [
+   5,
+   5,
+   5.07,
+   5.07
+  ],
+  "err": 5.065679238083851,
+  "J0": 2.500672922821103,
+  "J1": 3.677696800874275
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/84645fdc2d39/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "stable-estimate",
+  "key": "f71f4c59bcec6403",
+  "P": 8,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   1.0,
+   1.0
+  ],
+  "sel_p0": [
+   7,
+   7,
+   1.0,
+   1.0
+  ],
+  "sel_p1": [
+   7,
+   7,
+   1.0,
+   1.0
+  ],
+  "err": 0.9977769072443949,
+  "J0": 0.9546917493959736,
+  "J1": 0.7513763386751261
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/baf71e722495/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": null,
+  "key": "e0bacd2e7c76de8f",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   4.23,
+   4.23
+  ],
+  "sel_p0": [
+   5,
+   5,
+   4.23,
+   4.23
+  ],
+  "sel_p1": [
+   5,
+   5,
+   4.23,
+   4.23
+  ],
+  "err": 4.2266966253444025,
+  "J0": 1.1359253365794473,
+  "J1": 1.2569592350445637
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/a92b6c45f046/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "spread-consensus",
+  "key": "02551fc1a067947d",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   5.76,
+   5.76
+  ],
+  "sel_p0": [
+   5,
+   5,
+   5.76,
+   5.76
+  ],
+  "sel_p1": [
+   5,
+   5,
+   5.76,
+   5.76
+  ],
+  "err": 5.756867013662061,
+  "J0": 0.9612169047667598,
+  "J1": 1.6905719806038764
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/84645fdc2d39/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "stable-estimate",
+  "key": "5b2e705c62d74186",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   11,
+   11,
+   4.82,
+   4.82
+  ],
+  "sel_p0": [
+   11,
+   11,
+   4.82,
+   4.82
+  ],
+  "sel_p1": [
+   11,
+   11,
+   4.82,
+   4.82
+  ],
+  "err": 4.821485391713395,
+  "J0": 1.694156453915074,
+  "J1": 0.7983418438881937
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0623060e2227/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "stable-estimate",
+  "key": "b6f6ecbccc8a0199",
+  "P": 8,
+  "last": 10,
+  "n": 10,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   10,
+   10,
+   5.18,
+   5.18
+  ],
+  "sel_p0": [
+   10,
+   10,
+   5.18,
+   5.18
+  ],
+  "sel_p1": [
+   10,
+   10,
+   5.18,
+   5.18
+  ],
+  "err": 5.178095578199873,
+  "J0": 1.9157047052524905,
+  "J1": 0.9206172626292082
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/a92b6c45f046/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "spread-consensus",
+  "key": "c086efdc6f493ee8",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   6.92,
+   6.92
+  ],
+  "sel_p0": [
+   5,
+   5,
+   6.92,
+   6.92
+  ],
+  "sel_p1": [
+   5,
+   5,
+   6.92,
+   6.92
+  ],
+  "err": 6.923800839705236,
+  "J0": 2.5820351548671163,
+  "J1": 2.1052957342888403
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/e5593f448748/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "stable-estimate",
+  "key": "b2ad57be0674f71d",
+  "P": 8,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   1.35,
+   1.35
+  ],
+  "sel_p0": [
+   4,
+   4,
+   1.35,
+   1.35
+  ],
+  "sel_p1": [
+   4,
+   4,
+   1.35,
+   1.35
+  ],
+  "err": 1.3451159261287557,
+  "J0": 0.6778194043502711,
+  "J1": 0.5164180288613679
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0623060e2227/hangprinter_3/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "stable-estimate",
+  "key": "616f9ce8b9c44b3c",
+  "P": 8,
+  "last": 6,
+  "n": 6,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   6,
+   6,
+   0.96,
+   0.96
+  ],
+  "sel_p0": [
+   6,
+   6,
+   0.96,
+   0.96
+  ],
+  "sel_p1": [
+   6,
+   6,
+   0.96,
+   0.96
+  ],
+  "err": 0.9625986735370414,
+  "J0": 0.9698060589986207,
+  "J1": 0.9081006544288172
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/f3370a2ffebd/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "Ctrl-C",
+  "key": "2a64bd2aa04f2a8d",
+  "P": 8,
+  "last": 11,
+  "n": 11,
+  "stop_J0": null,
+  "stop_J1": 11,
+  "sel_end": [
+   11,
+   11,
+   4227.02,
+   4227.02
+  ],
+  "sel_p0": [
+   11,
+   11,
+   4227.02,
+   4227.02
+  ],
+  "sel_p1": [
+   11,
+   11,
+   4227.02,
+   4227.02
+  ],
+  "err": 4227.020046828108,
+  "J0": 590.7077730333291,
+  "J1": 404.9646979160587
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/1eaf01c1b063/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": null,
+  "key": "7f886eb3fbb5ba1b",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   4125.36,
+   4125.36
+  ],
+  "sel_p0": [
+   5,
+   5,
+   4125.36,
+   4125.36
+  ],
+  "sel_p1": [
+   5,
+   5,
+   4125.36,
+   4125.36
+  ],
+  "err": 4125.356688433269,
+  "J0": 425.95892749979333,
+  "J1": 464.40470543141043
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/883219adc1c6/hangprinter_4/05cccc696ff24886b876da47765b342c/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "stable-estimate",
+  "key": "bafde9db55ede7d3",
+  "P": 8,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   0.68,
+   0.68
+  ],
+  "sel_p0": [
+   4,
+   4,
+   0.68,
+   0.68
+  ],
+  "sel_p1": [
+   4,
+   4,
+   0.68,
+   0.68
+  ],
+  "err": 0.6838192163465476,
+  "J0": 0.5266707189056226,
+  "J1": 0.29599849857687216
+ },
+ {
+  "f": "output/hp5-integrated-sensing/pass2/direct/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "good-fit",
+  "key": "0211bebea217d61f",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.41,
+   1.41
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.41,
+   1.41
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.41,
+   1.41
+  ],
+  "err": 1.410130782203198,
+  "J0": 1.2885631746313837,
+  "J1": 1.331922406802627
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/e5593f448748/hangprinter_4/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_4",
+  "stop": "stable-estimate",
+  "key": "0dc50483f0970bef",
+  "P": 8,
+  "last": 10,
+  "n": 10,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   10,
+   10,
+   4.58,
+   4.58
+  ],
+  "sel_p0": [
+   10,
+   10,
+   4.58,
+   4.58
+  ],
+  "sel_p1": [
+   10,
+   10,
+   4.58,
+   4.58
+  ],
+  "err": 4.575763138532238,
+  "J0": 1.7140535427884094,
+  "J1": 1.0567864740556105
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/883219adc1c6/hangprinter_3/139b192a2a7f4875aee6d116c233306f/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_3",
+  "stop": "stable-estimate",
+  "key": "c3e1637ef87b0379",
+  "P": 8,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   0.99,
+   0.99
+  ],
+  "sel_p0": [
+   7,
+   7,
+   0.99,
+   0.99
+  ],
+  "sel_p1": [
+   7,
+   7,
+   0.99,
+   0.99
+  ],
+  "err": 0.9891991433785968,
+  "J0": 0.9394485744277221,
+  "J1": 0.7026133333900217
+ },
+ {
+  "f": "output/hp5-integrated-sensing/pass2/reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "66630f7a5ca80c2c",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   2.45,
+   2.45
+  ],
+  "sel_p0": [
+   3,
+   3,
+   2.45,
+   2.45
+  ],
+  "sel_p1": [
+   3,
+   3,
+   2.45,
+   2.45
+  ],
+  "err": 2.4505540730167468,
+  "J0": 1.4385474395545972,
+  "J1": 0.8917269487311893
+ },
+ {
+  "f": "output/hp5-integrated-sensing/pass3/reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "66630f7a5ca80c2c",
+  "P": 8,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   2.45,
+   2.45
+  ],
+  "sel_p0": [
+   4,
+   4,
+   2.45,
+   2.45
+  ],
+  "sel_p1": [
+   4,
+   4,
+   2.45,
+   2.45
+  ],
+  "err": 2.4505540730167468,
+  "J0": 1.4385474395545972,
+  "J1": 0.8917269487311893
+ },
+ {
+  "f": "output/extra-sensor-production/pass1/reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": null,
+  "key": "0fab10ea03d42776",
+  "P": 8,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   2.03,
+   2.03
+  ],
+  "sel_p0": [
+   4,
+   4,
+   2.03,
+   2.03
+  ],
+  "sel_p1": [
+   4,
+   4,
+   2.03,
+   2.03
+  ],
+  "err": 2.0316612525344855,
+  "J0": 1.152387410424441,
+  "J1": 0.8684749541659605
+ },
+ {
+  "f": "output/extra-sensor-production/pass3/direct/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "stable-estimate",
+  "key": "788f2e0005e0adff",
+  "P": 8,
+  "last": 10,
+  "n": 10,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   10,
+   10,
+   1.1,
+   1.1
+  ],
+  "sel_p0": [
+   10,
+   10,
+   1.1,
+   1.1
+  ],
+  "sel_p1": [
+   10,
+   10,
+   1.1,
+   1.1
+  ],
+  "err": 1.0953585578283649,
+  "J0": 0.8691746231113078,
+  "J1": 0.5590689783449101
+ },
+ {
+  "f": "output/hp5-integrated-sensing/pass3/direct/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "good-fit",
+  "key": "0211bebea217d61f",
+  "P": 8,
+  "last": 4,
+  "n": 4,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   4,
+   4,
+   1.41,
+   1.41
+  ],
+  "sel_p0": [
+   4,
+   4,
+   1.41,
+   1.41
+  ],
+  "sel_p1": [
+   4,
+   4,
+   1.41,
+   1.41
+  ],
+  "err": 1.410130782203198,
+  "J0": 1.2885631746313837,
+  "J1": 1.331922406802627
+ },
+ {
+  "f": "output/hp5-integrated-sensing/pass1/direct/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "good-fit",
+  "key": "61be14ef49614526",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.45,
+   1.45
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.45,
+   1.45
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.45,
+   1.45
+  ],
+  "err": 1.4457229907557045,
+  "J0": 1.4050674548120055,
+  "J1": 1.267722246292627
+ },
+ {
+  "f": "output/extra-sensor-production/pass1/direct/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": null,
+  "key": "580f186c294281db",
+  "P": 8,
+  "last": 5,
+  "n": 5,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   5,
+   5,
+   0.77,
+   0.77
+  ],
+  "sel_p0": [
+   5,
+   5,
+   0.77,
+   0.77
+  ],
+  "sel_p1": [
+   5,
+   5,
+   0.77,
+   0.77
+  ],
+  "err": 0.7720580028292628,
+  "J0": 0.9470564188015514,
+  "J1": 0.9690244072904487
+ },
+ {
+  "f": "output/hp5-integrated-sensing/pass1/reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "c74e204d4ac34562",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.66,
+   1.66
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.66,
+   1.66
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.66,
+   1.66
+  ],
+  "err": 1.6550517006558567,
+  "J0": 1.182403336815042,
+  "J1": 1.3783832059983223
+ },
+ {
+  "f": "output/hp5-sweep-motion/reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "76c59c69a32ec3c8",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.62,
+   1.62
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.62,
+   1.62
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.62,
+   1.62
+  ],
+  "err": 1.618895179388115,
+  "J0": 3.1956304017326587,
+  "J1": 1.6436313608085316
+ },
+ {
+  "f": "output/hp5-bootstrap-controls/half-stiffness/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "max-steps",
+  "key": "771dfd6989111466",
+  "P": 8,
+  "last": 2,
+  "n": 2,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   2,
+   2,
+   3.38,
+   3.38
+  ],
+  "sel_p0": [
+   2,
+   2,
+   3.38,
+   3.38
+  ],
+  "sel_p1": [
+   2,
+   2,
+   3.38,
+   3.38
+  ],
+  "err": 3.3831715148942756,
+  "J0": 8.554474117051436,
+  "J1": 5.74841032349551
+ },
+ {
+  "f": "output/hp5-bootstrap-controls/stock/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "581336a6c3b74112",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.82,
+   1.82
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.82,
+   1.82
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.82,
+   1.82
+  ],
+  "err": 1.8205708572288586,
+  "J0": 1.6907529070443588,
+  "J1": 1.5305404253042296
+ },
+ {
+  "f": "output/hp5-sweep-motion/direct/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "good-fit",
+  "key": "16be6d921de344d4",
+  "P": 8,
+  "last": 2,
+  "n": 2,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   2,
+   2,
+   1.05,
+   1.05
+  ],
+  "sel_p0": [
+   2,
+   2,
+   1.05,
+   1.05
+  ],
+  "sel_p1": [
+   2,
+   2,
+   1.05,
+   1.05
+  ],
+  "err": 1.051310308858746,
+  "J0": 1.3630597764528873,
+  "J1": 1.3119433325791046
+ },
+ {
+  "f": "output/hp5-bootstrap-controls/verified/hangprinter_5/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "good-fit",
+  "key": "6f6eaf508345e977",
+  "P": 8,
+  "last": 2,
+  "n": 2,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   2,
+   2,
+   0.73,
+   0.73
+  ],
+  "sel_p0": [
+   2,
+   2,
+   0.73,
+   0.73
+  ],
+  "sel_p1": [
+   2,
+   2,
+   0.73,
+   0.73
+  ],
+  "err": 0.7340410092542852,
+  "J0": 1.3864133297791732,
+  "J1": 1.103516816262576
+ },
+ {
+  "f": "output/hp5-bootstrap-controls/half-stiffness/hangprinter_5/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "max-steps",
+  "key": "033490fbd580fda9",
+  "P": 8,
+  "last": 2,
+  "n": 2,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   2,
+   2,
+   3.6,
+   3.6
+  ],
+  "sel_p0": [
+   2,
+   2,
+   3.6,
+   3.6
+  ],
+  "sel_p1": [
+   2,
+   2,
+   3.6,
+   3.6
+  ],
+  "err": 3.5980215535320488,
+  "J0": 14.595108675495569,
+  "J1": 3.798673192123296
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/97091d345c6c/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "7fe08eb449442d2a",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.82,
+   1.82
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.82,
+   1.82
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.82,
+   1.82
+  ],
+  "err": 1.8241419813209632,
+  "J0": 1.6841964327335315,
+  "J1": 1.5150967205975787
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/089a7ad371b4/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": null,
+  "key": "e8f0784b25aaa22c",
+  "P": 8,
+  "last": 8,
+  "n": 8,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   8,
+   8,
+   4.53,
+   4.53
+  ],
+  "sel_p0": [
+   8,
+   8,
+   4.53,
+   4.53
+  ],
+  "sel_p1": [
+   8,
+   8,
+   4.53,
+   4.53
+  ],
+  "err": 4.532899980549528,
+  "J0": 3.393233867827723,
+  "J1": 2.2627163470511693
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/84645fdc2d39/hangprinter_5/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "stable-estimate",
+  "key": "f9afbb2d4045621e",
+  "P": 8,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   1.37,
+   1.37
+  ],
+  "sel_p0": [
+   7,
+   7,
+   1.37,
+   1.37
+  ],
+  "sel_p1": [
+   7,
+   7,
+   1.37,
+   1.37
+  ],
+  "err": 1.3681431003024767,
+  "J0": 2.2964583970339802,
+  "J1": 1.7541589242981594
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/089a7ad371b4/hangprinter_5/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "stable-estimate",
+  "key": "d4adf7ecbf0e6a65",
+  "P": 8,
+  "last": 8,
+  "n": 8,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   8,
+   8,
+   1.1,
+   1.1
+  ],
+  "sel_p0": [
+   8,
+   8,
+   1.1,
+   1.1
+  ],
+  "sel_p1": [
+   8,
+   8,
+   1.1,
+   1.1
+  ],
+  "err": 1.0993121626525193,
+  "J0": 0.8667734274305474,
+  "J1": 0.5605934743316
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/c2450975d7a3/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "stable-estimate",
+  "key": "498ff3ffdddf48fb",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   2.25,
+   2.25
+  ],
+  "sel_p0": [
+   3,
+   3,
+   2.25,
+   2.25
+  ],
+  "sel_p1": [
+   3,
+   3,
+   2.25,
+   2.25
+  ],
+  "err": 2.247374603274069,
+  "J0": 3.660227852667544,
+  "J1": 3.8359801349495455
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/c2450975d7a3/hangprinter_5/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "stable-estimate",
+  "key": "74eedae6f92d7540",
+  "P": 8,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   1.21,
+   1.21
+  ],
+  "sel_p0": [
+   7,
+   7,
+   1.21,
+   1.21
+  ],
+  "sel_p1": [
+   7,
+   7,
+   1.21,
+   1.21
+  ],
+  "err": 1.2107705798493698,
+  "J0": 2.473225297411903,
+  "J1": 1.7682884835926385
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0652a47b957f/hangprinter_5_pulley_reduced/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "4c200613474829af",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.66,
+   1.66
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.66,
+   1.66
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.66,
+   1.66
+  ],
+  "err": 1.6641443414272277,
+  "J0": 1.5423868725364607,
+  "J1": 1.4182743312656032
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/f7b8845863ef/hangprinter_5/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "stable-estimate",
+  "key": "12856ccf442427b2",
+  "P": 8,
+  "last": 7,
+  "n": 7,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   7,
+   7,
+   1.37,
+   1.37
+  ],
+  "sel_p0": [
+   7,
+   7,
+   1.37,
+   1.37
+  ],
+  "sel_p1": [
+   7,
+   7,
+   1.37,
+   1.37
+  ],
+  "err": 1.3674289218167666,
+  "J0": 2.2856686750997284,
+  "J1": 1.748026192839342
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/0652a47b957f/hangprinter_5/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5",
+  "stop": "good-fit",
+  "key": "f9b91c48e0067ef6",
+  "P": 8,
+  "last": 2,
+  "n": 2,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   2,
+   2,
+   1.52,
+   1.52
+  ],
+  "sel_p0": [
+   2,
+   2,
+   1.52,
+   1.52
+  ],
+  "sel_p1": [
+   2,
+   2,
+   1.52,
+   1.52
+  ],
+  "err": 1.5206549963204787,
+  "J0": 3.5752765085690084,
+  "J1": 2.14177701827947
+ },
+ {
+  "f": "output/autocal-benchmark-backfill/runs/883219adc1c6/hangprinter_5_pulley_reduced/429c97932dad4c4e941688556a434d1c/sweeps.full_auto_log.jsonl",
+  "machine": "hangprinter_5_pulley_reduced",
+  "stop": "good-fit",
+  "key": "1521e71f9831b5c6",
+  "P": 8,
+  "last": 3,
+  "n": 3,
+  "stop_J0": null,
+  "stop_J1": null,
+  "sel_end": [
+   3,
+   3,
+   1.59,
+   1.59
+  ],
+  "sel_p0": [
+   3,
+   3,
+   1.59,
+   1.59
+  ],
+  "sel_p1": [
+   3,
+   3,
+   1.59,
+   1.59
+  ],
+  "err": 1.59363263404751,
+  "J0": 1.142955177492619,
+  "J1": 1.4872678928636176
+ }
+]

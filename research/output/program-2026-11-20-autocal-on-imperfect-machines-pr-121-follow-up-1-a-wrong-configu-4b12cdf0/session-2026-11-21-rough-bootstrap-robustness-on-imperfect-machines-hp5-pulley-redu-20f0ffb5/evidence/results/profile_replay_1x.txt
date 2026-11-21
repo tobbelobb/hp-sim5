@@ -1,0 +1,4 @@
+# profile_replay.py with the tension cap (uncommitted fix, later committed with the report), 2026-11-21.
+# Bootstrap equal-strain profiles rewritten from each run's recorded rough dataset vs the profiles the run used.
+fix-hp5r-s0..s9, fix-hp5r-nominal, fix-hp4-s0..s2, fix-hp4-nominal, fix-hp5-s0, fix-hp5-s4, fix-hp3-s1: every profile byte-identical (18 runs, 4-6 profiles each)
+cog2-hp5r-s6: target 5.056 -> 4.930 N; profile poses 52 -> 32, 33, 32, 28 (poses above 0.75 x M666 X = 30 N dropped)

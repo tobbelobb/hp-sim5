@@ -1,0 +1,26 @@
+# NAME autocal.tools.imperfect_machine args (HP3). Full random machines:
+hp3-s1 --seed 1
+hp3-s2 --seed 2
+hp3-k0.8 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 0.8
+hp3-k1.2 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1.2
+hp3-s3 --seed 3
+hp3-s4 --seed 4
+hp3-dz-s0 --seed 0 --top-offset-mm 0:0 --stiffness-scale 1
+hp3-dz-s1 --seed 1 --top-offset-mm 0:0 --stiffness-scale 1
+hp3-s5 --seed 5
+hp3-s6 --seed 6
+hp3-top-s1 --seed 1 --low-dz-mm 0:0:0 --stiffness-scale 1
+hp3-top-s8 --seed 8 --low-dz-mm 0:0:0 --stiffness-scale 1
+hp3-s7 --seed 7
+hp3-s8 --seed 8
+hp3-k0.9 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 0.9
+hp3-k1.1 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1.1
+hp3-s9 --seed 9
+hp3-dz-s2 --seed 2 --top-offset-mm 0:0 --stiffness-scale 1
+# HP5 (4 low anchors: uneven heights are not a pure tilt there)
+hp5-nominal --machine hangprinter_5 --seed 0 --low-dz-mm 0:0:0:0 --top-offset-mm 0:0 --stiffness-scale 1
+hp5-s3 --machine hangprinter_5 --seed 3
+hp5-k0.8 --machine hangprinter_5 --seed 0 --low-dz-mm 0:0:0:0 --top-offset-mm 0:0 --stiffness-scale 0.8
+hp5-k1.2 --machine hangprinter_5 --seed 0 --low-dz-mm 0:0:0:0 --top-offset-mm 0:0 --stiffness-scale 1.2
+hp5-s0 --machine hangprinter_5 --seed 0
+hp5-top-s0 --machine hangprinter_5 --seed 0 --low-dz-mm 0:0:0:0 --stiffness-scale 1

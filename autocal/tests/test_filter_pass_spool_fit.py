@@ -2424,7 +2424,6 @@ def test_non_pointwise_objective_schedule_controls_anchor_proposals(monkeypatch,
         solve_restarts,
         solve_iterations,
         solve_optimizer,
-        low_anchor_z,
     ):
         _ = (
             transformed_dataset,
@@ -2432,7 +2431,6 @@ def test_non_pointwise_objective_schedule_controls_anchor_proposals(monkeypatch,
             solve_restarts,
             solve_iterations,
             solve_optimizer,
-            low_anchor_z,
         )
         proposal_calls.append(
             {

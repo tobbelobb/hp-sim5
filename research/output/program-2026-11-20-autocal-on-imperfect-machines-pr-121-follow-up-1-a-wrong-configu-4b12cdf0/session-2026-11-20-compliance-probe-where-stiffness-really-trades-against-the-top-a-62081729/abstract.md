@@ -1,0 +1,3 @@
+# Compliance probe on HP5r sweeps and the ellipsoid shape: measured k halves the stiffness error
+
+[Simulation evidence](report.md): at true EA ×0.8/×1.2 (12 live runs), the fixed-pose probe recovers k to +4.1 ± 2.0% on HP5r and −4.0 ± 1.9% on the HP3 ellipsoid, cutting mean max anchor error from 2.6 to 1.0 mm and from 2.5 to 1.4 mm (worst 5.4→1.6, 4.8→2.7) for about 3% extra time. A joint rms k fit is free and matches it in mean, but it missed by 13% in one of six HP5r runs. An exact replay attributes the probe's ±4% bias to force realisation (commanded ≠ realised tension), plus 2% missing effector-side reeving in HP5r's M666 Y. Realised forces also remove most of the fit's leftover top-z error (1.33 → 0.33 mm, 1.12 → 0.51 mm).

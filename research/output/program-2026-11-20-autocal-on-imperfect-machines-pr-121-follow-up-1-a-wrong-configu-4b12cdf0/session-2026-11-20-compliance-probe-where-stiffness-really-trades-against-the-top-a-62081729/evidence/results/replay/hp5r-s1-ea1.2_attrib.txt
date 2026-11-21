@@ -1,0 +1,7 @@
+hp5r-s1-ea1.2: 20 steps; medians (ratio to k_true): {'k_probe': 1.0896, 'k_true_tensions': 1.0211, 'k_all_true_tensions': 1.024, 'k_true_geometry': 1.0642, 'k_true_geometry_tension': 1.0209, 'sensor_force_ratio': 1.0419}
+  replay check max |dm - d(g - s)| mm: 0.0505
+  line A: compliance sim/model median 1.1004 (n 20), held dT true/model median 1.0352, geometry residual median -0.0026 mm
+  line B: compliance sim/model median 1.1069 (n 20), held dT true/model median 1.0785, geometry residual median -0.0003 mm
+  line C: compliance sim/model median 1.1314 (n 20), held dT true/model median 1.0805, geometry residual median +0.0019 mm
+  line D: compliance sim/model median 1.0785 (n 20), held dT true/model median 1.0145, geometry residual median +0.0004 mm
+  line I: compliance sim/model median 1.1316 (n 20), held dT true/model median 1.0523, geometry residual median +0.0003 mm

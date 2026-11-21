@@ -31,7 +31,6 @@ def run_alternating_refinement(
     sweep_metric: str,
     use_noise_mean: bool,
     sigma_source: str,
-    low_anchor_z: Optional[float],
     pack_spool_opt_vector: Callable[..., np.ndarray],
     unpack_spool_opt_vector: Callable[..., Tuple[np.ndarray, np.ndarray]],
     build_dataset_and_params: Callable[[np.ndarray, np.ndarray], Tuple[Any, dict]],

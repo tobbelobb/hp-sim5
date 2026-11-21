@@ -98,7 +98,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         write_cfg=args.write_sweep_config,
         collector_output=args.collector_output,
         collector_args=collector_args,
-        low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
         ellipse_reference_fit=resolve_fit("ellipse", args.fit) == "ellipse",
         equal_strain=bool(args.equal_strain),

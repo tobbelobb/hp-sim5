@@ -1,0 +1,6 @@
+hp5r-s1-ea1.2: 190 line-points matched
+  line A: n 37, commanded 5.367 N, realised/commanded median 1.0382, offset mean +0.114 sd 0.482 N
+  line B: n 45, commanded 7.889 N, realised/commanded median 1.0146, offset mean +0.055 sd 0.482 N
+  line C: n 58, commanded 4.826 N, realised/commanded median 0.9976, offset mean -0.003 sd 0.445 N
+  line D: n 50, commanded 7.479 N, realised/commanded median 1.0064, offset mean +0.019 sd 0.445 N
+  all: realised/commanded median 1.0136, mean offset +0.039 N

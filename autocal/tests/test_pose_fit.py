@@ -211,14 +211,15 @@ def test_extra_range_force_survives_rejection_and_reversed_roles(accepted, profi
     assert after['force_n'] == before['force_n']
 
 
-def test_hp4_equal_strain_home_reference_reaches_the_second_fit_once():
+@pytest.mark.parametrize("machine_type", ["hangprinter_3", "hangprinter_4"])
+def test_equal_strain_home_reference_reaches_the_second_fit_once(machine_type):
     target = 2.0
     stiffness = 20000.0
     guy = np.array([500., 400., 300., 200.])
     advantage = np.array([2., 2., 2., 4.])
     offsets = target / stiffness * (np.linalg.norm(ANCHORS, axis=1) + guy / advantage)
     offsets[3] = 1.5  # The weight-bearing top line has an independent fitted offset.
-    data = _dataset(offsets)
+    data = {**_dataset(offsets), "machine_type": machine_type}
     data["config"]["m666_before_data_collection"] = {
         "S": stiffness, "U": advantage.tolist(), "Y": guy.tolist(),
     }

@@ -1,0 +1,25 @@
+fix-hp5r-s0 --machine hangprinter_5_pulley_reduced --seed 0
+fix-hp5r-s1 --machine hangprinter_5_pulley_reduced --seed 1
+fix-hp5r-s2 --machine hangprinter_5_pulley_reduced --seed 2
+fix-hp5r-s4 --machine hangprinter_5_pulley_reduced --seed 4
+fix-hp5r-s5 --machine hangprinter_5_pulley_reduced --seed 5
+fix-hp5r-s6 --machine hangprinter_5_pulley_reduced --seed 6
+fix-hp5r-s7 --machine hangprinter_5_pulley_reduced --seed 7
+fix-hp5r-s8 --machine hangprinter_5_pulley_reduced --seed 8
+fix-hp5r-s9 --machine hangprinter_5_pulley_reduced --seed 9
+fix-hp5-s0 --machine hangprinter_5 --seed 0
+fix-hp5-s1 --machine hangprinter_5 --seed 1
+fix-hp5-s2 --machine hangprinter_5 --seed 2
+fix-hp5-s3 --machine hangprinter_5 --seed 3
+fix-hp5-s4 --machine hangprinter_5 --seed 4
+fix-hp5-s5 --machine hangprinter_5 --seed 5
+fix-hp5-s6 --machine hangprinter_5 --seed 6
+fix-hp5-s7 --machine hangprinter_5 --seed 7
+fix-hp5r-nominal --machine hangprinter_5_pulley_reduced --seed 0 --low-dz-max-mm 0 --top-offset-max-mm 0 --stiffness-error 0
+fix-hp5-nominal --machine hangprinter_5 --seed 0 --low-dz-max-mm 0 --top-offset-max-mm 0 --stiffness-error 0
+fix-hp3-nominal --machine hangprinter_3 --seed 0 --low-dz-max-mm 0 --top-offset-max-mm 0 --stiffness-error 0
+fix-hp4-s0 --machine hangprinter_4 --seed 0
+fix-hp4-s1 --machine hangprinter_4 --seed 1
+fix-hp4-s2 --machine hangprinter_4 --seed 2
+fix-hp3-s9 --machine hangprinter_3 --seed 9
+fix-hp3-s1 --machine hangprinter_3 --seed 1

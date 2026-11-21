@@ -1,0 +1,3 @@
+# Force realisation in autocal data: fit the realised force, then compliance
+
+[Simulation evidence](report.md): the sim's force error is pure torque-mode cogging (0.333 N at 50/rev, identifiable from sweep rms). Fitting per-motor ripple (and a direction-dependent offset) jointly with anchors and compliance k from the rms gives 0.16 ± 0.06 mm max error on 11 HP3 ellipsoid runs (live fit 2.22 mm, k +0.7%) and 0.74 ± 0.21 mm on 6 HP5r runs. This holds at 2×/4× ripple (incl. 2 live 2× runs, 0.16 mm) and, with a fitted direction offset, for ±0.2 N hysteresis (0.32 mm). Constant per-motor offset/scale are unidentifiable and need external calibration; HP5r collection fails at 2× cogging.

@@ -655,13 +655,10 @@ export async function findEdgeForce(sendFn, options = {}) {
     }
     if (sample.moved && sample.travelDeg >= minUsefulTravelDeg) {
       if (previous) {
-        const gain = sample.travelDeg - previous.travelDeg;
-        const compliance = gain / (force - previous.force);
+        const compliance = (sample.travelDeg - previous.travelDeg) / (force - previous.force);
         sample.complianceDegPerN = compliance;
-        if (gain <= minUsefulTravelDeg) {
-          declineStart ??= previous;
-          return finish('travel stopped increasing; stopped before plateau or reversal');
-        }
+        // A flat or reversing sample is one decline, not a plateau: HP5r creeps
+        // ~140 deg at both 1.44 and 2.02 N before running free at 2.83 N.
         peakCompliance = Math.max(peakCompliance, compliance);
         if (compliance < complianceRatio * peakCompliance) {
           declineStart ??= previous;

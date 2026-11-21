@@ -1,0 +1,164 @@
+[
+ {
+  "case": "benchmark hangprinter_5",
+  "top_offset_mm": 10.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 5.263157894736842,
+  "anchor_shift_mm": 0.017639315185903046,
+  "err_ref": 1.0292966696240717,
+  "err": 1.0468290421805198
+ },
+ {
+  "case": "benchmark hangprinter_5",
+  "top_offset_mm": 10.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 5.263157894736842,
+  "anchor_shift_mm": 0.008964495492136848,
+  "err_ref": 1.0292966696240717,
+  "err": 1.030253748730386
+ },
+ {
+  "case": "benchmark hangprinter_5",
+  "top_offset_mm": 25.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 13.157894736842104,
+  "anchor_shift_mm": 0.043998219875008605,
+  "err_ref": 1.0292966696240717,
+  "err": 1.0730297915209237
+ },
+ {
+  "case": "benchmark hangprinter_5",
+  "top_offset_mm": 25.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 13.157894736842104,
+  "anchor_shift_mm": 0.02224212672831527,
+  "err_ref": 1.0292966696240717,
+  "err": 1.0314673474575182
+ },
+ {
+  "case": "benchmark hangprinter_5",
+  "top_offset_mm": 50.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 26.31578947368421,
+  "anchor_shift_mm": 0.08791510124002383,
+  "err_ref": 1.0292966696240717,
+  "err": 1.116700358857963
+ },
+ {
+  "case": "benchmark hangprinter_5",
+  "top_offset_mm": 50.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 26.31578947368421,
+  "anchor_shift_mm": 0.04413140673136695,
+  "err_ref": 1.0292966696240717,
+  "err": 1.0340650933035669
+ },
+ {
+  "case": "benchmark hangprinter_5_pulley_reduced",
+  "top_offset_mm": 10.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 5.263157894736842,
+  "anchor_shift_mm": 0.005329684925270009,
+  "err_ref": 1.59363263404751,
+  "err": 1.5937837376122168
+ },
+ {
+  "case": "benchmark hangprinter_5_pulley_reduced",
+  "top_offset_mm": 10.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 5.263157894736842,
+  "anchor_shift_mm": 0.003064499676156629,
+  "err_ref": 1.59363263404751,
+  "err": 1.5909730273285851
+ },
+ {
+  "case": "benchmark hangprinter_5_pulley_reduced",
+  "top_offset_mm": 25.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 13.157894736842104,
+  "anchor_shift_mm": 0.01362210056379524,
+  "err_ref": 1.59363263404751,
+  "err": 1.5939358828664076
+ },
+ {
+  "case": "benchmark hangprinter_5_pulley_reduced",
+  "top_offset_mm": 25.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 13.157894736842104,
+  "anchor_shift_mm": 0.007646396068594186,
+  "err_ref": 1.59363263404751,
+  "err": 1.5868175992150122
+ },
+ {
+  "case": "benchmark hangprinter_5_pulley_reduced",
+  "top_offset_mm": 50.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 26.31578947368421,
+  "anchor_shift_mm": 0.027197303806044983,
+  "err_ref": 1.59363263404751,
+  "err": 1.5942952088660367
+ },
+ {
+  "case": "benchmark hangprinter_5_pulley_reduced",
+  "top_offset_mm": 50.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 26.31578947368421,
+  "anchor_shift_mm": 0.015366130058737326,
+  "err_ref": 1.59363263404751,
+  "err": 1.5801752790768324
+ },
+ {
+  "case": "live new_hp5_base_0",
+  "top_offset_mm": 10.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 5.263157894736842,
+  "anchor_shift_mm": 0.0119055817352876,
+  "err_ref": 0.6843807141341499,
+  "err": 0.6929473869320467
+ },
+ {
+  "case": "live new_hp5_base_0",
+  "top_offset_mm": 10.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 5.263157894736842,
+  "anchor_shift_mm": 0.008406394590367322,
+  "err_ref": 0.6843807141341499,
+  "err": 0.6847119627429282
+ },
+ {
+  "case": "live new_hp5_base_0",
+  "top_offset_mm": 25.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 13.157894736842104,
+  "anchor_shift_mm": 0.0298350246692109,
+  "err_ref": 0.6843807141341499,
+  "err": 0.7058924778566755
+ },
+ {
+  "case": "live new_hp5_base_0",
+  "top_offset_mm": 25.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 13.157894736842104,
+  "anchor_shift_mm": 0.021104306423612086,
+  "err_ref": 0.6843807141341499,
+  "err": 0.6852140190470802
+ },
+ {
+  "case": "live new_hp5_base_0",
+  "top_offset_mm": 50.0,
+  "azimuth_deg": 0.0,
+  "theta_mrad": 26.31578947368421,
+  "anchor_shift_mm": 0.0596885137868013,
+  "err_ref": 0.6843807141341499,
+  "err": 0.727488843654572
+ },
+ {
+  "case": "live new_hp5_base_0",
+  "top_offset_mm": 50.0,
+  "azimuth_deg": 90.0,
+  "theta_mrad": 26.31578947368421,
+  "anchor_shift_mm": 0.042248137215744844,
+  "err_ref": 0.6843807141341499,
+  "err": 0.686112640786918
+ }
+]
