@@ -1,0 +1,23 @@
+# HP3: nominal + seeds 0-9, baseline (338ded23) vs home strain
+base hp3-nominal --machine hangprinter_3 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1
+home hp3-nominal --machine hangprinter_3 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1
+base hp3-s0 --machine hangprinter_3 --seed 0
+home hp3-s0 --machine hangprinter_3 --seed 0
+base hp3-s1 --machine hangprinter_3 --seed 1
+home hp3-s1 --machine hangprinter_3 --seed 1
+base hp3-s2 --machine hangprinter_3 --seed 2
+home hp3-s2 --machine hangprinter_3 --seed 2
+base hp3-s3 --machine hangprinter_3 --seed 3
+home hp3-s3 --machine hangprinter_3 --seed 3
+base hp3-s4 --machine hangprinter_3 --seed 4
+home hp3-s4 --machine hangprinter_3 --seed 4
+base hp3-s5 --machine hangprinter_3 --seed 5
+home hp3-s5 --machine hangprinter_3 --seed 5
+base hp3-s6 --machine hangprinter_3 --seed 6
+home hp3-s6 --machine hangprinter_3 --seed 6
+base hp3-s7 --machine hangprinter_3 --seed 7
+home hp3-s7 --machine hangprinter_3 --seed 7
+base hp3-s8 --machine hangprinter_3 --seed 8
+home hp3-s8 --machine hangprinter_3 --seed 8
+base hp3-s9 --machine hangprinter_3 --seed 9
+home hp3-s9 --machine hangprinter_3 --seed 9

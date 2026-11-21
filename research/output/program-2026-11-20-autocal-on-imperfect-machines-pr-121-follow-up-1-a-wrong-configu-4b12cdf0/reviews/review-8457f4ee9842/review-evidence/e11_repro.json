@@ -1,0 +1,34 @@
+[
+ {
+  "case": "new_hp5_seed1",
+  "machine": "hangprinter_5",
+  "units": 5,
+  "err": 0.7685400193739425,
+  "J0": 6.769178275216403,
+  "J1": 1.1454990460067394
+ },
+ {
+  "case": "new_hp5r_seed3",
+  "machine": "hangprinter_5_pulley_reduced",
+  "units": 5,
+  "err": 1.0118153446810538,
+  "J0": 4.2702965918254865,
+  "J1": 2.659120191581658
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_3:4",
+  "machine": "hangprinter_3",
+  "units": 4,
+  "err": 1.827615125540923,
+  "J0": 22.897625215252695,
+  "J1": 2.932979383033909
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_4",
+  "machine": "hangprinter_4",
+  "units": 7,
+  "err": 11.230096565785109,
+  "J0": 10.082011860192177,
+  "J1": 12.365045743354377
+ }
+]

@@ -1,0 +1,402 @@
+{
+  "version": 1,
+  "claim": "In the simulator, torque-mode force realisation error is purely motor cogging (0.333 N sin(50 theta)); a joint offline fit of per-motor force ripple (+ direction offset) with anchors and line stiffness reaches 0.16 +- 0.06 mm on the HP3 ellipsoid (11 runs) and 0.74 +- 0.21 mm on HP5r (6 runs) without configured stiffness or the probe, robust to 2-4x larger ripple; constant per-motor force offset/scale is unobservable from sweep data and shifts top z 3-13 mm.",
+  "scope": "Simulation only; offline refit wrapper, not production code; HP3 ellipsoid and HP5r. One HP5r seed unscored.",
+  "limitations": [
+    "The cogging model is sim-specific; unknown three-harmonic pattern gives 0.66 mm",
+    "HP5r keeps +0.4-0.9 mm top-z bias",
+    "Fit CPU 25-120 min for HP5r",
+    "HP5r collection fails at 2x cogging",
+    "Constant offset/scale needs external calibration on hardware"
+  ],
+  "candidate_revision": "1e2413f3fe6326295aa44e790a05146cfa46b195",
+  "candidate_tree": "8cddafd39f23805a735cf982b7123f286f212f3e",
+  "base_revision": "7bfd016c90024f5451c4329284326d6cd62717af",
+  "files": [
+    {
+      "path": "files/00-abstract.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/abstract.md",
+      "blob": "cf7e6d752cc5bb63969de5fa18beac64ec61f543",
+      "sha256": "c3b918122744c796c3e45cbb9c636ef1bc5524c22a2ea07fc4bab52bd01ce214"
+    },
+    {
+      "path": "files/01-cog_refit.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/cog_refit.py",
+      "blob": "a080183167f899c4e0f599265b802fbe29355781",
+      "sha256": "d5afca74d26ea90373f81a935243ad4ada3a2b477e5eb0db7f261d8434296802"
+    },
+    {
+      "path": "files/02-cogging_regress.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/cogging_regress.py",
+      "blob": "f55e14f78820d2a3b1b624fb5741140b3aec4a4a",
+      "sha256": "4671b47a758b49615a5384db43ef62a61a5f9531d6810e65b5d1c1755876601f"
+    },
+    {
+      "path": "files/03-force_param_scan.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/force_param_scan.py",
+      "blob": "20e1d9eef15396d33a81c43a880a8ad804f9e153",
+      "sha256": "a01920245acbe93a578f0f5926eb674ba7e755d937f94d6d225bc548ee1f0850"
+    },
+    {
+      "path": "files/04-joint_cog.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/joint_cog.py",
+      "blob": "baf4dad826f7bee61ca63952b3192d535381014d",
+      "sha256": "77b727ee4d75d4fc9412f9b5c329fbcf0ea03803b5d7a7d693c6f02ce8a2782b"
+    },
+    {
+      "path": "files/05-joint_k_cog.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/joint_k_cog.py",
+      "blob": "468f61eefb67da60cfc799302dc784b4835b2e0f",
+      "sha256": "604bd9858394b9b26e5cd3e1f91aba9bf2ce0e6d925eb04a3a71999f911f73d6"
+    },
+    {
+      "path": "files/06-lane.sh",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/lane.sh",
+      "blob": "634634638e907167aa56cabdb8da6cbc4a036938",
+      "sha256": "b10331388ee4965a7f8670b99038c85c61f6b8533356c45a37fc34023e37d9f8"
+    },
+    {
+      "path": "files/07-perturb.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/perturb.py",
+      "blob": "6e6af61e5764f0aeffb4995411a4d32d7d686d3e",
+      "sha256": "0e5b0fd0fc5826b53823cdaf1007a158354829fd69f6d3997469e0ddc5a7c917"
+    },
+    {
+      "path": "files/08-robust_lane.sh",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/robust_lane.sh",
+      "blob": "d1f6a58efa3d3b583f0762a7b1c587d88a5f4262",
+      "sha256": "b379631d757a587c2e1aa3b6ef72adaadef31bcf9db50171a8c238225dcaf59d"
+    },
+    {
+      "path": "files/09-robust_table.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/robust_table.py",
+      "blob": "5619cdf8503dc3d0d5d2b6eadd6430f5baa63847",
+      "sha256": "fc376adb3b1ca31e8cbb571505ec63110e4767c49a278c817329d1629b82fba9"
+    },
+    {
+      "path": "files/10-summ_cog.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/summ_cog.py",
+      "blob": "27bcdc00ee5193126db16b02c6f70ab1613fd967",
+      "sha256": "4226c2f37f0dba68617fd8333b21a35aec2bd5cce69d223d9f43e15bd77be438"
+    },
+    {
+      "path": "files/11-table.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/table.py",
+      "blob": "e26ffed1bc69b11a82e7ef6b6b71b72733829544",
+      "sha256": "76a6da24b55374e58454746453a5cf4742aa99e68388af391687e367e8cb418e"
+    },
+    {
+      "path": "files/12-report.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/report.md",
+      "blob": "7a03151d82b8e06c001b471df414a343b096ad9b",
+      "sha256": "759230f5838ca4b63f236fce64165e02cbce003badf9eb4aea55eaf0f2453016"
+    },
+    {
+      "path": "files/13-summary_cog.txt",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/summary_cog.txt",
+      "blob": "6816278a450fc019ffc4fd19c96bce48c4690b9d",
+      "sha256": "d2e0308969cc1b9704d237bb50219c5b291fcb5f0e18f14a8be2a8c2e013e2f8"
+    },
+    {
+      "path": "files/14-README.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/replay/README.md",
+      "blob": "acc79389dd4dd924e9d4025bfe71e83d2c0ac15d",
+      "sha256": "9ea111324f783f53462f5dc66d2b549ac1d82a4bab5a6dc89e7fb7bc1adc400a"
+    },
+    {
+      "path": "files/15-summary.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/robust/summary.md",
+      "blob": "d07c150e9ce77475dbc4d3d47b44c5879d36e411",
+      "sha256": "21b34ac8c835e7967f3fd69416314839a30186bab59710af53dd694167483350"
+    },
+    {
+      "path": "files/16-summary_table.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/summary_table.md",
+      "blob": "1dc11aff70a19d1d298c9c56cdc15be26e8028a6",
+      "sha256": "53534bf004eff0abf1e3467cd44cbe82d2e8ecd9b90d76f3a86d07f71f5123d9"
+    },
+    {
+      "path": "files/17-hp3e-cog2-s5.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/cog2/hp3e-cog2-s5.cog.json",
+      "blob": "f471e9fbcf1e60149aa19f65754f8785dc5f6b47",
+      "sha256": "1871e596fa4cb4962098b628ecf59aaaf8c4e89eb38d251f0bb5408f7e1f3f82"
+    },
+    {
+      "path": "files/18-hp3e-cog2-s5.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/cog2/hp3e-cog2-s5.jointk.json",
+      "blob": "13a38690bb0b9d21423298e95eb9ce5452b0f7e6",
+      "sha256": "b70431e583c13403a80b9dff28f8dc3a77655cb9f848871f561c8143b5c67f1e"
+    },
+    {
+      "path": "files/19-hp3e-cog2-s7.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/cog2/hp3e-cog2-s7.cog.json",
+      "blob": "1b402d8b8a7672feff060ea3bfa628c2e24b129b",
+      "sha256": "76a08bdf42141bb6e871dade5e0702822f5a9d94e5991617d551184dd2f1666a"
+    },
+    {
+      "path": "files/20-hp3e-cog2-s7.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/cog2/hp3e-cog2-s7.jointk.json",
+      "blob": "659c7f37bb2f26cf7bd47b30fb502f9954ba8a6a",
+      "sha256": "c879d661291bf3a243c6aa3850b0ae39c6bdcb6275bef4b956959cf70314bbeb"
+    },
+    {
+      "path": "files/21-hp3e-s10.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s10.cog.json",
+      "blob": "01fcd02980a0542a222107525fcfe2437f62b241",
+      "sha256": "fca834ca40f31e00727907da263a3866596439b24b11fb30ac25deeee8bb5f4d"
+    },
+    {
+      "path": "files/22-hp3e-s10.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s10.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/23-hp3e-s10.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s10.jointk.json",
+      "blob": "308561bc38e58c7bd9feb3f4a115dd510654f8c5",
+      "sha256": "fff02492ed4c346b249d8b00b081e057fe732464b67ccd646bb85e0c04fe12ba"
+    },
+    {
+      "path": "files/24-hp3e-s5.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s5.cog.json",
+      "blob": "6b1d87156544980dbbd70323c52936809f26ce51",
+      "sha256": "070c80c21952bba04b274617d852db40a3a5b265ad6de0f30b5046bd14a88a7a"
+    },
+    {
+      "path": "files/25-hp3e-s5.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s5.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/26-hp3e-s5.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s5.jointk.json",
+      "blob": "1138a98bc27e6a1a08a11e7d0d930199b3aea267",
+      "sha256": "00303a6053cf8f533326c1e2bdffcd1821553ec93de0a653af1cf020bdbe829a"
+    },
+    {
+      "path": "files/27-hp3e-s6.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s6.cog.json",
+      "blob": "e8da1b57f2a7e1637d1db98f68c908ffa9dc0383",
+      "sha256": "d44592f13f7839f7c252e4090283e0c4ae4bc292cfa3e6e7003ddbc41fb66203"
+    },
+    {
+      "path": "files/28-hp3e-s6.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s6.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/29-hp3e-s6.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s6.jointk.json",
+      "blob": "a6c7e348e0ec8d466bd23fb37779a336a3ce3ed2",
+      "sha256": "80cbcd920c5ea85e020be74cfb71761c1d90d7a10d42ae750dcd53623cca8b0b"
+    },
+    {
+      "path": "files/30-hp3e-s7.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s7.cog.json",
+      "blob": "73bfc2f7d638e488d7c693f5e65d1d9df027c577",
+      "sha256": "d73485aef2060e35d2eede57a392151309dac75787335b6e3d0265ca476572b1"
+    },
+    {
+      "path": "files/31-hp3e-s7.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s7.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/32-hp3e-s7.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s7.jointk.json",
+      "blob": "c5e7e9add3e01628f97f737bef470b3ea58cd8c1",
+      "sha256": "7f15506051c1fc827127a0b18ce9a7ec77044154dac2985ce2f7f1f9307ee9c6"
+    },
+    {
+      "path": "files/33-hp3e-s8.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s8.cog.json",
+      "blob": "abdb606e105123eb90067636e4edfa56ccd70115",
+      "sha256": "a647949ae95411a65fc3f768e49ace45d0217a624ede064199e018a2c5fdc5af"
+    },
+    {
+      "path": "files/34-hp3e-s8.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s8.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/35-hp3e-s8.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s8.jointk.json",
+      "blob": "e91f6945c7a96782766e4edfe79d52878d378d6e",
+      "sha256": "c05df321caff093da03f2d44495ba4ee7c39f5ee2d3989692da9123604226f17"
+    },
+    {
+      "path": "files/36-hp3e-s9.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp3e-s9.jointk.err",
+      "blob": "7291f0f2c02486cf23dbb7d2e598a1f7a1386913",
+      "sha256": "baa834463e5c6adcdb9c2f6750bb534a55f04543984a38c0fbc65a0ac96bfd25"
+    },
+    {
+      "path": "files/37-hp5r-s5.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s5.cog.json",
+      "blob": "6fd3b5728afb14e27f85c4e55ebbb776c331f1a0",
+      "sha256": "55293492926a58e247181701aa6a22b773449d7544d7dcb4f3dbd33d1ea3bd47"
+    },
+    {
+      "path": "files/38-hp5r-s5.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s5.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/39-hp5r-s5.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s5.jointk.json",
+      "blob": "a0c645290c884b47ae5958725f6631f950f03fc4",
+      "sha256": "aad6b6c954f4d546297a4d42c1baa337ca5c391898af4bad084d7997c6f24253"
+    },
+    {
+      "path": "files/40-hp5r-s6.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s6.cog.json",
+      "blob": "575f1d582c6829e498891b2b76878e908369df3c",
+      "sha256": "ba980c743aeca8dcd3b40d944718c3d02d8f05d3e9e252a38e91df67f04b8125"
+    },
+    {
+      "path": "files/41-hp5r-s6.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s6.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/42-hp5r-s6.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s6.jointk.json",
+      "blob": "e6795bf342f364ca31beac1c852f002dd32d2d95",
+      "sha256": "d648192dcff19710137e24b675f012a44e90dae93e1c0f23bd3050ef950dd794"
+    },
+    {
+      "path": "files/43-hp5r-s7.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s7.cog.json",
+      "blob": "0d8f93bab9f2954582d9e13f39279d8a2cc186c3",
+      "sha256": "6feecb980d405eb25a91d44997ed2ca0eaefe8a768e01b28e102b5548041d5e8"
+    },
+    {
+      "path": "files/44-hp5r-s7.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s7.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/45-hp5r-s7.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s7.jointk.json",
+      "blob": "6fe95e4f17c7bd24f594486413009fc68662ca85",
+      "sha256": "6d1ed3157855f32c8d9eded2ff17b712ff872e6ea4b32e36260d657a55ce4d53"
+    },
+    {
+      "path": "files/46-hp5r-s8.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s8.cog.json",
+      "blob": "0b167542cf920634ae78b1e876e882c26750a6df",
+      "sha256": "04104970b88e9a1b8358b20c483e73de38df776fcac28efa6018d81761e9cc59"
+    },
+    {
+      "path": "files/47-hp5r-s9.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s9.cog.json",
+      "blob": "6f70b7af2fa1adddd14a881ae838d2c7155f67d9",
+      "sha256": "2e07ebf0fc16361253d911695f2e95314b467b45c5deb2c0cef3579cda1550d8"
+    },
+    {
+      "path": "files/48-hp5r-s9.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/live/hp5r-s9.jointk.json",
+      "blob": "6f34605c47a5a056c8e1a8f0d353073cc6036c3c",
+      "sha256": "98e4cc30c380ba5a5244ccb9a09fb378a7c73bf0e1b6b58b30b2bb38419b6f8d"
+    },
+    {
+      "path": "files/49-hp3e-s1-ea0.8.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.cog.json",
+      "blob": "b30d8e9b4e3c5a4f67a7c93433341d5feb7f2692",
+      "sha256": "abd860f81ffc07b03e975efcb1f8192e4dc9c90c897d58c0cf102b58b5c800ee"
+    },
+    {
+      "path": "files/50-hp3e-s1-ea0.8.joint50.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.joint50.json",
+      "blob": "e743f174cd112279ba97218123e7272179061625",
+      "sha256": "f4b58541d0847f85a3f2b1baa17531debc00c23efda761dae52700640591b310"
+    },
+    {
+      "path": "files/51-hp3e-s1-ea0.8.joint_h200.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.joint_h200.json",
+      "blob": "a087463840b0d6f9dcd711751532feb967ab5d5c",
+      "sha256": "2f7d056a8e481b5cb612e17e39d0a37ed704951b6882486ef7d8c4b56fa9820a"
+    },
+    {
+      "path": "files/52-hp3e-s1-ea0.8.joint_multi.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.joint_multi.json",
+      "blob": "f15e7dc40103076ebfd3569676a8cd76b7f3ca6d",
+      "sha256": "226543e85a3373346cbe38e6880b4a3c8f0850ba624dc2be43a7b1fb6f43bfb1"
+    },
+    {
+      "path": "files/53-hp3e-s1-ea0.8.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/54-hp3e-s1-ea0.8.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.jointk.json",
+      "blob": "0362df16dfd290f5f8e9f362ff15f4f93392b3c1",
+      "sha256": "42b2c686e8e1b06b995d77d5fd95efa2fef23703e46893bbfedcea10e1463694"
+    },
+    {
+      "path": "files/55-hp3e-s1-ea0.8.scan_cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.scan_cog.json",
+      "blob": "453611f8d3cc528f56373fff011e2da60addc18b",
+      "sha256": "7659b1a8d86320f445c5169f31e2808e4a36c85bbebf8e87b931c29c40706d6e"
+    },
+    {
+      "path": "files/56-hp3e-s1-ea0.8.scan_offset.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.scan_offset.json",
+      "blob": "f9a440a8510c394ba8428c147bd76f8d5ebb284c",
+      "sha256": "2778d8631f5acfafb297389d49da46b518152c78c97e884ba4bdda14d1ab5d98"
+    },
+    {
+      "path": "files/57-hp3e-s1-ea0.8.scan_scale.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea0.8.scan_scale.json",
+      "blob": "9e8c4cebcbef2080491151d26f485b32b1bbbce0",
+      "sha256": "21a73bc2e2608341c825f1fd7516d3f03375c00f8b6858b9e21543bc26feabc2"
+    },
+    {
+      "path": "files/58-hp3e-s1-ea1.2.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea1.2.cog.json",
+      "blob": "ddfc87bcc123163d47b184e9fb535398626f40cc",
+      "sha256": "b7eab760d25f4f876c9825acc93bd6124d88e81f002a753ee63b0e7a5bc12815"
+    },
+    {
+      "path": "files/59-hp3e-s1-ea1.2.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea1.2.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/60-hp3e-s1-ea1.2.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s1-ea1.2.jointk.json",
+      "blob": "e86e5216c0468aed181eaeec054779f5dde458e0",
+      "sha256": "60bd489e2918510a6dea0ba1ca2c720f932b1ef6498e7e4354e6d035b47fe0bc"
+    },
+    {
+      "path": "files/61-hp3e-s2-ea0.8.cog.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s2-ea0.8.cog.json",
+      "blob": "4b67fe9b544a2de6042fd636a298e4015d1d3cb2",
+      "sha256": "d83752f36bb4237591f4ebcc1d2352c7b5ebe0015124be4a8c900450634cc28b"
+    },
+    {
+      "path": "files/62-hp3e-s2-ea0.8.jointk.err",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s2-ea0.8.jointk.err",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "files/63-hp3e-s2-ea0.8.jointk.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/results/offline/hp3e-s2-ea0.8.jointk.json",
+      "blob": "be0c264727a84dbd42a7e8d4a8c0177b2faaefbc",
+      "sha256": "5dfb3c94f105b14eea69baadd004c67d385791f0540bad81278fce5bd8a6a17c"
+    }
+  ],
+  "patch_sha256": "ae7cd3a573bd644b0c422fe42103bf4755b2421e1fcedd182d148cea681a5755"
+}

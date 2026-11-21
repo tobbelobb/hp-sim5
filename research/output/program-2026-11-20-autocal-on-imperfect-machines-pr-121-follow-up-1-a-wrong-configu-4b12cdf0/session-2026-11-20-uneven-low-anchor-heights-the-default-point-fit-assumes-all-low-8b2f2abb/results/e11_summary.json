@@ -1,0 +1,27 @@
+{
+ "J0": {
+  "spearman": 0.5952961672473869,
+  "median_ratio_j_over_err": 1.0311313151485713,
+  "log_ratio_rms": 1.1816230577937528,
+  "label_equals_error_label": 21,
+  "poor_when_err_le_1_5": 6,
+  "not_poor_when_err_gt_5": 0,
+  "min_j_when_err_gt_10": 10.082011860192177,
+  "median_ratio_hangprinter_5": 4.804166931653313,
+  "median_ratio_hangprinter_5_pulley_reduced": 1.0128731293801503
+ },
+ "J1": {
+  "spearman": 0.6733449477351917,
+  "median_ratio_j_over_err": 1.069091447972492,
+  "log_ratio_rms": 0.7469236997063636,
+  "label_equals_error_label": 25,
+  "poor_when_err_le_1_5": 2,
+  "not_poor_when_err_gt_5": 0,
+  "min_j_when_err_gt_10": 12.365045743354377,
+  "median_ratio_hangprinter_5": 2.042311892531295,
+  "median_ratio_hangprinter_5_pulley_reduced": 1.0726498063736858
+ },
+ "n_cases": 41,
+ "n_err_gt_5": 10,
+ "n_err_le_1_5": 26
+}

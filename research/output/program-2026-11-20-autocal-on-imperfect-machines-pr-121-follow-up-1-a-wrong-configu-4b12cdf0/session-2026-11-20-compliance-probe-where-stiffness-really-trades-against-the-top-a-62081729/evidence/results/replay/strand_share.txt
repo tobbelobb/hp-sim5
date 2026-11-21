@@ -1,0 +1,11 @@
+hp3e-s1-ea0.8
+line A: 2 paths; path-to-path spread median 1.01e-01 max 2.99e-01; segment spread within a path max 0.00e+00 (n 3428)
+line B: 2 paths; path-to-path spread median 9.29e-02 max 2.18e-01; segment spread within a path max 0.00e+00 (n 3456)
+line C: 2 paths; path-to-path spread median 9.12e-02 max 3.49e-01; segment spread within a path max 0.00e+00 (n 3410)
+line D: 3 paths; path-to-path spread median 3.91e-01 max 1.23e+00; segment spread within a path max 0.00e+00 (n 3445)
+hp5r-s1-ea1.2
+line A: 2 paths; path-to-path spread median 3.25e-02 max 1.02e+00; segment spread within a path max 0.00e+00 (n 1330)
+line B: 2 paths; path-to-path spread median 3.76e-02 max 2.04e-01; segment spread within a path max 0.00e+00 (n 1485)
+line C: 2 paths; path-to-path spread median 3.12e-02 max 9.70e-01; segment spread within a path max 0.00e+00 (n 1254)
+line D: 2 paths; path-to-path spread median 3.50e-02 max 2.16e-01; segment spread within a path max 0.00e+00 (n 1349)
+line I: 4 paths; path-to-path spread median 6.52e-01 max 1.47e+00; segment spread within a path max 0.00e+00 (n 266)

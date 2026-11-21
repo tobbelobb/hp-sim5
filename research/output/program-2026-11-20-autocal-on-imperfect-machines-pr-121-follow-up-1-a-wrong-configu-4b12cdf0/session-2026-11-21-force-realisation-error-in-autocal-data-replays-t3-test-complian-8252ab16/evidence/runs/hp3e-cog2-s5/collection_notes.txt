@@ -1,0 +1,1 @@
+   110.50s    1095.32s  | ; auto-tune selected: idle=0.0437 start=0.8731 edge=2.3957 d_max=1729.760deg

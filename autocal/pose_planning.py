@@ -90,7 +90,6 @@ def point_informations(
     positions: np.ndarray,
     *,
     machine_type: str,
-    low_anchor_z: Optional[float],
     sigma_mm: float,
 ) -> np.ndarray:
     """Information of each point, at known positions, about the anchors and home offsets.
@@ -101,7 +100,7 @@ def point_informations(
     anchors = np.asarray(anchors, dtype=float)
     num_anchors, dimensions = anchors.shape
     num_offsets = num_anchors - dimensions
-    anchor_vec = anchors_matrix_to_opt_vec(anchors, machine_type, low_anchor_z)
+    anchor_vec = anchors_matrix_to_opt_vec(anchors, machine_type)
     # Candidate poses are already known exactly. Eliminate their d nuisance
     # coordinates analytically rather than re-solving them from home for
     # every parameter perturbation (which can select another sphere branch).
@@ -109,8 +108,8 @@ def point_informations(
     for index in range(anchor_vec.size):
         step = np.zeros(anchor_vec.size)
         step[index] = _FD_STEP_MM
-        plus = anchor_opt_vec_to_matrix(anchor_vec + step, machine_type, num_anchors, dimensions, low_anchor_z)
-        minus = anchor_opt_vec_to_matrix(anchor_vec - step, machine_type, num_anchors, dimensions, low_anchor_z)
+        plus = anchor_opt_vec_to_matrix(anchor_vec + step, machine_type, num_anchors, dimensions)
+        minus = anchor_opt_vec_to_matrix(anchor_vec - step, machine_type, num_anchors, dimensions)
         mapping[:, :, index] = (plus - minus) / (2 * _FD_STEP_MM)
     vector = np.asarray(positions)[:, None, :] - anchors[None, :, :]
     direction = vector / np.linalg.norm(vector, axis=2)[:, :, None]
@@ -132,7 +131,6 @@ def pose_information(
     lengths_mm: np.ndarray,
     *,
     machine_type: str,
-    low_anchor_z: Optional[float],
     sigma_mm: float,
     positions: Optional[np.ndarray] = None,
     stretch=None,
@@ -141,15 +139,14 @@ def pose_information(
     anchors = np.asarray(anchors, dtype=float)
     num_anchors, dimensions = anchors.shape
     num_offsets = num_anchors - dimensions
-    anchor_vec = anchors_matrix_to_opt_vec(anchors, machine_type, low_anchor_z)
+    anchor_vec = anchors_matrix_to_opt_vec(anchors, machine_type)
 
     if positions is not None:
-        return np.sum(point_informations(anchors, lengths_mm, positions, machine_type=machine_type,
-                                         low_anchor_z=low_anchor_z, sigma_mm=sigma_mm), axis=0)
+        return np.sum(point_informations(anchors, lengths_mm, positions, machine_type=machine_type, sigma_mm=sigma_mm), axis=0)
 
     def residuals(step: np.ndarray) -> np.ndarray:
         moved = anchor_opt_vec_to_matrix(anchor_vec + step[:anchor_vec.size], machine_type, num_anchors,
-                                         dimensions, low_anchor_z)
+                                         dimensions)
         offsets = np.zeros(num_anchors)
         offsets[num_anchors - num_offsets:] = step[anchor_vec.size:]
         return consistency_residuals(moved, lengths_mm, offsets, stretch=stretch).ravel()
@@ -167,7 +164,6 @@ def rank_candidates_pose_information(
     anchors: np.ndarray,
     *,
     machine_type: str,
-    low_anchor_z: Optional[float],
     observed_lengths_mm: np.ndarray,
     candidates: Sequence[SweepConfig],
     points_per_sweep: int,
@@ -182,7 +178,7 @@ def rank_candidates_pose_information(
     num_anchors, dimensions = anchors.shape
     num_offsets = num_anchors - dimensions
     home_lengths = np.linalg.norm(anchors, axis=1)
-    options = dict(machine_type=machine_type, low_anchor_z=low_anchor_z, sigma_mm=sigma_mm)
+    options = dict(machine_type=machine_type, sigma_mm=sigma_mm)
     base = pose_information(anchors, observed_lengths_mm, stretch=observed_stretch, **options)
     prior = np.full(base.shape[0], float(regularization))
     prior[base.shape[0] - num_offsets:] += 1.0 / HOME_OFFSET_PRIOR_SIGMA_MM ** 2

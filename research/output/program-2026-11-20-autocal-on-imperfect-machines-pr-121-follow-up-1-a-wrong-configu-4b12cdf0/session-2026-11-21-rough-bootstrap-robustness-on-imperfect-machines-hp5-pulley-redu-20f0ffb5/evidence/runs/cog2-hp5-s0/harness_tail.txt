@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/torbjorn/.t3/worktrees/hp-sim5/t3-63ed3b0c-7128be341ef718f1/autocal/tools/imperfect_machine.py", line 282, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/torbjorn/.t3/worktrees/hp-sim5/t3-63ed3b0c-7128be341ef718f1/autocal/tools/imperfect_machine.py", line 271, in main
+    code = run_autocal(args.machine, output / 'sweeps.json', REPO_ROOT, output / 'autocal.log',
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/torbjorn/.t3/worktrees/hp-sim5/t3-63ed3b0c-7128be341ef718f1/autocal/tools/benchmark_history.py", line 222, in run_autocal
+    return process.wait(timeout=timeout_s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 2045, in _wait
+    raise TimeoutExpired(self.args, timeout)
+subprocess.TimeoutExpired: Command '['/home/torbjorn/.t3/worktrees/hp-sim5/t3-63ed3b0c-7128be341ef718f1/.venv/bin/python', 'autocal/autocal.py', '--headless-sim', '--machine-type', 'hangprinter_5', '--dataset', '/home/torbjorn/.t3/worktrees/hp-sim5/t3-63ed3b0c-7128be341ef718f1/output/rb/cog2-hp5-s0/sweeps.json', '--recording-mode', 'none', '--patience', '8']' timed out after 3300 seconds

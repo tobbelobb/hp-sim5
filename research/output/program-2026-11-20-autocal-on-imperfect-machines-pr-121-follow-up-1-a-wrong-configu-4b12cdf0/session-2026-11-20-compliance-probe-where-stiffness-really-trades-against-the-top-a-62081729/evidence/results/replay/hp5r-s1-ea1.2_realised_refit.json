@@ -1,0 +1,20 @@
+{
+ "run": "hp5r-s1-ea1.2",
+ "k_true": 0.8333333333333334,
+ "points_matched": 95,
+ "points": 100,
+ "commanded_true_k": {
+  "top_z_frame_mm": 1.1194533265586415,
+  "max_abs_frame_mm": 1.1194533265586415,
+  "low_z_frame_mm": 0.09492564921634283
+ },
+ "commanded_k_zero_top_z_over_true": 0.8429098833584102,
+ "commanded_dDz_dk_mm": 8.55813171133832,
+ "realised_true_k": {
+  "top_z_frame_mm": 0.509825814307078,
+  "max_abs_frame_mm": 0.509825814307078,
+  "low_z_frame_mm": -0.016950316062128934
+ },
+ "realised_k_zero_top_z_over_true": 0.9215798218607514,
+ "realised_dDz_dk_mm": 7.814224795640256
+}

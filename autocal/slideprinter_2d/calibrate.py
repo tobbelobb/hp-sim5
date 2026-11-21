@@ -33,7 +33,7 @@ from autocal.slideprinter_2d.ellipse_visualization import create_calibration_rep
 from autocal.json_schema import load_json_file, write_json_file
 from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import canonicalize_anchor_gauge
-from autocal.anchor_seed import (_apply_low_anchor_z_constraint, _expand_to_num_axes, _extract_m666, _first_float,
+from autocal.anchor_seed import (_expand_to_num_axes, _extract_m666, _first_float,
                                  build_anchor_initial_guess)
 
 
@@ -379,7 +379,6 @@ def calibrate_elliptical(
     residuals_csv: Optional[Path] = None,
     report_base_path: Optional[Path] = None,
     initial_guess: Optional[np.ndarray] = None,
-    low_anchor_z: Optional[float] = None,
 ) -> Dict[str, Any]:
     input_ref: Optional[Path] = None
     if isinstance(input_path, dict):
@@ -389,7 +388,6 @@ def calibrate_elliptical(
     else:
         input_ref = Path(input_path)
         dataset = _load_json(input_ref)
-    dataset = _apply_low_anchor_z_constraint(dataset, low_anchor_z)
     # `regularize_supersweep` is primarily relevant for the legacy point solver (raw motor samples);
     # ellipse mode consumes fixed_lengths setpoints, which are typically already regular.
     _ = bool(regularize_supersweep)
@@ -842,12 +840,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=None,
         help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
     )
-    ellipse_parser.add_argument(
-        "--low-anchor-z",
-        type=float,
-        default=None,
-        help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
-    )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     ellipse_parallel_group = ellipse_parser.add_mutually_exclusive_group()
@@ -1011,7 +1003,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pointwise_residual_mode=str(args.pointwise_residual),
             generate_report=not args.no_report,
             residuals_csv=args.residuals_csv,
-            low_anchor_z=args.low_anchor_z,
         )
         print(result["gcode"])
         _print_solution_summary("ellipse", np.asarray(result["anchors"], dtype=float), cost=float(result.get("cost", float("nan"))))

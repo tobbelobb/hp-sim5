@@ -1,0 +1,12 @@
+CHANGED hangprinter_4 old edge 3.354 (travel stopped increasing; stopped before plateau or reversal) | new needs 7 samples, logged 6 | e.g. output/autocal-benchmark-backfill/runs/3dd66bc678e2/hangprinter_4/sweeps.json.force-tuning.json
+CHANGED hangprinter_4 old edge 2.396 (travel stopped increasing; stopped before plateau or reversal) | new needs 6 samples, logged 5 | e.g. output/autocal-benchmark-backfill/runs/6ee13986bf20/hangprinter_4/sweeps.json.force-tuning.json
+CHANGED hangprinter_5_pulley_reduced old edge 1.445 (travel stopped increasing; stopped before plateau or reversal) | new needs 4 samples, logged 3 | e.g. t3-63ed3b0c-7128be341ef718f1/output/rb/hp5r-s3-base/sweeps.json.force-tuning.json
+CHANGED hangprinter_5_pulley_reduced old edge 1.445 (travel stopped increasing; stopped before plateau or reversal) | new needs 4 samples, logged 3 | e.g. t3-0559d9b9-29d8f3b23ff0e1f6/output/noprobe/hp5r-s3-ea1.2/sweeps.json.force-tuning.json
+CHANGED hangprinter_5_pulley_reduced old edge 1.445 (travel stopped increasing; stopped before plateau or reversal) | new needs 4 samples, logged 3 | e.g. t3-0559d9b9-29d8f3b23ff0e1f6/output/probe/hp5r-s3-ea0.8/sweeps.json.force-tuning.json
+50 hangprinter_3 same
+2 hangprinter_4 CHANGED
+18 hangprinter_4 same
+14 hangprinter_5 same
+3 hangprinter_5_pulley_reduced CHANGED
+18 hangprinter_5_pulley_reduced same
+105 unique ramps from 1175 files

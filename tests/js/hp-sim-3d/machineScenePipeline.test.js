@@ -14,6 +14,7 @@ import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
 import { setSolverIterations } from '../../../hp-sim-3d/app/solver-iterations.js';
 import { setPhysicsSubsteps } from '../../../hp-sim-3d/app/physics-substeps.js';
 import { LINE_LAYERING_TOGGLE_KEYS, setLineLayeringFeatureFlags } from '../../../hp-sim-3d/app/line-layering-flags.js';
+import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { createMachineSceneController } from '../../../hp-sim-3d/app/machineSceneController.js';
 import { createSceneChangeQueue } from '../../../hp-sim-3d/app/sceneController.js';
 import { setupScene } from '../../../hp-sim-3d/app/setupScene.js';
@@ -93,6 +94,17 @@ test('the authored scene builder retains zero cable stiffness', () => {
   const path = world.getComponent(paths[0], CablePathComponent);
   expect(path.stiffnessPerUnitLength).toBe(0);
   expect(path.compliancePerUnitLength).toBe(Infinity);
+});
+
+test('the scene builder passes an authored cogging torque to the stepper, default otherwise', () => {
+  const stepper = source => {
+    const world = applyScene(new World(), source);
+    return world.getComponent(world.query([StepperMotorComponent])[0], StepperMotorComponent);
+  };
+  expect(stepper(minimalSource()).coggingTorque).toBeUndefined();
+  const authored = minimalSource().replace('double stepper:maxSpeedRad = 70',
+    'double stepper:maxSpeedRad = 70\n            double stepper:coggingTorque = 0.014');
+  expect(stepper(authored).coggingTorque).toBe(0.014);
 });
 
 test.each([

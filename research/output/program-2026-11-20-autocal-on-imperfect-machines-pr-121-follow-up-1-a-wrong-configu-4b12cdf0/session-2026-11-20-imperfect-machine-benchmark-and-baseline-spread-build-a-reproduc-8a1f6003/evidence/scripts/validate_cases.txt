@@ -1,0 +1,3 @@
+# Unperturbed HP4/HP5r on the old fit: must reproduce CI (HP4 0.74 mm / 4924 s, HP5r 0.93 mm / 4686 s)
+hp4-nominal --machine hangprinter_4 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1
+hp5r-nominal --machine hangprinter_5_pulley_reduced --seed 0 --low-dz-mm 0:0:0:0 --top-offset-mm 0:0 --stiffness-scale 1

@@ -111,7 +111,6 @@ def plan_ellipse_sweep(
         ranked = rank_candidates_pose_information(
             anchors,
             machine_type=machine_type,
-            low_anchor_z=dataset.get("_low_anchor_z"),
             observed_lengths_mm=dataset_line_lengths(estimation_dataset)["lengths_mm"],
             candidates=placed,
             points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
@@ -279,7 +278,6 @@ def plan_next_ellipse_sweep(
     write_cfg: Optional[Path],
     collector_output: Optional[Path],
     collector_args: Sequence[str],
-    low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
     ellipse_reference_fit: bool = False,
     equal_strain: bool = True,

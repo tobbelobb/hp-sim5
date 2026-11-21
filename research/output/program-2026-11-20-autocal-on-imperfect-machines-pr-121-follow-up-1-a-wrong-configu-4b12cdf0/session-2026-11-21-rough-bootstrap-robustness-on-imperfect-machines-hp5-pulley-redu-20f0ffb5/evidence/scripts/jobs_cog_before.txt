@@ -1,0 +1,10 @@
+# Cogging baseline on 924094cd (before the tension cap); run from this worktree before the fix commit.
+cog2-hp5r-s5 --machine hangprinter_5_pulley_reduced --seed 5 --cogging-scale 2
+cog3-hp5r-s5 --machine hangprinter_5_pulley_reduced --seed 5 --cogging-scale 3
+cog2-hp4-s0 --machine hangprinter_4 --seed 0 --cogging-scale 2
+cog3-hp4-s0 --machine hangprinter_4 --seed 0 --cogging-scale 3
+cog2-hp5-s0 --machine hangprinter_5 --seed 0 --cogging-scale 2
+cog3-hp5-s0 --machine hangprinter_5 --seed 0 --cogging-scale 3
+cog2-hp3-s1 --machine hangprinter_3 --seed 1 --cogging-scale 2
+cog3-hp3-s1 --machine hangprinter_3 --seed 1 --cogging-scale 3
+cog1-hp3e-s9 --machine hangprinter_3 --seed 9 --ellipsoid-shape

@@ -16,7 +16,7 @@ from typing import Dict, List, Sequence
 
 import numpy as np
 
-from autocal.active_learning import SweepConfig
+from autocal.active_learning import SweepConfig, dataset_sweep_configs
 from autocal.pose_planning import predict_sweep_positions
 from autocal.projection_mode import resolve_projection_mode
 
@@ -26,6 +26,12 @@ _PROFILE_PRETENSION_SHARE = 0.05
 _PROFILE_POINTS = 60
 # The collector's constant measurement force is this multiple of the tuned start force.
 _COLLECTION_FORCE_MULTIPLE = 5.0
+# Planned line tensions stay below this share of the firmware's max planned force
+# (M666 X). The multiple above scales with the measured breakaway, which motor
+# ripple or stiction can inflate; held motors then slip or deflect.
+_MAX_PLANNED_FORCE_SHARE = 0.75
+# A capped strand target must leave every planned sweep this share of its poses.
+_CAPPED_POSE_SHARE = 0.5
 PROFILE_STRAIN_MODEL = "reeving-aware-v2"
 
 
@@ -98,24 +104,17 @@ def sensor_force_profiles(
     minimum_force_n: float,
     mechanical_advantage: np.ndarray | None = None,
     compliant_force_n: float = 0.0,
+    maximum_force_n: np.ndarray | None = None,
 ) -> List[Dict[str, object]]:
     """Sensor force against drive length change, for both directions of a sweep."""
     anchors = np.asarray(anchors, dtype=float)
     positions = predict_sweep_positions(anchors, cfg, _PROFILE_POINTS, _PROFILE_PRETENSION_SHARE)
     lines = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
-    tensions = np.array([
-        equal_strain_tensions(anchors, position, lines, strand_tension_n=strand_tension_n,
-                              mover_weight_n=mover_weight_n, strands=strands,
-                              extra_line_length_mm=extra_line_length_mm,
-                              mechanical_advantage=mechanical_advantage,
-                              compliant_force_n=compliant_force_n)
-        for position in positions
-    ]).reshape(-1, len(lines))
-    # Gravity can make a line go slack at the tails of the self-stress curve.
-    # Never tabulate those poses as realizable equal-strain measurements.
-    feasible = np.all(np.isfinite(tensions) & (tensions > 0.0), axis=1)
-    sensors = [lines.index(cfg.drive_anchor), lines.index(cfg.sensor_anchor)]
-    feasible &= np.all(tensions[:, sensors] >= minimum_force_n, axis=1)
+    tensions = _planned_tensions(anchors, positions, lines, strand_tension_n=strand_tension_n,
+                                 mover_weight_n=mover_weight_n, strands=strands,
+                                 extra_line_length_mm=extra_line_length_mm,
+                                 mechanical_advantage=mechanical_advantage, compliant_force_n=compliant_force_n)
+    feasible = _feasible(tensions, lines, cfg, minimum_force_n, maximum_force_n)
     # Never interpolate across an infeasible gap in the predicted arc.
     runs = np.split(np.flatnonzero(feasible), np.flatnonzero(np.diff(np.flatnonzero(feasible)) > 1) + 1)
     keep = max(runs, key=len)
@@ -144,7 +143,8 @@ def force_planning_parameters(dataset: dict):
     """Equal-strain inputs from the firmware line description and tuned forces, or None.
 
     Keys: strand_tension_n, mover_weight_n, strands, extra_line_length_mm,
-    mechanical_advantage, compliant_force_n, minimum_force_n, extra_sensor_force_n.
+    mechanical_advantage, compliant_force_n, minimum_force_n, maximum_force_n,
+    extra_sensor_force_n, target_recorded.
     """
     config = dataset["config"]
     line_description = config.get("m666_before_data_collection") or {}
@@ -181,8 +181,49 @@ def force_planning_parameters(dataset: dict):
         mechanical_advantage=advantage,
         compliant_force_n=(extra_force if extra_force is not None else float(tuning.get("force_low_n", 0.0))),
         minimum_force_n=start_force_n,
+        maximum_force_n=(None if line_description.get("X") is None else
+                         _MAX_PLANNED_FORCE_SHARE * np.broadcast_to(np.asarray(line_description["X"], dtype=float), strands.shape)),
         extra_sensor_force_n=extra_force,
+        target_recorded=bool(recorded_targets),
     )
+
+
+def _planned_tensions(anchors, positions, lines, **options):
+    return np.array([equal_strain_tensions(anchors, position, lines, **options)
+                     for position in positions]).reshape(-1, len(lines))
+
+
+def _feasible(tensions, lines, cfg, minimum_force_n, maximum_force_n):
+    # Gravity can make a line go slack at the tails of the self-stress curve.
+    # Never tabulate those poses as realizable equal-strain measurements.
+    feasible = np.all(np.isfinite(tensions) & (tensions > 0.0), axis=1)
+    sensors = [lines.index(cfg.drive_anchor), lines.index(cfg.sensor_anchor)]
+    feasible &= np.all(tensions[:, sensors] >= minimum_force_n, axis=1)
+    if maximum_force_n is not None:
+        feasible &= np.all(tensions <= np.asarray(maximum_force_n)[lines], axis=1)
+    return feasible
+
+
+def _capped_strand_tension(anchors, cfgs, params):
+    """Largest strand target, at most the planned one, that leaves every sweep enough poses under the force cap."""
+    target = params["strand_tension_n"]
+    if params["maximum_force_n"] is None or not cfgs:
+        return target
+    options = {key: params[key] for key in ("mover_weight_n", "strands", "extra_line_length_mm",
+                                            "mechanical_advantage", "compliant_force_n")}
+    sweeps = []
+    for cfg in cfgs:
+        lines = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
+        positions = predict_sweep_positions(anchors, cfg, _PROFILE_POINTS, _PROFILE_PRETENSION_SHARE)
+        uncapped = _feasible(_planned_tensions(anchors, positions, lines, strand_tension_n=target, **options),
+                             lines, cfg, params["minimum_force_n"], None)
+        sweeps.append((cfg, lines, positions, _CAPPED_POSE_SHARE * np.sum(uncapped)))
+    for scale in np.linspace(1.0, 0.1, 37):
+        if all(np.sum(_feasible(_planned_tensions(anchors, positions, lines, strand_tension_n=scale * target, **options),
+                                lines, cfg, params["minimum_force_n"], params["maximum_force_n"])) >= needed
+               for cfg, lines, positions, needed in sweeps):
+            return scale * target
+    return target
 
 
 def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, cfgs: Sequence[SweepConfig]) -> bool:
@@ -191,6 +232,9 @@ def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, c
     if params is None:
         return False
     extra_force = params.pop("extra_sensor_force_n")
+    if not params.pop("target_recorded"):
+        # The first profiles fix the dataset's target; plan it for the rough sweeps too.
+        params["strand_tension_n"] = _capped_strand_tension(anchors, [*dataset_sweep_configs(dataset), *cfgs], params)
     profiles = [profile for cfg in cfgs for profile in sensor_force_profiles(anchors, cfg, **params)]
     if extra_force is not None:
         for profile in profiles:

@@ -1,0 +1,347 @@
+{
+  "version": 1,
+  "claim": "Freeing every low-anchor z and fixing the Hangprinter gauge at top x=y=0, A.x=0, home at origin makes autocal anchor error (in that frame) independent of uneven low-anchor heights on HP3/HP4/HP5/HP5r (offline h=-20..+20 mm: HP3 0.97-1.02, HP4 0.69-0.70, HP5 1.00-1.06, HP5r 1.56-1.63 mm; live HP3 uneven 0.89-1.42 mm vs 7.5-13.4 before), with small cost on equal-height machines, and removes the equal-z code paths without regressions (707 tests pass).",
+  "scope": "Simulation only; offline refits on existing datasets plus 21 live headless runs (mostly HP3, some HP5). No physics change.",
+  "limitations": [
+    "HP3 equal-height base got worse live 1.17 -> 1.35 mm (single run)",
+    "HP5 jackknife rose 1.62 -> 3.28 mm while true error fell; may affect stopping",
+    "Few live seeds; HP4/HP5r live untested with uneven heights",
+    "D.z/stiffness coupling unchanged"
+  ],
+  "candidate_revision": "a7a8d179d38c4409594f5b9fbbf5d3291144fdb8",
+  "candidate_tree": "b72a5c4b32d6a13afa57bb65454fbefd4dd3aaca",
+  "base_revision": "b249a1a532542001e3b3a23ab5c582dfe2d375d4",
+  "files": [
+    {
+      "path": "files/00-abstract.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/abstract.md",
+      "blob": "b7d20aedda846fa75b755391958624926a63b91f",
+      "sha256": "8fe9a8309242b92ee71e81a550eb4e076a8440f3f7896c0984178753a7c44ba0"
+    },
+    {
+      "path": "files/01-report.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/report.md",
+      "blob": "0be3f80ea9d9a1d147be163e06f6b5ac91a03158",
+      "sha256": "417cc651284b7389580944f9ed0609f1139b91d67c984e74e6814ee2b506e6e5"
+    },
+    {
+      "path": "files/02-e1_hangprinter_3.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_3.json",
+      "blob": "11447f7335c449a4ebb6c7c48fa59c9e4e50941e",
+      "sha256": "b688efa7700c1fca4932aecf2a7c76949e0d628e9df91a84e544dffdee8e6b30"
+    },
+    {
+      "path": "files/03-e1_hangprinter_3.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_3.log",
+      "blob": "34dd1649ae12064c8836f28d3195a63318c6a83b",
+      "sha256": "9e9b8b818cff51d0978032fe8351ccb1c083ca8b056ba2944c6a41c626de936d"
+    },
+    {
+      "path": "files/04-e1_hangprinter_4.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_4.json",
+      "blob": "843a9316393146feb6e01d612b821738a93f90ad",
+      "sha256": "249780e43e56ca42df7390d8a91d3a4757e52e500fb38166078eee11b0872588"
+    },
+    {
+      "path": "files/05-e1_hangprinter_4.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_4.log",
+      "blob": "777cc697f9767f2ca12e9687969baad571769961",
+      "sha256": "efaaeca8bf23a42e94d62b0806926da97975dd6f5aa9d54a422f22a37fb0008d"
+    },
+    {
+      "path": "files/06-e1_hangprinter_5.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_5.json",
+      "blob": "b11def44f109900d96f7e70438fafbfc10afe028",
+      "sha256": "71b46ef492a213e003307bfb61bf925d046e3be7ff6ddde7492b72d048643f4e"
+    },
+    {
+      "path": "files/07-e1_hangprinter_5.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_5.log",
+      "blob": "300025bb351e02af666e63bae9a562907f618cfc",
+      "sha256": "426e5c9469e73fb702aac16c46165e85f6d51b086d4f40eda353bb8eaab7c488"
+    },
+    {
+      "path": "files/08-e1_hangprinter_5_pulley_reduced.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_5_pulley_reduced.json",
+      "blob": "dd9d082d72ec1e53316da7eeb49c6596cfab0c55",
+      "sha256": "4be53bc5d20ee09ddc3626086135ad90dabb427b66c7f9e3d158c80a71af72fa"
+    },
+    {
+      "path": "files/09-e1_hangprinter_5_pulley_reduced.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hangprinter_5_pulley_reduced.log",
+      "blob": "fe465b4e4ea2876b1ca99cd802d8dab5bade6f6b",
+      "sha256": "3430a89c28a45395f38b59bcc0e2e37645bb56844bde4d44efa82e533d4271fd"
+    },
+    {
+      "path": "files/10-e1_hp3_B_noise.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hp3_B_noise.json",
+      "blob": "e92877e1c5beeded70e8a746113be76c3de917ed",
+      "sha256": "299b0780c0accc5e7fd5337ffe452645ac58295ff3adbe462ef1b073f0852fae"
+    },
+    {
+      "path": "files/11-e1_hp3_B_noise.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e1_hp3_B_noise.log",
+      "blob": "8fd356a579781bee6691cb06df004679dc81b464",
+      "sha256": "f369b6c4a0058b1fd40657a5847db10b9c9c9107e3ddd9c05c042d0dcfbfcb57"
+    },
+    {
+      "path": "files/12-e2_identifiability.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e2_identifiability.json",
+      "blob": "d3c5c20e813cb75b09cea8f74cdf35639017ac09",
+      "sha256": "0d13dee0d7bad6516ca0ad704fa0b3bf2b187d6d8eb9bde9d339c8b63ce01135"
+    },
+    {
+      "path": "files/13-e3_hangprinter_5.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5.json",
+      "blob": "4b04e458b231676391b0ec54078bfff79bc74977",
+      "sha256": "102fa3e5ebaaa24bcbfe43931f723050a96ec08102d3300f9bd03a129eb9d604"
+    },
+    {
+      "path": "files/14-e3_hangprinter_5.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5.log",
+      "blob": "00b5e435d04416355c9e409911e8485006bbb78f",
+      "sha256": "f7808f4202a809ba4b99b58d6a6bd18ee3d856d7f92b2e14ecdcfa034f8b6b06"
+    },
+    {
+      "path": "files/15-e3_hangprinter_5_B_noise.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5_B_noise.json",
+      "blob": "31ed0278870338a42a6060770e3e3b4e59f0461e",
+      "sha256": "e37e055aa6e27580028b5b55d5dac12e8bfac6c120434f342973e18f0a7d0003"
+    },
+    {
+      "path": "files/16-e3_hangprinter_5_B_noise.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5_B_noise.log",
+      "blob": "d4f2af38b4ac647f04925472196d505c5599338b",
+      "sha256": "32e45ab5538e084f45358b71a2946caceeb3fcd940ecbd754bcb71dc7da951c5"
+    },
+    {
+      "path": "files/17-e3_hangprinter_5_pulley_reduced.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5_pulley_reduced.json",
+      "blob": "4d596f1249c605acebb8ba23394412311ff01ab2",
+      "sha256": "3920aab898e20e4d141a6a6f35c1b8f15c06c1397215f5313e97088c00e2429f"
+    },
+    {
+      "path": "files/18-e3_hangprinter_5_pulley_reduced.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5_pulley_reduced.log",
+      "blob": "4cfc9047c91df71548d7b7770991fdd230990e89",
+      "sha256": "56b0b1e6277e6bc5c7466e9435c17d1dd15bc97e8e5a800fadc855f4388a5449"
+    },
+    {
+      "path": "files/19-e3_hangprinter_5_pulley_reduced_B_noise.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5_pulley_reduced_B_noise.json",
+      "blob": "103906495ff509508b30f1ccb2db900876a233d1",
+      "sha256": "23d4371421f3349f4bad060e26ceeb5f351f06985fa4b05d333ca1990987193f"
+    },
+    {
+      "path": "files/20-e3_hangprinter_5_pulley_reduced_B_noise.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e3_hangprinter_5_pulley_reduced_B_noise.log",
+      "blob": "f756ff05abf03dfb3f1b73d67a60802848c30bbf",
+      "sha256": "dd924c941293896e5ac77531e6a2a610e259b065ba22bae2727322ed515e805e"
+    },
+    {
+      "path": "files/21-e6_new_hangprinter_3.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_3.json",
+      "blob": "d76822a21aea37a74e7bde13dda98b12a5675e1e",
+      "sha256": "a0d14d6b561c86c925bad69d67dd29cf9cb0346f1f58f600140134b88603a28d"
+    },
+    {
+      "path": "files/22-e6_new_hangprinter_3.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_3.log",
+      "blob": "0538ee2cd59c7356197b447a18f7d8e1005dd167",
+      "sha256": "6f28e0b5bb2803eeaf28c6ec23609f3b84a68e58f55ceff57246033c860fdaff"
+    },
+    {
+      "path": "files/23-e6_new_hangprinter_4.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_4.json",
+      "blob": "24229da137b58e78b83cc3afdbd7e59052f2fa1a",
+      "sha256": "c10b4af7058db3296263c99f76765e3f3bda0ebe88a17a5960149c2c15010735"
+    },
+    {
+      "path": "files/24-e6_new_hangprinter_4.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_4.log",
+      "blob": "9aa1cb81d4634f7a9404b04d74b95197f55d4754",
+      "sha256": "e000234314a1a7ad06f5f7aa8e245e98f5f7a4de840f48922fbfce6a8367cd0f"
+    },
+    {
+      "path": "files/25-e6_new_hangprinter_5.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_5.json",
+      "blob": "568a7bbeeb95326216a3d328e26f9eacf4c5bbc0",
+      "sha256": "e8928c767e823969eda431ca8e1d699b620bd74e9d0bc74ce2fb0214898e7c68"
+    },
+    {
+      "path": "files/26-e6_new_hangprinter_5.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_5.log",
+      "blob": "94db826e92e5a03e4fe3603201e419ffc4d8eb41",
+      "sha256": "f3fd432a2790fa5913024cfbb78f3c19285bd6a7b3565b951b4538589f0de4c2"
+    },
+    {
+      "path": "files/27-e6_new_hangprinter_5_pulley_reduced.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_5_pulley_reduced.json",
+      "blob": "0e2b0c76e6a9ba5afd00bddb5b5c1fab470957d5",
+      "sha256": "dc40a26ba9bd352fbf616b314dcd729ffaad151e2b8344b5e219b1b28234c7fe"
+    },
+    {
+      "path": "files/28-e6_new_hangprinter_5_pulley_reduced.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_5_pulley_reduced.log",
+      "blob": "bc616ae749d4625d148a376b8278ee800e4ba343",
+      "sha256": "3b5c29813afeacf74f6d13c237c68849a5b3ed0f7453b99f6d5af95576be17e7"
+    },
+    {
+      "path": "files/29-e6_old_hangprinter_3.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_3.json",
+      "blob": "7a306d4fd3a2e6e3886e0221b4ba35ffca295ded",
+      "sha256": "82eff8201177aae179e2f47068d953345ac378113f77fa9426c322f68e1c13dd"
+    },
+    {
+      "path": "files/30-e6_old_hangprinter_3.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_3.log",
+      "blob": "ca1f34037376171d6840f134a0c3d23499741091",
+      "sha256": "2354355a21d1d073d9c2534fc7742fab0026a0e0d505144a3ceb5dff5d263322"
+    },
+    {
+      "path": "files/31-e6_old_hangprinter_4.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_4.json",
+      "blob": "15d1dd6fff1507f40491b0738ae2c7822f15b0f0",
+      "sha256": "1c7ec179c5c81b5cf1bef6222ff72af63bad708cc5b00b7523fcc2491ef77c8f"
+    },
+    {
+      "path": "files/32-e6_old_hangprinter_4.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_4.log",
+      "blob": "0d44cfe67cf865957268c2b2befae485d70b49f4",
+      "sha256": "a8e647751fd35eac6d3d8c4bb7b9c762b09732aeeeab7fc29d597fde6117a8cd"
+    },
+    {
+      "path": "files/33-e6_old_hangprinter_5.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_5.json",
+      "blob": "6f5d34da12fa4f1e343f8569785dd49ca4563845",
+      "sha256": "cfef1408a5bb3b4967f433aa8d3582a9fc9703c9b10931676d9e9268084abd50"
+    },
+    {
+      "path": "files/34-e6_old_hangprinter_5.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_5.log",
+      "blob": "f88ae8cccfe02ceb397d0e210462dd8861467ca6",
+      "sha256": "308c7285adc2ce00e363a5e867aafeff316e750a319d71ebdc071bd9feddf860"
+    },
+    {
+      "path": "files/35-e6_old_hangprinter_5_pulley_reduced.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_5_pulley_reduced.json",
+      "blob": "6a47e0b3a6f51f04ce5fa772c988dbd7784918e7",
+      "sha256": "f874722baa74a8c42689bce8b2b351c4e5b9f129c7425916528c50c6fac0fb58"
+    },
+    {
+      "path": "files/36-e6_old_hangprinter_5_pulley_reduced.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_old_hangprinter_5_pulley_reduced.log",
+      "blob": "f6020fb935799b96c8ae1af76fe2dcf6ccb542c8",
+      "sha256": "7fc8eee88e6d44ede31d284db963c925c67cd7ad6d27cd1ba1a4d69999960f13"
+    },
+    {
+      "path": "files/37-e7_new.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e7_new.json",
+      "blob": "4d997c86e397412501095e8a84972c7da0044c3c",
+      "sha256": "45efafec04440ee58dfc5132dcf7f4277029f9768189a08c2c27b4c457e7253a"
+    },
+    {
+      "path": "files/38-e7_new.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e7_new.log",
+      "blob": "e94d8d3ce790fe2410c4e1f190c952b1be165d5a",
+      "sha256": "dfa65c42a2a89230d9244261927e2713f096d84b4d693b04aa9fedcb82b59048"
+    },
+    {
+      "path": "files/39-e7_old.json",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e7_old.json",
+      "blob": "e83944ac1a9642d00331f691c3ddefb26f0e0b09",
+      "sha256": "d598e054891feef13a7f91b6c1d647209a9dca92283d1353eaf8763690c41eb0"
+    },
+    {
+      "path": "files/40-e7_old.log",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e7_old.log",
+      "blob": "f6ef042372dbd41a2bc904357593fc115b4c617a",
+      "sha256": "b054d50dca058fc69a2d6d9f4bc9d9ea2111f891ad4b54a0a32ebdacb28ada54"
+    },
+    {
+      "path": "files/41-live_new.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/live_new.md",
+      "blob": "36ef0ea4b6842db2d0fbb2f41b81f25196f1c7f2",
+      "sha256": "50c84eaab7808054befb314ef5a9b8428ab5d048e7021066daa9ddbb3198d456"
+    },
+    {
+      "path": "files/42-tables.md",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/tables.md",
+      "blob": "11fcee253e565c204ee0d80b509b94bbe3f5fd18",
+      "sha256": "9b8345a4235861532e60d46235e3a6a339a98cee8dce8a23fc41a4462d6b2dcf"
+    },
+    {
+      "path": "files/43-e1_equal_z_bias.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/e1_equal_z_bias.py",
+      "blob": "5ae1eacd23fc1d52f873ea88ea172eb523742207",
+      "sha256": "155d73a549ec417a5df197e6fb5f22a3bc01e22589be38c45477250bc71224db"
+    },
+    {
+      "path": "files/44-e2_identifiability.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/e2_identifiability.py",
+      "blob": "69ec9926c67cbf43603c64ba30f7ae42799ab95c",
+      "sha256": "6b88f2f50fe84cb17e6b5bd7591ccf335df14778aa0c7e68ab1f22fab4f008a0"
+    },
+    {
+      "path": "files/45-e3_free_low_z.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/e3_free_low_z.py",
+      "blob": "c71f9beadeca106bb6d1222f05b2a8e9140d6869",
+      "sha256": "85cb3f02fb7d101ca21b20f1ea317b28cf0847ddc6d2b1df39f84496a792cf25"
+    },
+    {
+      "path": "files/46-e4_live.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/e4_live.py",
+      "blob": "8fdbef3909268bf32439dc994ad6fa2dc519f4f6",
+      "sha256": "a7ad18a20f4a4af950b5c3bba681311bdf19a66f390635287faa799fc1a31e4d"
+    },
+    {
+      "path": "files/47-e5_rescore_live.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/e5_rescore_live.py",
+      "blob": "651e7dac76503c665ee156347f3d5ee5673fbbf9",
+      "sha256": "e0df29923b726896a2be2d3deaf3738e3931a0be03fad7b4f267093a57af1648"
+    },
+    {
+      "path": "files/48-e6_gauge_compare.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/e6_gauge_compare.py",
+      "blob": "ba8addce58158377d5ff7b318225e58ce805c8e2",
+      "sha256": "c02491484521bfb8392516f2ab6074f852476dc22659967c839a0181ddfcc620"
+    },
+    {
+      "path": "files/49-e7_conditioning.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/e7_conditioning.py",
+      "blob": "7a0e2a0627f9e93609d2a245e970b2e8be8fddd4",
+      "sha256": "da0664095bd392f11ed0cbe654856f165c0686b691a3d4325f6f62be248546db"
+    },
+    {
+      "path": "files/50-live_new_table.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/live_new_table.py",
+      "blob": "d35a610931a238d3e802893ee577090a2689652c",
+      "sha256": "97e2857de4c745af8f2f74ae2e9cfe44b7c289a3e7206e07dc118657b56052d2"
+    },
+    {
+      "path": "files/51-lowz_common.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/lowz_common.py",
+      "blob": "43734a387028df98127f1f340d509c822c2e661b",
+      "sha256": "a9ae0d0ef4c982ef018f4d4cc726d414aeb447d2a7b14bb6dc798df080a7c142"
+    },
+    {
+      "path": "files/52-queue_live.sh",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/queue_live.sh",
+      "blob": "804ffb897f28723b41ee23589f135aa0ed396514",
+      "sha256": "ab6cff11df222ea4bb76d6091284a87012b9d29631594eb4e6e4ccf249b0884b"
+    },
+    {
+      "path": "files/53-tables.py",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/tables.py",
+      "blob": "2eeec6fa0f2884ceaafdaecbcea1e06eb334feb1",
+      "sha256": "f551797ac107c41c73ff1ae0491263addb490d27a2b329d9cbc2fb4b7afd3430"
+    },
+    {
+      "path": "files/54-wait_runs.sh",
+      "source": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/scripts/wait_runs.sh",
+      "blob": "8727e99362039bd91dc48c1cf336f756d30a2cc7",
+      "sha256": "021598f239a377766ae2e809297f78447b3d791bb3d253ca3b303734e96238ee"
+    }
+  ],
+  "patch_sha256": "88edaeeb86d1b992b9f9fc464ca3aed2cf7b44b9a9a1f963fd47887a338a9fab"
+}

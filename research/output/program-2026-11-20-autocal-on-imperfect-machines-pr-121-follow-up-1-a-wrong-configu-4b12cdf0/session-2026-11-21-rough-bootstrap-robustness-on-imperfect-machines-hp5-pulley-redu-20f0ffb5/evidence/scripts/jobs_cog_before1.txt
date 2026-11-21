@@ -1,0 +1,2 @@
+cog2-hp5r-s6 --machine hangprinter_5_pulley_reduced --seed 6 --cogging-scale 2
+cog3-hp5r-s6 --machine hangprinter_5_pulley_reduced --seed 6 --cogging-scale 3

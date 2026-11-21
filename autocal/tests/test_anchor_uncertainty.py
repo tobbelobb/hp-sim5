@@ -1,7 +1,7 @@
 import numpy as np
 
 from autocal.anchor_uncertainty import (
-    newest_trusted_index, plan_anchor_uncertainty_mm, sweep_jackknife_mm, uncertainty_label,
+    coordinate_names, jackknife_spread_mm, newest_trusted_index, plan_anchor_uncertainty, sweep_jackknife_mm, uncertainty_label,
 )
 
 ANCHORS = np.array([[0.0, -1900.0, -280.0], [1645.4, 950.0, -280.0], [-1645.4, 950.0, -280.0], [0.0, 0.0, 1900.0]])
@@ -53,13 +53,13 @@ def test_too_few_sweeps_leave_the_uncertainty_unknown():
 def test_plan_uncertainty_uses_the_estimation_dataset():
     plan = {"anchors": ANCHORS, "dataset": {"sweeps": []}, "dataset_for_estimation": _dataset(),
             "home_offsets_fitted": False}
-    assert plan_anchor_uncertainty_mm(plan) < 1e-3
+    assert plan_anchor_uncertainty(plan)[0] < 1e-3
 
 
 def test_plan_with_fitted_home_offsets_refits_them_from_unshifted_lengths():
     plan = {"anchors": ANCHORS, "dataset": _dataset(), "dataset_for_estimation": {"sweeps": []},
             "home_offsets_fitted": True}
-    assert plan_anchor_uncertainty_mm(plan) < 1e-2
+    assert plan_anchor_uncertainty(plan)[0] < 1e-2
 
 
 def test_failed_jackknife_is_never_applied():
@@ -81,3 +81,29 @@ def test_near_zero_early_uncertainty_does_not_lock_selection():
 def test_labels_follow_millimetre_thresholds():
     assert [uncertainty_label(value) for value in (0.8, 2.0, 4.0, float("inf"))] == \
         ["good", "usable", "poor", "unknown"]
+
+
+def _five_folds_with_one_loose(loose_mm):
+    folds = np.zeros((5, 2, 1)) + np.array([0.1, -0.1, 0.05, -0.05, 0.0])[:, None, None]
+    folds[3, 0, 0] = loose_mm
+    return folds
+
+
+def test_a_fold_that_alone_lost_a_coordinate_is_left_out_of_its_spread():
+    folds, ratios = _five_folds_with_one_loose(8.0), np.ones((5, 2, 1))
+    ratios[3, 0, 0] = 8.0
+    spread, single = jackknife_spread_mm(folds, ratios)
+    assert spread < 0.2 and single == [(0, 0)]
+    assert coordinate_names(single, 5) == ["A.x"]
+
+
+def test_a_deviating_fold_that_kept_its_constraints_still_counts():
+    # One corrupted sweep: the fold without it is the only clean one, and it deviates.
+    spread, single = jackknife_spread_mm(_five_folds_with_one_loose(8.0), np.ones((5, 2, 1)))
+    assert spread > 3.0 and single == []
+
+
+def test_a_coordinate_several_folds_lose_keeps_the_classical_spread():
+    folds, ratios = _five_folds_with_one_loose(8.0), np.ones((5, 2, 1))
+    ratios[3, 0, 0] = ratios[1, 0, 0] = 8.0
+    assert jackknife_spread_mm(folds, ratios)[0] > 3.0

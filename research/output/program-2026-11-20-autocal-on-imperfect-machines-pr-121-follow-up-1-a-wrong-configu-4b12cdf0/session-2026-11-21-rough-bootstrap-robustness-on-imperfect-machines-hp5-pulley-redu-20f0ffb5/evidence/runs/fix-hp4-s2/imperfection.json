@@ -1,0 +1,118 @@
+{
+  "seed": 2,
+  "shifts_mm": {
+    "A": [
+      0.0,
+      0.0,
+      -14.303271945041017
+    ],
+    "B": [
+      0.0,
+      0.0,
+      -12.090531395152603
+    ],
+    "C": [
+      0.0,
+      0.0,
+      18.853544435656822
+    ],
+    "D": [
+      -3.7163709901994864,
+      -2.7036896474373484,
+      0.0
+    ]
+  },
+  "stiffness_scale": 1.0914242107247178,
+  "ranges": {
+    "low_dz_max_mm": 30.0,
+    "top_offset_max_mm": 50.0,
+    "stiffness_error": 0.2
+  },
+  "machine": "hangprinter_4",
+  "source_scene": "public/usd_scenes/hp4.usda",
+  "moved_prims": {
+    "A": [
+      "SpoolA",
+      "AnchorAL_top",
+      "AnchorAL_bottom",
+      "AnchorAR_top",
+      "AnchorAR_bottom"
+    ],
+    "B": [
+      "SpoolB",
+      "AnchorBL_top",
+      "AnchorBL_bottom",
+      "AnchorBR_top",
+      "AnchorBR_bottom"
+    ],
+    "C": [
+      "SpoolC",
+      "AnchorCL_top",
+      "AnchorCL_bottom",
+      "AnchorCR_top",
+      "AnchorCR_bottom"
+    ],
+    "D": [
+      "SpoolD",
+      "WheelD0_left_top",
+      "WheelD0_right_top",
+      "AttachD0",
+      "WheelD1_left_top",
+      "WheelD1_right_top",
+      "AttachD1",
+      "WheelD2_left_top",
+      "WheelD2_right_top",
+      "AttachD2"
+    ]
+  },
+  "truth_mm": {
+    "A": [
+      0.0,
+      -1900.0,
+      -294.303272
+    ],
+    "B": [
+      1645.448267,
+      950.0,
+      -292.090531
+    ],
+    "C": [
+      -1645.448267,
+      950.0,
+      -261.146456
+    ],
+    "D": [
+      -3.716371,
+      -2.70369,
+      1900.0
+    ]
+  },
+  "nominal_mm": {
+    "A": [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    "B": [
+      1645.44826719,
+      950.0,
+      -280.0
+    ],
+    "C": [
+      -1645.44826719,
+      950.0,
+      -280.0
+    ],
+    "D": [
+      0.0,
+      0.0,
+      1900.0
+    ]
+  },
+  "overrides": {
+    "low_dz_mm": null,
+    "top_offset_mm": null,
+    "stiffness_scale": null
+  },
+  "ellipsoid_shape": false
+}

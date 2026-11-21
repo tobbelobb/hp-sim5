@@ -1604,13 +1604,44 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     throw new UnmeasurableSweepError('Insufficient coupled measurement points in the observed sweep interval',
       { rawDriveInterval, retained_points: dataPoints.length, coupling_probes: couplingProbes });
   }
-  return { dataPoints, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
+  const complianceProbe = await probeCompliance(sendFn, {
+    motorIds, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
+    measurementSensorForces, forceLow, lastPoint: dataPoints.at(-1),
+    noiseOptions: { sampleCount: noiseSampleCount, sampleIntervalMs: noiseSampleIntervalMs, speedup },
+  });
+  return { dataPoints, complianceProbe, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
     spoolReserve: { sensor_payout_mm: sensorPayoutMm, required_sensor_rewind_mm: sensorReserveMm,
       raw_measured_drive_interval_mm: rawDriveInterval,
       guarded_sensor_rewind_mm: reserved ? sensorPayoutMm - reserved.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor] : null,
       guarded_start_drive_mm: reserved ? guardedStartMm : null,
       first_drive_mm: dataPoints[0].drive_setpoint_mm, initial_half_turn_required: !probeSpoolReserve,
       coupling_probes: couplingProbes } };
+}
+
+// Research probe of line compliance: at the sweep's last pose, with every
+// other line held, step the sensor force and record all encoders at each level.
+// HP_SIM5_COMPLIANCE_PROBE lists the levels as multiples of the last point's force.
+async function probeCompliance(sendFn, {
+  motorIds, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
+  measurementSensorForces, forceLow, lastPoint, noiseOptions,
+}) {
+  const multiples = (process.env.HP_SIM5_COMPLIANCE_PROBE ?? '').split(',').filter(Boolean).map(Number);
+  if (!multiples.length || !lastPoint) return null;
+  const base = lastPoint.sensor_force_n;
+  const levels = [{ force_n: base, mu_deg: lastPoint.mu ?? lastPoint.raw_angles_deg, sigma_deg: lastPoint.sigma ?? null }];
+  for (const multiple of multiples) {
+    const force = base * multiple;
+    await applyForceModeState(sendFn, { motorIds, modes: motorIds.map((_, idx) => {
+      if (idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
+      return idx === sensorAnchor ? force : (measurementSensorForces[idx] ?? forceLow);
+    }) });
+    await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    const sample = await sampleEncoderNoise(sendFn, motorIds, noiseOptions);
+    levels.push({ force_n: force, mu_deg: sample.muByMotorDeg, sigma_deg: sample.sigmaByMotorDeg,
+      clock_ms: sendFn.simulationClock?.now() ?? Date.now() });
+  }
+  console.log(`; compliance probe on sensor ${sensorAnchor}: ${levels.map(level => level.force_n.toFixed(2)).join(', ')} N`);
+  return { drive_anchor: driveAnchor, sensor_anchor: sensorAnchor, levels };
 }
 
 export async function collectSweepData(send, context) {
@@ -1893,6 +1924,7 @@ export async function collectSweepData(send, context) {
     const recoveryEvents = [];
     const directionForces = [];
     const spoolReserves = [];
+    const complianceProbes = [];
     let rejected = false;
     for (let i = 0; i < subSweeps.length; i += 1) {
       const subCfg = subSweeps[i];
@@ -1980,6 +2012,7 @@ export async function collectSweepData(send, context) {
       sensorCollectionForce = sweepResult.forces.sensorCollectionForce;
       recoveryEvents.push(...sweepResult.recoveries.map(event => ({ ...event, direction: i })));
       spoolReserves.push({ direction: i, ...sweepResult.spoolReserve });
+      if (sweepResult.complianceProbe) complianceProbes.push({ direction: i, ...sweepResult.complianceProbe });
       directionForces.push({ drive_anchor: subCfg.driveAnchor, sensor_anchor: subCfg.sensorAnchor,
         sensor_force_n: resolveCollectionForce(sweepResult.forces),
         pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }) });
@@ -2028,6 +2061,7 @@ export async function collectSweepData(send, context) {
         direction_forces: directionForces,
         slip_recoveries: recoveryEvents,
         spool_reserves: spoolReserves,
+        ...(complianceProbes.length ? { compliance_probes: complianceProbes } : {}),
         settle_ms: settleMs,
       },
     });

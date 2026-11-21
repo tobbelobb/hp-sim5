@@ -1,0 +1,183 @@
+{
+ "args": {
+  "label": "new",
+  "machine": "hangprinter_5",
+  "anchor": 0,
+  "heights": "-20,-10,-2,0,2,10,20",
+  "noise_mm": 0.0,
+  "seeds": 1,
+  "jackknife": true,
+  "out": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_5.json"
+ },
+ "code": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/autocal/theoretical_ellipse.py",
+ "rows": [
+  {
+   "h": -20.0,
+   "seed": 0,
+   "err": 1.0577845827154693,
+   "dz_D": 0.18606698941471222,
+   "low_z_err": [
+    -0.037,
+    0.282,
+    0.228,
+    -0.264
+   ],
+   "per_anchor": [
+    0.615,
+    0.775,
+    0.488,
+    1.058,
+    0.186
+   ],
+   "rms": 0.03034509203130976,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null,
+   "jackknife": 1.07610869501411
+  },
+  {
+   "h": -10.0,
+   "seed": 0,
+   "err": 1.043458126445141,
+   "dz_D": 0.22327861356870926,
+   "low_z_err": [
+    -0.029,
+    0.279,
+    0.226,
+    -0.258
+   ],
+   "per_anchor": [
+    0.625,
+    0.77,
+    0.505,
+    1.043,
+    0.223
+   ],
+   "rms": 0.030336402061942384,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null,
+   "jackknife": 1.0810591251171524
+  },
+  {
+   "h": -2.0,
+   "seed": 0,
+   "err": 1.032169617325371,
+   "dz_D": 0.25291019577139195,
+   "low_z_err": [
+    -0.023,
+    0.276,
+    0.224,
+    -0.254
+   ],
+   "per_anchor": [
+    0.632,
+    0.766,
+    0.52,
+    1.032,
+    0.253
+   ],
+   "rms": 0.030329768992451482,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null,
+   "jackknife": 1.0860823737095533
+  },
+  {
+   "h": 0.0,
+   "seed": 0,
+   "err": 1.0292966696240717,
+   "dz_D": 0.26027506078662555,
+   "low_z_err": [
+    -0.021,
+    0.275,
+    0.224,
+    -0.253
+   ],
+   "per_anchor": [
+    0.634,
+    0.765,
+    0.523,
+    1.029,
+    0.26
+   ],
+   "rms": 0.030328153400871378,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null,
+   "jackknife": 1.0871924710709622
+  },
+  {
+   "h": 2.0,
+   "seed": 0,
+   "err": 1.0263512832238975,
+   "dz_D": 0.26756016097874635,
+   "low_z_err": [
+    -0.02,
+    0.275,
+    0.223,
+    -0.252
+   ],
+   "per_anchor": [
+    0.636,
+    0.764,
+    0.526,
+    1.026,
+    0.268
+   ],
+   "rms": 0.030326553055498057,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null,
+   "jackknife": 1.0869097435711592
+  },
+  {
+   "h": 10.0,
+   "seed": 0,
+   "err": 1.0147870394682987,
+   "dz_D": 0.29679590725163507,
+   "low_z_err": [
+    -0.014,
+    0.272,
+    0.221,
+    -0.248
+   ],
+   "per_anchor": [
+    0.644,
+    0.761,
+    0.54,
+    1.015,
+    0.297
+   ],
+   "rms": 0.030320307900337424,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null,
+   "jackknife": 1.0921237910496262
+  },
+  {
+   "h": 20.0,
+   "seed": 0,
+   "err": 1.0002287688642033,
+   "dz_D": 0.3330776345283084,
+   "low_z_err": [
+    -0.006,
+    0.269,
+    0.219,
+    -0.243
+   ],
+   "per_anchor": [
+    0.654,
+    0.756,
+    0.557,
+    1.0,
+    0.333
+   ],
+   "rms": 0.030312834425153378,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null,
+   "jackknife": 1.0984814197691912
+  }
+ ]
+}

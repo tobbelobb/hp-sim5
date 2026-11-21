@@ -1,0 +1,6 @@
+{"h": 0.0, "seed": 0, "err": 0.936, "dz_D": -0.057, "low_z_err": [-0.836, -0.836, -0.836], "per_anchor": [0.936, 0.837, 0.886, 0.108], "rms": 0.038, "scale": 0.02, "rejected": 0, "offsets_skipped": null}
+{"h": 0.0, "seed": 1, "err": 1.131, "dz_D": -0.158, "low_z_err": [-0.79, -0.79, -0.79], "per_anchor": [0.866, 0.793, 1.131, 0.271], "rms": 0.038, "scale": 0.02, "rejected": 0, "offsets_skipped": null}
+{"h": 0.0, "seed": 2, "err": 0.956, "dz_D": 0.31, "low_z_err": [-0.799, -0.799, -0.799], "per_anchor": [0.956, 0.813, 0.88, 0.378], "rms": 0.035, "scale": 0.02, "rejected": 0, "offsets_skipped": null}
+{"h": 0.0, "seed": 3, "err": 0.96, "dz_D": 0.186, "low_z_err": [-0.826, -0.826, -0.826], "per_anchor": [0.872, 0.831, 0.96, 0.233], "rms": 0.037, "scale": 0.02, "rejected": 0, "offsets_skipped": null}
+{"h": 0.0, "seed": 4, "err": 1.008, "dz_D": 0.004, "low_z_err": [-0.776, -0.776, -0.776], "per_anchor": [1.008, 0.784, 0.839, 0.166], "rms": 0.04, "scale": 0.02, "rejected": 0, "offsets_skipped": null}
+{"h": 0.0, "seed": 5, "err": 1.087, "dz_D": 0.01, "low_z_err": [-0.838, -0.838, -0.838], "per_anchor": [1.087, 0.856, 0.903, 0.195], "rms": 0.036, "scale": 0.02, "rejected": 0, "offsets_skipped": null}

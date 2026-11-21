@@ -1,0 +1,826 @@
+{
+ "run": "hp5r-s1-ea1.2",
+ "k_true": 0.8333333333333334,
+ "steps": [
+  {
+   "sensor": "D",
+   "level": 1,
+   "z": 58.03093549118245,
+   "dF_cmd": 11.749719432518758,
+   "matched": [
+    6,
+    9
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.02357020201855345,
+   "sensor_force_ratio": 1.017094158785479,
+   "held_tension_ratio": {
+    "A": 1.0232,
+    "B": 1.0181,
+    "I": 1.0192
+   },
+   "constant_dF": {
+    "C": 0.0577
+   },
+   "compliance_ratio": {
+    "A": 1.131,
+    "B": 1.1113,
+    "C": 2.1927,
+    "D": 1.0212,
+    "I": 1.1316
+   },
+   "geometry_residual_mm": {
+    "A": -0.0026,
+    "B": 0.001,
+    "C": 0.0019,
+    "D": -0.0009,
+    "I": 0.0002
+   },
+   "rotation_deg": 0.0022512252819987797,
+   "k_probe": 1.0429869320687264,
+   "k_true_tensions": 1.0246889474670062,
+   "k_all_true_tensions": 1.025664487187272,
+   "k_true_geometry": 1.0417246888942449,
+   "k_true_geometry_tension": 1.0242165682459308
+  },
+  {
+   "sensor": "D",
+   "level": 2,
+   "z": 58.03093549118245,
+   "dF_cmd": 23.49943886503751,
+   "matched": [
+    6,
+    2
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.048876415749810775,
+   "sensor_force_ratio": 1.0435158809683354,
+   "held_tension_ratio": {
+    "A": 1.0303,
+    "B": 1.0426,
+    "I": 1.0357
+   },
+   "constant_dF": {
+    "C": -0.1387
+   },
+   "compliance_ratio": {
+    "A": 1.1369,
+    "B": 1.1072,
+    "C": 0.4687,
+    "D": 1.0237,
+    "I": 1.1301
+   },
+   "geometry_residual_mm": {
+    "A": -0.0038,
+    "B": -0.0002,
+    "C": 0.0023,
+    "D": -0.0004,
+    "I": 0.0004
+   },
+   "rotation_deg": 0.004576971638117347,
+   "k_probe": 1.0675672719566,
+   "k_true_tensions": 1.0241526666519605,
+   "k_all_true_tensions": 1.0230110135806771,
+   "k_true_geometry": 1.068319985571434,
+   "k_true_geometry_tension": 1.0237697432837167
+  },
+  {
+   "sensor": "B",
+   "level": 1,
+   "z": 58.033934480086,
+   "dF_cmd": 11.773623859362633,
+   "matched": [
+    5,
+    7
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.0235926457162525,
+   "sensor_force_ratio": 1.016434801996463,
+   "held_tension_ratio": {
+    "A": 1.0226,
+    "D": 1.0173,
+    "I": 1.0185
+   },
+   "constant_dF": {
+    "C": 0.0591
+   },
+   "compliance_ratio": {
+    "A": 1.1307,
+    "B": 1.0166,
+    "C": 2.1865,
+    "D": 1.1164,
+    "I": 1.1316
+   },
+   "geometry_residual_mm": {
+    "A": -0.0026,
+    "B": -0.0008,
+    "C": 0.0019,
+    "D": 0.0009,
+    "I": 0.0002
+   },
+   "rotation_deg": 0.002251056649781962,
+   "k_probe": 1.0420330678926533,
+   "k_true_tensions": 1.0244985418764343,
+   "k_all_true_tensions": 1.0254963341917611,
+   "k_true_geometry": 1.0365281712313192,
+   "k_true_geometry_tension": 1.0197684782097083
+  },
+  {
+   "sensor": "B",
+   "level": 2,
+   "z": 58.033934480086,
+   "dF_cmd": 23.54724771872527,
+   "matched": [
+    5,
+    2
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.048265317311745166,
+   "sensor_force_ratio": 1.0403763644559023,
+   "held_tension_ratio": {
+    "A": 1.0316,
+    "D": 1.0412,
+    "I": 1.0351
+   },
+   "constant_dF": {
+    "C": -0.0683
+   },
+   "compliance_ratio": {
+    "A": 1.132,
+    "B": 1.0157,
+    "C": -0.8332,
+    "D": 1.1168,
+    "I": 1.1321
+   },
+   "geometry_residual_mm": {
+    "A": -0.005,
+    "B": -0.002,
+    "C": 0.0035,
+    "D": 0.0021,
+    "I": 0.0005
+   },
+   "rotation_deg": 0.004575477323321758,
+   "k_probe": 1.0675991120581096,
+   "k_true_tensions": 1.0262538854059347,
+   "k_all_true_tensions": 1.025689934729778,
+   "k_true_geometry": 1.060167070935246,
+   "k_true_geometry_tension": 1.0190226413781456
+  },
+  {
+   "sensor": "C",
+   "level": 1,
+   "z": 59.19639930279203,
+   "dF_cmd": 11.853162133831667,
+   "matched": [
+    10,
+    3
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.02581466051689033,
+   "sensor_force_ratio": 1.0934750827724753,
+   "held_tension_ratio": {
+    "A": 1.092,
+    "B": 1.1496,
+    "I": 1.1152
+   },
+   "constant_dF": {
+    "D": 0.3653
+   },
+   "compliance_ratio": {
+    "A": 1.1056,
+    "B": 1.1409,
+    "C": 1.0233,
+    "D": 1.073,
+    "I": 1.1146
+   },
+   "geometry_residual_mm": {
+    "A": -0.0004,
+    "B": -0.0014,
+    "C": 0.0,
+    "D": 0.0006,
+    "I": 0.0001
+   },
+   "rotation_deg": 0.0021903973411506322,
+   "k_probe": 1.1128550721395345,
+   "k_true_tensions": 1.0157396653417488,
+   "k_all_true_tensions": 1.0214131522837067,
+   "k_true_geometry": 1.1182432305424608,
+   "k_true_geometry_tension": 1.0226508570338764
+  },
+  {
+   "sensor": "C",
+   "level": 2,
+   "z": 59.19639930279203,
+   "dF_cmd": 23.706324267663334,
+   "matched": [
+    10,
+    2
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.048989149028855684,
+   "sensor_force_ratio": 1.0365538583375793,
+   "held_tension_ratio": {
+    "A": 1.0355,
+    "B": 1.0784,
+    "I": 1.0523
+   },
+   "constant_dF": {
+    "D": 0.5597
+   },
+   "compliance_ratio": {
+    "A": 1.1071,
+    "B": 1.1396,
+    "C": 1.022,
+    "D": 1.1088,
+    "I": 1.1147
+   },
+   "geometry_residual_mm": {
+    "A": -0.0,
+    "B": -0.003,
+    "C": -0.0005,
+    "D": 0.0016,
+    "I": 0.0004
+   },
+   "rotation_deg": 0.004125648375143596,
+   "k_probe": 1.0561706373833462,
+   "k_true_tensions": 1.017366913409797,
+   "k_all_true_tensions": 1.0219557102537609,
+   "k_true_geometry": 1.0594671343805138,
+   "k_true_geometry_tension": 1.022105244082235
+  },
+  {
+   "sensor": "A",
+   "level": 1,
+   "z": 59.19775655921643,
+   "dF_cmd": 11.83958690663849,
+   "matched": [
+    9,
+    1
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.025799195697431197,
+   "sensor_force_ratio": 1.0960840340964932,
+   "held_tension_ratio": {
+    "B": 1.1494,
+    "C": 1.0933,
+    "I": 1.1162
+   },
+   "constant_dF": {
+    "D": 0.3457
+   },
+   "compliance_ratio": {
+    "A": 1.0225,
+    "B": 1.143,
+    "C": 1.1058,
+    "D": 1.0417,
+    "I": 1.1128
+   },
+   "geometry_residual_mm": {
+    "A": 0.0009,
+    "B": -0.0012,
+    "C": -0.0014,
+    "D": 0.0003,
+    "I": 0.0001
+   },
+   "rotation_deg": 0.00218941304539816,
+   "k_probe": 1.1138070853642639,
+   "k_true_tensions": 1.0149145270698945,
+   "k_all_true_tensions": 1.0202742523511814,
+   "k_true_geometry": 1.1177432261556903,
+   "k_true_geometry_tension": 1.0197605214430945
+  },
+  {
+   "sensor": "A",
+   "level": 2,
+   "z": 59.19775655921643,
+   "dF_cmd": 23.679173813276982,
+   "matched": [
+    9,
+    2
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.048981751293509596,
+   "sensor_force_ratio": 1.0365950773354518,
+   "held_tension_ratio": {
+    "B": 1.0785,
+    "C": 1.0355,
+    "I": 1.0523
+   },
+   "constant_dF": {
+    "D": 0.5627
+   },
+   "compliance_ratio": {
+    "A": 1.0191,
+    "B": 1.1392,
+    "C": 1.1101,
+    "D": 1.1155,
+    "I": 1.1146
+   },
+   "geometry_residual_mm": {
+    "A": 0.0,
+    "B": -0.0031,
+    "C": -0.0005,
+    "D": 0.0018,
+    "I": 0.0004
+   },
+   "rotation_deg": 0.00412045082149484,
+   "k_probe": 1.0564747826190641,
+   "k_true_tensions": 1.017624995341466,
+   "k_all_true_tensions": 1.022244903645798,
+   "k_true_geometry": 1.056823576741698,
+   "k_true_geometry_tension": 1.0195143695436442
+  },
+  {
+   "sensor": "D",
+   "level": 1,
+   "z": 54.71052966181966,
+   "dF_cmd": 11.75396020181248,
+   "matched": [
+    5,
+    8
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.02508464228860197,
+   "sensor_force_ratio": 1.096713860712831,
+   "held_tension_ratio": {
+    "B": 1.0966,
+    "C": 1.1303,
+    "I": 1.1116
+   },
+   "constant_dF": {
+    "A": 0.2304
+   },
+   "compliance_ratio": {
+    "A": 1.1413,
+    "B": 1.1088,
+    "C": 1.1341,
+    "D": 1.022,
+    "I": 1.113
+   },
+   "geometry_residual_mm": {
+    "A": 0.0018,
+    "B": 0.0003,
+    "C": -0.0029,
+    "D": -0.0003,
+    "I": 0.0002
+   },
+   "rotation_deg": 0.002502673431506223,
+   "k_probe": 1.121732589709046,
+   "k_true_tensions": 1.0213095270648953,
+   "k_all_true_tensions": 1.0249180978218069,
+   "k_true_geometry": 1.1225647642863388,
+   "k_true_geometry_tension": 1.0235712381319821
+  },
+  {
+   "sensor": "D",
+   "level": 2,
+   "z": 54.71052966181966,
+   "dF_cmd": 23.507920403624958,
+   "matched": [
+    5,
+    9
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.04793686092510855,
+   "sensor_force_ratio": 1.0342599675443085,
+   "held_tension_ratio": {
+    "B": 1.0337,
+    "C": 1.0763,
+    "I": 1.053
+   },
+   "constant_dF": {
+    "A": 0.5565
+   },
+   "compliance_ratio": {
+    "A": 1.0606,
+    "B": 1.1082,
+    "C": 1.1369,
+    "D": 1.0219,
+    "I": 1.1132
+   },
+   "geometry_residual_mm": {
+    "A": 0.0026,
+    "B": 0.0002,
+    "C": -0.0047,
+    "D": -0.0005,
+    "I": 0.0004
+   },
+   "rotation_deg": 0.004738714871913116,
+   "k_probe": 1.0560755247702578,
+   "k_true_tensions": 1.0192878585606602,
+   "k_all_true_tensions": 1.0239038055023422,
+   "k_true_geometry": 1.0576719073355676,
+   "k_true_geometry_tension": 1.0226364168835105
+  },
+  {
+   "sensor": "B",
+   "level": 1,
+   "z": 54.70534276711143,
+   "dF_cmd": 11.778472132962527,
+   "matched": [
+    3,
+    10
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.025936592958843298,
+   "sensor_force_ratio": 1.0871710869059255,
+   "held_tension_ratio": {
+    "C": 1.1291,
+    "D": 1.0886,
+    "I": 1.1068
+   },
+   "constant_dF": {
+    "A": 0.2717
+   },
+   "compliance_ratio": {
+    "A": 1.0837,
+    "B": 1.0148,
+    "C": 1.1357,
+    "D": 1.1156,
+    "I": 1.1154
+   },
+   "geometry_residual_mm": {
+    "A": 0.0015,
+    "B": -0.0013,
+    "C": -0.0027,
+    "D": 0.0012,
+    "I": 0.0003
+   },
+   "rotation_deg": 0.002491908885603713,
+   "k_probe": 1.1116516677280532,
+   "k_true_tensions": 1.0199123779199113,
+   "k_all_true_tensions": 1.0241944824252003,
+   "k_true_geometry": 1.106531384411424,
+   "k_true_geometry_tension": 1.0178079584148967
+  },
+  {
+   "sensor": "B",
+   "level": 2,
+   "z": 54.70534276711143,
+   "dF_cmd": 23.556944265925054,
+   "matched": [
+    3,
+    11
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.0490777740463162,
+   "sensor_force_ratio": 1.0366186034533125,
+   "held_tension_ratio": {
+    "C": 1.0847,
+    "D": 1.0367,
+    "I": 1.0585
+   },
+   "constant_dF": {
+    "A": 0.6286
+   },
+   "compliance_ratio": {
+    "A": 1.0566,
+    "B": 1.0168,
+    "C": 1.1368,
+    "D": 1.1134,
+    "I": 1.1139
+   },
+   "geometry_residual_mm": {
+    "A": 0.0026,
+    "B": -0.0014,
+    "C": -0.0047,
+    "D": 0.0011,
+    "I": 0.0005
+   },
+   "rotation_deg": 0.004762407350757903,
+   "k_probe": 1.0581786554889836,
+   "k_true_tensions": 1.0184374247882129,
+   "k_all_true_tensions": 1.0236304001296876,
+   "k_true_geometry": 1.0559073466122886,
+   "k_true_geometry_tension": 1.0186073673525817
+  },
+  {
+   "sensor": "D",
+   "level": 1,
+   "z": 453.2812990988118,
+   "dF_cmd": 12.435230652500676,
+   "matched": [
+    8,
+    2
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.026482927553299646,
+   "sensor_force_ratio": 1.0912900788756763,
+   "held_tension_ratio": {
+    "A": 1.1457,
+    "B": 1.0921,
+    "I": 1.1063
+   },
+   "constant_dF": {
+    "C": 0.2128
+   },
+   "compliance_ratio": {
+    "A": 1.103,
+    "B": 1.1066,
+    "C": 1.3495,
+    "D": 1.0206,
+    "I": 1.1668
+   },
+   "geometry_residual_mm": {
+    "A": -0.004,
+    "B": 0.0011,
+    "C": 0.0036,
+    "D": -0.001,
+    "I": 0.0002
+   },
+   "rotation_deg": 0.001873790328843675,
+   "k_probe": 1.116486892044931,
+   "k_true_tensions": 1.0227905269755935,
+   "k_all_true_tensions": 1.0257275844188734,
+   "k_true_geometry": 1.1170702935683274,
+   "k_true_geometry_tension": 1.023623613181943
+  },
+  {
+   "sensor": "D",
+   "level": 2,
+   "z": 453.2812990988118,
+   "dF_cmd": 24.87046130500135,
+   "matched": [
+    8,
+    3
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.050165226324463075,
+   "sensor_force_ratio": 1.0094885644065419,
+   "held_tension_ratio": {
+    "A": 1.0316,
+    "B": 1.0073,
+    "I": 1.0141
+   },
+   "constant_dF": {
+    "C": 0.1626
+   },
+   "compliance_ratio": {
+    "A": 1.1162,
+    "B": 1.1013,
+    "C": 1.1893,
+    "D": 1.0249,
+    "I": 1.1653
+   },
+   "geometry_residual_mm": {
+    "A": -0.005,
+    "B": -0.001,
+    "C": 0.0042,
+    "D": 0.0007,
+    "I": 0.0003
+   },
+   "rotation_deg": 0.003442803108869067,
+   "k_probe": 1.0289467994554755,
+   "k_true_tensions": 1.0204314871708915,
+   "k_all_true_tensions": 1.021641442199719,
+   "k_true_geometry": 1.0338754474553196,
+   "k_true_geometry_tension": 1.0241576615215193
+  },
+  {
+   "sensor": "B",
+   "level": 1,
+   "z": 453.29727214708043,
+   "dF_cmd": 12.53532259269417,
+   "matched": [
+    9,
+    2
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.027454964771528593,
+   "sensor_force_ratio": 1.0956061234286856,
+   "held_tension_ratio": {
+    "A": 1.1437,
+    "D": 1.0954,
+    "I": 1.1085
+   },
+   "constant_dF": {
+    "C": 0.206
+   },
+   "compliance_ratio": {
+    "A": 1.0978,
+    "B": 1.0166,
+    "C": 1.4944,
+    "D": 1.112,
+    "I": 1.1633
+   },
+   "geometry_residual_mm": {
+    "A": -0.0044,
+    "B": -0.0002,
+    "C": 0.0043,
+    "D": 0.0006,
+    "I": -0.0
+   },
+   "rotation_deg": 0.0018788435097317742,
+   "k_probe": 1.1172201030421902,
+   "k_true_tensions": 1.0198449324668175,
+   "k_all_true_tensions": 1.0226320903967705,
+   "k_true_geometry": 1.1146936872984188,
+   "k_true_geometry_tension": 1.017421921493099
+  },
+  {
+   "sensor": "B",
+   "level": 2,
+   "z": 453.29727214708043,
+   "dF_cmd": 25.070645185388337,
+   "matched": [
+    9,
+    4
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.050480029074073784,
+   "sensor_force_ratio": 1.0123343166270335,
+   "held_tension_ratio": {
+    "A": 1.0348,
+    "D": 1.0116,
+    "I": 1.018
+   },
+   "constant_dF": {
+    "C": 0.2088
+   },
+   "compliance_ratio": {
+    "A": 1.104,
+    "B": 1.0168,
+    "C": 1.6244,
+    "D": 1.1111,
+    "I": 1.1645
+   },
+   "geometry_residual_mm": {
+    "A": -0.007,
+    "B": -0.0003,
+    "C": 0.0066,
+    "D": 0.0007,
+    "I": 0.0002
+   },
+   "rotation_deg": 0.003452644495122901,
+   "k_probe": 1.0330826673463842,
+   "k_true_tensions": 1.0208927701873276,
+   "k_all_true_tensions": 1.0224212244379356,
+   "k_true_geometry": 1.0298926015886802,
+   "k_true_geometry_tension": 1.0173443542051883
+  },
+  {
+   "sensor": "C",
+   "level": 1,
+   "z": 988.0548136133377,
+   "dF_cmd": 3.9481625483515077,
+   "matched": [
+    1,
+    8
+   ],
+   "tol": 0.01,
+   "replay_check_mm": 0.017124864477692042,
+   "sensor_force_ratio": 1.3456949537921536,
+   "held_tension_ratio": {
+    "A": 1.3202,
+    "D": 0.9943,
+    "I": 1.0872
+   },
+   "constant_dF": {
+    "B": -1.1189
+   },
+   "compliance_ratio": {
+    "A": 1.0742,
+    "B": 1.0942,
+    "C": 1.0634,
+    "D": 1.0765,
+    "I": 1.6724
+   },
+   "geometry_residual_mm": {
+    "A": -0.0034,
+    "B": 0.017,
+    "C": 0.0025,
+    "D": -0.0251,
+    "I": 0.001
+   },
+   "rotation_deg": 0.008481469539386681,
+   "k_probe": 1.710838741611381,
+   "k_true_tensions": 1.2392821831488814,
+   "k_all_true_tensions": 1.1086030257049933,
+   "k_true_geometry": 1.4191659792533666,
+   "k_true_geometry_tension": 1.054597087738326
+  },
+  {
+   "sensor": "C",
+   "level": 2,
+   "z": 988.0548136133377,
+   "dF_cmd": 7.8963250967030145,
+   "matched": [
+    1,
+    8
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.029831444482747712,
+   "sensor_force_ratio": 1.05568401076638,
+   "held_tension_ratio": {
+    "A": 1.0373,
+    "D": 0.8566,
+    "I": 0.9086
+   },
+   "constant_dF": {
+    "B": -1.2129
+   },
+   "compliance_ratio": {
+    "A": 1.0769,
+    "B": 1.1196,
+    "C": 1.0605,
+    "D": 1.0791,
+    "I": 1.6499
+   },
+   "geometry_residual_mm": {
+    "A": -0.0047,
+    "B": 0.0283,
+    "C": 0.0035,
+    "D": -0.0412,
+    "I": 0.0022
+   },
+   "rotation_deg": 0.013821133557980276,
+   "k_probe": 1.292582722024038,
+   "k_true_tensions": 1.204507803563152,
+   "k_all_true_tensions": 1.1130281632694712,
+   "k_true_geometry": 1.113531193637249,
+   "k_true_geometry_tension": 1.0547959259408262
+  },
+  {
+   "sensor": "A",
+   "level": 1,
+   "z": 987.9708124857332,
+   "dF_cmd": 4.083859600974053,
+   "matched": [
+    1,
+    7
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.014025448868171418,
+   "sensor_force_ratio": 1.0045644359271109,
+   "held_tension_ratio": {
+    "C": 0.9928,
+    "D": 0.7374,
+    "I": 0.8091
+   },
+   "constant_dF": {
+    "B": -0.8917
+   },
+   "compliance_ratio": {
+    "A": 1.0113,
+    "B": 1.1059,
+    "C": 1.1236,
+    "D": 1.0778,
+    "I": 1.6714
+   },
+   "geometry_residual_mm": {
+    "A": -0.0014,
+    "B": 0.0125,
+    "C": 0.0003,
+    "D": -0.019,
+    "I": 0.0006
+   },
+   "rotation_deg": 0.006436412567457502,
+   "k_probe": 1.2848104825696474,
+   "k_true_tensions": 1.2448491025866308,
+   "k_all_true_tensions": 1.1101996569663741,
+   "k_true_geometry": 1.0100219006298763,
+   "k_true_geometry_tension": 1.005432667639412
+  },
+  {
+   "sensor": "A",
+   "level": 2,
+   "z": 987.9708124857332,
+   "dF_cmd": 8.167719201948106,
+   "matched": [
+    1,
+    2
+   ],
+   "tol": 0.005,
+   "replay_check_mm": 0.03348285014837535,
+   "sensor_force_ratio": 1.0709501168345974,
+   "held_tension_ratio": {
+    "C": 1.0576,
+    "D": 0.9272,
+    "I": 0.9646
+   },
+   "constant_dF": {
+    "B": -0.8614
+   },
+   "compliance_ratio": {
+    "A": 1.0091,
+    "B": 1.1695,
+    "C": 1.1286,
+    "D": 1.0809,
+    "I": 1.6377
+   },
+   "geometry_residual_mm": {
+    "A": -0.0035,
+    "B": 0.0303,
+    "C": 0.0023,
+    "D": -0.044,
+    "I": 0.0025
+   },
+   "rotation_deg": 0.014767017874779065,
+   "k_probe": 1.2809734652568447,
+   "k_true_tensions": 1.1841114782681708,
+   "k_all_true_tensions": 1.12143187535123,
+   "k_true_geometry": 1.0764618721984223,
+   "k_true_geometry_tension": 1.0051466032611454
+  }
+ ]
+}

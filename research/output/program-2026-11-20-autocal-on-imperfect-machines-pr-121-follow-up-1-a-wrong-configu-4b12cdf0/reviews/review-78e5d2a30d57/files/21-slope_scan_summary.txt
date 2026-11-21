@@ -1,0 +1,30 @@
+| Machine | Shape (fitter) | uses config S | k | D.z | low z | max | rms |
+|---|---|---|---|---|---|---|---|
+| hangprinter_3 | ellipsoid shape | True | 0.8 | +4.69 | +0.03 | 4.69 | 0.0435 |
+| hangprinter_3 | ellipsoid shape | True | 1.0 | +2.60 | -0.01 | 2.60 | 0.0419 |
+| hangprinter_3 | ellipsoid shape | True | 1.2 | +0.51 | -0.04 | 1.33 | 0.0439 |
+| hangprinter_4 | ellipsoid shape | True | 0.8 | +1.16 | +0.08 | 1.16 | 0.0302 |
+| hangprinter_4 | ellipsoid shape | True | 1.0 | -0.46 | +0.10 | 0.46 | 0.0288 |
+| hangprinter_4 | ellipsoid shape | True | 1.2 | -2.08 | +0.11 | 2.08 | 0.0299 |
+| hangprinter_5 | ellipsoid shape | True | 0.8 | +2.97 | -0.29 | 2.97 | 0.0344 |
+| hangprinter_5 | ellipsoid shape | True | 1.0 | +1.27 | -0.12 | 1.27 | 0.0338 |
+| hangprinter_5 | ellipsoid shape | True | 1.2 | -0.44 | +0.05 | 0.53 | 0.0344 |
+| hangprinter_5_pulley_reduced | ellipsoid shape | True | 0.8 | +3.86 | -0.11 | 3.86 | 0.0291 |
+| hangprinter_5_pulley_reduced | ellipsoid shape | True | 1.0 | +2.90 | +0.02 | 2.90 | 0.0294 |
+| hangprinter_5_pulley_reduced | ellipsoid shape | True | 1.2 | +1.93 | +0.15 | 1.93 | 0.0303 |
+| hangprinter_3 | default sweeps | False | 0.8 | -0.57 | -0.97 | 1.18 | 0.0218 |
+| hangprinter_3 | default sweeps | False | 1.0 | -0.57 | -0.97 | 1.18 | 0.0218 |
+| hangprinter_3 | default sweeps | False | 1.2 | -0.57 | -0.97 | 1.18 | 0.0218 |
+| hangprinter_4 | default sweeps | True | 0.8 | -0.33 | -0.20 | 0.72 | 0.0240 |
+| hangprinter_4 | default sweeps | True | 1.0 | -0.04 | +0.10 | 0.72 | 0.0240 |
+| hangprinter_4 | default sweeps | True | 1.2 | +0.26 | +0.40 | 0.72 | 0.0240 |
+| hangprinter_5 | default sweeps | True | 0.8 | +0.11 | -0.14 | 0.87 | 0.0303 |
+| hangprinter_5 | default sweeps | True | 0.9 | +0.11 | -0.05 | 0.82 | 0.0303 |
+| hangprinter_5 | default sweeps | True | 1.0 | +0.12 | +0.04 | 1.00 | 0.0303 |
+| hangprinter_5 | default sweeps | True | 1.1 | +0.12 | +0.13 | 1.18 | 0.0303 |
+| hangprinter_5 | default sweeps | True | 1.2 | +0.13 | +0.22 | 1.36 | 0.0305 |
+| hangprinter_5_pulley_reduced | default sweeps | True | 0.8 | -1.31 | -0.65 | 3.32 | 0.0341 |
+| hangprinter_5_pulley_reduced | default sweeps | True | 0.9 | -0.48 | -0.35 | 2.00 | 0.0284 |
+| hangprinter_5_pulley_reduced | default sweeps | True | 1.0 | +0.36 | -0.07 | 0.92 | 0.0256 |
+| hangprinter_5_pulley_reduced | default sweeps | True | 1.1 | +1.20 | +0.22 | 1.20 | 0.0266 |
+| hangprinter_5_pulley_reduced | default sweeps | True | 1.2 | +2.05 | +0.52 | 2.24 | 0.0310 |

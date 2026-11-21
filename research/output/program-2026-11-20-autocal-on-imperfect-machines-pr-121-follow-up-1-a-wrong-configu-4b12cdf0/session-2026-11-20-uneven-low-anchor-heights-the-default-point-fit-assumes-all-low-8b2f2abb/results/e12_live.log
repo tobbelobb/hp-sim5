@@ -1,0 +1,17 @@
+{"case": "new_A_p10", "machine": "hangprinter_3", "err": 0.9546525253485925}
+{"case": "new_A_p10_B_m10", "machine": "hangprinter_3", "err": 1.249569373205759}
+{"case": "new_base_0", "machine": "hangprinter_3", "err": 1.342908245295733}
+{"case": "new_B_p20_C_p20", "machine": "hangprinter_3", "err": 1.4240491660773387}
+{"case": "new_C_m20", "machine": "hangprinter_3", "err": 0.8934763425484107}
+{"case": "new_hp4_A_p10", "machine": "hangprinter_4", "err": 1.0418593392092055}
+{"case": "new_hp4_base_0", "machine": "hangprinter_4", "err": 0.8726871734537869}
+{"case": "new_hp5_A_p5", "machine": "hangprinter_5", "err": 0.7784798915426737}
+{"case": "new_hp5_base_0", "machine": "hangprinter_5", "err": 0.6843807141341499}
+{"case": "new_hp5r_base_0", "machine": "hangprinter_5_pulley_reduced", "err": 1.118610559802748}
+{"case": "new_hp5r_seed1", "machine": "hangprinter_5_pulley_reduced", "err": 0.3598319139825256}
+{"case": "new_hp5r_seed2", "machine": "hangprinter_5_pulley_reduced", "err": 0.8689593608074813}
+{"case": "new_hp5r_seed3", "machine": "hangprinter_5_pulley_reduced", "err": 1.0118153446810538}
+{"case": "new_hp5_seed1", "machine": "hangprinter_5", "err": 0.7685400193739425}
+{"case": "new_hp5_seed2", "machine": "hangprinter_5", "err": 0.7949987005941165}
+{"case": "new_hp5_seed3", "machine": "hangprinter_5", "err": 0.7846998768716369}
+{"case": "new_hp5_seed4", "machine": "hangprinter_5", "err": 0.8366336502038664}

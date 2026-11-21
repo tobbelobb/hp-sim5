@@ -3348,12 +3348,6 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         help="Minimum noise-model sigma in mm; changing it rescales normalized costs, so costs across floors are not comparable.",
     )
     parser.add_argument(
-        "--low-anchor-z",
-        type=float,
-        default=None,
-        help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
-    )
-    parser.add_argument(
         "--equal-strain",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -4006,7 +4000,6 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--objective-schedule", default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
-    parser.add_argument("--low-anchor-z", type=float, default=None)
     parser.add_argument("--fit-home-offsets", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--ellipse-fit", dest="ellipse_reference_fit", action="store_true", default=None,
                         help="Fit Hangprinter anchors to each sweep's predicted ellipses (ellipse_fit.py) "
