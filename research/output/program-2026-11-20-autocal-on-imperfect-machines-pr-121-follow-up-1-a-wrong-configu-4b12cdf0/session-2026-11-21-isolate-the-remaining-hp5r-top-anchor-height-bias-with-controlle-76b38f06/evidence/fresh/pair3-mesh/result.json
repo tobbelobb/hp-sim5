@@ -1,0 +1,76 @@
+{
+  "machine": "hangprinter_5_pulley_reduced",
+  "seed": 3,
+  "status": "complete",
+  "stop_reason": "stable-estimate",
+  "normal_completion": true,
+  "simulated_s": 5279.124,
+  "wall_s": 1230.5256519530012,
+  "git_revision": "f09bc8c67dbecc4f2952ecb3dd572084f1a1e820",
+  "max_abs_frame_error_mm": 1.577787731569515,
+  "frame_error_mm": [
+    [
+      0.0,
+      0.7276,
+      0.2872
+    ],
+    [
+      0.5917,
+      0.0295,
+      -0.3501
+    ],
+    [
+      -0.0701,
+      -0.0166,
+      -0.1263
+    ],
+    [
+      0.9321,
+      -0.0207,
+      0.252
+    ],
+    [
+      -0.0,
+      0.0,
+      1.5778
+    ]
+  ],
+  "selection": {
+    "anchor_uncertainty_mm": 0.45545052748116177,
+    "fit_model": "ellipsoid"
+  },
+  "sweeps": 12,
+  "strand_target_n": null,
+  "cogging_scale": null,
+  "true_ea_scale": 0.8,
+  "scene_sha256": "ec6225d73a79d956668227a2061839aa3503e7cf72059bb6101ff0304c47ce4e",
+  "iterations": [
+    {
+      "num_sweeps": 1,
+      "sim_s": null,
+      "max_abs_frame_error_mm": 20.904824180693367,
+      "pose_fit_rms_mm": null,
+      "anchor_uncertainty_mm": null,
+      "max_std_mm": null,
+      "decision": null
+    },
+    {
+      "num_sweeps": 2,
+      "sim_s": null,
+      "max_abs_frame_error_mm": 1.4076769571965997,
+      "pose_fit_rms_mm": null,
+      "anchor_uncertainty_mm": null,
+      "max_std_mm": null,
+      "decision": null
+    },
+    {
+      "num_sweeps": 3,
+      "sim_s": null,
+      "max_abs_frame_error_mm": 1.577787731569515,
+      "pose_fit_rms_mm": null,
+      "anchor_uncertainty_mm": null,
+      "max_std_mm": null,
+      "decision": null
+    }
+  ]
+}

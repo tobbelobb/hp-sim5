@@ -1,0 +1,81 @@
+{
+  "machine": "hangprinter_5_pulley_reduced",
+  "seed": 1,
+  "status": "complete",
+  "stop_reason": "good-fit",
+  "normal_completion": true,
+  "simulated_s": 4024.3,
+  "wall_s": 894.5086538319993,
+  "git_revision": "f09bc8c67dbecc4f2952ecb3dd572084f1a1e820",
+  "max_abs_frame_error_mm": 2.5273756054218666,
+  "frame_error_mm": [
+    [
+      0.0,
+      1.1011,
+      0.6176
+    ],
+    [
+      -1.3093,
+      -0.0334,
+      0.631
+    ],
+    [
+      0.0562,
+      -1.0183,
+      0.6301
+    ],
+    [
+      0.6541,
+      0.029,
+      0.2243
+    ],
+    [
+      0.0,
+      -0.0,
+      2.5274
+    ]
+  ],
+  "selection": {
+    "iteration": 2,
+    "run_id": "default.warm",
+    "flags": "",
+    "anchor_uncertainty_mm": 1.6047039590596186,
+    "single_unit_coordinates": [
+      "A.y",
+      "A.z",
+      "B.z",
+      "C.z",
+      "D.y",
+      "D.z",
+      "I.z"
+    ],
+    "cost": 1.0766809823835473,
+    "rel_std": 0.0002435918953224203,
+    "max_std_mm": 0.37189977695013987
+  },
+  "sweeps": 5,
+  "strand_target_n": 2.579573013075965,
+  "cogging_scale": null,
+  "true_ea_scale": 1.2,
+  "scene_sha256": "724bd7f5d282d3c47b2c6a0c536a0b58c549e3cb24411107ae9b236815e5b43f",
+  "iterations": [
+    {
+      "num_sweeps": 4,
+      "sim_s": 3700.544,
+      "max_abs_frame_error_mm": 2.7922691669018604,
+      "pose_fit_rms_mm": 0.022843092149861927,
+      "anchor_uncertainty_mm": 2.921976802743842,
+      "max_std_mm": 0.44468942411336243,
+      "decision": "collect"
+    },
+    {
+      "num_sweeps": 5,
+      "sim_s": 4024.3,
+      "max_abs_frame_error_mm": 2.5273756054218666,
+      "pose_fit_rms_mm": 0.02776515051979045,
+      "anchor_uncertainty_mm": 1.6047039590596186,
+      "max_std_mm": 0.37189977695013987,
+      "decision": "accept"
+    }
+  ]
+}

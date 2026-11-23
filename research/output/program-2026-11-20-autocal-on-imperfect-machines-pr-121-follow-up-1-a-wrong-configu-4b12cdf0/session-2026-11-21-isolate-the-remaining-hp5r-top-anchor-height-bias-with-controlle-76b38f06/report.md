@@ -102,6 +102,15 @@ convention changes I.z by at most 0.005 mm. Mean vertical force from the replay
 is about 0.795 N, consistent with configured mass. Lower RMS after a modelling
 change was therefore insufficient evidence for a geometric correction.
 
+A separate native replay set the effector's inverse inertia and initial
+angular velocity to zero. The same motor commands then produced no rotation
+in the 100 sampled windows on seed 1. The forward geometry shift fell from
++0.491 to +0.038 mm. Using the locked replay's own forces and encoder ranges
+gave +0.198 mm, compared with +0.509 mm before locking. The lock also
+changed the trajectory and the encoder readings by up to 52 degrees in
+the sampled windows. The fixed-translation controls isolate rotation more
+directly.
+
 The 300 windows report four or five cable ranges each. Three per-point
 coordinates are already needed for translation, leaving at most two scalar
 range constraints for three possible attitude components, even given the
@@ -144,6 +153,40 @@ simulated time and the common point fitter leaves almost three times the
 final error, chiefly I.z. These are single nominal instances at the earlier
 collector revision.
 
+### Fresh imperfect HP5r pairs
+
+The workflows used the same scene and default cogging in each pair. The
+first runs at `7a57be78` and the repeat at `f09bc8c6` produced identical
+completion times and applied anchors in all four runs. Both workflows finished and applied a calibration on both seeds. The table reports
+the largest absolute coordinate error of those applied anchors.
+
+| Seed | True EA / configured EA | Sweep time (s) | Sweep error (mm) | Ellipsoid time (s) | Ellipsoid error (mm) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1.2 | 4,024 | 2.53 | 5,216 | 0.66 |
+| 3 | 0.8 | 4,372 | 4.54 | 5,279 | 1.58 |
+
+Ellipsoid collection took 21–30% longer and had lower applied error in the
+two imperfect pairs. At the sweep workflow's end time, two complete meshes
+were already available on each seed. Here are the same-model prefix refits.
+
+| Seed | Simulated budget (s) | Configured EA, sweep / ellipsoid (mm) | True EA, sweep / ellipsoid (mm) |
+| --- | ---: | ---: | ---: |
+| 1 | 4,024 | 2.53 / 0.78 | 1.10 / 0.73 |
+| 3 | 4,372 | 4.54 / 1.55 | 0.54 / 0.80 |
+
+The equal-time benefit on both imperfect scenes holds with the same fitter
+at configured EA. Supplying true EA improves both sweep fits substantially
+and reverses the order on seed 3. The archived nominal HP5r pair favored
+sweeps on both speed and accuracy. The sweep workflow's `good-fit` stop
+coexisted with several millimetres of error when configured stiffness was
+wrong. The study supports retaining sweeps as the default and keeping
+ellipsoid collection available. The sample does not establish a policy for
+selecting a shape on a machine with unknown stiffness.
+
+The [fresh inputs](evidence/fresh/) preserve the collected ranges, perturbations,
+fit summaries and manifests. Large run logs and intermediate captures are in
+the checkout's ignored `output/research/pr122` directory.
+
 ## Reproduction
 
 Use `.venv/bin/python` from the checkout root. The compact fixtures hold
@@ -162,6 +205,7 @@ export PYTHONPATH=. OPENBLAS_NUM_THREADS=1
     --reduced "$evidence/replay-1/window-means.json.gz"
 pair="$evidence/nominal/hangprinter_5_pulley_reduced"
 .venv/bin/python "$evidence/compare.py" "$pair/sweeps" "$pair/ellipsoid"
+.venv/bin/python "$evidence/compare.py" "$evidence/fresh/pair1-sweep" "$evidence/fresh/pair1-mesh"
 ```
 
 The force-and-geometry controls for seeds 1, 5 and 7 are recorded in the
