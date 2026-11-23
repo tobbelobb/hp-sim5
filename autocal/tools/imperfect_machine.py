@@ -130,6 +130,20 @@ def scaled_cogging(text, scale=1.0, freq=None):
     return scene
 
 
+def scaled_motor_friction(text, scale=1.0):
+    """Give every stepper explicit Coulomb (0.2% holding) and stiction (0.3% holding) friction
+    scaled by `scale`, to stress torque-mode force realization under motor/bearing friction."""
+    def lines(m):
+        holding = float(m[2])
+        return (f'{m[0]}\n{m[1]}custom double stepper:coulombFriction = {0.002 * holding * scale:.12g}'
+                f'\n{m[1]}custom double stepper:stictionTorque = {0.003 * holding * scale:.12g}')
+    scene, count = re.subn(r'^(\s*)custom double stepper:holdingTorque\s*=\s*([-+\d.eE]+)\s*$', lines,
+                           text, flags=re.M)
+    if not count:
+        raise ValueError('no stepper holding torques found')
+    return scene
+
+
 def _rotate_onto_z(anchors, vector):
     """Rotate about the origin (home) by the smallest rotation taking vector to +z."""
     vector = np.asarray(vector, dtype=float) / np.linalg.norm(vector)
@@ -244,7 +258,11 @@ def main(argv=None):
         parser.add_argument('--' + key.replace('_', '-'), type=float, default=value)
     parser.add_argument('--cogging-scale', type=float, help='multiply the motors\' default cogging torque')
     parser.add_argument('--cogging-freq', type=float, help='cogging periods per motor turn (default numPolePairs)')
+    parser.add_argument('--friction-scale', type=float, help='multiply the motors\' default Coulomb & stiction friction')
     parser.add_argument('--ellipsoid-shape', action='store_true', help='collect and fit the opt-in ellipsoid shape')
+    parser.add_argument('--point-fit', action='store_true', help='use point fit (with --ellipsoid-shape)')
+    parser.add_argument('--force-contrast', action='store_true', help='enable Ds-optimal multi-force contrast sweeps')
+    parser.add_argument('--no-stretch-varpro', action='store_true', help='disable VarPro stretch/nuisance fitting')
     parser.add_argument('--timeout-s', type=float, default=55 * 60)
     parser.add_argument('--prepare-only', action='store_true', help='write scene and imperfection.json, do not run')
     parser.add_argument('--rescore', action='store_true', help='only recompute OUT/result.json')
@@ -260,6 +278,8 @@ def main(argv=None):
     scene, moved = perturbed_scene(source.read_text(), imperfection['shifts_mm'], imperfection['stiffness_scale'])
     if args.cogging_scale is not None or args.cogging_freq is not None:
         scene = scaled_cogging(scene, 1.0 if args.cogging_scale is None else args.cogging_scale, args.cogging_freq)
+    if args.friction_scale is not None:
+        scene = scaled_motor_friction(scene, args.friction_scale)
     truth = {name: (np.add(anchor, imperfection['shifts_mm'][name])).round(6).tolist()
              for name, anchor in nominal_anchors(args.machine).items()}
     output.mkdir(parents=True, exist_ok=False)
@@ -268,14 +288,25 @@ def main(argv=None):
                         moved_prims=moved, truth_mm=truth, nominal_mm=nominal_anchors(args.machine),
                         overrides=dict(low_dz_mm=args.low_dz_mm, top_offset_mm=args.top_offset_mm,
                                        stiffness_scale=args.stiffness_scale), ellipsoid_shape=args.ellipsoid_shape,
-                        cogging_scale=args.cogging_scale, cogging_freq=args.cogging_freq)
+                        cogging_scale=args.cogging_scale, cogging_freq=args.cogging_freq,
+                        friction_scale=args.friction_scale, force_contrast=args.force_contrast,
+                        stretch_varpro=not args.no_stretch_varpro)
     (output / 'imperfection.json').write_text(json.dumps(imperfection, indent=2) + '\n')
     if args.prepare_only:
         print(json.dumps(imperfection, indent=2))
         return 0
+    extra_args = []
+    if args.ellipsoid_shape:
+        extra_args.append('--ellipsoid-shape')
+    if args.point_fit:
+        extra_args.append('--point-fit')
+    if args.force_contrast:
+        extra_args.append('--force-contrast')
+    if args.no_stretch_varpro:
+        extra_args.append('--no-stretch-varpro')
     code = run_autocal(args.machine, output / 'sweeps.json', REPO_ROOT, output / 'autocal.log',
                        args.timeout_s, scene=output / 'input-scene.usda',
-                       extra_args=['--ellipsoid-shape'] if args.ellipsoid_shape else ())
+                       extra_args=extra_args)
     result = score(output)
     print(json.dumps({k: result.get(k) for k in ('machine', 'seed', 'stop_reason', 'max_abs_frame_error_mm',
                       'worst_frame_coordinate', 'frame_error_mm', 'truth_frame_tilt_deg', 'max_abs_raw_error_mm',

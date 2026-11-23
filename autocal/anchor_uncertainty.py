@@ -55,8 +55,15 @@ def sweep_jackknife_mm(dataset: dict, anchors, *, fit_home_offsets: bool = True,
     return sweep_jackknife(dataset, anchors, fit_home_offsets=fit_home_offsets, use_noise_mean=use_noise_mean)[0]
 
 
-def sweep_jackknife(dataset: dict, anchors, *, fit_home_offsets: bool = True,
-                    use_noise_mean: bool = True) -> Tuple[Optional[float], List[Tuple[int, int]]]:
+def sweep_jackknife(
+    dataset: dict,
+    anchors,
+    *,
+    fit_home_offsets: bool = True,
+    use_noise_mean: bool = True,
+    fit_stretch_varpro: bool = False,
+    varpro_fixed_ripple_period: Optional[int] = None,
+) -> Tuple[Optional[float], List[Tuple[int, int]]]:
     """Largest anchor-coordinate jackknife standard deviation in mm, and single-unit coordinates.
 
     Each refit leaves out one collection unit: a sweep, or a whole sphere mesh.
@@ -75,6 +82,9 @@ def sweep_jackknife(dataset: dict, anchors, *, fit_home_offsets: bool = True,
                 subset, np.asarray(anchors, dtype=float), fit_home_offsets=fit_home_offsets,
                 home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
                 use_noise_mean=use_noise_mean,
+                fit_stretch_varpro=fit_stretch_varpro,
+                varpro_allow_ripple=False,
+                varpro_fixed_ripple_period=varpro_fixed_ripple_period,
             )
         except (ValueError, np.linalg.LinAlgError):
             return float("inf"), []
@@ -148,8 +158,11 @@ def plan_anchor_uncertainty(plan: dict) -> Tuple[Optional[float], List[Tuple[int
     dataset = plan.get("dataset") if fit_home_offsets else plan.get("dataset_for_estimation")
     if not isinstance(dataset, dict) or plan.get("anchors") is None:
         return None, []
+    varpro = plan.get("stretch_varpro")
     return sweep_jackknife(
         dataset, plan["anchors"], fit_home_offsets=fit_home_offsets, use_noise_mean=bool(plan.get("use_noise_mean", True)),
+        fit_stretch_varpro=isinstance(varpro, dict),
+        varpro_fixed_ripple_period=(varpro.get("ripple_period") if isinstance(varpro, dict) else None),
     )
 
 

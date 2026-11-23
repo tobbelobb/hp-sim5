@@ -105,24 +105,55 @@ def dataset_line_lengths(dataset: dict, *, use_noise_mean: bool = True) -> Dict[
     }
 
 
+def has_force_contrast(dataset: dict) -> bool:
+    """Whether the dataset spans multiple commanded force levels (breaking equal-strain degeneracy)."""
+    sweeps = dataset.get("sweeps", [])
+    if len(sweeps) < 2:
+        return False
+    targets = [
+        float((sweep.get("metadata") or {})["strand_tension_n"])
+        for sweep in sweeps
+        if (sweep.get("metadata") or {}).get("strand_tension_n") is not None
+    ]
+    if len(targets) >= 2 and all(np.isfinite(v) and v > 0.0 for v in targets):
+        if max(targets) > 1.15 * min(targets):
+            return True
+    forces = [
+        float(point["sensor_force_n"])
+        for sweep in sweeps
+        for point in sweep.get("data_points", [])
+        if isinstance(point.get("sensor_force_n"), (int, float))
+        and np.isfinite(point["sensor_force_n"])
+        and float(point["sensor_force_n"]) > 0.0
+    ]
+    if len(forces) >= 2:
+        from autocal.equal_strain import is_equal_strain
+        if not is_equal_strain(dataset) and max(forces) > 1.15 * min(forces):
+            return True
+    return False
+
+
 def dataset_stretch(dataset: dict):
     """Recorded sensor loads plus firmware compliance for per-pose range correction.
 
     Static equilibrium and every commanded torque determine the line loads.
     A rejected extra range still contributes its commanded force.
     Historical constant-force sweep records without extra load evidence retain the
-    rigid fit. Sphere meshes are always corrected unless collected at equal strain:
-    the ellipsoid autocal's constant-force meshes on HP3/HP4 rely on it.
+    rigid fit unless they span multiple force levels (force contrast). Sphere meshes
+    are always corrected unless collected at equal strain: the ellipsoid autocal's
+    constant-force meshes on HP3/HP4 rely on it.
     """
     from autocal.dataset_roles import mesh_metadata
     from autocal.equal_strain import is_equal_strain
-    # Only redundant machines use this range model as their primary objective.
-    # Equal-strain collection otherwise turns stretch into rigid home offsets.
+    # Redundant machines and multi-force contrast sweeps use per-pose stretch correction.
+    # Single-target equal-strain collection otherwise turns stretch into rigid home offsets.
     if any(mesh_metadata(sweep) is not None for sweep in dataset.get("sweeps", [])):
-        if is_equal_strain(dataset):
+        if is_equal_strain(dataset) and not has_force_contrast(dataset):
             return None
-    elif (int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1
-            or not (is_equal_strain(dataset) or has_extra_sensor_data(dataset))):
+    elif not has_force_contrast(dataset) and (
+        int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1
+        or not (is_equal_strain(dataset) or has_extra_sensor_data(dataset))
+    ):
         return None
     config = dataset.get("config") or {}
     m666 = config.get("m666_before_data_collection") or {}
@@ -232,6 +263,9 @@ def fit_pose_least_squares(
     home_offset_prior_sigma_mm: float,
     use_noise_mean: bool = True,
     extra_initial_anchors: Sequence[np.ndarray] = (),
+    fit_stretch_varpro: bool = False,
+    varpro_allow_ripple: bool = True,
+    varpro_fixed_ripple_period: Optional[int] = None,
 ) -> Dict[str, object]:
     """Fit anchors, and home length offsets once the data determines them.
 
@@ -241,12 +275,26 @@ def fit_pose_least_squares(
     the offset-free fit is below half the prior's, and dropped again if they land
     beyond two prior sigmas. `home_offsets_skipped` then says why.
     """
+    def _maybe_varpro(result: Dict[str, object]) -> Dict[str, object]:
+        if not fit_stretch_varpro or not result.get("stretch_corrected"):
+            return result
+        from autocal.stretch_varpro import fit_pose_varpro
+        refined = fit_pose_varpro(
+            dataset,
+            result,
+            use_noise_mean=use_noise_mean,
+            allow_ripple=varpro_allow_ripple,
+            fixed_ripple_period=varpro_fixed_ripple_period,
+            home_offset_prior_sigma_mm=home_offset_prior_sigma_mm,
+        )
+        return result if refined is None else refined
+
     options = dict(use_noise_mean=use_noise_mean,
                    home_offset_prior_sigma_mm=home_offset_prior_sigma_mm)
     rigid = _fit_points(dataset, initial_anchors, fit_home_offsets=False,
                         extra_initial_anchors=extra_initial_anchors, **options)
     if not fit_home_offsets:
-        return rigid
+        return _maybe_varpro(rigid)
     from autocal.pose_planning import pose_information
     num_offsets = int(dataset["num_anchors"]) - int(dataset["dimensions"])
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
@@ -255,14 +303,14 @@ def fit_pose_least_squares(
     info[-num_offsets:, -num_offsets:] += np.eye(num_offsets) / home_offset_prior_sigma_mm ** 2
     offset_std = np.sqrt(np.diag(np.linalg.pinv(info))[-num_offsets:])
     if np.any(offset_std > 0.5 * home_offset_prior_sigma_mm):
-        return {**rigid, "home_offsets_skipped": "undetermined"}
+        return _maybe_varpro({**rigid, "home_offsets_skipped": "undetermined"})
     fit = _fit_points(dataset, initial_anchors, fit_home_offsets=True,
                       extra_initial_anchors=[*extra_initial_anchors, rigid["anchors"]], **options)
     if np.any(np.abs(fit["home_offsets_mm"][-num_offsets:]) > 2.0 * home_offset_prior_sigma_mm):
-        return {**rigid, "home_offsets_skipped": "implausible"}
+        return _maybe_varpro({**rigid, "home_offsets_skipped": "implausible"})
     if _at_far_bound(fit["anchors"], dataset) and not _at_far_bound(rigid["anchors"], dataset):
-        return {**rigid, "home_offsets_skipped": "anchor at bound"}
-    return {**fit, "home_offsets_skipped": None}
+        return _maybe_varpro({**rigid, "home_offsets_skipped": "anchor at bound"})
+    return _maybe_varpro({**fit, "home_offsets_skipped": None})
 
 
 def _at_far_bound(anchors: np.ndarray, dataset: dict) -> bool:

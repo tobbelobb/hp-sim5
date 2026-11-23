@@ -202,8 +202,10 @@ def _full_auto_loop(
     verbose: bool,
     fit_home_offsets: bool = True,
     fit_force_ripple: bool = False,
+    fit_stretch_varpro: bool = True,
     fit: str = "point",
     equal_strain: bool = True,
+    force_contrast: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     no_collect: bool = False,
@@ -229,7 +231,7 @@ def _full_auto_loop(
         print(f"; {error}")
         return 2
     if dataset_path.exists() and not no_collect:
-        if error := profile_policy_error(_load_json(dataset_path)):
+        if error := profile_policy_error(_load_json(dataset_path), allow_force_contrast=force_contrast):
             print(f"; {error}")
             return 2
     log_path = Path(full_auto_log) if full_auto_log is not None else _unique_path(
@@ -573,7 +575,7 @@ def _full_auto_loop(
                 run_collection=_collect_mesh, log_line=_log_line, log_console=_log_console,
                 append_log=lambda row: _append_jsonl(log_path, row), no_collect=bool(no_collect), use_noise_mean=bool(use_noise_mean),
                 stable_step_mm=float(stable_step_mm), stop_file=_full_auto_stop_path(dataset_path),
-                model=fit)
+                model=fit, fit_stretch_varpro=bool(fit_stretch_varpro))
         except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
             _log_console(f"; ellipsoid autocal stopped: {error!r}; data so far: {dataset_path}")
             return _finalize(130 if isinstance(error, KeyboardInterrupt) else 2)
@@ -819,6 +821,7 @@ def _full_auto_loop(
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "fit_home_offsets": bool(fit_home_offsets),
         "fit_force_ripple": bool(fit_force_ripple),
+        "fit_stretch_varpro": bool(fit_stretch_varpro),
         "ellipse_reference_fit": bool(ellipse_reference_fit),
     }
 
@@ -935,6 +938,16 @@ def _full_auto_loop(
             f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(metrics.get('J'))} "
             f"chi2_red={_fmt_float(metrics.get('chi2_red'))}"
         )
+        varpro = plan.get("stretch_varpro")
+        if isinstance(varpro, dict):
+            _log_line(
+                f"{log_prefix}: stretch_varpro k_hat={_fmt_float(varpro.get('k_hat'))} "
+                f"k_std={_fmt_float(varpro.get('k_joint_std'))} "
+                f"ea_grav_std={_fmt_float(varpro.get('ea_grav_std'))} "
+                f"ea_separated_for_config_g={bool(varpro.get('ea_separated_for_config_g'))} "
+                f"blocks={','.join(varpro.get('active_blocks') or ())} "
+                f"ripple={varpro.get('ripple_period')}"
+            )
 
     def _execute_plan_run(
         *,
@@ -1018,8 +1031,10 @@ def _full_auto_loop(
                 ),
                 fit_home_offsets=bool(settings["fit_home_offsets"]),
                 fit_force_ripple=bool(settings["fit_force_ripple"]),
+                fit_stretch_varpro=bool(settings.get("fit_stretch_varpro", True)),
                 ellipse_reference_fit=bool(settings["ellipse_reference_fit"]),
                 equal_strain=bool(equal_strain),
+                force_contrast=bool(force_contrast),
                 candidate_count=int(candidate_count),
                 delta_min=delta_min,
                 delta_max=delta_max,
@@ -1494,6 +1509,7 @@ def _full_auto_loop(
                     min_fixed_delta_spacing_mm=min_fixed_delta_spacing_mm,
                     write_cfg=plan.get("cfg_path"), collector_output=collector_output,
                     collector_args=collector_args_eff, equal_strain=equal_strain,
+                    force_contrast=force_contrast,
                 )
     except KeyboardInterrupt:
         if applying_solution:
@@ -1564,7 +1580,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.dataset is not None and (error := bootstrap_state_error(args.dataset)):
         parser.error(error)
     if args.dataset is not None and args.dataset.exists() and not args.no_collect:
-        if error := profile_policy_error(_load_json(args.dataset)):
+        if error := profile_policy_error(_load_json(args.dataset), allow_force_contrast=bool(args.force_contrast)):
             parser.error(error)
     spool_opts = _resolve_spool_cli_options(parser, args)
     machine_type = _normalize_machine_type(str(args.machine_type))
@@ -1649,8 +1665,10 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         fit_home_offsets=bool(args.fit_home_offsets),
         fit_force_ripple=bool(args.fit_force_ripple),
+        fit_stretch_varpro=bool(args.stretch_varpro),
         fit=args.fit,
         equal_strain=bool(args.equal_strain),
+        force_contrast=bool(args.force_contrast),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
         delta_max=args.delta_max,

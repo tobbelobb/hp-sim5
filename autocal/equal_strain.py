@@ -139,7 +139,7 @@ def sensor_force_profiles(
     return profiles
 
 
-def force_planning_parameters(dataset: dict):
+def force_planning_parameters(dataset: dict, *, allow_force_contrast: bool = False):
     """Equal-strain inputs from the firmware line description and tuned forces, or None.
 
     Keys: strand_tension_n, mover_weight_n, strands, extra_line_length_mm,
@@ -160,14 +160,15 @@ def force_planning_parameters(dataset: dict):
     recorded_targets = [(sweep.get("metadata") or {}).get("strand_tension_n")
                         for sweep in dataset.get("sweeps", [])]
     recorded_targets = [float(value) for value in recorded_targets if value is not None]
+    contrast = bool(allow_force_contrast or config.get("force_contrast_enabled"))
     if recorded_targets and (not np.all(np.isfinite(recorded_targets))
                              or min(recorded_targets) <= 0
-                             or not np.allclose(recorded_targets, recorded_targets[0], rtol=1e-9, atol=0)):
+                             or (not contrast and not np.allclose(recorded_targets, recorded_targets[0], rtol=1e-9, atol=0))):
         raise ValueError("Cannot combine different equal-strain targets in one refinement dataset")
     # Pulley reduction must not lower the strand tension. Parallel lines on one
     # spool share load through effector roll, and a lightly loaded line goes slack;
     # the encoder then follows only the taut line, which no point model describes.
-    strand_target = (recorded_targets[0] if recorded_targets else
+    strand_target = (min(recorded_targets) if recorded_targets else
                      _COLLECTION_FORCE_MULTIPLE * start_force_n / float(np.min(strands)))
     extra_force = None
     if config.get("extra_sensors_enabled") and int(dataset["num_anchors"]) == 5:
@@ -226,15 +227,30 @@ def _capped_strand_tension(anchors, cfgs, params):
     return target
 
 
-def write_sensor_force_profile(path: Path, dataset: dict, anchors: np.ndarray, cfgs: Sequence[SweepConfig]) -> bool:
+def write_sensor_force_profile(
+    path: Path,
+    dataset: dict,
+    anchors: np.ndarray,
+    cfgs: Sequence[SweepConfig],
+    *,
+    strand_tension_scale: float = 1.0,
+    allow_force_contrast: bool = False,
+) -> bool:
     """Write the collector's force table for the sweeps. Needs the firmware's line description and tuned forces."""
-    params = force_planning_parameters(dataset)
+    params = force_planning_parameters(dataset, allow_force_contrast=allow_force_contrast)
     if params is None:
         return False
     extra_force = params.pop("extra_sensor_force_n")
-    if not params.pop("target_recorded"):
+    target_recorded = params.pop("target_recorded")
+    if not target_recorded:
         # The first profiles fix the dataset's target; plan it for the rough sweeps too.
         params["strand_tension_n"] = _capped_strand_tension(anchors, [*dataset_sweep_configs(dataset), *cfgs], params)
+    if strand_tension_scale != 1.0:
+        scaled = params["strand_tension_n"] * float(strand_tension_scale)
+        params["strand_tension_n"] = _capped_strand_tension(anchors, cfgs, {**params, "strand_tension_n": scaled})
+        if extra_force is not None:
+            max_extra = float((dataset.get("config") or {}).get("force_tuning", {}).get("force_max_n", np.inf))
+            extra_force = min(max_extra, extra_force * float(strand_tension_scale))
     profiles = [profile for cfg in cfgs for profile in sensor_force_profiles(anchors, cfg, **params)]
     if extra_force is not None:
         for profile in profiles:
@@ -250,7 +266,7 @@ def is_equal_strain(dataset: dict) -> bool:
             and all((sweep.get("metadata") or {}).get("sensor_force_profile") for sweep in sweeps))
 
 
-def profile_policy_error(dataset: dict):
+def profile_policy_error(dataset: dict, *, allow_force_contrast: bool = False):
     """Refuse continuation across incompatible force-table policies."""
     flags = [(sweep.get("metadata") or {}).get("sensor_force_profile", False) for sweep in dataset.get("sweeps", [])]
     if not any(flags) or resolve_projection_mode(dataset) is True:
@@ -268,8 +284,9 @@ def profile_policy_error(dataset: dict):
         return "Invalid mechanical advantage or equal-strain target in recorded data"
     if not np.all(np.isfinite(advantage) & (advantage > 0)):
         return "Profiled collection requires positive finite mechanical advantages"
+    contrast = bool(allow_force_contrast or ((dataset.get("config") or {}).get("force_contrast_enabled")))
     if targets and (not np.all(np.isfinite(targets)) or min(targets) <= 0
-                    or not np.allclose(targets, targets[0], rtol=1e-9, atol=0)):
+                    or (not contrast and not np.allclose(targets, targets[0], rtol=1e-9, atol=0))):
         return "Cannot combine different equal-strain targets in one refinement dataset"
     if any((sweep.get("metadata") or {}).get("sensor_force_profile_model") != PROFILE_STRAIN_MODEL
            for sweep in dataset["sweeps"]):
