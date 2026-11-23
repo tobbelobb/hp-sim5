@@ -1,8 +1,10 @@
-// Persistent production Rust/WASM world and JS RRF bridge owned by autocal.py.
+// Persistent production Rust/WASM world and direct in-process RRF bridge owned by autocal.py.
 import { setSolverIterations } from '../hp-sim-3d/app/solver-iterations.js';
 import { setPhysicsSubsteps } from '../hp-sim-3d/app/physics-substeps.js';
 import fs from 'node:fs';
 import http from 'node:http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { setImmediate as yieldStep } from 'node:timers/promises';
 import WebSocket from 'ws';
 import { createHash } from 'node:crypto';
@@ -10,17 +12,32 @@ import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
 import { setLineLayeringFeatureFlags } from '../hp-sim-3d/app/line-layering-flags.js';
 import { setClosedLoopMotorFeatureFlags } from '../hp-sim-3d/app/closed-loop-flags.js';
 import { createExternalCommandController } from '../hp-sim-3d/app/externalCommandSocket.js';
-import { createGcodeBridge } from '../integrations/rrf/rrfSimulatorBridge.mjs';
+import { RrfHttpBridge } from '../integrations/rrf/rrfHttpBridge.js';
 import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
+import { compileCableSolverWasm } from '../src/js/cable_joints_3d/wasm_cable_solver.js';
+import { WasmPhysicsEngine } from '../src/js/cable_joints_3d/wasm_physics_engine.js';
 
-const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
+const [scene, rrfUrl, _wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
 const sceneText = fs.readFileSync(scene, 'utf8');
 const clockPath = `${directory}/clock.json`;
+const solverChoice = (process.env.HP_SIM5_PHYSICS_SOLVER || 'native').toLowerCase();
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+let wasmModule = null;
+if (solverChoice === 'wasm') {
+  const wasmPath = process.env.HP_SIM5_WASM_PATH || path.join(repoRoot, 'public/wasm/cable_solver.wasm');
+  wasmModule = await compileCableSolverWasm(fs.readFileSync(wasmPath));
+} else if (solverChoice !== 'native') {
+  throw new Error(`Unsupported HP_SIM5_PHYSICS_SOLVER: ${solverChoice} (expected native or wasm)`);
+}
+
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
 let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false, physicsSubsteps, solverIterations;
 let world, remote, dt, bakedScene, bakedSceneFile, bakedSceneHash;
 function buildWorld() {
-  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled, physicsSubsteps, solverIterations }));
+  const cableSolverBackend = wasmModule ? new WasmPhysicsEngine(wasmModule) : undefined;
+  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, {
+    lineLayeringEnabled, closedLoopMotorsEnabled, physicsSubsteps, solverIterations, cableSolverBackend,
+  }));
   bakedSceneFile = `baked-scene${epoch ? `-${epoch}` : ''}.usda`;
   fs.writeFileSync(`${directory}/${bakedSceneFile}`, bakedScene);
   bakedSceneHash = createHash('sha256').update(bakedScene).digest('hex');
@@ -58,10 +75,24 @@ if (recorder) {
   try { await recorder.ensureConnected(recorder.url); }
   catch (error) { disableRecorder(error); }
 }
+
 const events = fs.openSync(`${directory}/events.jsonl`, 'a');
-function event(type, values = {}) {
-  fs.writeSync(events, JSON.stringify({ type, epoch, step, sim_time_s: step * dt, ...values }) + '\n');
+const EVENT_FLUSH_BYTES = 65536;
+let eventBuffer = [];
+let eventBufferBytes = 0;
+function flushEvents() {
+  if (!eventBuffer.length) return;
+  fs.writeSync(events, eventBuffer.join(''));
+  eventBuffer = [];
+  eventBufferBytes = 0;
 }
+function event(type, values = {}) {
+  const line = JSON.stringify({ type, epoch, step, sim_time_s: step * dt, ...values }) + '\n';
+  eventBuffer.push(line);
+  eventBufferBytes += line.length;
+  if (eventBufferBytes >= EVENT_FLUSH_BYTES) flushEvents();
+}
+
 function status() {
   return { backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), step, epoch, total_steps: totalSteps, dt_s: dt,
     simulated_s: totalSteps * dt, collector_time_s: collectorTime, wall_s: (performance.now() - started) / 1000,
@@ -71,12 +102,18 @@ function status() {
     settings: { enableLayering: world.getResource('enableLayering') === true,
       closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps: world.getResource('physicsSubsteps'), solverIterations: world.getResource('solverIterations'), timeScale: speed } };
 }
-function writeClock(state = status()) {
+let lastClockWriteMs = 0;
+function writeClock(state = status(), { force = false } = {}) {
+  const now = performance.now();
+  if (!force && now - lastClockWriteMs < 150) return;
+  lastClockWriteMs = now;
   // Readers poll this file while physics is advancing. Publish a complete snapshot.
   const temporary = `${clockPath}.tmp`;
-  fs.writeFileSync(temporary, JSON.stringify(state, null, 2));
+  fs.writeFileSync(temporary, JSON.stringify(state));
   fs.renameSync(temporary, clockPath);
 }
+writeClock(status(), { force: true });
+
 async function advance(seconds = 0, drain = false) {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
   // Collector waits are simulation seconds, as in createBrowserClock. This
@@ -97,12 +134,13 @@ async function advance(seconds = 0, drain = false) {
     }
     world.update(dt); step++; totalSteps++; collectorTime += dt;
     world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
-    if (totalSteps % 1000 === 0) writeClock();
+    if (totalSteps % 1000 === 0) writeClock(status(), { force: true });
     if (i % 50 === 49) await yieldStep();
   }
 }
-const bridge = createGcodeBridge({ server: rrfUrl, wsPort: Number(wsPort), quiet: true, encoderTimeoutMs: 120000 });
-// Use the browser's actual command dispatch and encoder conversion.
+
+// Use the browser's actual command dispatch and encoder conversion directly in-process
+// without serializing every 2 ms command through a loopback WebSocket server.
 let response;
 class ObservationSocket {
   static OPEN = 1;
@@ -144,22 +182,53 @@ function attachController() {
   controller.connect();
 }
 attachController();
-let delivered = Promise.resolve();
-async function handle(payload) {
+
+let encoderRequestSeq = 1;
+let currentGcode = null;
+
+function dispatchPayloadSync(payload) {
   event('bridge_payload', { payload });
-  if (payload.type === 'encoder_request' && payload.axes.length) await advance(0, true);
   controller.handlePayload(payload);
   if (payload.type === 'encoder_request') {
     if (response.anglesDeg.some(value => !Number.isFinite(value))) throw new Error('Non-finite encoder observation');
     event('encoder_response', { request_id: payload.requestId, axes: payload.axes, angles_deg: response.anglesDeg });
-    socket.send(JSON.stringify(response));
+    return response;
+  }
+  return null;
+}
+
+async function dispatchPayload(payload) {
+  if (payload.type === 'encoder_request' && payload.axes.length) await advance(0, true);
+  return dispatchPayloadSync(payload);
+}
+
+const rrfBridge = new RrfHttpBridge({
+  baseUrl: rrfUrl.replace(/\/$/, ''),
+  remoteSpoolSystem: {
+    addCommand(command) {
+      if (!command) return;
+      dispatchPayloadSync({ type: 'command', command, gcode: currentGcode });
+    },
+  },
+  encoderResolver: async ({ axes }) => {
+    const res = await dispatchPayload({ type: 'encoder_request', requestId: encoderRequestSeq++, axes });
+    return Array.isArray(res?.anglesDeg) ? res.anglesDeg : [];
+  },
+});
+
+async function sendGcodeLine(line, options = {}) {
+  const trimmed = line?.trim?.();
+  if (!trimmed) return null;
+  currentGcode = trimmed;
+  try {
+    const result = await rrfBridge.sendGCode(trimmed, options);
+    dispatchPayloadSync({ type: 'reply', gcode: trimmed, reply: result.reply });
+    return result;
+  } finally {
+    currentGcode = null;
   }
 }
-const socket = new WebSocket(`ws://127.0.0.1:${wsPort}`);
-await new Promise((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
-socket.on('message', data => {
-  delivered = delivered.then(() => handle(JSON.parse(data))).catch(error => { failure = error.message; });
-});
+
 let pending = Promise.resolve();
 const server = http.createServer(async (request, reply) => {
   reply.setHeader('Content-Type', 'application/json');
@@ -184,17 +253,15 @@ const server = http.createServer(async (request, reply) => {
       recorder?.recordEvent('service_gcode_send', { commandId, line: args.line });
       // Drain outside RRF's short encoder resolver timeout before its M569.3 query.
       if (/^M569\.3\b/i.test(args.line)) await advance(0, true);
-      result = await bridge.sendGcodeLine(args.line, { timeout: 120000 });
+      result = await sendGcodeLine(args.line, { timeout: 120000 });
       event('gcode_reply', { command_id: commandId, result });
       if (/^Error:/im.test(result?.reply ?? '')) throw new Error(result.reply);
-      await bridge.sendEncoderRequest([], 120000); // barrier for all preceding CAN payloads
       recorder?.recordEvent('service_gcode_reply', { commandId, result });
     } else if (request.url === '/advance') {
-      await delivered;
       await advance(args.seconds);
     } else if (request.url === '/payload') {
-      bridge.broadcast(args.payload);
-      result = await bridge.sendEncoderRequest([], 120000);
+      await dispatchPayload(args.payload);
+      result = await dispatchPayload({ type: 'encoder_request', requestId: encoderRequestSeq++, axes: [] });
     } else if (request.url !== '/status') throw new Error('Unknown operation');
     const state = status();
     writeClock(state);
@@ -208,7 +275,6 @@ async function close() {
   if (stopped) return;
   stopped = true;
   try {
-    await delivered;
     if (recorder) {
       try {
         recorder.recordEvent('service_stopped', status());
@@ -218,9 +284,11 @@ async function close() {
       } catch (error) { disableRecorder(error); }
     }
   } catch (error) { failure = error.message; }
-  writeClock();
-  event('service_stopped'); fs.closeSync(events);
-  socket.close(); bridge.close(); server.close();
+  writeClock(status(), { force: true });
+  event('service_stopped');
+  flushEvents();
+  fs.closeSync(events);
+  server.close();
   process.exit(failure ? 1 : 0);
 }
 process.once('SIGTERM', close);

@@ -29,10 +29,11 @@ from autocal.dataset_roles import measurement_groups
 
 
 class BrowserCollector:
-    """Run sequential collection commands over one simulator bridge."""
+    """Run sequential collection commands over one persistent simulator bridge process."""
 
-    def __init__(self, log_line):
+    def __init__(self, log_line, on_spawn=None):
         self.log_line = log_line
+        self.on_spawn = on_spawn
         self.process = None
 
     def collect(self, cmd):
@@ -43,6 +44,8 @@ class BrowserCollector:
                 text=True, encoding="utf-8", errors="replace",
                 start_new_session=not bool(os.environ.get("HP_SIM5_AUTOCAL_JOB")),
             )
+            if self.on_spawn is not None:
+                self.on_spawn(self.process)
         process = self.process
         try:
             process.stdin.write(json.dumps(cmd[2:]) + "\n")
@@ -56,11 +59,15 @@ class BrowserCollector:
             self.log_line(line.rstrip("\n"))
         raise subprocess.CalledProcessError(process.wait() or 1, cmd)
 
-    def close(self):
+    def close(self, *, force: bool = False):
         if self.process is None:
             return
         process, self.process = self.process, None
         try:
+            if force:
+                _stop_process(process)
+                process.wait()
+                return
             try:
                 process.stdin.close()
             except BrokenPipeError:
@@ -473,22 +480,24 @@ def _full_auto_loop(
         provider.wait_for_ready(f"http://localhost:{target_port}")
 
     browser_collector = None
-    if sim and not no_collect and headless_sim is None and not _arg_has_flag(
-        collector_args_eff, "--no-ws", "--headless-url"
-    ):
-        raw_ws_port = _arg_value(collector_args_eff, "--ws-port")
-        try:
-            ws_port = int(raw_ws_port) if raw_ws_port is not None else 8790
-        except ValueError:
-            ws_port = 0
-        if ws_port > 0:
-            _log_console(f"; --sim: collection waits for a browser connected to ws://localhost:{ws_port}")
-            _log_console(
-                f";        open http://localhost:5173/hp-sim5/hp-sim-3d/"
-                f"?gcode_ws=ws://localhost:{ws_port} and keep the simulator page open"
-            )
+    if sim and not no_collect and not _arg_has_flag(collector_args_eff, "--no-ws"):
+        if headless_sim is None and not _arg_has_flag(collector_args_eff, "--headless-url"):
+            raw_ws_port = _arg_value(collector_args_eff, "--ws-port")
+            try:
+                ws_port = int(raw_ws_port) if raw_ws_port is not None else 8790
+            except ValueError:
+                ws_port = 0
+            if ws_port > 0:
+                _log_console(f"; --sim: collection waits for a browser connected to ws://localhost:{ws_port}")
+                _log_console(
+                    f";        open http://localhost:5173/hp-sim5/hp-sim-3d/"
+                    f"?gcode_ws=ws://localhost:{ws_port} and keep the simulator page open"
+                )
         if not _arg_has_flag(collector_args_eff, "--step-gcode", "--step-gcodes", "--interactive-gcode"):
-            browser_collector = BrowserCollector(_log_line)
+            browser_collector = BrowserCollector(
+                _log_line,
+                on_spawn=(lambda p: headless_sim.track_process('collector', p)) if headless_sim is not None else None,
+            )
             resources.callback(browser_collector.close)
 
     def _finalize(code: int) -> int:

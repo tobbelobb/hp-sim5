@@ -2,6 +2,7 @@
 
 #ifdef RRF_HOST_BUILD
 
+#include <HostIdle.h>
 #include <arpa/inet.h>
 #include <cerrno>
 #include <cstring>
@@ -168,6 +169,7 @@ bool SocketHost::FillBuffer() noexcept
         {
             writePos += static_cast<size_t>(ret);
             readAny = true;
+            HostIdle::SetServerIdle(false);
             continue;
         }
         else if (ret == 0)

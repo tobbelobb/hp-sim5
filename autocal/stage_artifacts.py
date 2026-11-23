@@ -63,12 +63,20 @@ def _decode(value):
     raise ValueError(f"Unknown calibration artifact type: {kind}")
 
 
+def _git_revision(root: Path) -> str:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, stderr=subprocess.DEVNULL, text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        rev_file = root / ".hp_sim5_git_revision"
+        return rev_file.read_text(encoding="utf-8").strip() if rev_file.is_file() else "unknown"
+
+
 def write_stage_artifact(path: Path, kind: str, payload: dict) -> None:
     root = Path(__file__).resolve().parents[1]
     sources = sorted((root / "autocal").glob("*.py")) + [root / "autocal/tools/replay_stage.py"]
     envelope = {
         "format_version": 1, "kind": kind,
-        "source_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip(),
+        "source_revision": _git_revision(root),
         "source_sha256": {str(source.relative_to(root)): hashlib.sha256(source.read_bytes()).hexdigest() for source in sources},
         "payload": _encode(payload),
     }
