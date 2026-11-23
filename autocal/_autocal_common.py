@@ -2731,6 +2731,9 @@ def _print_ellipse_plan(
     anchor_line = f"; Anchors: {format_anchor_matrix_plain(anchors)}" if anchors.size else ""
     if anchor_line and gcode.strip() != anchor_line:
         print(anchor_line)
+    if ripple := plan.get("force_ripple"):
+        print(f"; Sensor force ripple: {ripple['periods_per_turn']} periods/turn, "
+              f"{ripple['cv_sse_gain']:.1%} lower held-out squared residual")
     if gcode:
         print(gcode)
     cost_raw_str = _fmt_float(cost_raw)
@@ -3348,12 +3351,6 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         help="Minimum noise-model sigma in mm; changing it rescales normalized costs, so costs across floors are not comparable.",
     )
     parser.add_argument(
-        "--low-anchor-z",
-        type=float,
-        default=None,
-        help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
-    )
-    parser.add_argument(
         "--equal-strain",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -3380,6 +3377,8 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
              "during measurement (default: enabled, except with --find-radii or --find-buildup-factor, "
              "which do not support them).",
     )
+    parser.add_argument("--fit-force-ripple", action=argparse.BooleanOptionalAction, default=False,
+                        help="Try a sweep-validated periodic sensor-force correction in the HP3 home-offset point fit.")
     parser.add_argument(
         "--r0-bounds",
         type=str,
@@ -4006,8 +4005,8 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--objective-schedule", default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
-    parser.add_argument("--low-anchor-z", type=float, default=None)
     parser.add_argument("--fit-home-offsets", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--fit-force-ripple", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--ellipse-fit", dest="ellipse_reference_fit", action="store_true", default=None,
                         help="Fit Hangprinter anchors to each sweep's predicted ellipses (ellipse_fit.py) "
                              "instead of with the point fit. Spool searches keep the legacy ellipse fit.")

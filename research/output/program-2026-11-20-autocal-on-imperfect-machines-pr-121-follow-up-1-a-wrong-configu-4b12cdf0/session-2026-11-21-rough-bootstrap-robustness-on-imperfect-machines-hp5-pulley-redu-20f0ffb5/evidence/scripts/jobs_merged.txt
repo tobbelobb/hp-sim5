@@ -1,0 +1,2 @@
+merged-hp5r-s3 --machine hangprinter_5_pulley_reduced --seed 3
+merged-hp5-s6 --machine hangprinter_5 --seed 6

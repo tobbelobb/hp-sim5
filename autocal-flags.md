@@ -1,154 +1,8 @@
-usage: autocal.py [-h] --machine-type {slideprinter,hangprinter_3,hangprinter_4,hangprinter_5,cubecorners,skycam,hp3,hp4,v3,v4,four_high_anchors,cube_corners} [--no-collect] [--sparse-recovery] [--dataset DATASET] [--sweep-points SWEEP_POINTS]
-                  [--plot-residual-histogram] [--max-steps MAX_STEPS] [--stop-cost STOP_COST] [--stop-std-mm STOP_STD_MM] [--full-auto-run FULL_AUTO_RUN] [--shotgun] [--stage-artifacts STAGE_ARTIFACTS] [--full-auto-log FULL_AUTO_LOG] [--verbose]
-                  [--patience PATIENCE] [--stable-step-mm STABLE_STEP_MM] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
-                  [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
-                  [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
-                  [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--theta0-mode {infer,zero}] [--filter-schedule FILTER_SCHEDULE]
-                  [--objective-schedule OBJECTIVE_SCHEDULE] [--pointwise-residual {sampson,euclidean}] [--pointwise-filtering] [--no-pointwise-filtering] [--pointwise-global-mad] [--pointwise-per-sweep-mad] [--sweep-wise-filtering]
-                  [--no-sweep-wise-filtering] [--sweep-metric {mad,median_abs,outlier_ratio}] [--sigma-source {auto,point,origin,min}] [--use-noise-mean | --use-raw-lengths] [--robust-debug] [--no-robust-debug] [--residuals-csv RESIDUALS_CSV]
-                  [--report] [--candidate-deltas CANDIDATE_DELTAS] [--candidate-count CANDIDATE_COUNT] [--delta-min DELTA_MIN] [--delta-max DELTA_MAX] [--fd-eps-mm FD_EPS_MM] [--regularization REGULARIZATION] [--no-exclude-existing]
-                  [--existing-tol-mm EXISTING_TOL_MM] [--min-fixed-delta-spacing-mm MIN_FIXED_DELTA_SPACING_MM] [--top-k TOP_K] [--output-with-explanations] [--write-sweep-config WRITE_SWEEP_CONFIG]
-                  [--physics-substeps {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}] [--open-loop-motors] [--collector-args ...] [--firmware {rrf,klipper}] [--config CONFIG] [--rrf-config RRF_CONFIG] [--klipper-config KLIPPER_CONFIG] [--sim]
-                  [--keep-sim-alive] [--hp-sim-reset] [--project-zero-tension] [--debug-sweep-actions] [--speedup SPEEDUP] [--extended-recording] [--extended-reference-ws URL] [--extended-reference] [--recording-mode {none,events,sampled,full}]
-                  [--headless-sim]
+# Autocal CLI changes
 
-Non-interactive autocal active-learning loop.
-
-options:
-KEEP  -h, --help            show this help message and exit
-KEEP  --machine-type {slideprinter,hangprinter_3,hangprinter_4,hangprinter_5,cubecorners,skycam,hp3,hp4,v3,v4,four_high_anchors,cube_corners}
-                        Machine type (slideprinter | hangprinter_3 | hangprinter_4 | hangprinter_5 | cubecorners | skycam | hp3 | hp4 | v3 | v4 | four_high_anchors | cube_corners)
-KEEP  --no-collect          Do not collect new sweeps; stop when replayed data is exhausted.
-  --sparse-recovery     Use an endpoint-preserving sparse seed when underconstrained recovery needs it.
-KEEP  --dataset DATASET     Dataset file updated each iteration (default: autocal/data/default_dataset.json).
-  --sweep-points SWEEP_POINTS
-                        Points per sub-sweep (passed to the collector and histogram plot).
-  --plot-residual-histogram
-                        Write residuals CSV next to the dataset and render a histogram PNG (gamma fit included).
-  --max-steps MAX_STEPS
-                        Maximum active-learning iterations
-  --stop-cost STOP_COST
-                        Optional stop condition on ellipse cost
-  --stop-std-mm STOP_STD_MM
-                        Optional stop condition on max parameter std
-  --full-auto-run FULL_AUTO_RUN
-                        Full-auto run override flags (repeatable). Example: --full-auto-run "--sweep-metric mad --use-raw-lengths"
-  --shotgun             Append full-auto runs from shotgun.conf.
-  --stage-artifacts STAGE_ARTIFACTS
-                        Save frozen fit/history JSON artifacts for independent stage experiments (opt-in).
-  --full-auto-log FULL_AUTO_LOG
-                        Write full-auto JSONL logs to this path (default: <dataset>.full_auto_log.jsonl).
-  --verbose             Print every log line to the console, with its timestamps.
-  --patience PATIENCE   Number of non-improving full-auto iterations to allow (default: 3).
-  --stable-step-mm STABLE_STEP_MM
-                        Stop once two consecutive sweeps each move every anchor coordinate by at most this (default: 0.5; 0 disables).
-  --solve-restarts SOLVE_RESTARTS
-  --solve-iterations SOLVE_ITERATIONS
-  --solve-optimizer {lbfgsb,lm,trf}
-                        Anchor solver: lbfgsb (default), trf, or lm.
-  --trf-solver-fallback, --no-trf-solver-fallback
-                        Retry unsuccessful or invalid lbfgsb restarts with bounded trf (default: disabled).
-  --optimizer-mode {fast,fast-fd,legacy}
-                        Optimization mode: 'fast' (JAX exact Jacobian), 'fast-fd' (JAX value + SciPy finite differences), or 'legacy' (no JAX + SciPy finite differences).
-KEEP  --find-radii [{off,global,per-anchor}]
-                        Spool-radius fit mode: off | global | per-anchor (default: off).
-KEEP  --find-buildup-factor [{off,global,per-anchor}]
-                        Buildup-factor fit mode: off | global | per-anchor (default: off).
-KEEP  --base-radii BASE_RADII
-                        Comma-separated base radii in mm (defaults to config m666_adjusted_by_data_collector/m666_before_data_collection R).
-KEEP  --buildup-factor BUILDUP_FACTOR
-                        Use this buildup factor k in the model transform (if omitted, falls back to config m666_adjusted_by_data_collector/m666_before_data_collection Q, else 0).
-KEEP  --line-width LINE_WIDTH
-                        Estimated line width in mm used by the layered noise model (default: 1.0).
-  --sigma-floor-mm SIGMA_FLOOR_MM
-                        Override the base sigma floor (mm) used in the composite noise model.
-  --low-anchor-z LOW_ANCHOR_Z
-                        For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.
-KEEP  --r0-bounds R0_BOUNDS
-                        Bounds for fitted r0 in mm as 'min,max' (default [base_radius, 1.5*base_radius]).
-KEEP  --b-bounds B_BOUNDS   Bounds for fitted buildup factor as 'min,max' (default: 0,1).
-  --r0-prior-sigma-mm R0_PRIOR_SIGMA_MM
-                        Gaussian prior sigma (mm) around base radii during radius fitting.
-  --b-prior-sigma B_PRIOR_SIGMA
-                        Gaussian prior sigma for buildup-factor fitting (auto default: 0.1 when fitting k).
-  --spool-outer-iters SPOOL_OUTER_ITERS
-                        Outer iterations for spool parameter refinement.
-  --theta0-mode {infer,zero}
-                        Theta offset mode for spool model: infer | zero (default: zero).
-  --filter-schedule FILTER_SCHEDULE
-                        Explicit filter-pass schedule as comma-separated words or numbers. Words: warmup,dynamic,constant. Numbers: 0=warmup, 1=dynamic, 2=constant. Default: warmup,warmup,warmup,dynamic.
-  --objective-schedule OBJECTIVE_SCHEDULE
-                        Explicit spool objective schedule as comma-separated words or numbers. Words: prefit,pointwise,position. Numbers: 0=ellipse_prefit, 1=pointwise_forward_model, 2=position_reconstruction. Default: 1,1,1,1.
-  --pointwise-residual {sampson,euclidean}
-                        Pointwise residual metric (default: sampson)
-  --pointwise-filtering
-                        Enable GNC-IRLS style pointwise filtering (default).
-  --no-pointwise-filtering
-                        Disable pointwise filtering.
-  --pointwise-global-mad
-                        Use a single global MAD scale for pointwise filtering (default).
-  --pointwise-per-sweep-mad
-                        Use a per-sweep MAD scale for pointwise filtering.
-  --sweep-wise-filtering
-                        Enable sweep-wise outlier rejection (default).
-  --no-sweep-wise-filtering
-                        Disable sweep-wise outlier rejection.
-  --sweep-metric {mad,median_abs,outlier_ratio}
-                        Per-sweep metric used by sweep-wise filtering (default: outlier_ratio).
-  --sigma-source {auto,point,origin,min}
-                        Sigma source for normalization: per-point, origin, or fallback min (default: auto).
-  --use-noise-mean      Use encoder noise mean lengths when available (default).
-  --use-raw-lengths     Use raw l_drive/l_sensor lengths (disable noise-mean datapoints).
-  --robust-debug        Print diagnostics for robustness filtering (default).
-  --no-robust-debug     Disable robustness filtering diagnostics.
-  --residuals-csv RESIDUALS_CSV
-                        Write pointwise residuals (approx mm) to CSV after the final GNC stage.
-  --report              Write a PNG report (like calibrate.py)
-  --candidate-deltas CANDIDATE_DELTAS
-                        Comma-separated fixed deltas (mm)
-  --candidate-count CANDIDATE_COUNT
-                        Grid size when deltas not provided
-  --delta-min DELTA_MIN
-  --delta-max DELTA_MAX
-  --fd-eps-mm FD_EPS_MM
-  --regularization REGULARIZATION
-  --no-exclude-existing
-  --existing-tol-mm EXISTING_TOL_MM
-                        Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates
-  --min-fixed-delta-spacing-mm MIN_FIXED_DELTA_SPACING_MM
-                        Minimum spacing (mm) from previously collected fixed deltas with the same sign
-  --top-k TOP_K
-  --output-with-explanations
-                        Include explanatory notes for rank deficiency and covariance behavior.
-  --write-sweep-config WRITE_SWEEP_CONFIG
-                        Write the suggested sweep config to this path (default: <dataset>.active_sweep_cfg.txt)
-KEEP  --physics-substeps {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}
-                        Simulator physics steps per firmware tick (default: simulator setting, initially 1)
-KEEP  --open-loop-motors    Use open-loop motors in the simulator instead of closed-loop motors.
-KEEP  --collector-args ...  Extra args passed to autocal/control/cli/collect_sweep_data.mjs (after --collector-args)
-KEEP  --firmware {rrf,klipper}
-                        Firmware flavor to target (default: rrf)
-KEEP  --config CONFIG       Generic simulator config path. Interpreted as --rrf-config when --firmware rrf, or as --klipper-config when --firmware klipper.
-KEEP  --rrf-config RRF_CONFIG
-                        Path to RRF simulator config file (env fallback: AUTOCAL_RRF_SIM_CONFIG)
-KEEP  --klipper-config KLIPPER_CONFIG
-                        Path to Klipper simulator config file (env fallback: AUTOCAL_KLIPPER_SIM_CONFIG)
-KEEP  --sim, --simulation   Use simulator + hp-sim WebSocket bridge (default: talk to real firmware)
-KEEP  --keep-sim-alive      Leave simulator process running after exit (only when --sim)
-KEEP  --hp-sim-reset        Reset hp-sim once before the first sweep (only when --sim)
-  --project-zero-tension
-                        Project encoder readings to zero tension during each data point.
-  --debug-sweep-actions
-                        Enable sweep collector debug traces (force modes, waits, moves, data points).
-KEEP  --speedup SPEEDUP     Forward this hp-sim speed scale to the collector (shortcut for --collector-args --speedup).
-KEEP  --extended-recording, --recording, --record
-                        Start and finalize an extended recorder automatically; output is derived from --dataset.
-  --extended-reference-ws URL
-                        Record timestamped logs and collector events in an --extended-reference flight recorder
-  --extended-reference  Record headless physics and all autocal events in one RRD; starts an owned recorder unless a WebSocket URL is supplied
-KEEP  --recording-mode {none,events,sampled,full}
-                        Headless evidence: none (numerical artifacts/traces), events, sampled (physics stride 100), full (extended RRD, stride 10); geometry stays compact
-KEEP  --headless-sim        Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim
+Run `.venv/bin/python autocal/autocal.py --help` for the everyday options and
+`--help-research` for the full option list. The notes below record changes from the
+flag audit.
 
 ## Investigation, 2026-10-22
 
@@ -198,13 +52,19 @@ consumer. Keep using `autocal/plot_residual_hist.py` with exported residual CSVs
 The help text above is the original audit snapshot, not current CLI help.
 See [integration findings](research/autocal-ranking-lane04-integration.md).
 
+## Free low-anchor heights, 2026-11-21
+
+Removed `--low-anchor-z`. Hangprinter fits no longer give the low anchors one shared
+height: every anchor coordinate is fitted except A.x and the top anchor's x and y.
+The frame convention is origin at home, top anchor straight above it, A on -Y.
+
 ## Lane 05 integration, 2026-10-22
 
 Removed `--flex` and `--spring-k-multiplier` from the ellipse/autocal pipeline,
 including full-auto variants, fitting and history-validation plumbing. The
 collector never supplied the per-point tensions this correction required.
 Legacy point calibration and the explicit flex plotting helper remain separate.
-`--theta0-mode` and `--low-anchor-z` are retained with their existing defaults.
+`--theta0-mode` is retained with its existing default.
 `--project-zero-tension` now rejects failed projections and requires projected
 angle fields during fitting instead of silently using raw angles.
 
@@ -231,8 +91,9 @@ Patience remains 3, and sparse recovery remains opt-in.
 
 `--stable-step-mm` (default 0.5, 0 disables) stops collection once two
 consecutive sweeps each move every anchor coordinate by at most that distance.
-It replaced the `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` agreement heuristic.
-Stability does not establish physical accuracy.
+HP5 and HP5r add range coverage, uncertainty and residual requirements when
+using spare sensor ranges. [HP5 stopping rules](autocal/README.md#hp5-stopping-rules).
+The step rule replaced the `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` agreement heuristic.
 
 ## Everyday and research help
 

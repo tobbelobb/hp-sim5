@@ -1,0 +1,36 @@
+== recorded (strand target 1.114 N)
+  assumed compliance none: max 0.967 Dz -0.573 lowz -0.967 off [0.0, 0.0, 0.0, 1.007] rms 0.02178
+  assumed compliance x0.00: max 0.967 Dz -0.573 lowz -0.967 off [0.0, 0.0, 0.0, 1.007] rms 0.02178
+  assumed compliance x0.60: max 0.598 Dz -0.013 lowz -0.407 off [0.082, 0.082, 0.082, 0.448] rms 0.02178
+  assumed compliance x0.80: max 0.598 Dz +0.174 lowz -0.220 off [0.109, 0.109, 0.109, 0.261] rms 0.02178
+  assumed compliance x0.90: max 0.598 Dz +0.268 lowz -0.126 off [0.123, 0.123, 0.123, 0.167] rms 0.02178
+  assumed compliance x1.00: max 0.598 Dz +0.361 lowz -0.033 off [0.136, 0.136, 0.136, 0.074] rms 0.02178
+  assumed compliance x1.10: max 0.598 Dz +0.455 lowz +0.061 off [0.15, 0.15, 0.15, -0.02] rms 0.02178
+  assumed compliance x1.20: max 0.598 Dz +0.548 lowz +0.154 off [0.164, 0.164, 0.164, -0.113] rms 0.02178
+  assumed compliance x1.25: max 0.598 Dz +0.595 lowz +0.201 off [0.17, 0.17, 0.17, -0.16] rms 0.02178
+  assumed compliance x1.40: max 0.735 Dz +0.735 lowz +0.342 off [0.191, 0.191, 0.191, -0.301] rms 0.02178
+  assumed compliance x1.60: max 0.923 Dz +0.923 lowz +0.529 off [0.218, 0.218, 0.218, -0.488] rms 0.02178
+== replay-synthetic true compliance x0.8 (strand target 1.114 N)
+  assumed compliance none: max 0.771 Dz -0.574 lowz -0.771 off [0.0, 0.0, 0.0, 0.788] rms 0.01729
+  assumed compliance x0.00: max 0.771 Dz -0.574 lowz -0.771 off [0.0, 0.0, 0.0, 0.788] rms 0.01729
+  assumed compliance x0.60: max 0.466 Dz -0.014 lowz -0.211 off [0.082, 0.082, 0.082, 0.228] rms 0.01729
+  assumed compliance x0.80: max 0.466 Dz +0.173 lowz -0.024 off [0.109, 0.109, 0.109, 0.041] rms 0.01729
+  assumed compliance x0.90: max 0.466 Dz +0.266 lowz +0.070 off [0.123, 0.123, 0.123, -0.052] rms 0.01729
+  assumed compliance x1.00: max 0.466 Dz +0.360 lowz +0.163 off [0.136, 0.136, 0.136, -0.146] rms 0.01729
+  assumed compliance x1.10: max 0.466 Dz +0.454 lowz +0.257 off [0.15, 0.15, 0.15, -0.24] rms 0.01729
+  assumed compliance x1.20: max 0.547 Dz +0.547 lowz +0.351 off [0.164, 0.164, 0.164, -0.333] rms 0.01729
+  assumed compliance x1.25: max 0.594 Dz +0.594 lowz +0.397 off [0.17, 0.17, 0.17, -0.38] rms 0.01729
+  assumed compliance x1.40: max 0.735 Dz +0.735 lowz +0.538 off [0.191, 0.191, 0.191, -0.52] rms 0.01729
+  assumed compliance x1.60: max 0.922 Dz +0.922 lowz +0.725 off [0.218, 0.218, 0.218, -0.708] rms 0.01729
+== replay-synthetic true compliance x1.25 (strand target 1.114 N)
+  assumed compliance none: max 1.206 Dz -0.899 lowz -1.206 off [0.0, 0.0, 0.0, 1.23] rms 0.02701
+  assumed compliance x0.00: max 1.206 Dz -0.899 lowz -1.206 off [0.0, 0.0, 0.0, 1.23] rms 0.02701
+  assumed compliance x0.60: max 0.738 Dz -0.339 lowz -0.647 off [0.082, 0.082, 0.082, 0.671] rms 0.02701
+  assumed compliance x0.80: max 0.738 Dz -0.153 lowz -0.460 off [0.109, 0.109, 0.109, 0.484] rms 0.02701
+  assumed compliance x0.90: max 0.738 Dz -0.059 lowz -0.366 off [0.123, 0.123, 0.123, 0.391] rms 0.02701
+  assumed compliance x1.00: max 0.738 Dz +0.034 lowz -0.273 off [0.136, 0.136, 0.136, 0.297] rms 0.02701
+  assumed compliance x1.10: max 0.738 Dz +0.128 lowz -0.180 off [0.15, 0.15, 0.15, 0.204] rms 0.02701
+  assumed compliance x1.20: max 0.738 Dz +0.221 lowz -0.086 off [0.164, 0.164, 0.164, 0.11] rms 0.02701
+  assumed compliance x1.25: max 0.738 Dz +0.268 lowz -0.039 off [0.17, 0.17, 0.17, 0.064] rms 0.02701
+  assumed compliance x1.40: max 0.738 Dz +0.408 lowz +0.101 off [0.191, 0.191, 0.191, -0.077] rms 0.02701
+  assumed compliance x1.60: max 0.738 Dz +0.595 lowz +0.288 off [0.218, 0.218, 0.218, -0.264] rms 0.02701

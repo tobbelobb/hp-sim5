@@ -1,0 +1,24 @@
+[
+ {
+  "run": "base_0",
+  "code": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/autocal/theoretical_ellipse.py",
+  "err": 1.3376362206162837,
+  "low_z_err": [
+   -0.887,
+   -1.182,
+   -0.83
+  ],
+  "dz_D": -0.5725062382905435
+ },
+ {
+  "run": "new_base_0",
+  "code": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/autocal/theoretical_ellipse.py",
+  "err": 1.342908245295733,
+  "low_z_err": [
+   -0.888,
+   -1.185,
+   -0.836
+  ],
+  "dz_D": -0.5702880396418095
+ }
+]

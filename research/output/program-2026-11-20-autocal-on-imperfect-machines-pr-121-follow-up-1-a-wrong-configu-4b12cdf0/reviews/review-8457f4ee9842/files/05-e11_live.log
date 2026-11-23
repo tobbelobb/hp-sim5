@@ -1,0 +1,17 @@
+{"case": "new_A_p10", "machine": "hangprinter_3", "units": 10, "err": 0.955, "J0": 0.539, "J1": 0.488}
+{"case": "new_A_p10_B_m10", "machine": "hangprinter_3", "units": 7, "err": 1.25, "J0": 0.457, "J1": 0.494}
+{"case": "new_base_0", "machine": "hangprinter_3", "units": 7, "err": 1.343, "J0": 0.68, "J1": 0.761}
+{"case": "new_B_p20_C_p20", "machine": "hangprinter_3", "units": 9, "err": 1.424, "J0": 0.422, "J1": 0.504}
+{"case": "new_C_m20", "machine": "hangprinter_3", "units": 8, "err": 0.893, "J0": 0.463, "J1": 0.427}
+{"case": "new_hp4_A_p10", "machine": "hangprinter_4", "units": 7, "err": 1.042, "J0": 0.756, "J1": 0.59}
+{"case": "new_hp4_base_0", "machine": "hangprinter_4", "units": 7, "err": 0.873, "J0": 0.425, "J1": 0.295}
+{"case": "new_hp5_A_p5", "machine": "hangprinter_5", "units": 5, "err": 0.778, "J0": 2.368, "J1": 3.078}
+{"case": "new_hp5_base_0", "machine": "hangprinter_5", "units": 5, "err": 0.684, "J0": 3.277, "J1": 1.56}
+{"case": "new_hp5r_base_0", "machine": "hangprinter_5_pulley_reduced", "units": 6, "err": 1.119, "J0": 0.887, "J1": 0.989}
+{"case": "new_hp5r_seed1", "machine": "hangprinter_5_pulley_reduced", "units": 5, "err": 0.36, "J0": 1.368, "J1": 1.002}
+{"case": "new_hp5r_seed2", "machine": "hangprinter_5_pulley_reduced", "units": 5, "err": 0.869, "J0": 1.574, "J1": 1.521}
+{"case": "new_hp5r_seed3", "machine": "hangprinter_5_pulley_reduced", "units": 5, "err": 1.012, "J0": 4.27, "J1": 2.659}
+{"case": "new_hp5_seed1", "machine": "hangprinter_5", "units": 5, "err": 0.769, "J0": 6.769, "J1": 1.145}
+{"case": "new_hp5_seed2", "machine": "hangprinter_5", "units": 5, "err": 0.795, "J0": 5.138, "J1": 2.495}
+{"case": "new_hp5_seed3", "machine": "hangprinter_5", "units": 5, "err": 0.785, "J0": 1.449, "J1": 1.953}
+{"case": "new_hp5_seed4", "machine": "hangprinter_5", "units": 5, "err": 0.837, "J0": 2.713, "J1": 1.376}

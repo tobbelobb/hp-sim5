@@ -1,0 +1,145 @@
+{
+  "seed": 1,
+  "shifts_mm": {
+    "A": [
+      0.0,
+      0.0,
+      0.7092974820154012
+    ],
+    "B": [
+      0.0,
+      0.0,
+      27.02782177955612
+    ],
+    "C": [
+      0.0,
+      0.0,
+      -21.350423236821975
+    ],
+    "D": [
+      0.0,
+      0.0,
+      26.91896682823463
+    ],
+    "I": [
+      -13.81699497325336,
+      7.22411143785245,
+      0.0
+    ]
+  },
+  "stiffness_scale": 1.2,
+  "ranges": {
+    "low_dz_max_mm": 30.0,
+    "top_offset_max_mm": 50.0,
+    "stiffness_error": 0.2
+  },
+  "machine": "hangprinter_5_pulley_reduced",
+  "source_scene": "public/usd_scenes/hp5_pulley_reduced.usda",
+  "moved_prims": {
+    "A": [
+      "SpoolA",
+      "AnchorAL_top",
+      "AnchorAL_bottom",
+      "AnchorAR_top",
+      "AnchorAR_bottom"
+    ],
+    "B": [
+      "SpoolB",
+      "AnchorBL_top",
+      "AnchorBL_bottom",
+      "AnchorBR_top",
+      "AnchorBR_bottom"
+    ],
+    "C": [
+      "SpoolC",
+      "AnchorCL_top",
+      "AnchorCL_bottom",
+      "AnchorCR_top",
+      "AnchorCR_bottom"
+    ],
+    "D": [
+      "SpoolD",
+      "AnchorDL_top",
+      "AnchorDL_bottom",
+      "AnchorDR_top",
+      "AnchorDR_bottom"
+    ],
+    "I": [
+      "SpoolI",
+      "WheelI0_left_top",
+      "WheelI0_right_top",
+      "AttachI0",
+      "WheelI1_left_top",
+      "WheelI1_right_top",
+      "AttachI1",
+      "WheelI2_left_top",
+      "WheelI2_right_top",
+      "AttachI2",
+      "WheelI3_left_top",
+      "WheelI3_right_top",
+      "AttachI3"
+    ]
+  },
+  "truth_mm": {
+    "A": [
+      0.0,
+      -1900.0,
+      -279.290703
+    ],
+    "B": [
+      1900.0,
+      0.0,
+      -252.972178
+    ],
+    "C": [
+      0.0,
+      1900.0,
+      -301.350423
+    ],
+    "D": [
+      -1900.0,
+      0.0,
+      -253.081033
+    ],
+    "I": [
+      -13.816995,
+      7.224111,
+      1900.0
+    ]
+  },
+  "nominal_mm": {
+    "A": [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    "B": [
+      1900.0,
+      0.0,
+      -280.0
+    ],
+    "C": [
+      0.0,
+      1900.0,
+      -280.0
+    ],
+    "D": [
+      -1900.0,
+      0.0,
+      -280.0
+    ],
+    "I": [
+      0.0,
+      0.0,
+      1900.0
+    ]
+  },
+  "overrides": {
+    "low_dz_mm": null,
+    "top_offset_mm": null,
+    "stiffness_scale": 1.2
+  },
+  "ellipsoid_shape": false,
+  "cogging_scale": null,
+  "cogging_freq": null
+}

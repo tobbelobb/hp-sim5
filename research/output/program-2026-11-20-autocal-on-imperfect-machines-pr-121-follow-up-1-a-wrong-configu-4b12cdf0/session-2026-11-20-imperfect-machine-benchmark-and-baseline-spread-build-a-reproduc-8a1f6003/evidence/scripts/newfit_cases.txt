@@ -1,0 +1,17 @@
+# Paired HP3 rerun with the free-low-z fit (branch t3/imperfect-machine-newfit = this harness + a7a8d179).
+# Same imperfections as the baseline cases of the same name.
+hp3-nominal --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1
+hp3-s0 --seed 0
+hp3-s1 --seed 1
+hp3-s2 --seed 2
+hp3-s3 --seed 3
+hp3-s4 --seed 4
+hp3-s5 --seed 5
+hp3-s6 --seed 6
+hp3-s7 --seed 7
+hp3-s8 --seed 8
+hp3-s9 --seed 9
+hp3-k0.8 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 0.8
+hp3-k1.2 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1.2
+hp3-dz-s0 --seed 0 --top-offset-mm 0:0 --stiffness-scale 1
+hp3-dz-s1 --seed 1 --top-offset-mm 0:0 --stiffness-scale 1

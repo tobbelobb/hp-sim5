@@ -1,0 +1,44 @@
+runs replayed 86, distinct 84
+final-fit Spearman vs err: J0 0.646  J1 0.572  (n=84)
+  hangprinter_3                  n= 28 Spearman J0 +0.82 J1 +0.82 median J/err J0 0.69 J1 0.65
+  hangprinter_4                  n= 29 Spearman J0 +0.57 J1 +0.52 median J/err J0 0.36 J1 0.25
+  hangprinter_5                  n= 12 Spearman J0 +0.64 J1 +0.71 median J/err J0 1.48 J1 1.25
+  hangprinter_5_pulley_reduced   n= 15 Spearman J0 +0.64 J1 +0.61 median J/err J0 0.92 J1 0.84
+>5 mm: n=18  min J0 0.9612169047667598  min J1 0.9206172626292082
+   err 948.94 J0  333.40 J1  213.80 hangprinter_3 output/headless-extended-verification-no-ping/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl
+   err   9.47 J0   14.27 J1   11.63 hangprinter_3 research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/session-2026-11-15-build-and-exercise-reproducible-full-hp3-hp4-autocal-sanity-batt-fc7253a7/evidence/hp3-soft/sweeps.full_auto_log.jsonl
+   err 904.99 J0  264.52 J1  219.66 hangprinter_3 output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl
+   err 975.22 J0  374.07 J1  388.53 hangprinter_3 output/headless-verification/pytest/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl
+   err   5.12 J0    1.91 J1    0.93 hangprinter_4 output/autocal-benchmark-backfill/runs/682608717670/hangprinter_4/sweeps.full_auto_log.jsonl
+   err 4213.28 J0  425.08 J1  417.96 hangprinter_4 output/autocal-benchmark-backfill/runs/678f76591172/hangprinter_4/sweeps.full_auto_log.jsonl
+   err   6.34 J0    2.31 J1    1.60 hangprinter_4 research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-fixed/sweeps.full_auto_log.jsonl
+   err   5.50 J0    3.85 J1    4.84 hangprinter_3 output/autocal-benchmark-backfill/runs/678f76591172/hangprinter_3/sweeps.full_auto_log.jsonl
+   err 4255.84 J0  652.78 J1  466.37 hangprinter_4 output/autocal-benchmark-backfill/runs/d567ed2b7fa9/hangprinter_4/sweeps.full_auto_log.jsonl
+   err   5.57 J0    3.23 J1    2.34 hangprinter_3 output/autocal-benchmark-backfill/runs/b497fbab0445/hangprinter_3/sweeps.full_auto_log.jsonl
+   err   6.73 J0    3.10 J1    4.02 hangprinter_4 output/autocal-benchmark-backfill/runs/b497fbab0445/hangprinter_4/sweeps.full_auto_log.jsonl
+   err 4064.07 J0  443.66 J1  428.33 hangprinter_4 output/autocal-benchmark-backfill/runs/67f59ec841e6/hangprinter_4/sweeps.full_auto_log.jsonl
+   err   5.07 J0    2.50 J1    3.68 hangprinter_4 output/autocal-benchmark-backfill/runs/1254ef00dbd7/hangprinter_4/sweeps.full_auto_log.jsonl
+   err   5.76 J0    0.96 J1    1.69 hangprinter_4 output/autocal-benchmark-backfill/runs/a92b6c45f046/hangprinter_4/sweeps.full_auto_log.jsonl
+   err   5.18 J0    1.92 J1    0.92 hangprinter_4 output/autocal-benchmark-backfill/runs/0623060e2227/hangprinter_4/sweeps.full_auto_log.jsonl
+   err   6.92 J0    2.58 J1    2.11 hangprinter_3 output/autocal-benchmark-backfill/runs/a92b6c45f046/hangprinter_3/sweeps.full_auto_log.jsonl
+   err 4227.02 J0  590.71 J1  404.96 hangprinter_4 output/autocal-benchmark-backfill/runs/f3370a2ffebd/hangprinter_4/sweeps.full_auto_log.jsonl
+   err 4125.36 J0  425.96 J1  464.40 hangprinter_4 output/autocal-benchmark-backfill/runs/1eaf01c1b063/hangprinter_4/sweeps.full_auto_log.jsonl
+>10 mm: n=8  min J0 264.51858111937753  min J1 213.79897000391512
+   err 948.94 J0  333.40 J1  213.80 hangprinter_3 output/headless-extended-verification-no-ping/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl
+   err 904.99 J0  264.52 J1  219.66 hangprinter_3 output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl
+   err 975.22 J0  374.07 J1  388.53 hangprinter_3 output/headless-verification/pytest/test_fresh_hp3_full_auto_globa0/hp3/sweeps.full_auto_log.jsonl
+   err 4213.28 J0  425.08 J1  417.96 hangprinter_4 output/autocal-benchmark-backfill/runs/678f76591172/hangprinter_4/sweeps.full_auto_log.jsonl
+   err 4255.84 J0  652.78 J1  466.37 hangprinter_4 output/autocal-benchmark-backfill/runs/d567ed2b7fa9/hangprinter_4/sweeps.full_auto_log.jsonl
+   err 4064.07 J0  443.66 J1  428.33 hangprinter_4 output/autocal-benchmark-backfill/runs/67f59ec841e6/hangprinter_4/sweeps.full_auto_log.jsonl
+   err 4227.02 J0  590.71 J1  404.96 hangprinter_4 output/autocal-benchmark-backfill/runs/f3370a2ffebd/hangprinter_4/sweeps.full_auto_log.jsonl
+   err 4125.36 J0  425.96 J1  464.40 hangprinter_4 output/autocal-benchmark-backfill/runs/1eaf01c1b063/hangprinter_4/sweeps.full_auto_log.jsonl
+label confusion (final fits): err<=1.5 & poor: 0 0  err>3 & not poor: 20 22
+
+Decision differences (distinct runs):
+{"f": "research/output/program-2026-11-15-review-and-harden-stretch-insensitive-autocal-robust-bootstrap-h-3fa9855a/validation/workspace-expansion/hp4-final/sweeps.full_auto_log.jsonl", "machine": "hangprinter_4", "stop": "patience", "P": 3, "last": 6, "stop_J0": 5, "stop_J1": null, "sel_end": [6, 6, 4.25, 4.25], "sel_p0": [5, 5, 3.97, 3.97], "sel_p1": [6, 6, 4.25, 4.25]}
+{"f": "output/autocal-benchmark-backfill/runs/f0efe6cc21bb/hangprinter_3/sweeps.full_auto_log.jsonl", "machine": "hangprinter_3", "stop": "patience", "P": 8, "last": 11, "stop_J0": 11, "stop_J1": null, "sel_end": [11, 11, 1.21, 1.21], "sel_p0": [11, 11, 1.21, 1.21], "sel_p1": [11, 11, 1.21, 1.21]}
+{"f": "output/extra-sensor-production/pass3/reduced/sweeps.full_auto_log.jsonl", "machine": "hangprinter_5_pulley_reduced", "stop": "patience", "P": 8, "last": 11, "stop_J0": null, "stop_J1": null, "sel_end": [11, 10, 2.94, 4.62], "sel_p0": [11, 10, 2.94, 4.62], "sel_p1": [11, 10, 2.94, 4.62]}
+{"f": "output/autocal-benchmark-backfill/runs/d567ed2b7fa9/hangprinter_4/sweeps.full_auto_log.jsonl", "machine": "hangprinter_4", "stop": null, "P": 8, "last": 12, "stop_J0": null, "stop_J1": 11, "sel_end": [12, 12, 4255.84, 4255.84], "sel_p0": [12, 12, 4255.84, 4255.84], "sel_p1": [11, 11, 4227.02, 4227.02]}
+{"f": "output/autocal-benchmark-backfill/runs/f3370a2ffebd/hangprinter_4/sweeps.full_auto_log.jsonl", "machine": "hangprinter_4", "stop": "Ctrl-C", "P": 8, "last": 11, "stop_J0": null, "stop_J1": 11, "sel_end": [11, 11, 4227.02, 4227.02], "sel_p0": [11, 11, 4227.02, 4227.02], "sel_p1": [11, 11, 4227.02, 4227.02]}
+n distinct with any difference: 5
+patience fires within run length: J0 5 J1 5

@@ -1,0 +1,13 @@
+{
+  "machine": "hangprinter_5_pulley_reduced",
+  "seed": 6,
+  "stop_reason": null,
+  "max_abs_frame_error_mm": null,
+  "worst_frame_coordinate": null,
+  "frame_error_mm": null,
+  "truth_frame_tilt_deg": 1.4885184543226158,
+  "max_abs_raw_error_mm": null,
+  "max_abs_rigid_error_mm": null,
+  "simulated_s": 7396.604,
+  "wall_s": 2040.1426308779992
+}

@@ -1,0 +1,194 @@
+[
+ {
+  "case": "benchmark_923c2baa_hangprinter_3",
+  "machine": "hangprinter_3",
+  "units": 10,
+  "err": 0.9909492732680291,
+  "J0": 0.9423819476168317,
+  "J1": 0.7007933334214763
+ },
+ {
+  "case": "noisy_0p2mm_benchmark_923c2baa_hangprinter_3",
+  "machine": "hangprinter_3",
+  "units": 10,
+  "err": 3.9332676600043075,
+  "J0": 2.4036294846777064,
+  "J1": 1.644828367423255
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_3",
+  "machine": "hangprinter_3",
+  "units": 10,
+  "err": 9.558887297157007,
+  "J0": 5.857168931279806,
+  "J1": 6.223673118729398
+ },
+ {
+  "case": "disturbed_benchmark_923c2baa_hangprinter_3",
+  "machine": "hangprinter_3",
+  "units": 10,
+  "err": 1.0688969373524952,
+  "J0": 0.9393745582103944,
+  "J1": 0.6611014120686367
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_3:4",
+  "machine": "hangprinter_3",
+  "units": 4,
+  "err": 1.827615125540923,
+  "J0": 22.897625215252695,
+  "J1": 2.932979383033909
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_3:4",
+  "machine": "hangprinter_3",
+  "units": 4,
+  "err": 31.111707851413506,
+  "J0": 69.15143334817931,
+  "J1": 57.48541350489629
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_4",
+  "machine": "hangprinter_4",
+  "units": 7,
+  "err": 0.6918778442539809,
+  "J0": 0.5497821815839674,
+  "J1": 0.32429434653000166
+ },
+ {
+  "case": "noisy_0p2mm_benchmark_923c2baa_hangprinter_4",
+  "machine": "hangprinter_4",
+  "units": 7,
+  "err": 4.664529414281986,
+  "J0": 3.9640413444305067,
+  "J1": 4.781633089758534
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_4",
+  "machine": "hangprinter_4",
+  "units": 7,
+  "err": 11.230096565785109,
+  "J0": 10.082011860192177,
+  "J1": 12.365045743354377
+ },
+ {
+  "case": "disturbed_benchmark_923c2baa_hangprinter_4",
+  "machine": "hangprinter_4",
+  "units": 7,
+  "err": 0.738495693369478,
+  "J0": 0.6753075281034061,
+  "J1": 0.5216133639228855
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_4:4",
+  "machine": "hangprinter_4",
+  "units": 4,
+  "err": 4.714132221668499,
+  "J0": 38.048310762914,
+  "J1": 4.867912027524629
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_4:4",
+  "machine": "hangprinter_4",
+  "units": 4,
+  "err": 22.51436934925106,
+  "J0": 58.05152628830979,
+  "J1": 54.17125970133781
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_5",
+  "machine": "hangprinter_5",
+  "units": 5,
+  "err": 1.0292966696240717,
+  "J0": 1.0871924710709622,
+  "J1": 1.18322347275618
+ },
+ {
+  "case": "noisy_0p2mm_benchmark_923c2baa_hangprinter_5",
+  "machine": "hangprinter_5",
+  "units": 5,
+  "err": 5.991280956819534,
+  "J0": 31.283061410330117,
+  "J1": 8.945528419143331
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_5",
+  "machine": "hangprinter_5",
+  "units": 5,
+  "err": 13.643202574578503,
+  "J0": 65.75679480781052,
+  "J1": 24.621662748411637
+ },
+ {
+  "case": "disturbed_benchmark_923c2baa_hangprinter_5",
+  "machine": "hangprinter_5",
+  "units": 5,
+  "err": 0.8811118487532632,
+  "J0": 0.9085420193979412,
+  "J1": 0.7843075579802499
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_5:4",
+  "machine": "hangprinter_5",
+  "units": 4,
+  "err": 1.2247061644869461,
+  "J0": 21.2249440111619,
+  "J1": 5.676127287880353
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_5:4",
+  "machine": "hangprinter_5",
+  "units": 4,
+  "err": 16.03400869490289,
+  "J0": 193.7909050909549,
+  "J1": 128.01006544077975
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_5_pulley_reduced",
+  "machine": "hangprinter_5_pulley_reduced",
+  "units": 6,
+  "err": 1.59363263404751,
+  "J0": 1.142955177492619,
+  "J1": 1.4872678928636176
+ },
+ {
+  "case": "noisy_0p2mm_benchmark_923c2baa_hangprinter_5_pulley_reduced",
+  "machine": "hangprinter_5_pulley_reduced",
+  "units": 6,
+  "err": 6.722379586874692,
+  "J0": 7.224626664979186,
+  "J1": 8.843181089588727
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_5_pulley_reduced",
+  "machine": "hangprinter_5_pulley_reduced",
+  "units": 6,
+  "err": 19.424129220884772,
+  "J0": 18.4729988868602,
+  "J1": 20.90440646115851
+ },
+ {
+  "case": "disturbed_benchmark_923c2baa_hangprinter_5_pulley_reduced",
+  "machine": "hangprinter_5_pulley_reduced",
+  "units": 6,
+  "err": 1.3911591461136306,
+  "J0": 0.9321938054648157,
+  "J1": 1.487276345878797
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_5_pulley_reduced:4",
+  "machine": "hangprinter_5_pulley_reduced",
+  "units": 4,
+  "err": 1.4893583049028436,
+  "J0": 6.5508044341415035,
+  "J1": 1.3151621794174633
+ },
+ {
+  "case": "noisy_0p5mm_benchmark_923c2baa_hangprinter_5_pulley_reduced:4",
+  "machine": "hangprinter_5_pulley_reduced",
+  "units": 4,
+  "err": 47.20805784446463,
+  "J0": 36.38844462804482,
+  "J1": 47.131352631601004
+ }
+]

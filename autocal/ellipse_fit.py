@@ -22,7 +22,7 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from autocal.dataset_roles import measurement_groups, mesh_metadata
-from autocal.pose_fit import (REJECT_SCALES, _MIN_SCALE_MM, _REJECT_ROUNDS, _at_far_bound, _hp4_home_strain,
+from autocal.pose_fit import (REJECT_SCALES, _MIN_SCALE_MM, _REJECT_ROUNDS, _at_far_bound, _home_strain,
                               dataset_line_lengths, dataset_stretch, fit_point_positions, robust_loss)
 from autocal.theoretical_ellipse import (anchor_opt_vec_to_matrix, anchors_matrix_to_opt_vec,
                                          compute_constraint_circle_3d, get_anchor_opt_bounds,
@@ -143,7 +143,6 @@ def fit_ellipses(
     dataset: dict,
     initial_anchors: np.ndarray,
     *,
-    low_anchor_z: Optional[float] = None,
     use_noise_mean: bool = True,
     fit_home_offsets: bool = False,
     home_offset_prior_sigma_mm: float = 5.0,
@@ -157,7 +156,7 @@ def fit_ellipses(
     (posterior std above half the prior), implausible (beyond two prior sigmas)
     or when they push an anchor onto a far bound.
     """
-    options = (low_anchor_z, use_noise_mean, home_offset_prior_sigma_mm)
+    options = (use_noise_mean, home_offset_prior_sigma_mm)
     rigid = _fit(dataset, initial_anchors, False, *options)
     if not fit_home_offsets:
         return rigid
@@ -167,12 +166,12 @@ def fit_ellipses(
         return {**rigid, "home_offsets_skipped": "undetermined"}
     if np.any(np.abs(fit["fitted_offsets_mm"]) > 2.0 * sigma):
         return {**rigid, "home_offsets_skipped": "implausible"}
-    if _at_far_bound(fit["anchors"], dataset, low_anchor_z) and not _at_far_bound(rigid["anchors"], dataset, low_anchor_z):
+    if _at_far_bound(fit["anchors"], dataset) and not _at_far_bound(rigid["anchors"], dataset):
         return {**rigid, "home_offsets_skipped": "anchor at bound"}
     return fit
 
 
-def _fit(dataset, initial_anchors, fit_home_offsets, low_anchor_z, use_noise_mean, home_offset_prior_sigma_mm):
+def _fit(dataset, initial_anchors, fit_home_offsets, use_noise_mean, home_offset_prior_sigma_mm):
     machine_type = str(dataset["machine_type"])
     num_anchors, dimensions = int(dataset["num_anchors"]), int(dataset["dimensions"])
     if not machine_type.startswith("hangprinter_") or dimensions != 3:
@@ -182,15 +181,15 @@ def _fit(dataset, initial_anchors, fit_home_offsets, low_anchor_z, use_noise_mea
     recorded = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
     stretch = dataset_stretch(dataset)
     sweeps = _sweep_ellipses(dataset, recorded)
-    lower, upper = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+    lower, upper = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)
     num_params = lower.size
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
-    home_strain = _hp4_home_strain(dataset) if fit_home_offsets and low_anchor_z is None else None
+    home_strain = _home_strain(dataset) if fit_home_offsets else None
     sigma = home_offset_prior_sigma_mm
 
     def unpack(x):
-        anchors = anchor_opt_vec_to_matrix(x[:num_params], machine_type, num_anchors, dimensions, low_anchor_z)
+        anchors = anchor_opt_vec_to_matrix(x[:num_params], machine_type, num_anchors, dimensions)
         offsets = np.zeros(num_anchors)
         if home_strain is not None:
             strain, extra_length = home_strain
@@ -201,7 +200,7 @@ def _fit(dataset, initial_anchors, fit_home_offsets, low_anchor_z, use_noise_mea
     lower = np.concatenate([lower, np.full(num_offsets, -np.inf)])
     upper = np.concatenate([upper, np.full(num_offsets, np.inf)])
     x_scale = np.concatenate([np.full(num_params, 100.0), np.ones(num_offsets)])
-    start = anchors_matrix_to_opt_vec(np.asarray(initial_anchors, dtype=float), machine_type, low_anchor_z)
+    start = anchors_matrix_to_opt_vec(np.asarray(initial_anchors, dtype=float), machine_type)
     x = np.concatenate([np.clip(start, lower[:num_params], upper[:num_params]), np.zeros(num_offsets)])
     scale = _MIN_SCALE_MM
     for _ in range(_STRETCH_PASSES if stretch is not None else 1):

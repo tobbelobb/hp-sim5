@@ -29,16 +29,6 @@ _ANCHOR_LSQ_METHODS = ("trf", "lm")
 _LBFGSB_TRF_FALLBACK_METHOD = "lbfgsb+trf-fallback"
 
 
-def _dataset_low_anchor_z(dataset: Union[dict, "SweepDataset"]) -> Optional[float]:
-    if not isinstance(dataset, dict):
-        return None
-    raw = dataset.get("_low_anchor_z")
-    try:
-        value = float(raw)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return None
-    return value if np.isfinite(value) else None
-
 
 def _jax_objective_enabled() -> bool:
     disable_jax = str(os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE", "")).strip().lower()
@@ -388,8 +378,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
     machine_type = machine_type_raw.value if isinstance(machine_type_raw, MachineType) else str(machine_type_raw)
     num_anchors = int(dataset.get("num_anchors", 4))
     dimensions = int(dataset.get("dimensions", 3))
-    low_anchor_z = _dataset_low_anchor_z(dataset)
-    lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+    lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)
     bounds = list(zip(lb, ub))
 
     cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
@@ -597,17 +586,15 @@ def _prepare_frozen_dataset_and_flags(
 
     try:
         machine_type, num_anchors, dimensions = _dataset_metadata(dataset)
-        low_anchor_z = _dataset_low_anchor_z(dataset)
-        lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+        lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)
         x0_matrix = anchor_opt_vec_to_matrix(
             np.asarray(x0, dtype=float).reshape(-1),
             machine_type,
             int(num_anchors),
             int(dimensions),
-            low_anchor_z,
         )
-        x0_clipped = np.clip(anchors_matrix_to_opt_vec(x0_matrix, machine_type, low_anchor_z), lb, ub)
-        anchors = anchor_opt_vec_to_matrix(x0_clipped, machine_type, int(num_anchors), int(dimensions), low_anchor_z)
+        x0_clipped = np.clip(anchors_matrix_to_opt_vec(x0_matrix, machine_type), lb, ub)
+        anchors = anchor_opt_vec_to_matrix(x0_clipped, machine_type, int(num_anchors), int(dimensions))
     except Exception:
         return dataset, flags
 
@@ -745,17 +732,15 @@ def solve_anchor_proposal_lsq(
 ) -> Dict[str, object]:
     """Solve one bounded anchor proposal with scipy least_squares."""
     machine_type, num_anchors, dimensions = _dataset_metadata(dataset)
-    low_anchor_z = _dataset_low_anchor_z(dataset)
-    lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+    lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)
     guess_matrix = anchor_opt_vec_to_matrix(
         np.asarray(initial_guess, dtype=float),
         machine_type,
         int(num_anchors),
         int(dimensions),
-        low_anchor_z,
     )
     x0 = np.clip(
-        anchors_matrix_to_opt_vec(guess_matrix, machine_type, low_anchor_z),
+        anchors_matrix_to_opt_vec(guess_matrix, machine_type),
         lb,
         ub,
     )
@@ -788,7 +773,6 @@ def solve_anchor_proposal_lsq(
         machine_type,
         int(num_anchors),
         int(dimensions),
-        low_anchor_z,
     )
     detailed = cost_fn.evaluate_detailed(np.asarray(result.x, dtype=float))
     return {
@@ -834,10 +818,9 @@ def solve_anchors(
     and the raw scipy result from the best restart.
     """
     machine_type, num_anchors, dimensions = _dataset_metadata(dataset)
-    low_anchor_z = _dataset_low_anchor_z(dataset)
-    lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+    lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)
 
-    expected_len = anchor_opt_vector_size(machine_type, num_anchors, dimensions, low_anchor_z)
+    expected_len = anchor_opt_vector_size(machine_type, num_anchors, dimensions)
     if lb.size != expected_len or ub.size != expected_len:
         raise ValueError(
             f"Bounds size mismatch for {machine_type}: expected {expected_len}, got {lb.size}"
@@ -942,7 +925,6 @@ def solve_anchors(
                 machine_type,
                 num_anchors,
                 dimensions,
-                low_anchor_z,
             )
             norms = np.linalg.norm(anchors, axis=1)
             norms_str = ", ".join(f"{v:.3f}" for v in norms.tolist())
@@ -1212,9 +1194,8 @@ def solve_anchors(
             machine_type,
             num_anchors,
             dimensions,
-            low_anchor_z,
         )
-        guess = anchors_matrix_to_opt_vec(guess_matrix, machine_type, low_anchor_z)
+        guess = anchors_matrix_to_opt_vec(guess_matrix, machine_type)
         initial_guesses.append(np.clip(guess, lb, ub))
 
     while len(initial_guesses) < max(num_restarts, 1):
@@ -1222,9 +1203,8 @@ def solve_anchors(
             full_lb, full_ub = get_anchor_bounds(machine_type)
             full_guess = rng.uniform(full_lb, full_ub)
             guess = anchors_matrix_to_opt_vec(
-                anchor_opt_vec_to_matrix(full_guess, machine_type, num_anchors, dimensions, low_anchor_z),
+                anchor_opt_vec_to_matrix(full_guess, machine_type, num_anchors, dimensions),
                 machine_type,
-                low_anchor_z,
             )
         else:
             guess = rng.uniform(lb, ub)
@@ -1522,7 +1502,7 @@ def solve_anchors(
         )
 
     cost_fn = best_cost_fn
-    anchors_matrix = anchor_opt_vec_to_matrix(best_result.x, machine_type, num_anchors, dimensions, low_anchor_z)
+    anchors_matrix = anchor_opt_vec_to_matrix(best_result.x, machine_type, num_anchors, dimensions)
     detailed: CostResult = best_cost_fn.evaluate_detailed(best_result.x)
 
     if verbose:

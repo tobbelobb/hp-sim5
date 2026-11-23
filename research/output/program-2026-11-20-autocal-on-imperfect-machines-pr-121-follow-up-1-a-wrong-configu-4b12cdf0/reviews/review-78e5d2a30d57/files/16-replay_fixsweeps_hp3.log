@@ -1,0 +1,16 @@
+1000 reads step 230780
+2000 reads step 637098
+3000 reads step 839638
+4000 reads step 999061
+5000 reads step 1173015
+6000 reads step 1345405
+7000 reads step 1540540
+8000 reads step 1722791
+9000 reads step 1885499
+10000 reads step 2042774
+11000 reads step 2190565
+done 11645
+
+real	3m17,746s
+user	3m19,037s
+sys	0m0,351s

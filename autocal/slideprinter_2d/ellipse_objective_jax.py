@@ -13,8 +13,7 @@ import numpy as np
 from autocal.slideprinter_2d.ellipse_cost import EllipseCostFunction
 from autocal.theoretical_ellipse import (
     _ANCHOR_OPT_MODE_FULL,
-    _ANCHOR_OPT_MODE_HANGPRINTER_AX0_FIXED_LOW_Z,
-    _ANCHOR_OPT_MODE_HANGPRINTER_AX0_SHARED_LOW_Z,
+    _ANCHOR_OPT_MODE_HANGPRINTER_VERTICAL_TOP,
     _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0,
     anchor_opt_constraint_mode,
     anchor_opt_vector_size,
@@ -366,7 +365,6 @@ def _anchors_from_opt_vec(
     anchor_vec: "jnp.ndarray",
     lb: "jnp.ndarray",
     ub: "jnp.ndarray",
-    low_anchor_z: "jnp.ndarray",
     *,
     num_anchors: int,
     dimensions: int,
@@ -378,14 +376,11 @@ def _anchors_from_opt_vec(
     if constraint_mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
         x = jnp.concatenate([jnp.zeros((1,), dtype=x.dtype), x], axis=0)
         return x.reshape((num_anchors, dimensions))
-    if constraint_mode in (_ANCHOR_OPT_MODE_HANGPRINTER_AX0_SHARED_LOW_Z, _ANCHOR_OPT_MODE_HANGPRINTER_AX0_FIXED_LOW_Z):
-        shared = constraint_mode == _ANCHOR_OPT_MODE_HANGPRINTER_AX0_SHARED_LOW_Z
-        low_z = x[1] if shared else jnp.asarray(low_anchor_z, dtype=x.dtype)
-        start = 2 if shared else 1
-        low_xy = x[start:-3].reshape((num_anchors - 2, 2))
-        first = jnp.stack([jnp.zeros((), dtype=x.dtype), x[0], low_z])[None, :]
-        lows = jnp.concatenate([low_xy, jnp.full((num_anchors - 2, 1), low_z)], axis=1)
-        return jnp.concatenate([first, lows, x[-3:][None, :]], axis=0)
+    if constraint_mode == _ANCHOR_OPT_MODE_HANGPRINTER_VERTICAL_TOP:
+        zero = jnp.zeros((1,), dtype=x.dtype)
+        first = jnp.concatenate([zero, x[:2]])[None, :]
+        top = jnp.concatenate([zero, zero, x[-1:]])[None, :]
+        return jnp.concatenate([first, x[2:-1].reshape((num_anchors - 2, 3)), top], axis=0)
     return x.reshape((num_anchors, dimensions))
 
 
@@ -459,7 +454,6 @@ def _objective_core(
     point_mask: "jnp.ndarray",
     has_sigma: "jnp.ndarray",
     num_points: "jnp.ndarray",
-    low_anchor_z: "jnp.ndarray",
     lb: "jnp.ndarray",
     ub: "jnp.ndarray",
     *,
@@ -485,7 +479,6 @@ def _objective_core(
         anchor_vec,
         lb,
         ub,
-        low_anchor_z,
         num_anchors=num_anchors,
         dimensions=dimensions,
         constraint_mode=constraint_mode,
@@ -784,7 +777,6 @@ def _build_kwargs_for_objective(cost_fn: EllipseCostFunction, *, constraint_mode
 
 def _build_packed_jax_args(
     packed: _PackedSweeps,
-    low_anchor_z: float,
     lb_arr: np.ndarray,
     ub_arr: np.ndarray,
 ) -> tuple:
@@ -802,7 +794,6 @@ def _build_packed_jax_args(
         jnp.asarray(packed.point_mask),
         jnp.asarray(packed.has_sigma),
         jnp.asarray(packed.num_points),
-        jnp.asarray(low_anchor_z, dtype=float),
         jnp.asarray(lb_arr),
         jnp.asarray(ub_arr),
     )
@@ -812,7 +803,7 @@ def _jax_constraint_mode(
     cost_fn: EllipseCostFunction,
     lb_arr: np.ndarray,
     ub_arr: np.ndarray,
-) -> Optional[Tuple[int, float]]:
+) -> Optional[int]:
     if lb_arr.size != ub_arr.size:
         return None
     full_size = int(cost_fn.num_anchors) * int(cost_fn.dimensions)
@@ -821,24 +812,12 @@ def _jax_constraint_mode(
             cost_fn.machine_type,
             cost_fn.num_anchors,
             cost_fn.dimensions,
-            cost_fn.low_anchor_z,
         )
     )
     if lb_arr.size == full_size:
-        return _ANCHOR_OPT_MODE_FULL, float("nan")
+        return _ANCHOR_OPT_MODE_FULL
     if lb_arr.size == opt_size:
-        mode = int(
-            anchor_opt_constraint_mode(
-                cost_fn.machine_type,
-                cost_fn.num_anchors,
-                cost_fn.dimensions,
-                cost_fn.low_anchor_z,
-            )
-        )
-        low_anchor_z = float(cost_fn.low_anchor_z) if cost_fn.low_anchor_z is not None else float("nan")
-        if mode == _ANCHOR_OPT_MODE_HANGPRINTER_AX0_FIXED_LOW_Z and not np.isfinite(low_anchor_z):
-            return None
-        return mode, low_anchor_z
+        return int(anchor_opt_constraint_mode(cost_fn.machine_type, cost_fn.num_anchors, cost_fn.dimensions))
     return None
 
 
@@ -866,9 +845,9 @@ def build_compiled_value_and_grad(
     layout = _jax_constraint_mode(cost_fn, lb_arr, ub_arr)
     if layout is None:
         return None
-    constraint_mode, low_anchor_z = layout
+    constraint_mode = layout
     kwargs = _build_kwargs_for_objective(cost_fn, constraint_mode=constraint_mode)
-    packed_args = _build_packed_jax_args(packed, low_anchor_z, lb_arr, ub_arr)
+    packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
 
     def _wrapped(anchor_vec: np.ndarray) -> Tuple[float, np.ndarray]:
         x_np = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb_arr, ub_arr)
@@ -927,9 +906,9 @@ def build_compiled_objective(
     layout = _jax_constraint_mode(cost_fn, lb_arr, ub_arr)
     if layout is None:
         return None
-    constraint_mode, low_anchor_z = layout
+    constraint_mode = layout
     kwargs = _build_kwargs_for_objective(cost_fn, constraint_mode=constraint_mode)
-    packed_args = _build_packed_jax_args(packed, low_anchor_z, lb_arr, ub_arr)
+    packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
 
     def _wrapped(anchor_vec: np.ndarray) -> float:
         x_np = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb_arr, ub_arr)

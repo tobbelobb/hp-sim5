@@ -41,7 +41,7 @@ def main():
                 try:
                     if fit.get('spool_model_params') is not None:
                         raise ValueError('Joint comparison with fitted spool lengths is not validated')
-                    seed = build_anchor_initial_guess(fit['dataset'], low_anchor_z=fit['dataset'].get('_low_anchor_z'))
+                    seed = build_anchor_initial_guess(fit['dataset'])
                     joint = fit_joint_ranges(
                         fit['dataset'], fit['anchors'] if seed is None else seed,
                         fit_home_offsets=fit['home_offsets_fitted'],

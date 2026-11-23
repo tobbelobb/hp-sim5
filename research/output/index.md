@@ -218,7 +218,25 @@ One result sentence per session; follow the report for evidence.
 
 - [session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea](program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-test-numerical-integration-accuracy-on-analytic-systems-damped-h-c6fd65ea/report.md) — No result summary available.
 
+- [Compliance observability: a fixed-pose force step measures line compliance to ±4%](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/report.md) — No result summary available.
+
+- [Compliance probe on HP5r sweeps and the ellipsoid shape: measured k halves the stiffness error](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-probe-where-stiffness-really-trades-against-the-top-a-62081729/report.md) — No result summary available.
+
 - [Ellipsoid autocal: sweeps still win; the held anchor's height trades against stretch scale](session-2026-11-20-ellipsoid-autocal/report.md) — No result summary available.
+
+- [Imperfect-machine autocal benchmark: HP3 holds about 1.1 mm in the print frame; uneven low heights are a gauge on three low anchors](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-imperfect-machine-benchmark-and-baseline-spread-build-a-reproduc-8a1f6003/report.md) — No result summary available.
+
+- [Uneven low-anchor heights: free every low z, fix the gauge at the top anchor](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/report.md) — No result summary available.
+
+- [Force realisation in autocal data: fit the realised force, then compliance](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/report.md) — No result summary available.
+
+- [HP5r top-anchor height bias and paired collection](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06/report.md) — Small rotations of the effector explain the remaining positive HP5r top-anchor height bias in controlled replays, and paired data show that the speed and accuracy of ellipsoid collection vary by machine.
+
+- [Home-stretch correction is now the default on HP3 (already on HP4; built into HP5/HP5r's stretch model)](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-make-the-home-stretch-correction-the-default-autocal-fit-the-com-01a484d6/report.md) — No result summary available.
+
+- [Production force-realisation fitting on HP3 and HP5r](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-production-force-realisation-fitting-reuse-blind-period-scan-and-b5e5ea67/report.md) — A sweep-validated ripple correction reduced mean HP3 print-frame error from 0.45 to 0.15 mm on 11 simulator recordings and is available as an opt-in; HP5r and joint stiffness fitting remain research candidates.
+
+- [Rough-bootstrap robustness: the HP5r seed-3 failure was a one-sample force auto-tune plateau rule](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-rough-bootstrap-robustness-on-imperfect-machines-hp5-pulley-redu-20f0ffb5/report.md) — No result summary available.
 
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 

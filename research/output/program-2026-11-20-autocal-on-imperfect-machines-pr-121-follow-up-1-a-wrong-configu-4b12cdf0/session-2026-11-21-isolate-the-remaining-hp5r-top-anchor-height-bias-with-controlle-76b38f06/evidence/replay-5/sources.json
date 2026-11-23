@@ -1,0 +1,17 @@
+{
+  "sweeps.json": {
+    "local_uri": "file:///home/torbjorn/.t3/worktrees/hp-sim5/t3-8ab5d557-4e1ca8e08b845775/output/fr/hp5r-s5/sweeps.json",
+    "bytes": 249542,
+    "sha256": "7fb03260771bb47f69dd93bc9eb8b13f00960fa17c3235b74a1d6c05f8816ad9"
+  },
+  "sweeps.headless/scene.usda": {
+    "local_uri": "file:///home/torbjorn/.t3/worktrees/hp-sim5/t3-8ab5d557-4e1ca8e08b845775/output/fr/hp5r-s5/sweeps.headless/scene.usda",
+    "bytes": 83069,
+    "sha256": "1388841b5d1083e63323ac58a26aa8e84a602e84a23e3b28010d0199a48a2f52"
+  },
+  "sweeps.headless/events.jsonl": {
+    "local_uri": "file:///home/torbjorn/.t3/worktrees/hp-sim5/t3-8ab5d557-4e1ca8e08b845775/output/fr/hp5r-s5/sweeps.headless/events.jsonl",
+    "bytes": 147190374,
+    "sha256": "232ca941327b09889ab75fd1ec9322419269f8cee0add87875c243230e5181a4"
+  }
+}

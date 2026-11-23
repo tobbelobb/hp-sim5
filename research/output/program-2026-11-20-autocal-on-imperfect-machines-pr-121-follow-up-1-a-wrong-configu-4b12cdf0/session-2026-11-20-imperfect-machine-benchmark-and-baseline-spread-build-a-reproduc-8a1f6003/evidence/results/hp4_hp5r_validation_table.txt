@@ -1,0 +1,3 @@
+name          dz                       top   k      tiltD  frame  worst  lowz                     Dz     xy    raw    gauge  rigid  rms     chi2  jack  split  sweeps  sim   stop           
+hp4-nominal    +0.0  +0.0  +0.0         0.0  1.000  0.00   0.72   C.x    -0.12 +0.16 +0.26        -0.04  0.72   0.73  0.73   0.68   0.0240  1.56  0.43  1.31   7       4924  stable-estimate
+hp5r-nominal   +0.0  +0.0  +0.0  +0.0   0.0  1.000  0.00   0.92   C.y    +0.02 -0.15 -0.15 +0.02  +0.36  0.92   0.93  0.93   0.75   0.0256  0.97  1.06  1.25   6       4686  good-fit       

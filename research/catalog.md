@@ -13,6 +13,112 @@ and evidence in Git; prefer those links when continuing in another environment.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Rough-bootstrap robustness: HP5r seed 3 was a one-sample force auto-tune plateau rule
+
+Status: complete, unreviewed, 2026-11-21. Topics: autocalibration, force auto-tune, size tuning, rough bootstrap, imperfect machines, HP3, HP4, HP5, HP5r.
+
+- **Cause.** HP5r's edge ramp creeps about 140° at both 1.44 and 2.02 N, then runs free at 2.83 N. On seed 3 a −0.4° gain fired the single-sample "travel stopped increasing" rule, which set force max at 1.44 N, just above the 1.03 N breakaway. Size tuning then moved 0.25 mm and the rough bootstrap had nothing to fit.
+- **Fix** (`9b2941ee`). A flat or reversing sample is one of the two declines that are needed. Seed 3 becomes good-fit at 1.17 mm.
+- **No change elsewhere.** 16 of 16 comparable runs are bit-identical. Of 105 replayed archived ramps, only seed 3's and two old HP4 workspace-limit reversals change.
+- **Failure rate.** On random machines the bootstrap failed 1/23 before (HP5r 1/10) and 0/23 after.
+
+Simulation only.
+
+[Report and evidence](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-rough-bootstrap-robustness-on-imperfect-machines-hp5-pulley-redu-20f0ffb5/report.md).
+
+## Force realisation: fit the realised force, then compliance
+
+Status: complete, unreviewed, 2026-11-21. Topics: autocalibration, force realisation, cogging, hysteresis, compliance, imperfect machines, HP3 ellipsoid, HP5r.
+
+- **Cause.** The sim's commanded-vs-realised tension error is pure torque-mode cogging, 0.333 N · sin(50 θ_encoder) per spool. It has no friction, hysteresis or scale error.
+- **What the data identify.** Errors that vary with recorded variables (encoder angle, direction of motion) are identifiable from the sweep rms. Once the ripple is modelled, so is a per-motor constant offset/scale (corrected after review). A common scale is degenerate with k.
+- **Result.** Fitting per-motor ripple, and a direction offset, jointly with anchors and k from the rms gives the following, with no probe and no configured stiffness:
+  - HP3 ellipsoid: 0.16 ± 0.06 mm (11 runs; live 2.22 mm).
+  - HP5r: 0.74 ± 0.21 mm (6 runs).
+  - The result holds at 2×/4× ripple, including live 2×, and with ±0.2 N hysteresis if a direction offset is fitted (0.32 mm).
+- **Blind test** (unknown 137/turn ripple, 0.5 N single-motor offset): the period is found and the offset recovered. HP3e max error is 0.17 mm mean over 7 held-out cases (6/7 < 0.3).
+- **Caveats.**
+  - The headline numbers use the oracle 50/turn basis.
+  - HP5r blind test not done.
+  - HP5r collection fails at 2× cogging.
+  - The home-stretch emulation was a double count.
+
+Simulation only. Fit-side diagnostic, not integrated code.
+
+[Report and evidence](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/report.md).
+
+## Compliance probe on HP5r sweeps and the ellipsoid shape
+
+Status: complete, unreviewed, 2026-11-21. Topics: autocalibration, stretch, compliance, imperfect machines, HP3 ellipsoid, HP5r.
+
+- **Result.** Where configured stiffness trades strongly against the top anchor, measuring k matters. Configured S leaves mean max error 2.5–2.6 mm (worst 5.4) at EA ×0.8/×1.2. The force-step probe's k cuts it to 1.0 mm (HP5r) and 1.4 mm (HP3 ellipsoid) for about 3% time.
+- **Bias.** The probe's k is biased about ±4%, with the sign depending on the machine. An exact replay shows this is force realisation (commanded ≠ realised tension), plus 2% missing reeving in HP5r's M666 Y. It is not the line model or the sim's compliance. The same realisation error drives most of the fit's remaining top-z error.
+- **Joint rms fit.** It is free and as good in mean, but it has occasional 13% misses on HP5r.
+
+Simulation only.
+
+[Report and evidence](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-probe-where-stiffness-really-trades-against-the-top-a-62081729/report.md).
+
+## Home-stretch correction as the default autocal fit
+
+Status: complete, unreviewed, 2026-11-21. Topics: autocalibration, stretch, home reference, imperfect machines, HP3, HP4, HP5, HP5r.
+
+- **Change.** The ABC home-strain term `(T/S)(d0+Y/U)` now applies on every equal-strain d+1-line machine (HP3 and HP4), not only HP4.
+- **HP3, live and paired on 10 seeds.** Print-frame max error falls from 1.06 ± 0.31 to 0.44 ± 0.10 mm, better in 10/10. The common low-z shift goes from −0.80 to +0.06 mm. Stops are unchanged.
+- **Stiffness.** A ±20% EA error costs about ±0.1 mm of common z.
+- **HP5/HP5r.** Their per-point flex model already treats encoder zero as unstretched. Forcing the term on doubles the error, so it is excluded there and their results are byte-identical.
+
+Simulation only.
+
+[Report and evidence](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-make-the-home-stretch-correction-the-default-autocal-fit-the-com-01a484d6/report.md).
+
+## Compliance observability: force-step probe measures line compliance
+
+Status: complete for HP3, 2026-11-21. Topics: autocalibration, stretch, compliance, home reference, imperfect machines, HP3, HP4, HP5.
+
+- **Where it matters.** A wrong configured stiffness trades strongly against the top anchor height only on HP5 pulley-reduced sweeps (8.4 mm per unit compliance) and in the ellipsoid shape (5–10 mm). On HP3 the ~1 mm common z shift is ABC stretch relative to the slack encoder origin.
+- **What fixes it.** A fixed-pose force-step probe (~150 s simulated) measures the compliance to ±4%. With it, HP3 D.z lands within 0.04 mm of the true-compliance fit on nine live runs at EA ×0.8–1.2.
+- **What remains.** The leftover D.z shape error comes from force realisation.
+
+Simulation only.
+
+[Report and evidence](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-compliance-observability-for-the-top-anchor-height-with-todays-c-4f2510fd/report.md).
+
+## Uneven low-anchor heights: free low z, gauge at the top anchor
+
+Status: complete, 2026-11-21. Topics: autocalibration, anchor gauge, frame convention, low-anchor heights, HP3, HP4, HP5, HP5r.
+
+The old point fit gave all low anchors one z.
+- **HP3/HP4:** one low anchor h mm off became an exact, undetectable tilt, with 0.68·h anchor error.
+- **HP5/HP5r:** it distorted the shape (2–2.4·h) and made a live HP5 run fail at 5 mm.
+
+Per the user's convention (origin at home, top anchor straight above it, A.x = 0), every Hangprinter fit now frees each low z, and `--low-anchor-z` is gone.
+- **Offline:** error stays flat in h, at HP3 1.0, HP4 0.7, HP5 1.0 and HP5r 1.6 mm, for a cost of ≤ 0.3 mm at equal heights.
+- **Live:** HP5 A+5 now completes at 0.78 mm.
+- **Unchanged:** the D.z/stiffness coupling.
+- **HP5 jackknife:** under the free gauge it printed "poor" in 4 of 9 sub-mm HP5/HP5r runs, because one fold lost a coordinate's only constraint.
+  - **Fix:** that fold is now left out of that coordinate alone, found from pose information, and the coordinate is reported as single-sweep supported.
+  - **Results:** false "poor" fell from 4/9 to 1/9; all 56 single-sweep corruptions kept their classical label; the 84-run corpus replay changed no decision.
+  - **Rejected:** a median spread, which review showed hid 2 of 22 single-sweep failures above 5 mm.
+- **Also measured:** HP4 live with A raised 10 mm is 1.04 mm; a top line 50 mm off plumb moves the anchors ≤ 0.09 mm.
+- Simulation only.
+
+[Report and evidence](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/report.md).
+
+## Imperfect-machine benchmark: about 1.1 mm on random HP3s; uneven low heights are a gauge on three low anchors
+
+Status: complete, 2026-11-21. Topics: autocalibration, imperfect machines, benchmark harness, anchor heights, top-anchor offset, stiffness, force auto-tune, HP3, HP5.
+
+`python -m autocal.tools.imperfect_machine OUT --seed N` runs the default autocal on a randomized imperfect scene and scores it in the print frame.
+- **HP3 spread.** On 10 random HP3 machines the error is 1.11 ± 0.35 mm, mostly the known common z shift.
+- **Low heights on HP3.** Uneven low heights are an exact, invisible rigid tilt. Stiffness ±20% moves the anchors by ≤0.25 mm.
+- **HP5.** HP5's four low anchors broke the shared-z fit (4–19 mm, flagged). Freeing the low z values fixed it (0.5–1.0 mm).
+- **Force auto-tune.** A knife-edge in force auto-tune failed 1/10 machines and was fixed.
+
+Simulation only.
+
+[Report and evidence](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-imperfect-machine-benchmark-and-baseline-spread-build-a-reproduc-8a1f6003/report.md).
+
 ## Ellipsoid autocal: sweeps still win; stretch scale decides accuracy
 
 Status: complete, 2026-11-20. Topics: autocalibration, sphere meshes, ellipsoid fit, point fit, stretch, collector, disturbances, HP3, HP4, HP5.
@@ -312,3 +418,11 @@ implement measurement-only spare-line sensing with local coupling checks and
 force-aware range fitting. Both simulated continuations apply near-1 mm anchors;
 matched final-data comparisons improve direct HP5 and worsen reduced HP5. See
 the report's negative result and limitations before extending the policy.
+
+## Autocal on imperfect machines (2026-11-21/23)
+
+[Program agenda](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/agenda.md).
+The paired studies cover uneven anchor heights, wrong line stiffness and elevated
+motor cogging. See the [HP5 stopping and load-cap results](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/validation/high-cogging/report.md),
+the [guarded force fit](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-production-force-realisation-fitting-reuse-blind-period-scan-and-b5e5ea67/report.md),
+and the [HP5r rotation replay and collection comparison](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06/report.md).

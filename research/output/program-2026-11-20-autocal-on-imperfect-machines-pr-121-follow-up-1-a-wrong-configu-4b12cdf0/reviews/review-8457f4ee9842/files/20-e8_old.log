@@ -1,0 +1,2 @@
+{"run": "base_0", "code": "/home/torbjorn/repos/hp-sim5/autocal/theoretical_ellipse.py", "err": 1.1701071332091695, "low_z_err": [-0.967, -0.967, -0.967], "dz_D": -0.572537890160902}
+{"run": "new_base_0", "code": "/home/torbjorn/repos/hp-sim5/autocal/theoretical_ellipse.py", "err": 1.1758936836129679, "low_z_err": [-0.97, -0.97, -0.97], "dz_D": -0.5703203366556409}

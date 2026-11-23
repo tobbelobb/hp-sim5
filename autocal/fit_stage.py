@@ -4,7 +4,9 @@ from __future__ import annotations
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.slideprinter_2d.filter_pass import estimate_effective_radii_with_spool_model
 from autocal.equal_strain import is_equal_strain
-from autocal.pose_fit import HOME_OFFSET_PRIOR_SIGMA_MM, fit_pose_least_squares, shift_dataset_home_offsets, dataset_line_lengths, dataset_stretch
+from autocal.force_ripple import correct_hp3_force_ripple
+from autocal.pose_fit import (HOME_OFFSET_PRIOR_SIGMA_MM, _at_far_bound, dataset_line_lengths,
+                              dataset_stretch, fit_pose_least_squares, shift_dataset_home_offsets)
 from autocal.projection_mode import resolve_projection_mode
 from autocal.ellipse_fit import fit_ellipses
 from autocal.spool_fit import fit_spools
@@ -49,8 +51,8 @@ def fit_ellipse_dataset(
     fd_eps_mm: float,
     regularization: float,
     collector_args: Sequence[str],
-    low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
+    fit_force_ripple: bool = False,
     ellipse_reference_fit: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -59,16 +61,6 @@ def fit_ellipse_dataset(
     initial_buildup_factor: Optional[np.ndarray] = None,
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
-    if low_anchor_z is not None:
-        try:
-            low_anchor_z = float(low_anchor_z)
-        except (TypeError, ValueError):
-            low_anchor_z = None
-        if low_anchor_z is not None and np.isfinite(low_anchor_z):
-            dataset = dict(dataset)
-            dataset["_low_anchor_z"] = float(low_anchor_z)
-        else:
-            low_anchor_z = None
     remapped_points = _normalize_dataset_point_roles(dataset)
     machine_type = _require_machine_type(dataset, context=str(dataset_path))
     num_anchors = int(dataset.get("num_anchors", 4))
@@ -131,7 +123,6 @@ def fit_ellipse_dataset(
             dataset,
             machine_type=str(machine_type),
             base_radii_mm=base_radii_for_seed,
-            low_anchor_z=low_anchor_z,
         )
 
     def _resolve_spool_seed(
@@ -156,6 +147,7 @@ def fit_ellipse_dataset(
     length_model: Optional[Dict[str, object]] = None
     spool_params: Optional[SpoolModelParams] = None
     home_offsets_mm = np.zeros(int(num_anchors))
+    force_ripple = None
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
     _annotate_dataset_noise_model(
@@ -204,8 +196,7 @@ def fit_ellipse_dataset(
                                if search_radii else (np.zeros(0), np.zeros(0))),
                 buildup_bounds=_resolve_b_bounds(modeled_buildup, find_buildup_mode=find_buildup_mode, b_bounds=b_bounds),
                 radius_prior_sigma_mm=r0_prior_sigma_mm, buildup_prior_sigma=b_prior_sigma,
-                initial_radii_mm=initial_radii_seed, initial_buildup_factor=initial_buildup_seed,
-                low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+                initial_radii_mm=initial_radii_seed, initial_buildup_factor=initial_buildup_seed, use_noise_mean=bool(use_noise_mean),
             )
             if not spool["success"]:
                 raise ValueError("Spool point fit did not converge: " + spool["message"])
@@ -239,7 +230,6 @@ def fit_ellipse_dataset(
                 generate_report=False,
                 residuals_csv=None,
                 initial_guess=anchor_initial_guess,
-                low_anchor_z=low_anchor_z,
             )
             seed_anchors = np.asarray(seed_cal["anchors"], dtype=float)
             effective_radii_mm, _fit_anchors, spool_params, dataset_for_estimation, radii_fit = (
@@ -270,7 +260,6 @@ def fit_ellipse_dataset(
                     use_noise_mean=bool(use_noise_mean),
                     sigma_source=str(sigma_source),
                     robust_debug=bool(robust_debug),
-                    low_anchor_z=low_anchor_z,
                     prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
                     filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
                     objective_schedule=_parse_objective_schedule(
@@ -321,7 +310,6 @@ def fit_ellipse_dataset(
                     residuals_csv=residuals_csv,
                     report_base_path=dataset_path,
                     initial_guess=seed_anchors,
-                    low_anchor_z=low_anchor_z,
                 )
 
         length_model = {
@@ -384,7 +372,6 @@ def fit_ellipse_dataset(
                 anchor_initial_guess,
                 fit_home_offsets=True,
                 home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
-                low_anchor_z=low_anchor_z,
                 use_noise_mean=bool(use_noise_mean),
             )
             if not offset_fit["success"]:
@@ -396,15 +383,19 @@ def fit_ellipse_dataset(
             primary_pose_fit = fit_pose_least_squares(
                 dataset_for_estimation,
                 offset_fit["anchors"] if fit_home_offsets else anchor_initial_guess,
-                fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
-                low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+                fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM, use_noise_mean=bool(use_noise_mean),
             )
             if not primary_pose_fit["success"]:
                 raise ValueError("Point fit did not converge: " + primary_pose_fit["message"])
+            if (fit_force_ripple and fit_home_offsets and not ellipse_reference_fit
+                    and not offset_fit.get("home_offsets_skipped")):
+                correction = _refit_force_ripple(dataset, primary_pose_fit, home_offsets_mm, bool(use_noise_mean))
+                if correction is not None:
+                    primary_pose_fit, dataset_for_estimation, home_offsets_mm, force_ripple = correction
+                    sweep_configs_for_info = dataset_sweep_configs(dataset_for_estimation)
             primary_fit = primary_pose_fit
             if ellipse_reference_fit:
-                primary_fit = fit_ellipses(dataset_for_estimation, primary_pose_fit["anchors"],
-                                           low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean))
+                primary_fit = fit_ellipses(dataset_for_estimation, primary_pose_fit["anchors"], use_noise_mean=bool(use_noise_mean))
             cal = {"anchors": primary_fit["anchors"], "cost": 0., "details": {}}
         else:
             cal = calibrate_elliptical(
@@ -426,7 +417,6 @@ def fit_ellipse_dataset(
                 generate_report=bool(generate_report),
                 residuals_csv=residuals_csv,
                 initial_guess=anchor_initial_guess,
-                low_anchor_z=low_anchor_z,
             )
 
     anchors = np.asarray(cal["anchors"], dtype=float)
@@ -441,15 +431,13 @@ def fit_ellipse_dataset(
             _resolve_anchor_seed(None),
             fit_home_offsets=False,
             home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
-            low_anchor_z=low_anchor_z,
             use_noise_mean=bool(use_noise_mean),
             extra_initial_anchors=[anchors],
         )
     if point_model:
         lengths = dataset_line_lengths(dataset_for_estimation, use_noise_mean=bool(use_noise_mean))["lengths_mm"]
         sigma = float(primary_fit["robust_scale_mm"])
-        info_obs = pose_information(anchors, lengths, machine_type=machine_type,
-                                   low_anchor_z=low_anchor_z, sigma_mm=sigma,
+        info_obs = pose_information(anchors, lengths, machine_type=machine_type, sigma_mm=sigma,
                                    stretch=dataset_stretch(dataset_for_estimation))
         offsets = num_anchors - dimensions
         if fit_home_offsets:
@@ -586,6 +574,35 @@ def fit_ellipse_dataset(
         "fit_model": ("point" if point_model and (search_radii or search_buildup or not ellipse_reference_fit)
                       else "ellipse"),
         "home_offsets_mm": home_offsets_mm,
+        "force_ripple": force_ripple,
         "home_offsets_fitted": bool(fit_home_offsets),
         "use_noise_mean": bool(use_noise_mean),
     }
+
+
+def _refit_force_ripple(dataset, baseline, home_offsets_mm, use_noise_mean):
+    if dataset["machine_type"] != "hangprinter_3" or _at_far_bound(baseline["anchors"], dataset):
+        return None
+    try:
+        correction = correct_hp3_force_ripple(dataset, baseline, home_offsets_mm, use_noise_mean=use_noise_mean)
+        if correction is None:
+            return None
+        corrected, diagnostics = correction
+        options = dict(home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM, use_noise_mean=use_noise_mean)
+        offsets = fit_pose_least_squares(corrected, baseline["anchors"], fit_home_offsets=True, **options)
+        if not offsets["success"] or offsets.get("home_offsets_skipped"):
+            return None
+        home = offsets["home_offsets_mm"]
+        shifted = shift_dataset_home_offsets(corrected, home)
+        trial = fit_pose_least_squares(shifted, offsets["anchors"], fit_home_offsets=False, **options)
+    except (IndexError, KeyError, TypeError, ValueError, np.linalg.LinAlgError):
+        return None
+    kept = np.ones(baseline["num_points"], dtype=bool)
+    kept[baseline["rejected_points"]] = False
+    previous = np.linalg.norm(baseline["point_residuals_mm"][kept])
+    current = np.linalg.norm(trial["point_residuals_mm"][kept])
+    if (not trial["success"] or _at_far_bound(trial["anchors"], dataset)
+            or np.any(kept[trial["rejected_points"]])
+            or not current < 0.5 * previous):
+        return None
+    return trial, shifted, home, diagnostics

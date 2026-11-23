@@ -1,0 +1,7 @@
+recorded sim data: {'max_coord': 0.9665942799188088, 'Dz': -0.572537890160902, 'low_z': -0.9665942799188088, 'err': [[0.0, 0.015, -0.967], [0.598, 0.278, -0.967], [0.175, -0.03, -0.967], [-0.203, -0.079, -0.573]]}
+S x1e+09: max 0.000 Dz -0.000 lowz -0.000 offD +0.000 rms 0.0000  tension range 0.53..4.31 N
+S x2: max 0.538 Dz -0.538 lowz -0.453 offD +0.534 rms 0.0003  tension range 0.53..4.31 N
+S x1.2: max 0.896 Dz -0.896 lowz -0.754 offD +0.889 rms 0.0005  tension range 0.53..4.31 N
+S x1: max 1.075 Dz -1.075 lowz -0.904 offD +1.066 rms 0.0005  tension range 0.53..4.31 N
+S x0.8: max 1.343 Dz -1.343 lowz -1.130 offD +1.332 rms 0.0007  tension range 0.53..4.31 N
+S x0.5: max 2.147 Dz -2.147 lowz -1.806 offD +2.130 rms 0.0011  tension range 0.53..4.31 N

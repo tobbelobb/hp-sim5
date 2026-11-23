@@ -1,0 +1,24 @@
+{
+  "git_revision": "e022c0953e2f8d69ca7601a10f11a5063843c2e5",
+  "status": "complete",
+  "normal_completion": true,
+  "simulated_s": 4621.514,
+  "wall_s": 490.20683028899657,
+  "stop_reason": "stable-estimate",
+  "dt_s": 0.002,
+  "scene_sha256": "a81fd963ec961641b70ff5e10256a567f6a6731065c2aa492547e9ea4c020269",
+  "baked_scene_sha256": "1af28ba8f7fe0ee676061ec166a5a32141fae6aa1d39d350548151de8f0a9637",
+  "rrf_sha256": "bb55011c2c7eb6050d82e0e9aba60aa6bd6ba8834758c908358a68dee5c37330",
+  "firmware_config_sha256": "322b94c93eb3451fd1c4565c275fd3035381a44ab6aa5164d2c38786ea4ce2ab",
+  "recording_mode": "none",
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-11-11 22:12:27",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU2:2:2:4\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08100\nS20000.00\nI10.0:10.0:10.0:10.0\nX40.0:40.0:40.0:40.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nE0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000\nF0 B0 P0"
+  },
+  "firmware_final": {
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1899.58, -279.90\nB:1645.35, 949.90, -279.90\nC:-1645.28, 949.91, -279.90\nD:-0.05, 0.01, 1899.54\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU2:2:2:4\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08100\nS20000.00\nI10.0:10.0:10.0:10.0\nX40.0:40.0:40.0:40.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nE0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000\nF0 B0 P0"
+  },
+  "native_sha256": "be16247d3455ca780dba9db277f77c08606254c5938bb1ff8605359914fbefa1"
+}

@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/torbjorn/.t3/worktrees/hp-sim5/t3-8ab5d557-4e1ca8e08b845775/research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/joint_k_cog.py", line 69, in <module>
+    main()
+  File "/home/torbjorn/.t3/worktrees/hp-sim5/t3-8ab5d557-4e1ca8e08b845775/research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/joint_k_cog.py", line 35, in main
+    ds = load(run)
+         ^^^^^^^^^
+  File "/home/torbjorn/.t3/worktrees/hp-sim5/t3-8ab5d557-4e1ca8e08b845775/research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-force-realisation-error-in-autocal-data-replays-t3-test-complian-8252ab16/evidence/scripts/cog_refit.py", line 24, in load
+    return json.loads(path.read_text()) if path.exists() else json.load(gzip.open(run / 'sweeps.json.gz'))
+                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/gzip.py", line 61, in open
+    binary_file = GzipFile(filename, gz_mode, compresslevel)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/gzip.py", line 192, in __init__
+    fileobj = self.myfileobj = builtins.open(filename, mode or 'rb')
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/fr/hp3e-s9/sweeps.json.gz'

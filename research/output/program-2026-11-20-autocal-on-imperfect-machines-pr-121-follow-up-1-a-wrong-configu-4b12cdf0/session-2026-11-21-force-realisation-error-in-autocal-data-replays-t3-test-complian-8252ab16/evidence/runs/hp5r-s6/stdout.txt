@@ -1,0 +1,39 @@
+{
+  "machine": "hangprinter_5_pulley_reduced",
+  "seed": 6,
+  "stop_reason": "good-fit",
+  "max_abs_frame_error_mm": 1.0186746183678679,
+  "worst_frame_coordinate": "A.y",
+  "frame_error_mm": [
+    [
+      -0.0,
+      1.0187,
+      0.3851
+    ],
+    [
+      0.1868,
+      0.0331,
+      0.0492
+    ],
+    [
+      -0.0476,
+      0.4453,
+      0.0333
+    ],
+    [
+      0.0467,
+      -0.0361,
+      0.0984
+    ],
+    [
+      -0.0,
+      -0.0,
+      0.5286
+    ]
+  ],
+  "truth_frame_tilt_deg": 1.4885184543226158,
+  "max_abs_raw_error_mm": 37.03717071430157,
+  "max_abs_rigid_error_mm": 0.7254168413708157,
+  "simulated_s": 4058.558,
+  "wall_s": 751.412710482
+}

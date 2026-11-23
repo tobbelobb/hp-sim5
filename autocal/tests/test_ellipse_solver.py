@@ -209,7 +209,6 @@ def test_anchor_residual_vector_matches_simple_pointwise_cost():
     cost_fn.machine_type = "slideprinter"
     cost_fn.num_anchors = 3
     cost_fn.dimensions = 2
-    cost_fn.low_anchor_z = None
     cost_fn.sweeps = [object()]
     cost_fn._min_sweeps_after_trim = 1
     cost_fn.pointwise_filter_stage = 0
@@ -278,7 +277,7 @@ def test_prepare_frozen_dataset_and_flags_filters_points_and_sweeps(monkeypatch)
     monkeypatch.setattr(
         ellipse_solver,
         "get_anchor_opt_bounds",
-        lambda _m, _n, _d, _low_z=None: (np.full(5, -1000.0, dtype=float), np.full(5, 1000.0, dtype=float)),
+        lambda _m, _n, _d: (np.full(5, -1000.0, dtype=float), np.full(5, 1000.0, dtype=float)),
     )
 
     frozen_dataset, flags = ellipse_solver._prepare_frozen_dataset_and_flags(
@@ -425,22 +424,13 @@ def test_solve_anchors_uses_reduced_slideprinter_optimizer_vector(monkeypatch):
     )
 
 
-@pytest.mark.parametrize(
-    ("low_anchor_z", "expected_len"),
-    [
-        (None, 9),
-        (-120.0, 8),
-    ],
-)
-def test_solve_anchors_uses_reduced_hangprinter_4_optimizer_vector(monkeypatch, low_anchor_z, expected_len):
+def test_solve_anchors_uses_reduced_hangprinter_4_optimizer_vector(monkeypatch):
     dataset = {
         "machine_type": "hangprinter_4",
         "num_anchors": 4,
         "dimensions": 3,
         "sweeps": [],
     }
-    if low_anchor_z is not None:
-        dataset["_low_anchor_z"] = float(low_anchor_z)
 
     initial_guess = np.asarray(
         [
@@ -466,7 +456,6 @@ def test_solve_anchors_uses_reduced_hangprinter_4_optimizer_vector(monkeypatch, 
                 "hangprinter_4",
                 4,
                 3,
-                low_anchor_z,
             )
             return ellipse_solver.CostResult(
                 total_cost=float(self.evaluate(x)),
@@ -518,15 +507,13 @@ def test_solve_anchors_uses_reduced_hangprinter_4_optimizer_vector(monkeypatch, 
 
     x0_seen = np.asarray(seen["x0"], dtype=float)
     anchors = np.asarray(result["anchors"], dtype=float)
-    assert x0_seen.shape == (expected_len,)
+    assert x0_seen.shape == (9,)
     assert anchors.shape == (4, 3)
     assert np.isclose(float(anchors[0, 0]), 0.0)
-    assert np.allclose(anchors[:3, 2], anchors[0, 2])
-    if low_anchor_z is not None:
-        assert np.allclose(anchors[:3, 2], float(low_anchor_z))
+    assert np.allclose(anchors[3, :2], 0.0)
     assert np.allclose(
         anchors,
-        ellipse_solver.anchor_opt_vec_to_matrix(x0_seen, "hangprinter_4", 4, 3, low_anchor_z),
+        ellipse_solver.anchor_opt_vec_to_matrix(x0_seen, "hangprinter_4", 4, 3),
     )
 
 
@@ -616,10 +603,10 @@ def test_solve_anchors_clips_hangprinter_4_initial_guess_into_sign_constrained_h
 
     assert np.all(x0_seen >= lb_opt - 1e-12)
     assert np.all(x0_seen <= ub_opt + 1e-12)
-    assert x0_seen[1] < 0.0
-    assert x0_seen[3] > 0.0
-    assert x0_seen[4] < 0.0
-    assert x0_seen[5] > 0.0
+    # A.y, A.z, B.xyz, C.xyz, D.z
+    assert x0_seen[0] < 0.0 and x0_seen[1] < 0.0
+    assert x0_seen[2] > 0.0 and x0_seen[3] > 0.0 and x0_seen[4] < 0.0
+    assert x0_seen[5] < 0.0 and x0_seen[6] > 0.0 and x0_seen[7] < 0.0
     assert x0_seen[8] > 0.0
 
     assert anchors[0, 1] < 0.0

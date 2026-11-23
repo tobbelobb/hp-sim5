@@ -145,8 +145,8 @@ def _hangprinter_4_sweep(
     }
 
 
-def _synthetic_hangprinter_4_dataset(*, low_anchor_z: float | None = None):
-    low_z = -120.0 if low_anchor_z is None else float(low_anchor_z)
+def _synthetic_hangprinter_4_dataset():
+    low_z = -120.0
     anchors = np.asarray(
         [
             [0.0, -1900.0, low_z],
@@ -193,8 +193,6 @@ def _synthetic_hangprinter_4_dataset(*, low_anchor_z: float | None = None):
             ),
         ],
     }
-    if low_anchor_z is not None:
-        dataset["_low_anchor_z"] = float(low_anchor_z)
     return dataset, anchors
 
 
@@ -430,33 +428,6 @@ def test_jax_hangprinter_4_objective_matches_numpy_cost():
     assert np.all(np.isfinite(np.asarray(grad_jax, dtype=float)))
     assert np.asarray(grad_jax, dtype=float).shape == x_opt.shape
     assert np.isclose(value_jax, value_np, rtol=1e-6, atol=1e-8)
-
-
-@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
-def test_jax_hangprinter_4_objective_accepts_fixed_low_anchor_z():
-    low_anchor_z = -120.0
-    dataset, anchors = _synthetic_hangprinter_4_dataset(low_anchor_z=low_anchor_z)
-    cost_fn = EllipseCostFunction(
-        dataset,
-        pointwise_residual_mode="sampson",
-        pointwise_filtering=True,
-        pointwise_global_mad=True,
-        sweep_wise_filtering=True,
-        use_noise_mean=True,
-        noise_normalized=True,
-    )
-    lb_opt, ub_opt = get_anchor_opt_bounds("hangprinter_4", 4, 3, low_anchor_z)
-    objective = build_compiled_value_and_grad(cost_fn, np.asarray(lb_opt, dtype=float), np.asarray(ub_opt, dtype=float))
-    assert objective is not None
-
-    x_opt = anchors_matrix_to_opt_vec(anchors, "hangprinter_4", low_anchor_z)
-    value_opt, grad_opt = objective(x_opt)
-    value_np = float(cost_fn.evaluate(x_opt))
-
-    assert np.isfinite(float(value_opt))
-    assert np.all(np.isfinite(np.asarray(grad_opt, dtype=float)))
-    assert np.asarray(grad_opt, dtype=float).shape == x_opt.shape
-    assert np.isclose(value_opt, value_np, rtol=1e-6, atol=1e-8)
 
 
 @pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")

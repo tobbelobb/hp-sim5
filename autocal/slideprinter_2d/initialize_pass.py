@@ -29,7 +29,6 @@ def run_initialize_pass(
     sweep_metric: str,
     use_noise_mean: bool,
     sigma_source: str,
-    low_anchor_z: Optional[float],
     enable_prefit: bool,
     enable_bootstrap_anchor_refresh: bool,
     pack_spool_opt_vector: Callable[..., np.ndarray],

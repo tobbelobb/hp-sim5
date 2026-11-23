@@ -1,0 +1,103 @@
+hp3e-s1-ea0.8: k_true 1.250; ratio k_step/k_true mean 0.953 median 0.932
+   sensor 0: n 16, ratio 0.952
+   sensor 1: n 18, ratio 0.920
+   sensor 2: n 14, ratio 0.942
+   z in [-1000000000,100): n 12, ratio median 0.922
+   z in [400,800): n 8, ratio median 0.901
+   z in [800,1000000000): n 28, ratio median 0.959
+   2x level 0.911, 3x level 0.939, corr 0.45
+hp3e-s1-ea1.2: k_true 0.833; ratio k_step/k_true mean 0.946 median 0.929
+   sensor 0: n 22, ratio 0.953
+   sensor 1: n 20, ratio 0.880
+   sensor 2: n 22, ratio 0.942
+   z in [-1000000000,100): n 12, ratio median 0.946
+   z in [100,400): n 12, ratio median 0.891
+   z in [400,800): n 12, ratio median 0.944
+   z in [800,1000000000): n 28, ratio median 0.879
+   2x level 0.898, 3x level 0.940, corr 0.82
+hp3e-s2-ea0.8: k_true 1.250; ratio k_step/k_true mean 0.953 median 0.935
+   sensor 0: n 14, ratio 0.960
+   sensor 1: n 14, ratio 0.927
+   sensor 2: n 20, ratio 0.936
+   z in [-1000000000,100): n 12, ratio median 0.933
+   z in [400,800): n 4, ratio median 1.101
+   z in [800,1000000000): n 32, ratio median 0.907
+   2x level 0.942, 3x level 0.929, corr 0.48
+hp3e-s2-ea1.2: k_true 0.833; ratio k_step/k_true mean 0.966 median 0.947
+   sensor 0: n 16, ratio 0.947
+   sensor 1: n 18, ratio 0.920
+   sensor 2: n 14, ratio 0.981
+   z in [-1000000000,100): n 12, ratio median 0.949
+   z in [400,800): n 8, ratio median 0.954
+   z in [800,1000000000): n 28, ratio median 0.896
+   2x level 0.942, 3x level 0.948, corr 0.91
+hp3e-s3-ea0.8: k_true 1.250; ratio k_step/k_true mean 0.991 median 0.967
+   sensor 0: n 14, ratio 1.009
+   sensor 1: n 14, ratio 0.948
+   sensor 2: n 16, ratio 0.926
+   z in [-1000000000,100): n 12, ratio median 0.926
+   z in [400,800): n 4, ratio median 1.206
+   z in [800,1000000000): n 28, ratio median 0.967
+   2x level 0.972, 3x level 0.943, corr 0.69
+hp3e-s3-ea1.2: k_true 0.833; ratio k_step/k_true mean 0.973 median 0.951
+   sensor 0: n 16, ratio 0.932
+   sensor 1: n 14, ratio 0.949
+   sensor 2: n 14, ratio 0.981
+   z in [-1000000000,100): n 12, ratio median 0.951
+   z in [400,800): n 8, ratio median 0.912
+   z in [800,1000000000): n 24, ratio median 0.974
+   2x level 0.949, 3x level 0.955, corr 0.71
+hp5r-s1-ea0.8: k_true 1.250; ratio k_step/k_true mean 0.968 median 1.014
+   sensor 0: n 4, ratio 1.006
+   sensor 1: n 6, ratio 1.019
+   sensor 2: n 4, ratio 0.911
+   sensor 3: n 6, ratio 1.020
+   z in [-1000000000,100): n 12, ratio median 1.018
+   z in [400,800): n 8, ratio median 0.970
+   2x level 0.986, 3x level 1.018, corr 0.55
+hp5r-s1-ea1.2: k_true 0.833; ratio k_step/k_true mean 1.139 median 1.090
+   sensor 0: n 4, ratio 1.197
+   sensor 1: n 6, ratio 1.063
+   sensor 2: n 4, ratio 1.203
+   sensor 3: n 6, ratio 1.062
+   z in [-1000000000,100): n 12, ratio median 1.063
+   z in [400,800): n 4, ratio median 1.075
+   z in [800,1000000000): n 4, ratio median 1.289
+   2x level 1.115, 3x level 1.057, corr 0.84
+hp5r-s2-ea0.8: k_true 1.250; ratio k_step/k_true mean 1.030 median 1.020
+   sensor 0: n 8, ratio 1.006
+   sensor 1: n 4, ratio 1.074
+   sensor 2: n 8, ratio 0.994
+   sensor 3: n 4, ratio 1.075
+   z in [-1000000000,100): n 16, ratio median 1.021
+   z in [100,400): n 4, ratio median 1.015
+   z in [400,800): n 4, ratio median 0.976
+   2x level 1.060, 3x level 1.020, corr 0.31
+hp5r-s2-ea1.2: k_true 0.833; ratio k_step/k_true mean 1.047 median 1.049
+   sensor 0: n 4, ratio 0.997
+   sensor 1: n 6, ratio 1.084
+   sensor 2: n 4, ratio 1.002
+   sensor 3: n 6, ratio 1.084
+   z in [-1000000000,100): n 12, ratio median 1.051
+   z in [100,400): n 4, ratio median 0.969
+   z in [400,800): n 4, ratio median 1.084
+   2x level 1.117, 3x level 1.045, corr 0.47
+hp5r-s4-ea0.8: k_true 1.250; ratio k_step/k_true mean 1.061 median 1.057
+   sensor 0: n 2, ratio 1.056
+   sensor 1: n 10, ratio 1.056
+   sensor 2: n 2, ratio 1.050
+   sensor 3: n 10, ratio 1.064
+   z in [-1000000000,100): n 12, ratio median 1.059
+   z in [100,400): n 4, ratio median 1.106
+   z in [400,800): n 4, ratio median 1.053
+   z in [800,1000000000): n 4, ratio median 0.996
+   2x level 1.098, 3x level 1.028, corr 0.06
+hp5r-s4-ea1.2: k_true 0.833; ratio k_step/k_true mean 1.021 median 1.057
+   sensor 0: n 4, ratio 1.012
+   sensor 1: n 6, ratio 1.058
+   sensor 2: n 4, ratio 1.050
+   sensor 3: n 6, ratio 1.060
+   z in [-1000000000,100): n 12, ratio median 1.062
+   z in [400,800): n 4, ratio median 1.048
+   z in [800,1000000000): n 4, ratio median 0.866
+   2x level 1.031, 3x level 1.059, corr -0.04

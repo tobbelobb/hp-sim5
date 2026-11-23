@@ -1,0 +1,257 @@
+{
+ "2.5": {
+  "a_runs": [
+   [
+    "new_hp5_base_0",
+    0.68,
+    3.28,
+    1.54,
+    6
+   ],
+   [
+    "new_hp5r_base_0",
+    1.12,
+    0.89,
+    0.89,
+    0
+   ],
+   [
+    "new_hp5r_seed1",
+    0.36,
+    1.37,
+    0.67,
+    6
+   ],
+   [
+    "new_hp5r_seed2",
+    0.87,
+    1.57,
+    0.64,
+    8
+   ],
+   [
+    "new_hp5r_seed3",
+    1.01,
+    4.27,
+    1.62,
+    8
+   ],
+   [
+    "new_hp5_seed1",
+    0.77,
+    6.77,
+    0.85,
+    7
+   ],
+   [
+    "new_hp5_seed2",
+    0.79,
+    5.14,
+    1.95,
+    7
+   ],
+   [
+    "new_hp5_seed3",
+    0.78,
+    1.45,
+    1.38,
+    7
+   ],
+   [
+    "new_hp5_seed4",
+    0.84,
+    2.71,
+    1.27,
+    6
+   ]
+  ],
+  "a_poor_J0": 4,
+  "a_poor_J2": 0,
+  "live_other_labels_changed": [],
+  "b_n": 56,
+  "b_lost_poor": [],
+  "b_label_worse_any": [],
+  "b_err_gt5_not_poor": [
+   0,
+   0,
+   22
+  ],
+  "b_false_poor_le1_5": [
+   6,
+   6
+  ],
+  "c_distinct": 84,
+  "c_changes": [],
+  "c_worse": 0
+ },
+ "3.0": {
+  "a_runs": [
+   [
+    "new_hp5_base_0",
+    0.68,
+    3.28,
+    2.22,
+    5
+   ],
+   [
+    "new_hp5r_base_0",
+    1.12,
+    0.89,
+    0.89,
+    0
+   ],
+   [
+    "new_hp5r_seed1",
+    0.36,
+    1.37,
+    0.66,
+    5
+   ],
+   [
+    "new_hp5r_seed2",
+    0.87,
+    1.57,
+    0.59,
+    8
+   ],
+   [
+    "new_hp5r_seed3",
+    1.01,
+    4.27,
+    1.62,
+    7
+   ],
+   [
+    "new_hp5_seed1",
+    0.77,
+    6.77,
+    2.39,
+    5
+   ],
+   [
+    "new_hp5_seed2",
+    0.79,
+    5.14,
+    2.5,
+    5
+   ],
+   [
+    "new_hp5_seed3",
+    0.78,
+    1.45,
+    1.42,
+    5
+   ],
+   [
+    "new_hp5_seed4",
+    0.84,
+    2.71,
+    2.63,
+    4
+   ]
+  ],
+  "a_poor_J0": 4,
+  "a_poor_J2": 0,
+  "live_other_labels_changed": [],
+  "b_n": 56,
+  "b_lost_poor": [],
+  "b_label_worse_any": [],
+  "b_err_gt5_not_poor": [
+   0,
+   0,
+   22
+  ],
+  "b_false_poor_le1_5": [
+   6,
+   6
+  ],
+  "c_distinct": 84,
+  "c_changes": [],
+  "c_worse": 0
+ },
+ "4.0": {
+  "a_runs": [
+   [
+    "new_hp5_base_0",
+    0.68,
+    3.28,
+    3.28,
+    4
+   ],
+   [
+    "new_hp5r_base_0",
+    1.12,
+    0.89,
+    0.89,
+    0
+   ],
+   [
+    "new_hp5r_seed1",
+    0.36,
+    1.37,
+    0.93,
+    2
+   ],
+   [
+    "new_hp5r_seed2",
+    0.87,
+    1.57,
+    1.57,
+    5
+   ],
+   [
+    "new_hp5r_seed3",
+    1.01,
+    4.27,
+    2.58,
+    6
+   ],
+   [
+    "new_hp5_seed1",
+    0.77,
+    6.77,
+    2.39,
+    4
+   ],
+   [
+    "new_hp5_seed2",
+    0.79,
+    5.14,
+    2.5,
+    4
+   ],
+   [
+    "new_hp5_seed3",
+    0.78,
+    1.45,
+    1.45,
+    4
+   ],
+   [
+    "new_hp5_seed4",
+    0.84,
+    2.71,
+    2.63,
+    4
+   ]
+  ],
+  "a_poor_J0": 4,
+  "a_poor_J2": 1,
+  "live_other_labels_changed": [],
+  "b_n": 56,
+  "b_lost_poor": [],
+  "b_label_worse_any": [],
+  "b_err_gt5_not_poor": [
+   0,
+   0,
+   22
+  ],
+  "b_false_poor_le1_5": [
+   6,
+   6
+  ],
+  "c_distinct": 84,
+  "c_changes": [],
+  "c_worse": 0
+ }
+}

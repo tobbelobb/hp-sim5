@@ -1,0 +1,34 @@
+{
+  "machine": "hangprinter_3",
+  "seed": 5,
+  "stop_reason": "max-ellipsoids",
+  "max_abs_frame_error_mm": 2.5580838781943385,
+  "worst_frame_coordinate": "D.z",
+  "frame_error_mm": [
+    [
+      0.0,
+      0.1376,
+      0.1723
+    ],
+    [
+      -0.0722,
+      0.022,
+      -0.0092
+    ],
+    [
+      0.1866,
+      -0.0612,
+      0.153
+    ],
+    [
+      -0.0,
+      -0.0,
+      2.5581
+    ]
+  ],
+  "truth_frame_tilt_deg": 0.4309185137766497,
+  "max_abs_raw_error_mm": 14.044744318676493,
+  "max_abs_rigid_error_mm": 1.8400371080699642,
+  "simulated_s": 6641.412,
+  "wall_s": 522.374453294
+}

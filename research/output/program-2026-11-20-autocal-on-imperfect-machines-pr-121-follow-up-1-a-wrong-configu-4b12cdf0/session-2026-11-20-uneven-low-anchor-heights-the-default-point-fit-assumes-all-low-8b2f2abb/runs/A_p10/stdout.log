@@ -1,0 +1,41 @@
+; headless simulator manifest: /home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/runs/A_p10/sweeps.headless/manifest.json
+Writing additional info to log: /home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/runs/A_p10/sweeps.full_auto.log
+; rough bootstrap: {'ready': False, 'sweeps': 3, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 95.54817582699549, 'restart_difference_mm': 0.00016928252478010108, 'inlier_fraction': 1.0, 'rms_mm': 0.022641189942106357, 'converged': True}
+; rough bootstrap: {'ready': True, 'sweeps': 4, 'rank': 9, 'parameters': 9, 'assumed_line_sigma_mm': 0.5, 'max_anchor_std_mm': 16.36846830954498, 'restart_difference_mm': 0.00041489935847494053, 'inlier_fraction': 1.0, 'rms_mm': 0.02917837688302767, 'converged': True}
+; full-auto stop: press Ctrl-C to accept best-so-far, or create /home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/runs/A_p10/sweeps.full_auto.stop to request stop (cross-platform)
+; full-auto: stops when 2 consecutive sweeps each move every anchor coordinate by at most 0.5 mm (--stable-step-mm 0 disables)
+
+== iteration 1/20 - sweeps.json ==
+Anchor uncertainty 22.44 mm, the lowest so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 5
+
+== iteration 2/20 - sweeps.json ==
+Anchor uncertainty 0.9358 mm, the lowest so far.
+Patience reset.
+Collecting new sweep to try and beat it.
+Still has patience for 3 more attempts.
+Collected sweep nr 6
+
+== iteration 3/20 - sweeps.json ==
+Anchor uncertainty 2.222 mm, the 2nd lowest so far.
+Collecting new sweep to try and beat it.
+Still has patience for 2 more attempts.
+Collected sweep nr 7
+
+== iteration 4/20 - sweeps.json ==
+Anchor uncertainty 1.279 mm, the 2nd lowest so far.
+Collecting new sweep to try and beat it.
+Still has patience for 1 more attempts.
+Collected sweep nr 8
+
+== iteration 5/20 - sweeps.json ==
+Anchor uncertainty 1.022 mm, the 2nd lowest so far.
+
+== Calibration summary ==
+Found parameters of usable quality
+Anchor uncertainty (mm, lower is better): 1.022
+; Spread of anchors refitted without one sweep at a time. It misses bias that every sweep shares, such as unmodelled line stretch.
+Anchors (M669): M669 A0.00:-1898.97:-277.46 B1645.46:950.90:-277.46 C-1644.92:950.74:-277.46 D-0.09:-6.63:1899.10

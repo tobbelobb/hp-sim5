@@ -1,0 +1,17 @@
+{
+  "sweeps.json": {
+    "local_uri": "file:///home/torbjorn/.t3/worktrees/hp-sim5/t3-0559d9b9-29d8f3b23ff0e1f6/output/probe/hp5r-s1-ea1.2/sweeps.json",
+    "bytes": 248945,
+    "sha256": "c3c85993f38bf826fbdaf82ec2f35c3d01dde460fbeae05b39bdc1c153bed240"
+  },
+  "sweeps.headless/scene.usda": {
+    "local_uri": "file:///home/torbjorn/.t3/worktrees/hp-sim5/t3-0559d9b9-29d8f3b23ff0e1f6/output/probe/hp5r-s1-ea1.2/sweeps.headless/scene.usda",
+    "bytes": 82974,
+    "sha256": "724bd7f5d282d3c47b2c6a0c536a0b58c549e3cb24411107ae9b236815e5b43f"
+  },
+  "sweeps.headless/events.jsonl": {
+    "local_uri": "file:///home/torbjorn/.t3/worktrees/hp-sim5/t3-0559d9b9-29d8f3b23ff0e1f6/output/probe/hp5r-s1-ea1.2/sweeps.headless/events.jsonl",
+    "bytes": 152703904,
+    "sha256": "927f9d874f57c1f87d88974710f26f654de6934835b4a795c80ad7afc3336d77"
+  }
+}

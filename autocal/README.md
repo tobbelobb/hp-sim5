@@ -93,20 +93,22 @@ ranges still contribute their commanded force to the static load model.
 HP5 fits use every accepted range with its physical anchor identity, home offset,
 reeving and per-pose stretch correction. The default bootstrap uses the rough
 anchors to compute the equal-strain force profiles for remeasurement. Candidate
-ranking includes future fifth ranges, uncertainty uses the force-aware residual,
-and history validation uses all accepted ranges with offsets frozen from each
-candidate's training data. HP5 applies the best validated anchor/offset model
-rather than averaging it with an unvalidated fit. Historical datasets retain
-their collection policy.
+ranking includes future fifth ranges, and uncertainty uses the force-aware
+residual. HP5 applies the newest admissible anchor and offset estimate that passes
+the sweep-jackknife check. Historical datasets retain their collection policy.
 `--no-extra-sensors` on the collector retains the legacy compliant-line policy.
+
+### HP5 stopping rules
 
 HP5 can stop after two successive well-constrained fits with range RMS at most
 0.05 mm, estimated maximum anchor standard deviation at most 1 mm, at least four
 sweeps and extra ranges accepted on at least half the points. The fits must use
 new measurements and agree within 2 mm in every anchor coordinate. The stop reason
-is `good-fit`. These checks measure local consistency and observability, not true
-anchor error. `--stable-step-mm 0` disables this early condition as well as ordinary
-stable-estimate stopping. HP3/HP4 retain their existing stopping rules.
+is `good-fit`. HP5 and HP5r can also stop with `stable-estimate` when two
+successive new sweeps meet the same coverage and rank checks, range RMS is at
+most 0.12 mm, sweep jackknife is at most 2 mm, and every anchor coordinate moves
+by at most `--stable-step-mm` on each update. These checks measure consistency
+and observability. `--stable-step-mm 0` disables both early stops.
 
 `--fit-home-offsets` is enabled by default. It estimates the non-translational
 home-length offsets with the point fit before the anchor fit. Offsets are only
@@ -115,6 +117,13 @@ fitted once the data determines them (posterior standard deviation below half th
 anchor onto its bound. With the first three HP3/HP4 sweeps, which all hold D,
 D's offset trades against D's height and is skipped.
 Use `--no-fit-home-offsets` and `--no-equal-strain` for ablation comparisons.
+
+On HP3, `--fit-force-ripple` tries a periodic sensor-force correction when the
+point fit has enough equal-strain sweeps with fitted home offsets and encoder
+angles. It uses a single frequency shared by the sensor motors, with a separate
+amplitude and phase per motor. If the period or improvement fails validation
+across sweeps, autocal uses the ordinary home-offset fit. The correction applies
+to the fit's ranges and leaves the recorded forces and configured stiffness intact.
 
 The point fit (`pose_fit.py`) is the anchor fit on every Hangprinter. It uses all
 ranges, including HP5's extra ones, and the force-aware stretch model, and it

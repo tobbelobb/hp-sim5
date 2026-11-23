@@ -1,0 +1,141 @@
+{
+ "args": {
+  "label": "new",
+  "machine": "hangprinter_4",
+  "anchor": 0,
+  "heights": "0",
+  "noise_mm": 0.02,
+  "seeds": 6,
+  "jackknife": false,
+  "out": "research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/results/e6_new_hangprinter_4_noise.json"
+ },
+ "code": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/autocal/theoretical_ellipse.py",
+ "rows": [
+  {
+   "h": 0.0,
+   "seed": 0,
+   "err": 0.6126646006257014,
+   "dz_D": -0.4754141321602674,
+   "low_z_err": [
+    -0.202,
+    0.292,
+    0.149
+   ],
+   "per_anchor": [
+    0.429,
+    0.613,
+    0.612,
+    0.475
+   ],
+   "rms": 0.03175570690432627,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null
+  },
+  {
+   "h": 0.0,
+   "seed": 1,
+   "err": 1.038714705270852,
+   "dz_D": -0.4204205013668343,
+   "low_z_err": [
+    -0.211,
+    0.125,
+    0.32
+   ],
+   "per_anchor": [
+    0.448,
+    0.304,
+    1.039,
+    0.42
+   ],
+   "rms": 0.027116807650639844,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null
+  },
+  {
+   "h": 0.0,
+   "seed": 2,
+   "err": 0.5337465751538066,
+   "dz_D": 0.026418640472229526,
+   "low_z_err": [
+    -0.033,
+    0.112,
+    0.124
+   ],
+   "per_anchor": [
+    0.19,
+    0.122,
+    0.534,
+    0.026
+   ],
+   "rms": 0.03108053072372963,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null
+  },
+  {
+   "h": 0.0,
+   "seed": 3,
+   "err": 0.5286626429252154,
+   "dz_D": -0.24263362166061597,
+   "low_z_err": [
+    -0.226,
+    0.287,
+    0.131
+   ],
+   "per_anchor": [
+    0.529,
+    0.528,
+    0.522,
+    0.243
+   ],
+   "rms": 0.029777818884892265,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null
+  },
+  {
+   "h": 0.0,
+   "seed": 4,
+   "err": 0.8010452232526859,
+   "dz_D": -0.8010452232526859,
+   "low_z_err": [
+    0.032,
+    0.315,
+    0.158
+   ],
+   "per_anchor": [
+    0.194,
+    0.57,
+    0.509,
+    0.801
+   ],
+   "rms": 0.030992382956479787,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null
+  },
+  {
+   "h": 0.0,
+   "seed": 5,
+   "err": 0.510970988462512,
+   "dz_D": -0.32170308468380426,
+   "low_z_err": [
+    0.029,
+    0.245,
+    0.07
+   ],
+   "per_anchor": [
+    0.156,
+    0.511,
+    0.295,
+    0.322
+   ],
+   "rms": 0.030027123725626995,
+   "scale": 0.02,
+   "rejected": 0,
+   "offsets_skipped": null
+  }
+ ]
+}

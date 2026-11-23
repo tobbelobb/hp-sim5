@@ -21,7 +21,7 @@ from autocal.rough_bootstrap import (
     bootstrap_state_error, write_bootstrap_state,
 )
 from autocal.history_selection import HISTORY_CONSENSUS_MAX_SPREAD_MM, evaluate_history_candidates, select_history_plan
-from autocal.anchor_uncertainty import newest_trusted_index, plan_anchor_uncertainty_mm, uncertainty_label
+from autocal.anchor_uncertainty import coordinate_names, newest_trusted_index, plan_anchor_uncertainty, uncertainty_label
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
 from autocal.stopping import StoppingPolicy
@@ -200,8 +200,8 @@ def _full_auto_loop(
     patience: int,
     stable_step_mm: float = 0.5,
     verbose: bool,
-    low_anchor_z: Optional[float] = None,
     fit_home_offsets: bool = True,
+    fit_force_ripple: bool = False,
     fit: str = "point",
     equal_strain: bool = True,
     filter_schedule: Optional[Sequence[Any]] = None,
@@ -325,6 +325,10 @@ def _full_auto_loop(
         _log_console(f"Anchor uncertainty (mm, lower is better): {_fmt_float(uncertainty)}")
         _log_console("; Spread of anchors refitted without one sweep at a time. "
                      "It misses bias that every sweep shares, such as unmodelled line stretch.")
+        single_unit = meta_for_summary.get("single_unit_coordinates") or []
+        if single_unit:
+            _log_console(f"; {', '.join(single_unit)} rest on a single sweep: the refit without it lost them, "
+                         "so their spread comes from the other refits and that sweep is not cross-checked.")
         if m669:
             _log_console(f"Anchors (M669): {m669}")
         elif anchor_str:
@@ -567,8 +571,7 @@ def _full_auto_loop(
             accepted = run_ellipsoid_autocal(
                 dataset_path, machine_type=str(machine_type), collector_args=mesh_args,
                 run_collection=_collect_mesh, log_line=_log_line, log_console=_log_console,
-                append_log=lambda row: _append_jsonl(log_path, row), no_collect=bool(no_collect),
-                low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+                append_log=lambda row: _append_jsonl(log_path, row), no_collect=bool(no_collect), use_noise_mean=bool(use_noise_mean),
                 stable_step_mm=float(stable_step_mm), stop_file=_full_auto_stop_path(dataset_path),
                 model=fit)
         except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
@@ -690,7 +693,7 @@ def _full_auto_loop(
                     write_bootstrap_state(dataset_path, "checking_rough", extra_sweeps=extra)
                     _write_json(rough_path, rough)
                     rough_anchors, check = assess_rough_geometry(
-                        rough, low_anchor_z=low_anchor_z, use_noise_mean=bool(use_noise_mean),
+                        rough, use_noise_mean=bool(use_noise_mean),
                     )
                     checks.append(check)
                     check_path.write_text(json.dumps({"checks": checks}, indent=2) + "\n", encoding="utf-8")
@@ -699,7 +702,7 @@ def _full_auto_loop(
                         break
                     if extra == MAX_EXTRA_ROUGH_SWEEPS:
                         raise ValueError(f"rough geometry is still unreliable after {len(rough['sweeps'])} sweeps")
-                    cfg = next_rough_sweep(rough, rough_anchors, low_anchor_z=low_anchor_z)
+                    cfg = next_rough_sweep(rough, rough_anchors)
                     added = _collect_bootstrap_sweep(cfg, f"rough_extra_{extra + 1}")
                     rough = _merge_sweep_datasets(rough, added)
                     _write_json(dataset_path, rough)
@@ -814,8 +817,8 @@ def _full_auto_loop(
         ],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
-        "low_anchor_z": (None if low_anchor_z is None else float(low_anchor_z)),
         "fit_home_offsets": bool(fit_home_offsets),
+        "fit_force_ripple": bool(fit_force_ripple),
         "ellipse_reference_fit": bool(ellipse_reference_fit),
     }
 
@@ -901,6 +904,7 @@ def _full_auto_loop(
                 "pose_fit_rms_mm": float(pose_fit["rms_mm"]),
                 "pose_fit_max_diff_mm": float(np.max(np.abs(pose_anchors - np.asarray(plan["anchors"], dtype=float)))),
                 "home_offsets_mm": np.asarray(plan["home_offsets_mm"], dtype=float).tolist(),
+                **({"force_ripple": plan["force_ripple"]} if plan.get("force_ripple") is not None else {}),
             }
         return {
             **pose_fit_metrics,
@@ -1012,12 +1016,8 @@ def _full_auto_loop(
                     if settings.get("sigma_floor_mm") is None
                     else float(settings.get("sigma_floor_mm"))
                 ),
-                low_anchor_z=(
-                    None
-                    if settings.get("low_anchor_z") is None
-                    else float(settings.get("low_anchor_z"))
-                ),
                 fit_home_offsets=bool(settings["fit_home_offsets"]),
+                fit_force_ripple=bool(settings["fit_force_ripple"]),
                 ellipse_reference_fit=bool(settings["ellipse_reference_fit"]),
                 equal_strain=bool(equal_strain),
                 candidate_count=int(candidate_count),
@@ -1128,10 +1128,6 @@ def _full_auto_loop(
                     settings["sigma_floor_mm"] = float(settings["sigma_floor_mm"])
                     if not np.isfinite(settings["sigma_floor_mm"]) or settings["sigma_floor_mm"] <= 0.0:
                         settings["sigma_floor_mm"] = None
-                if settings.get("low_anchor_z") is not None:
-                    settings["low_anchor_z"] = float(settings["low_anchor_z"])
-                    if not np.isfinite(settings["low_anchor_z"]):
-                        settings["low_anchor_z"] = None
                 return run_id, run_flags, overrides, settings
 
             def _execute_run_variant(
@@ -1240,13 +1236,14 @@ def _full_auto_loop(
             selected_warnings = list(metrics.get("warnings") or [])
             history_admissible = (not selected_underconstrained) and np.isfinite(selected_cost)
             uncertainty_started = time.perf_counter()
-            selected_uncertainty = plan_anchor_uncertainty_mm(plan) if history_admissible else None
+            selected_uncertainty, single_unit = plan_anchor_uncertainty(plan) if history_admissible else (None, [])
             uncertainty_seconds = time.perf_counter() - uncertainty_started
             selected_summary_meta = {
                 "iteration": step,
                 "run_id": selected_id,
                 "flags": selected_flags,
                 "anchor_uncertainty_mm": selected_uncertainty,
+                "single_unit_coordinates": coordinate_names(single_unit, len(np.asarray(plan.get("anchors")))) if plan.get("anchors") is not None else [],
                 "cost": selected_cost,
                 "rel_std": selected_rel_std,
                 "max_std_mm": selected_max_std,
@@ -1365,6 +1362,7 @@ def _full_auto_loop(
                     "decision": stop.decision,
                     "cost": selected_cost,
                     "anchor_uncertainty_mm": selected_uncertainty,
+                    "single_unit_coordinates": selected_summary_meta["single_unit_coordinates"],
                     "uncertainty_compute_seconds": uncertainty_seconds,
                     "uncertainty_rank": stop.rank,
                     "no_improve_count": stopping.no_improve,
@@ -1649,8 +1647,8 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         theta0_mode=str(spool_opts["theta0_mode"]),
         line_width=float(spool_opts["line_width"]),
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
-        low_anchor_z=args.low_anchor_z,
         fit_home_offsets=bool(args.fit_home_offsets),
+        fit_force_ripple=bool(args.fit_force_ripple),
         fit=args.fit,
         equal_strain=bool(args.equal_strain),
         candidate_count=int(args.candidate_count),

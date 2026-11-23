@@ -1,0 +1,9 @@
+# Random machines on t3/imperfect-machine-newfit (free low z)
+hp4-s0 --machine hangprinter_4 --seed 0
+hp5r-s0 --machine hangprinter_5_pulley_reduced --seed 0
+hp4-s1 --machine hangprinter_4 --seed 1
+hp5r-s1 --machine hangprinter_5_pulley_reduced --seed 1
+hp4-s2 --machine hangprinter_4 --seed 2
+hp5r-s2 --machine hangprinter_5_pulley_reduced --seed 2
+hp5-s1 --machine hangprinter_5 --seed 1
+hp5-s2 --machine hangprinter_5 --seed 2

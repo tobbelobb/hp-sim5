@@ -1,0 +1,29 @@
+# Fixed-code runs vs earlier pre-fix runs of the same harness case (name, seed, EA scale).
+# IDENTICAL = same max error (5e-5 mm) and simulated time (0.01 s). hp5-nominal prior is the old (shared-low-z) fit.
+hp3-nominal    err 1.1853 sim 4584.5 | prior: 1.1824@4586.7 1.1853@4584.5 | IDENTICAL
+hp3-s1         err 1.1228 sim 5054.8 | prior: 1.0975@5038.2 1.1228@5054.8 | IDENTICAL
+hp3-s9         err 0.8233 sim 4730.1 | prior: 0.8233@4730.1 0.8413@4731.0 | IDENTICAL
+hp4-nominal    err 0.7211 sim 4925.8 | prior: 0.7211@4923.9 0.7211@4925.8 | IDENTICAL
+hp4-s0         err 0.5748 sim 4974.4 | prior: 0.5748@4974.4 | IDENTICAL
+hp4-s1         err 0.5147 sim 4537.2 | prior: 0.5147@4537.2 | IDENTICAL
+hp4-s2         err 0.4950 sim 5002.3 | prior: 0.495@5002.3 | IDENTICAL
+hp5-nominal    err 0.6580 sim 3781.0 | prior: 0.9995@3778.2 | differs
+hp5-s0         err 0.5231 sim 3777.9 | prior: 0.5231@3777.9 19.2571@8580.2 | IDENTICAL
+hp5-s1         err 1.3593 sim 3737.7 | prior: 1.3593@3737.7 | IDENTICAL
+hp5-s2         err 0.9137 sim 3591.8 | prior: 0.9137@3591.8 | IDENTICAL
+hp5-s3         err 0.9988 sim 3782.2 | prior: 0.9988@3782.2 4.3014@8635.1 | IDENTICAL
+hp5-s4         err 1.1213 sim 3818.4 | prior: none 
+hp5-s5         err 0.9991 sim 3738.5 | prior: none 
+hp5-s6         err 1.2204 sim 4315.3 | prior: none 
+hp5-s7         err 0.7343 sim 3886.9 | prior: none 
+hp5r-nominal   err 1.0972 sim 4683.7 | prior: 0.9224@4685.5 1.0972@4683.7 | IDENTICAL
+hp5r-s0        err 1.1803 sim 4965.9 | prior: 1.1803@4965.9 | IDENTICAL
+hp5r-s1        err 1.2408 sim 3833.1 | prior: 1.2408@3833.1 | IDENTICAL
+hp5r-s2        err 1.2586 sim 3898.8 | prior: 1.2586@3898.8 | IDENTICAL
+hp5r-s3        err 1.1671 sim 4014.4 | prior: none 
+hp5r-s4        err 1.3331 sim 4009.6 | prior: none 
+hp5r-s5        err 1.1721 sim 3896.4 | prior: none 
+hp5r-s6        err 0.9959 sim 3923.1 | prior: none 
+hp5r-s7        err 2.3113 sim 3785.8 | prior: none 
+hp5r-s8        err 0.9225 sim 3865.8 | prior: none 
+hp5r-s9        err 2.2707 sim 4005.1 | prior: none 

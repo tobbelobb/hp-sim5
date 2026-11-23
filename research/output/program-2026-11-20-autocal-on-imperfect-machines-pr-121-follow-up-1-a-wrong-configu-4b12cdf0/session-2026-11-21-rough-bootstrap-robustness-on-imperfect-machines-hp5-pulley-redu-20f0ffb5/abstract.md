@@ -1,0 +1,3 @@
+# Rough-bootstrap robustness: the HP5r seed-3 failure was a one-sample force auto-tune plateau rule
+
+[Simulation evidence](report.md): HP5r's edge ramp creeps about 140° at both 1.44 and 2.02 N before it runs free. On seed 3 a −0.4° gain set force max at 1.44 N, so size tuning moved 0.25 mm and the rough bootstrap failed. Counting a flat sample as one of two required declines fixes it (seed 3: good-fit, 1.17 mm). All 16 comparable runs are bit-identical, and random-machine bootstrap failures drop from 1/23 (HP5r 1/10) to 0/23. These rates were measured on 3aa8cacc + 9b2941ee. Two re-runs on the merge with e292f73e are bit-identical.

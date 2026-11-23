@@ -1,0 +1,21 @@
+home (first read) [ 0.     0.    99.943]; encoder-zero read #3615 pos [-1.000e-03 -1.000e-03  9.997e+01]; strand tensions there [0.    0.    0.    0.265] N
+points 139; effector rotation median 0.0032 max 0.0090 deg
+strand tension per axis mean [1.067 1.043 0.942 0.991] min [0.248 0.218 0.231 0.633] max [1.932 1.938 2.115 1.703]
+measured - rigid model  mean [-0.1405 -0.1411 -0.1242 -0.0621] std [0.0495 0.0522 0.0495 0.0126]
+stretch predicted       mean [-0.1305 -0.1322 -0.1156 -0.0599] std [0.0455 0.0461 0.0468 0.0124]
+difference              mean [-0.01   -0.0089 -0.0086 -0.0022] std [0.0076 0.0085 0.0068 0.0012]
+corr(res, pred) per axis [0.991, 0.993, 0.992, 0.996]
+  axis A: res = +0.0003 + 1.078 * pred  (EA_eff ~ 18546 N)
+  axis B: res = +0.0076 + 1.124 * pred  (EA_eff ~ 17787 N)
+  axis C: res = -0.0029 + 1.049 * pred  (EA_eff ~ 19065 N)
+  axis D: res = -0.0017 + 1.009 * pred  (EA_eff ~ 19830 N)
+measured                                       max 0.967 Dz -0.573 lowz -0.967 offD +1.007 rms 0.0218
+true rigid lengths (from encoder-zero pose)    max 0.000 Dz -0.000 lowz -0.000 offD +0.000 rms 0.0000
+rigid + predicted stretch                      max 0.964 Dz -0.718 lowz -0.964 offD +0.985 rms 0.0216
+measured - predicted stretch                   max 0.144 Dz +0.144 lowz -0.002 offD +0.023 rms 0.0013
+measured - predicted stretch on A only         max 0.648 Dz -0.094 lowz -0.648 offD +0.694 rms 0.0157
+measured - predicted stretch on B only         max 0.523 Dz -0.396 lowz -0.523 offD +0.708 rms 0.0159
+measured - predicted stretch on C only         max 0.818 Dz -0.155 lowz -0.672 offD +0.688 rms 0.0170
+measured - predicted stretch on D only         max 1.057 Dz -0.931 lowz -1.057 offD +0.957 rms 0.0188
+measured - (stretch - its mean)                max 0.866 Dz -0.720 lowz -0.866 offD +0.946 rms 0.0013
+measured - mean stretch only                   max 0.583 Dz +0.291 lowz -0.103 offD +0.084 rms 0.0218

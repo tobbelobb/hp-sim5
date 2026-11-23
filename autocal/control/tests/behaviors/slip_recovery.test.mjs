@@ -1,4 +1,5 @@
 import { collectWithSlipRecovery } from '../../behaviors/slip_recovery.mjs';
+import { UnmeasurableSweepError } from '../../behaviors/spool_reserve.mjs';
 import { FixedAnchorDriftError } from '../../primitives/uncalibrated_actions.mjs';
 
 const options = { motorIds: ['A', 'B'], forceLow: .01, forceMid: .2, forceMax: 10, sensorCollectionForce: 6 };
@@ -25,6 +26,19 @@ test('repeated slips stop after a bounded number of retries with motors held', a
   const collect = jest.fn(async () => { throw new FixedAnchorDriftError(0, 2, 1.5); });
   await expect(collectWithSlipRecovery(send, collect, options)).rejects.toThrow('exhausted after 3 retries');
   expect(collect).toHaveBeenCalledTimes(4);
+  expect(send.mock.calls.at(-1)[0]).toContain('T0.0:0.0');
+});
+
+test('a profiled sweep preserves measurement force and can be rejected after bounded retries', async () => {
+  const send = jest.fn(async () => {});
+  const collect = jest.fn(async (forces, attempt) => {
+    expect(forces.sensorCollectionForce).toBe(options.sensorCollectionForce);
+    expect(forces.forceMax).toBe(attempt === 0 ? 10 : 5);
+    throw new FixedAnchorDriftError(0, 2, 1.5);
+  });
+  await expect(collectWithSlipRecovery(send, collect, { ...options, profiled: true, maxRetries: 1 }))
+    .rejects.toBeInstanceOf(UnmeasurableSweepError);
+  expect(collect).toHaveBeenCalledTimes(2);
   expect(send.mock.calls.at(-1)[0]).toContain('T0.0:0.0');
 });
 

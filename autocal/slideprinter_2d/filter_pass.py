@@ -335,7 +335,6 @@ def _solve_local_anchor_objective(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    low_anchor_z: Optional[float],
 ) -> Optional[Dict[str, object]]:
     try:
         machine_type = _require_machine_type(
@@ -358,11 +357,10 @@ def _solve_local_anchor_objective(
             machine_type,
             int(num_anchors),
             int(dimensions),
-            low_anchor_z,
         )
         x0 = np.clip(
             np.asarray(
-                anchors_matrix_to_opt_vec(anchors_seed, machine_type, low_anchor_z),
+                anchors_matrix_to_opt_vec(anchors_seed, machine_type),
                 dtype=float,
             ).reshape(-1),
             lb,
@@ -399,7 +397,6 @@ def _solve_local_anchor_objective(
                 machine_type,
                 int(num_anchors),
                 int(dimensions),
-                low_anchor_z,
             )
             value = float(objective_cost(transformed_dataset, anchors_try))
         except Exception:
@@ -441,12 +438,10 @@ def _solve_local_anchor_objective(
             machine_type,
             int(num_anchors),
             int(dimensions),
-            low_anchor_z,
         )
         anchors_best = canonicalize_anchor_gauge(
             machine_type,
             np.asarray(anchors_best, dtype=float),
-            low_anchor_z=low_anchor_z,
         )
     except Exception:
         return None
@@ -491,7 +486,6 @@ def estimate_effective_radii_with_spool_model(
     use_noise_mean: bool,
     sigma_source: str,
     robust_debug: bool,
-    low_anchor_z: Optional[float] = None,
     prefer_zero_tension_angles: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -843,7 +837,6 @@ def estimate_effective_radii_with_spool_model(
                 generate_report=False,
                 residuals_csv=None,
                 initial_guess=np.asarray(fit_anchors_pass, dtype=float),
-                low_anchor_z=low_anchor_z,
             )
             if pass_kind == "dynamic":
                 constant_mask_info["attempted"] = True
@@ -1449,7 +1442,6 @@ def estimate_effective_radii_with_spool_model(
                 solve_restarts=int(local_restarts),
                 solve_iterations=int(local_iterations),
                 solve_optimizer=str(solve_optimizer),
-                low_anchor_z=low_anchor_z,
             )
             if isinstance(local_result, dict):
                 return local_result
@@ -1497,7 +1489,6 @@ def estimate_effective_radii_with_spool_model(
             generate_report=False,
             residuals_csv=None,
             initial_guess=np.asarray(initial_guess, dtype=float),
-            low_anchor_z=low_anchor_z,
         )
         result_out = dict(result) if isinstance(result, dict) else {}
         result_out["objective_id"] = int(objective_id)
@@ -1672,7 +1663,6 @@ def estimate_effective_radii_with_spool_model(
         sweep_metric=sweep_metric,
         use_noise_mean=use_noise_mean,
         sigma_source=sigma_source,
-        low_anchor_z=low_anchor_z,
         enable_prefit=enable_prefit,
         enable_bootstrap_anchor_refresh=enable_bootstrap_anchor_refresh,
         pack_spool_opt_vector=_pack_spool_opt_vector,
@@ -1717,7 +1707,6 @@ def estimate_effective_radii_with_spool_model(
         sweep_metric=sweep_metric,
         use_noise_mean=use_noise_mean,
         sigma_source=sigma_source,
-        low_anchor_z=low_anchor_z,
         pack_spool_opt_vector=_pack_spool_opt_vector,
         unpack_spool_opt_vector=_unpack_spool_opt_vector,
         build_dataset_and_params=_build_dataset_and_params,

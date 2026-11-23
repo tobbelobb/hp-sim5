@@ -1,0 +1,314 @@
+[
+ {
+  "machine": "hangprinter_3",
+  "stretch": "none",
+  "sigma_mm": 0.02,
+  "points": 197,
+  "singular_values_smallest": [
+   0.16222941300414168,
+   0.11292602411735439,
+   0.10418300659825684,
+   3.937880785916853e-09,
+   3.796589697053793e-09
+  ],
+  "cond": 2233706546.7351384,
+  "roll_x_fixed_std_mrad": 1715382.534745281,
+  "roll_x_fixed_std_mm_at_D": 3259226.816016034,
+  "pitch_y_fixed_std_mrad": 1632683.322654441,
+  "pitch_y_fixed_std_mm_at_D": 3102098.313043438,
+  "low_z_profiled_std_mm": null
+ },
+ {
+  "machine": "hangprinter_3",
+  "stretch": "forced",
+  "sigma_mm": 0.02,
+  "points": 197,
+  "singular_values_smallest": [
+   0.16205777118529935,
+   0.11285620445063411,
+   0.10399856713028145,
+   0.00027132004934079775,
+   0.0001669106742667951
+  ],
+  "cond": 50809.35225182677,
+  "roll_x_fixed_std_mrad": 22.174435512019954,
+  "roll_x_fixed_std_mm_at_D": 42.13142747283791,
+  "pitch_y_fixed_std_mrad": 22.497682688941847,
+  "pitch_y_fixed_std_mm_at_D": 42.74559710898951,
+  "low_z_profiled_std_mm": [
+   51.970881397155985,
+   56.840897193911026,
+   73.8253872987352
+  ]
+ },
+ {
+  "machine": "hangprinter_3",
+  "stretch": "forced_10xW",
+  "sigma_mm": 0.02,
+  "points": 197,
+  "singular_values_smallest": [
+   0.1615395777646545,
+   0.11258453373340582,
+   0.10367036158503525,
+   0.002661049933967072,
+   0.0016061420558739646
+  ],
+  "cond": 5279.934607386645,
+  "roll_x_fixed_std_mrad": 2.2823057477838407,
+  "roll_x_fixed_std_mm_at_D": 4.336380920789297,
+  "pitch_y_fixed_std_mrad": 2.3173574209358683,
+  "pitch_y_fixed_std_mm_at_D": 4.4029790997781495,
+  "low_z_profiled_std_mm": [
+   5.399702006422892,
+   5.783538484841653,
+   7.660575828007166
+  ]
+ },
+ {
+  "machine": "hangprinter_4",
+  "stretch": "none",
+  "sigma_mm": 0.02,
+  "points": 138,
+  "singular_values_smallest": [
+   0.0969412980190206,
+   0.09522093585603156,
+   0.07814823555180729,
+   3.3440743051809417e-09,
+   3.2018793841020782e-09
+  ],
+  "cond": 2249444787.4608707,
+  "roll_x_fixed_std_mrad": 2004675.2843145675,
+  "roll_x_fixed_std_mm_at_D": 3808883.0401976784,
+  "pitch_y_fixed_std_mrad": 1963846.5847835816,
+  "pitch_y_fixed_std_mm_at_D": 3731308.5110888053,
+  "low_z_profiled_std_mm": null
+ },
+ {
+  "machine": "hangprinter_4",
+  "stretch": "forced",
+  "sigma_mm": 0.02,
+  "points": 138,
+  "singular_values_smallest": [
+   0.09673988251233583,
+   0.09501249256271165,
+   0.07729754482592942,
+   6.543734883338422e-05,
+   4.881669012821141e-05
+  ],
+  "cond": 147561.14122902518,
+  "roll_x_fixed_std_mrad": 69.10743734802948,
+  "roll_x_fixed_std_mm_at_D": 131.304130961256,
+  "pitch_y_fixed_std_mrad": 87.78624819204022,
+  "pitch_y_fixed_std_mm_at_D": 166.7938715648764,
+  "low_z_profiled_std_mm": [
+   255.59340385221577,
+   210.98599955444814,
+   203.84259954917863
+  ]
+ },
+ {
+  "machine": "hangprinter_4",
+  "stretch": "forced_10xW",
+  "sigma_mm": 0.02,
+  "points": 138,
+  "singular_values_smallest": [
+   0.09656691171072032,
+   0.0948606269361774,
+   0.07674011907848664,
+   0.000654474661117769,
+   0.0004891420580471262
+  ],
+  "cond": 14727.119114147372,
+  "roll_x_fixed_std_mrad": 6.916074939301839,
+  "roll_x_fixed_std_mm_at_D": 13.140542384673495,
+  "pitch_y_fixed_std_mrad": 8.784757271240876,
+  "pitch_y_fixed_std_mm_at_D": 16.691038815357665,
+  "low_z_profiled_std_mm": [
+   25.500742250812568,
+   21.07513667250055,
+   20.326793801040733
+  ]
+ },
+ {
+  "machine": "hangprinter_5",
+  "stretch": "none",
+  "sigma_mm": 0.02,
+  "points": 100,
+  "singular_values_smallest": [
+   0.050641955713857996,
+   0.03516453683779002,
+   0.03206816830018465,
+   2.947890532040733e-09,
+   2.633943486411622e-09
+  ],
+  "cond": 2662311246.8208375,
+  "roll_x_fixed_std_mrad": 2167745.6638363968,
+  "roll_x_fixed_std_mm_at_D": 4118716.761289154,
+  "pitch_y_fixed_std_mrad": 2066507.8480963346,
+  "pitch_y_fixed_std_mm_at_D": 3926364.911383036,
+  "low_z_profiled_std_mm": null
+ },
+ {
+  "machine": "hangprinter_5",
+  "stretch": "dataset",
+  "sigma_mm": 0.02,
+  "points": 100,
+  "singular_values_smallest": [
+   0.050578988341470045,
+   0.03510934238995538,
+   0.03197227685315804,
+   6.895353345646717e-05,
+   3.550904438674538e-05
+  ],
+  "cond": 197496.5893614095,
+  "roll_x_fixed_std_mrad": 49.42211970447254,
+  "roll_x_fixed_std_mm_at_D": 93.90202743849784,
+  "pitch_y_fixed_std_mrad": 45.30480079490061,
+  "pitch_y_fixed_std_mm_at_D": 86.07912151031115,
+  "low_z_profiled_std_mm": [
+   320.510169718471,
+   163.03984487065253,
+   320.4424337289216,
+   163.04342559505255
+  ]
+ },
+ {
+  "machine": "hangprinter_5",
+  "stretch": "forced",
+  "sigma_mm": 0.02,
+  "points": 100,
+  "singular_values_smallest": [
+   0.050578988341470045,
+   0.03510934238995538,
+   0.03197227685315804,
+   6.895353345646717e-05,
+   3.550904438674538e-05
+  ],
+  "cond": 197496.5893614095,
+  "roll_x_fixed_std_mrad": 49.42211970447254,
+  "roll_x_fixed_std_mm_at_D": 93.90202743849784,
+  "pitch_y_fixed_std_mrad": 45.30480079490061,
+  "pitch_y_fixed_std_mm_at_D": 86.07912151031115,
+  "low_z_profiled_std_mm": [
+   320.510169718471,
+   163.03984487065253,
+   320.4424337289216,
+   163.04342559505255
+  ]
+ },
+ {
+  "machine": "hangprinter_5",
+  "stretch": "forced_10xW",
+  "sigma_mm": 0.02,
+  "points": 100,
+  "singular_values_smallest": [
+   0.050478458298325174,
+   0.0351269977998519,
+   0.03190646838452376,
+   0.0006910186152428671,
+   0.00035488393044044817
+  ],
+  "cond": 19762.068032205352,
+  "roll_x_fixed_std_mrad": 4.944209262022714,
+  "roll_x_fixed_std_mm_at_D": 9.393997597843157,
+  "pitch_y_fixed_std_mrad": 4.532140858367577,
+  "pitch_y_fixed_std_mm_at_D": 8.611067630898397,
+  "low_z_profiled_std_mm": [
+   32.09985180833683,
+   16.301579768547906,
+   32.03229552474836,
+   16.305273453131754
+  ]
+ },
+ {
+  "machine": "hangprinter_5_pulley_reduced",
+  "stretch": "none",
+  "sigma_mm": 0.02,
+  "points": 120,
+  "singular_values_smallest": [
+   0.05229278640520487,
+   0.03643065854691231,
+   0.030277145443384217,
+   3.065361569058959e-09,
+   2.922299883995689e-09
+  ],
+  "cond": 2626752695.1255927,
+  "roll_x_fixed_std_mrad": 2007378.03476773,
+  "roll_x_fixed_std_mm_at_D": 3814018.266058687,
+  "pitch_y_fixed_std_mrad": 1928942.535796125,
+  "pitch_y_fixed_std_mm_at_D": 3664990.8180126376,
+  "low_z_profiled_std_mm": null
+ },
+ {
+  "machine": "hangprinter_5_pulley_reduced",
+  "stretch": "dataset",
+  "sigma_mm": 0.02,
+  "points": 120,
+  "singular_values_smallest": [
+   0.05224024488624742,
+   0.03635638049633441,
+   0.030220163851953277,
+   2.6301912030164096e-05,
+   2.4786303498974663e-05
+  ],
+  "cond": 309734.54512408294,
+  "roll_x_fixed_std_mrad": 105.62499676384384,
+  "roll_x_fixed_std_mm_at_D": 200.68749385130332,
+  "pitch_y_fixed_std_mrad": 102.19160968112006,
+  "pitch_y_fixed_std_mm_at_D": 194.1640583941281,
+  "low_z_profiled_std_mm": [
+   432.81054145568817,
+   452.9154254425448,
+   432.8546982740637,
+   452.90524477678207
+  ]
+ },
+ {
+  "machine": "hangprinter_5_pulley_reduced",
+  "stretch": "forced",
+  "sigma_mm": 0.02,
+  "points": 120,
+  "singular_values_smallest": [
+   0.05224024488624742,
+   0.03635638049633441,
+   0.030220163851953277,
+   2.6301912030164096e-05,
+   2.4786303498974663e-05
+  ],
+  "cond": 309734.54512408294,
+  "roll_x_fixed_std_mrad": 105.62499676384384,
+  "roll_x_fixed_std_mm_at_D": 200.68749385130332,
+  "pitch_y_fixed_std_mrad": 102.19160968112006,
+  "pitch_y_fixed_std_mm_at_D": 194.1640583941281,
+  "low_z_profiled_std_mm": [
+   432.81054145568817,
+   452.9154254425448,
+   432.8546982740637,
+   452.90524477678207
+  ]
+ },
+ {
+  "machine": "hangprinter_5_pulley_reduced",
+  "stretch": "forced_10xW",
+  "sigma_mm": 0.02,
+  "points": 120,
+  "singular_values_smallest": [
+   0.05221560261061107,
+   0.03635723201097895,
+   0.03019724809837928,
+   0.00026316169027671424,
+   0.00024786319952779616
+  ],
+  "cond": 30973.759593465365,
+  "roll_x_fixed_std_mrad": 10.563757679631445,
+  "roll_x_fixed_std_mm_at_D": 20.071139591299744,
+  "pitch_y_fixed_std_mrad": 10.22050110156738,
+  "pitch_y_fixed_std_mm_at_D": 19.418952092978024,
+  "low_z_profiled_std_mm": [
+   43.22727816184924,
+   45.317672924454094,
+   43.27111845370927,
+   45.307531699402766
+  ]
+ }
+]

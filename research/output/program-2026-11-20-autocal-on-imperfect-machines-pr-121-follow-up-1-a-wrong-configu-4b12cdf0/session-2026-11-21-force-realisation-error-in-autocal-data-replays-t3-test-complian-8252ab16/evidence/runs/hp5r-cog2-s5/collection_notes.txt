@@ -1,0 +1,3 @@
+   279.96s    1091.28s  | ; auto-tune selected: idle=0.1011 start=2.0224 edge=5.5494 d_max=3464.000deg
+  2247.72s    9000.00s  | Failed to collect sweeps: Physics step budget exhausted
+  2247.72s    9000.00s  | Failed to hold motors after collection error: Physics step budget exhausted

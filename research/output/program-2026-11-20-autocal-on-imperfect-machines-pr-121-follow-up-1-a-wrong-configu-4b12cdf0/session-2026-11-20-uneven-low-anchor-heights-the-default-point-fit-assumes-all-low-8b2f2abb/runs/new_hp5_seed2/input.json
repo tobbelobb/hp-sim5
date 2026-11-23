@@ -1,0 +1,64 @@
+{
+ "command": [
+  "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/.venv/bin/python",
+  "-m",
+  "autocal.autocal",
+  "--headless-sim",
+  "--machine-type",
+  "hangprinter_5",
+  "--dataset",
+  "/home/torbjorn/.t3/worktrees/hp-sim5/t3-6e0b8c92-45ecfe1ef9fc1174/research/output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-uneven-low-anchor-heights-the-default-point-fit-assumes-all-low-8b2f2abb/runs/new_hp5_seed2/sweeps.json",
+  "--recording-mode",
+  "none"
+ ],
+ "seed": "2",
+ "moves_mm": {
+  "A": [
+   0.0,
+   -8.060354263435068,
+   0.0
+  ],
+  "B": [
+   12.569029623771215,
+   -16.323362314596125,
+   0.0
+  ],
+  "C": [
+   4.00402103862616,
+   9.142421072471784,
+   0.0
+  ],
+  "D": [
+   -12.483957065335861,
+   -17.79413490667727,
+   0.0
+  ]
+ },
+ "truth": [
+  [
+   0.0,
+   -1908.060354263435,
+   -280.0
+  ],
+  [
+   1912.5690296237713,
+   -16.323362314596125,
+   -280.0
+  ],
+  [
+   4.00402103862616,
+   1909.1424210724717,
+   -280.0
+  ],
+  [
+   -1912.483957065336,
+   -17.79413490667727,
+   -280.0
+  ],
+  [
+   0.0,
+   0.0,
+   1900.0
+  ]
+ ]
+}

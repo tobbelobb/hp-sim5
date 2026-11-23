@@ -1,0 +1,138 @@
+[
+ {
+  "case": "new_hp5_base_0",
+  "err": 0.6843807141341499,
+  "jackknife": 2.2203398566796273,
+  "label": "usable",
+  "single_unit": [
+   "A.y",
+   "B.z",
+   "C.z",
+   "D.x",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_hp5_seed1",
+  "err": 0.7685400193739425,
+  "jackknife": 2.38606520440074,
+  "label": "usable",
+  "single_unit": [
+   "A.z",
+   "B.z",
+   "C.z",
+   "D.z",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_hp5_seed2",
+  "err": 0.7949987005941165,
+  "jackknife": 2.5041103495065875,
+  "label": "usable",
+  "single_unit": [
+   "A.z",
+   "B.z",
+   "C.z",
+   "D.z",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_hp5_seed3",
+  "err": 0.7846998768716369,
+  "jackknife": 1.4208057275637762,
+  "label": "usable",
+  "single_unit": [
+   "A.z",
+   "B.z",
+   "D.x",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_hp5_seed4",
+  "err": 0.8366336502038664,
+  "jackknife": 2.6306865395031926,
+  "label": "usable",
+  "single_unit": [
+   "B.z",
+   "C.z",
+   "D.x",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_hp5r_base_0",
+  "err": 1.118610559802748,
+  "jackknife": 0.887093105096018,
+  "label": "good",
+  "single_unit": []
+ },
+ {
+  "case": "new_hp5r_seed1",
+  "err": 0.3598319139825256,
+  "jackknife": 0.66869424962909,
+  "label": "good",
+  "single_unit": [
+   "B.z",
+   "C.z",
+   "D.x",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_hp5r_seed2",
+  "err": 0.8689593608074813,
+  "jackknife": 1.5736082644373135,
+  "label": "usable",
+  "single_unit": [
+   "A.y",
+   "B.z",
+   "C.y",
+   "D.y",
+   "D.z",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_hp5r_seed3",
+  "err": 1.0118153446810538,
+  "jackknife": 4.2702965918254865,
+  "label": "poor",
+  "single_unit": [
+   "B.z",
+   "C.y",
+   "D.z",
+   "I.z"
+  ]
+ },
+ {
+  "case": "new_base_0",
+  "err": 1.342908245295733,
+  "jackknife": 0.6796494843706982,
+  "label": "good",
+  "single_unit": []
+ },
+ {
+  "case": "new_hp4_A_p10",
+  "err": 1.0418593392092055,
+  "jackknife": 0.7560901154148469,
+  "label": "good",
+  "single_unit": []
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_3#8 10 mm",
+  "err": 5.055255958801354,
+  "jackknife": 5.23430250520501,
+  "label": "poor",
+  "single_unit": []
+ },
+ {
+  "case": "benchmark_923c2baa_hangprinter_5_pulley_reduced#0 20 mm",
+  "err": 5.709681138615522,
+  "jackknife": 5.949350429391691,
+  "label": "poor",
+  "single_unit": []
+ }
+]

@@ -1,0 +1,9 @@
+# HP4 (rename only: gate unchanged), then HP5 and HP5r (gate excludes redundant machines): expect identical pairs
+base hp4-nominal --machine hangprinter_4 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1
+home hp4-nominal --machine hangprinter_4 --seed 0 --low-dz-mm 0:0:0 --top-offset-mm 0:0 --stiffness-scale 1
+base hp4-s0 --machine hangprinter_4 --seed 0
+home hp4-s0 --machine hangprinter_4 --seed 0
+base hp5-s0 --machine hangprinter_5 --seed 0
+home hp5-s0 --machine hangprinter_5 --seed 0
+base hp5r-s0 --machine hangprinter_5_pulley_reduced --seed 0
+home hp5r-s0 --machine hangprinter_5_pulley_reduced --seed 0

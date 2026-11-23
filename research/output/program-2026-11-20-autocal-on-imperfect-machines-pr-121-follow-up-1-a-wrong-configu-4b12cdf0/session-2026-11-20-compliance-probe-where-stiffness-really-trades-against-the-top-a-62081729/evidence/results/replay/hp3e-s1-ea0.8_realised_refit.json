@@ -1,0 +1,20 @@
+{
+ "run": "hp3e-s1-ea0.8",
+ "k_true": 1.25,
+ "points_matched": 120,
+ "points": 120,
+ "commanded_true_k": {
+  "top_z_frame_mm": 1.331452883053089,
+  "max_abs_frame_mm": 1.331452883053089,
+  "low_z_frame_mm": 0.0212111649460572
+ },
+ "commanded_k_zero_top_z_over_true": 1.0848073468098138,
+ "commanded_dDz_dk_mm": -12.50364949144325,
+ "realised_true_k": {
+  "top_z_frame_mm": 0.33142348420005874,
+  "max_abs_frame_mm": 0.33142348420005874,
+  "low_z_frame_mm": 0.010938610465814236
+ },
+ "realised_k_zero_top_z_over_true": 1.0170412328561418,
+ "realised_dDz_dk_mm": -14.14782309441397
+}

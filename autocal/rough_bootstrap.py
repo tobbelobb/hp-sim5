@@ -83,19 +83,17 @@ def bootstrap_state_error(dataset_path):
     return None
 
 
-def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):
+def assess_rough_geometry(dataset, *, use_noise_mean=True):
     machine = dataset["machine_type"]
     n, d = int(dataset["num_anchors"]), int(dataset["dimensions"])
-    seed = build_anchor_initial_guess(dataset, machine_type=machine, base_radii_mm=None,
-                                      low_anchor_z=low_anchor_z)
+    seed = build_anchor_initial_guess(dataset, machine_type=machine, base_radii_mm=None)
     if seed is None:
         raise ValueError("Rough bootstrap needs raw encoder travel to construct independent geometry seeds")
-    options = dict(fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
-                   low_anchor_z=low_anchor_z, use_noise_mean=use_noise_mean)
+    options = dict(fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM, use_noise_mean=use_noise_mean)
     fits = [fit_pose_least_squares(dataset, start, **options) for start in (seed, seed * 1.15)]
     fit = min(fits, key=lambda result: result["rms_mm"])
     anchors = fit["anchors"]
-    vector = anchors_matrix_to_opt_vec(anchors, machine, low_anchor_z)
+    vector = anchors_matrix_to_opt_vec(anchors, machine)
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
     stretch = dataset_stretch(dataset)
     inliers = fit["point_residuals_mm"] <= max(1.0, 6.0 * fit["robust_scale_mm"])
@@ -105,7 +103,7 @@ def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):
                    for key, value in stretch.items()}
 
     def residuals(x):
-        moved = anchor_opt_vec_to_matrix(x, machine, n, d, low_anchor_z)
+        moved = anchor_opt_vec_to_matrix(x, machine, n, d)
         return consistency_residuals(moved, lengths, np.zeros(n), stretch=stretch).ravel()
 
     steps = np.eye(vector.size) * 0.1
@@ -129,7 +127,7 @@ def assess_rough_geometry(dataset, *, low_anchor_z=None, use_noise_mean=True):
     }
 
 
-def next_rough_sweep(dataset, anchors, *, low_anchor_z=None):
+def next_rough_sweep(dataset, anchors):
     from autocal.workspace import exploration_grid
     deltas, bounds = exploration_grid(dataset, 9)
     observed = dataset_sweep_configs(dataset)
@@ -140,7 +138,7 @@ def next_rough_sweep(dataset, anchors, *, low_anchor_z=None):
         machine_type=dataset["machine_type"], fixed_delta_bounds_by_anchor=bounds,
     )
     ranked = rank_candidates_pose_information(
-        anchors, machine_type=dataset["machine_type"], low_anchor_z=low_anchor_z,
+        anchors, machine_type=dataset["machine_type"],
         observed_lengths_mm=dataset_line_lengths(dataset)["lengths_mm"],
         candidates=[cfg for cfg in candidates if cfg.normalized_key(tol_mm=1.0) not in seen],
         points_per_sweep=20, sigma_mm=ROUGH_LINE_SIGMA_MM, regularization=1e-6, top_k=1,

@@ -1,0 +1,30 @@
+case                    frame            rigid            sim_s   jack old/new   sweeps old/new  stop new
+hp3-dz-s0        0.97>0.79        0.44>0.34         5413>5481     0.67/0.53      9/9            stable-estimate
+hp3-dz-s1        0.91>1.06        0.33>0.44         5044>4755     0.43/0.78      8/7            stable-estimate
+hp3-k0.8         1.09>1.09        0.33>0.33         5429>5431     0.51/0.49      10/10            stable-estimate
+hp3-k1.2         0.88>0.84        0.17>0.35         5145>5160     0.31/0.40      8/8            stable-estimate
+hp3-nominal      1.18>1.19        0.39>0.40         4587>4585     0.70/0.68      7/7            stable-estimate
+hp3-s0           0.71>0.72        0.29>0.24         4776>4794     0.96/0.84      7/7            stable-estimate
+hp3-s1           1.10>1.12        0.37>0.40         5038>5055     0.49/0.42      8/8            stable-estimate
+hp3-s2           0.82>0.74        0.28>0.28         5126>5434     0.55/0.40      8/9            stable-estimate
+hp3-s3           1.10>0.93        0.32>0.51         5014>5045     0.34/0.46      8/8            stable-estimate
+hp3-s4           1.15>1.20        0.44>0.24         5089>5021     0.38/0.86      8/8            stable-estimate
+hp3-s5           1.68>1.62        0.66>0.60         5075>5074     0.73/0.72      8/8            stable-estimate
+hp3-s6           0.93>0.94        0.65>0.28         5014>5060     0.49/0.44      8/8            stable-estimate
+hp3-s7           1.09>0.92        0.21>0.22         4664>4807     0.39/0.63      7/7            stable-estimate
+hp3-s8           1.74>1.54        0.70>0.59         4729>4721     0.71/0.72      7/7            stable-estimate
+hp3-s9           0.84>0.82        0.10>0.08         4731>4730     0.63/0.63      7/7            stable-estimate
+
+all pairs (n=15): paired new - old
+  frame  mean -0.043  sd 0.099  se 0.026  min -0.203  max +0.150  new better in 8/15
+  rigid  mean -0.026  sd 0.141  se 0.036  min -0.372  max +0.192  new better in 8/15
+  sim_s  mean +18.494  sd 121.551  se 31.384  min -289.126  max +308.028  new better in 6/15
+  old frame error mean 1.08 sd 0.29 max 1.74
+  new frame error mean 1.04 sd 0.27 max 1.62
+
+random seeds s0-s9 (n=10): paired new - old
+  frame  mean -0.058  sd 0.091  se 0.029  min -0.203  max +0.057  new better in 6/10
+  rigid  mean -0.059  sd 0.149  se 0.047  min -0.372  max +0.192  new better in 7/10
+  sim_s  mean +48.444  sd 105.447  se 33.345  min -67.832  max +308.028  new better in 4/10
+  old frame error mean 1.11 sd 0.35 max 1.74
+  new frame error mean 1.06 sd 0.31 max 1.62

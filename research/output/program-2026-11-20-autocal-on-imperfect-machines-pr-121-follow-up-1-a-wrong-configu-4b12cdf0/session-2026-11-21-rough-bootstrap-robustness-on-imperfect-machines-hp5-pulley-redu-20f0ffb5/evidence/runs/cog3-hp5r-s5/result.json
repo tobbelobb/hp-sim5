@@ -1,0 +1,245 @@
+{
+  "machine": "hangprinter_5_pulley_reduced",
+  "seed": 5,
+  "imperfection": {
+    "seed": 5,
+    "shifts_mm": {
+      "A": [
+        0.0,
+        0.0,
+        18.30017542472281
+      ],
+      "B": [
+        0.0,
+        0.0,
+        18.476447384189626
+      ],
+      "C": [
+        0.0,
+        0.0,
+        0.9195336625285186
+      ],
+      "D": [
+        0.0,
+        0.0,
+        -12.851917194711504
+      ],
+      "I": [
+        -2.004319070734637,
+        1.803886557169393,
+        0.0
+      ]
+    },
+    "stiffness_scale": 0.9633892821679995,
+    "ranges": {
+      "low_dz_max_mm": 30.0,
+      "top_offset_max_mm": 50.0,
+      "stiffness_error": 0.2
+    },
+    "machine": "hangprinter_5_pulley_reduced",
+    "source_scene": "public/usd_scenes/hp5_pulley_reduced.usda",
+    "moved_prims": {
+      "A": [
+        "SpoolA",
+        "AnchorAL_top",
+        "AnchorAL_bottom",
+        "AnchorAR_top",
+        "AnchorAR_bottom"
+      ],
+      "B": [
+        "SpoolB",
+        "AnchorBL_top",
+        "AnchorBL_bottom",
+        "AnchorBR_top",
+        "AnchorBR_bottom"
+      ],
+      "C": [
+        "SpoolC",
+        "AnchorCL_top",
+        "AnchorCL_bottom",
+        "AnchorCR_top",
+        "AnchorCR_bottom"
+      ],
+      "D": [
+        "SpoolD",
+        "AnchorDL_top",
+        "AnchorDL_bottom",
+        "AnchorDR_top",
+        "AnchorDR_bottom"
+      ],
+      "I": [
+        "SpoolI",
+        "WheelI0_left_top",
+        "WheelI0_right_top",
+        "AttachI0",
+        "WheelI1_left_top",
+        "WheelI1_right_top",
+        "AttachI1",
+        "WheelI2_left_top",
+        "WheelI2_right_top",
+        "AttachI2",
+        "WheelI3_left_top",
+        "WheelI3_right_top",
+        "AttachI3"
+      ]
+    },
+    "truth_mm": {
+      "A": [
+        0.0,
+        -1900.0,
+        -261.699825
+      ],
+      "B": [
+        1900.0,
+        0.0,
+        -261.523553
+      ],
+      "C": [
+        0.0,
+        1900.0,
+        -279.080466
+      ],
+      "D": [
+        -1900.0,
+        0.0,
+        -292.851917
+      ],
+      "I": [
+        -2.004319,
+        1.803887,
+        1900.0
+      ]
+    },
+    "nominal_mm": {
+      "A": [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      "B": [
+        1900.0,
+        0.0,
+        -280.0
+      ],
+      "C": [
+        0.0,
+        1900.0,
+        -280.0
+      ],
+      "D": [
+        -1900.0,
+        0.0,
+        -280.0
+      ],
+      "I": [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    },
+    "overrides": {
+      "low_dz_mm": null,
+      "top_offset_mm": null,
+      "stiffness_scale": null
+    },
+    "ellipsoid_shape": false,
+    "cogging_scale": 3.0
+  },
+  "status": "failed",
+  "stop_reason": "unreliable-rough-bootstrap",
+  "normal_completion": false,
+  "simulated_s": 2395.862,
+  "wall_s": 312.5465355729975,
+  "git_revision": "924094cd2ba85bd63809f3f735b19e78b52234cc",
+  "anchor_names": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "I"
+  ],
+  "truth_mm": [
+    [
+      0.0,
+      -1900.0,
+      -261.699825
+    ],
+    [
+      1900.0,
+      0.0,
+      -261.523553
+    ],
+    [
+      0.0,
+      1900.0,
+      -279.080466
+    ],
+    [
+      -1900.0,
+      0.0,
+      -292.851917
+    ],
+    [
+      -2.004319,
+      1.803887,
+      1900.0
+    ]
+  ],
+  "truth_frame_mm": [
+    [
+      0.0,
+      -1899.7507,
+      -263.5034
+    ],
+    [
+      1899.723,
+      0.5263,
+      -263.5276
+    ],
+    [
+      -0.5705,
+      1900.264,
+      -277.2763
+    ],
+    [
+      -1900.3079,
+      -0.0,
+      -290.8473
+    ],
+    [
+      -0.0,
+      0.0,
+      1900.0019
+    ]
+  ],
+  "truth_frame_tilt_deg": 0.08131578518940828,
+  "gauge_truth_mm": [
+    [
+      -0.0,
+      -1898.7845,
+      -270.3782
+    ],
+    [
+      1897.7767,
+      3.4241,
+      -277.1755
+    ],
+    [
+      -4.461,
+      1901.2527,
+      -270.3781
+    ],
+    [
+      -1902.3499,
+      -0.8938,
+      -277.1753
+    ],
+    [
+      13.6673,
+      -6.8704,
+      1899.9403
+    ]
+  ],
+  "low_plane_tilt_deg": 0.5401767190262359,
+  "iterations": []
+}

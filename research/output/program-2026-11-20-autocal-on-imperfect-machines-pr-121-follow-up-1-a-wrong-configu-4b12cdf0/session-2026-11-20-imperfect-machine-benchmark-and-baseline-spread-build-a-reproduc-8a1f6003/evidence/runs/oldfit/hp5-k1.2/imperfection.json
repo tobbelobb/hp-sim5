@@ -1,0 +1,126 @@
+{
+  "seed": 0,
+  "shifts_mm": {
+    "A": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "B": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "C": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "D": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "I": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "stiffness_scale": 1.2,
+  "ranges": {
+    "low_dz_max_mm": 30.0,
+    "top_offset_max_mm": 50.0,
+    "stiffness_error": 0.2
+  },
+  "machine": "hangprinter_5",
+  "source_scene": "public/usd_scenes/hp5.usda",
+  "moved_prims": {
+    "A": [
+      "SpoolA",
+      "AnchorAL",
+      "AnchorAR"
+    ],
+    "B": [
+      "SpoolB",
+      "AnchorBL",
+      "AnchorBR"
+    ],
+    "C": [
+      "SpoolC",
+      "AnchorCL",
+      "AnchorCR"
+    ],
+    "D": [
+      "SpoolD",
+      "AnchorDL",
+      "AnchorDR"
+    ],
+    "I": [
+      "SpoolI",
+      "AnchorI0",
+      "AnchorI1",
+      "AnchorI2",
+      "AnchorI3"
+    ]
+  },
+  "truth_mm": {
+    "A": [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    "B": [
+      1900.0,
+      0.0,
+      -280.0
+    ],
+    "C": [
+      0.0,
+      1900.0,
+      -280.0
+    ],
+    "D": [
+      -1900.0,
+      0.0,
+      -280.0
+    ],
+    "I": [
+      0.0,
+      0.0,
+      1900.0
+    ]
+  },
+  "nominal_mm": {
+    "A": [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    "B": [
+      1900.0,
+      0.0,
+      -280.0
+    ],
+    "C": [
+      0.0,
+      1900.0,
+      -280.0
+    ],
+    "D": [
+      -1900.0,
+      0.0,
+      -280.0
+    ],
+    "I": [
+      0.0,
+      0.0,
+      1900.0
+    ]
+  },
+  "overrides": {
+    "low_dz_mm": "0:0:0:0",
+    "top_offset_mm": "0:0",
+    "stiffness_scale": 1.2
+  }
+}

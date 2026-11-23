@@ -92,7 +92,7 @@ def test_backfilled_spheres_share_a_mesh_and_replay_by_visit():
     assert visits(dataset) == [list(range(3 * k, 3 * k + 3)) for k in range(len(schedule))]
     start = anchors + np.random.default_rng(1).normal(0, 20, anchors.shape)
     for model in ("ellipsoid", "point"):
-        result = fit(dataset, [start], None, True, model)
+        result = fit(dataset, [start], True, model)
         assert np.max(np.abs(result["anchors"] - anchors)) < 0.05
         assert result["home_offsets_mm"][3] == pytest.approx(0.4, abs=0.02)
 
@@ -104,7 +104,7 @@ def test_replay_fits_spheres_of_a_sweep_dataset(tmp_path):
     rows = []
     accepted = run_ellipsoid_autocal(
         path, machine_type="hangprinter_4", collector_args=[], run_collection=None, log_line=lambda _: None,
-        log_console=lambda _: None, append_log=rows.append, no_collect=True, low_anchor_z=None,
+        log_console=lambda _: None, append_log=rows.append, no_collect=True,
         use_noise_mean=True, stable_step_mm=0.5, stop_file=tmp_path / "stop")
     truth = np.asarray(TRUTH["hangprinter_4"], dtype=float)
     assert np.max(np.abs(accepted["plan"]["anchors"] - truth)) < 1.5

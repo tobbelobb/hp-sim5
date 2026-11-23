@@ -1,0 +1,194 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-cc036ed6-1b973479bb12c26c/output/compliance/live/s080/input-scene.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "recording_mode": "none",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-cc036ed6-1b973479bb12c26c/output/compliance/live/s080/sweeps.json",
+  "source_sha256": "d6f079319dbf226ddc4dee4ad677a8a77a25d74602f6326b290a4af6f513ac72",
+  "autocal_source_sha256": "3bcdbb12aaf5abbfc367c88c358e2aea169209dab93e2b0e4b0135ad57862223",
+  "git_revision": "063a3af5b60a67a38e7d530d9c7609aaeae6fc3a",
+  "scene_sha256": "b79bcd877bc79f59e573a1c017d7930796154a1874c83d98b14166055ee89887",
+  "firmware_config_sha256": "b143707d9ac7aa3ee971d0ad744ee348c6c980e8bc1d5c80990d4b95541e7d1a",
+  "rrf_sha256": "bb55011c2c7eb6050d82e0e9aba60aa6bd6ba8834758c908358a68dee5c37330",
+  "owned_services": [
+    {
+      "name": "rrf",
+      "pid": 731764
+    },
+    {
+      "name": "physics",
+      "pid": 731774
+    },
+    {
+      "name": "collector",
+      "pid": 731797
+    },
+    {
+      "name": "collector",
+      "pid": 733603
+    },
+    {
+      "name": "collector",
+      "pid": 733877
+    },
+    {
+      "name": "collector",
+      "pid": 734181
+    },
+    {
+      "name": "collector",
+      "pid": 734307
+    },
+    {
+      "name": "collector",
+      "pid": 734581
+    },
+    {
+      "name": "collector",
+      "pid": 734905
+    },
+    {
+      "name": "collector",
+      "pid": 735290
+    },
+    {
+      "name": "collector",
+      "pid": 735960
+    },
+    {
+      "name": "collector",
+      "pid": 736377
+    },
+    {
+      "name": "collector",
+      "pid": 737357
+    },
+    {
+      "name": "collector",
+      "pid": 737725
+    }
+  ],
+  "physics_engine": "rust-native",
+  "physics_artifact": {
+    "path": "/home/torbjorn/.t3/worktrees/hp-sim5/t3-cc036ed6-1b973479bb12c26c/src/wasm/cable_solver/target/native/physics.node",
+    "sha256": "be16247d3455ca780dba9db277f77c08606254c5938bb1ff8605359914fbefa1",
+    "build": {
+      "profile": "release",
+      "platform": "linux",
+      "arch": "x64",
+      "nodeApi": 8,
+      "artifactSha256": "be16247d3455ca780dba9db277f77c08606254c5938bb1ff8605359914fbefa1",
+      "nodeApiHeaders": {
+        "directory": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/native/node-api",
+        "sha256": {
+          "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+          "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+          "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+          "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+        }
+      },
+      "sources": {
+        "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+        "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+        "native/node_bridge.c": "fed2ba8f81fe35770e287067a17b6a0c5c4542ab30a5caadf6ff172a51571728",
+        "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+        "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+        "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+        "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+        "src/abi.rs": "e4d4d7facb040252283564a0ce65a72f28575ac0ef294b57fb8128ef36f343c4",
+        "src/engine.rs": "8792ad14c67a0fdc62c4901be48711cb6909a195a5d0a25652ab2b882bcd45c7",
+        "src/lib.rs": "950e73b29c179d33737b34464db68364b80a8bc9f402d9961e5e3037524806e6"
+      },
+      "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+      "target": "x86_64-unknown-linux-gnu",
+      "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-D2S7d5/merged.profdata",
+      "compiler": "cc",
+      "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016",
+      "pgo": {
+        "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-D2S7d5/merged.profdata",
+        "sha256": "d35b07a41916c32308f39d6b6458b55ecb6a974ba902d5544e5d33d4af162e6a",
+        "training": {
+          "worlds": [
+            {
+              "machine": "hp3",
+              "layering": true,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "cb428664b2819572b729ef4ad52b286e0edcd72171de28d8ca9415e85abee339"
+            },
+            {
+              "machine": "hp3",
+              "layering": false,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "161479c41804a7080aa0ca4365b4b019035466e9e2ce3974207a6703eefd3d2c"
+            },
+            {
+              "machine": "hp4",
+              "layering": true,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "30bdabae635d8c938c9955f53981f914ed3bc46e767b1f71379dcb521dbd7052"
+            },
+            {
+              "machine": "hp4",
+              "layering": false,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "7875f1cf94b11b5abe54b1ef19571ccfdf065633b4f068f95529d09ddbe6a45c"
+            }
+          ],
+          "steps": 40000,
+          "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+        },
+        "trainerSha256": "3a2c1684dc4fe6e850017532b4249b2ea6f7a7ea6bbf144ab8357bb5abb7c5fd"
+      }
+    }
+  },
+  "baked_scene_sha256": "bc4dd4ed324170f9b035651299698887e8db5bf22bb53c9e27f1a10848c57d1d",
+  "initial_baked_scene_sha256": "bc4dd4ed324170f9b035651299698887e8db5bf22bb53c9e27f1a10848c57d1d",
+  "service_url": "http://127.0.0.1:37861",
+  "rrf_url": "http://127.0.0.1:44175",
+  "services": [
+    731764,
+    731774
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-11-11 22:12:27",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08100\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nE0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000\nF0 B0 P0"
+  },
+  "stop_reason": "stable-estimate",
+  "applied_parameters": [
+    "M669 A0.00:-1899.83:-281.16 B1645.35:949.87:-281.16 C-1645.54:950.07:-281.16 D0.03:-0.01:1899.38"
+  ],
+  "firmware_final": {
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1899.83, -281.16\nB:1645.35, 949.87, -281.16\nC:-1645.54, 950.07, -281.16\nD:0.03, -0.01, 1899.38\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nN2:2:2:3\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08100\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nE0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000:0.000\nF0 B0 P0"
+  },
+  "wall_s": 467.62676962000114,
+  "kept_alive": false,
+  "service_wall_s": 467.471578194,
+  "step": 2810073,
+  "epoch": 0,
+  "total_steps": 2810073,
+  "dt_s": 0.002,
+  "simulated_s": 5620.146,
+  "collector_time_s": 5620.146000227475,
+  "queue_length": 0,
+  "recording_drained": false,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "physicsSubsteps": 1,
+    "solverIterations": 20,
+    "timeScale": 1
+  },
+  "physics_returncode": 0,
+  "normal_completion": true
+}

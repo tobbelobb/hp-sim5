@@ -1,4 +1,5 @@
 import { applyForceModeState, FixedAnchorDriftError } from '../primitives/uncalibrated_actions.mjs';
+import { UnmeasurableSweepError } from './spool_reserve.mjs';
 
 // A held motor that moved more than a full turn did not slip under load: the
 // machine no longer matches what the collector believes, so retrying is unsafe.
@@ -7,7 +8,7 @@ const GROSS_DRIFT_DEG = 360;
 // Retry the whole direction: never mix points from before/after a slip.
 export async function collectWithSlipRecovery(send, collect, {
   motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
-  onRecovery, maxRetries = 3,
+  profiled = false, onRecovery, maxRetries = 3,
 }) {
   let forces = { forceLow, forceMid, forceMax, sensorCollectionForce };
   const recoveries = [];
@@ -21,23 +22,31 @@ export async function collectWithSlipRecovery(send, collect, {
       if (Math.abs(error.driftDeg) > GROSS_DRIFT_DEG) {
         throw new Error(`Stopping with all motors held: ${error.message}, more than one full turn, which no force reduction can explain`);
       }
-      if (attempt >= maxRetries) throw new Error(`Slip recovery exhausted after ${maxRetries} retries: ${error.message}`);
       const lower = force => Math.min(force, Math.max(forceLow, force * .5));
       const reduced = {
         forceLow,
         forceMid: lower(forces.forceMid),
         forceMax: lower(forces.forceMax),
-        sensorCollectionForce: Number.isFinite(forces.sensorCollectionForce)
+        sensorCollectionForce: !profiled && Number.isFinite(forces.sensorCollectionForce)
           ? lower(forces.sensorCollectionForce) : forces.sensorCollectionForce,
       };
-      if (reduced.forceMid === forces.forceMid && reduced.forceMax === forces.forceMax
-        && reduced.sensorCollectionForce === forces.sensorCollectionForce) {
-        throw new Error(`Cannot reduce sweep forces below idle preload: ${error.message}`);
+      const atIdle = reduced.forceMid === forces.forceMid && reduced.forceMax === forces.forceMax
+        && reduced.sensorCollectionForce === forces.sensorCollectionForce;
+      if (attempt >= maxRetries || atIdle) {
+        const reason = attempt >= maxRetries ? `Slip recovery exhausted after ${maxRetries} retries`
+          : 'Cannot reduce sweep forces below idle preload';
+        const message = `${reason}: ${error.message}`;
+        if (profiled) {
+          throw new UnmeasurableSweepError(message, { anchor: error.anchor, drift_deg: error.driftDeg, recoveries });
+        }
+        throw new Error(message);
       }
       const recovery = { discarded_attempt: attempt, anchor: error.anchor, drift_deg: error.driftDeg,
         previous_forces: forces, reduced_forces: reduced };
       recoveries.push(recovery);
-      console.log(`; slip recovery ${attempt + 1}/${maxRetries}: ${error.message}; lowering forces and restarting direction`);
+      const action = profiled ? 'lowering positioning and pullout forces, keeping the measurement profile'
+        : 'lowering forces';
+      console.log(`; slip recovery ${attempt + 1}/${maxRetries}: ${error.message}; ${action} and restarting direction`);
       await onRecovery?.(recovery);
       forces = reduced;
     }

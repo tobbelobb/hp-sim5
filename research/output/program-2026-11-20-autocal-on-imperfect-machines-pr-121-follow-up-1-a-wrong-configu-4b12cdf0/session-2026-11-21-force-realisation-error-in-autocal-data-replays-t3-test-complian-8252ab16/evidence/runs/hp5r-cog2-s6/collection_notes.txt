@@ -1,0 +1,2 @@
+   166.71s    1062.08s  | ; auto-tune selected: idle=0.1011 start=2.0224 edge=5.5494 d_max=3314.410deg
+  2039.81s    7396.60s  | Failed to collect sweeps: Slip recovery exhausted after 3 retries: Fixed anchor 2 drifted 1.782deg from its target (limit 1.5deg)

@@ -197,11 +197,15 @@ def fit_point_positions(anchors: np.ndarray, lengths_mm: np.ndarray, home_offset
     return positions, absolute
 
 
-def _hp4_home_strain(dataset: dict) -> Optional[tuple[float, np.ndarray]]:
-    """ABC hang slack at encoder zero. Approximate their measurement strain by T/EA."""
+def _home_strain(dataset: dict) -> Optional[tuple[float, np.ndarray]]:
+    """Low lines hang slack at encoder zero. Approximate their measurement strain by T/EA.
+
+    Applies to equal-strain sweeps on HP3/HP4, which have no per-point stretch model.
+    Redundant machines' per-point flex model already treats encoder zero as unstretched.
+    """
     from autocal.equal_strain import is_equal_strain
 
-    if dataset["machine_type"] != "hangprinter_4" or not is_equal_strain(dataset):
+    if int(dataset["num_anchors"]) != int(dataset["dimensions"]) + 1 or not is_equal_strain(dataset):
         return None
     m666 = (dataset.get("config") or {}).get("m666_before_data_collection") or {}
     targets = [(s.get("metadata") or {}).get("strand_tension_n") for s in dataset["sweeps"]]
@@ -226,7 +230,6 @@ def fit_pose_least_squares(
     *,
     fit_home_offsets: bool,
     home_offset_prior_sigma_mm: float,
-    low_anchor_z: Optional[float] = None,
     use_noise_mean: bool = True,
     extra_initial_anchors: Sequence[np.ndarray] = (),
 ) -> Dict[str, object]:
@@ -238,7 +241,7 @@ def fit_pose_least_squares(
     the offset-free fit is below half the prior's, and dropped again if they land
     beyond two prior sigmas. `home_offsets_skipped` then says why.
     """
-    options = dict(low_anchor_z=low_anchor_z, use_noise_mean=use_noise_mean,
+    options = dict(use_noise_mean=use_noise_mean,
                    home_offset_prior_sigma_mm=home_offset_prior_sigma_mm)
     rigid = _fit_points(dataset, initial_anchors, fit_home_offsets=False,
                         extra_initial_anchors=extra_initial_anchors, **options)
@@ -247,8 +250,7 @@ def fit_pose_least_squares(
     from autocal.pose_planning import pose_information
     num_offsets = int(dataset["num_anchors"]) - int(dataset["dimensions"])
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
-    info = pose_information(rigid["anchors"], lengths, machine_type=str(dataset["machine_type"]),
-                            low_anchor_z=low_anchor_z, sigma_mm=rigid["robust_scale_mm"],
+    info = pose_information(rigid["anchors"], lengths, machine_type=str(dataset["machine_type"]), sigma_mm=rigid["robust_scale_mm"],
                             stretch=dataset_stretch(dataset))
     info[-num_offsets:, -num_offsets:] += np.eye(num_offsets) / home_offset_prior_sigma_mm ** 2
     offset_std = np.sqrt(np.diag(np.linalg.pinv(info))[-num_offsets:])
@@ -258,16 +260,16 @@ def fit_pose_least_squares(
                       extra_initial_anchors=[*extra_initial_anchors, rigid["anchors"]], **options)
     if np.any(np.abs(fit["home_offsets_mm"][-num_offsets:]) > 2.0 * home_offset_prior_sigma_mm):
         return {**rigid, "home_offsets_skipped": "implausible"}
-    if _at_far_bound(fit["anchors"], dataset, low_anchor_z) and not _at_far_bound(rigid["anchors"], dataset, low_anchor_z):
+    if _at_far_bound(fit["anchors"], dataset) and not _at_far_bound(rigid["anchors"], dataset):
         return {**rigid, "home_offsets_skipped": "anchor at bound"}
     return {**fit, "home_offsets_skipped": None}
 
 
-def _at_far_bound(anchors: np.ndarray, dataset: dict, low_anchor_z: Optional[float]) -> bool:
+def _at_far_bound(anchors: np.ndarray, dataset: dict) -> bool:
     """An anchor coordinate on a workspace-sized bound, which no measurement put there."""
     machine_type, num_anchors, dimensions = str(dataset["machine_type"]), int(dataset["num_anchors"]), int(dataset["dimensions"])
-    lower, upper = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
-    vector = anchors_matrix_to_opt_vec(np.asarray(anchors, dtype=float), machine_type, low_anchor_z)
+    lower, upper = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)
+    vector = anchors_matrix_to_opt_vec(np.asarray(anchors, dtype=float), machine_type)
     # Near-zero bounds only fix the layout's sign convention.
     far = lambda bound: np.abs(bound) > 100.0
     return bool(np.any(far(lower) & (vector - lower < 1.0)) or np.any(far(upper) & (upper - vector < 1.0)))
@@ -279,7 +281,6 @@ def _fit_points(
     *,
     fit_home_offsets: bool,
     home_offset_prior_sigma_mm: float,
-    low_anchor_z: Optional[float],
     use_noise_mean: bool,
     extra_initial_anchors: Sequence[np.ndarray],
     spool=None,
@@ -307,12 +308,12 @@ def _fit_points(
     num_spool = 0 if spool is None else spool.start.size
     num_prior = num_offsets + (0 if spool is None else spool.num_prior)
 
-    home_strain = _hp4_home_strain(dataset) if fit_home_offsets and low_anchor_z is None else None
+    home_strain = _home_strain(dataset) if fit_home_offsets else None
 
-    num_anchor_params = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)[0].size
+    num_anchor_params = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)[0].size
 
     def unpack(x: np.ndarray):
-        anchors = anchor_opt_vec_to_matrix(x[:num_anchor_params], machine_type, num_anchors, dimensions, low_anchor_z)
+        anchors = anchor_opt_vec_to_matrix(x[:num_anchor_params], machine_type, num_anchors, dimensions)
         offsets = np.zeros(num_anchors)
         if home_strain is not None:
             strain, extra_length = home_strain
@@ -336,14 +337,14 @@ def _fit_points(
 
     # The same anchor bounds as the ellipse fit: they exclude mirrored layouts that
     # fit a small set of sweeps equally well.
-    anchor_lb, anchor_ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+    anchor_lb, anchor_ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)
     spool_lb, spool_ub = (np.zeros(0), np.zeros(0)) if spool is None else (spool.lower, spool.upper)
     bounds = (np.concatenate([anchor_lb, np.full(num_offsets, -np.inf), spool_lb]),
               np.concatenate([anchor_ub, np.full(num_offsets, np.inf), spool_ub]))
 
     def solve(start_anchors: np.ndarray):
         anchor_start = ((anchor_lb + anchor_ub) / 2.0 if start_anchors is None else
-                        anchors_matrix_to_opt_vec(np.asarray(start_anchors, dtype=float), machine_type, low_anchor_z))
+                        anchors_matrix_to_opt_vec(np.asarray(start_anchors, dtype=float), machine_type))
         start = np.concatenate([
             np.clip(anchor_start, anchor_lb, anchor_ub),
             np.zeros(num_offsets),

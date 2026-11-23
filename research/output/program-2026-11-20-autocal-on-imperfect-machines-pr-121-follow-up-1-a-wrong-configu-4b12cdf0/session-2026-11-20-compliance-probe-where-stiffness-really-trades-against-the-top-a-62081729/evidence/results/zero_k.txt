@@ -1,0 +1,12 @@
+hp3e-s1-ea0.8: dDz/dk -12.11 mm, k(top z = 0) / k_true 1.080, probe 0.965, joint 1.048
+hp3e-s1-ea1.2: dDz/dk -11.78 mm, k(top z = 0) / k_true 1.041, probe 0.934, joint 1.035
+hp3e-s2-ea0.8: dDz/dk -12.05 mm, k(top z = 0) / k_true 1.080, probe 0.941, joint 1.032
+hp3e-s2-ea1.2: dDz/dk -10.65 mm, k(top z = 0) / k_true 1.121, probe 0.964, joint 1.042
+hp3e-s3-ea0.8: dDz/dk -12.78 mm, k(top z = 0) / k_true 0.988, probe 0.979, joint 1.028
+hp3e-s3-ea1.2: dDz/dk -8.84 mm, k(top z = 0) / k_true 1.086, probe 0.979, joint 1.041
+hp5r-s1-ea0.8: dDz/dk +7.46 mm, k(top z = 0) / k_true 0.923, probe 1.018, joint 0.981
+hp5r-s1-ea1.2: dDz/dk +8.60 mm, k(top z = 0) / k_true 0.900, probe 1.069, joint 0.987
+hp5r-s2-ea0.8: dDz/dk +16.20 mm, k(top z = 0) / k_true 1.043, probe 1.018, joint 1.012
+hp5r-s2-ea1.2: dDz/dk +9.98 mm, k(top z = 0) / k_true 0.909, probe 1.044, joint 1.133
+hp5r-s4-ea0.8: dDz/dk +3.52 mm, k(top z = 0) / k_true 0.867, probe 1.045, joint 0.973
+hp5r-s4-ea1.2: dDz/dk +8.90 mm, k(top z = 0) / k_true 0.947, probe 1.050, joint 1.066

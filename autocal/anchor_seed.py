@@ -162,7 +162,6 @@ def build_anchor_initial_guess(
     *,
     machine_type: Optional[str] = None,
     base_radii_mm: Optional[Sequence[float]] = None,
-    low_anchor_z: Optional[float] = None,
 ) -> Optional[np.ndarray]:
     machine = str(machine_type or dataset.get("machine_type", "")).strip().lower()
     if not machine:
@@ -197,10 +196,7 @@ def build_anchor_initial_guess(
     if machine in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"):
         if dimensions not in (0, 3) or num_anchors not in (4, 5):
             return None
-        low_z = low_anchor_z
-        if low_z is None or not np.isfinite(float(low_z)):
-            low_z = -a * np.sin(np.pi / 10.0)
-        low_z = float(low_z)
+        low_z = -a * np.sin(np.pi / 10.0)
         low_xy = float(np.sqrt(max(a * a - low_z * low_z, 0.0)))
         low_base = np.asarray([0.0, -low_xy, low_z], dtype=float)
         low_count = num_anchors - 1
@@ -226,17 +222,6 @@ def build_anchor_initial_guess(
         return out
 
     return None
-
-def _apply_low_anchor_z_constraint(dataset: dict, low_anchor_z: Optional[float]) -> dict:
-    try:
-        value = float(low_anchor_z) if low_anchor_z is not None else None
-    except (TypeError, ValueError):
-        value = None
-    if value is None or not np.isfinite(value):
-        return dataset
-    dataset_out = dict(dataset)
-    dataset_out["_low_anchor_z"] = float(value)
-    return dataset_out
 
 def _expand_to_num_axes(value: Any, num_axes: int, default: float) -> List[float]:
     if value is None:
