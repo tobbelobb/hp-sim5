@@ -436,34 +436,23 @@ class OAuthRefreshTokenProvider:
 def load_drive_token_provider(
     *,
     credentials_path: Path | str | None = None,
-    quota_project: str | None = None,
 ) -> tuple[Callable[[], str], str | None]:
-    """Resolve Google Drive access token provider from env, OAuth JSON, rclone, or ADC."""
-    env_token = os.environ.get("HP_SIM5_DRIVE_ACCESS_TOKEN")
-    env_quota = quota_project or os.environ.get("HP_SIM5_DRIVE_QUOTA_PROJECT")
-    if env_token:
-        return (lambda: env_token), env_quota
-
+    """Resolve Google Drive access token provider from standard Google ADC credentials."""
     candidates: list[Path] = []
     if credentials_path:
         candidates.append(Path(credentials_path).expanduser())
-    if os.environ.get("HP_SIM5_DRIVE_CREDENTIALS"):
-        candidates.append(Path(os.environ["HP_SIM5_DRIVE_CREDENTIALS"]).expanduser())
-    adc_path = Path(
-        os.environ.get(
-            "GOOGLE_APPLICATION_CREDENTIALS",
-            str(Path.home() / ".config/gcloud/application_default_credentials.json"),
-        )
-    )
-    if adc_path.is_file():
-        candidates.append(adc_path)
+    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        candidates.append(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).expanduser())
+    default_adc = Path.home() / ".config/gcloud/application_default_credentials.json"
+    if default_adc.is_file():
+        candidates.append(default_adc)
 
     for cand in candidates:
         if not cand.is_file():
             continue
         data = json.loads(cand.read_text(encoding="utf-8"))
         if data.get("type") == "authorized_user" or {"client_id", "client_secret", "refresh_token"} <= set(data):
-            qp = env_quota or data.get("quota_project_id")
+            qp = data.get("quota_project_id")
             provider = OAuthRefreshTokenProvider(
                 client_id=data["client_id"],
                 client_secret=data["client_secret"],
@@ -473,13 +462,12 @@ def load_drive_token_provider(
             return provider, qp
 
     raise DriveAuthError(
-        "No Google Drive credentials found. Set HP_SIM5_DRIVE_CREDENTIALS to an OAuth2 "
-        "authorized_user JSON file, set HP_SIM5_DRIVE_ACCESS_TOKEN, or mint ADC with Drive scope:\n"
+        "No Google Application Default Credentials found. Mint ADC with Colab + Drive file scope:\n"
         "  gcloud auth application-default login --scopes="
         "openid,https://www.googleapis.com/auth/cloud-platform,"
         "https://www.googleapis.com/auth/userinfo.email,"
         "https://www.googleapis.com/auth/colaboratory,"
-        "https://www.googleapis.com/auth/drive"
+        "https://www.googleapis.com/auth/drive.file"
     )
 
 
@@ -496,7 +484,6 @@ class GoogleDriveArtifactStore:
         root_folder_id: str | None = None,
         token_provider: Callable[[], str] | None = None,
         credentials_path: Path | str | None = None,
-        quota_project: str | None = None,
         api_base: str = DRIVE_API_BASE,
         upload_base: str = DRIVE_UPLOAD_BASE,
         chunk_bytes: int = DEFAULT_CHUNK_BYTES,
@@ -514,11 +501,10 @@ class GoogleDriveArtifactStore:
         self.timeout_s = timeout_s
         if token_provider is not None:
             self._token_provider = token_provider
-            self._quota_project = quota_project
+            self._quota_project = None
         else:
             self._token_provider, self._quota_project = load_drive_token_provider(
                 credentials_path=credentials_path,
-                quota_project=quota_project,
             )
         self._folder_cache: dict[tuple[str, str], str] = {}
         self._root_id_cache: str | None = root_folder_id
@@ -567,13 +553,12 @@ class GoogleDriveArtifactStore:
                     if "ACCESS_TOKEN_SCOPE_INSUFFICIENT" in detail or "insufficientPermissions" in detail:
                         raise DriveAuthError(
                             "Google Drive API rejected the access token due to insufficient scopes. "
-                            "Grant https://www.googleapis.com/auth/drive (or configure HP_SIM5_DRIVE_CREDENTIALS).\n"
-                            f"Drive response: {detail}"
-                        ) from None
-                    if "quota project" in detail.lower() or "SERVICE_DISABLED" in detail:
-                        raise DriveAuthError(
-                            "Google Drive API requires an enabled GCP project / quota project "
-                            "(set HP_SIM5_DRIVE_QUOTA_PROJECT or use a dedicated OAuth client).\n"
+                            "Re-mint ADC with https://www.googleapis.com/auth/drive.file:\n"
+                            "  gcloud auth application-default login --scopes="
+                            "openid,https://www.googleapis.com/auth/cloud-platform,"
+                            "https://www.googleapis.com/auth/userinfo.email,"
+                            "https://www.googleapis.com/auth/colaboratory,"
+                            "https://www.googleapis.com/auth/drive.file\n"
                             f"Drive response: {detail}"
                         ) from None
                     raise DriveAuthError(f"Google Drive auth error (HTTP {err.code}): {detail}") from None

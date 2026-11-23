@@ -69,12 +69,9 @@ Manage stored artifacts (usable independently of Colab):
 
 ## Google Drive Authentication
 
-`GoogleDriveArtifactStore` checks credentials in this order:
-1. `HP_SIM5_DRIVE_ACCESS_TOKEN` (direct bearer token)
-2. `HP_SIM5_DRIVE_CREDENTIALS` (OAuth2 `authorized_user` JSON with `client_id`, `client_secret`, `refresh_token`)
-3. Application Default Credentials (`~/.config/gcloud/application_default_credentials.json`) with optional `HP_SIM5_DRIVE_QUOTA_PROJECT`.
+`GoogleDriveArtifactStore` uses standard Google Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` or `~/.config/gcloud/application_default_credentials.json`) — the same ADC file used by `colab --auth=adc`.
 
-To include Drive scope in ADC alongside Colab:
+Mint ADC with the `drive.file` scope (non-restricted, supported by the standard Google Cloud SDK OAuth client alongside Colab):
 
 ```bash
 gcloud auth application-default login --scopes=\
@@ -82,5 +79,11 @@ openid,\
 https://www.googleapis.com/auth/cloud-platform,\
 https://www.googleapis.com/auth/userinfo.email,\
 https://www.googleapis.com/auth/colaboratory,\
-https://www.googleapis.com/auth/drive
+https://www.googleapis.com/auth/drive.file
+```
+
+Verify both Colab and Drive access with:
+
+```bash
+.venv/bin/python scripts/hp_sim5_run.py doctor
 ```
