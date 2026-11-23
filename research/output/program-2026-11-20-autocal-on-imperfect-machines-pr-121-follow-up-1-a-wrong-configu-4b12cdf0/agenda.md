@@ -162,10 +162,10 @@ Simulation only. The integration branch merged every investigation. The delivera
 
 ## PR #122 follow-up
 
-- The tension cap cleared the profiled bootstrap failure on both paired HP5r seeds at 3× cogging. It lowers planned load and shortens the supported arc. The experiments measure their combined effect.
+- The tension cap cleared the profiled bootstrap failure on both paired HP5r seeds at 3× cogging. All four 2×/3× live stress runs applied calibrations with 0.94–1.69 mm maximum coordinate error. The 2× trials stopped after 10 sweeps each. At 3× seed 6 used the stability gate at 18 sweeps and seed 5 used patience at 20.
 - HP5/HP5r now have a fallback stop for noisy but stable fits, with a range RMS ceiling, geometry checks, and a sweep jackknife. On the archived 2× HP5r seed 6 run it would have stopped at 8 sweeps instead of 23 at the same 1.54 mm error.
 - Profiled slip recovery reduces positioning and pullout forces, preserves the measurement profile, and replans after bounded recovery fails during refinement. [High-cogging report](validation/high-cogging/report.md).
-- The failed CI integration test exited in collector startup. The runtime now allocates distinct ports in one batch and CI retains the collector and firmware logs on failure. The original failure did not reproduce locally.
+- The failed CI integration test exited in collector startup. The runtime now allocates distinct ports in one batch and CI retains the collector and firmware logs on failure. The original failure did not reproduce locally. Slow integration and all five other CI jobs passed on final production revision `f09bc8c6`.
 
 ## Force and geometry results
 
