@@ -37,6 +37,16 @@
       "id": "session-2026-11-21-make-the-home-stretch-correction-the-default-autocal-fit-the-com-01a484d6",
       "question": "Make the home-stretch correction the default autocal fit. The compliance study (session ...-4f2510fd, branch t3/top-anchor-compliance-observability, review reviews/review-78e5d2a30d57) showed that on HP3 adding the HP4-style home-strain term (the low lines are slack at encoder zero and their measurement stretch acts as a home offset) with the configured stiffness cuts max print-frame error 1.07 -> 0.38 mm in offline refits. The human approved making it the default, starting with HP3, then HP4, HP5 and HP5r, accepting changed stored benchmark numbers. Implement it as the default in the live fit (small change, no new flags unless needed; delete superseded code), verify live on the imperfect-machine harness with the same seeds as the baseline (paired comparison, print-frame error, top-anchor z, stop reasons, time), machine by machine in that order, and only proceed to the next machine when the previous one does not regress. Also verify the stored CI benchmark (autocal/tests/test_autocal_benchmark.py) on unperturbed machines and update expected numbers if the human-approved change moves them. The opt-in compliance probe is out of scope here except as a note.",
       "directory": "session-2026-11-21-make-the-home-stretch-correction-the-default-autocal-fit-the-com-01a484d6"
+    },
+    {
+      "id": "session-2026-11-21-production-force-realisation-fitting-reuse-blind-period-scan-and-b5e5ea67",
+      "question": "Production force-realisation fitting. Reuse blind period scan and force contrasts where justified. Test HP5r and the default HP3 home-strain path on held-out and high-ripple data, quantify cost and regressions, and guard unsupported fits. Implement a small production path with a baseline fallback if supported by evidence.",
+      "directory": "session-2026-11-21-production-force-realisation-fitting-reuse-blind-period-scan-and-b5e5ea67"
+    },
+    {
+      "id": "session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06",
+      "question": "Isolate the remaining HP5r top-anchor height bias with controlled forward/replay experiments, including effector rotation and downstream model assumptions. Implement a correction only if independently observable and validated. Perform the subsequent paired collection-pattern comparison with the current robust model when feasible; preserve negative outcomes, coordinate any dependency on the force-fit lane.",
+      "directory": "session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06"
     }
   ]
 }

@@ -418,3 +418,11 @@ implement measurement-only spare-line sensing with local coupling checks and
 force-aware range fitting. Both simulated continuations apply near-1 mm anchors;
 matched final-data comparisons improve direct HP5 and worsen reduced HP5. See
 the report's negative result and limitations before extending the policy.
+
+## Autocal on imperfect machines (2026-11-21/23)
+
+[Program agenda](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/agenda.md).
+The paired studies cover uneven anchor heights, wrong line stiffness and elevated
+motor cogging. See the [HP5 stopping and load-cap results](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/validation/high-cogging/report.md),
+the [guarded force fit](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-production-force-realisation-fitting-reuse-blind-period-scan-and-b5e5ea67/report.md),
+and the [HP5r rotation replay and collection comparison](output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06/report.md).

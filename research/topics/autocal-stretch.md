@@ -81,7 +81,6 @@ The [uneven low-anchor heights investigation](../output/program-2026-11-20-autoc
 - **New convention:** top x = y = 0 and A.x = 0, with translation pinned by home and the first d lines' zero offsets. Every low z is fitted, and simulated error stays flat in h. The common HP3 low-z shift of −0.7 to −1.0 mm is the existing stretch/D.z bias, not the gauge.
 - **Unchanged:** the D.z–stretch-scale trade-off (corr 0.99 on HP3/HP4) does not change with the gauge.
 - **Jackknife:** with free low z, one HP5 fold that loses a coordinate's only constraint inflated the classical jackknife 2–9×. The jackknife stays classical but leaves such a fold out of that coordinate alone, and reports the coordinate as not cross-checked. A median spread was rejected: it also hides the one clean fold when a single sweep is corrupted.
-- **Jackknife:** the leave-one-sweep-out jackknife is now a robust (median) spread of the same folds. With free low z, one HP5 fold could inflate the classical value 2–9×.
 
 The [imperfect-machine benchmark](../output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-20-imperfect-machine-benchmark-and-baseline-spread-build-a-reproduc-8a1f6003/report.md) (2026-11-21, simulation) ran the default autocal on randomized machines: low anchors ±30 mm, top anchor off-centre ≤50 mm, true EA 0.8–1.2× config.g.
 - **HP3, 10 random machines.** Max error in the print frame (origin at home, z through D, A.x = 0) is 1.11 ± 0.35 mm. Most of it is the common home-reference z shift (−0.87 ± 0.15 mm); the rigid-aligned error is 0.40 ± 0.21 mm.
@@ -113,3 +112,23 @@ The [force realisation investigation](../output/program-2026-11-20-autocal-on-im
   - HP5r collection fails at 2× cogging, because force auto-tune reads ripple as stiction.
   - The HP4-style home-stretch emulation on HP5r was a double count. The production term is gated to HP3/HP4.
 
+
+The [HP5 high-cogging follow-up](../output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/validation/high-cogging/report.md)
+verified the cap during profiled bootstrap at 3× and added a stable-fit stop for
+well-constrained noisy measurements. The original 2× seed 6 recording reaches
+the same 1.54 mm maximum error after 8 of its 23 sweeps.
+
+The [guarded force fit](../output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-production-force-realisation-fitting-reuse-blind-period-scan-and-b5e5ea67/report.md) adds an HP3 opt-in on top of
+home-strain correction. Eleven archived simulations improve from 0.45 to 0.15 mm
+mean maximum anchor error. The additional cost is 1.56 s median CPU time per fit
+stage. Mixed force errors and negative inferred tensions limit the HP5r joint-fit
+result to research evidence.
+
+The [HP5r rotation replay and paired collection study](../output/program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06/report.md)
+uses verified encoder replays to explain the remaining positive height error.
+The low-line attachments rotate with the effector. Freezing their attitude in
+the geometric controls removes most of the positive top-height shift. General
+effector attitude is underdetermined by the existing ranges. In the archived
+nominal HP5r pair the sweep workflow gives 1.06 mm after 4,686 simulated seconds
+and the ellipsoid gives 2.94 mm after 6,495 simulated seconds, with the same
+point objective.

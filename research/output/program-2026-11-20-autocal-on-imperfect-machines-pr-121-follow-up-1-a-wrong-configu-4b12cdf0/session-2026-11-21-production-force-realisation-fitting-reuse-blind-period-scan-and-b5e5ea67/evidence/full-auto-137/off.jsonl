@@ -1,0 +1,11 @@
+{"iteration":1,"num_sweeps":3,"decision":"collect","stable_hit":false,"selected_run":"default","fit":{"pose_fit_rms_mm":0.03630733519882157,"force_ripple":null}}
+{"iteration":2,"num_sweeps":4,"decision":"collect","stable_hit":false,"selected_run":"default","fit":{"pose_fit_rms_mm":0.036223911424852415,"force_ripple":null}}
+{"iteration":3,"num_sweeps":5,"decision":"collect","stable_hit":false,"selected_run":"default.warm","fit":{"pose_fit_rms_mm":0.03922378158543584,"force_ripple":null}}
+{"iteration":4,"num_sweeps":6,"decision":"collect","stable_hit":false,"selected_run":"default.warm","fit":{"pose_fit_rms_mm":0.03959301005026265,"force_ripple":null}}
+{"iteration":5,"num_sweeps":7,"decision":"collect","stable_hit":false,"selected_run":"default","fit":{"pose_fit_rms_mm":0.04067237023608433,"force_ripple":null}}
+{"iteration":6,"num_sweeps":8,"decision":"collect","stable_hit":false,"selected_run":"default.warm","fit":{"pose_fit_rms_mm":0.04010147533180137,"force_ripple":null}}
+{"iteration":7,"num_sweeps":9,"decision":"collect","stable_hit":false,"selected_run":"default.warm","fit":{"pose_fit_rms_mm":0.039603364794963264,"force_ripple":null}}
+{"iteration":8,"num_sweeps":10,"decision":"collect","stable_hit":false,"selected_run":"default","fit":{"pose_fit_rms_mm":0.03994364474921872,"force_ripple":null}}
+{"iteration":9,"num_sweeps":11,"decision":"collect","stable_hit":false,"selected_run":"default.warm","fit":{"pose_fit_rms_mm":0.040283356662183335,"force_ripple":null}}
+{"iteration":10,"num_sweeps":12,"decision":"accept","stable_hit":true,"selected_run":"default","fit":{"pose_fit_rms_mm":0.04009878465356943,"force_ripple":null}}
+{"event":"summary","anchors":[[0.0,-1896.8350677673106,-282.4333176807672],[1651.1474144679833,948.882820852433,-248.34756665275518],[-1639.2699582272367,956.3152283026253,-273.41824341443566],[0.0,0.0,1900.8621686349866]],"selection":{"iteration":10,"run_id":"default","flags":"","anchor_uncertainty_mm":0.4623103618780873,"single_unit_coordinates":[],"cost":3.8375512409300123,"rel_std":0.00029466176550410183,"max_std_mm":0.32834064960146964}}

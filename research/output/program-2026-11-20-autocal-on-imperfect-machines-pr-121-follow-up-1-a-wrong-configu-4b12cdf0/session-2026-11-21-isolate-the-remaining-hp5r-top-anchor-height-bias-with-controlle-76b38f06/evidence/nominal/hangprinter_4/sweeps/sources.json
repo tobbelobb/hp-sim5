@@ -1,0 +1,17 @@
+{
+  "sweeps.json": {
+    "local_uri": "file:///home/torbjorn/repos/hp-sim5/output/fixsweeps-hangprinter_4/sweeps.json",
+    "bytes": 254587,
+    "sha256": "671c9cbc45dd21e562252a73ef0077d6ff13e7ac7d6cc52ab0bdefe67db5304e"
+  },
+  "sweeps.headless/scene.usda": {
+    "local_uri": "file:///home/torbjorn/repos/hp-sim5/output/fixsweeps-hangprinter_4/sweeps.headless/scene.usda",
+    "bytes": 64831,
+    "sha256": "a81fd963ec961641b70ff5e10256a567f6a6731065c2aa492547e9ea4c020269"
+  },
+  "sweeps.headless/events.jsonl": {
+    "local_uri": "file:///home/torbjorn/repos/hp-sim5/output/fixsweeps-hangprinter_4/sweeps.headless/events.jsonl",
+    "bytes": 197100515,
+    "sha256": "1d05f4668ea8fd2381318f82bdaf65926485050ac27816bf0e803dea64662750"
+  }
+}

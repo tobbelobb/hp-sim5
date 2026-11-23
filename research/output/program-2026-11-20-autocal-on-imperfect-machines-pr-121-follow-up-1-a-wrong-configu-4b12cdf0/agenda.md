@@ -160,19 +160,19 @@ Simulation only. The integration branch merged every investigation. The delivera
 | HP5 | 0.95 ± 0.34 mm |
 | HP5r | 1.23 ± 0.04 mm (top z +1.2 mm; not home strain, force or stiffness) |
 
-## Open questions and next steps
+## PR #122 follow-up
 
-1. **The HP5/HP5r good-fit gate (rms ≤ 0.05 mm) never passes at 2× cogging**, whose rms floor is 0.07–0.09 mm, so runs go to max steps. The human must choose one:
-   - a relative gate;
-   - a stable-streak stop;
-   - the force terms in the fit.
-2. Verify the tension cap live: HP5r s5/s6 at 2× and 3× on cb086259.
-3. Move the blind force-realisation model into the production fit, then test it on HP5r and with the home-strain default.
-4. Find the cause of HP5r's residual +0.4–1.2 mm top z. One untested candidate is effector rotation.
-5. Slip recovery retries with the same forces when force profiles are in use.
-6. Only after 1–4: compare collection patterns, i.e. ellipsoid shape vs sweeps on the new fit.
-7. Hardware: keep an external force calibration (known mass, both directions) as a cross-check and the absolute force scale. The human expects real force errors larger than the sim's.
-8. Tooling: RRF fails on config paths of about 150 characters or more, so use short worktree paths. Dead JS copies of the torque law exist (hp-sim-3d/app/torqueModeSystem.js).
+- The tension cap cleared the profiled bootstrap failure on both paired HP5r seeds at 3× cogging. It lowers planned load and shortens the supported arc. The experiments measure their combined effect.
+- HP5/HP5r now have a fallback stop for noisy but stable fits, with a range RMS ceiling, geometry checks, and a sweep jackknife. On the archived 2× HP5r seed 6 run it would have stopped at 8 sweeps instead of 23 at the same 1.54 mm error.
+- Profiled slip recovery reduces positioning and pullout forces, preserves the measurement profile, and replans after bounded recovery fails during refinement. [High-cogging report](validation/high-cogging/report.md).
+- The failed CI integration test exited in collector startup. The runtime now allocates distinct ports in one batch and CI retains the collector and firmware logs on failure. The original failure did not reproduce locally.
+
+## Force and geometry results
+
+- The HP3 home-strain fit now offers `--fit-force-ripple`. The guarded fit improved all eleven archived HP3 simulations and detected 137 periods per turn in a fresh 2× run. HP5r offset and scale contrasts produced regressions and negative sensor tensions in mixed-error controls. [Force-fit evidence](session-2026-11-21-production-force-realisation-fitting-reuse-blind-period-scan-and-b5e5ea67/report.md).
+- HP5r's positive residual top height shift comes mainly from the effector rotating the low-line attachments. Holding attitude at home in the matched forward controls reduces +0.35–0.59 mm to +0.04–0.07 mm. The observed ranges leave general effector attitude underdetermined, so this establishes a cause in simulation. [Rotation and collection comparison](session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06/report.md).
+- The archived collection comparison gives different orderings on different machines. The nominal HP5r sweep is both faster and more accurate than the nominal ellipsoid. The paired imperfect HP5r runs test sensitivity to wrong configured EA. [Paired refits](session-2026-11-21-isolate-the-remaining-hp5r-top-anchor-height-bias-with-controlle-76b38f06/report.md).
+- Hardware validation needs an independent force scale. The earlier program identified a known mass in both directions as a cross-check.
 
 ## Human decisions
 

@@ -1,0 +1,33 @@
+# PR 122 robustness review
+
+**Assessment: accept the stopping and same-world port changes with the scope below.** The sealed collector can replan after the retry limit, but an earlier exit at idle preload prevents replanning in a reproducible edge case. Follow-up `2ebf2718` addresses that case. The 3× cap has matched simulator evidence through the stage that previously failed. Completion, final accuracy at high cogging, and hardware behavior remain open.
+
+I verified the sealed submission with `hp-sim5-research-program --resume … --verify …`. It identifies revision `f4b2e95e3369ca5233339ce9f81a771ae0775c63` and tree `449faecea3c798a79594ab589db5bef7d8b996f2`. [Sealed submission](submission.tar.gz). Extract it into a directory before running the verifier.
+
+## HP5 stopping
+
+For HP5 and HP5r runs with extra sensor ranges, the fallback needs two consecutive stable fits, each with a higher collection-unit count. Each must be admissible, have at least four groups, at least 50% accepted extra-range coverage, full-rank information, stretch correction, anchor standard deviation ≤1 mm, range RMS ≤0.12 mm, and jackknife ≤2 mm. The default coordinate step limit is 0.5 mm. Before seeing any extra-range records, an HP5 dataset can still take the generic stability path, as it did at the base. Patience remains a separate stop condition.
+
+- All six paired 1× replay controls (HP5 and HP5r, seeds 0, 5, and 6) selected identical anchor arrays and stopped at five sweeps on the existing good-fit path. The replay substituted only the base stopping module in the comparison arm.
+- I ran the base and candidate policies against the same synthetic noisy history. The candidate stopped on the third fit after two new stable groups. Repeated group counts and a jackknife above the cutoff kept it collecting. Both versions took the fast path on low RMS despite high jackknife. The 11 stopping tests passed.
+- The historical uncapped HP5r seed 6 run at 2× had acquired eight sweeps by its first pair of fits meeting the archived numerical fallback limits. The second fit had a 0.401 mm coordinate step, 0.0575 mm range RMS, 0.618 mm anchor standard deviation, 1.240 mm jackknife, and 1.539 mm maximum print-frame error. The archived 23-sweep fit ended at 1.543 mm. This is a retrospective check of the logged thresholds and truth score. The current jackknife calculation changed since that archive, and the archived numbers alone leave the other qualification gates unverified.
+
+The strongest competing explanation for a stable fit is systematic bias shared by successive samples, such as load-model or routing error. The structure-aware jackknife also omits one fold for coordinates whose constraint depends on that unit. Treat agreement as evidence of repeatability. The one known-truth comparison above supports early termination for that prefix, with no basis for an error guarantee across high-cogging seeds. [Archived robustness study](../../session-2026-11-21-rough-bootstrap-robustness-on-imperfect-machines-hp5-pulley-redu-20f0ffb5/report.md)
+
+## Equal-strain cap
+
+Both archived HP5r seeds 5 and 6 at 3× passed the rough geometry check and failed the second **profiled remeasurement**. The drive missed by about 0.087–0.088 mm against a 0.079 mm tolerance. The current capped simulator prefixes for both seeds passed that second remeasurement. Seed 6 entered active fitting. Scene, baked scene, firmware config, RRF binary, tuned forces, and fixed targets matched each archived counterpart. Each prefix had zero slip retries through the comparison. The capped runs were launched before the sealed commit, and their captured collector digest is the pre-`f4b2e95e` digest. They provide evidence for the cap already present at `7a57be78`.
+
+I regenerated uncapped and capped tables from the same rough input for each seed. At 3×, the cap changed the strand target from 7.078 to 4.955 N and held the simulated static predictions below the 30 N limit, compared with uncapped peaks of 46.5–48.8 N. The extra-sensor setpoint stayed at 7.769 N. The longest contiguous tables went from 52–54 to 26–30 poses. At 2×, the target changed from 5.056 to 4.803 N for seed 5 and to 4.930 N for seed 6, with shorter table support in both cases. The 14 equal-strain tests passed.
+
+The cap changes loads and the sampled interval together. A narrower interval can move the first probe and change the rotor phase or preceding travel, so these results establish that the capped plan passed the failure point. They leave the mechanism and final accuracy open. The bound is on modelled active-line forces at tabulated poses. A fixed-force or transient limit would require separate evidence. The geometrically different earlier 2× runs that slipped are a weaker control than the matched 3× prefixes. · [Archived robustness study](../../session-2026-11-21-rough-bootstrap-robustness-on-imperfect-machines-hp5-pulley-redu-20f0ffb5/report.md)
+
+## Profiled slip recovery
+
+On a held-anchor drift, the collector holds all motors, retries the whole direction, and lowers positioning and pullout forces. The measurement profile and extra-range setpoint still come from the same table. At the retry limit the collector sends the active planner a rejection if at least three sweeps have been completed. The planner excludes that sweep configuration and replans without refitting the rejected data. Gross drift and transport errors still abort. This assessment comes from tracing the collector and planner and running the six targeted JavaScript tests plus the two existing Python replan tests. The simulator prefixes did not exercise a slip.
+
+I reproduced the idle-floor edge case using the sealed module. With both positioning forces already at idle, a 2° profiled slip held both motors and threw a generic error. The same injection at `2ebf2718` held both motors and threw `UnmeasurableSweepError`, which enters the rejection path during active refinement. Bootstrap remeasurement passes no completed-sweep count and can still abort safely on exhaustion. ·
+
+## CI startup
+
+The startup allocator keeps all three localhost sockets bound while asking the kernel for ports, which prevents duplicate choices within one startup. I exercised it 1,000 times and saw three distinct ports every time. The sockets close before the services bind, so separate worlds or an unrelated process can still race startup. The slow test workflow collects RRF and collector logs from a stable pytest base directory when the job fails, and the local suite had created both files under the corresponding test directories. This verifies the allocation property and diagnostic paths. It leaves attribution of the original intermittent failure and the GitHub Actions upload behavior open. ·
