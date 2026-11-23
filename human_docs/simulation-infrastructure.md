@@ -19,8 +19,8 @@ Five decoupled layers live under [`src/python/hp_sim5_sim/`](../src/python/hp_si
 4. **Execution Scheduling** ([`runner.py`](../src/python/hp_sim5_sim/runner.py), [`colab.py`](../src/python/hp_sim5_sim/colab.py))
    - `ExecutionScheduler` protocol implemented by `LocalScheduler` (local parallel CPU pool) and `ColabScheduler` (remote Google Colab VMs via official `google-colab-cli`).
    - `ColabScheduler` bundles the workspace once (with optional portable `x86-64` `physics.node`), bootstraps minimal headless Node deps (`@kroxilon/usda-parser`, `ws`) and compiles `rrf_simulator` once on the VM, then executes all experiments in parallel **entirely inside the Colab VM** with zero per-G-code internet traffic.
-   - **Direct Colab → Google Drive uploads:** When `--backend colab` is paired with `--store gdrive://...`, `ColabScheduler` uploads artifacts directly from Colab to Google Drive (bypassing the local host/VPS) and only downloads a small `batch_summary.json` (plus any rescued failed uploads). Pass `--via-local` to force the VPS-mediated fallback path.
-   - **Safe persistence & verified shutdown:** Colab runs without `--store` or `--keep-scratch` automatically persist results to `local://output/experiments` (never returning ephemeral `/content/...` URIs). Any artifact upload failure preserves local scratch with `upload_pending.json` and prints an exact `artifacts push` retry command. Failed `colab stop` calls retry, verify with `colab sessions`, preserve `sessions.json`, and raise `ColabShutdownError` with the manual stop command (after persisting any already-downloaded results).
+   - **Artifact transfer & opt-in direct Colab → Google Drive uploads:** By default, Colab stages results back through the local host so no Drive credentials are ever sent to Colab. Pass `--direct-drive` with `--store gdrive://...` to upload each finished experiment directly from Colab to Google Drive using only a **short-lived OAuth access token** (no refresh token or client secret is ever transferred, and the handoff token file is deleted before experiments spawn).
+   - **Safe persistence, pre-shutdown recovery & verified shutdown:** Colab runs without `--store` or `--keep-scratch` automatically persist results to `local://output/experiments` (never returning ephemeral `/content/...` URIs). Any artifact upload failure preserves local scratch with `upload_pending.json` and prints an exact `artifacts push` retry command. If remote execution fails or times out mid-batch, `ColabScheduler` performs a best-effort remote rescue before stopping the VM, recovering completed experiments (persisted to the store) and any partial scratch directories locally. Failed `colab stop` calls retry, verify with `colab sessions`, preserve `sessions.json`, and raise `ColabShutdownError` with the manual stop command (after persisting any already-downloaded results).
 5. **Artifact Storage** ([`storage.py`](../src/python/hp_sim5_sim/storage.py))
    - `ScratchWorkspace` guarantees active simulation, telemetry, and Rerun recording stay on fast local scratch storage.
    - `ArtifactStore` protocol implemented by:
@@ -53,7 +53,7 @@ Run a single autocal experiment locally and persist artifacts:
   --exp-args --max-steps 5 --sweep-points 10
 ```
 
-Run a parallel batch on a Google Colab high-RAM CPU VM (8 cores, 50 GiB RAM) with direct Colab → Google Drive uploads:
+Run a parallel batch on a Google Colab high-RAM CPU VM (8 cores, 50 GiB RAM) and store artifacts:
 
 ```bash
 .venv/bin/python scripts/hp_sim5_run.py batch experiments.json \
@@ -61,7 +61,7 @@ Run a parallel batch on a Google Colab high-RAM CPU VM (8 cores, 50 GiB RAM) wit
   --store gdrive://hp-sim5-artifacts
 ```
 
-(Pass `--via-local` to stage artifacts back through the local host instead of uploading directly from Colab.)
+(Pass `--direct-drive` for large multi-GB batches to upload directly from Colab → Google Drive using a short-lived access token instead of staging via the local host.)
 
 Manage stored artifacts (usable independently of Colab, and for retrying any preserved `upload_pending.json` directory):
 

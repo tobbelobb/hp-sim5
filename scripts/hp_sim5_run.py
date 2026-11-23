@@ -62,7 +62,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             session_name=args.session,
             keep_session=args.keep_session,
             remote_store_uri=args.remote_store,
-            direct_drive_upload=not args.via_local,
+            direct_drive_upload=args.direct_drive,
         )
         scheduler = ColabScheduler(ROOT, config=cfg)
 
@@ -88,7 +88,7 @@ def cmd_batch(args: argparse.Namespace) -> int:
             keep_session=args.keep_session,
             remote_workers=args.workers,
             remote_store_uri=args.remote_store,
-            direct_drive_upload=not args.via_local,
+            direct_drive_upload=args.direct_drive,
         )
         scheduler = ColabScheduler(ROOT, config=cfg)
 
@@ -208,9 +208,10 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--store", help="Artifact store URI (local://..., gdrive://..., drivemount://...)")
         p.add_argument("--remote-store", help="Optional store URI writable directly from Colab (e.g. drivemount://...)")
         p.add_argument(
-            "--via-local",
-            action="store_true",
-            help="For Colab + gdrive://, download artifacts via this host instead of uploading directly from Colab to Google Drive",
+            "--direct-drive",
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help="For Colab + gdrive://, upload directly from Colab using a short-lived access token (default: stage via this host)",
         )
         p.add_argument("--gpu", help="Colab GPU type (T4, L4, A100, H100)")
         p.add_argument("--tpu", help="Colab TPU type (v5e1, v6e1)")

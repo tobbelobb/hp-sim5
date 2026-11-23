@@ -28,9 +28,9 @@ from .storage import (
     ArtifactUploadError,
     GoogleDriveArtifactStore,
     LocalArtifactStore,
+    MANIFEST_NAME,
     ScratchWorkspace,
     UPLOAD_PENDING_NAME,
-    default_adc_path,
     retry_upload_command,
     write_upload_pending,
 )
@@ -263,7 +263,7 @@ class ColabConfig:
     colab_bin: str | None = None
     config_path: Path | None = None
     remote_store_uri: str | None = None
-    direct_drive_upload: bool = True
+    direct_drive_upload: bool = False
     default_local_store_dir: Path | None = None
     command_timeout_s: float = 7200.0
 
@@ -576,15 +576,23 @@ def _render_remote_batch_script(
         if stage_store_dir.exists():
             shutil.rmtree(stage_store_dir)
 
-        creds_path = None
+        token_path = None
         if direct_drive_cfg is not None:
-            creds_path = Path(direct_drive_cfg["credentials_remote_path"])
-            os.chmod(creds_path, 0o600)
+            # Read short-lived bearer access token (no refresh_token/client_secret) and delete the
+            # handoff file BEFORE spawning any experiment subprocesses.
+            token_path = Path(direct_drive_cfg["token_remote_path"])
+            try:
+                token_payload = json.loads(token_path.read_text(encoding="utf-8"))
+            finally:
+                token_path.unlink(missing_ok=True)
+            access_token = str(token_payload["access_token"])
+            quota_project = token_payload.get("quota_project")
             store = GoogleDriveArtifactStore(
                 root_folder=direct_drive_cfg["root_folder"],
                 root_folder_id=direct_drive_cfg.get("root_folder_id"),
                 experiments_folder_id=direct_drive_cfg.get("experiments_folder_id"),
-                credentials_path=creds_path,
+                token_provider=lambda _tok=access_token: _tok,
+                quota_project=quota_project,
                 api_base=direct_drive_cfg["api_base"],
                 upload_base=direct_drive_cfg["upload_base"],
                 chunk_bytes=direct_drive_cfg["chunk_bytes"],
@@ -629,8 +637,8 @@ def _render_remote_batch_script(
         finally:
             done_event.set()
             hb.join(timeout=2.0)
-            if creds_path is not None:
-                creds_path.unlink(missing_ok=True)
+            if token_path is not None:
+                token_path.unlink(missing_ok=True)
 
         rescue_dirs = {{}}
         for r in results:
@@ -678,6 +686,55 @@ def _render_remote_batch_script(
     """)
 
 
+def _render_remote_rescue_script() -> str:
+    """Pack any completed staged experiments or remaining scratch dirs before stopping a failed VM."""
+    return textwrap.dedent("""\
+        import json, tarfile
+        from pathlib import Path
+
+        Path("/content/.hp_sim5_drive_token.json").unlink(missing_ok=True)
+        STAGE_EXPS = Path("/content/hp_sim5_stage_store/experiments")
+        SCRATCH = Path("/content/hp_sim5_scratch")
+        RESCUE_TAR = Path("/content/hp_sim5_rescue.tar.gz")
+
+        completed = []
+        partial = []
+        with tarfile.open(RESCUE_TAR, "w:gz", compresslevel=5) as tar:
+            if STAGE_EXPS.is_dir():
+                for exp_dir in sorted(STAGE_EXPS.iterdir()):
+                    if not exp_dir.is_dir():
+                        continue
+                    files = [p for p in sorted(exp_dir.rglob("*")) if p.is_file() and not p.is_symlink()]
+                    if not files:
+                        continue
+                    completed.append(exp_dir.name)
+                    for p in files:
+                        tar.add(p, arcname=f"store/experiments/{exp_dir.name}/" + p.relative_to(exp_dir).as_posix())
+            if SCRATCH.is_dir():
+                for sc_dir in sorted(SCRATCH.iterdir()):
+                    if not sc_dir.is_dir():
+                        continue
+                    files = [p for p in sorted(sc_dir.rglob("*")) if p.is_file() and not p.is_symlink()]
+                    if not files:
+                        continue
+                    partial.append(sc_dir.name)
+                    for p in files:
+                        tar.add(p, arcname=f"partial_scratch/{sc_dir.name}/" + p.relative_to(sc_dir).as_posix())
+            index_path = Path("/content/hp_sim5_rescue_index.json")
+            index_path.write_text(json.dumps({
+                "completed_experiments": completed,
+                "partial_scratch_dirs": partial,
+            }, indent=2) + "\\n")
+            tar.add(index_path, arcname="rescue_index.json")
+
+        print("COLAB_RESCUE_DONE:", json.dumps({
+            "completed_experiments": completed,
+            "partial_scratch_dirs": partial,
+            "archive_bytes": RESCUE_TAR.stat().st_size,
+        }), flush=True)
+    """)
+
+
 class ColabScheduler:
     """Executes single or parallel batches of ExperimentSpecs remotely on Google Colab."""
 
@@ -696,6 +753,102 @@ class ColabScheduler:
     def backend_name(self) -> str:
         accel = self.config.gpu or self.config.tpu or ("cpu-highmem" if self.config.high_mem else "cpu")
         return f"colab-{accel}"
+
+    def _best_effort_rescue(
+        self,
+        *,
+        session: ColabSession,
+        ws_dir: Path,
+        local_ws: ScratchWorkspace,
+        effective_store: ArtifactStore | None,
+    ) -> dict[str, Any]:
+        """Attempt to recover completed and partial remote artifacts before stopping a failed VM."""
+        recovered: dict[str, Any] = {"persisted": [], "preserved_local": [], "partial_scratch": []}
+        try:
+            rescue_tar = ws_dir / "rescue.tar.gz"
+            rescue_py = ws_dir / "rescue.py"
+            rescue_py.write_text(_render_remote_rescue_script(), encoding="utf-8")
+            session.exec_file(rescue_py, timeout_s=120.0)
+            session.download("/content/hp_sim5_rescue.tar.gz", rescue_tar, timeout_s=300.0)
+
+            rescue_extract = ws_dir / "rescued"
+            rescue_extract.mkdir(parents=True, exist_ok=True)
+            with tarfile.open(rescue_tar, "r:gz") as tar:
+                tar.extractall(rescue_extract, filter="data")
+
+            exps_root = rescue_extract / "store/experiments"
+            if exps_root.is_dir():
+                for exp_dir in sorted(p for p in exps_root.iterdir() if p.is_dir()):
+                    exp_id = exp_dir.name
+                    meta: dict[str, Any] = {}
+                    man_file = exp_dir / MANIFEST_NAME
+                    if man_file.is_file():
+                        try:
+                            meta = dict(json.loads(man_file.read_text(encoding="utf-8")).get("metadata") or {})
+                        except ValueError:
+                            meta = {}
+                    elif (exp_dir / "result.json").is_file():
+                        try:
+                            rdata = json.loads((exp_dir / "result.json").read_text(encoding="utf-8"))
+                            for k in ("kind", "status", "backend", "wall_s", "simulated_s", "total_steps", "metrics"):
+                                if rdata.get(k) is not None:
+                                    meta[k] = rdata[k]
+                        except ValueError:
+                            pass
+                    if effective_store is not None:
+                        try:
+                            effective_store.put_directory(exp_id, exp_dir, metadata=meta)
+                            recovered["persisted"].append(f"{effective_store.uri}/experiments/{exp_id}")
+                            continue
+                        except Exception as err:
+                            local_ws.preserve()
+                            write_upload_pending(
+                                exp_dir,
+                                experiment_id=exp_id,
+                                store_uri=effective_store.uri,
+                                metadata=meta,
+                                error=f"{type(err).__name__}: {err}",
+                            )
+                            recovered["preserved_local"].append(str(exp_dir))
+                    else:
+                        local_ws.preserve()
+                        recovered["preserved_local"].append(str(exp_dir))
+
+            partial_root = rescue_extract / "partial_scratch"
+            if partial_root.is_dir():
+                for sc_dir in sorted(p for p in partial_root.iterdir() if p.is_dir()):
+                    # If direct upload failed on Colab after experiment finished, try persisting it now.
+                    pending_file = sc_dir / UPLOAD_PENDING_NAME
+                    if pending_file.is_file() and effective_store is not None:
+                        try:
+                            pdata = json.loads(pending_file.read_text(encoding="utf-8"))
+                            exp_id = pdata.get("experiment_id")
+                            meta = dict(pdata.get("metadata") or {})
+                            if exp_id:
+                                effective_store.put_directory(exp_id, sc_dir, metadata=meta)
+                                recovered["persisted"].append(f"{effective_store.uri}/experiments/{exp_id}")
+                                continue
+                        except Exception:
+                            pass
+                    local_ws.preserve()
+                    recovered["partial_scratch"].append(str(sc_dir))
+
+            if recovered["persisted"] or recovered["preserved_local"] or recovered["partial_scratch"]:
+                lines = ["[hp_sim5_sim] RECOVERY: Rescued remote artifacts before stopping Colab VM:"]
+                for uri in recovered["persisted"]:
+                    lines.append(f"[hp_sim5_sim]   persisted: {uri}")
+                for path in recovered["preserved_local"]:
+                    lines.append(f"[hp_sim5_sim]   preserved locally: {path}")
+                for path in recovered["partial_scratch"]:
+                    lines.append(f"[hp_sim5_sim]   partial scratch: {path}")
+                print("\n".join(lines), file=sys.stderr, flush=True)
+        except Exception as err:
+            print(
+                f"[hp_sim5_sim] WARNING: Best-effort remote artifact rescue failed: {type(err).__name__}: {err}",
+                file=sys.stderr,
+                flush=True,
+            )
+        return recovered
 
     def run(
         self,
@@ -738,29 +891,31 @@ class ColabScheduler:
                 flush=True,
             )
 
-        # When targeting Google Drive, upload directly from Colab -> Google Drive (bypassing this host)
-        # unless disabled via direct_drive_upload=False (--via-local) or custom token_provider.
-        adc_file: Path | None = None
+        # Opt-in direct Colab -> Google Drive upload (bypassing this host) using ONLY a short-lived
+        # OAuth access token minted locally (never copying refresh_token/client_secret to Colab).
         direct_drive_config: dict[str, Any] | None = None
+        direct_drive_token_payload: dict[str, Any] | None = None
         if (
             isinstance(effective_store, GoogleDriveArtifactStore)
             and self.config.direct_drive_upload
             and not self.config.remote_store_uri
-            and getattr(effective_store, "_uses_adc", False)
         ):
-            adc_file = default_adc_path(effective_store._credentials_path)
-            if adc_file is not None:
-                # Resolve/create <root>/experiments once BEFORE allocating Colab compute units.
-                exp_folder_id = effective_store.ensure_experiments_folder()
-                direct_drive_config = {
-                    "root_folder": effective_store.root_folder,
-                    "root_folder_id": effective_store._explicit_root_id,
-                    "experiments_folder_id": exp_folder_id,
-                    "api_base": effective_store.api_base,
-                    "upload_base": effective_store.upload_base,
-                    "chunk_bytes": effective_store.chunk_bytes,
-                    "credentials_remote_path": "/content/.hp_sim5_drive_creds.json",
-                }
+            # Resolve/create <root>/experiments and mint short-lived token BEFORE allocating Colab VM.
+            exp_folder_id = effective_store.ensure_experiments_folder()
+            access_token, quota_project = effective_store.mint_access_token()
+            direct_drive_token_payload = {
+                "access_token": access_token,
+                "quota_project": quota_project,
+            }
+            direct_drive_config = {
+                "root_folder": effective_store.root_folder,
+                "root_folder_id": effective_store._explicit_root_id,
+                "experiments_folder_id": exp_folder_id,
+                "api_base": effective_store.api_base,
+                "upload_base": effective_store.upload_base,
+                "chunk_bytes": effective_store.chunk_bytes,
+                "token_remote_path": "/content/.hp_sim5_drive_token.json",
+            }
 
         with ScratchWorkspace(f"colab-batch-{uuid.uuid4().hex[:8]}", keep=keep_scratch) as local_ws:
             assert local_ws.path is not None
@@ -798,6 +953,7 @@ class ColabScheduler:
             own_session = self._external_session is None
             session = self._external_session or ColabSession(self.config)
             results_tar = ws_dir / "results.tar.gz"
+            batch_started = False
             body_failed = False
             shutdown_error: ColabShutdownError | None = None
             try:
@@ -805,13 +961,27 @@ class ColabScheduler:
                     session.start()
                 session.upload(bundle_tar, "/content/hp_sim5_bundle.tar.gz")
                 session.upload(specs_json, "/content/hp_sim5_specs.json")
-                if direct_drive_config is not None and adc_file is not None:
-                    session.upload(adc_file, direct_drive_config["credentials_remote_path"])
+                if direct_drive_config is not None and direct_drive_token_payload is not None:
+                    local_token_file = ws_dir / ".drive_token.json"
+                    local_token_file.write_text(json.dumps(direct_drive_token_payload) + "\n", encoding="utf-8")
+                    os.chmod(local_token_file, 0o600)
+                    try:
+                        session.upload(local_token_file, direct_drive_config["token_remote_path"])
+                    finally:
+                        local_token_file.unlink(missing_ok=True)
                 session.exec_file(bootstrap_py, timeout_s=900.0)
+                batch_started = True
                 session.exec_file(batch_py, timeout_s=self.config.command_timeout_s)
                 session.download("/content/hp_sim5_results.tar.gz", results_tar, timeout_s=900.0)
             except BaseException:
                 body_failed = True
+                if batch_started and not results_tar.is_file():
+                    self._best_effort_rescue(
+                        session=session,
+                        ws_dir=ws_dir,
+                        local_ws=local_ws,
+                        effective_store=effective_store,
+                    )
                 raise
             finally:
                 if own_session and not self.config.keep_session:

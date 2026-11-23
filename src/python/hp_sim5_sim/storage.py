@@ -587,6 +587,7 @@ class GoogleDriveArtifactStore:
         root_folder_id: str | None = None,
         experiments_folder_id: str | None = None,
         token_provider: Callable[[], str] | None = None,
+        quota_project: str | None = None,
         credentials_path: Path | str | None = None,
         api_base: str = DRIVE_API_BASE,
         upload_base: str = DRIVE_UPLOAD_BASE,
@@ -606,17 +607,22 @@ class GoogleDriveArtifactStore:
         self.timeout_s = timeout_s
         if token_provider is not None:
             self._token_provider = token_provider
-            self._quota_project = None
+            self._quota_project = quota_project
             self._uses_adc = False
         else:
-            self._token_provider, self._quota_project = load_drive_token_provider(
+            self._token_provider, detected_qp = load_drive_token_provider(
                 credentials_path=credentials_path,
             )
+            self._quota_project = quota_project if quota_project is not None else detected_qp
             self._uses_adc = True
         self._folder_lock = threading.Lock()
         self._folder_cache: dict[tuple[str, str], str] = {}
         self._root_id_cache: str | None = root_folder_id
         self._experiments_id_cache: str | None = experiments_folder_id
+
+    def mint_access_token(self) -> tuple[str, str | None]:
+        """Return a short-lived OAuth bearer access token and optional quota project (never a refresh token)."""
+        return self._token_provider(), self._quota_project
 
     @property
     def uri(self) -> str:

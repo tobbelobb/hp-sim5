@@ -693,9 +693,10 @@ def _make_stub_colab(
     fake_remote: Path,
     stop_mode: str = "ok",
     direct_mode: str = "ok",
+    exec_mode: str = "ok",
 ) -> Path:
     """Create an executable stub `colab` CLI for deterministic lifecycle tests."""
-    stub = tmp_path / f"fake_colab_{stop_mode}_{direct_mode}"
+    stub = tmp_path / f"fake_colab_{stop_mode}_{direct_mode}_{exec_mode}"
     stub.write_text(
         f"""#!{sys.executable}
 import json, shutil, sys, tarfile
@@ -705,6 +706,7 @@ log_file = Path({str(log_file)!r})
 remote = Path({str(fake_remote)!r})
 stop_mode = {stop_mode!r}
 direct_mode = {direct_mode!r}
+exec_mode = {exec_mode!r}
 argv = sys.argv[1:]
 with log_file.open("a") as fh:
     fh.write(json.dumps(argv) + "\\n")
@@ -733,6 +735,9 @@ elif cmd == "exec":
     script_path = Path(rest[rest.index("-f") + 1])
     shutil.copy2(script_path, remote / script_path.name)
     if script_path.name == "run_batch.py":
+        if exec_mode == "fail_mid_batch":
+            print("simulated mid-batch disconnect", file=sys.stderr)
+            sys.exit(1)
         script_text = script_path.read_text()
         specs = json.loads((remote / "hp_sim5_specs.json").read_text())
         out_dir = remote / "out"
@@ -746,7 +751,7 @@ elif cmd == "exec":
                 results.append({{
                     "experiment_id": s["experiment_id"], "kind": s["kind"], "status": "ok",
                     "exit_code": 0, "backend": "colab-cpu-8c", "wall_s": 1.0, "metrics": {{}},
-                    "artifact_uri": f"gdrive://hp-sim5-artifacts/experiments/{{s['experiment_id']}}",
+                    "artifact_uri": f"gdrive://hp-sim5-direct/experiments/{{s['experiment_id']}}",
                     "manifest": {{"metadata": {{"machine": s["machine"], "tags": s["tags"]}}}},
                 }})
             elif is_direct and direct_mode == "rescue":
@@ -779,6 +784,25 @@ elif cmd == "exec":
             for p in sorted(out_dir.rglob("*")):
                 if p.is_file():
                     tar.add(p, arcname=p.relative_to(out_dir).as_posix())
+    elif script_path.name == "rescue.py":
+        # Synthesize a remote rescue archive containing 1 completed staged experiment + 1 partial scratch dir.
+        resc_dir = remote / "rescue_stage"
+        if resc_dir.exists():
+            shutil.rmtree(resc_dir)
+        done_exp = resc_dir / "store/experiments/exp-done-1"
+        done_exp.mkdir(parents=True)
+        (done_exp / "sweeps.json").write_text(json.dumps({{"recovered": True}}) + "\\n")
+        (done_exp / "experiment_manifest.json").write_text(json.dumps({{
+            "experiment_id": "exp-done-1",
+            "metadata": {{"kind": "autocal", "machine": "hangprinter_3", "status": "ok", "tags": ["recovered"]}},
+        }}))
+        wip_dir = resc_dir / "partial_scratch/exp-wip-2-abc"
+        wip_dir.mkdir(parents=True)
+        (wip_dir / "stdout.log").write_text("partial progress log\\n")
+        with tarfile.open(remote / "hp_sim5_rescue.tar.gz", "w:gz") as tar:
+            for p in sorted(resc_dir.rglob("*")):
+                if p.is_file():
+                    tar.add(p, arcname=p.relative_to(resc_dir).as_posix())
 elif cmd == "download":
     remote_name = Path(rest[2]).name
     local_p = Path(rest[3])
@@ -1020,7 +1044,7 @@ def test_colab_session_stop_failure_preserves_config_and_raises(tmp_path):
 
 
 def test_colab_direct_drive_upload_bypasses_local_and_rescues_failures(tmp_path):
-    """Finding 5: Colab + gdrive:// uploads directly from Colab -> Drive and rescues failed remote uploads."""
+    """Direct Colab -> Drive is opt-in, sends ONLY a short-lived access token (no refresh token), and rescues failures."""
     state = _FakeDriveState()
     drive_srv, drive_base = _start_fake_drive_server(state)
 
@@ -1042,8 +1066,9 @@ def test_colab_direct_drive_upload_bypasses_local_and_rescues_failures(tmp_path)
     adc_path.write_text(json.dumps({
         "type": "authorized_user",
         "client_id": "cid",
-        "client_secret": "csec",
-        "refresh_token": "rtok",
+        "client_secret": "SUPER_SECRET_NEVER_UPLOAD",
+        "refresh_token": "LONG_LIVED_REFRESH_NEVER_UPLOAD",
+        "quota_project_id": "test-qp-123",
     }))
 
     try:
@@ -1053,55 +1078,107 @@ def test_colab_direct_drive_upload_bypasses_local_and_rescues_failures(tmp_path)
             api_base=f"{drive_base}/drive/v3",
             upload_base=f"{drive_base}/upload/drive/v3",
         )
-        # Point ADC provider at our local test token server.
         store._token_provider.token_url = f"http://127.0.0.1:{tok_srv.server_port}/token"  # type: ignore[attr-defined]
 
-        # 1. Happy path: direct upload succeeds on Colab -> credentials uploaded, no experiment files in results.tar.gz.
+        # 1. Default mode (direct_drive_upload=False): NO token or credentials sent to Colab!
+        log_def = tmp_path / "direct_default.jsonl"
+        remote_def = tmp_path / "remote_default"
+        remote_def.mkdir()
+        stub_def = _make_stub_colab(tmp_path, log_file=log_def, fake_remote=remote_def, direct_mode="ok")
+        sched_def = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub_def), build_portable_native=False))
+        spec0 = ExperimentSpec(experiment_id="default-vialocal-1", kind="autocal", machine="hangprinter_3", solver="wasm")
+        res0 = sched_def.run(spec0, store=store)
+        assert res0.status == "ok"
+        assert not (remote_def / ".hp_sim5_drive_token.json").exists()
+        assert not (remote_def / ".hp_sim5_drive_creds.json").exists()
+        assert store.exists("default-vialocal-1", "sweeps.json")
+
+        # 2. Opt-in direct Drive mode: sends ONLY short-lived access_token + quota_project (no refresh_token/client_secret).
         log_ok = tmp_path / "direct_ok.jsonl"
         remote_ok = tmp_path / "remote_ok"
         remote_ok.mkdir()
         stub_ok = _make_stub_colab(tmp_path, log_file=log_ok, fake_remote=remote_ok, direct_mode="ok")
-        sched_ok = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub_ok), build_portable_native=False))
+        sched_ok = ColabScheduler(
+            ROOT,
+            config=ColabConfig(colab_bin=str(stub_ok), build_portable_native=False, direct_drive_upload=True),
+        )
         spec1 = ExperimentSpec(experiment_id="direct-1", kind="autocal", machine="hangprinter_3", solver="wasm")
         res1 = sched_ok.run(spec1, store=store)
         assert res1.status == "ok"
-        assert res1.artifact_uri == "gdrive://hp-sim5-artifacts/experiments/direct-1"
-        assert (remote_ok / ".hp_sim5_drive_creds.json").is_file()
+        assert res1.artifact_uri == "gdrive://hp-sim5-direct/experiments/direct-1"
+        tok_file = remote_ok / ".hp_sim5_drive_token.json"
+        assert tok_file.is_file()
+        tok_data = json.loads(tok_file.read_text())
+        assert tok_data == {"access_token": "test-token", "quota_project": "test-qp-123"}
+        assert "LONG_LIVED_REFRESH_NEVER_UPLOAD" not in tok_file.read_text()
+        assert "SUPER_SECRET_NEVER_UPLOAD" not in tok_file.read_text()
         run_batch_src = (remote_ok / "run_batch.py").read_text()
         assert "experiments_folder_id" in run_batch_src
         assert "'root_folder_id': None" in run_batch_src
+        # Token file must be unlinked BEFORE scheduler.run_batch spawns experiment subprocesses.
+        assert run_batch_src.index("token_path.unlink(missing_ok=True)") < run_batch_src.index("scheduler.run_batch(")
         with tarfile.open(remote_ok / "hp_sim5_results.tar.gz", "r:gz") as tar:
             assert tar.getnames() == ["batch_summary.json"]
 
-        # 2. Rescue path: direct Drive upload fails on Colab -> rescued in results.tar.gz and retried locally!
+        # 3. Rescue path: direct Drive upload fails on Colab (e.g. token expired or 503) -> rescued & uploaded locally!
         log_r = tmp_path / "direct_rescue.jsonl"
         remote_r = tmp_path / "remote_rescue"
         remote_r.mkdir()
         stub_r = _make_stub_colab(tmp_path, log_file=log_r, fake_remote=remote_r, direct_mode="rescue")
-        sched_r = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub_r), build_portable_native=False))
+        sched_r = ColabScheduler(
+            ROOT,
+            config=ColabConfig(colab_bin=str(stub_r), build_portable_native=False, direct_drive_upload=True),
+        )
         spec2 = ExperimentSpec(experiment_id="rescue-1", kind="autocal", machine="hangprinter_4", solver="wasm", tags=["rescued"])
         res2 = sched_r.run(spec2, store=store)
         assert res2.status == "ok"
         assert res2.artifact_uri == "gdrive://hp-sim5-direct/experiments/rescue-1"
         assert store.exists("rescue-1", "sweeps.json")
-
-        # 3. Fallback (--via-local / direct_drive_upload=False): credentials NOT uploaded to Colab.
-        log_fb = tmp_path / "direct_fb.jsonl"
-        remote_fb = tmp_path / "remote_fb"
-        remote_fb.mkdir()
-        stub_fb = _make_stub_colab(tmp_path, log_file=log_fb, fake_remote=remote_fb, direct_mode="ok")
-        sched_fb = ColabScheduler(
-            ROOT,
-            config=ColabConfig(colab_bin=str(stub_fb), build_portable_native=False, direct_drive_upload=False),
-        )
-        spec3 = ExperimentSpec(experiment_id="vialocal-1", kind="autocal", machine="hangprinter_3", solver="wasm")
-        res3 = sched_fb.run(spec3, store=store)
-        assert res3.status == "ok"
-        assert not (remote_fb / ".hp_sim5_drive_creds.json").exists()
-        assert store.exists("vialocal-1", "sweeps.json")
     finally:
         drive_srv.shutdown()
         tok_srv.shutdown()
+
+
+def test_colab_best_effort_rescue_on_remote_exec_failure(tmp_path, capsys):
+    """When remote batch execution fails/times out mid-run, recover completed & partial artifacts before stopping VM."""
+    log_file = tmp_path / "midfail_calls.jsonl"
+    fake_remote = tmp_path / "midfail_remote"
+    fake_remote.mkdir()
+    stub = _make_stub_colab(tmp_path, log_file=log_file, fake_remote=fake_remote, exec_mode="fail_mid_batch")
+
+    store = LocalArtifactStore(tmp_path / "recovered_store")
+    sched = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub), build_portable_native=False))
+    specs = [
+        ExperimentSpec(experiment_id="exp-done-1", kind="autocal", machine="hangprinter_3", solver="wasm"),
+        ExperimentSpec(experiment_id="exp-wip-2", kind="autocal", machine="hangprinter_3", solver="wasm"),
+    ]
+    with pytest.raises(RuntimeError, match="colab exec"):
+        sched.run_batch(specs, max_workers=2, store=store, keep_scratch=False)
+
+    # Completed experiment from before the crash was recovered and persisted to store!
+    assert store.exists("exp-done-1", "sweeps.json")
+    listed = store.list_experiments(tags=["recovered"])
+    assert len(listed) == 1 and listed[0]["experiment_id"] == "exp-done-1"
+
+    # Partial scratch was preserved locally on disk and reported to stderr!
+    err_out = capsys.readouterr().err
+    assert "RECOVERY: Rescued remote artifacts" in err_out
+    partial_line = [ln for ln in err_out.splitlines() if "partial scratch:" in ln][0]
+    partial_path = Path(partial_line.split("partial scratch:", 1)[1].strip())
+    assert (partial_path / "stdout.log").read_text() == "partial progress log\n"
+    shutil.rmtree(partial_path.parents[2], ignore_errors=True)
+
+    # Verify rescue happened BEFORE stop, and stop STILL ran!
+    calls = [json.loads(line) for line in log_file.read_text().splitlines()]
+    subcommands = []
+    for argv in calls:
+        idx = 0
+        while idx < len(argv) and argv[idx].startswith("-"):
+            idx += 2 if argv[idx] == "--config" else 1
+        subcommands.append(argv[idx])
+    assert subcommands[-1] == "stop"
+    assert "download" in subcommands  # rescue.tar.gz was downloaded before stop
+    assert subcommands.index("download") < len(subcommands) - 1
 
 
 @pytest.mark.slow
