@@ -71,7 +71,12 @@ class HeadlessSimulation:
                          "clock": "fixed steps; collector waits advance simulation time",
                          "dataset": str(Path(args.dataset).resolve()), "source_sha256": source_hash()}
         self.manifest["autocal_source_sha256"] = source_hash(("autocal",), (".py",))
-        self.manifest["git_revision"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True).strip()
+        try:
+            git_rev = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, stderr=subprocess.DEVNULL, text=True).strip()
+        except (OSError, subprocess.CalledProcessError):
+            rev_file = REPO_ROOT / ".hp_sim5_git_revision"
+            git_rev = rev_file.read_text(encoding="utf-8").strip() if rev_file.is_file() else "unknown"
+        self.manifest["git_revision"] = git_rev
 
     def simulated_seconds(self):
         """Simulated time at the service's latest snapshot; None until it has written one."""

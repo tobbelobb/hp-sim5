@@ -758,31 +758,50 @@ bool RunServerLoop() noexcept
     std::signal(SIGINT, HandleServerSignal);
     std::signal(SIGTERM, HandleServerSignal);
 
-    std::thread spinThread([]() {
+    auto isServerIdle = []() noexcept -> bool {
+        const Move& move = reprap.GetMove();
+        const bool moveIdle = move.NoLiveMovement();
+        GCodeBuffer* const httpBuffer = reprap.GetGCodes().HttpGCode();
+        const bool httpIdle = (httpBuffer == nullptr) ? true : httpBuffer->IsCompletelyIdle();
+        const bool printing = reprap.GetPrintMonitor().IsPrinting();
+        return moveIdle && httpIdle && !printing;
+    };
+
+    std::thread spinThread([&isServerIdle]() {
         pthread_setname_np(pthread_self(), "SpinThread");
+        unsigned int idleSpins = 0;
         while (!gServerShutdown.load())
         {
             GCodeInjector::Instance().ProcessPending();
             reprap.Spin();
-            std::this_thread::sleep_for(kServerSpinSleep);
+            if (isServerIdle())
+            {
+                if (idleSpins < 2)
+                {
+                    ++idleSpins;
+                    std::this_thread::yield();
+                }
+                else
+                {
+                    HostIdle::SetServerIdle(true);
+                    std::this_thread::sleep_for(kServerSpinSleep);
+                }
+            }
+            else
+            {
+                idleSpins = 0;
+                HostIdle::SetServerIdle(false);
+                std::this_thread::yield();
+            }
         }
     });
 
     while (!gServerShutdown.load())
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         if (reprap.IsStopped())
         {
             gServerShutdown.store(true);
-        }
-        else
-        {
-            const Move& move = reprap.GetMove();
-            const bool moveIdle = move.NoLiveMovement();
-            GCodeBuffer* const httpBuffer = reprap.GetGCodes().HttpGCode();
-            const bool httpIdle = (httpBuffer == nullptr) ? true : httpBuffer->IsCompletelyIdle();
-            const bool printing = reprap.GetPrintMonitor().IsPrinting();
-            HostIdle::SetServerIdle(moveIdle && httpIdle && !printing);
         }
     }
 

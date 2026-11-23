@@ -24,6 +24,8 @@ own each world, how configuration reaches physics and what gets recorded.
 For a manager that delegates research and arranges review, see
 [Research Programs](human_docs/research-programs.md). The implementation and short role prompts live in [`research-program/`](research-program/).
 
+For portable local and Google Colab experiment execution (including parallel CPU batches) and persistent Google Drive artifact storage, see [Simulation Infrastructure](human_docs/simulation-infrastructure.md) and [`scripts/hp_sim5_run.py`](scripts/hp_sim5_run.py).
+
 Example usecases:
  - **Automate and Validate Hardware Design**
  - **Digital Twin**

@@ -2,6 +2,7 @@
 
 #ifdef RRF_HOST_BUILD
 
+#include <HostIdle.h>
 #include <arpa/inet.h>
 #include <cerrno>
 #include <cstring>
@@ -232,6 +233,7 @@ void NetworkInterfaceHost::AcceptConnections() noexcept
         connections.push_back(
             {std::make_unique<SocketHost>(this, client, listenPort, remoteIp, remotePort),
              false});
+        HostIdle::SetServerIdle(false);
     }
 }
 
