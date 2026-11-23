@@ -1,0 +1,22 @@
+[
+ {
+  "anchor_height_offset_mm": 2.0,
+  "training_range_rms_mm": 0.0070997702828501505,
+  "max_eval_pose_error_mm": 0.7490519318779505
+ },
+ {
+  "anchor_height_offset_mm": 5.0,
+  "training_range_rms_mm": 0.017767767179117825,
+  "max_eval_pose_error_mm": 1.870836519066674
+ },
+ {
+  "anchor_height_offset_mm": 10.0,
+  "training_range_rms_mm": 0.03559664222486836,
+  "max_eval_pose_error_mm": 3.7365468687652488
+ },
+ {
+  "anchor_height_offset_mm": 25.0,
+  "training_range_rms_mm": 0.08944933899907231,
+  "max_eval_pose_error_mm": 9.288255959399246
+ }
+]

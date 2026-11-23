@@ -1,0 +1,83 @@
+{
+  "python": "3.14.4",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "reference_file": "benchmark_923c2baa_hangprinter_5_pulley_reduced.json",
+  "spool_scale": [
+    {
+      "scale": 0.98,
+      "scale_buildup": false,
+      "point_range_rms_mm": 0.6203169882870299,
+      "max_anchor_coordinate_error_mm": 38.000000000000036,
+      "ab_distance_change_mm": -65.8179480157199,
+      "physical_error_for_1000mm_command_mm": 20.408163265306143
+    },
+    {
+      "scale": 0.98,
+      "scale_buildup": true,
+      "point_range_rms_mm": 1.9323046799372548e-13,
+      "max_anchor_coordinate_error_mm": 38.000000000000036,
+      "ab_distance_change_mm": -65.8179480157199,
+      "physical_error_for_1000mm_command_mm": 20.408163265306143
+    },
+    {
+      "scale": 1.0,
+      "scale_buildup": false,
+      "point_range_rms_mm": 1.9136346316603822e-13,
+      "max_anchor_coordinate_error_mm": 0.0,
+      "ab_distance_change_mm": 0.0,
+      "physical_error_for_1000mm_command_mm": 0.0
+    },
+    {
+      "scale": 1.02,
+      "scale_buildup": false,
+      "point_range_rms_mm": 0.6197875072129793,
+      "max_anchor_coordinate_error_mm": 38.000000000000036,
+      "ab_distance_change_mm": 65.8179480157199,
+      "physical_error_for_1000mm_command_mm": 19.607843137254918
+    },
+    {
+      "scale": 1.02,
+      "scale_buildup": true,
+      "point_range_rms_mm": 2.381702319094176e-13,
+      "max_anchor_coordinate_error_mm": 38.000000000000036,
+      "ab_distance_change_mm": 65.8179480157199,
+      "physical_error_for_1000mm_command_mm": 19.607843137254918
+    }
+  ],
+  "repeated_load": {
+    "recorded_rows": 120,
+    "complete_rows": 96,
+    "poses_per_protocol": 96,
+    "range_observations_per_protocol": 960,
+    "minimum_modeled_tension_n": 2.8313393391521777,
+    "cases": {
+      "same_load_repeat": {
+        "point_range_rms_mm_for_10_percent_compliance_change_after_refit": 0.0048041783652564216,
+        "top_z_change_mm_for_10_percent_compliance_change_after_refit": 0.819876313618083,
+        "projected_signal_norm_mm_per_unit_compliance": 1.4885202240678472
+      },
+      "25_percent_load_change": {
+        "point_range_rms_mm_for_10_percent_compliance_change_after_refit": 0.0060185303778051286,
+        "top_z_change_mm_for_10_percent_compliance_change_after_refit": 0.9270358069871417,
+        "projected_signal_norm_mm_per_unit_compliance": 1.8647734337506154
+      }
+    }
+  },
+  "noncoplanar_layout": {
+    "training_poses": 24,
+    "evaluation_poses": 18,
+    "cases": {
+      "shared_lower_z": {
+        "training_range_rms_mm": 0.08944933899907231,
+        "evaluation_range_rms_mm": 0.484893405318845,
+        "max_evaluation_pose_error_mm": 9.288255959399246
+      },
+      "one_extra_height": {
+        "training_range_rms_mm": 2.4022650233195507e-12,
+        "evaluation_range_rms_mm": 3.5135441955092054e-11,
+        "max_evaluation_pose_error_mm": 2.486363435205512e-10
+      }
+    }
+  }
+}
