@@ -36,6 +36,7 @@ DEFAULT_CHUNK_BYTES = 8 * 1024 * 1024  # 8 MiB (multiple of 256 KiB required by 
 MANIFEST_NAME = "experiment_manifest.json"
 INDEX_NAME = "index.jsonl"
 UPLOAD_PENDING_NAME = "upload_pending.json"
+DEFAULT_EXCLUDE_GLOBS: tuple[str, ...] = ("*.tmp", ".tmp-*", UPLOAD_PENDING_NAME, ".matplotlib/*")
 
 _LOCAL_INDEX_LOCKS_GUARD = threading.Lock()
 _LOCAL_INDEX_LOCKS: dict[Path, threading.Lock] = {}
@@ -288,7 +289,7 @@ class LocalArtifactStore:
         local_dir: Path,
         *,
         metadata: Mapping[str, Any] | None = None,
-        exclude_globs: Sequence[str] = ("*.tmp", ".tmp-*", UPLOAD_PENDING_NAME),
+        exclude_globs: Sequence[str] = DEFAULT_EXCLUDE_GLOBS,
     ) -> dict[str, Any]:
         exp_id = _validate_experiment_id(experiment_id)
         src_root = Path(local_dir).resolve()
@@ -984,7 +985,7 @@ class GoogleDriveArtifactStore:
         local_dir: Path,
         *,
         metadata: Mapping[str, Any] | None = None,
-        exclude_globs: Sequence[str] = ("*.tmp", ".tmp-*", UPLOAD_PENDING_NAME),
+        exclude_globs: Sequence[str] = DEFAULT_EXCLUDE_GLOBS,
     ) -> dict[str, Any]:
         exp_id = _validate_experiment_id(experiment_id)
         src_root = Path(local_dir).resolve()

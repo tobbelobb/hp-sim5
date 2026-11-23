@@ -537,6 +537,68 @@ def test_local_scheduler_parallel_batch_and_store_sync(tmp_path):
         assert dest.read_text() == f"val={i}\n"
 
 
+def test_local_scheduler_excludes_bulky_events_only_on_ok_non_recording_runs(tmp_path):
+    store = LocalArtifactStore(tmp_path / "artifacts")
+    scheduler = LocalScheduler(ROOT, scratch_base=tmp_path / "scratch")
+
+    def _writer_cmd(exit_code: int = 0) -> list[str]:
+        return [
+            "{python}",
+            "-c",
+            (
+                "import sys; from pathlib import Path; sc = Path('{scratch}'); "
+                "(sc / 'sweeps.headless').mkdir(); (sc / '.matplotlib').mkdir(); "
+                "(sc / 'sweeps.json').write_text('{{\"sweeps\": []}}\\n'); "
+                "(sc / 'sweeps.headless/rrf.log').write_text('rrf ok\\n'); "
+                "(sc / 'sweeps.headless/events.jsonl').write_text('bulky event trace\\n'); "
+                "(sc / '.matplotlib/fontlist.json').write_text('cache'); "
+                f"sys.exit({exit_code})"
+            ),
+        ]
+
+    # 1. Successful recording_mode="none": skips events.jsonl and .matplotlib/*, keeps sweeps.json & rrf.log.
+    res_ok = scheduler.run(
+        ExperimentSpec(experiment_id="lean-ok", kind="command", recording_mode="none", command=_writer_cmd(0)),
+        store=store,
+    )
+    assert res_ok.status == "ok"
+    assert store.exists("lean-ok", "sweeps.json")
+    assert store.exists("lean-ok", "sweeps.headless/rrf.log")
+    assert not store.exists("lean-ok", "sweeps.headless/events.jsonl")
+    assert not store.exists("lean-ok", ".matplotlib/fontlist.json")
+
+    # 2. Failed run: retains events.jsonl for post-mortem debugging!
+    res_fail = scheduler.run(
+        ExperimentSpec(experiment_id="lean-fail", kind="command", recording_mode="none", command=_writer_cmd(1)),
+        store=store,
+    )
+    assert res_fail.status == "failed"
+    assert store.exists("lean-fail", "sweeps.headless/events.jsonl")
+    assert not store.exists("lean-fail", ".matplotlib/fontlist.json")
+
+    # 3. Recording enabled (recording_mode="events"): retains events.jsonl!
+    res_rec = scheduler.run(
+        ExperimentSpec(experiment_id="lean-rec", kind="command", recording_mode="events", command=_writer_cmd(0)),
+        store=store,
+    )
+    assert res_rec.status == "ok"
+    assert store.exists("lean-rec", "sweeps.headless/events.jsonl")
+
+    # 4. Explicit metadata opt-in (keep_events_log=True): retains events.jsonl!
+    res_keep = scheduler.run(
+        ExperimentSpec(
+            experiment_id="lean-keep",
+            kind="command",
+            recording_mode="none",
+            metadata={"keep_events_log": True},
+            command=_writer_cmd(0),
+        ),
+        store=store,
+    )
+    assert res_keep.status == "ok"
+    assert store.exists("lean-keep", "sweeps.headless/events.jsonl")
+
+
 def test_cli_artifacts_roundtrip(tmp_path):
     src = tmp_path / "exp_src"
     src.mkdir()

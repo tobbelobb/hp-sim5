@@ -13,7 +13,25 @@ from typing import Any, Sequence
 
 from .firmware import stop_process_tree
 from .interfaces import ArtifactStore, ExperimentResult, ExperimentSpec
-from .storage import ArtifactUploadError, ScratchWorkspace, retry_upload_command, write_upload_pending
+from .storage import (
+    ArtifactUploadError,
+    DEFAULT_EXCLUDE_GLOBS,
+    ScratchWorkspace,
+    retry_upload_command,
+    write_upload_pending,
+)
+
+
+def _artifact_exclude_globs(spec: ExperimentSpec, status: str) -> tuple[str, ...]:
+    """Skip multi-tens-of-MB headless event logs on successful non-recording runs."""
+    globs = list(DEFAULT_EXCLUDE_GLOBS)
+    if (
+        status == "ok"
+        and spec.recording_mode == "none"
+        and not spec.metadata.get("keep_events_log")
+    ):
+        globs.append("*.headless*/events.jsonl")
+    return tuple(globs)
 
 
 def _git_revision(repo_root: Path) -> str:
@@ -270,8 +288,14 @@ def run_experiment_spec(
                 "metrics": metrics,
                 **spec.metadata,
             }
+            exclude_globs = _artifact_exclude_globs(spec, status)
             try:
-                manifest = store.put_directory(spec.experiment_id, scratch, metadata=meta)
+                manifest = store.put_directory(
+                    spec.experiment_id,
+                    scratch,
+                    metadata=meta,
+                    exclude_globs=exclude_globs,
+                )
             except Exception as err:
                 ws.preserve()
                 err_text = f"{type(err).__name__}: {err}"

@@ -36,6 +36,13 @@ platform cancellation alone is not confirmation that detached services stopped.
 Inspect --runtime-status and retain partial evidence. After an uncertain mutation
 timeout, inspect status before retrying.
 
+For multi-run sweep or autocal batches (or when local CPU/RAM is limited), offload
+batches via `scripts/hp_sim5_run.py` (`--backend colab --store gdrive://hp-sim5-artifacts`,
+or `--backend local` on fast workstations; see `human_docs/simulation-infrastructure.md`
+and check availability with `scripts/hp_sim5_run.py doctor`). Commit small reports,
+manifests, and datasets in Git; reference large Drive artifacts by portable `gdrive://...`
+URI and SHA-256.
+
 Choose consequential, tractable questions. Let researchers own methods. Explore
 alternatives, then concentrate on promising directions. Reconsider agenda.md after
 persistent surprises, strong results, diminishing returns, or changed priorities;
