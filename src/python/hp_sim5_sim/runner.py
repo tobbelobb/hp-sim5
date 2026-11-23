@@ -13,7 +13,7 @@ from typing import Any, Sequence
 
 from .firmware import stop_process_tree
 from .interfaces import ArtifactStore, ExperimentResult, ExperimentSpec
-from .storage import ScratchWorkspace
+from .storage import ArtifactUploadError, ScratchWorkspace, retry_upload_command, write_upload_pending
 
 
 def _git_revision(repo_root: Path) -> str:
@@ -173,8 +173,13 @@ def run_experiment_spec(
     keep_scratch: bool = False,
     python_exe: str | None = None,
     backend_label: str = "local-cpu",
+    raise_on_upload_error: bool = True,
 ) -> ExperimentResult:
-    """Execute one ExperimentSpec on local scratch, then sync artifacts to store if given."""
+    """Execute one ExperimentSpec on local scratch, then sync artifacts to store if given.
+
+    If persisting to `store` fails, the local scratch directory is always preserved
+    with an `upload_pending.json` file so the experiment is never lost.
+    """
     root = Path(repo_root).resolve()
     py = python_exe or _default_python(root)
     started = time.monotonic()
@@ -265,7 +270,47 @@ def run_experiment_spec(
                 "metrics": metrics,
                 **spec.metadata,
             }
-            manifest = store.put_directory(spec.experiment_id, scratch, metadata=meta)
+            try:
+                manifest = store.put_directory(spec.experiment_id, scratch, metadata=meta)
+            except Exception as err:
+                ws.preserve()
+                err_text = f"{type(err).__name__}: {err}"
+                write_upload_pending(
+                    scratch,
+                    experiment_id=spec.experiment_id,
+                    store_uri=store.uri,
+                    metadata=meta,
+                    error=err_text,
+                )
+                retry_cmd = retry_upload_command(spec.experiment_id, scratch, store.uri)
+                result.scratch_dir = str(scratch)
+                result.artifact_uri = None
+                result.metrics["experiment_status"] = status
+                result.metrics["upload_error"] = err_text
+                result.error = f"{result.error}\nArtifact upload failed: {err_text}" if result.error else f"Artifact upload failed: {err_text}"
+                if not raise_on_upload_error:
+                    result.status = "upload_failed"
+                (scratch / "result.json").write_text(
+                    json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                print(
+                    f"[hp_sim5_sim] WARNING: Artifact upload failed for {spec.experiment_id} -> {store.uri}: {err_text}\n"
+                    f"[hp_sim5_sim] Preserved local scratch at: {scratch}\n"
+                    f"[hp_sim5_sim] Retry upload with: {retry_cmd}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                if raise_on_upload_error:
+                    raise ArtifactUploadError(
+                        f"Artifact upload failed for {spec.experiment_id} -> {store.uri}: {err_text}. "
+                        f"Preserved scratch at {scratch}. Retry with: {retry_cmd}",
+                        experiment_id=spec.experiment_id,
+                        scratch_dir=scratch,
+                        store_uri=store.uri,
+                        result=result,
+                    ) from err
+                return result
+
             result.manifest = manifest
             result.artifact_uri = f"{store.uri}/experiments/{spec.experiment_id}"
 
@@ -298,6 +343,7 @@ class LocalScheduler:
         *,
         store: ArtifactStore | None = None,
         keep_scratch: bool = False,
+        raise_on_upload_error: bool = True,
     ) -> ExperimentResult:
         return run_experiment_spec(
             self.repo_root,
@@ -307,6 +353,7 @@ class LocalScheduler:
             keep_scratch=keep_scratch,
             python_exe=self.python_exe,
             backend_label=self._backend_label,
+            raise_on_upload_error=raise_on_upload_error,
         )
 
     def run_batch(
@@ -316,10 +363,17 @@ class LocalScheduler:
         max_workers: int | None = None,
         store: ArtifactStore | None = None,
         keep_scratch: bool = False,
+        raise_on_upload_error: bool = True,
     ) -> list[ExperimentResult]:
         spec_list = list(specs)
         if not spec_list:
             return []
+        if store is not None and hasattr(store, "ensure_experiments_folder"):
+            try:
+                store.ensure_experiments_folder()  # type: ignore[attr-defined]
+            except Exception:
+                # Let per-experiment upload handling preserve scratch if Drive is unreachable.
+                pass
         if max_workers is None:
             cpus = os.cpu_count() or 2
             max_threads = max(1, max(int(s.threads) for s in spec_list))
@@ -329,15 +383,31 @@ class LocalScheduler:
             max_workers = max(1, min(len(spec_list), int(max_workers)))
 
         if max_workers == 1:
-            return [self.run(s, store=store, keep_scratch=keep_scratch) for s in spec_list]
+            return [
+                self.run(s, store=store, keep_scratch=keep_scratch, raise_on_upload_error=raise_on_upload_error)
+                for s in spec_list
+            ]
 
         results_by_index: dict[int, ExperimentResult] = {}
+        first_error: Exception | None = None
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
             futures = {
-                pool.submit(self.run, spec, store=store, keep_scratch=keep_scratch): idx
+                pool.submit(
+                    self.run,
+                    spec,
+                    store=store,
+                    keep_scratch=keep_scratch,
+                    raise_on_upload_error=raise_on_upload_error,
+                ): idx
                 for idx, spec in enumerate(spec_list)
             }
             for fut in as_completed(futures):
                 idx = futures[fut]
-                results_by_index[idx] = fut.result()
+                try:
+                    results_by_index[idx] = fut.result()
+                except Exception as err:
+                    if first_error is None:
+                        first_error = err
+        if first_error is not None:
+            raise first_error
         return [results_by_index[i] for i in range(len(spec_list))]

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from datetime import datetime, timezone
+import fcntl
 import fnmatch
 import hashlib
 import http.client
@@ -18,6 +19,7 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+import threading
 import time
 from typing import Any, Callable, Mapping, Sequence
 from urllib.error import HTTPError, URLError
@@ -33,6 +35,20 @@ FOLDER_MIME = "application/vnd.google-apps.folder"
 DEFAULT_CHUNK_BYTES = 8 * 1024 * 1024  # 8 MiB (multiple of 256 KiB required by Drive resumable API)
 MANIFEST_NAME = "experiment_manifest.json"
 INDEX_NAME = "index.jsonl"
+UPLOAD_PENDING_NAME = "upload_pending.json"
+
+_LOCAL_INDEX_LOCKS_GUARD = threading.Lock()
+_LOCAL_INDEX_LOCKS: dict[Path, threading.Lock] = {}
+
+
+def _local_index_lock(root: Path) -> threading.Lock:
+    resolved = root.resolve()
+    with _LOCAL_INDEX_LOCKS_GUARD:
+        lock = _LOCAL_INDEX_LOCKS.get(resolved)
+        if lock is None:
+            lock = threading.Lock()
+            _LOCAL_INDEX_LOCKS[resolved] = lock
+        return lock
 
 
 class DriveAuthError(RuntimeError):
@@ -41,6 +57,65 @@ class DriveAuthError(RuntimeError):
 
 class ArtifactIntegrityError(RuntimeError):
     """Raised when an uploaded or downloaded artifact fails checksum verification."""
+
+
+class ArtifactUploadError(RuntimeError):
+    """Raised when persisting artifacts fails; local scratch is preserved for retry."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        experiment_id: str | None = None,
+        scratch_dir: Path | str | None = None,
+        store_uri: str | None = None,
+        result: Any = None,
+    ) -> None:
+        super().__init__(message)
+        self.experiment_id = experiment_id
+        self.scratch_dir = str(scratch_dir) if scratch_dir is not None else None
+        self.store_uri = store_uri
+        self.result = result
+
+
+def retry_upload_command(experiment_id: str, scratch_dir: Path | str, store_uri: str) -> str:
+    """Return a copy-pastable CLI command to retry uploading a preserved scratch directory."""
+    import shlex
+
+    return shlex.join([
+        "scripts/hp_sim5_run.py",
+        "artifacts",
+        "--store",
+        store_uri,
+        "push",
+        experiment_id,
+        str(scratch_dir),
+    ])
+
+
+def write_upload_pending(
+    scratch_dir: Path,
+    *,
+    experiment_id: str,
+    store_uri: str,
+    metadata: Mapping[str, Any],
+    error: str,
+) -> Path:
+    """Persist retry metadata inside a preserved scratch directory after an upload failure."""
+    pending_path = Path(scratch_dir) / UPLOAD_PENDING_NAME
+    _atomic_write_json(
+        pending_path,
+        {
+            "experiment_id": experiment_id,
+            "store_uri": store_uri,
+            "scratch_dir": str(Path(scratch_dir).resolve()),
+            "failed_at": utc_now_iso(),
+            "error": error,
+            "metadata": dict(metadata),
+            "retry_command": retry_upload_command(experiment_id, Path(scratch_dir).resolve(), store_uri),
+        },
+    )
+    return pending_path
 
 
 def utc_now_iso() -> str:
@@ -121,6 +196,11 @@ class ScratchWorkspace(AbstractContextManager["ScratchWorkspace"]):
             self._base = Path(tempfile.gettempdir()) / "hp_sim5_scratch"
         self.keep = keep
         self.path: Path | None = None
+
+    def preserve(self) -> Path | None:
+        """Retain this scratch workspace on exit (e.g. after an upload failure)."""
+        self.keep = True
+        return self.path
 
     def __enter__(self) -> "ScratchWorkspace":
         self._base.mkdir(parents=True, exist_ok=True)
@@ -208,7 +288,7 @@ class LocalArtifactStore:
         local_dir: Path,
         *,
         metadata: Mapping[str, Any] | None = None,
-        exclude_globs: Sequence[str] = ("*.tmp", ".tmp-*"),
+        exclude_globs: Sequence[str] = ("*.tmp", ".tmp-*", UPLOAD_PENDING_NAME),
     ) -> dict[str, Any]:
         exp_id = _validate_experiment_id(experiment_id)
         src_root = Path(local_dir).resolve()
@@ -240,35 +320,42 @@ class LocalArtifactStore:
 
     def _update_index(self, manifest: Mapping[str, Any]) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
-        entries: dict[str, dict[str, Any]] = {}
-        if self.index_path.is_file():
-            for line in self.index_path.read_text(encoding="utf-8").splitlines():
-                if not line.strip():
-                    continue
-                try:
-                    row = json.loads(line)
-                    entries[row["experiment_id"]] = row
-                except (ValueError, KeyError):
-                    continue
-        meta = manifest.get("metadata", {})
-        entries[manifest["experiment_id"]] = {
-            "experiment_id": manifest["experiment_id"],
-            "stored_at": manifest["stored_at"],
-            "total_bytes": manifest["total_bytes"],
-            "file_count": manifest["file_count"],
-            "kind": meta.get("kind"),
-            "machine": meta.get("machine"),
-            "status": meta.get("status"),
-            "tags": list(meta.get("tags", [])),
-            "git_revision": meta.get("git_revision"),
-        }
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", dir=self.root, prefix=".idx-", delete=False
-        ) as tmp:
-            for row in sorted(entries.values(), key=lambda r: r.get("stored_at", ""), reverse=True):
-                tmp.write(json.dumps(row, sort_keys=True) + "\n")
-            tmp_path = Path(tmp.name)
-        os.replace(tmp_path, self.index_path)
+        lock_file = self.root / ".index.lock"
+        # Serialize concurrent index updates across both threads and independent processes.
+        with _local_index_lock(self.root), lock_file.open("a", encoding="utf-8") as lf:
+            fcntl.flock(lf.fileno(), fcntl.LOCK_EX)
+            try:
+                entries: dict[str, dict[str, Any]] = {}
+                if self.index_path.is_file():
+                    for line in self.index_path.read_text(encoding="utf-8").splitlines():
+                        if not line.strip():
+                            continue
+                        try:
+                            row = json.loads(line)
+                            entries[row["experiment_id"]] = row
+                        except (ValueError, KeyError):
+                            continue
+                meta = manifest.get("metadata", {})
+                entries[manifest["experiment_id"]] = {
+                    "experiment_id": manifest["experiment_id"],
+                    "stored_at": manifest["stored_at"],
+                    "total_bytes": manifest["total_bytes"],
+                    "file_count": manifest["file_count"],
+                    "kind": meta.get("kind"),
+                    "machine": meta.get("machine"),
+                    "status": meta.get("status"),
+                    "tags": list(meta.get("tags", [])),
+                    "git_revision": meta.get("git_revision"),
+                }
+                with tempfile.NamedTemporaryFile(
+                    mode="w", encoding="utf-8", dir=self.root, prefix=".idx-", delete=False
+                ) as tmp:
+                    for row in sorted(entries.values(), key=lambda r: r.get("stored_at", ""), reverse=True):
+                        tmp.write(json.dumps(row, sort_keys=True) + "\n")
+                    tmp_path = Path(tmp.name)
+                os.replace(tmp_path, self.index_path)
+            finally:
+                fcntl.flock(lf.fileno(), fcntl.LOCK_UN)
 
     def get_file(self, experiment_id: str, rel_path: str, dest_path: Path) -> Path:
         exp_id = _validate_experiment_id(experiment_id)
@@ -433,23 +520,27 @@ class OAuthRefreshTokenProvider:
         return self._access_token
 
 
-def load_drive_token_provider(
-    *,
-    credentials_path: Path | str | None = None,
-) -> tuple[Callable[[], str], str | None]:
-    """Resolve Google Drive access token provider from standard Google ADC credentials."""
+def default_adc_path(credentials_path: Path | str | None = None) -> Path | None:
+    """Return the active standard Google ADC JSON path if one exists on disk."""
     candidates: list[Path] = []
     if credentials_path:
         candidates.append(Path(credentials_path).expanduser())
     if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
         candidates.append(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).expanduser())
-    default_adc = Path.home() / ".config/gcloud/application_default_credentials.json"
-    if default_adc.is_file():
-        candidates.append(default_adc)
-
+    candidates.append(Path.home() / ".config/gcloud/application_default_credentials.json")
     for cand in candidates:
-        if not cand.is_file():
-            continue
+        if cand.is_file():
+            return cand
+    return None
+
+
+def load_drive_token_provider(
+    *,
+    credentials_path: Path | str | None = None,
+) -> tuple[Callable[[], str], str | None]:
+    """Resolve Google Drive access token provider from standard Google ADC credentials."""
+    cand = default_adc_path(credentials_path)
+    if cand is not None:
         data = json.loads(cand.read_text(encoding="utf-8"))
         if data.get("type") == "authorized_user" or {"client_id", "client_secret", "refresh_token"} <= set(data):
             qp = data.get("quota_project_id")
@@ -471,10 +562,22 @@ def load_drive_token_provider(
     )
 
 
+def _clip_app_property(key: str, value: str) -> str:
+    """Clip a Drive appProperties value so key+value stays within Google's 124-byte UTF-8 limit."""
+    budget = max(0, 124 - len(key.encode("utf-8")))
+    encoded = value.encode("utf-8")
+    if len(encoded) <= budget:
+        return value
+    return encoded[:budget].decode("utf-8", errors="ignore")
+
+
 class GoogleDriveArtifactStore:
     """Reliable Google Drive REST API v3 artifact store with resumable chunked uploads.
 
     Works identically from local machines and from Colab (no interactive Drive mount required).
+    Per-experiment metadata is stored on each experiment folder's `appProperties` and
+    `experiment_manifest.json` rather than a shared mutable index file, making parallel
+    uploads lock-free and race-free.
     """
 
     def __init__(
@@ -482,6 +585,7 @@ class GoogleDriveArtifactStore:
         root_folder: str = "hp-sim5-artifacts",
         *,
         root_folder_id: str | None = None,
+        experiments_folder_id: str | None = None,
         token_provider: Callable[[], str] | None = None,
         credentials_path: Path | str | None = None,
         api_base: str = DRIVE_API_BASE,
@@ -494,6 +598,7 @@ class GoogleDriveArtifactStore:
             raise ValueError("chunk_bytes must be a positive multiple of 256 KiB")
         self.root_folder = root_folder.strip("/") or "hp-sim5-artifacts"
         self._explicit_root_id = root_folder_id
+        self._credentials_path = Path(credentials_path).expanduser() if credentials_path else None
         self.api_base = api_base.rstrip("/")
         self.upload_base = upload_base.rstrip("/")
         self.chunk_bytes = chunk_bytes
@@ -502,12 +607,16 @@ class GoogleDriveArtifactStore:
         if token_provider is not None:
             self._token_provider = token_provider
             self._quota_project = None
+            self._uses_adc = False
         else:
             self._token_provider, self._quota_project = load_drive_token_provider(
                 credentials_path=credentials_path,
             )
+            self._uses_adc = True
+        self._folder_lock = threading.Lock()
         self._folder_cache: dict[tuple[str, str], str] = {}
         self._root_id_cache: str | None = root_folder_id
+        self._experiments_id_cache: str | None = experiments_folder_id
 
     @property
     def uri(self) -> str:
@@ -614,26 +723,27 @@ class GoogleDriveArtifactStore:
         app_properties: Mapping[str, str] | None = None,
     ) -> str:
         cache_key = (parent_id, name)
-        if cache_key in self._folder_cache and not app_properties:
-            return self._folder_cache[cache_key]
-        existing = self._find_child(parent_id, name, mime_type=FOLDER_MIME)
-        if existing:
-            folder_id = existing["id"]
+        with self._folder_lock:
+            if cache_key in self._folder_cache and not app_properties:
+                return self._folder_cache[cache_key]
+            existing = self._find_child(parent_id, name, mime_type=FOLDER_MIME)
+            if existing:
+                folder_id = existing["id"]
+                if app_properties:
+                    self._request_json(
+                        "PATCH",
+                        f"{self.api_base}/files/{quote(folder_id)}?fields=id",
+                        json_body={"appProperties": dict(app_properties)},
+                    )
+                self._folder_cache[cache_key] = folder_id
+                return folder_id
+            body: dict[str, Any] = {"name": name, "mimeType": FOLDER_MIME, "parents": [parent_id]}
             if app_properties:
-                self._request_json(
-                    "PATCH",
-                    f"{self.api_base}/files/{quote(folder_id)}?fields=id",
-                    json_body={"appProperties": dict(app_properties)},
-                )
+                body["appProperties"] = dict(app_properties)
+            created = self._request_json("POST", f"{self.api_base}/files?fields=id", json_body=body)
+            folder_id = created["id"]
             self._folder_cache[cache_key] = folder_id
             return folder_id
-        body: dict[str, Any] = {"name": name, "mimeType": FOLDER_MIME, "parents": [parent_id]}
-        if app_properties:
-            body["appProperties"] = dict(app_properties)
-        created = self._request_json("POST", f"{self.api_base}/files?fields=id", json_body=body)
-        folder_id = created["id"]
-        self._folder_cache[cache_key] = folder_id
-        return folder_id
 
     def _ensure_root(self) -> str:
         if self._root_id_cache:
@@ -645,21 +755,43 @@ class GoogleDriveArtifactStore:
         self._root_id_cache = parent
         return parent
 
-    def _ensure_path_folder(self, experiment_id: str, rel_dir: str, *, app_properties: Mapping[str, str] | None = None) -> str:
+    def ensure_experiments_folder(self) -> str:
+        """Create/resolve the shared `<root>/experiments` folder once (safe before parallel fan-out)."""
+        if self._experiments_id_cache:
+            return self._experiments_id_cache
         root_id = self._ensure_root()
-        exps_id = self._ensure_folder(root_id, "experiments")
+        self._experiments_id_cache = self._ensure_folder(root_id, "experiments")
+        return self._experiments_id_cache
+
+    def _ensure_path_folder(
+        self,
+        experiment_id: str,
+        rel_dir: str,
+        *,
+        app_properties: Mapping[str, str] | None = None,
+    ) -> str:
+        exps_id = self.ensure_experiments_folder()
         parent = self._ensure_folder(exps_id, experiment_id, app_properties=app_properties)
         if rel_dir and rel_dir != ".":
             for segment in Path(rel_dir).parts:
                 parent = self._ensure_folder(parent, segment)
         return parent
 
-    def _find_path_file(self, experiment_id: str, rel_path: str) -> dict[str, Any] | None:
+    def _find_experiments_folder(self) -> str | None:
+        if self._experiments_id_cache:
+            return self._experiments_id_cache
         root_id = self._ensure_root()
         exps = self._find_child(root_id, "experiments", mime_type=FOLDER_MIME)
         if not exps:
             return None
-        exp = self._find_child(exps["id"], experiment_id, mime_type=FOLDER_MIME)
+        self._experiments_id_cache = exps["id"]
+        return self._experiments_id_cache
+
+    def _find_path_file(self, experiment_id: str, rel_path: str) -> dict[str, Any] | None:
+        exps_id = self._find_experiments_folder()
+        if not exps_id:
+            return None
+        exp = self._find_child(exps_id, experiment_id, mime_type=FOLDER_MIME)
         if not exp:
             return None
         parent_id = exp["id"]
@@ -846,18 +978,12 @@ class GoogleDriveArtifactStore:
         local_dir: Path,
         *,
         metadata: Mapping[str, Any] | None = None,
-        exclude_globs: Sequence[str] = ("*.tmp", ".tmp-*"),
+        exclude_globs: Sequence[str] = ("*.tmp", ".tmp-*", UPLOAD_PENDING_NAME),
     ) -> dict[str, Any]:
         exp_id = _validate_experiment_id(experiment_id)
         src_root = Path(local_dir).resolve()
         meta = dict(metadata or {})
-        app_props = {
-            "hp_sim5_experiment_id": exp_id,
-            "hp_sim5_kind": str(meta.get("kind", "")),
-            "hp_sim5_machine": str(meta.get("machine", "")),
-            "hp_sim5_status": str(meta.get("status", "")),
-        }
-        self._ensure_path_folder(exp_id, ".", app_properties=app_props)
+        self._ensure_path_folder(exp_id, ".")
 
         records: list[dict[str, Any]] = []
         total_bytes = 0
@@ -871,10 +997,11 @@ class GoogleDriveArtifactStore:
             records.append(rec.to_dict())
             total_bytes += rec.size_bytes
 
+        stored_at = utc_now_iso()
         manifest = {
             "schema_version": 1,
             "experiment_id": exp_id,
-            "stored_at": utc_now_iso(),
+            "stored_at": stored_at,
             "store_uri": self.uri,
             "total_bytes": total_bytes,
             "file_count": len(records),
@@ -885,7 +1012,24 @@ class GoogleDriveArtifactStore:
             manifest_file = Path(tmp) / MANIFEST_NAME
             _atomic_write_json(manifest_file, manifest)
             self.put_file(exp_id, MANIFEST_NAME, manifest_file)
-        self._update_remote_index(manifest)
+
+        # Store per-experiment index metadata on this experiment's own folder (zero shared-index races).
+        tags_csv = ",".join(str(t) for t in (meta.get("tags") or []))
+        app_props = {
+            k: _clip_app_property(k, str(v))
+            for k, v in {
+                "hp_sim5_experiment_id": exp_id,
+                "hp_sim5_kind": meta.get("kind") or "",
+                "hp_sim5_machine": meta.get("machine") or "",
+                "hp_sim5_status": meta.get("status") or "",
+                "hp_sim5_stored_at": stored_at,
+                "hp_sim5_total_bytes": str(total_bytes),
+                "hp_sim5_file_count": str(len(records)),
+                "hp_sim5_git_revision": meta.get("git_revision") or "",
+                "hp_sim5_tags": tags_csv,
+            }.items()
+        }
+        self._ensure_path_folder(exp_id, ".", app_properties=app_props)
         return manifest
 
     def _download_file_id(self, file_id: str, dest_path: Path, *, expected_sha256: str | None = None) -> Path:
@@ -927,44 +1071,27 @@ class GoogleDriveArtifactStore:
             tmp_path.unlink(missing_ok=True)
         raise RuntimeError(f"Drive download failed for {file_id}")
 
-    def _update_remote_index(self, manifest: Mapping[str, Any]) -> None:
-        root_id = self._ensure_root()
-        existing = self._find_child(root_id, "index.json")
-        entries: dict[str, dict[str, Any]] = {}
-        if existing:
-            with tempfile.TemporaryDirectory(prefix="hp-idx-") as tmp:
-                idx_file = Path(tmp) / "index.json"
-                try:
-                    self._download_file_id(existing["id"], idx_file)
-                    entries = json.loads(idx_file.read_text(encoding="utf-8"))
-                except Exception:
-                    entries = {}
-        meta = manifest.get("metadata", {})
-        entries[manifest["experiment_id"]] = {
-            "experiment_id": manifest["experiment_id"],
-            "stored_at": manifest["stored_at"],
-            "total_bytes": manifest["total_bytes"],
-            "file_count": manifest["file_count"],
-            "kind": meta.get("kind"),
-            "machine": meta.get("machine"),
-            "status": meta.get("status"),
-            "tags": list(meta.get("tags", [])),
-            "git_revision": meta.get("git_revision"),
-        }
-        with tempfile.TemporaryDirectory(prefix="hp-idx-up-") as tmp:
-            idx_file = Path(tmp) / "index.json"
-            _atomic_write_json(idx_file, entries)
-            size, sha256, md5 = compute_file_digests(idx_file)
-            self._upload_resumable(
-                parent_id=root_id,
-                name="index.json",
-                local_path=idx_file,
-                size=size,
-                sha256=sha256,
-                md5=md5,
-                mime_type="application/json",
-                existing_file_id=existing["id"] if existing else None,
-            )
+    def _list_experiment_folders(self) -> list[dict[str, Any]]:
+        exps_id = self._find_experiments_folder()
+        if not exps_id:
+            return []
+        q = f"'{exps_id}' in parents and mimeType = '{FOLDER_MIME}' and trashed = false"
+        folders: list[dict[str, Any]] = []
+        page_token: str | None = None
+        while True:
+            query: dict[str, str] = {
+                "q": q,
+                "fields": "nextPageToken,files(id,name,appProperties,modifiedTime)",
+                "pageSize": "100",
+            }
+            if page_token:
+                query["pageToken"] = page_token
+            data = self._request_json("GET", f"{self.api_base}/files?{urlencode(query)}")
+            folders.extend(data.get("files", []))
+            page_token = data.get("nextPageToken")
+            if not page_token:
+                break
+        return folders
 
     def get_manifest(self, experiment_id: str) -> dict[str, Any]:
         exp_id = _validate_experiment_id(experiment_id)
@@ -1027,14 +1154,42 @@ class GoogleDriveArtifactStore:
         kind: str | None = None,
         limit: int = 100,
     ) -> list[dict[str, Any]]:
-        root_id = self._ensure_root()
-        existing = self._find_child(root_id, "index.json")
         rows: list[dict[str, Any]] = []
-        if existing:
-            with tempfile.TemporaryDirectory(prefix="hp-idx-ls-") as tmp:
-                idx_file = self._download_file_id(existing["id"], Path(tmp) / "index.json")
-                data = json.loads(idx_file.read_text(encoding="utf-8"))
-                rows = list(data.values())
+        for folder in self._list_experiment_folders():
+            props = folder.get("appProperties") or {}
+            if "hp_sim5_stored_at" in props:
+                tags_raw = props.get("hp_sim5_tags", "")
+                row = {
+                    "experiment_id": props.get("hp_sim5_experiment_id") or folder["name"],
+                    "stored_at": props.get("hp_sim5_stored_at", ""),
+                    "store_uri": self.uri,
+                    "total_bytes": int(props.get("hp_sim5_total_bytes") or 0),
+                    "file_count": int(props.get("hp_sim5_file_count") or 0),
+                    "kind": props.get("hp_sim5_kind") or None,
+                    "machine": props.get("hp_sim5_machine") or None,
+                    "status": props.get("hp_sim5_status") or None,
+                    "tags": [t for t in tags_raw.split(",") if t],
+                    "git_revision": props.get("hp_sim5_git_revision") or None,
+                }
+            else:
+                try:
+                    manifest = self.get_manifest(folder["name"])
+                except FileNotFoundError:
+                    continue
+                meta = manifest.get("metadata", {})
+                row = {
+                    "experiment_id": manifest.get("experiment_id", folder["name"]),
+                    "stored_at": manifest.get("stored_at", ""),
+                    "store_uri": self.uri,
+                    "total_bytes": manifest.get("total_bytes", 0),
+                    "file_count": manifest.get("file_count", 0),
+                    "kind": meta.get("kind"),
+                    "machine": meta.get("machine"),
+                    "status": meta.get("status"),
+                    "tags": list(meta.get("tags", [])),
+                    "git_revision": meta.get("git_revision"),
+                }
+            rows.append(row)
         required_tags = set(tags)
         filtered = [
             row

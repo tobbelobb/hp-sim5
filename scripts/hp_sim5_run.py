@@ -19,14 +19,16 @@ sys.path.insert(0, str(ROOT / "src/python"))
 sys.path.insert(0, str(ROOT))
 
 from hp_sim5_sim import (  # noqa: E402
+    ArtifactUploadError,
     ColabConfig,
     ColabScheduler,
+    ColabShutdownError,
     ExperimentSpec,
     LocalScheduler,
     resolve_colab_cli,
     store_from_uri,
 )
-from hp_sim5_sim.storage import DriveAuthError, GoogleDriveArtifactStore  # noqa: E402
+from hp_sim5_sim.storage import DriveAuthError, GoogleDriveArtifactStore, UPLOAD_PENDING_NAME  # noqa: E402
 
 
 def _resolve_store(uri: str | None):
@@ -60,6 +62,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             session_name=args.session,
             keep_session=args.keep_session,
             remote_store_uri=args.remote_store,
+            direct_drive_upload=not args.via_local,
         )
         scheduler = ColabScheduler(ROOT, config=cfg)
 
@@ -85,6 +88,7 @@ def cmd_batch(args: argparse.Namespace) -> int:
             keep_session=args.keep_session,
             remote_workers=args.workers,
             remote_store_uri=args.remote_store,
+            direct_drive_upload=not args.via_local,
         )
         scheduler = ColabScheduler(ROOT, config=cfg)
 
@@ -109,12 +113,38 @@ def cmd_artifacts(args: argparse.Namespace) -> int:
         print(json.dumps(store.get_manifest(args.experiment_id), indent=2, sort_keys=True))
         return 0
     if args.action == "push":
-        meta: dict[str, Any] = {"tags": list(args.tag or [])}
+        source_dir = Path(args.source)
+        meta: dict[str, Any] = {}
+        pending_file = source_dir / UPLOAD_PENDING_NAME
+        if pending_file.is_file():
+            try:
+                pending_data = json.loads(pending_file.read_text(encoding="utf-8"))
+                if isinstance(pending_data.get("metadata"), dict):
+                    meta.update(pending_data["metadata"])
+            except ValueError:
+                pass
+        elif (source_dir / "result.json").is_file():
+            try:
+                res_data = json.loads((source_dir / "result.json").read_text(encoding="utf-8"))
+                for key in ("kind", "status", "backend", "wall_s", "simulated_s", "total_steps", "metrics"):
+                    if res_data.get(key) is not None:
+                        meta[key] = res_data[key]
+            except ValueError:
+                pass
+        if args.tag:
+            merged_tags = list(meta.get("tags") or [])
+            for tag in args.tag:
+                if tag not in merged_tags:
+                    merged_tags.append(tag)
+            meta["tags"] = merged_tags
+        else:
+            meta.setdefault("tags", [])
         if args.kind:
             meta["kind"] = args.kind
         if args.machine:
             meta["machine"] = args.machine
-        manifest = store.put_directory(args.experiment_id, Path(args.source), metadata=meta)
+        manifest = store.put_directory(args.experiment_id, source_dir, metadata=meta)
+        pending_file.unlink(missing_ok=True)
         print(json.dumps(manifest, indent=2, sort_keys=True))
         return 0
     if args.action == "get":
@@ -177,6 +207,11 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--backend", choices=("local", "colab"), default="local")
         p.add_argument("--store", help="Artifact store URI (local://..., gdrive://..., drivemount://...)")
         p.add_argument("--remote-store", help="Optional store URI writable directly from Colab (e.g. drivemount://...)")
+        p.add_argument(
+            "--via-local",
+            action="store_true",
+            help="For Colab + gdrive://, download artifacts via this host instead of uploading directly from Colab to Google Drive",
+        )
         p.add_argument("--gpu", help="Colab GPU type (T4, L4, A100, H100)")
         p.add_argument("--tpu", help="Colab TPU type (v5e1, v6e1)")
         p.add_argument("--high-mem", action=argparse.BooleanOptionalAction, default=True, help="Request high-RAM Colab VM")
@@ -236,7 +271,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return int(args.func(args))
+    try:
+        return int(args.func(args))
+    except (ArtifactUploadError, ColabShutdownError) as err:
+        print(f"ERROR: {err}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

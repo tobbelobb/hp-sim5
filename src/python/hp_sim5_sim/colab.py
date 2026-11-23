@@ -13,8 +13,10 @@ import io
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import textwrap
@@ -22,7 +24,33 @@ from typing import Any, Sequence
 import uuid
 
 from .interfaces import ArtifactStore, ExperimentResult, ExperimentSpec
-from .storage import ScratchWorkspace
+from .storage import (
+    ArtifactUploadError,
+    GoogleDriveArtifactStore,
+    LocalArtifactStore,
+    ScratchWorkspace,
+    UPLOAD_PENDING_NAME,
+    default_adc_path,
+    retry_upload_command,
+    write_upload_pending,
+)
+
+
+class ColabShutdownError(RuntimeError):
+    """Raised when stopping a Google Colab VM fails; session config is preserved for manual cleanup."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        session_name: str,
+        config_path: Path | str,
+        cleanup_command: str,
+    ) -> None:
+        super().__init__(message)
+        self.session_name = session_name
+        self.config_path = str(config_path)
+        self.cleanup_command = cleanup_command
 
 
 BUNDLE_TOP_LEVEL_PATHS = (
@@ -235,6 +263,8 @@ class ColabConfig:
     colab_bin: str | None = None
     config_path: Path | None = None
     remote_store_uri: str | None = None
+    direct_drive_upload: bool = True
+    default_local_store_dir: Path | None = None
     command_timeout_s: float = 7200.0
 
 
@@ -245,12 +275,13 @@ class ColabSession:
         self.config = config or ColabConfig()
         self.cli_prefix = resolve_colab_cli(self.config.colab_bin)
         self.session_name = self.config.session_name or f"hpsim-{uuid.uuid4().hex[:8]}"
-        self._temp_config_dir: tempfile.TemporaryDirectory[str] | None = None
+        self._temp_config_dir: Path | None = None
         if self.config.config_path is not None:
             self.config_path = Path(self.config.config_path).expanduser().resolve()
         else:
-            self._temp_config_dir = tempfile.TemporaryDirectory(prefix="hp-colab-cfg-")
-            self.config_path = Path(self._temp_config_dir.name) / "sessions.json"
+            # Use mkdtemp (not TemporaryDirectory) so sessions.json survives process exit if stop() fails.
+            self._temp_config_dir = Path(tempfile.mkdtemp(prefix="hp-colab-cfg-"))
+            self.config_path = self._temp_config_dir / "sessions.json"
         self._started = False
 
     def _cmd(self, *args: str) -> list[str]:
@@ -277,6 +308,21 @@ class ColabSession:
             )
         return proc
 
+    def _cleanup_temp_config(self) -> None:
+        if self._temp_config_dir is not None:
+            shutil.rmtree(self._temp_config_dir, ignore_errors=True)
+            self._temp_config_dir = None
+
+    def _session_still_listed(self) -> bool | None:
+        """Check whether this session is still present in `colab sessions` (None if check failed)."""
+        try:
+            proc = self._run_cli("sessions", timeout_s=60.0, check=False)
+        except (subprocess.TimeoutExpired, OSError):
+            return None
+        if proc.returncode != 0:
+            return None
+        return self.session_name in (proc.stdout or "")
+
     def start(self) -> "ColabSession":
         args = ["new", "-s", self.session_name]
         if self.config.gpu:
@@ -285,7 +331,12 @@ class ColabSession:
             args.extend(["--tpu", self.config.tpu])
         if self.config.high_mem:
             args.append("--high-mem")
-        self._run_cli(*args, timeout_s=180.0)
+        try:
+            self._run_cli(*args, timeout_s=180.0)
+        except Exception:
+            if self.config_path.is_file():
+                self._started = True
+            raise
         self._started = True
         return self
 
@@ -325,14 +376,41 @@ class ColabSession:
         )
 
     def stop(self) -> None:
-        if self._started:
+        if not self._started:
+            self._cleanup_temp_config()
+            return
+
+        last_err = ""
+        for _attempt in range(2):
             try:
-                self._run_cli("stop", "-s", self.session_name, timeout_s=120.0, check=False)
-            finally:
-                self._started = False
-        if self._temp_config_dir is not None:
-            self._temp_config_dir.cleanup()
-            self._temp_config_dir = None
+                proc = self._run_cli("stop", "-s", self.session_name, timeout_s=120.0, check=False)
+                if proc.returncode == 0:
+                    self._started = False
+                    self._cleanup_temp_config()
+                    return
+                last_err = (proc.stderr or proc.stdout or f"exit code {proc.returncode}").strip()[-1000:]
+            except (subprocess.TimeoutExpired, OSError) as err:
+                last_err = f"{type(err).__name__}: {err}"
+
+        # If `stop` failed because the session is already gone/pruned, treat shutdown as complete.
+        if self._session_still_listed() is False:
+            self._started = False
+            self._cleanup_temp_config()
+            return
+
+        cleanup_cmd = shlex.join(self._cmd("stop", "-s", self.session_name))
+        msg = (
+            f"Failed to stop Colab session {self.session_name!r}: {last_err}\n"
+            f"Preserved session config at: {self.config_path}\n"
+            f"Stop manually with: {cleanup_cmd}"
+        )
+        print(f"[hp_sim5_sim] ERROR: {msg}", file=sys.stderr, flush=True)
+        raise ColabShutdownError(
+            msg,
+            session_name=self.session_name,
+            config_path=self.config_path,
+            cleanup_command=cleanup_cmd,
+        )
 
     def __enter__(self) -> "ColabSession":
         return self.start()
@@ -344,7 +422,7 @@ class ColabSession:
 
 def _render_remote_bootstrap_script(rrf_hash: str, *, need_rerun: bool, need_usd: bool) -> str:
     return textwrap.dedent(f"""\
-        import json, os, shutil, subprocess, sys, tarfile
+        import json, os, shutil, subprocess, sys, tarfile, threading, time
         from pathlib import Path
 
         WORK = Path("/content/hp_sim5_work")
@@ -353,6 +431,14 @@ def _render_remote_bootstrap_script(rrf_hash: str, *, need_rerun: bool, need_usd
         RRF_HASH = {rrf_hash!r}
         NEED_RERUN = {need_rerun!r}
         NEED_USD = {need_usd!r}
+
+        _hb_done = threading.Event()
+        _hb_start = time.monotonic()
+        def _hb():
+            while not _hb_done.wait(15.0):
+                print(f"BOOTSTRAP_HEARTBEAT: elapsed={{time.monotonic() - _hb_start:.1f}}s", flush=True)
+        _hb_thread = threading.Thread(target=_hb, daemon=True)
+        _hb_thread.start()
 
         def run(cmd, cwd=None, check=True):
             print("$", " ".join(map(str, cmd)), flush=True)
@@ -365,85 +451,94 @@ def _render_remote_bootstrap_script(rrf_hash: str, *, need_rerun: bool, need_usd
                 raise RuntimeError(f"Command failed ({{p.returncode}}): {{cmd}}")
             return p
 
-        if WORK.exists():
-            shutil.rmtree(WORK)
-        WORK.mkdir(parents=True)
-        with tarfile.open(BUNDLE, "r:gz") as tar:
-            tar.extractall(WORK, filter="data")
+        try:
+            if WORK.exists():
+                shutil.rmtree(WORK)
+            WORK.mkdir(parents=True)
+            with tarfile.open(BUNDLE, "r:gz") as tar:
+                tar.extractall(WORK, filter="data")
 
-        # 1. Minimal headless JS dependencies (cached across runs in /content/hp_sim5_cache/node_modules)
-        nm_cache = CACHE / "node_modules"
-        if not (nm_cache / "@kroxilon/usda-parser").is_dir() or not (nm_cache / "ws").is_dir():
-            nm_stage = CACHE / "npm_stage"
-            nm_stage.mkdir(parents=True, exist_ok=True)
-            (nm_stage / "package.json").write_text('{{"name":"hp-sim5-colab-deps","private":true}}\\n')
-            run(["npm", "install", "--no-audit", "--no-fund", "@kroxilon/usda-parser@^0.0.4", "ws@^8.18.0"], cwd=nm_stage)
-            if nm_cache.exists():
-                shutil.rmtree(nm_cache)
-            shutil.move(str(nm_stage / "node_modules"), str(nm_cache))
-        (WORK / "node_modules").symlink_to(nm_cache, target_is_directory=True)
+            # 1. Minimal headless JS dependencies (cached across runs in /content/hp_sim5_cache/node_modules)
+            nm_cache = CACHE / "node_modules"
+            if not (nm_cache / "@kroxilon/usda-parser").is_dir() or not (nm_cache / "ws").is_dir():
+                nm_stage = CACHE / "npm_stage"
+                nm_stage.mkdir(parents=True, exist_ok=True)
+                (nm_stage / "package.json").write_text('{{"name":"hp-sim5-colab-deps","private":true}}\\n')
+                run(["npm", "install", "--no-audit", "--no-fund", "@kroxilon/usda-parser@^0.0.4", "ws@^8.18.0"], cwd=nm_stage)
+                if nm_cache.exists():
+                    shutil.rmtree(nm_cache)
+                shutil.move(str(nm_stage / "node_modules"), str(nm_cache))
+            (WORK / "node_modules").symlink_to(nm_cache, target_is_directory=True)
 
-        # 2. Build or reuse cached rrf_simulator
-        rrf_bin = CACHE / "rrf" / RRF_HASH / "rrf_simulator"
-        if not rrf_bin.is_file():
-            rrf_build = CACHE / "rrf-build" / RRF_HASH
-            rrf_build.mkdir(parents=True, exist_ok=True)
-            cpus = str(os.cpu_count() or 4)
-            run(["cmake", "-S", str(WORK / "RRF"), "-B", str(rrf_build)])
-            run(["cmake", "--build", str(rrf_build), "--target", "rrf_simulator", f"-j{{cpus}}"])
-            rrf_bin.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(rrf_build / "rrf_simulator", rrf_bin)
-            shutil.rmtree(rrf_build, ignore_errors=True)
-        (WORK / "RRF/build").mkdir(parents=True, exist_ok=True)
-        shutil.copy2(rrf_bin, WORK / "RRF/build/rrf_simulator")
+            # 2. Build or reuse cached rrf_simulator
+            rrf_bin = CACHE / "rrf" / RRF_HASH / "rrf_simulator"
+            if not rrf_bin.is_file():
+                rrf_build = CACHE / "rrf-build" / RRF_HASH
+                rrf_build.mkdir(parents=True, exist_ok=True)
+                cpus = str(os.cpu_count() or 4)
+                run(["cmake", "-S", str(WORK / "RRF"), "-B", str(rrf_build)])
+                run(["cmake", "--build", str(rrf_build), "--target", "rrf_simulator", f"-j{{cpus}}"])
+                rrf_bin.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(rrf_build / "rrf_simulator", rrf_bin)
+                shutil.rmtree(rrf_build, ignore_errors=True)
+            (WORK / "RRF/build").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(rrf_bin, WORK / "RRF/build/rrf_simulator")
 
-        # 3. Optional Python packages (only install what is missing and requested)
-        missing_py = []
-        for mod, pkg in [("jsonschema", "jsonschema"), ("websockets", "websockets")]:
-            try:
-                __import__(mod)
-            except ImportError:
-                missing_py.append(pkg)
-        if NEED_RERUN:
-            try:
-                __import__("rerun")
-            except ImportError:
-                missing_py.append("rerun-sdk>=0.38.1,<0.39")
-        if NEED_USD:
-            try:
-                __import__("pxr")
-            except ImportError:
-                missing_py.append("usd-core>=26.3")
-        if missing_py:
-            installer = ["uv", "pip", "install", "--system", *missing_py] if shutil.which("uv") else [sys.executable, "-m", "pip", "install", *missing_py]
-            run(installer)
+            # 3. Optional Python packages (only install what is missing and requested)
+            missing_py = []
+            for mod, pkg in [("jsonschema", "jsonschema"), ("websockets", "websockets")]:
+                try:
+                    __import__(mod)
+                except ImportError:
+                    missing_py.append(pkg)
+            if NEED_RERUN:
+                try:
+                    __import__("rerun")
+                except ImportError:
+                    missing_py.append("rerun-sdk>=0.38.1,<0.39")
+            if NEED_USD:
+                try:
+                    __import__("pxr")
+                except ImportError:
+                    missing_py.append("usd-core>=26.3")
+            if missing_py:
+                installer = ["uv", "pip", "install", "--system", *missing_py] if shutil.which("uv") else [sys.executable, "-m", "pip", "install", *missing_py]
+                run(installer)
 
-        # 4. Probe native Rust physics addon compatibility on this Colab VM
-        native_ok = False
-        native_err = None
-        probe = subprocess.run(
-            ["node", "--input-type=module", "-e",
-             "import {{ loadNativePhysicsAddon }} from './src/js/cable_joints_3d/native_physics_engine.js'; loadNativePhysicsAddon(); console.log('NATIVE_OK');"],
-            cwd=WORK, capture_output=True, text=True,
-        )
-        if probe.returncode == 0 and "NATIVE_OK" in probe.stdout:
-            native_ok = True
-        else:
-            native_err = (probe.stderr or probe.stdout).strip()[-400:]
+            # 4. Probe native Rust physics addon compatibility on this Colab VM
+            native_ok = False
+            native_err = None
+            probe = subprocess.run(
+                ["node", "--input-type=module", "-e",
+                 "import {{ loadNativePhysicsAddon }} from './src/js/cable_joints_3d/native_physics_engine.js'; loadNativePhysicsAddon(); console.log('NATIVE_OK');"],
+                cwd=WORK, capture_output=True, text=True,
+            )
+            if probe.returncode == 0 and "NATIVE_OK" in probe.stdout:
+                native_ok = True
+            else:
+                native_err = (probe.stderr or probe.stdout).strip()[-400:]
 
-        info = {{
-            "ok": True,
-            "cpus": os.cpu_count(),
-            "python": sys.executable,
-            "native_physics_ok": native_ok,
-            "native_physics_error": native_err,
-        }}
-        Path("/content/hp_sim5_bootstrap.json").write_text(json.dumps(info, indent=2) + "\\n")
-        print("BOOTSTRAP_INFO:", json.dumps(info), flush=True)
+            info = {{
+                "ok": True,
+                "cpus": os.cpu_count(),
+                "python": sys.executable,
+                "native_physics_ok": native_ok,
+                "native_physics_error": native_err,
+            }}
+            Path("/content/hp_sim5_bootstrap.json").write_text(json.dumps(info, indent=2) + "\\n")
+            print("BOOTSTRAP_INFO:", json.dumps(info), flush=True)
+        finally:
+            _hb_done.set()
+            _hb_thread.join(timeout=2.0)
     """)
 
 
-def _render_remote_batch_script(*, max_workers: int | None, remote_store_uri: str | None) -> str:
+def _render_remote_batch_script(
+    *,
+    max_workers: int | None,
+    remote_store_uri: str | None,
+    direct_drive_config: dict[str, Any] | None = None,
+) -> str:
     return textwrap.dedent(f"""\
         import json, os, shutil, sys, tarfile, threading, time
         from pathlib import Path
@@ -459,7 +554,7 @@ def _render_remote_batch_script(*, max_workers: int | None, remote_store_uri: st
 
         from hp_sim5_sim.interfaces import ExperimentSpec
         from hp_sim5_sim.runner import LocalScheduler
-        from hp_sim5_sim.storage import LocalArtifactStore, store_from_uri
+        from hp_sim5_sim.storage import GoogleDriveArtifactStore, LocalArtifactStore, store_from_uri
 
         if SCRATCH.exists():
             shutil.rmtree(SCRATCH)
@@ -476,15 +571,39 @@ def _render_remote_batch_script(*, max_workers: int | None, remote_store_uri: st
                 )
 
         remote_store_uri = {remote_store_uri!r}
+        direct_drive_cfg = {direct_drive_config!r}
         stage_store_dir = Path("/content/hp_sim5_stage_store")
         if stage_store_dir.exists():
             shutil.rmtree(stage_store_dir)
-        store = store_from_uri(remote_store_uri) if remote_store_uri else LocalArtifactStore(stage_store_dir)
+
+        creds_path = None
+        if direct_drive_cfg is not None:
+            creds_path = Path(direct_drive_cfg["credentials_remote_path"])
+            os.chmod(creds_path, 0o600)
+            store = GoogleDriveArtifactStore(
+                root_folder=direct_drive_cfg["root_folder"],
+                root_folder_id=direct_drive_cfg.get("root_folder_id"),
+                experiments_folder_id=direct_drive_cfg.get("experiments_folder_id"),
+                credentials_path=creds_path,
+                api_base=direct_drive_cfg["api_base"],
+                upload_base=direct_drive_cfg["upload_base"],
+                chunk_bytes=direct_drive_cfg["chunk_bytes"],
+            )
+            direct_persist = True
+        elif remote_store_uri:
+            store = store_from_uri(remote_store_uri)
+            direct_persist = True
+        else:
+            store = LocalArtifactStore(stage_store_dir)
+            direct_persist = False
 
         cpus = os.cpu_count() or 2
         requested_workers = {max_workers!r}
         workers = requested_workers if requested_workers is not None else max(1, min(len(specs), cpus))
-        print(f"COLAB_BATCH_START: specs={{len(specs)}} workers={{workers}} cpus={{cpus}}", flush=True)
+        print(
+            f"COLAB_BATCH_START: specs={{len(specs)}} workers={{workers}} cpus={{cpus}} direct_persist={{direct_persist}}",
+            flush=True,
+        )
 
         done_event = threading.Event()
         started_t = time.monotonic()
@@ -500,16 +619,40 @@ def _render_remote_batch_script(*, max_workers: int | None, remote_store_uri: st
                 python_exe=sys.executable,
                 backend_label=f"colab-cpu-{{cpus}}c",
             )
-            results = scheduler.run_batch(specs, max_workers=workers, store=store, keep_scratch=False)
+            results = scheduler.run_batch(
+                specs,
+                max_workers=workers,
+                store=store,
+                keep_scratch=False,
+                raise_on_upload_error=False,
+            )
         finally:
             done_event.set()
             hb.join(timeout=2.0)
+            if creds_path is not None:
+                creds_path.unlink(missing_ok=True)
+
+        rescue_dirs = {{}}
+        for r in results:
+            if direct_persist and r.status == "upload_failed" and r.scratch_dir:
+                p = Path(r.scratch_dir)
+                if p.is_dir():
+                    rescue_dirs[r.experiment_id] = p
+                r.scratch_dir = None
+            elif not direct_persist:
+                # Never return ephemeral /content/... URIs back to the local host.
+                r.artifact_uri = None
+                r.scratch_dir = None
+                if r.manifest and str(r.manifest.get("store_uri", "")).startswith("local:///content/"):
+                    r.manifest["store_uri"] = None
 
         summary = {{
             "cpus": cpus,
             "workers": workers,
             "native_physics_ok": BOOTSTRAP.get("native_physics_ok"),
             "remote_store_uri": remote_store_uri,
+            "direct_drive_upload": direct_drive_cfg is not None,
+            "rescued_experiments": sorted(rescue_dirs.keys()),
             "results": [r.to_dict() for r in results],
         }}
         summary_path = Path("/content/hp_sim5_batch_summary.json")
@@ -517,14 +660,19 @@ def _render_remote_batch_script(*, max_workers: int | None, remote_store_uri: st
 
         with tarfile.open(OUT_TAR, "w:gz", compresslevel=5) as tar:
             tar.add(summary_path, arcname="batch_summary.json")
-            if not remote_store_uri and stage_store_dir.exists():
+            if not direct_persist and stage_store_dir.exists():
                 for path in sorted(stage_store_dir.rglob("*")):
                     if path.is_file():
                         tar.add(path, arcname="store/" + path.relative_to(stage_store_dir).as_posix())
+            for exp_id, rdir in sorted(rescue_dirs.items()):
+                for path in sorted(rdir.rglob("*")):
+                    if path.is_file():
+                        tar.add(path, arcname=f"rescue/{{exp_id}}/" + path.relative_to(rdir).as_posix())
 
         print("COLAB_BATCH_DONE:", json.dumps({{
             "count": len(results),
             "statuses": [r.status for r in results],
+            "rescued": sorted(rescue_dirs.keys()),
             "archive_bytes": OUT_TAR.stat().st_size,
         }}), flush=True)
     """)
@@ -573,6 +721,47 @@ class ColabScheduler:
         need_rerun = any(s.recording_mode != "none" for s in spec_list)
         need_native = any(s.solver == "native" for s in spec_list)
 
+        # Never silently discard Colab results: default to a persistent local store when neither
+        # --store, --remote-store, nor --keep-scratch is given.
+        effective_store: ArtifactStore | None = store
+        if effective_store is None and not self.config.remote_store_uri and not keep_scratch:
+            default_dir = (
+                Path(self.config.default_local_store_dir).expanduser().resolve()
+                if self.config.default_local_store_dir is not None
+                else (self.repo_root / "output/experiments").resolve()
+            )
+            effective_store = LocalArtifactStore(default_dir)
+            print(
+                f"[hp_sim5_sim] No artifact store specified for Colab run; "
+                f"persisting artifacts to {effective_store.uri}",
+                file=sys.stderr,
+                flush=True,
+            )
+
+        # When targeting Google Drive, upload directly from Colab -> Google Drive (bypassing this host)
+        # unless disabled via direct_drive_upload=False (--via-local) or custom token_provider.
+        adc_file: Path | None = None
+        direct_drive_config: dict[str, Any] | None = None
+        if (
+            isinstance(effective_store, GoogleDriveArtifactStore)
+            and self.config.direct_drive_upload
+            and not self.config.remote_store_uri
+            and getattr(effective_store, "_uses_adc", False)
+        ):
+            adc_file = default_adc_path(effective_store._credentials_path)
+            if adc_file is not None:
+                # Resolve/create <root>/experiments once BEFORE allocating Colab compute units.
+                exp_folder_id = effective_store.ensure_experiments_folder()
+                direct_drive_config = {
+                    "root_folder": effective_store.root_folder,
+                    "root_folder_id": effective_store._explicit_root_id,
+                    "experiments_folder_id": exp_folder_id,
+                    "api_base": effective_store.api_base,
+                    "upload_base": effective_store.upload_base,
+                    "chunk_bytes": effective_store.chunk_bytes,
+                    "credentials_remote_path": "/content/.hp_sim5_drive_creds.json",
+                }
+
         with ScratchWorkspace(f"colab-batch-{uuid.uuid4().hex[:8]}", keep=keep_scratch) as local_ws:
             assert local_ws.path is not None
             ws_dir = local_ws.path
@@ -601,25 +790,41 @@ class ColabScheduler:
                 _render_remote_batch_script(
                     max_workers=max_workers if max_workers is not None else self.config.remote_workers,
                     remote_store_uri=self.config.remote_store_uri,
+                    direct_drive_config=direct_drive_config,
                 ),
                 encoding="utf-8",
             )
 
             own_session = self._external_session is None
             session = self._external_session or ColabSession(self.config)
+            results_tar = ws_dir / "results.tar.gz"
+            body_failed = False
+            shutdown_error: ColabShutdownError | None = None
             try:
                 if own_session:
                     session.start()
                 session.upload(bundle_tar, "/content/hp_sim5_bundle.tar.gz")
                 session.upload(specs_json, "/content/hp_sim5_specs.json")
+                if direct_drive_config is not None and adc_file is not None:
+                    session.upload(adc_file, direct_drive_config["credentials_remote_path"])
                 session.exec_file(bootstrap_py, timeout_s=900.0)
                 session.exec_file(batch_py, timeout_s=self.config.command_timeout_s)
-
-                results_tar = ws_dir / "results.tar.gz"
                 session.download("/content/hp_sim5_results.tar.gz", results_tar, timeout_s=900.0)
+            except BaseException:
+                body_failed = True
+                raise
             finally:
                 if own_session and not self.config.keep_session:
-                    session.stop()
+                    try:
+                        session.stop()
+                    except ColabShutdownError as err:
+                        if body_failed:
+                            # Do not mask the primary run failure; stop() already printed manual command
+                            # and preserved sessions.json.
+                            pass
+                        else:
+                            # Defer raising until after downloaded artifacts are safely persisted.
+                            shutdown_error = err
 
             extract_dir = ws_dir / "extracted"
             extract_dir.mkdir(parents=True)
@@ -629,23 +834,155 @@ class ColabScheduler:
             summary = json.loads((extract_dir / "batch_summary.json").read_text(encoding="utf-8"))
             results = [ExperimentResult.from_dict(item) for item in summary["results"]]
 
-            # Persist downloaded artifacts into local/Drive ArtifactStore if requested.
-            if store is not None and not self.config.remote_store_uri:
+            upload_errors: list[ArtifactUploadError] = []
+
+            def _record_upload_failure(
+                res: ExperimentResult,
+                preserved_dir: Path,
+                store_uri: str,
+                meta: dict[str, Any],
+                err: Exception,
+            ) -> None:
+                local_ws.preserve()
+                err_text = f"{type(err).__name__}: {err}"
+                write_upload_pending(
+                    preserved_dir,
+                    experiment_id=res.experiment_id,
+                    store_uri=store_uri,
+                    metadata=meta,
+                    error=err_text,
+                )
+                retry_cmd = retry_upload_command(res.experiment_id, preserved_dir, store_uri)
+                res.scratch_dir = str(preserved_dir)
+                res.artifact_uri = None
+                res.error = (
+                    f"{res.error}\nArtifact upload failed: {err_text}"
+                    if res.error
+                    else f"Artifact upload failed: {err_text}"
+                )
+                print(
+                    f"[hp_sim5_sim] WARNING: Artifact upload failed for {res.experiment_id} -> {store_uri}: {err_text}\n"
+                    f"[hp_sim5_sim] Preserved local scratch at: {preserved_dir}\n"
+                    f"[hp_sim5_sim] Retry upload with: {retry_cmd}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                upload_errors.append(
+                    ArtifactUploadError(
+                        f"Artifact upload failed for {res.experiment_id} -> {store_uri}: {err_text}. "
+                        f"Preserved scratch at {preserved_dir}. Retry with: {retry_cmd}",
+                        experiment_id=res.experiment_id,
+                        scratch_dir=preserved_dir,
+                        store_uri=store_uri,
+                        result=res,
+                    )
+                )
+
+            if direct_drive_config is not None and effective_store is not None:
+                # Direct Colab -> Drive mode: retry any rescued experiments locally, preserving on failure.
+                for res in results:
+                    if res.status != "upload_failed":
+                        continue
+                    rescue_dir = extract_dir / "rescue" / res.experiment_id
+                    if not rescue_dir.is_dir():
+                        upload_errors.append(
+                            ArtifactUploadError(
+                                f"Direct Drive upload failed on Colab for {res.experiment_id} and no rescue archive was found",
+                                experiment_id=res.experiment_id,
+                                store_uri=effective_store.uri,
+                                result=res,
+                            )
+                        )
+                        continue
+                    pending_path = rescue_dir / UPLOAD_PENDING_NAME
+                    meta: dict[str, Any] = {}
+                    if pending_path.is_file():
+                        try:
+                            meta = dict(json.loads(pending_path.read_text(encoding="utf-8")).get("metadata") or {})
+                        except ValueError:
+                            meta = {}
+                    meta.setdefault("kind", res.kind)
+                    meta.setdefault("status", res.metrics.get("experiment_status", "ok"))
+                    meta.setdefault("backend", res.backend)
+                    try:
+                        manifest = effective_store.put_directory(res.experiment_id, rescue_dir, metadata=meta)
+                        res.status = str(res.metrics.pop("experiment_status", "ok"))
+                        res.metrics.pop("upload_error", None)
+                        res.error = None
+                        res.manifest = manifest
+                        res.artifact_uri = f"{effective_store.uri}/experiments/{res.experiment_id}"
+                        pending_path.unlink(missing_ok=True)
+                    except Exception as err:
+                        _record_upload_failure(res, rescue_dir, effective_store.uri, meta, err)
+            elif self.config.remote_store_uri:
+                for res in results:
+                    if res.status != "upload_failed":
+                        continue
+                    rescue_dir = extract_dir / "rescue" / res.experiment_id
+                    if rescue_dir.is_dir():
+                        local_ws.preserve()
+                        res.scratch_dir = str(rescue_dir)
+                        res.artifact_uri = None
+                        retry_cmd = retry_upload_command(res.experiment_id, rescue_dir, self.config.remote_store_uri)
+                        print(
+                            f"[hp_sim5_sim] WARNING: Remote store upload failed for {res.experiment_id}.\n"
+                            f"[hp_sim5_sim] Preserved rescued local copy at: {rescue_dir}\n"
+                            f"[hp_sim5_sim] Retry upload with: {retry_cmd}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                        upload_errors.append(
+                            ArtifactUploadError(
+                                f"Remote store upload failed for {res.experiment_id}. Preserved rescued copy at {rescue_dir}.",
+                                experiment_id=res.experiment_id,
+                                scratch_dir=rescue_dir,
+                                store_uri=self.config.remote_store_uri,
+                                result=res,
+                            )
+                        )
+            elif effective_store is not None:
+                if hasattr(effective_store, "ensure_experiments_folder"):
+                    try:
+                        effective_store.ensure_experiments_folder()  # type: ignore[attr-defined]
+                    except Exception:
+                        pass
                 for res in results:
                     exp_dir = extract_dir / "store/experiments" / res.experiment_id
-                    if exp_dir.is_dir():
-                        meta = dict(res.manifest.get("metadata", {})) if res.manifest else {}
-                        meta.setdefault("kind", res.kind)
-                        meta.setdefault("status", res.status)
-                        meta.setdefault("backend", res.backend)
-                        manifest = store.put_directory(res.experiment_id, exp_dir, metadata=meta)
+                    if not exp_dir.is_dir():
+                        continue
+                    meta = dict(res.manifest.get("metadata", {})) if res.manifest else {}
+                    meta.setdefault("kind", res.kind)
+                    meta.setdefault("status", res.status)
+                    meta.setdefault("backend", res.backend)
+                    try:
+                        manifest = effective_store.put_directory(res.experiment_id, exp_dir, metadata=meta)
                         res.manifest = manifest
-                        res.artifact_uri = f"{store.uri}/experiments/{res.experiment_id}"
+                        res.artifact_uri = f"{effective_store.uri}/experiments/{res.experiment_id}"
+                    except Exception as err:
+                        _record_upload_failure(res, exp_dir, effective_store.uri, meta, err)
+
+            # Never return an artifact URI pointing to the terminated Colab VM's /content filesystem.
+            for res in results:
+                if res.artifact_uri and res.artifact_uri.startswith("local:///content/"):
+                    res.artifact_uri = None
+                if res.manifest and str(res.manifest.get("store_uri", "")).startswith("local:///content/"):
+                    res.manifest["store_uri"] = None
 
             if keep_scratch:
                 for res in results:
-                    exp_dir = extract_dir / "store/experiments" / res.experiment_id
-                    if exp_dir.is_dir():
-                        res.scratch_dir = str(exp_dir)
+                    if res.scratch_dir is not None:
+                        continue
+                    for candidate in (
+                        extract_dir / "store/experiments" / res.experiment_id,
+                        extract_dir / "rescue" / res.experiment_id,
+                    ):
+                        if candidate.is_dir():
+                            res.scratch_dir = str(candidate)
+                            break
+
+            if upload_errors:
+                raise upload_errors[0]
+            if shutdown_error is not None:
+                raise shutdown_error
 
             return results

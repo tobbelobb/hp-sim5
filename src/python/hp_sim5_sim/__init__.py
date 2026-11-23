@@ -21,22 +21,26 @@ from .interfaces import (
 )
 from .firmware import RrfFirmwareService, free_port
 from .storage import (
+    ArtifactUploadError,
     DriveMountArtifactStore,
     GoogleDriveArtifactStore,
     LocalArtifactStore,
     ScratchWorkspace,
+    default_adc_path,
     store_from_uri,
 )
 from .runner import LocalScheduler, run_experiment_spec
-from .colab import ColabConfig, ColabScheduler, ColabSession, resolve_colab_cli
+from .colab import ColabConfig, ColabScheduler, ColabSession, ColabShutdownError, resolve_colab_cli
 
 __all__ = [
     "ArtifactRecord",
     "ArtifactStore",
+    "ArtifactUploadError",
     "BatchedPhysicsBackend",
     "ColabConfig",
     "ColabScheduler",
     "ColabSession",
+    "ColabShutdownError",
     "DriveMountArtifactStore",
     "ExecutionScheduler",
     "ExperimentController",
@@ -53,6 +57,7 @@ __all__ = [
     "RrfFirmwareService",
     "ScratchWorkspace",
     "WorldStepRequest",
+    "default_adc_path",
     "free_port",
     "resolve_colab_cli",
     "run_experiment_spec",

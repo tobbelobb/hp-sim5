@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import shutil
 import stat
 import subprocess
 import sys
@@ -18,9 +19,11 @@ import pytest
 
 from hp_sim5_sim import (
     ArtifactStore,
+    ArtifactUploadError,
     ColabConfig,
     ColabScheduler,
     ColabSession,
+    ColabShutdownError,
     DriveMountArtifactStore,
     ExecutionScheduler,
     ExperimentResult,
@@ -41,6 +44,7 @@ from hp_sim5_sim.storage import (
     ArtifactIntegrityError,
     DriveAuthError,
     OAuthRefreshTokenProvider,
+    UPLOAD_PENDING_NAME,
     compute_file_digests,
 )
 
@@ -225,9 +229,9 @@ def _start_fake_drive_server(state: _FakeDriveState):
                     matches = []
                     for meta in state.files.values():
                         ok = True
-                        if f"'{meta['parents'][0]}' in parents" not in q:
+                        if " in parents" in q and f"'{meta['parents'][0]}' in parents" not in q:
                             ok = False
-                        if f"name = '{meta['name']}'" not in q:
+                        if "name = " in q and f"name = '{meta['name']}'" not in q:
                             ok = False
                         if "mimeType = " in q and f"mimeType = '{meta['mimeType']}'" not in q:
                             ok = False
@@ -305,6 +309,11 @@ def _start_fake_drive_server(state: _FakeDriveState):
                 fid = parsed.path.rsplit("/", 1)[1]
                 patch = json.loads(raw.decode("utf-8"))
                 with state.lock:
+                    if "appProperties" in patch:
+                        merged = dict(state.files[fid].get("appProperties") or {})
+                        merged.update(patch["appProperties"])
+                        state.files[fid]["appProperties"] = merged
+                        patch = {k: v for k, v in patch.items() if k != "appProperties"}
                     state.files[fid].update(patch)
                     rec = dict(state.files[fid])
                 self._send_json(200, rec)
@@ -669,6 +678,430 @@ elif cmd == "download":
     assert subcommands[0] == "new"
     assert subcommands[-1] == "stop"
     assert "upload" in subcommands and "exec" in subcommands and "download" in subcommands
+
+
+# ---------------------------------------------------------------------------
+# Review-fix regression tests: persistence, upload recovery, concurrency,
+# verified Colab shutdown, and direct Colab -> Google Drive upload
+# ---------------------------------------------------------------------------
+
+
+def _make_stub_colab(
+    tmp_path: Path,
+    *,
+    log_file: Path,
+    fake_remote: Path,
+    stop_mode: str = "ok",
+    direct_mode: str = "ok",
+) -> Path:
+    """Create an executable stub `colab` CLI for deterministic lifecycle tests."""
+    stub = tmp_path / f"fake_colab_{stop_mode}_{direct_mode}"
+    stub.write_text(
+        f"""#!{sys.executable}
+import json, shutil, sys, tarfile
+from pathlib import Path
+
+log_file = Path({str(log_file)!r})
+remote = Path({str(fake_remote)!r})
+stop_mode = {stop_mode!r}
+direct_mode = {direct_mode!r}
+argv = sys.argv[1:]
+with log_file.open("a") as fh:
+    fh.write(json.dumps(argv) + "\\n")
+
+config_path = None
+i = 0
+while i < len(argv) and argv[i].startswith("-"):
+    if argv[i] == "--config":
+        config_path = Path(argv[i + 1])
+        i += 2
+    else:
+        i += 1
+cmd = argv[i]
+rest = argv[i + 1:]
+
+if cmd == "new":
+    session_name = rest[rest.index("-s") + 1]
+    if config_path is not None:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(json.dumps({{"sessions": [session_name]}}))
+elif cmd == "upload":
+    local_p = Path(rest[2])
+    remote_name = Path(rest[3]).name
+    shutil.copy2(local_p, remote / remote_name)
+elif cmd == "exec":
+    script_path = Path(rest[rest.index("-f") + 1])
+    shutil.copy2(script_path, remote / script_path.name)
+    if script_path.name == "run_batch.py":
+        script_text = script_path.read_text()
+        specs = json.loads((remote / "hp_sim5_specs.json").read_text())
+        out_dir = remote / "out"
+        if out_dir.exists():
+            shutil.rmtree(out_dir)
+        out_dir.mkdir(parents=True)
+        results = []
+        is_direct = "direct_drive_cfg = {{" in script_text
+        for s in specs:
+            if is_direct and direct_mode == "ok":
+                results.append({{
+                    "experiment_id": s["experiment_id"], "kind": s["kind"], "status": "ok",
+                    "exit_code": 0, "backend": "colab-cpu-8c", "wall_s": 1.0, "metrics": {{}},
+                    "artifact_uri": f"gdrive://hp-sim5-artifacts/experiments/{{s['experiment_id']}}",
+                    "manifest": {{"metadata": {{"machine": s["machine"], "tags": s["tags"]}}}},
+                }})
+            elif is_direct and direct_mode == "rescue":
+                rdir = out_dir / "rescue" / s["experiment_id"]
+                rdir.mkdir(parents=True, exist_ok=True)
+                (rdir / "sweeps.json").write_text(json.dumps({{"rescued": s["experiment_id"]}}) + "\\n")
+                (rdir / "upload_pending.json").write_text(json.dumps({{
+                    "experiment_id": s["experiment_id"],
+                    "metadata": {{"kind": s["kind"], "machine": s["machine"], "tags": s["tags"], "status": "ok"}},
+                }}))
+                results.append({{
+                    "experiment_id": s["experiment_id"], "kind": s["kind"], "status": "upload_failed",
+                    "exit_code": 0, "backend": "colab-cpu-8c", "wall_s": 1.0,
+                    "metrics": {{"experiment_status": "ok", "upload_error": "simulated Drive 503 on Colab"}},
+                    "error": "Artifact upload failed: simulated Drive 503 on Colab",
+                }})
+            else:
+                exp_dir = out_dir / "store/experiments" / s["experiment_id"]
+                exp_dir.mkdir(parents=True, exist_ok=True)
+                (exp_dir / "sweeps.json").write_text(json.dumps({{"sweeps": [], "id": s["experiment_id"]}}) + "\\n")
+                # Intentionally emit a remote /content URI to verify ColabScheduler scrubs it.
+                results.append({{
+                    "experiment_id": s["experiment_id"], "kind": s["kind"], "status": "ok",
+                    "exit_code": 0, "backend": "colab-cpu-8c", "wall_s": 1.25, "metrics": {{}},
+                    "artifact_uri": f"local:///content/hp_sim5_stage_store/experiments/{{s['experiment_id']}}",
+                    "manifest": {{"store_uri": "local:///content/hp_sim5_stage_store", "metadata": {{"machine": s["machine"], "tags": s["tags"]}}}},
+                }})
+        (out_dir / "batch_summary.json").write_text(json.dumps({{"results": results}}))
+        with tarfile.open(remote / "hp_sim5_results.tar.gz", "w:gz") as tar:
+            for p in sorted(out_dir.rglob("*")):
+                if p.is_file():
+                    tar.add(p, arcname=p.relative_to(out_dir).as_posix())
+elif cmd == "download":
+    remote_name = Path(rest[2]).name
+    local_p = Path(rest[3])
+    shutil.copy2(remote / remote_name, local_p)
+elif cmd == "stop":
+    if stop_mode in ("fail_still_running", "fail_already_gone"):
+        print("simulated colab stop error", file=sys.stderr)
+        sys.exit(1)
+elif cmd == "sessions":
+    if stop_mode == "fail_still_running" and config_path and config_path.is_file():
+        data = json.loads(config_path.read_text())
+        for s in data.get("sessions", []):
+            print(s)
+    # fail_already_gone prints nothing (session already pruned)
+"""
+    )
+    stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
+    return stub
+
+
+def test_colab_defaults_to_persistent_local_store_and_never_returns_content_uri(tmp_path):
+    """Finding 1: Colab without --store must persist locally and never return a dead /content URI."""
+    log_file = tmp_path / "calls.jsonl"
+    fake_remote = tmp_path / "remote"
+    fake_remote.mkdir()
+    stub = _make_stub_colab(tmp_path, log_file=log_file, fake_remote=fake_remote)
+
+    default_store_dir = tmp_path / "default_experiments"
+    cfg = ColabConfig(
+        colab_bin=str(stub),
+        build_portable_native=False,
+        default_local_store_dir=default_store_dir,
+    )
+    scheduler = ColabScheduler(ROOT, config=cfg)
+    spec = ExperimentSpec(experiment_id="colab-default-1", kind="autocal", machine="hangprinter_3", solver="wasm")
+
+    # store=None, keep_scratch=False -> persisted in default_store_dir!
+    res = scheduler.run(spec, store=None, keep_scratch=False)
+    assert res.status == "ok"
+    assert res.artifact_uri is not None
+    assert "/content/" not in res.artifact_uri
+    assert str(default_store_dir.resolve()) in res.artifact_uri
+    default_store = LocalArtifactStore(default_store_dir)
+    assert default_store.exists("colab-default-1", "sweeps.json")
+
+    # store=None, keep_scratch=True -> scratch kept locally, artifact_uri is None (never /content/...)
+    spec2 = ExperimentSpec(experiment_id="colab-scratch-2", kind="autocal", machine="hangprinter_3", solver="wasm")
+    res2 = scheduler.run(spec2, store=None, keep_scratch=True)
+    assert res2.artifact_uri is None
+    assert res2.manifest is None or res2.manifest.get("store_uri") is None
+    assert res2.scratch_dir is not None and (Path(res2.scratch_dir) / "sweeps.json").is_file()
+
+
+def test_failed_upload_preserves_scratch_and_supports_cli_retry(tmp_path):
+    """Finding 2: Upload failures preserve scratch on both Local and Colab and can be retried via CLI."""
+
+    class FailingStore(LocalArtifactStore):
+        def put_directory(self, *args, **kwargs):
+            raise RuntimeError("simulated Drive 503 outage")
+
+    failing_store = FailingStore(tmp_path / "real_store")
+    scheduler = LocalScheduler(ROOT, scratch_base=tmp_path / "scratch")
+    spec = ExperimentSpec(
+        experiment_id="retry-local-1",
+        kind="command",
+        machine="hangprinter_4",
+        tags=["retry-test", "hp4"],
+        command=[
+            "{python}",
+            "-c",
+            "from pathlib import Path; (Path('{scratch}') / 'sweeps.json').write_text('{{\"ok\": true}}\\n')",
+        ],
+    )
+    with pytest.raises(ArtifactUploadError) as exc_info:
+        scheduler.run(spec, store=failing_store, keep_scratch=False)
+
+    err = exc_info.value
+    assert err.scratch_dir is not None
+    preserved = Path(err.scratch_dir)
+    assert preserved.is_dir()
+    assert (preserved / "sweeps.json").read_text() == '{"ok": true}\n'
+    assert (preserved / UPLOAD_PENDING_NAME).is_file()
+
+    # Retry upload via CLI to the healthy LocalArtifactStore at the same path.
+    store_uri = f"local://{tmp_path / 'real_store'}"
+    p = subprocess.run(
+        [sys.executable, "scripts/hp_sim5_run.py", "artifacts", "--store", store_uri, "push", "retry-local-1", str(preserved)],
+        cwd=ROOT, capture_output=True, text=True, check=True,
+    )
+    manifest = json.loads(p.stdout)
+    assert manifest["experiment_id"] == "retry-local-1"
+    assert not (preserved / UPLOAD_PENDING_NAME).exists()
+
+    healthy_store = LocalArtifactStore(tmp_path / "real_store")
+    assert healthy_store.exists("retry-local-1", "sweeps.json")
+    assert not healthy_store.exists("retry-local-1", UPLOAD_PENDING_NAME)
+    listed = healthy_store.list_experiments(tags=["retry-test"], kind="command")
+    assert len(listed) == 1 and listed[0]["machine"] == "hangprinter_4"
+
+    # Also verify ColabScheduler preserves downloaded artifacts when store.put_directory fails!
+    log_file = tmp_path / "colab_fail_calls.jsonl"
+    fake_remote = tmp_path / "colab_fail_remote"
+    fake_remote.mkdir()
+    stub = _make_stub_colab(tmp_path, log_file=log_file, fake_remote=fake_remote)
+    colab_sched = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub), build_portable_native=False))
+    colab_spec = ExperimentSpec(experiment_id="retry-colab-1", kind="autocal", machine="hangprinter_3", solver="wasm")
+    with pytest.raises(ArtifactUploadError) as colab_exc:
+        colab_sched.run(colab_spec, store=failing_store, keep_scratch=False)
+    colab_preserved = Path(colab_exc.value.scratch_dir or "")
+    assert (colab_preserved / "sweeps.json").is_file()
+    assert (colab_preserved / UPLOAD_PENDING_NAME).is_file()
+
+
+def test_parallel_index_updates_local_and_drive_no_lost_entries(tmp_path):
+    """Finding 3: Parallel uploads never overwrite each other's index entries (local & Drive)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    # 1. LocalArtifactStore: concurrent threads + concurrent subprocesses.
+    local_store = LocalArtifactStore(tmp_path / "concurrent_local")
+
+    def _push_local(idx: int) -> None:
+        d = tmp_path / f"lsrc_{idx}"
+        d.mkdir()
+        (d / "data.txt").write_text(f"payload-{idx}\n")
+        local_store.put_directory(f"local-exp-{idx:02d}", d, metadata={"kind": "autocal", "tags": ["par"]})
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(_push_local, range(12)))
+
+    procs = []
+    for idx in range(12, 18):
+        d = tmp_path / f"lsrc_{idx}"
+        d.mkdir()
+        (d / "data.txt").write_text(f"payload-{idx}\n")
+        procs.append(
+            subprocess.Popen(
+                [
+                    sys.executable,
+                    "scripts/hp_sim5_run.py",
+                    "artifacts",
+                    "--store",
+                    f"local://{local_store.root}",
+                    "push",
+                    f"local-exp-{idx:02d}",
+                    str(d),
+                    "--kind",
+                    "autocal",
+                    "--tag",
+                    "par",
+                ],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        )
+    for p in procs:
+        out, err = p.communicate(timeout=30)
+        assert p.returncode == 0, f"subprocess push failed: {out}\n{err}"
+
+    listed_local = local_store.list_experiments(tags=["par"], limit=100)
+    assert len(listed_local) == 18
+    assert {r["experiment_id"] for r in listed_local} == {f"local-exp-{i:02d}" for i in range(18)}
+
+    # 2. GoogleDriveArtifactStore: lock-free per-experiment folder appProperties (no shared index.json).
+    state = _FakeDriveState()
+    server, base = _start_fake_drive_server(state)
+    try:
+        drive_store = GoogleDriveArtifactStore(
+            root_folder="hp-sim5-par",
+            token_provider=lambda: "test-token",
+            api_base=f"{base}/drive/v3",
+            upload_base=f"{base}/upload/drive/v3",
+        )
+        drive_store.ensure_experiments_folder()
+
+        def _push_drive(idx: int) -> None:
+            d = tmp_path / f"dsrc_{idx}"
+            d.mkdir()
+            (d / "data.txt").write_text(f"drive-{idx}\n")
+            drive_store.put_directory(
+                f"drv-exp-{idx:02d}",
+                d,
+                metadata={"kind": "autocal", "machine": "hangprinter_3", "status": "ok", "tags": ["par-drive"]},
+            )
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(_push_drive, range(12)))
+
+        listed_drive = drive_store.list_experiments(tags=["par-drive"], limit=100)
+        assert len(listed_drive) == 12
+        assert {r["experiment_id"] for r in listed_drive} == {f"drv-exp-{i:02d}" for i in range(12)}
+        # Verify no shared index.json was written and only one `experiments` folder exists.
+        assert not any(f["name"] == "index.json" for f in state.files.values())
+        assert sum(1 for f in state.files.values() if f["name"] == "experiments") == 1
+    finally:
+        server.shutdown()
+
+
+def test_colab_session_stop_failure_preserves_config_and_raises(tmp_path):
+    """Finding 4: Failed `colab stop` raises ColabShutdownError, preserves sessions.json, and still persists results."""
+    # Case A: stop fails and session is still listed -> raises ColabShutdownError & preserves sessions.json.
+    log_a = tmp_path / "stop_fail_calls.jsonl"
+    remote_a = tmp_path / "stop_fail_remote"
+    remote_a.mkdir()
+    stub_fail = _make_stub_colab(tmp_path, log_file=log_a, fake_remote=remote_a, stop_mode="fail_still_running")
+
+    sess = ColabSession(ColabConfig(colab_bin=str(stub_fail), session_name="leaked-vm-1"))
+    sess.start()
+    cfg_path = sess.config_path
+    assert cfg_path.is_file()
+    with pytest.raises(ColabShutdownError) as exc_info:
+        sess.stop()
+    assert exc_info.value.session_name == "leaked-vm-1"
+    assert str(cfg_path) in exc_info.value.cleanup_command
+    assert cfg_path.is_file()  # sessions.json MUST survive stop failure!
+    shutil.rmtree(cfg_path.parent, ignore_errors=True)
+
+    # Case B: stop returns non-zero, but `colab sessions` confirms session is already gone -> clean exit.
+    log_b = tmp_path / "stop_gone_calls.jsonl"
+    remote_b = tmp_path / "stop_gone_remote"
+    remote_b.mkdir()
+    stub_gone = _make_stub_colab(tmp_path, log_file=log_b, fake_remote=remote_b, stop_mode="fail_already_gone")
+    sess_b = ColabSession(ColabConfig(colab_bin=str(stub_gone), session_name="pruned-vm-2"))
+    sess_b.start()
+    cfg_b = sess_b.config_path
+    sess_b.stop()
+    assert not cfg_b.exists()
+
+    # Case C: ColabScheduler persists downloaded artifacts BEFORE raising ColabShutdownError!
+    store = LocalArtifactStore(tmp_path / "saved_despite_stop_fail")
+    sched = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub_fail), build_portable_native=False))
+    spec = ExperimentSpec(experiment_id="keep-on-stop-err", kind="autocal", machine="hangprinter_3", solver="wasm")
+    with pytest.raises(ColabShutdownError) as sched_exc:
+        sched.run(spec, store=store)
+    assert store.exists("keep-on-stop-err", "sweeps.json")
+    assert Path(sched_exc.value.config_path).is_file()
+    shutil.rmtree(Path(sched_exc.value.config_path).parent, ignore_errors=True)
+
+
+def test_colab_direct_drive_upload_bypasses_local_and_rescues_failures(tmp_path):
+    """Finding 5: Colab + gdrive:// uploads directly from Colab -> Drive and rescues failed remote uploads."""
+    state = _FakeDriveState()
+    drive_srv, drive_base = _start_fake_drive_server(state)
+
+    class TokenHandler(BaseHTTPRequestHandler):
+        def log_message(self, *_args):
+            pass
+
+        def do_POST(self):
+            body = json.dumps({"access_token": "test-token", "expires_in": 3600}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    tok_srv = ThreadingHTTPServer(("127.0.0.1", 0), TokenHandler)
+    threading.Thread(target=tok_srv.serve_forever, daemon=True).start()
+    adc_path = tmp_path / "adc.json"
+    adc_path.write_text(json.dumps({
+        "type": "authorized_user",
+        "client_id": "cid",
+        "client_secret": "csec",
+        "refresh_token": "rtok",
+    }))
+
+    try:
+        store = GoogleDriveArtifactStore(
+            root_folder="hp-sim5-direct",
+            credentials_path=adc_path,
+            api_base=f"{drive_base}/drive/v3",
+            upload_base=f"{drive_base}/upload/drive/v3",
+        )
+        # Point ADC provider at our local test token server.
+        store._token_provider.token_url = f"http://127.0.0.1:{tok_srv.server_port}/token"  # type: ignore[attr-defined]
+
+        # 1. Happy path: direct upload succeeds on Colab -> credentials uploaded, no experiment files in results.tar.gz.
+        log_ok = tmp_path / "direct_ok.jsonl"
+        remote_ok = tmp_path / "remote_ok"
+        remote_ok.mkdir()
+        stub_ok = _make_stub_colab(tmp_path, log_file=log_ok, fake_remote=remote_ok, direct_mode="ok")
+        sched_ok = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub_ok), build_portable_native=False))
+        spec1 = ExperimentSpec(experiment_id="direct-1", kind="autocal", machine="hangprinter_3", solver="wasm")
+        res1 = sched_ok.run(spec1, store=store)
+        assert res1.status == "ok"
+        assert res1.artifact_uri == "gdrive://hp-sim5-artifacts/experiments/direct-1"
+        assert (remote_ok / ".hp_sim5_drive_creds.json").is_file()
+        run_batch_src = (remote_ok / "run_batch.py").read_text()
+        assert "experiments_folder_id" in run_batch_src
+        assert "'root_folder_id': None" in run_batch_src
+        with tarfile.open(remote_ok / "hp_sim5_results.tar.gz", "r:gz") as tar:
+            assert tar.getnames() == ["batch_summary.json"]
+
+        # 2. Rescue path: direct Drive upload fails on Colab -> rescued in results.tar.gz and retried locally!
+        log_r = tmp_path / "direct_rescue.jsonl"
+        remote_r = tmp_path / "remote_rescue"
+        remote_r.mkdir()
+        stub_r = _make_stub_colab(tmp_path, log_file=log_r, fake_remote=remote_r, direct_mode="rescue")
+        sched_r = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub_r), build_portable_native=False))
+        spec2 = ExperimentSpec(experiment_id="rescue-1", kind="autocal", machine="hangprinter_4", solver="wasm", tags=["rescued"])
+        res2 = sched_r.run(spec2, store=store)
+        assert res2.status == "ok"
+        assert res2.artifact_uri == "gdrive://hp-sim5-direct/experiments/rescue-1"
+        assert store.exists("rescue-1", "sweeps.json")
+
+        # 3. Fallback (--via-local / direct_drive_upload=False): credentials NOT uploaded to Colab.
+        log_fb = tmp_path / "direct_fb.jsonl"
+        remote_fb = tmp_path / "remote_fb"
+        remote_fb.mkdir()
+        stub_fb = _make_stub_colab(tmp_path, log_file=log_fb, fake_remote=remote_fb, direct_mode="ok")
+        sched_fb = ColabScheduler(
+            ROOT,
+            config=ColabConfig(colab_bin=str(stub_fb), build_portable_native=False, direct_drive_upload=False),
+        )
+        spec3 = ExperimentSpec(experiment_id="vialocal-1", kind="autocal", machine="hangprinter_3", solver="wasm")
+        res3 = sched_fb.run(spec3, store=store)
+        assert res3.status == "ok"
+        assert not (remote_fb / ".hp_sim5_drive_creds.json").exists()
+        assert store.exists("vialocal-1", "sweeps.json")
+    finally:
+        drive_srv.shutdown()
+        tok_srv.shutdown()
 
 
 @pytest.mark.slow

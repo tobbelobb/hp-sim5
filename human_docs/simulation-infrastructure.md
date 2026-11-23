@@ -19,12 +19,14 @@ Five decoupled layers live under [`src/python/hp_sim5_sim/`](../src/python/hp_si
 4. **Execution Scheduling** ([`runner.py`](../src/python/hp_sim5_sim/runner.py), [`colab.py`](../src/python/hp_sim5_sim/colab.py))
    - `ExecutionScheduler` protocol implemented by `LocalScheduler` (local parallel CPU pool) and `ColabScheduler` (remote Google Colab VMs via official `google-colab-cli`).
    - `ColabScheduler` bundles the workspace once (with optional portable `x86-64` `physics.node`), bootstraps minimal headless Node deps (`@kroxilon/usda-parser`, `ws`) and compiles `rrf_simulator` once on the VM, then executes all experiments in parallel **entirely inside the Colab VM** with zero per-G-code internet traffic.
+   - **Direct Colab → Google Drive uploads:** When `--backend colab` is paired with `--store gdrive://...`, `ColabScheduler` uploads artifacts directly from Colab to Google Drive (bypassing the local host/VPS) and only downloads a small `batch_summary.json` (plus any rescued failed uploads). Pass `--via-local` to force the VPS-mediated fallback path.
+   - **Safe persistence & verified shutdown:** Colab runs without `--store` or `--keep-scratch` automatically persist results to `local://output/experiments` (never returning ephemeral `/content/...` URIs). Any artifact upload failure preserves local scratch with `upload_pending.json` and prints an exact `artifacts push` retry command. Failed `colab stop` calls retry, verify with `colab sessions`, preserve `sessions.json`, and raise `ColabShutdownError` with the manual stop command (after persisting any already-downloaded results).
 5. **Artifact Storage** ([`storage.py`](../src/python/hp_sim5_sim/storage.py))
    - `ScratchWorkspace` guarantees active simulation, telemetry, and Rerun recording stay on fast local scratch storage.
    - `ArtifactStore` protocol implemented by:
-     - `LocalArtifactStore` (`local:///path/to/store`)
+     - `LocalArtifactStore` (`local:///path/to/store`) — serialized index updates (`threading.Lock` + `fcntl.flock`) safe for parallel threads and processes.
      - `DriveMountArtifactStore` (`drivemount:///content/drive/MyDrive/hp-sim5-artifacts`)
-     - `GoogleDriveArtifactStore` (`gdrive://hp-sim5-artifacts`) — pure-stdlib Google Drive REST API v3 with 8 MiB resumable chunked uploads, 308 resume-after-failure recovery, exponential backoff on 429/5xx, SHA-256/MD5 checksum verification, deduplication, and queryable experiment metadata.
+     - `GoogleDriveArtifactStore` (`gdrive://hp-sim5-artifacts`) — pure-stdlib Google Drive REST API v3 with 8 MiB resumable chunked uploads, 308 resume-after-failure recovery, exponential backoff on 429/5xx, SHA-256/MD5 checksum verification, deduplication, and lock-free per-experiment folder `appProperties` indexing (no concurrently overwritten shared `index.json`).
 
 ## Future GPU-Batching Design
 
@@ -51,7 +53,7 @@ Run a single autocal experiment locally and persist artifacts:
   --exp-args --max-steps 5 --sweep-points 10
 ```
 
-Run a parallel batch on a Google Colab high-RAM CPU VM (8 cores, 50 GiB RAM) and store artifacts:
+Run a parallel batch on a Google Colab high-RAM CPU VM (8 cores, 50 GiB RAM) with direct Colab → Google Drive uploads:
 
 ```bash
 .venv/bin/python scripts/hp_sim5_run.py batch experiments.json \
@@ -59,7 +61,9 @@ Run a parallel batch on a Google Colab high-RAM CPU VM (8 cores, 50 GiB RAM) and
   --store gdrive://hp-sim5-artifacts
 ```
 
-Manage stored artifacts (usable independently of Colab):
+(Pass `--via-local` to stage artifacts back through the local host instead of uploading directly from Colab.)
+
+Manage stored artifacts (usable independently of Colab, and for retrying any preserved `upload_pending.json` directory):
 
 ```bash
 .venv/bin/python scripts/hp_sim5_run.py artifacts --store gdrive://hp-sim5-artifacts list --tag nightly
