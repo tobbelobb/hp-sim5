@@ -69,9 +69,9 @@ Manage stored artifacts (usable independently of Colab):
 
 ## Google Drive Authentication
 
-`GoogleDriveArtifactStore` uses standard Google Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` or `~/.config/gcloud/application_default_credentials.json`) — the same ADC file used by `colab --auth=adc`.
+`GoogleDriveArtifactStore` uses standard Google Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` or `~/.config/gcloud/application_default_credentials.json`) — the same ADC file used by `colab --auth=adc`, with no `hp-sim5`-specific auth environment variables.
 
-Mint ADC with the `drive.file` scope (non-restricted, supported by the standard Google Cloud SDK OAuth client alongside Colab):
+1. Mint ADC with the `drive.file` scope (non-restricted, supported by the standard Google Cloud SDK OAuth client alongside Colab):
 
 ```bash
 gcloud auth application-default login --scopes=\
@@ -82,7 +82,16 @@ https://www.googleapis.com/auth/colaboratory,\
 https://www.googleapis.com/auth/drive.file
 ```
 
-Verify both Colab and Drive access with:
+2. Google Drive API requires ADC user credentials to have a quota project with `drive.googleapis.com` enabled. Configure it persistently using standard `gcloud` tooling:
+
+```bash
+gcloud config set project <PROJECT_ID>
+gcloud config set billing/quota_project <PROJECT_ID>
+gcloud auth application-default set-quota-project <PROJECT_ID>
+gcloud services enable drive.googleapis.com
+```
+
+3. Verify both Colab and Drive access with:
 
 ```bash
 .venv/bin/python scripts/hp_sim5_run.py doctor
