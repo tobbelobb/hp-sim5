@@ -485,6 +485,8 @@ def test_google_drive_store_chunked_resumable_retry_dedupe_and_verify(tmp_path, 
         monkeypatch.setenv("HP_SIM5_ARTIFACT_STORE", store.uri)
         assert hp_sim5_run.main(["artifacts", "find", "--local-only", "reduced", "PRELOAD"]) == 0
         assert [row["experiment_id"] for row in json.loads(capsys.readouterr().out)] == ["legacy-local"]
+        assert hp_sim5_run.main(["artifacts", "--store", "GDRIVE://fixture", "find", "--local-only"]) == 1
+        assert "conflicts with an explicit Drive store" in capsys.readouterr().err
 
         missing_store = GoogleDriveArtifactStore(
             root_folder="missing-folder", token_provider=lambda: "test-token", api_base=store.api_base,
@@ -765,18 +767,27 @@ def test_cli_retains_new_runs_with_provenance_and_allows_discard(tmp_path, monke
 
 
 @pytest.mark.parametrize("packaged", [False, True])
-def test_lookup_prefers_canonical_run_and_keeps_local_results_on_drive_error(tmp_path, monkeypatch, capsys, packaged):
+@pytest.mark.parametrize("symlinked", [False, True])
+def test_lookup_prefers_canonical_run_and_keeps_local_results_on_drive_error(
+    tmp_path, monkeypatch, capsys, packaged, symlinked,
+):
     from scripts import hp_sim5_run
 
     run_id = "a" * 32
-    shared = tmp_path / "output/experiments" / run_id
+    experiments = tmp_path / "output/experiments"
+    if symlinked:
+        target = tmp_path / "shared"
+        target.mkdir()
+        experiments.parent.mkdir()
+        experiments.symlink_to(target, target_is_directory=True)
+    shared = experiments.resolve() / run_id
     for base in (tmp_path / "output/legacy/session/experiments", tmp_path / "research/output/scratch/experiments",
                  shared.parent):
         directory = base / run_id
         directory.mkdir(parents=True)
         (directory / "manifest.json").write_text(json.dumps({"run_id": run_id, "commands_sha256": "hash"}))
     if packaged:
-        LocalArtifactStore(shared.parent.parent).put_directory(run_id, shared, metadata={"kind": "recorded_experiment"})
+        LocalArtifactStore(experiments.parent).put_directory(run_id, shared, metadata={"kind": "recorded_experiment"})
     monkeypatch.setattr(hp_sim5_run, "ROOT", tmp_path)
     monkeypatch.setattr(hp_sim5_run, "DEFAULT_LOCAL_STORE", tmp_path / "output")
     monkeypatch.setattr(hp_sim5_run, "default_adc_path", lambda: tmp_path / "broken-adc.json")

@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 from typing import Any
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src/python"))
@@ -167,7 +168,7 @@ def cmd_find(args: argparse.Namespace) -> int:
     seen_stores = {store.uri for store in stores}
     configured_store = args.store or (None if args.local_only else os.environ.get("HP_SIM5_ARTIFACT_STORE"))
     for uri in filter(None, [configured_store, *args.also_store]):
-        if args.local_only and uri.startswith(("gdrive:", "drivemount:")):
+        if args.local_only and urlparse(uri).scheme in ("gdrive", "drivemount"):
             raise ValueError("--local-only conflicts with an explicit Drive store")
         try:
             store = store_from_uri(uri)
@@ -204,6 +205,8 @@ def cmd_find(args: argparse.Namespace) -> int:
             error |= store is not implicit_drive
 
     roots = [ROOT / "output", ROOT / "research/output"]
+    if stores[0].experiments_dir.is_symlink():
+        roots.append(canonical)
     for path in args.path:
         if not path.is_dir():
             print(f"ERROR: Run tree not found: {path}", file=sys.stderr)
@@ -214,7 +217,7 @@ def cmd_find(args: argparse.Namespace) -> int:
         roots.append(Path(session_dir))
     # Scan loose runs in the same directory as packaged runs; skip packages already listed.
     skip = {
-        manifest.parent
+        manifest.parent.resolve()
         for store in stores if isinstance(store, LocalArtifactStore)
         for manifest in store.experiments_dir.glob(f"*/{MANIFEST_NAME}")
     }
