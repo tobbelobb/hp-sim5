@@ -2,7 +2,7 @@
 //! interface; the core has no browser, ECS, transport or JavaScript dependency.
 use super::*;
 
-pub const HEADER: usize = 11;
+pub const HEADER: usize = 9;
 pub const LINK: usize = 5;
 pub const SEGMENT: usize = 16;
 pub const OPTIONS: usize = 20;
@@ -2089,22 +2089,23 @@ impl PhysicsWorld {
             }
         }
     }
-    /// Viscoelastic / retained elongation hysteresis on cable paths with `data[9] > 0`.
+    /// Viscoelastic / retained elongation hysteresis when `options[11] > 0`.
     /// Active spans develop additional hysteretic strain toward `h * eps_el` on loading
     /// (`tau_load = 0.25 s`) and either retain it permanently (`tau_rec <= 0`) or recover
-    /// slowly with time constant `tau_rec = data[10]` on unloading, adjusting active rest
+    /// slowly with time constant `tau_rec = options[12]` on unloading, adjusting active rest
     /// lengths and `totalRestLength` without altering stored spool length.
     fn elongation_hysteresis(&mut self, dt: f64) {
-        if !(dt.is_finite() && dt > 0.0) {
+        let h = self.options[11];
+        if !(dt.is_finite() && dt > 0.0 && h.is_finite() && h > 0.0) {
             return;
         }
+        let tau_rec = self.options[12];
         const TAU_LOAD: f64 = 0.25;
         let mut joint_offset = 0usize;
         for c in &mut self.cables {
             let count = c.count();
-            let h = c.data[9];
             let cpl = c.data[3];
-            if h.is_finite() && h > 0.0 && cpl.is_finite() && cpl > 0.0 && joint_offset + count <= self.joints.len() {
+            if cpl.is_finite() && cpl > 0.0 && joint_offset + count <= self.joints.len() {
                 let mut stretch_sum = 0.0;
                 let mut rest_sum = 0.0;
                 for i in 0..count {
@@ -2126,7 +2127,6 @@ impl PhysicsWorld {
                     let delta_eps = if diff > 0.0 {
                         diff * (1.0 - (-dt / TAU_LOAD).exp())
                     } else if diff < 0.0 {
-                        let tau_rec = c.data[10];
                         if tau_rec.is_finite() && tau_rec > 0.0 {
                             diff * (1.0 - (-dt / tau_rec).exp())
                         } else {

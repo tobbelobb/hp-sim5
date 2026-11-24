@@ -332,10 +332,10 @@ fn cable_elongation_hysteresis_loads_retains_and_recovers() {
         let es = vec![fixed(0, [0.0, 0.0, 0.0], 0.0), mass(1, [0.0, -1.0, 0.0], 2.0)];
         let segs = [Seg { a: 0, b: 1, rest: 1.0, pa: [0.0, 0.0, 0.0], pb: [0.0, -1.0, 0.0] }];
         let links = [(ATTACHMENT, true, 0.0), (ATTACHMENT, true, 0.0)];
-        let mut p = path(&links, &segs, 20_000.0, 5.0, 2.0);
-        p[9] = hyst_frac;
-        p[10] = tau_rec;
+        let p = path(&links, &segs, 20_000.0, 5.0, 2.0);
         let mut w = world(es, vec![p]);
+        w.options[11] = hyst_frac;
+        w.options[12] = tau_rec;
         // Load under 2 kg * 9.81 N for 1.0 s
         for _ in 0..500 {
             w.step(0.002).unwrap();

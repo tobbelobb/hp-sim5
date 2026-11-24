@@ -7,7 +7,7 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 // components are views of persistent Rust records, including interactive edits.
 // See engine.rs `Row` for how the per-unit-length cable properties become
 // per-row XPBD compliance and damping.
-const E = 160, H = 11, L = 5, J = 16;
+const E = 160, H = 9, L = 5, J = 16;
 const kinds = ['attachment', 'rolling', 'pinhole', 'hybrid', 'hybrid-attachment'];
 const putV = (a, o, v) => { if (v) a.set([v.x, v.y, v.z], o); };
 const putQ = (a, o, q) => { if (q) a.set([q.x, q.y, q.z, q.w], o); };
@@ -135,7 +135,7 @@ export class RustPhysicsEngine {
       const data = new Float64Array(H + (n + 1) * L + n * J);
       const machine = get(id, ecs.MachineTagComponent)?.id ?? null;
       if (!machines.has(machine)) machines.set(machine, machines.size);
-      data.set([n, id, c.stiffnessPerUnitLength, c.compliancePerUnitLength, c.dampingPerUnitLength, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine), c.hysteresisFraction ?? 0, c.hysteresisRecoveryTime ?? 0]);
+      data.set([n, id, c.stiffnessPerUnitLength, c.compliancePerUnitLength, c.dampingPerUnitLength, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine)]);
       for (let li = 0; li <= n; li++) {
         const j = n ? get(c.jointEntities[li === n ? n - 1 : li], CableJointComponent) : null;
         const entity = j ? (li === n ? j.entityB : j.entityA) : null;
@@ -213,8 +213,6 @@ export class RustPhysicsEngine {
       path.stored = Array.from({ length: n + 1 }, (_, i) => data[o + H + i * L + 2]);
       this.pathShapes.push({ path, arrays: [path.jointEntities, path.linkTypes, path.cw, path.stored], count: n });
       for (const [i, key] of ['stiffnessPerUnitLength', 'compliancePerUnitLength', 'dampingPerUnitLength', 'solverIterations', 'cableHalfWidth', 'totalRestLength'].entries()) this.bind(path, key, o + i + 2, group);
-      this.bind(path, 'hysteresisFraction', o + 9, group);
-      this.bind(path, 'hysteresisRecoveryTime', o + 10, group);
       for (let li = 0; li <= n; li++) {
         this.bind(path.linkTypes, li, o + H + li * L, group, x => kinds[x], x => kinds.indexOf(x));
         this.bind(path.cw, li, o + H + li * L + 1, group, Boolean, Number);
@@ -271,10 +269,18 @@ export class RustPhysicsEngine {
     const flag = (key, fallback) => typeof world.getResource(key) === 'boolean' ? world.getResource(key) : fallback;
     const finite = (key, fallback) => Number.isFinite(world.getResource(key)) ? world.getResource(key) : fallback;
     putV(data, o, world.getResource('gravity') ?? { x: 0, y: 0, z: 0 });
+    let hystFrac = 0, hystRec = 0;
+    for (const shape of this.pathShapes ?? []) {
+      const f = shape.path.hysteresisFraction;
+      if (Number.isFinite(f) && f > hystFrac) {
+        hystFrac = f;
+        hystRec = Number.isFinite(shape.path.hysteresisRecoveryTime) ? Math.max(0, shape.path.hysteresisRecoveryTime) : 0;
+      }
+    }
     data.set([+flag('enableLayering', true), +flag('layeringAttachmentUpdatePoints', true),
       +flag('layeringClampJointRestLength', true), +flag('layeringMergeJoints', false), +flag('layeringSplitJoints', false),
       +flag('layeringHybridLinkStates', true), -1 /* reserved: a grabbed body stays dynamic */, world.nextEntityId,
-      0, 0 /* reserved ABI slots; motors derive their own stiffness */,
+      hystFrac, hystRec,
       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
     data[o + 15] = world.getResource('dt') ?? -1;

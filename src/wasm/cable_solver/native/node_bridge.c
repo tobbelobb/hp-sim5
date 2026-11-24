@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define PATH_HEADER 11
+#define PATH_HEADER 9
 #define PATH_LINK 5
 #define PATH_JOINT 16
 
