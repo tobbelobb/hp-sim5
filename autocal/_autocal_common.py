@@ -3379,6 +3379,13 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--fit-force-ripple", action=argparse.BooleanOptionalAction, default=False,
                         help="Try a sweep-validated periodic sensor-force correction in the HP3 home-offset point fit.")
+    parser.add_argument("--stretch-varpro", action=argparse.BooleanOptionalAction, default=True,
+                        help="Use guarded Variable Projection (VarPro) to jointly eliminate stretch compliance, "
+                             "ripple, hysteresis/creep, and friction nuisances in stretch-corrected point fits "
+                             "(default: enabled).")
+    parser.add_argument("--force-contrast", action=argparse.BooleanOptionalAction, default=False,
+                        help="Let the Schur-complement Ds-optimal planner schedule sweeps at both low and high "
+                             "sensor force levels to collapse the top-anchor height vs stretch-scale ridge.")
     parser.add_argument(
         "--r0-bounds",
         type=str,

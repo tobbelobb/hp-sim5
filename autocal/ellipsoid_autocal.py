@@ -139,23 +139,36 @@ def visits(dataset: dict) -> List[List[int]]:
 
 
 def fit(dataset: dict, starts: Sequence[np.ndarray], use_noise_mean: bool,
-        model: str = "ellipsoid") -> dict:
+        model: str = "ellipsoid", *, fit_stretch_varpro: bool = True,
+        varpro_allow_ripple: bool = True, varpro_fixed_ripple_period: Optional[int] = None) -> dict:
     """Best fit, with home offsets, over the given starts (lowest rms)."""
     options = dict(use_noise_mean=use_noise_mean, fit_home_offsets=True,
                    home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM)
     if model == "point":
-        return fit_pose_least_squares(dataset, starts[0], extra_initial_anchors=starts[1:], **options)
+        return fit_pose_least_squares(
+            dataset, starts[0], extra_initial_anchors=starts[1:],
+            fit_stretch_varpro=fit_stretch_varpro,
+            varpro_allow_ripple=varpro_allow_ripple,
+            varpro_fixed_ripple_period=varpro_fixed_ripple_period,
+            **options,
+        )
     return min((fit_ellipses(dataset, start, **options) for start in starts), key=lambda result: result["rms_mm"])
 
 
-def row_jackknife_mm(dataset: dict, anchors: np.ndarray, use_noise_mean, model="ellipsoid") -> Optional[float]:
+def row_jackknife_mm(dataset: dict, anchors: np.ndarray, use_noise_mean, model="ellipsoid",
+                     *, fit_stretch_varpro: bool = False, fixed_ripple_period: Optional[int] = None) -> Optional[float]:
     """Largest anchor coordinate shift when one row is left out."""
     if len(dataset["sweeps"]) < 3:
         return None
     shifts = []
     for index in range(len(dataset["sweeps"])):
         subset = dict(dataset, sweeps=[s for i, s in enumerate(dataset["sweeps"]) if i != index])
-        refit = fit(subset, [anchors], use_noise_mean, model)["anchors"]
+        refit = fit(
+            subset, [anchors], use_noise_mean, model,
+            fit_stretch_varpro=fit_stretch_varpro,
+            varpro_allow_ripple=False,
+            varpro_fixed_ripple_period=fixed_ripple_period,
+        )["anchors"]
         shifts.append(np.max(np.abs(refit - anchors)))
     return float(np.max(shifts))
 
@@ -174,6 +187,7 @@ def run_ellipsoid_autocal(
     stable_step_mm: float,
     stop_file: Path,
     model: str = "ellipsoid",
+    fit_stretch_varpro: bool = True,
 ) -> Optional[dict]:
     """Collect and fit ellipsoids until the anchors are stable. Returns the accepted plan and summary."""
     from autocal._autocal_common import _inject_force_args, _merge_sweep_datasets
@@ -251,10 +265,15 @@ def run_ellipsoid_autocal(
         # The blind seed underestimates the anchor distances; on HP5 its own scale can
         # settle in a far minimum, so larger copies start too and the lowest rms wins.
         result = fit(dataset, [seed * scale for scale in SEED_SCALES] + history[-1:], use_noise_mean,
-                     model)
+                     model, fit_stretch_varpro=fit_stretch_varpro)
         step = float(np.max(np.abs(result["anchors"] - history[-1]))) if history else None
         history.append(result["anchors"])
-        uncertainty = row_jackknife_mm(dataset, result["anchors"], use_noise_mean, model)
+        varpro = result.get("varpro") if isinstance(result, dict) else None
+        uncertainty = row_jackknife_mm(
+            dataset, result["anchors"], use_noise_mean, model,
+            fit_stretch_varpro=bool(varpro is not None),
+            fixed_ripple_period=(varpro.get("ripple_period") if isinstance(varpro, dict) else None),
+        )
         lengths = sorted({round(mesh_metadata(s)["held_length_mm"], 1) for s in dataset["sweeps"]})
         log_console(f"; ellipsoid {index + 1}: {len(dataset['sweeps'])} rows, held lengths {lengths} mm, "
                     f"{model} fit rms {result['rms_mm']:.3f} mm, step "

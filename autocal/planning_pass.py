@@ -3,17 +3,50 @@ from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.fit_stage import fit_ellipse_dataset
-from autocal.equal_strain import InfeasibleForceProfileError, is_equal_strain, write_sensor_force_profile, profile_policy_error
+from autocal.equal_strain import (
+    InfeasibleForceProfileError,
+    effective_strand_tension_scale,
+    force_planning_parameters,
+    is_equal_strain,
+    profile_policy_error,
+    write_sensor_force_profile,
+)
 from autocal.pose_fit import dataset_line_lengths, has_extra_sensor_data, dataset_stretch, has_spare_winches
-from autocal.pose_planning import rank_candidates_pose_information
+from autocal.pose_planning import rank_candidates_force_aware, rank_candidates_pose_information
 from autocal.workspace import exploration_grid
 
 _PLANNING_ONLY = (
     "candidate_deltas", "candidate_count", "delta_min", "delta_max",
     "exclude_existing", "existing_tol_mm", "min_fixed_delta_spacing_mm",
-    "top_k", "write_cfg", "collector_output", "equal_strain",
+    "top_k", "write_cfg", "collector_output", "equal_strain", "force_contrast",
 )
 _PLANNING_OPTIONS = _PLANNING_ONLY + ("fd_eps_mm", "regularization", "collector_args")
+_FORCE_CONTRAST_SCALES = (1.0, 2.0)
+_SENSOR_FORCE_FLAGS = (
+    "--sensor-force",
+    "--force-sensor",
+    "--sensorForce",
+    "--sensor-collection-force",
+    "--sensorCollectionForce",
+)
+
+
+def _strip_cli_option(args: Sequence[str], option_names: Sequence[str]) -> List[str]:
+    """Remove matching CLI flags along with their separate value tokens (or `--flag=value` forms)."""
+    names = tuple(option_names)
+    cleaned: List[str] = []
+    idx = 0
+    while idx < len(args):
+        token = str(args[idx])
+        if token in names:
+            idx += 2
+            continue
+        if any(token.startswith(name + "=") for name in names):
+            idx += 1
+            continue
+        cleaned.append(args[idx])
+        idx += 1
+    return cleaned
 
 
 def plan_ellipse_sweep(
@@ -32,6 +65,7 @@ def plan_ellipse_sweep(
     collector_output: Optional[Path] = None,
     collector_args: Sequence[str] = (),
     equal_strain: bool = True,
+    force_contrast: bool = False,
 ) -> Dict[str, object]:
     """Plan from a frozen fit; no optimizer or measurement collection is run."""
     dataset = fit["dataset"]
@@ -102,27 +136,100 @@ def plan_ellipse_sweep(
     needs_profile = (is_equal_strain(dataset) and spool_params is None
                      and machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced"))
 
+    collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
+    chosen_force_scale = 1.0
+    ranked_with_force: Optional[List[Tuple[float, SweepConfig, float]]] = None
+    const_base_force: Optional[float] = None
+    const_max_force = float("inf")
+    if isinstance(force_tuning, dict) and force_tuning.get("force_mid_n") is not None:
+        raw_mid = float(force_tuning["force_mid_n"])
+        if np.isfinite(raw_mid) and raw_mid > 0.0:
+            raw_max = force_tuning.get("force_max_n")
+            if isinstance(raw_max, (int, float)) and np.isfinite(raw_max) and float(raw_max) > 0.0:
+                const_max_force = float(raw_max)
+            const_base_force = min(const_max_force, 5.0 * raw_mid)
+
     if machine_type.startswith("hangprinter_"):
         # Point-fit information. With a fitted spool model, candidates are placed by
         # their modelled lengths but keep their commanded ones.
         estimation_dataset = fit["dataset_for_estimation"]
         placed = candidates if spool_params is None else sweep_configs_with_modeled_lengths(candidates, spool_params)
         commanded = {id(model): cfg for cfg, model in zip(candidates, placed)}
-        ranked = rank_candidates_pose_information(
-            anchors,
-            machine_type=machine_type,
-            observed_lengths_mm=dataset_line_lengths(estimation_dataset)["lengths_mm"],
-            candidates=placed,
-            points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
-            sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
-            regularization=float(regularization),
-            # Keep the complete ordering until a force-feasible candidate is
-            # found; the highest-information band may all be infeasible.
-            top_k=len(candidates) if needs_profile else int(top_k),
-            measure_extra_ranges=has_extra_sensor_data(dataset),
-            observed_stretch=dataset_stretch(estimation_dataset),
-        )
-        ranked = [(score, commanded[id(cfg)]) for score, cfg in ranked]
+        obs_stretch = dataset_stretch(estimation_dataset)
+        if force_contrast and obs_stretch is None:
+            from autocal.stretch_varpro import dataset_stretch_basis
+            obs_stretch = dataset_stretch_basis(estimation_dataset)
+        if force_contrast:
+            effective_scale_fn = None
+            cand_scales: Sequence[float] = _FORCE_CONTRAST_SCALES
+            plan_base_sensor_force: Optional[float | np.ndarray] = None
+            plan_base_extra_force: Optional[float] = None
+            plan_max_extra_force: Optional[float] = None
+            measure_extra = has_extra_sensor_data(dataset)
+            if needs_profile:
+                prof_params = force_planning_parameters(dataset, allow_force_contrast=True)
+                if prof_params is not None:
+                    plan_base_sensor_force = float(prof_params["strand_tension_n"]) * np.asarray(prof_params["strands"], dtype=float)
+                    plan_base_extra_force = prof_params.get("extra_sensor_force_n")
+                    raw_max = (force_tuning or {}).get("force_max_n")
+                    if isinstance(raw_max, (int, float)) and np.isfinite(raw_max) and float(raw_max) > 0.0:
+                        plan_max_extra_force = float(raw_max)
+                def _profile_effective_scale(cfg_placed: SweepConfig, req_scale: float) -> Optional[float]:
+                    return effective_strand_tension_scale(
+                        dataset, anchors, commanded[id(cfg_placed)], req_scale, allow_force_contrast=True,
+                    )
+                effective_scale_fn = _profile_effective_scale
+            elif const_base_force is None:
+                # Without usable force_mid_n we cannot override the constant sensor force, so only
+                # score the nominal 1.0x action rather than an unexecutable high-force candidate.
+                cand_scales = (1.0,)
+            else:
+                plan_base_sensor_force = const_base_force
+                plan_base_extra_force = const_base_force if measure_extra else None
+                plan_max_extra_force = const_max_force if np.isfinite(const_max_force) else None
+                def _const_effective_scale(_cfg_placed: SweepConfig, req_scale: float) -> Optional[float]:
+                    target_f = min(const_max_force, const_base_force * float(req_scale))
+                    eff = target_f / const_base_force
+                    return eff if np.isfinite(eff) and eff > 0.0 else None
+                effective_scale_fn = _const_effective_scale
+
+            ranked_raw = rank_candidates_force_aware(
+                anchors,
+                machine_type=machine_type,
+                observed_lengths_mm=dataset_line_lengths(estimation_dataset)["lengths_mm"],
+                candidates=placed,
+                points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
+                sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
+                regularization=float(regularization),
+                top_k=int(top_k),
+                measure_extra_ranges=measure_extra,
+                observed_stretch=obs_stretch,
+                candidate_force_scales=cand_scales,
+                base_sensor_force_n=plan_base_sensor_force,
+                base_extra_force_n=plan_base_extra_force,
+                max_extra_force_n=plan_max_extra_force,
+                effective_scale_fn=effective_scale_fn,
+            )
+            ranked_with_force = [(score, commanded[id(cfg)], scale) for score, cfg, scale in ranked_raw]
+            ranked = [(score, cfg) for score, cfg, _ in ranked_with_force]
+            if ranked_with_force:
+                chosen_force_scale = float(ranked_with_force[0][2])
+        else:
+            ranked = rank_candidates_pose_information(
+                anchors,
+                machine_type=machine_type,
+                observed_lengths_mm=dataset_line_lengths(estimation_dataset)["lengths_mm"],
+                candidates=placed,
+                points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
+                sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
+                regularization=float(regularization),
+                # Keep the complete ordering until a force-feasible candidate is
+                # found; the highest-information band may all be infeasible.
+                top_k=len(candidates) if needs_profile else int(top_k),
+                measure_extra_ranges=has_extra_sensor_data(dataset),
+                observed_stretch=obs_stretch,
+            )
+            ranked = [(score, commanded[id(cfg)]) for score, cfg in ranked]
     elif spool_params is not None:
         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
         id_map = {id(cfg_model): cfg_base for cfg_base, cfg_model in zip(candidates, candidates_model)}
@@ -182,7 +289,6 @@ def plan_ellipse_sweep(
         collection_fallback = True
     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
 
-    collector_args_eff, force_tuning, force_args_applied = _inject_force_args(dataset, collector_args)
     if has_spare_winches(dataset) and not has_extra_sensor_data(dataset) and not needs_profile and "--no-extra-sensors" not in collector_args_eff:
         collector_args_eff.append("--no-extra-sensors")
     collector_args_eff, _ = _inject_spool_collection_args(
@@ -204,7 +310,9 @@ def plan_ellipse_sweep(
     if best_cfg is not None:
         if needs_profile:
             profile_path = cfg_path.with_suffix(".sensor_force_profile.json")
-            if error := profile_policy_error(dataset):
+            error = (profile_policy_error(dataset, allow_force_contrast=True)
+                     if force_contrast else profile_policy_error(dataset))
+            if error:
                 collection_error = error
             elif not equal_strain:
                 collection_error = "Cannot append constant-force measurements to profiled data; use a fresh dataset for --no-equal-strain"
@@ -212,17 +320,35 @@ def plan_ellipse_sweep(
                 # Information gain alone does not establish force feasibility,
                 # especially with the redundant line now carrying a measured load.
                 best_cfg = None
-                for index, (score, cfg) in enumerate(ranked):
+                iter_ranked = ranked_with_force if ranked_with_force is not None else [(s, c, 1.0) for s, c in ranked]
+                for index, (score, cfg, f_scale) in enumerate(iter_ranked):
                     try:
-                        written = write_sensor_force_profile(profile_path, dataset, anchors, [cfg])
+                        written = (
+                            write_sensor_force_profile(
+                                profile_path, dataset, anchors, [cfg],
+                                strand_tension_scale=f_scale, allow_force_contrast=True,
+                            )
+                            if force_contrast else
+                            write_sensor_force_profile(profile_path, dataset, anchors, [cfg])
+                        )
                     except InfeasibleForceProfileError:
                         continue
                     if not written:
                         collection_error = "Cannot continue profiled collection without M666 W/N/Y/U and tuned forces"
                         break
                     best_cfg = cfg
-                    ranked = ranked[index:index + int(top_k)]
+                    chosen_force_scale = float(f_scale)
+                    ranked = [(s, c) for s, c, _ in iter_ranked[index:index + int(top_k)]]
                     break
+        elif force_contrast and abs(chosen_force_scale - 1.0) > 1e-6:
+            # Constant-force sweep with force contrast: scale the collector's sensor force safely.
+            if const_base_force is not None:
+                target_f = min(const_max_force, const_base_force * chosen_force_scale)
+                chosen_force_scale = float(target_f / const_base_force)
+                collector_args_eff = _strip_cli_option(collector_args_eff, _SENSOR_FORCE_FLAGS)
+                collector_args_eff.extend(["--sensor-force", f"{target_f:.4f}"])
+            else:
+                chosen_force_scale = 1.0
         if best_cfg is not None and collection_error is None:
             if profile_path is not None:
                 collector_args_eff.extend(["--sensor-force-profile", str(profile_path)])
@@ -235,6 +361,7 @@ def plan_ellipse_sweep(
             )
 
     return {**fit, "ranked": ranked, "best_cfg": best_cfg, "cfg_path": cfg_path,
+            "chosen_force_scale": chosen_force_scale,
             "collection_fallback": collection_fallback,
             "collect_command": cmd, "force_tuning": force_tuning,
             "collection_error": collection_error,
@@ -280,8 +407,10 @@ def plan_next_ellipse_sweep(
     collector_args: Sequence[str],
     fit_home_offsets: bool = True,
     fit_force_ripple: bool = False,
+    fit_stretch_varpro: bool = True,
     ellipse_reference_fit: bool = False,
     equal_strain: bool = True,
+    force_contrast: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
     stage_artifact: Optional[Path] = None,

@@ -53,6 +53,7 @@ def fit_ellipse_dataset(
     collector_args: Sequence[str],
     fit_home_offsets: bool = True,
     fit_force_ripple: bool = False,
+    fit_stretch_varpro: bool = True,
     ellipse_reference_fit: bool = False,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -148,6 +149,7 @@ def fit_ellipse_dataset(
     spool_params: Optional[SpoolModelParams] = None
     home_offsets_mm = np.zeros(int(num_anchors))
     force_ripple = None
+    stretch_varpro = None
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
     _annotate_dataset_noise_model(
@@ -373,20 +375,30 @@ def fit_ellipse_dataset(
                 fit_home_offsets=True,
                 home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
                 use_noise_mean=bool(use_noise_mean),
+                fit_stretch_varpro=bool(fit_stretch_varpro and point_model and not ellipse_reference_fit),
             )
             if not offset_fit["success"]:
                 raise ValueError("Home-offset fit did not converge: " + str(offset_fit["message"]))
             home_offsets_mm = offset_fit["home_offsets_mm"]
+            stretch_varpro = offset_fit.get("varpro")
             dataset_for_estimation = shift_dataset_home_offsets(dataset, home_offsets_mm)
         sweep_configs_for_info = dataset_sweep_configs(dataset_for_estimation)
         if point_model:
-            primary_pose_fit = fit_pose_least_squares(
-                dataset_for_estimation,
-                offset_fit["anchors"] if fit_home_offsets else anchor_initial_guess,
-                fit_home_offsets=False, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM, use_noise_mean=bool(use_noise_mean),
-            )
-            if not primary_pose_fit["success"]:
-                raise ValueError("Point fit did not converge: " + primary_pose_fit["message"])
+            if fit_home_offsets and stretch_varpro is not None:
+                primary_pose_fit = offset_fit
+            else:
+                primary_pose_fit = fit_pose_least_squares(
+                    dataset_for_estimation,
+                    offset_fit["anchors"] if fit_home_offsets else anchor_initial_guess,
+                    fit_home_offsets=False,
+                    home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+                    use_noise_mean=bool(use_noise_mean),
+                    fit_stretch_varpro=bool(fit_stretch_varpro and not ellipse_reference_fit),
+                )
+                if not primary_pose_fit["success"]:
+                    raise ValueError("Point fit did not converge: " + primary_pose_fit["message"])
+                if primary_pose_fit.get("varpro") is not None:
+                    stretch_varpro = primary_pose_fit["varpro"]
             if (fit_force_ripple and fit_home_offsets and not ellipse_reference_fit
                     and not offset_fit.get("home_offsets_skipped")):
                 correction = _refit_force_ripple(dataset, primary_pose_fit, home_offsets_mm, bool(use_noise_mean))
@@ -575,6 +587,7 @@ def fit_ellipse_dataset(
                       else "ellipse"),
         "home_offsets_mm": home_offsets_mm,
         "force_ripple": force_ripple,
+        "stretch_varpro": stretch_varpro,
         "home_offsets_fitted": bool(fit_home_offsets),
         "use_noise_mean": bool(use_noise_mean),
     }

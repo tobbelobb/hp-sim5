@@ -24,7 +24,8 @@ _RESEARCH = {
         "trf_solver_fallback", "sparse_recovery",
     },
     "Research: spool model and objectives": {
-        "sigma_floor_mm", "fit_home_offsets", "fit_force_ripple", "equal_strain", "r0_prior_sigma_mm", "b_prior_sigma",
+        "sigma_floor_mm", "fit_home_offsets", "fit_force_ripple", "stretch_varpro", "equal_strain", "force_contrast",
+        "r0_prior_sigma_mm", "b_prior_sigma",
         "spool_outer_iters", "theta0_mode", "filter_schedule",
         "objective_schedule",
     },
