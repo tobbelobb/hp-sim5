@@ -175,3 +175,53 @@ def test_failed_benchmark_retains_available_diagnostics(tmp_path, monkeypatch):
         benchmark.run_benchmark(tmp_path, machine)
     assert history.read_results(output / f'{machine}.jsonl')[0]['status'] == 'timeout'
     assert {path.name for path in (output / 'diagnostics').rglob('*') if path.is_file()} == set(files)
+
+
+def test_impaired_benchmark_scenarios_prepare_fingerprint_and_score(tmp_path):
+    from autocal.tools.autocal_benchmark import benchmark_metrics
+    from autocal.tools.imperfect_machine import convention_frame
+
+    # Nominal machine returns (machine, None, None) and keeps distinct fingerprint from scenarios.
+    assert history.prepare_benchmark_scene('hangprinter_3', tmp_path / 'nom') == ('hangprinter_3', None, None)
+    head = history.git('rev-parse', 'HEAD')
+    fp_nom = history.fingerprint(head, 'hangprinter_3')
+    fp_hp3_imp = history.fingerprint(head, 'hangprinter_3_hyst_stickslip')
+    fp_hp5r_imp = history.fingerprint(head, 'hangprinter_5_pulley_reduced_hyst_stickslip')
+    assert fp_hp3_imp != fp_nom
+    assert fp_hp5r_imp != history.fingerprint(head, 'hangprinter_5_pulley_reduced')
+
+    for scenario, expect_bearing in [
+        ('hangprinter_3_hyst_stickslip', False),
+        ('hangprinter_5_pulley_reduced_hyst_stickslip', True),
+    ]:
+        base, scene_path, truth = history.prepare_benchmark_scene(scenario, tmp_path / scenario)
+        assert base == history.BENCHMARK_SCENARIOS[scenario]['base_machine']
+        assert scene_path is not None and scene_path.is_file()
+        txt = scene_path.read_text()
+        assert 'cablePath:hysteresisFraction = 0.35' in txt
+        assert 'cablePath:hysteresisRecoveryTime = 90' in txt
+        assert 'stepper:stictionTorque' in txt
+        assert 'stepper:stictionSpeed = 0.25' in txt
+        if expect_bearing:
+            assert 'bearing:frictionTorque = 0.002' in txt
+        assert len(truth) == (4 if base == 'hangprinter_3' else 5)
+
+    # Verify benchmark_metrics scores shifted-top-anchor fits in the print convention frame.
+    _, _, truth = history.prepare_benchmark_scene('hangprinter_3_hyst_stickslip', tmp_path / 'score_case')
+    truth_arr = [truth[k] for k in ('A', 'B', 'C', 'D')]
+    truth_frame, _ = convention_frame(truth_arr)
+    fitted_frame = truth_frame.copy()
+    fitted_frame[3, 2] += 0.75
+    m669_init = 'M669 A0:-1900:-280 B1645.45:950:-280 C-1645.45:950:-280 D0:0:1900'
+    m669_final = 'M669 ' + ' '.join(f'{k}{v[0]:.4f}:{v[1]:.4f}:{v[2]:.4f}' for k, v in zip('ABCD', fitted_frame))
+    ds_path = tmp_path / 'score_case' / 'sweeps.json'
+    ds_path.write_text(json.dumps({'machine_type': 'hangprinter_3', 'num_anchors': 4, 'dimensions': 3, 'sweeps': []}))
+    headless = ds_path.with_suffix('.headless')
+    headless.mkdir()
+    (headless / 'manifest.json').write_text(json.dumps({
+        'simulated_s': 1234.0, 'wall_s': 100.0, 'stop_reason': 'stable-estimate',
+        'firmware_initial': {'M669': m669_init}, 'firmware_final': {'M669': m669_final},
+    }))
+    ds_path.with_suffix('.full_auto_log.jsonl').write_text('')
+    metrics = benchmark_metrics(ds_path, history.ROOT, truth_mm=truth)
+    assert metrics['accuracy_mm'] == pytest.approx(0.75, abs=1e-3)

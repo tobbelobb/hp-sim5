@@ -94,9 +94,8 @@ pub fn path(links: &[(f64, bool, f64)], segs: &[Seg], stiffness: f64, damping: f
     assert_eq!(links.len(), n + 1);
     let mut d = vec![0.0; HEADER + (n + 1) * LINK + n * SEGMENT];
     let total: f64 = segs.iter().map(|s| s.rest).sum::<f64>() + links.iter().map(|l| l.2).sum::<f64>();
-    d[..16].copy_from_slice(&[
-        n as f64, 1000.0, stiffness, 1.0 / stiffness, damping, iterations, 0.0, total, 0.0, -1.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
+    d[..9].copy_from_slice(&[
+        n as f64, 1000.0, stiffness, 1.0 / stiffness, damping, iterations, 0.0, total, 0.0,
     ]);
     for (i, &(kind, cw, stored)) in links.iter().enumerate() {
         let o = HEADER + i * LINK;

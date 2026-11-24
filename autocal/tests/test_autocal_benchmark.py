@@ -10,7 +10,9 @@ import pytest
 
 from autocal.pose_fit import dataset_line_lengths, dataset_stretch
 from autocal.tools.autocal_benchmark import benchmark_metrics
-from autocal.tools.benchmark_history import ROOT, dependency_environment, git, measurement, results_text, run_autocal
+from autocal.tools.benchmark_history import (
+    ROOT, dependency_environment, git, measurement, prepare_benchmark_scene, results_text, run_autocal,
+)
 
 
 def verify_extra_sensor_run(dataset):
@@ -56,10 +58,13 @@ def run_benchmark(tmp_path, machine, verify=verify_applied_calibration):
     log = output / f'{machine}-{row["measurement_id"].replace(":", "-")}.log'
     try:
         row['environment'] = dependency_environment((ROOT / 'node_modules').resolve())
-        result = run_autocal(machine, dataset, ROOT, log, timeout_s=55 * 60)
+        base, scene, truth_mm = prepare_benchmark_scene(machine, dataset.parent, ROOT)
+        result = (run_autocal(base, dataset, ROOT, log, timeout_s=55 * 60, scene=scene)
+                  if scene is not None else run_autocal(base, dataset, ROOT, log, timeout_s=55 * 60))
         assert result == 0, log.read_text(errors='replace')[-4000:]
         verify(dataset)
-        row.update(benchmark_metrics(dataset, ROOT), status='ok')
+        metrics = benchmark_metrics(dataset, ROOT, truth_mm=truth_mm) if truth_mm is not None else benchmark_metrics(dataset, ROOT)
+        row.update(metrics, status='ok')
     except Exception as error:
         status = 'timeout' if isinstance(error, subprocess.TimeoutExpired) else 'failed'
         details = log.read_text(errors='replace')[-4000:] if log.exists() else ''
@@ -103,3 +108,15 @@ def test_benchmark_hangprinter_5(tmp_path):
 @pytest.mark.heavy
 def test_benchmark_hangprinter_5_pulley_reduced(tmp_path):
     run_benchmark(tmp_path, 'hangprinter_5_pulley_reduced', verify_extra_sensor_run)
+
+
+@pytest.mark.slow
+@pytest.mark.heavy
+def test_benchmark_hangprinter_3_hyst_stickslip(tmp_path):
+    run_benchmark(tmp_path, 'hangprinter_3_hyst_stickslip')
+
+
+@pytest.mark.slow
+@pytest.mark.heavy
+def test_benchmark_hangprinter_5_pulley_reduced_hyst_stickslip(tmp_path):
+    run_benchmark(tmp_path, 'hangprinter_5_pulley_reduced_hyst_stickslip', verify_extra_sensor_run)

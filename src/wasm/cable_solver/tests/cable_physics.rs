@@ -324,6 +324,42 @@ fn vanishing_span_is_stable() {
     assert!(y(&w, 1) <= 1e-3 && (after - before).abs() < 1e-9);
 }
 
+/// Cable elongation hysteresis stretches rest length under tension, retains it when
+/// unloaded with `tau_rec == 0`, and slowly recovers when `tau_rec > 0`.
+#[test]
+fn cable_elongation_hysteresis_loads_retains_and_recovers() {
+    let run = |hyst_frac: f64, tau_rec: f64| -> (f64, f64) {
+        let es = vec![fixed(0, [0.0, 0.0, 0.0], 0.0), mass(1, [0.0, -1.0, 0.0], 2.0)];
+        let segs = [Seg { a: 0, b: 1, rest: 1.0, pa: [0.0, 0.0, 0.0], pb: [0.0, -1.0, 0.0] }];
+        let links = [(ATTACHMENT, true, 0.0), (ATTACHMENT, true, 0.0)];
+        let p = path(&links, &segs, 20_000.0, 5.0, 2.0);
+        let mut w = world(es, vec![p]);
+        w.options[11] = hyst_frac;
+        w.options[12] = tau_rec;
+        // Load under 2 kg * 9.81 N for 1.0 s
+        for _ in 0..500 {
+            w.step(0.002).unwrap();
+        }
+        let after_load = rest(&mut w, 0, 0);
+        // Unload by zeroing gravity for 1.0 s
+        w.options[1] = 0.0;
+        for _ in 0..500 {
+            w.step(0.002).unwrap();
+        }
+        let after_unload = rest(&mut w, 0, 0);
+        (after_load - 1.0, after_unload - 1.0)
+    };
+    let (el_load, el_unload) = run(0.0, 0.0);
+    assert!(el_load.abs() < 1e-12 && el_unload.abs() < 1e-12, "zero hysteresis must not alter rest length");
+    let (perm_load, perm_unload) = run(0.35, 0.0);
+    assert!(perm_load > 2.5e-4, "expected >0.25 mm hysteretic loading stretch, got {perm_load}");
+    assert!((perm_unload - perm_load).abs() < 1e-6, "permanent hysteresis should retain elongation when unloaded");
+    let (cyc_load, cyc_unload) = run(0.35, 10.0);
+    assert!(cyc_load > 2.5e-4);
+    assert!(cyc_unload < cyc_load * 0.95 && cyc_unload > cyc_load * 0.70,
+            "viscoelastic recovery should relax partially over 1 s (tau=10 s): load={cyc_load}, unload={cyc_unload}");
+}
+
 /// Replays prepared records dumped from a production world (HP_SIM5_REPLAY
 /// directory of regionN.bin little-endian f64 files: entities, options,
 /// paths) for profiling, e.g. under callgrind.

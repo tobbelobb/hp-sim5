@@ -269,10 +269,18 @@ export class RustPhysicsEngine {
     const flag = (key, fallback) => typeof world.getResource(key) === 'boolean' ? world.getResource(key) : fallback;
     const finite = (key, fallback) => Number.isFinite(world.getResource(key)) ? world.getResource(key) : fallback;
     putV(data, o, world.getResource('gravity') ?? { x: 0, y: 0, z: 0 });
+    let hystFrac = 0, hystRec = 0;
+    for (const shape of this.pathShapes ?? []) {
+      const f = shape.path.hysteresisFraction;
+      if (Number.isFinite(f) && f > hystFrac) {
+        hystFrac = f;
+        hystRec = Number.isFinite(shape.path.hysteresisRecoveryTime) ? Math.max(0, shape.path.hysteresisRecoveryTime) : 0;
+      }
+    }
     data.set([+flag('enableLayering', true), +flag('layeringAttachmentUpdatePoints', true),
       +flag('layeringClampJointRestLength', true), +flag('layeringMergeJoints', false), +flag('layeringSplitJoints', false),
       +flag('layeringHybridLinkStates', true), -1 /* reserved: a grabbed body stays dynamic */, world.nextEntityId,
-      0, 0 /* reserved ABI slots; motors derive their own stiffness */,
+      hystFrac, hystRec,
       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
     data[o + 15] = world.getResource('dt') ?? -1;
