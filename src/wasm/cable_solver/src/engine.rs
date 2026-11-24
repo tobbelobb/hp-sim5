@@ -2,7 +2,7 @@
 //! interface; the core has no browser, ECS, transport or JavaScript dependency.
 use super::*;
 
-pub const HEADER: usize = 9;
+pub const HEADER: usize = 11;
 pub const LINK: usize = 5;
 pub const SEGMENT: usize = 16;
 pub const OPTIONS: usize = 20;
@@ -164,6 +164,8 @@ struct Cable {
     strain: Vec<f64>,
     // Per link on a wheel with a worn bearing.
     wheels: Vec<Option<Wheel>>,
+    // Accumulated hysteretic elongation strain (active when data[9] > 0).
+    hyst_strain: f64,
 }
 /// A wheel whose bearing resists turning. The line turns it through capstan
 /// friction, against the bearing's friction torque and the wheel's inertia.
@@ -565,7 +567,7 @@ impl PhysicsWorld {
         }
         let cables: Vec<Cable> = paths
             .into_iter()
-            .map(|data| Cable { data, ratio: Vec::new(), slip: Vec::new(), tried: Vec::new(), merged: Vec::new(), strain: Vec::new(), wheels: Vec::new() })
+            .map(|data| Cable { data, ratio: Vec::new(), slip: Vec::new(), tried: Vec::new(), merged: Vec::new(), strain: Vec::new(), wheels: Vec::new(), hyst_strain: 0.0 })
             .collect();
         let mut by_id = std::collections::BTreeMap::<u64, Vec<(usize, usize)>>::new();
         for (p, c) in cables.iter().enumerate() {
@@ -656,6 +658,7 @@ impl PhysicsWorld {
         self.cache();
         self.friction(solver_dt);
         self.constraints(solver_dt);
+        self.elongation_hysteresis(solver_dt);
         self.overcorrections(solver_dt);
         self.sync_bodies(true);
         self.velocities(dt);
@@ -2084,6 +2087,72 @@ impl PhysicsWorld {
                 let o = self.cables[p].jo(i);
                 self.cables[p].data[o + 10..o + 16].copy_from_slice(&result);
             }
+        }
+    }
+    /// Viscoelastic / retained elongation hysteresis on cable paths with `data[9] > 0`.
+    /// Active spans develop additional hysteretic strain toward `h * eps_el` on loading
+    /// (`tau_load = 0.25 s`) and either retain it permanently (`tau_rec <= 0`) or recover
+    /// slowly with time constant `tau_rec = data[10]` on unloading, adjusting active rest
+    /// lengths and `totalRestLength` without altering stored spool length.
+    fn elongation_hysteresis(&mut self, dt: f64) {
+        if !(dt.is_finite() && dt > 0.0) {
+            return;
+        }
+        const TAU_LOAD: f64 = 0.25;
+        let mut joint_offset = 0usize;
+        for c in &mut self.cables {
+            let count = c.count();
+            let h = c.data[9];
+            let cpl = c.data[3];
+            if h.is_finite() && h > 0.0 && cpl.is_finite() && cpl > 0.0 && joint_offset + count <= self.joints.len() {
+                let mut stretch_sum = 0.0;
+                let mut rest_sum = 0.0;
+                for i in 0..count {
+                    let rest = c.rest(i);
+                    if rest <= EPS {
+                        continue;
+                    }
+                    let j = &self.joints[joint_offset + i];
+                    let a = attachment(&self.entities, j[0] as usize, v(j, 4));
+                    let b = attachment(&self.entities, j[1] as usize, v(j, 7));
+                    let span = length(sub(b, a));
+                    stretch_sum += (span - rest).max(0.0);
+                    rest_sum += rest;
+                }
+                if rest_sum > EPS {
+                    let eps_el = stretch_sum / rest_sum;
+                    let target = h * eps_el;
+                    let diff = target - c.hyst_strain;
+                    let delta_eps = if diff > 0.0 {
+                        diff * (1.0 - (-dt / TAU_LOAD).exp())
+                    } else if diff < 0.0 {
+                        let tau_rec = c.data[10];
+                        if tau_rec.is_finite() && tau_rec > 0.0 {
+                            diff * (1.0 - (-dt / tau_rec).exp())
+                        } else {
+                            0.0
+                        }
+                    } else {
+                        0.0
+                    };
+                    if delta_eps.abs() > 1e-15 {
+                        let scale = delta_eps / (1.0 + c.hyst_strain).max(EPS);
+                        let mut delta_total = 0.0;
+                        for i in 0..count {
+                            let jo = c.jo(i);
+                            let rest = c.data[jo + 3];
+                            if rest > EPS {
+                                let dr = rest * scale;
+                                c.data[jo + 3] = (rest + dr).max(EPS);
+                                delta_total += dr;
+                            }
+                        }
+                        c.data[7] += delta_total;
+                        c.hyst_strain = (c.hyst_strain + delta_eps).max(0.0);
+                    }
+                }
+            }
+            joint_offset += count;
         }
     }
     /// After the solve, material inside each slipping row settles where every

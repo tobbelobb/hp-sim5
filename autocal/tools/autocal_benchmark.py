@@ -40,20 +40,26 @@ def _config_m669(path):
                 if re.match(r'M669\s+A', line))
 
 
-def _convergence_sim_s(data, rows, truth):
+def _convergence_sim_s(data, rows, truth, *, use_convention_frame=False):
     """Simulated time when the first selected fit reached CONVERGED_MM. num_sweeps counts
     collection units (sweeps or whole sphere meshes); older logs lack it, and each later
     iteration then follows exactly one newly collected unit."""
     fits = [r for r in rows if 'selected_run' in r]
     if not fits:
         return None
+    if use_convention_frame:
+        from autocal.tools.imperfect_machine import convention_frame
+        truth_ref = convention_frame(truth)[0]
+    else:
+        truth_ref = truth
     last = fits[-1]['iteration']
     for row in fits:
         run = next(r for r in row['runs'] if r['id'] == row['selected_run'])
         anchors = run['metrics'].get('pose_fit_anchors')
         if anchors is None:
             return None
-        if np.max(np.abs(np.asarray(anchors) - truth)) <= CONVERGED_MM:
+        cand = convention_frame(anchors)[0] if use_convention_frame else np.asarray(anchors)
+        if np.max(np.abs(cand - truth_ref)) <= CONVERGED_MM:
             # One collection unit (sweep or sphere mesh) per iteration.
             groups = measurement_groups(data)
             units = row.get('num_sweeps', len(groups) - (last - row['iteration']))
@@ -64,7 +70,7 @@ def _convergence_sim_s(data, rows, truth):
     return None
 
 
-def benchmark_metrics(dataset, repo_root):
+def benchmark_metrics(dataset, repo_root, *, truth_mm=None):
     data = json.loads(dataset.read_text())
     manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
     rows = [json.loads(line) for line in
@@ -75,12 +81,23 @@ def benchmark_metrics(dataset, repo_root):
              or next((c for c in manifest.get('applied_parameters', []) if c.startswith('M669 ')), None)
              or next(r['m669'] for r in rows if r.get('event') == 'summary'))
     error = anchor_errors(initial, final)
-    truth = np.asarray(error['reference_mm'])
+    fitted = np.asarray(error['fitted_mm'], dtype=float)
+    if truth_mm is not None:
+        from autocal.tools.imperfect_machine import convention_frame
+        truth_arr = np.asarray(list(truth_mm.values()) if isinstance(truth_mm, dict) else truth_mm, dtype=float)
+        truth_frame, _ = convention_frame(truth_arr)
+        fitted_frame, _ = convention_frame(fitted)
+        accuracy_mm = float(np.max(np.abs(fitted_frame - truth_frame)))
+        conv_s = _convergence_sim_s(data, rows, truth_arr, use_convention_frame=True)
+    else:
+        truth_arr = np.asarray(error['reference_mm'], dtype=float)
+        accuracy_mm = error['max_abs_coordinate_mm']
+        conv_s = _convergence_sim_s(data, rows, truth_arr)
     try:
-        precision = split_fit_difference_mm(data, np.asarray(error['fitted_mm']))
+        precision = split_fit_difference_mm(data, fitted)
     except (KeyError, ValueError, np.linalg.LinAlgError):
         precision = None
-    return dict(total_sim_s=manifest.get('simulated_s'), convergence_sim_s=_convergence_sim_s(data, rows, truth),
-                precision_mm=precision, accuracy_mm=error['max_abs_coordinate_mm'],
+    return dict(total_sim_s=manifest.get('simulated_s'), convergence_sim_s=conv_s,
+                precision_mm=precision, accuracy_mm=accuracy_mm,
                 sweeps=len(measurement_groups(data)), stop_reason=manifest.get('stop_reason'),
                 wall_s=manifest.get('wall_s'))

@@ -34,6 +34,12 @@ jobs:
           - name: Autocal HP5 reduced
             suite: benchmark
             machine: hangprinter_5_pulley_reduced
+          - name: Autocal HP3 hyst+stickslip
+            suite: benchmark
+            machine: hangprinter_3_hyst_stickslip
+          - name: Autocal HP5 reduced hyst+stickslip
+            suite: benchmark
+            machine: hangprinter_5_pulley_reduced_hyst_stickslip
     env:
       CI: true
       RUN_RRF_HTTP_ENDPOINT_TESTS: "1"

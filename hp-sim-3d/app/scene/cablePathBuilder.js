@@ -40,6 +40,10 @@ function applyCablePath(world, prim, jointKeys, registry, machineId, iterations)
         // The baked half-width already encodes the initial geometry, including zero for an unlayered bake.
         { initialLayeringEnabled: true },
     );
+    const hystFrac = readNumericAttribute(prim, "cablePath:hysteresisFraction");
+    if (hystFrac !== null && hystFrac > 0) pathComp.hysteresisFraction = hystFrac;
+    const hystRec = readNumericAttribute(prim, "cablePath:hysteresisRecoveryTime");
+    if (hystRec !== null && hystRec >= 0) pathComp.hysteresisRecoveryTime = hystRec;
     const cablePath = world.createEntity();
     world.addComponent(cablePath, pathComp);
     world.addComponent(cablePath, new MachineTagComponent(machineId));

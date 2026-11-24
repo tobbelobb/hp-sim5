@@ -130,18 +130,53 @@ def scaled_cogging(text, scale=1.0, freq=None):
     return scene
 
 
-def scaled_motor_friction(text, scale=1.0):
+def scaled_motor_friction(text, scale=1.0, stiction_speed=None):
     """Give every stepper explicit Coulomb (0.2% holding) and stiction (0.3% holding) friction
-    scaled by `scale`, to stress torque-mode force realization under motor/bearing friction."""
+    scaled by `scale`, to stress torque-mode force realization under motor/bearing stick-slip."""
     def lines(m):
         holding = float(m[2])
+        speed_line = f'\n{m[1]}custom double stepper:stictionSpeed = {stiction_speed:.12g}' if stiction_speed is not None else ''
         return (f'{m[0]}\n{m[1]}custom double stepper:coulombFriction = {0.002 * holding * scale:.12g}'
-                f'\n{m[1]}custom double stepper:stictionTorque = {0.003 * holding * scale:.12g}')
+                f'\n{m[1]}custom double stepper:stictionTorque = {0.003 * holding * scale:.12g}{speed_line}')
     scene, count = re.subn(r'^(\s*)custom double stepper:holdingTorque\s*=\s*([-+\d.eE]+)\s*$', lines,
                            text, flags=re.M)
     if not count:
         raise ValueError('no stepper holding torques found')
     return scene
+
+
+def with_cable_hysteresis(text, fraction, recovery_time_s=0.0):
+    """Attach cablePath:hysteresisFraction (and optional recovery time) to every cable path."""
+    def lines(m):
+        return (f'{m[0]}\n{m[1]}custom double cablePath:hysteresisFraction = {fraction:.12g}'
+                f'\n{m[1]}custom double cablePath:hysteresisRecoveryTime = {recovery_time_s:.12g}')
+    scene, count = re.subn(r'^(\s*)custom double cablePath:stiffnessPerUnitLength\s*=\s*[-+\d.eE]+\s*$', lines,
+                           text, flags=re.M)
+    if not count:
+        raise ValueError('no cable stiffness entries found')
+    return scene
+
+
+def with_wheel_bearing_friction(text, torque_nm):
+    """Attach bearing:frictionTorque to every Wheel prim in the scene."""
+    lines = text.splitlines(keepends=True)
+    in_wheel = False
+    indent = ''
+    count = 0
+    out = []
+    for line in lines:
+        out.append(line)
+        m = re.match(r'^(\s*)def \w+ "Wheel[^"]*"', line)
+        if m:
+            in_wheel = True
+            indent = m[1] + '    '
+        elif in_wheel and re.match(r'^\s*double radius\s*=', line):
+            out.append(f'{indent}custom double bearing:frictionTorque = {torque_nm:.12g}\n')
+            in_wheel = False
+            count += 1
+    if not count:
+        raise ValueError('no Wheel prims found')
+    return ''.join(out)
 
 
 def _rotate_onto_z(anchors, vector):
@@ -259,6 +294,10 @@ def main(argv=None):
     parser.add_argument('--cogging-scale', type=float, help='multiply the motors\' default cogging torque')
     parser.add_argument('--cogging-freq', type=float, help='cogging periods per motor turn (default numPolePairs)')
     parser.add_argument('--friction-scale', type=float, help='multiply the motors\' default Coulomb & stiction friction')
+    parser.add_argument('--stiction-speed', type=float, help='Stribeck stiction transition speed (rad/s)')
+    parser.add_argument('--hysteresis-fraction', type=float, help='cable elongation hysteresis fraction of elastic strain')
+    parser.add_argument('--hysteresis-recovery-s', type=float, default=0.0, help='cable hysteresis unloading recovery time (s; 0 = permanent)')
+    parser.add_argument('--bearing-friction', type=float, help='wheel bearing friction torque (Nm)')
     parser.add_argument('--ellipsoid-shape', action='store_true', help='collect and fit the opt-in ellipsoid shape')
     parser.add_argument('--point-fit', action='store_true', help='use point fit (with --ellipsoid-shape)')
     parser.add_argument('--force-contrast', action='store_true', help='enable Ds-optimal multi-force contrast sweeps')
@@ -278,8 +317,12 @@ def main(argv=None):
     scene, moved = perturbed_scene(source.read_text(), imperfection['shifts_mm'], imperfection['stiffness_scale'])
     if args.cogging_scale is not None or args.cogging_freq is not None:
         scene = scaled_cogging(scene, 1.0 if args.cogging_scale is None else args.cogging_scale, args.cogging_freq)
-    if args.friction_scale is not None:
-        scene = scaled_motor_friction(scene, args.friction_scale)
+    if args.friction_scale is not None or args.stiction_speed is not None:
+        scene = scaled_motor_friction(scene, 1.0 if args.friction_scale is None else args.friction_scale, args.stiction_speed)
+    if args.hysteresis_fraction is not None and args.hysteresis_fraction > 0.0:
+        scene = with_cable_hysteresis(scene, args.hysteresis_fraction, args.hysteresis_recovery_s)
+    if args.bearing_friction is not None and args.bearing_friction > 0.0:
+        scene = with_wheel_bearing_friction(scene, args.bearing_friction)
     truth = {name: (np.add(anchor, imperfection['shifts_mm'][name])).round(6).tolist()
              for name, anchor in nominal_anchors(args.machine).items()}
     output.mkdir(parents=True, exist_ok=False)
@@ -289,7 +332,11 @@ def main(argv=None):
                         overrides=dict(low_dz_mm=args.low_dz_mm, top_offset_mm=args.top_offset_mm,
                                        stiffness_scale=args.stiffness_scale), ellipsoid_shape=args.ellipsoid_shape,
                         cogging_scale=args.cogging_scale, cogging_freq=args.cogging_freq,
-                        friction_scale=args.friction_scale, force_contrast=args.force_contrast,
+                        friction_scale=args.friction_scale, stiction_speed=args.stiction_speed,
+                        hysteresis_fraction=args.hysteresis_fraction,
+                        hysteresis_recovery_s=args.hysteresis_recovery_s,
+                        bearing_friction=args.bearing_friction,
+                        force_contrast=args.force_contrast,
                         stretch_varpro=not args.no_stretch_varpro)
     (output / 'imperfection.json').write_text(json.dumps(imperfection, indent=2) + '\n')
     if args.prepare_only:

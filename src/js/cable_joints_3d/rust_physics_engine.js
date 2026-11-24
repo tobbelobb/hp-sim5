@@ -7,7 +7,7 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 // components are views of persistent Rust records, including interactive edits.
 // See engine.rs `Row` for how the per-unit-length cable properties become
 // per-row XPBD compliance and damping.
-const E = 160, H = 9, L = 5, J = 16;
+const E = 160, H = 11, L = 5, J = 16;
 const kinds = ['attachment', 'rolling', 'pinhole', 'hybrid', 'hybrid-attachment'];
 const putV = (a, o, v) => { if (v) a.set([v.x, v.y, v.z], o); };
 const putQ = (a, o, q) => { if (q) a.set([q.x, q.y, q.z, q.w], o); };
@@ -135,7 +135,7 @@ export class RustPhysicsEngine {
       const data = new Float64Array(H + (n + 1) * L + n * J);
       const machine = get(id, ecs.MachineTagComponent)?.id ?? null;
       if (!machines.has(machine)) machines.set(machine, machines.size);
-      data.set([n, id, c.stiffnessPerUnitLength, c.compliancePerUnitLength, c.dampingPerUnitLength, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine)]);
+      data.set([n, id, c.stiffnessPerUnitLength, c.compliancePerUnitLength, c.dampingPerUnitLength, c.solverIterations, c.cableHalfWidth, c.totalRestLength, machines.get(machine), c.hysteresisFraction ?? 0, c.hysteresisRecoveryTime ?? 0]);
       for (let li = 0; li <= n; li++) {
         const j = n ? get(c.jointEntities[li === n ? n - 1 : li], CableJointComponent) : null;
         const entity = j ? (li === n ? j.entityB : j.entityA) : null;
@@ -213,6 +213,8 @@ export class RustPhysicsEngine {
       path.stored = Array.from({ length: n + 1 }, (_, i) => data[o + H + i * L + 2]);
       this.pathShapes.push({ path, arrays: [path.jointEntities, path.linkTypes, path.cw, path.stored], count: n });
       for (const [i, key] of ['stiffnessPerUnitLength', 'compliancePerUnitLength', 'dampingPerUnitLength', 'solverIterations', 'cableHalfWidth', 'totalRestLength'].entries()) this.bind(path, key, o + i + 2, group);
+      this.bind(path, 'hysteresisFraction', o + 9, group);
+      this.bind(path, 'hysteresisRecoveryTime', o + 10, group);
       for (let li = 0; li <= n; li++) {
         this.bind(path.linkTypes, li, o + H + li * L, group, x => kinds[x], x => kinds.indexOf(x));
         this.bind(path.cw, li, o + H + li * L + 1, group, Boolean, Number);

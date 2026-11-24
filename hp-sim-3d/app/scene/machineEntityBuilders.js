@@ -251,8 +251,8 @@ function buildStepperMotorComponent(prim) {
     if (numPolePairs !== null) stepperComponent.numPolePairs = Math.round(numPolePairs);
     if (dampingCoeff !== null) stepperComponent.dampingCoeff = dampingCoeff;
     if (maxSpeedRad !== null) stepperComponent.maxSpeedRad = maxSpeedRad;
-    // Optional torque-mode ripple; unset keeps the engine default (1% of holding torque at numPolePairs).
-    for (const name of ["coggingTorque", "coggingFreq"]) {
+    // Optional torque-mode ripple and friction/stiction; unset keeps engine defaults.
+    for (const name of ["coggingTorque", "coggingFreq", "coulombFriction", "stictionTorque", "stictionSpeed", "windageCoeff"]) {
         const value = readNumericAttribute(prim, `stepper:${name}`);
         if (value !== null) stepperComponent[name] = value;
     }

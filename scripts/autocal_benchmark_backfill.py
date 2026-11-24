@@ -34,7 +34,7 @@ sys.path.insert(0, str(ROOT))
 from autocal.tools.benchmark_history import (  # noqa: E402
     BACKFILL_DIR, FINGERPRINT_VERSION, LEGACY_TRANSFORM, MACHINES, MAX_PHYSICS_STEPS, dependency_environment,
     fingerprint, git, markdown_summary, measurement,
-    merge_results, protocol, read_results, run_autocal, settings, scorer_fingerprint, write_results,
+    merge_results, prepare_benchmark_scene, protocol, read_results, run_autocal, settings, scorer_fingerprint, write_results,
 )
 
 SUBMODULES = ('RRF/ReprapFirmware', 'RRF/RRFLibraries', 'RRF/CANlib', LEGACY_TRANSFORM)
@@ -123,7 +123,9 @@ def benchmark(commit, machine, repeat, worktree, out, timeout_s, max_steps):
     row['run_dir'] = str(directory.relative_to(out))
     try:
         row['environment'] = dependency_environment((worktree / 'node_modules').resolve())
-        code = run_autocal(machine, dataset, worktree, log, timeout_s, max_steps)
+        base, scene, truth_mm = prepare_benchmark_scene(machine, directory, worktree)
+        code = (run_autocal(base, dataset, worktree, log, timeout_s, max_steps, scene=scene)
+                if scene is not None else run_autocal(base, dataset, worktree, log, timeout_s, max_steps))
         details = log.read_text(errors='replace')[-2000:]
         if code:
             collection_log = dataset.with_suffix('.full_auto.log')
@@ -145,7 +147,9 @@ def benchmark(commit, machine, repeat, worktree, out, timeout_s, max_steps):
             manifest = json.loads(manifest_path.read_text())
             if manifest.get('normal_completion') is False:
                 raise RuntimeError('Calibration did not complete and apply parameters')
-            row.update(benchmark_metrics(dataset, worktree), status='ok')
+            metrics = (benchmark_metrics(dataset, worktree, truth_mm=truth_mm)
+                       if truth_mm is not None else benchmark_metrics(dataset, worktree))
+            row.update(metrics, status='ok')
     except subprocess.TimeoutExpired:
         row.update(status='timeout', reason=f'Wall-clock timeout after {timeout_s:g} seconds')
     except Exception as error:

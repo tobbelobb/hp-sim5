@@ -17,7 +17,31 @@ import sys
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[2]
-MACHINES = ('hangprinter_3', 'hangprinter_4', 'hangprinter_5', 'hangprinter_5_pulley_reduced')
+BENCHMARK_SCENARIOS = {
+    'hangprinter_3_hyst_stickslip': dict(
+        base_machine='hangprinter_3',
+        seed=1,
+        stiffness_scale=0.9,
+        hysteresis_fraction=0.35,
+        hysteresis_recovery_s=90.0,
+        friction_scale=4.0,
+        stiction_speed=0.25,
+    ),
+    'hangprinter_5_pulley_reduced_hyst_stickslip': dict(
+        base_machine='hangprinter_5_pulley_reduced',
+        seed=1,
+        stiffness_scale=0.9,
+        hysteresis_fraction=0.35,
+        hysteresis_recovery_s=90.0,
+        friction_scale=4.0,
+        stiction_speed=0.25,
+        bearing_friction=0.002,
+    ),
+}
+MACHINES = (
+    'hangprinter_3', 'hangprinter_4', 'hangprinter_5', 'hangprinter_5_pulley_reduced',
+    *BENCHMARK_SCENARIOS,
+)
 MAX_PHYSICS_STEPS = 4_500_000
 PATIENCE = 8
 METRICS = ('accuracy_mm', 'precision_mm', 'convergence_sim_s', 'total_sim_s')
@@ -144,17 +168,62 @@ def catalog_inputs(blobs, machine):
     return files
 
 
+def base_machine(machine):
+    scenario = BENCHMARK_SCENARIOS.get(machine)
+    return scenario['base_machine'] if scenario else machine
+
+
+def prepare_benchmark_scene(machine, directory, repo=ROOT):
+    """Prepare an impaired USDA scene and truth anchor dict for scenario benchmarks, or (machine, None, None)."""
+    scenario = BENCHMARK_SCENARIOS.get(machine)
+    if scenario is None:
+        return machine, None, None
+    # Lazy import so stdlib-only CI checks (scripts/autocal_benchmark_ci.py) never require numpy.
+    import numpy as np
+    from autocal._autocal_common import catalogued_machine
+    from autocal.tools.imperfect_machine import (
+        draw, nominal_anchors, perturbed_scene, scaled_cogging, scaled_motor_friction,
+        with_cable_hysteresis, with_wheel_bearing_friction,
+    )
+
+    base = scenario['base_machine']
+    imperfection = draw(base, scenario['seed'], stiffness_scale=scenario.get('stiffness_scale'))
+    source = Path(repo) / catalogued_machine(base)['scene']
+    scene, _ = perturbed_scene(source.read_text(), imperfection['shifts_mm'], imperfection['stiffness_scale'])
+    if scenario.get('cogging_scale') is not None or scenario.get('cogging_freq') is not None:
+        scene = scaled_cogging(scene, scenario.get('cogging_scale', 1.0), scenario.get('cogging_freq'))
+    if scenario.get('friction_scale') is not None or scenario.get('stiction_speed') is not None:
+        scene = scaled_motor_friction(scene, scenario.get('friction_scale', 1.0), scenario.get('stiction_speed'))
+    if scenario.get('hysteresis_fraction'):
+        scene = with_cable_hysteresis(scene, scenario['hysteresis_fraction'], scenario.get('hysteresis_recovery_s', 0.0))
+    if scenario.get('bearing_friction'):
+        scene = with_wheel_bearing_friction(scene, scenario['bearing_friction'])
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    scene_path = directory / 'input-scene.usda'
+    scene_path.write_text(scene)
+    truth = {name: (np.add(anchor, imperfection['shifts_mm'][name])).round(6).tolist()
+             for name, anchor in nominal_anchors(base).items()}
+    return base, scene_path, truth
+
+
 def fingerprint(commit, machine, version=FINGERPRINT_VERSION):
     """Hash tracked runtime inputs. Version 1 is retained for backfill imports."""
     if version not in (1, 2):
         raise ValueError(f'Unsupported benchmark fingerprint version {version}')
     files, blobs = runtime_files(commit, version)
-    scene = SCENES[machine]
+    base = base_machine(machine)
+    scene = SCENES[base]
     paths = {f'public/usd_scenes/{scene}.usda', f'RRF/run/vsd/sys/config_{scene}.g'}
     if version == 2:
-        paths.update(catalog_inputs(blobs, machine))
+        paths.update(catalog_inputs(blobs, base))
     files = {**files, **{p: blobs[p] for p in paths if p in blobs}}
-    return hashlib.sha256(json.dumps(sorted(files.items())).encode()).hexdigest()[:20]
+    items = sorted(files.items())
+    if machine in BENCHMARK_SCENARIOS:
+        if 'autocal/tools/imperfect_machine.py' in blobs:
+            items.append(('autocal/tools/imperfect_machine.py', blobs['autocal/tools/imperfect_machine.py']))
+        items.append(('__scenario__', json.dumps(BENCHMARK_SCENARIOS[machine], sort_keys=True)))
+    return hashlib.sha256(json.dumps(items).encode()).hexdigest()[:20]
 
 
 def execution_fingerprint(commit):

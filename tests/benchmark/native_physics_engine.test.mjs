@@ -157,3 +157,28 @@ for (const machine of ['hp3', 'hp4']) {
     }
   });
 }
+
+test('USDA stepper stick-slip and cable elongation hysteresis attributes load into native physics', async () => {
+  const { CablePathComponent } = await import('../../src/js/cable_joints_3d/cable_joints_core.js');
+  const { StepperMotorComponent } = await import('../../hp-sim-3d/app/hangprinter_stepper_motor.js');
+  let scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3.usda', import.meta.url), 'utf8');
+  scene = scene.replace(/(^\s*custom double stepper:holdingTorque\s*=\s*[-+\d.eE]+)\s*$/gm,
+    '$1\n            custom double stepper:coulombFriction = 0.008\n            custom double stepper:stictionTorque = 0.012\n            custom double stepper:stictionSpeed = 0.25');
+  scene = scene.replace(/(^\s*custom double cablePath:stiffnessPerUnitLength\s*=\s*[-+\d.eE]+)\s*$/gm,
+    '$1\n            custom double cablePath:hysteresisFraction = 0.35\n            custom double cablePath:hysteresisRecoveryTime = 90');
+  const instance = createHeadlessWorld(scene);
+  try {
+    const { world } = instance;
+    const motors = world.query([StepperMotorComponent]).map(id => world.getComponent(id, StepperMotorComponent));
+    const paths = world.query([CablePathComponent]).map(id => world.getComponent(id, CablePathComponent));
+    assert(motors.length === 4 && motors.every(m => m.coulombFriction === 0.008 && m.stictionTorque === 0.012 && m.stictionSpeed === 0.25));
+    assert(paths.length > 0 && paths.every(p => p.hysteresisFraction === 0.35 && p.hysteresisRecoveryTime === 90));
+    const L0 = paths.map(p => p.totalRestLength);
+    for (const m of motors) { m.torqueMode = true; m.targetTorque = 0.4; }
+    for (let i = 0; i < 500; i++) world.update(0.002);
+    const L_load = paths.map(p => p.totalRestLength);
+    assert(L_load.some((l, i) => (l - L0[i]) * 1000 > 0.1));
+  } finally {
+    instance.world.getResource('cableSolverBackend').dispose();
+  }
+});

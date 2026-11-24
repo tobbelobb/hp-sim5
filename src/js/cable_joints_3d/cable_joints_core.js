@@ -97,6 +97,8 @@ export class CablePathComponent {
     this.stiffnessPerUnitLength = stiffnessPerUnitLength;
     this.compliancePerUnitLength = 1.0 / stiffnessPerUnitLength;
     this.dampingPerUnitLength = Number.isFinite(dampingPerUnitLength) ? Math.max(0.0, dampingPerUnitLength) : 0.0;
+    this.hysteresisFraction = 0.0;
+    this.hysteresisRecoveryTime = 0.0;
     this.solverIterations = Number.isFinite(solverIterations)
       ? Math.max(1, Math.floor(solverIterations))
       : 1;
