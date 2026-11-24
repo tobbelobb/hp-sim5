@@ -101,9 +101,13 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     progressIntervalMs = 5000,
     onProgress = message => console.log(message),
     validateAngles = null,
+    watchMotorIndices = null,
     sleepFn = sendFn.simulationClock?.sleep ?? baseSleep,
     nowFn = sendFn.simulationClock?.now ?? (() => Date.now()),
   } = normalizedOptions;
+  const watchedIndices = Array.isArray(watchMotorIndices) && watchMotorIndices.length > 0
+    ? watchMotorIndices.filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < motorIds.length)
+    : motorIds.map((_, idx) => idx);
   const pollMs = pollIntervalMs;
   const windowMs = Math.max(pollMs * 2, stableWindowMs);
   const vibrationMs = Math.max(windowMs, vibrationWindowMs);
@@ -142,7 +146,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     // Preserve the drift rate allowed by the longer history while returning
     // sooner after a transient. Larger stationary noise can use the vibration check.
     const quietTolerance = tol * windowMs / vibrationMs;
-    for (let motorIdx = 0; motorIdx < motorIds.length; motorIdx += 1) {
+    for (const motorIdx of watchedIndices) {
       let minVal = Number.POSITIVE_INFINITY;
       let maxVal = Number.NEGATIVE_INFINITY;
       for (let i = first; i < samples.length; i += 1) {
@@ -176,7 +180,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
       return false;
     }
     const midpoint = vibrationSamples[0].timestampMs + (windowSpan / 2);
-    for (let motorIdx = 0; motorIdx < motorIds.length; motorIdx += 1) {
+    for (const motorIdx of watchedIndices) {
       let earlySum = 0;
       let lateSum = 0;
       let earlyCount = 0;
@@ -711,28 +715,91 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
   const stableBefore = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   const lengths = anglesToLengths(stableBefore.anglesDeg, mmPerDeg);
   const moveParts = [];
+  let maxAbsDelta = 0;
+  let sumSq = 0;
   for (let idx = 0; idx < motorIds.length; idx += 1) {
     const axis = axes[idx];
     const current = lengths[idx] ?? 0;
     const delta = -current;
     if (Math.abs(delta) > 1e-6) {
       moveParts.push(formatAxisDelta(axis, delta));
+      maxAbsDelta = Math.max(maxAbsDelta, Math.abs(delta));
+      sumSq += delta * delta;
     }
   }
 
-  if (moveParts.length > 0) {
-    await runMoveWithWait(
-      sendFn,
-      `G1 H2 ${moveParts.join(' ')} F${feed}`,
-      speedup,
-      { axes, delayFn },
-    );
-    await applyForceModeState(sendFn, {
-      motorIds,
-      modes: motorIds.map(() => 'position')
-    });
+  if (moveParts.length === 0) {
+    return lengths;
   }
+
+  // RRF scales a multi-axis G1 H2 feed by the Euclidean norm of all axis deltas;
+  // normalize so the fastest motor runs at `feed` rather than slowing down by ~sqrt(N).
+  const euclideanNorm = Math.sqrt(sumSq);
+  const effectiveFeed = Number.isFinite(feed) && feed > 0 && maxAbsDelta > 0 && euclideanNorm > maxAbsDelta
+    ? Number((feed * (euclideanNorm / maxAbsDelta)).toFixed(3))
+    : feed;
+
+  await runMoveWithWait(
+    sendFn,
+    `G1 H2 ${moveParts.join(' ')} F${effectiveFeed}`,
+    speedup,
+    { axes, delayFn },
+  );
+  await applyForceModeState(sendFn, {
+    motorIds,
+    modes: motorIds.map(() => 'position'),
+  });
 
   const stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   return anglesToLengths(stableAfter.anglesDeg, mmPerDeg);
+}
+
+// For idealized straight cables with fixed anchor geometry, convexity of
+// Euclidean distance implies linear joint-space return keeps commanded lengths
+// >= straight-line geometric distance, reducing intermediate slack relative to
+// one-at-a-time returns. Real hardware adds elasticity, friction, spool buildup,
+// dynamic lag, and tracking error, so this is a planning heuristic rather than
+// a physical guarantee; post-move encoder checks, a single coordinated
+// correction, and sequential fallback guard against residual tracking error.
+// Klipper uses sequential FORCE_MOVE directly.
+export async function returnMotorsToOrigin(sendFn, options = {}) {
+  const {
+    motorIds,
+    axes,
+    mmPerDeg,
+    feed,
+    speedup,
+    delayFn,
+    settleOptions = {},
+  } = options;
+  if (!Array.isArray(motorIds) || motorIds.length === 0) {
+    return [];
+  }
+  if (!Array.isArray(mmPerDeg) || mmPerDeg.length !== motorIds.length
+      || !mmPerDeg.every(value => Number.isFinite(value) && value > 0)) {
+    throw new Error('Return to origin requires positive finite encoder conversions');
+  }
+  if (sendFn?.firmware === 'klipper') {
+    return returnMotorsToOriginOneAtATime(sendFn, options);
+  }
+  const toleranceDeg = settleOptions.toleranceDeg ?? DEFAULT_STABILITY_TOLERANCE_DEG;
+  const withinOrigin = (lengths) => (
+    Array.isArray(lengths)
+    && lengths.length === motorIds.length
+    && lengths.every((len, idx) => Number.isFinite(len) && Math.abs(len / mmPerDeg[idx]) <= toleranceDeg)
+  );
+  let lengths = await returnMotorsToOriginAllAtOnce(sendFn, {
+    motorIds, axes, mmPerDeg, feed, speedup, delayFn, settleOptions,
+  });
+  if (withinOrigin(lengths)) {
+    return lengths;
+  }
+  // One coordinated encoder correction handles a stale firmware position after saturation.
+  lengths = await returnMotorsToOriginAllAtOnce(sendFn, {
+    motorIds, axes, mmPerDeg, feed, speedup, delayFn, settleOptions,
+  });
+  if (withinOrigin(lengths)) {
+    return lengths;
+  }
+  return returnMotorsToOriginOneAtATime(sendFn, options);
 }

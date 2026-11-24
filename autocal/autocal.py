@@ -24,7 +24,7 @@ from autocal.history_selection import HISTORY_CONSENSUS_MAX_SPREAD_MM, evaluate_
 from autocal.anchor_uncertainty import coordinate_names, newest_trusted_index, plan_anchor_uncertainty, uncertainty_label
 from autocal import extended_reference
 from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
-from autocal.stopping import StoppingPolicy
+from autocal.stopping import STABLE_STEP_MM, StoppingPolicy, resolve_precision_mm
 from autocal.dataset_roles import measurement_groups
 
 
@@ -198,7 +198,7 @@ def _full_auto_loop(
     full_auto_runs: Optional[Sequence[str]],
     full_auto_log: Optional[Path],
     patience: int,
-    stable_step_mm: float = 0.5,
+    stable_step_mm: float = STABLE_STEP_MM,
     verbose: bool,
     fit_home_offsets: bool = True,
     fit_force_ripple: bool = False,
@@ -1547,8 +1547,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         args.fit = resolve_fit(args.shape, args.fit)
     except ValueError as error:
         parser.error(str(error))
-    if not np.isfinite(args.stable_step_mm) or args.stable_step_mm < 0:
-        parser.error("--stable-step-mm must be a finite nonnegative distance")
+    if args.precision is not None and args.stable_step_mm is not None:
+        parser.error("Use either --precision/--thoroughness or --stable-step-mm, not both.")
+    if args.stable_step_mm is not None:
+        if not np.isfinite(args.stable_step_mm) or args.stable_step_mm < 0:
+            parser.error("--stable-step-mm must be a finite nonnegative distance")
+        args.stable_step_mm = float(args.stable_step_mm)
+    else:
+        try:
+            args.stable_step_mm = resolve_precision_mm(args.precision)
+        except ValueError as error:
+            parser.error(str(error))
     if args.project_zero_tension and not args.no_collect:
         parser.error("--project-zero-tension collection was retired; use equal-strain collection with home-offset fitting. Historical projected datasets can still be replayed with --no-collect.")
     if args.extended_recording:

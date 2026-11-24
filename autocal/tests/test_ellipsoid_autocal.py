@@ -33,13 +33,45 @@ def test_level_lines_shorten_half_way_to_their_shortest():
 def test_heights_go_low_middle_highest_then_split_the_largest_gap():
     anchors = np.asarray(TRUTH["hangprinter_4"], dtype=float)
     top = highest_held_mm(anchors, 3)
-    # The effector stops a tenth of the anchor's home distance below it.
-    assert top == pytest.approx(-0.9 * 1900.0)
+    # The highest planned sphere stays inside the kinematically feasible coupled-arc ceiling,
+    # well below the unreachable -0.9 * |A_top| clearance cap.
+    assert -1000.0 < top < -700.0
     assert next_held_mm(0, None, 3, []) is None
     assert next_held_mm(1, anchors, 3, [0.0]) == pytest.approx(0.5 * top)
     assert next_held_mm(2, anchors, 3, [0.0, 0.5 * top]) == pytest.approx(top)
-    assert next_held_mm(3, anchors, 3, [0.0, -900.0, -1700.0]) == pytest.approx(-450.0)
-    assert next_held_mm(4, anchors, 3, [0.0, -900.0, -1700.0, -450.0]) == pytest.approx(-1300.0)
+    assert next_held_mm(3, anchors, 3, [0.0, -450.0, -850.0]) == pytest.approx(-225.0)
+    assert next_held_mm(4, anchors, 3, [0.0, -450.0, -850.0, -225.0]) == pytest.approx(-650.0)
+
+
+def test_feasible_ceiling_adapts_higher_for_five_anchor_geometry():
+    from autocal.tools.imperfect_machine import nominal_anchors
+    hp4 = np.asarray(TRUTH["hangprinter_4"], dtype=float)
+    hp5 = np.array(list(nominal_anchors("hangprinter_5_pulley_reduced").values()), dtype=float)
+    top_hp4 = highest_held_mm(hp4, 3, machine_type="hangprinter_4")
+    top_hp5 = highest_held_mm(hp5, 4, machine_type="hangprinter_5_pulley_reduced")
+    assert top_hp5 < top_hp4 - 200.0  # more negative = higher feasible sphere on 4-low-anchor HP5
+
+
+def test_highest_held_mm_handles_nonmonotonic_feasibility_and_rejects_infeasible_home(monkeypatch):
+    import autocal.ellipsoid_autocal as ea
+    anchors = np.asarray(TRUTH["hangprinter_4"], dtype=float)
+
+    # Non-monotonic span: feasible on [0, -500], infeasible pocket on (-500, -900),
+    # feasible again above -900. Grid scan must stop before the infeasible pocket
+    # instead of bisecting past it, and the returned height must itself be feasible.
+    def nonmonotonic_span(_anchors, _held, held_mm, _machine_type=None):
+        if -900.0 < held_mm < -500.0:
+            return 0.0
+        return 600.0
+
+    monkeypatch.setattr(ea, "_row_min_span_mm", nonmonotonic_span)
+    selected = highest_held_mm(anchors, 3, machine_type="hangprinter_4")
+    assert -500.0 <= selected <= -400.0
+    assert nonmonotonic_span(anchors, 3, selected) >= ea.MIN_ROW_SPAN_MM
+
+    monkeypatch.setattr(ea, "_row_min_span_mm", lambda *_args, **_kwargs: 0.0)
+    with pytest.raises(ValueError, match="feasible ellipsoid sweep span at home"):
+        highest_held_mm(anchors, 3, machine_type="hangprinter_4")
 
 
 def _blind_mesh(anchors, offsets, held_length, level_length, mesh_id, visit=1):

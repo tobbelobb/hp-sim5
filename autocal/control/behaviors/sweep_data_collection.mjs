@@ -26,7 +26,7 @@ import {
   EncoderStabilityTimeoutError,
   getCurrentLengths,
   primeEncoders,
-  returnMotorsToOriginOneAtATime,
+  returnMotorsToOrigin,
   resolveCollectionForce,
   settleOnTargets,
   waitForStableEncoders,
@@ -1274,8 +1274,14 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   });
   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
   try {
+    // Pullout only locates the sweep endpoint (the drive is held and strictly settled
+    // under preload right after), so watch the pulling drive motor with a sustained 2 s
+    // low-speed window instead of waiting on asymptotic creep in the idle sensor line.
     await waitForStableEncoders(sendFn, motorIds, speedup, {
       ...settleOptions,
+      watchMotorIndices: [driveAnchor],
+      stableWindowMs: 2000,
+      toleranceDeg: 2.0,
       timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
       wallTimeoutMs: FORCE_TRAVEL_TIMEOUT_MS + 30000,
       onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
@@ -1351,7 +1357,19 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     const delta = target - current[driveAnchor];
     if (Math.abs(delta) > 1e-6) await runMoveWithWait(sendFn,
       `G1 H2 ${driveAxis}${delta.toFixed(3)} F${feed}`, speedup, { axes });
-    const stable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    const trackingToleranceMm = DEFAULT_FIXED_TOLERANCE_MM + (stepMmByAnchor[driveAnchor] ?? 0);
+    let stable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    // A held closed-loop drive motor can carry an elastic rotor offset across a
+    // tension change before G1 H2; one encoder correction removes it without
+    // masking a stall/slip or unresolvable firmware step truncation.
+    const settledDriveMm = stable.anglesDeg[driveAnchor] * mmPerDeg[driveAnchor];
+    const correction = target - settledDriveMm;
+    if (Number.isFinite(correction) && Math.abs(correction) > trackingToleranceMm
+        && (Math.abs(delta) <= 1e-6 || Math.abs(correction) < Math.abs(delta) * 0.5)) {
+      await runMoveWithWait(sendFn,
+        `G1 H2 ${driveAxis}${correction.toFixed(3)} F${feed}`, speedup, { axes });
+      stable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    }
     const measuredClockMs = sendFn.simulationClock?.now() ?? Date.now();
     const sample = await sampleEncoderNoise(sendFn, motorIds, {
       sampleCount: noiseSampleCount, sampleIntervalMs: noiseSampleIntervalMs, speedup,
@@ -1362,7 +1380,6 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       throw new Error('Insufficient encoder evidence for the spool reserve');
     }
     const reachedMm = sample.muByMotorDeg[driveAnchor] * mmPerDeg[driveAnchor];
-    const trackingToleranceMm = DEFAULT_FIXED_TOLERANCE_MM + (stepMmByAnchor[driveAnchor] ?? 0);
     if (Math.abs(reachedMm - target) > trackingToleranceMm) {
       throw new Error(`Drive did not track the spool-reserve probe target: target ${target.toFixed(3)} mm, `
         + `reached ${reachedMm.toFixed(3)} mm, move ${delta.toFixed(3)} mm, tolerance ${trackingToleranceMm.toFixed(3)} mm`);
@@ -1878,7 +1895,7 @@ export async function collectSweepData(send, context) {
       } else {
         console.log('; size-tune failed; using 0.0mm');
       }
-      await returnMotorsToOriginOneAtATime(send, {
+      await returnMotorsToOrigin(send, {
         motorIds,
         axes: machineConfig.axes,
         mmPerDeg,
@@ -1939,7 +1956,7 @@ export async function collectSweepData(send, context) {
       try {
         sweepResult = await collectWithSlipRecovery(send, async (forces, attempt) => {
           if (attempt > 0) {
-            await returnMotorsToOriginOneAtATime(send, {
+            await returnMotorsToOrigin(send, {
               motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
               midForce: forces.forceLow,
               forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
@@ -1997,7 +2014,7 @@ export async function collectSweepData(send, context) {
       } catch (error) {
         if (!(error instanceof UnmeasurableSweepError) || options.completedSweeps < 3) throw error;
         await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
-        await returnMotorsToOriginOneAtATime(send, {
+        await returnMotorsToOrigin(send, {
           motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup, midForce: forceLow,
           forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
           returnFirstAnchors: machineConfig.numAnchors > machineConfig.dimensions + 1 ? getForceForbiddenAnchors(machineConfig) : [],
@@ -2070,7 +2087,7 @@ export async function collectSweepData(send, context) {
       `  Collected ${aggregatedPoints.length} points from ${subSweeps.length} sub-sweep${subSweeps.length === 1 ? '' : 's'}`,
     );
     if (returnToOrigin && sweepOrdinal < totalPlannedSweeps) {
-      await returnMotorsToOriginOneAtATime(send, {
+      await returnMotorsToOrigin(send, {
         motorIds,
         axes: machineConfig.axes,
         mmPerDeg,
@@ -2152,7 +2169,7 @@ export async function collectSweepData(send, context) {
   console.log(`\nSaved ${sweeps.length} sweeps to ${outputFile}`);
 
   if (returnToOrigin) {
-    await returnMotorsToOriginOneAtATime(send, {
+    await returnMotorsToOrigin(send, {
       motorIds,
       axes: machineConfig.axes,
       mmPerDeg,

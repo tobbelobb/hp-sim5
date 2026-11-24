@@ -8,7 +8,7 @@ import sys
 _EVERYDAY = {
     "Calibration": {
         "help", "help_research", "machine_type", "dataset", "no_collect",
-        "max_steps", "patience", "find_radii", "find_buildup_factor",
+        "max_steps", "patience", "precision", "find_radii", "find_buildup_factor",
         "base_radii", "buildup_factor", "line_width", "r0_bounds", "b_bounds", "shape", "fit",
     },
     "Collection and simulation": {
@@ -35,7 +35,7 @@ _RESEARCH = {
     },
     "Research: planning and run comparisons": {
         "candidate_count", "delta_min", "delta_max", "regularization",
-        "min_fixed_delta_spacing_mm", "full_auto_run", "shotgun",
+        "min_fixed_delta_spacing_mm", "stable_step_mm", "full_auto_run", "shotgun",
     },
     "Diagnostics and advanced configuration": {
         "stage_artifacts", "full_auto_log", "robust_debug", "residuals_csv",

@@ -3814,10 +3814,17 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Number of non-improving full-auto iterations to allow (default: 3).",
     )
     parser.add_argument(
+        "--precision",
+        "--thoroughness",
+        dest="precision",
+        default=None,
+        help="Convergence target: low (5 mm), medium (1 mm, default), high (0.5 mm), or a distance in mm (0 disables).",
+    )
+    parser.add_argument(
         "--stable-step-mm",
         type=float,
-        default=0.5,
-        help="Stop once two consecutive sweeps each move every anchor coordinate by at most this (default: 0.5; 0 disables).",
+        default=None,
+        help="Legacy alias for --precision <mm>.",
     )
     _add_solver_args(parser)
     _add_candidate_args(parser)

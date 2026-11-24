@@ -40,11 +40,12 @@ from typing import Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
+from autocal.active_learning import SweepConfig
 from autocal.anchor_seed import build_anchor_initial_guess
 from autocal.dataset_roles import mesh_metadata, normalize_dataset_point_roles
 from autocal.ellipse_fit import fit_ellipses
 from autocal.pose_fit import fit_pose_least_squares
-from autocal.pose_planning import ANCHOR_CLEARANCE_SHARE
+from autocal.pose_planning import ANCHOR_CLEARANCE_SHARE, SWEEP_PRETENSION_SHARE, predict_sweep_positions
 from autocal.sweep_config_generator import generate_sweep_configs
 from autocal.sweep_types import MachineConfig, MachineType
 
@@ -54,6 +55,11 @@ MAX_ELLIPSOIDS = 6
 HOME_OFFSET_PRIOR_SIGMA_MM = 5.0
 SEED_SCALES = (1.0, 2.0, 4.0)
 FITS = ("ellipsoid", "point")
+# Every row of a planned sphere needs enough coupled travel for both sweep
+# directions (roughly one spool turn on a 30 mm spool), backed off slightly
+# from the exact feasibility cliff so early anchor error does not push rows over it.
+MIN_ROW_SPAN_MM = 200.0
+FEASIBLE_HEIGHT_MARGIN = 0.90
 
 
 def mesh_rows(machine_type: str, held_mm: Optional[float], level_mm: Optional[Dict[int, float]] = None) -> List[str]:
@@ -80,12 +86,96 @@ def held_anchor(machine_type: str) -> int:
     return max(int(anchor) for anchor in configs[0]["fixed_anchors"])
 
 
-def highest_held_mm(anchors: np.ndarray, held: int) -> float:
-    """Held-line length that leaves the effector the anchor clearance below the held anchor.
+def _infer_machine_type(anchors: np.ndarray, machine_type: Optional[str]) -> str:
+    if machine_type is not None:
+        return str(machine_type)
+    return "hangprinter_5" if len(anchors) >= 5 else "hangprinter_4"
 
-    Home is the origin, so the held line's home length is the anchor's distance.
+
+def _row_min_span_mm(anchors: np.ndarray, held: int, held_mm: float,
+                     machine_type: Optional[str] = None) -> float:
+    """Smallest predicted drive/sensor travel (mm) across all rows on the sphere at `held_mm`."""
+    anchors = np.asarray(anchors, dtype=float)
+    configs = generate_sweep_configs(MachineConfig.from_type(MachineType(_infer_machine_type(anchors, machine_type))))
+    top = anchors[held]
+    radius = float(np.linalg.norm(top)) + float(held_mm)
+    if radius <= 0.0:
+        return 0.0
+    hanging = top - np.array([0.0, 0.0, radius])
+    offsets = level_offsets_mm(anchors, held, held_mm)
+    norms = np.linalg.norm(anchors, axis=1)
+    min_span = float("inf")
+    for config in configs:
+        fixed = sorted(int(anchor) for anchor in config["fixed_anchors"])
+        deltas = [
+            float(held_mm) if anchor == held
+            else (float(np.linalg.norm(anchors[anchor] - hanging)) - float(norms[anchor])) + offsets[anchor]
+            for anchor in fixed
+        ]
+        sweep = SweepConfig(
+            fixed_anchors=fixed,
+            fixed_deltas_mm=deltas,
+            drive_anchor=int(config["drive_anchor"]),
+            sensor_anchor=int(config["sensor_anchor"]),
+        )
+        points = predict_sweep_positions(anchors, sweep, ROW_POINTS * 2, SWEEP_PRETENSION_SHARE)
+        if len(points) < ROW_POINTS * 2:
+            return 0.0
+        drive_span = float(np.ptp(np.linalg.norm(points - anchors[sweep.drive_anchor], axis=1)))
+        sensor_span = float(np.ptp(np.linalg.norm(points - anchors[sweep.sensor_anchor], axis=1)))
+        min_span = min(min_span, drive_span, sensor_span)
+    return 0.0 if not np.isfinite(min_span) else min_span
+
+
+def highest_held_mm(
+    anchors: np.ndarray,
+    held: int,
+    *,
+    machine_type: Optional[str] = None,
+    min_span_mm: float = MIN_ROW_SPAN_MM,
+    grid_steps: int = 16,
+) -> float:
+    """Highest held-line length (most negative) whose rows all keep a usable coupled arc.
+
+    Scans a coarse grid from home (0) toward the anchor-clearance ceiling to find the
+    contiguous feasible interval starting at home (avoiding assumptions of global
+    monotonicity), bisects that bracket, backs off by FEASIBLE_HEIGHT_MARGIN, and
+    verifies that the returned height is itself feasible.
     """
-    return -(1.0 - ANCHOR_CLEARANCE_SHARE) * float(np.linalg.norm(anchors[held]))
+    anchors = np.asarray(anchors, dtype=float)
+    ceiling = -(1.0 - ANCHOR_CLEARANCE_SHARE) * float(np.linalg.norm(anchors[held]))
+    home_span = _row_min_span_mm(anchors, held, 0.0, machine_type)
+    if home_span <= 0.0:
+        raise ValueError("No kinematically feasible ellipsoid sweep span at home for the current anchor estimate")
+    required_span = min(float(min_span_mm), 0.4 * home_span)
+
+    grid = [float(value) for value in np.linspace(0.0, ceiling, max(2, int(grid_steps)) + 1)]
+    feasible_prefix = [0.0]
+    infeasible_bound: Optional[float] = None
+    for height in grid[1:]:
+        if _row_min_span_mm(anchors, held, height, machine_type) >= required_span:
+            feasible_prefix.append(height)
+        else:
+            infeasible_bound = height
+            break
+
+    lo = feasible_prefix[-1]
+    if infeasible_bound is not None:
+        hi = infeasible_bound
+        for _ in range(10):
+            mid = 0.5 * (lo + hi)
+            if _row_min_span_mm(anchors, held, mid, machine_type) >= required_span:
+                lo = mid
+            else:
+                hi = mid
+
+    candidate = lo * FEASIBLE_HEIGHT_MARGIN
+    if _row_min_span_mm(anchors, held, candidate, machine_type) >= required_span:
+        return candidate
+    for height in reversed(feasible_prefix):
+        if abs(height) <= abs(candidate) + 1e-9:
+            return height
+    return 0.0
 
 
 def level_offsets_mm(anchors: np.ndarray, held: int, held_mm: float) -> Dict[int, float]:
@@ -106,7 +196,14 @@ def level_offsets_mm(anchors: np.ndarray, held: int, held_mm: float) -> Dict[int
     return offsets
 
 
-def next_held_mm(index: int, anchors: Optional[np.ndarray], held: int, used: Sequence[float]) -> Optional[float]:
+def next_held_mm(
+    index: int,
+    anchors: Optional[np.ndarray],
+    held: int,
+    used: Sequence[float],
+    *,
+    machine_type: Optional[str] = None,
+) -> Optional[float]:
     """Held length of ellipsoid `index` (0-based); None for the bootstrap rows.
 
     `used` holds every held length recorded or tried so far, so a height whose
@@ -115,7 +212,7 @@ def next_held_mm(index: int, anchors: Optional[np.ndarray], held: int, used: Seq
     if index == 0:
         return None
     if index <= 2:
-        return highest_held_mm(anchors, held) * (0.5 if index == 1 else 1.0)
+        return highest_held_mm(anchors, held, machine_type=machine_type) * (0.5 if index == 1 else 1.0)
     heights = sorted(set(round(length, 1) for length in used) | {0.0})
     gaps = [(upper - lower, 0.5 * (lower + upper)) for lower, upper in zip(heights[:-1], heights[1:])]
     return max(gaps)[1]
@@ -248,7 +345,8 @@ def run_ellipsoid_autocal(
             dataset = dict(recorded, sweeps=[recorded["sweeps"][i] for group in replay[:index + 1] for i in group])
         else:
             held_lengths = [mesh_metadata(s)["held_length_mm"] for s in dataset["sweeps"]] if dataset else []
-            held_mm = next_held_mm(index, history[-1] if history else None, held, held_lengths + tried)
+            held_mm = next_held_mm(index, history[-1] if history else None, held, held_lengths + tried,
+                                   machine_type=machine_type)
             tried += [] if held_mm is None else [held_mm]
             try:
                 dataset = collect(index, dataset, held_mm)
