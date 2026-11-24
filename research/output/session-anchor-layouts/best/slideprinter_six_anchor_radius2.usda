@@ -1,0 +1,419 @@
+#usda 1.0
+(
+    defaultPrim = "SlideprinterScene"
+    doc = "A better USD scene for Slideprinter"
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 500
+    upAxis = "Y"
+)
+
+def Xform "World"
+{
+    def Xform "SlideprinterScene"
+    {
+        custom color3f machine:extrusionColor = (1, 1, 1)
+        custom color3f machine:tintColor = (1, 1, 1)
+
+        def Circle "SpoolA" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ( (0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005) )
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:holdingTorque = 0.5
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (0, -2.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "AnchorAL"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (-0.12990381056766578, -1.995776791126703, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "AnchorAR"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (0.12990381056766578, -1.995776791126703, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Circle "AttachAL" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Attachment"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float physics:mass = 0.027
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.01
+            double3 xformOp:translate = (-0.12990381056766578, -0.075, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Circle "AttachAR" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Attachment"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float physics:mass = 0.027
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.01
+            double3 xformOp:translate = (0.12990381056766578, -0.075, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Circle "SpoolB" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ( (0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005) )
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:holdingTorque = 0.5
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (2.165063509461097, 1.25, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "AnchorBL"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (1.793345306682947, 0.8853883955633516, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "AnchorBR"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (1.6634414961152812, 1.1103883955633516, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Circle "AttachBR" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Attachment"]
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            float physics:mass = 0.027
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.01
+            double3 xformOp:translate = (0, 0.15, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Circle "SpoolC" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            custom bool cable:linkable = 1
+            token[] ecs:tags = ["Spool", "Stepper"]
+            rel material:binding = </World/PhysicsScene/SpoolMaterial>
+            float3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ( (0.00005, 0, 0), (0, 0.00005, 0), (0, 0, 0.00005) )
+            float physics:mass = -1
+            vector3f physics:velocity = (0, 0, 0)
+            double radius = 0.03
+            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:holdingTorque = 0.5
+            custom int stepper:numPolePairs = 50
+            quatf xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (-2.165063509461097, 1.25, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "AnchorCL"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (-1.6634414961152812, 1.1103883955633516, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "AnchorCR"
+        {
+            token[] ecs:tags = ["Anchor"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (-1.793345306682947, 0.8853883955633516, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Extruder"
+        {
+            token[] ecs:tags = ["Extruder"]
+            rel machine:centerSources = [
+                </World/SlideprinterScene/AttachAL>,
+                </World/SlideprinterScene/AttachAR>,
+                </World/SlideprinterScene/AttachBR>,
+            ]
+            rel machine:rigidGroup = </World/SlideprinterScene/SpoolTriangle>
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "Tip"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "ColdEnd"
+            {
+                double3 xformOp:translate = (0, 0, 0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def RigidGroup "SpoolTriangle"
+        {
+            rel rigidGroup:members = [
+                </World/SlideprinterScene/AttachAL>,
+                </World/SlideprinterScene/AttachAR>,
+                </World/SlideprinterScene/AttachBR>,
+            ]
+        }
+
+        def CableJoint "JointAL_0"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/SpoolA>
+            custom rel physics:body1 = </World/SlideprinterScene/AnchorAL>
+        }
+
+        def CableJoint "JointAL_1"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/AnchorAL>
+            custom rel physics:body1 = </World/SlideprinterScene/AttachAL>
+        }
+
+        def CableJoint "JointAR_0"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/SpoolA>
+            custom rel physics:body1 = </World/SlideprinterScene/AnchorAR>
+        }
+
+        def CableJoint "JointAR_1"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/AnchorAR>
+            custom rel physics:body1 = </World/SlideprinterScene/AttachAR>
+        }
+
+        def CableJoint "JointBL_0"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/SpoolB>
+            custom rel physics:body1 = </World/SlideprinterScene/AnchorBL>
+        }
+
+        def CableJoint "JointBL_1"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/AnchorBL>
+            custom rel physics:body1 = </World/SlideprinterScene/AttachAR>
+        }
+
+        def CableJoint "JointBR_0"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/SpoolB>
+            custom rel physics:body1 = </World/SlideprinterScene/AnchorBR>
+        }
+
+        def CableJoint "JointBR_1"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/AnchorBR>
+            custom rel physics:body1 = </World/SlideprinterScene/AttachBR>
+        }
+
+        def CableJoint "JointCL_0"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/SpoolC>
+            custom rel physics:body1 = </World/SlideprinterScene/AnchorCL>
+        }
+
+        def CableJoint "JointCL_1"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/AnchorCL>
+            custom rel physics:body1 = </World/SlideprinterScene/AttachBR>
+        }
+
+        def CableJoint "JointCR_0"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/SpoolC>
+            custom rel physics:body1 = </World/SlideprinterScene/AnchorCR>
+        }
+
+        def CableJoint "JointCR_1"
+        {
+            custom rel physics:body0 = </World/SlideprinterScene/AnchorCR>
+            custom rel physics:body1 = </World/SlideprinterScene/AttachAL>
+        }
+
+        def Xform "CablePathAL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom double cablePath:damping = 0
+            custom double cablePath:halfWidth = 0.001
+            custom token cablePath:initPolicy = "deriveMissing"
+            custom rel cablePath:joints = [
+                </World/SlideprinterScene/JointAL_0>,
+                </World/SlideprinterScene/JointAL_1>,
+            ]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom double cablePath:stiffness = 20000
+            custom double[] cablePath:stored = [1, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+        }
+
+        def Xform "CablePathAR" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom double cablePath:damping = 0
+            custom double cablePath:halfWidth = 0.001
+            custom token cablePath:initPolicy = "deriveMissing"
+            custom rel cablePath:joints = [
+                </World/SlideprinterScene/JointAR_0>,
+                </World/SlideprinterScene/JointAR_1>,
+            ]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom double cablePath:stiffness = 20000
+            custom double[] cablePath:stored = [1, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+        }
+
+        def Xform "CablePathBL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom double cablePath:damping = 0
+            custom double cablePath:halfWidth = 0.001
+            custom token cablePath:initPolicy = "deriveMissing"
+            custom rel cablePath:joints = [
+                </World/SlideprinterScene/JointBL_0>,
+                </World/SlideprinterScene/JointBL_1>,
+            ]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom double cablePath:stiffness = 20000
+            custom double[] cablePath:stored = [1, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+        }
+
+        def Xform "CablePathBR" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom double cablePath:damping = 0
+            custom double cablePath:halfWidth = 0.001
+            custom token cablePath:initPolicy = "deriveMissing"
+            custom rel cablePath:joints = [
+                </World/SlideprinterScene/JointBR_0>,
+                </World/SlideprinterScene/JointBR_1>,
+            ]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom double cablePath:stiffness = 20000
+            custom double[] cablePath:stored = [1, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+        }
+
+        def Xform "CablePathCL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom double cablePath:damping = 0
+            custom double cablePath:halfWidth = 0.001
+            custom token cablePath:initPolicy = "deriveMissing"
+            custom rel cablePath:joints = [
+                </World/SlideprinterScene/JointCL_0>,
+                </World/SlideprinterScene/JointCL_1>,
+            ]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom double cablePath:stiffness = 20000
+            custom double[] cablePath:stored = [1, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+        }
+
+        def Xform "CablePathCR" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom double cablePath:damping = 0
+            custom double cablePath:halfWidth = 0.001
+            custom token cablePath:initPolicy = "deriveMissing"
+            custom rel cablePath:joints = [
+                </World/SlideprinterScene/JointCR_0>,
+                </World/SlideprinterScene/JointCR_1>,
+            ]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom double cablePath:stiffness = 20000
+            custom double[] cablePath:stored = [1, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+        }
+    }
+
+    def PhysicsScene "PhysicsScene"
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.82
+
+        def Material "SpoolMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            float physics:dynamicFriction = 0.2
+            float physics:restitution = 0.5
+            float physics:staticFriction = 0.2
+
+            def Shader "Shader"
+            {
+                color3f inputs:diffuseColor = (0.5, 0, 0.5)
+            }
+        }
+
+        def Material "PinholeMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            float physics:dynamicFriction = 0.005
+            float physics:restitution = 0.025
+            float physics:staticFriction = 0.005
+        }
+
+        def Material "AnchorMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            def Shader "Shader"
+            {
+                color3f inputs:diffuseColor = (0.6, 0.6, 0.6)
+            }
+        }
+    }
+}

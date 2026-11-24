@@ -256,6 +256,8 @@ One result sentence per session; follow the report for evidence.
 
 - [Autocal history-ranking baseline, unfinished record](session-a71aec03021f470796a789ba7382e28a/research.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
+- [Anchor-layout search within a 2 m radius](session-anchor-layouts/report.md) — The highest-scoring layouts used six fixed guides in 2D and four kinematic cable groups in 3D.
+
 - [Retained batch research entry route](session-architecture-batch/report.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
 - [Architecture interactive](session-architecture-interactive/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
@@ -300,4 +302,8 @@ One result sentence per session; follow the report for evidence.
 
 - [Headless extended autocal recording validation](session-headless-extended-autocal-validation/report.md) — The production headless JavaScript world completed default full-auto calibration with one finalized extended-reference RRD: eight sweeps, 160 points, 267,711 physics observations and 616,025 events in 1525.41 wall seconds.
 
+- [Research Program usefulness audit](session-program-usefulness/report.md) — Five early programs demonstrated evidence handling and tool plumbing.
+
 - [Future-sweep selection versus refreshed autocal references](session-reference-refresh-october-7-2026/report.md) — Retrospective summary of saved evidence, written 2026-10-08.
+
+- [Research instruction audit](session-research-instruction-audit/report.md) — The November 2026 audit mapped the instructions loaded by the legacy research manager, worker, and reviewer.

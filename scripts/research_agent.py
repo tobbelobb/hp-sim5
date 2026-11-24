@@ -200,7 +200,7 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
     runtime = None
     if checks.get('physics', {}).get('ok'):
         try:
-            runtime = RuntimeService(ROOT, ROOT / 'research/output/scratch/preflight' / uuid.uuid4().hex).start()
+            runtime = RuntimeService(ROOT, ROOT / 'output/scratch/preflight' / uuid.uuid4().hex).start()
             runtime.call('configure', machine='hp3')
             collection = runtime.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
             from hp_sim5_research.validation import validate_collection

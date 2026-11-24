@@ -42,7 +42,7 @@ manifest = run_experiment('.', steps=200, record=True)
 print(manifest['artifacts']['rrd'])
 print(read_run('.', manifest['run_id'], 0, 5)['samples'][-1]['effectors'])
 PY
-.venv/bin/rerun output/research/experiments/*/recording.rrd
+.venv/bin/rerun output/experiments/*/recording.rrd
 ```
 
 The `steps` argument selects the number of updates. Commands are scheduled one

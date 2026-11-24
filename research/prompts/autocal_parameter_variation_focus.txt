@@ -7,7 +7,7 @@ and disabled simulator line layering. Use HP3, not HP4. Real calibration has no
 ground-truth anchors. Truth may construct and evaluate a simulated plant, but
 must not choose measurements, fit seeds, thresholds or the applied answer.
 
-The historical reference is output/extended-autocal/no-buildup-reference-003.
+The historical reference is output/legacy/standalone/extended-autocal/no-buildup-reference-003.
 Also use a fresh current-code baseline for any live comparison. Physics, motor,
 collector and fitting changes since that reference can change its results.
 

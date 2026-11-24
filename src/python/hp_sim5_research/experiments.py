@@ -7,10 +7,12 @@ import os
 from pathlib import Path
 import platform
 import re
-import subprocess
 import time
 import uuid
 import warnings
+
+from hp_sim5_sim.provenance import git_provenance
+from hp_sim5_sim.storage import EXPERIMENTS_DIR, LOCAL_STORE_DIR, utc_now_iso
 
 from .js_physics import JSPhysics
 from .mirror import World, apply_state, capture_snapshot, sample  # noqa: F401 - re-exported API
@@ -34,22 +36,29 @@ def write_json(path, value):
 
 def repo_path(root, value):
     path = (root / value).resolve()
-    if not path.is_relative_to(root.resolve()):
+    shared = (root / LOCAL_STORE_DIR / EXPERIMENTS_DIR).resolve()
+    if not (path.is_relative_to(root.resolve()) or path.is_relative_to(shared)):
         raise ValueError('Input paths must be inside the repository')
     return path
 
 
-def run_directory(root, run_id):
+def run_directory(root, run_id, *, existing=False):
     if not re.fullmatch(r'[0-9a-f]{32}', run_id):
         raise ValueError('Use the run_id returned by run_experiment')
-    # Attached runs belong to the stable investigation; loose trials use scratch.
-    session = os.environ.get('HP_SIM5_SESSION_DIR')
-    base = Path(session) if session else Path(root) / 'research/output/scratch'
-    output = (base / 'experiments').resolve()
-    directory = (output / run_id).resolve()
-    if not directory.is_relative_to(output):
-        raise ValueError('Experiment paths must stay inside the experiment output directory')
-    return directory
+    root = Path(root)
+    stores = [root / LOCAL_STORE_DIR / EXPERIMENTS_DIR]
+    if existing:
+        if session := os.environ.get('HP_SIM5_SESSION_DIR'):
+            stores.append(Path(session) / EXPERIMENTS_DIR)
+        stores.append(root / 'research/output/scratch/experiments')
+    for store in stores:
+        output = store.resolve()
+        directory = (output / run_id).resolve()
+        if not directory.is_relative_to(output):
+            raise ValueError('Experiment paths must stay inside the experiment output directory')
+        if not existing or (directory / 'manifest.json').is_file():
+            return directory
+    raise FileNotFoundError(f'Experiment manifest not found: {run_id}')
 
 
 def validate_commands(commands, axes, steps):
@@ -109,6 +118,11 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     if dt is not None and (isinstance(dt, bool) or not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0):
         raise ValueError('dt must be positive and finite')
     scene_path = repo_path(root, scene)
+    if scene_path.is_relative_to(root):
+        scene_ref = scene_path.relative_to(root)
+    else:
+        shared = Path(LOCAL_STORE_DIR) / EXPERIMENTS_DIR
+        scene_ref = shared / scene_path.relative_to((root / shared).resolve())
     commands = [] if commands is None else commands
     frozen_scene = scene_path.read_text()
     validate_commands(commands, scene_motor_axes(frozen_scene), steps)
@@ -121,18 +135,19 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     source = hashlib.sha256()
     for path in sorted((root / 'src/python').rglob('*.py')):
         source.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
-    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True)
     manifest = {'schema_version': 2, 'backend': 'headless-js', 'physics_engine': 'rust-native',
                 'run_id': run_id, 'label': label, 'status': 'running',
-                'scene': str(scene_path.relative_to(root)), 'scene_generation': 0, 'steps': steps, 'dt_s': dt,
+                'scene': str(scene_ref), 'scene_generation': 0, 'steps': steps, 'dt_s': dt,
                 'commands_sha256': digest(encode(commands).encode()), 'scene_sha256': digest(frozen_scene.encode()),
-                'python_source_sha256': source.hexdigest(), 'git_revision': revision.stdout.strip(),
+                'python_source_sha256': source.hexdigest(), **git_provenance(root),
                 'python': platform.python_version(), 'platform': platform.platform(),
                 'packages': {name: version(name) for name in ('numpy', 'rerun-sdk')},
                 'construction_wall_s': time.perf_counter() - started, 'record': record,
                 'artifacts': {name: str(directory / file) for name, file in
                               [('manifest', 'manifest.json'), ('scene', 'scene.usda'), ('commands', 'commands.json'),
                                ('telemetry', 'telemetry.jsonl'), ('snapshot', 'final.json')]}}
+    if session := os.environ.get('HP_SIM5_SESSION_DIR'):
+        manifest['investigation'] = Path(session).name
     recording = None
     physics = None
     write_json(directory / 'manifest.json', manifest)
@@ -184,12 +199,13 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
         if recording is not None:
             recorder.flush()
             recording.disconnect()
+        manifest['finished_at'] = utc_now_iso()
         write_json(directory / 'manifest.json', manifest)
     return manifest
 
 
 def read_run(root, run_id, start_step=None, limit=20):
-    directory = run_directory(Path(root), run_id)
+    directory = run_directory(root, run_id, existing=True)
     manifest = json.loads((directory / 'manifest.json').read_text())
     if start_step is None:
         return manifest

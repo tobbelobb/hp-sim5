@@ -37,7 +37,8 @@ is retained and a new world generation records its own provenance.
 
 Opening and closing a client writes only ignored .research-state metadata and logs.
 No placeholder abstract, empty evidence directory, or catalog entry is published.
-Reports and original experiment evidence go into the assigned stable artifact path.
+Keep reports and selected evidence in the assigned path under `research/output/`.
+Link reusable runs in `output/experiments/` or `gdrive://hp-sim5-artifacts`.
 For corpus discovery and publishing, use the
 [research-corpus skill](../.agents/skills/research-corpus/SKILL.md).
 

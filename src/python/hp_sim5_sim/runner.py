@@ -13,11 +13,17 @@ from typing import Any, Sequence
 
 from .firmware import stop_process_tree
 from .interfaces import ArtifactStore, ExperimentResult, ExperimentSpec
+from .provenance import git_provenance
 from .storage import (
     ArtifactUploadError,
     DEFAULT_EXCLUDE_GLOBS,
+    DriveMountArtifactStore,
+    GoogleDriveArtifactStore,
+    LOCAL_STORE_DIR,
     ScratchWorkspace,
+    UPLOAD_PENDING_DIR,
     retry_upload_command,
+    utc_now_iso,
     write_upload_pending,
 )
 
@@ -32,18 +38,6 @@ def _artifact_exclude_globs(spec: ExperimentSpec, status: str) -> tuple[str, ...
     ):
         globs.append("*.headless*/events.jsonl")
     return tuple(globs)
-
-
-def _git_revision(repo_root: Path) -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=repo_root, stderr=subprocess.DEVNULL, text=True
-        ).strip()
-    except (OSError, subprocess.CalledProcessError):
-        rev_file = repo_root / ".hp_sim5_git_revision"
-        if rev_file.is_file():
-            return rev_file.read_text(encoding="utf-8").strip() or "unknown"
-        return "unknown"
 
 
 def _default_python(repo_root: Path) -> str:
@@ -201,6 +195,9 @@ def run_experiment_spec(
     root = Path(repo_root).resolve()
     py = python_exe or _default_python(root)
     started = time.monotonic()
+    provenance = git_provenance(root)
+    if scratch_base is None and isinstance(store, (GoogleDriveArtifactStore, DriveMountArtifactStore)):
+        scratch_base = root / LOCAL_STORE_DIR / UPLOAD_PENDING_DIR
 
     with ScratchWorkspace(spec.experiment_id, base_dir=scratch_base, keep=keep_scratch) as ws:
         assert ws.path is not None
@@ -268,12 +265,17 @@ def run_experiment_spec(
             scratch_dir=str(scratch) if keep_scratch else None,
             error=error_msg,
         )
-        (scratch / "result.json").write_text(
-            json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        provenance["finished_at"] = utc_now_iso()
+        result_path = scratch / "result.json"
+        result_path.write_text(
+            json.dumps({**result.to_dict(), **provenance}, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
         )
 
         if store is not None:
             meta = {
+                **spec.metadata,
+                **provenance,
                 "kind": spec.kind,
                 "machine": spec.machine,
                 "status": status,
@@ -281,12 +283,10 @@ def run_experiment_spec(
                 "solver": spec.solver,
                 "recording_mode": spec.recording_mode,
                 "tags": list(spec.tags),
-                "git_revision": _git_revision(root),
                 "wall_s": result.wall_s,
                 "simulated_s": simulated_s,
                 "total_steps": total_steps,
                 "metrics": metrics,
-                **spec.metadata,
             }
             exclude_globs = _artifact_exclude_globs(spec, status)
             try:
@@ -314,8 +314,9 @@ def run_experiment_spec(
                 result.error = f"{result.error}\nArtifact upload failed: {err_text}" if result.error else f"Artifact upload failed: {err_text}"
                 if not raise_on_upload_error:
                     result.status = "upload_failed"
-                (scratch / "result.json").write_text(
-                    json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                result_path.write_text(
+                    json.dumps({**result.to_dict(), **provenance}, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
                 )
                 print(
                     f"[hp_sim5_sim] WARNING: Artifact upload failed for {spec.experiment_id} -> {store.uri}: {err_text}\n"

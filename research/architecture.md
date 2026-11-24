@@ -100,12 +100,13 @@ configuration contracts interchangeable.
 ## Recording scope and identity
 
 Let `S` be the launcher-assigned session directory. Its default location is
-`research/output/session-<session-name>/`. Attached fresh trials use this investigation's experiments/ directory; unattached trials use scratch storage. Launcher metadata
+`research/output/session-<session-name>/`. Fresh trials use the shared `output/experiments/` tree.
+Investigations can cite the same run by ID. Launcher metadata
 and logs stay under ignored .research-state/, outside the corpus. Always use paths returned by tools and manifests.
 
 | Workflow | Evidence location | Recording scope and sampling |
 | --- | --- | --- |
-| Fresh trial | `S/experiments/<run_id>/` when attached; otherwise scratch | Frozen scene/commands, manifest, final snapshot and JSON telemetry at step zero and every update. Optional RRD records physics updates with the native blueprint. |
+| Fresh trial | `output/experiments/<run_id>/` | Frozen scene/commands, manifest, final snapshot and JSON telemetry at step zero and every update. Optional RRD records physics updates with the native blueprint. |
 | Continuing collection | `S/native/<world_id>/<collection_job_id>/` | Each recorded collection finalizes its own RRD while the world continues. Observations are sampled at 10 simulated Hz and at encoder reads. Dataset, point journal, events and manifests retain roles, settings and step bounds. World inputs live in the parent generation directory. |
 | Full-autocal | `S/native/autocal/<job_id>/` by default | CLI logs, datasets, stage artifacts and `sweeps.headless/` command/encoder traces and manifests. `recording_mode` defaults to `events` (one RRD without physics); `none` skips RRD, `sampled` adds physics at stride 100, and `full` retains stride 10. Physics uses compact geometry; events span scene resets. |
 | Browser | `S/native/browser-recordings/` | Receiver writes separate recordings for page session/scene generations. Ordinary recording defaults to every physics step; extended recording defaults to stride 10. `browser_status` lists exact files, recording IDs and finalized bounds. |

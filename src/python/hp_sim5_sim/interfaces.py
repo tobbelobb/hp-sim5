@@ -261,7 +261,7 @@ class ArtifactStore(Protocol):
         *,
         tags: Sequence[str] = (),
         kind: str | None = None,
-        limit: int = 100,
+        limit: int | None = 100,
     ) -> list[dict[str, Any]]: ...
 
     def exists(self, experiment_id: str, rel_path: str | None = None) -> bool: ...

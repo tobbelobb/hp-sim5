@@ -155,7 +155,8 @@ research/output/program-ID/
 ```
 
 Commit the useful reports, agenda, manifests, and topic syntheses. Keep large raw
-recordings on durable storage with checksummed references. On another host, resume
+recordings in `output/experiments/` or on Drive with checksummed references. Programs
+and investigations can cite the same run. On another host, resume
 the program by directory and use `--agent-id` to reconstruct a researcher's local
 metadata. The corpus skill explains synthesis and preservation.
 
@@ -165,11 +166,6 @@ when needed. Sidebar grouping is opt-in through `--sidebar-section UUID`.
 Legacy program.json records with nested `program.id` and `program.goal` can be
 reopened with an empty new membership list. Archives without program.json remain
 readable evidence; carry useful questions into a new program.
-
-The former `research-program-feature` controller and cloud model queues have been
-removed. Existing reports and archives are preserved. Old ignored SQLite state is
-not imported or deleted; retain it if needed, and carry useful questions/evidence
-into a new plain program rather than restarting historical PIDs or queued actors.
 
 Run `.venv/bin/python -m pytest -q research-program/tests` for this layer. No paid
 model calls are part of the suite.

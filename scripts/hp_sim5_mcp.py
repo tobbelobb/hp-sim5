@@ -282,7 +282,7 @@ def capture_native_context(message: str, step: int | None = None, selected_entit
                'scene_generation': manifest.get('scene_generation'), 'scene_sha256': manifest['scene_sha256'],
                'selected_entity': selected_entity, 'message': message,
                'observation': read_run(ROOT, run_id, selected_step, 1)['samples'][0]}
-    directory = Path(os.environ.get('HP_SIM5_SESSION_DIR', ROOT / 'research/output/scratch'))
+    directory = Path(os.environ.get('HP_SIM5_SESSION_DIR', ROOT / 'output/scratch'))
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / 'native-context.jsonl').open('a') as output:
         output.write(json.dumps(context, allow_nan=False) + '\n')
