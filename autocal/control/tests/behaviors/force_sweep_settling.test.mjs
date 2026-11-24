@@ -3,11 +3,12 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2, driveStepMm = 0, stepMmByAnchor = [], extraGain = null } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false, sensorForceProfile = null, sensorSpoolGearRatio = 1, probeSpoolReserve = false, pulloutLimit = Infinity, sensorGain = 4, meanCrossing = false, forceLosesCoupling = false, sweepPoints = 2, driveStepMm = 0, stepMmByAnchor = [], extraGain = null, firstMoveElasticRelaxMm = 0, driveScale = 1 } = {}) {
   let now = 0;
   let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
   let preparing = preparationDrift;
   let angles = extraGain === null ? [0, 0, 0, 0] : [0, 0, 0, 0, 0];
+  let driveMovesSeen = 0;
   const commands = [];
   const points = [];
   let lastSleepMs = null, noiseBatch = 0;
@@ -24,10 +25,13 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     }
     const move = line.match(/^G1 H2 Y([-\d.]+)/);
     if (move) {
+      driveMovesSeen += 1;
+      const requested = Number(move[1]) * driveScale;
+      const relax = driveMovesSeen === 1 ? firstMoveElasticRelaxMm : 0;
       // Firmware moves whole steps; truncation can leave almost one step short.
-      angles[1] += driveStepMm ? Math.trunc(Number(move[1]) / driveStepMm) * driveStepMm : Number(move[1]);
-      if (!(forceLosesCoupling && modes[2] > 2.5)) angles[2] -= sensorGain * Number(move[1]);
-      if (extraGain !== null && modes[4] > 0.1) angles[4] += extraGain * Number(move[1]);
+      angles[1] += (driveStepMm ? Math.trunc(requested / driveStepMm) * driveStepMm : requested) - relax;
+      if (!(forceLosesCoupling && modes[2] > 2.5)) angles[2] -= sensorGain * requested;
+      if (extraGain !== null && modes[4] > 0.1) angles[4] += extraGain * requested;
     }
     return { reply: '' };
   };
@@ -79,6 +83,19 @@ test('drive tracking allows the one motor step that firmware moves cannot resolv
   await expect(movingPullout({ driveStepMm: 0.2 }).run()).rejects.toThrow(/did not track.*tolerance 0\.050 mm/);
   const result = await movingPullout({ driveStepMm: 0.2, stepMmByAnchor: [0, 0.2, 0, 0] }).run();
   expect(result.dataPoints.length).toBeGreaterThan(0);
+});
+
+test('drive tracking corrects an elastic rotor offset once without masking a stall', async () => {
+  const recovered = movingPullout({ firstMoveElasticRelaxMm: 0.13, stepMmByAnchor: [0, 0.046, 0, 0] });
+  const result = await recovered.run();
+  expect(result.dataPoints.length).toBeGreaterThan(0);
+  const driveMoves = recovered.commands
+    .map(({ line }) => line.match(/^G1 H2 Y([-\d.]+)/))
+    .filter(Boolean)
+    .map(match => Number(match[1]));
+  expect(driveMoves[1]).toBeCloseTo(0.13, 3);
+
+  await expect(movingPullout({ driveScale: 0.25 }).run()).rejects.toThrow(/did not track/);
 });
 
 test('continues to reject measurement drift after a bounded pullout', async () => {

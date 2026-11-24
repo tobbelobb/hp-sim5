@@ -133,29 +133,49 @@ def highest_held_mm(
     *,
     machine_type: Optional[str] = None,
     min_span_mm: float = MIN_ROW_SPAN_MM,
+    grid_steps: int = 16,
 ) -> float:
     """Highest held-line length (most negative) whose rows all keep a usable coupled arc.
 
-    Bisects between home (0) and the anchor-clearance ceiling using the kinematic
-    pretension reachability model, then backs off by FEASIBLE_HEIGHT_MARGIN so
-    modest errors in the initial anchor estimate do not waste sweeps on unreachable rows.
+    Scans a coarse grid from home (0) toward the anchor-clearance ceiling to find the
+    contiguous feasible interval starting at home (avoiding assumptions of global
+    monotonicity), bisects that bracket, backs off by FEASIBLE_HEIGHT_MARGIN, and
+    verifies that the returned height is itself feasible.
     """
     anchors = np.asarray(anchors, dtype=float)
     ceiling = -(1.0 - ANCHOR_CLEARANCE_SHARE) * float(np.linalg.norm(anchors[held]))
     home_span = _row_min_span_mm(anchors, held, 0.0, machine_type)
     if home_span <= 0.0:
-        return 0.5 * ceiling
+        raise ValueError("No kinematically feasible ellipsoid sweep span at home for the current anchor estimate")
     required_span = min(float(min_span_mm), 0.4 * home_span)
-    if _row_min_span_mm(anchors, held, ceiling, machine_type) >= required_span:
-        return ceiling * FEASIBLE_HEIGHT_MARGIN
-    lo, hi = 0.0, ceiling
-    for _ in range(14):
-        mid = 0.5 * (lo + hi)
-        if _row_min_span_mm(anchors, held, mid, machine_type) >= required_span:
-            lo = mid
+
+    grid = [float(value) for value in np.linspace(0.0, ceiling, max(2, int(grid_steps)) + 1)]
+    feasible_prefix = [0.0]
+    infeasible_bound: Optional[float] = None
+    for height in grid[1:]:
+        if _row_min_span_mm(anchors, held, height, machine_type) >= required_span:
+            feasible_prefix.append(height)
         else:
-            hi = mid
-    return lo * FEASIBLE_HEIGHT_MARGIN
+            infeasible_bound = height
+            break
+
+    lo = feasible_prefix[-1]
+    if infeasible_bound is not None:
+        hi = infeasible_bound
+        for _ in range(10):
+            mid = 0.5 * (lo + hi)
+            if _row_min_span_mm(anchors, held, mid, machine_type) >= required_span:
+                lo = mid
+            else:
+                hi = mid
+
+    candidate = lo * FEASIBLE_HEIGHT_MARGIN
+    if _row_min_span_mm(anchors, held, candidate, machine_type) >= required_span:
+        return candidate
+    for height in reversed(feasible_prefix):
+        if abs(height) <= abs(candidate) + 1e-9:
+            return height
+    return 0.0
 
 
 def level_offsets_mm(anchors: np.ndarray, held: int, held_mm: float) -> Dict[int, float]:

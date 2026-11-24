@@ -754,11 +754,14 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
   return anglesToLengths(stableAfter.anglesDeg, mmPerDeg);
 }
 
-// By convexity of Euclidean distance to each anchor, linear joint-space return
-// keeps every commanded cable length >= the straight-line geometric distance, so
-// cables cannot bind and avoid the large intermediate slack of one-at-a-time returns.
-// Falls back to one-at-a-time on Klipper (sequential FORCE_MOVE) or if a coordinated
-// correction still leaves an encoder off origin.
+// For idealized straight cables with fixed anchor geometry, convexity of
+// Euclidean distance implies linear joint-space return keeps commanded lengths
+// >= straight-line geometric distance, reducing intermediate slack relative to
+// one-at-a-time returns. Real hardware adds elasticity, friction, spool buildup,
+// dynamic lag, and tracking error, so this is a planning heuristic rather than
+// a physical guarantee; post-move encoder checks, a single coordinated
+// correction, and sequential fallback guard against residual tracking error.
+// Klipper uses sequential FORCE_MOVE directly.
 export async function returnMotorsToOrigin(sendFn, options = {}) {
   const {
     motorIds,

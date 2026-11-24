@@ -701,7 +701,12 @@ export async function findBreakawayForce(sendFn, options = {}) {
         curAngles = angles;
         if (Number.isFinite(fixedAnchor)) {
           fixedDriftDeg = angles[fixedAnchor] - startAngles[fixedAnchor];
-          if (Math.abs(fixedDriftDeg) > 1.5) break;
+          if (Math.abs(fixedDriftDeg) > 1.5) {
+            // Stop torque application immediately on fixed-anchor slip.
+            // eslint-disable-next-line no-await-in-loop
+            await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
+            break;
+          }
         }
         const deltaDeg = angles.map((a, idx) => a - startAngles[idx]);
         if (hasMovementBeyondThresholds(deltaDeg, { activeAnchor, restAnchors, thresholds })) {
@@ -715,10 +720,11 @@ export async function findBreakawayForce(sendFn, options = {}) {
     onStep?.({ step: step + 1, maxSteps: maxBracketSteps, force: testForce, moved, travelDeg, fixedDriftDeg });
     if (Math.abs(fixedDriftDeg) > 1.5) {
       return {
-        forceStart: lastNoMoveForce,
+        forceStart: null,
         lastNoMoveForce,
         firstMoveForce: null,
         fixedDriftDeg,
+        fixedSlipped: true,
         anglesDeg: curAngles,
       };
     }
@@ -728,6 +734,7 @@ export async function findBreakawayForce(sendFn, options = {}) {
         lastNoMoveForce,
         firstMoveForce: testForce,
         fixedDriftDeg,
+        fixedSlipped: false,
         anglesDeg: curAngles,
       };
     }
@@ -739,7 +746,14 @@ export async function findBreakawayForce(sendFn, options = {}) {
     testForce = nextForce;
   }
 
-  return { forceStart: null, lastNoMoveForce, firstMoveForce: null, fixedDriftDeg, anglesDeg: curAngles };
+  return {
+    forceStart: null,
+    lastNoMoveForce,
+    firstMoveForce: null,
+    fixedDriftDeg,
+    fixedSlipped: false,
+    anglesDeg: curAngles,
+  };
 }
 
 // One in-place staircase step for findEdgeForce: ramps activeAnchor to testForce
@@ -830,7 +844,12 @@ export async function runStaircaseForceStep(sendFn, options = {}) {
       endAngles = angles;
       if (Number.isFinite(fixedAnchor)) {
         fixedDriftDeg = angles[fixedAnchor] - originAngles[fixedAnchor];
-        if (Math.abs(fixedDriftDeg) > 1.5) break;
+        if (Math.abs(fixedDriftDeg) > 1.5) {
+          // Stop torque application immediately on fixed-anchor slip.
+          // eslint-disable-next-line no-await-in-loop
+          await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
+          break;
+        }
       }
       const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);
       const speed = Math.abs(angles[activeAnchor] - lastAngles[activeAnchor]) / dtSec;
@@ -854,6 +873,7 @@ export async function runStaircaseForceStep(sendFn, options = {}) {
     stalled,
     deltaEndDeg,
     fixedDriftDeg,
+    fixedSlipped: Math.abs(fixedDriftDeg) > 1.5,
   };
 }
 
@@ -1036,34 +1056,9 @@ export async function tuneForce(sendFn, plan, options = {}) {
     });
   }
 
-  const noiseStats = await calibrateEncoderNoise(sendFn, {
-    motorIds,
-    fixedAnchor,
-    idleForce: baseLow,
-    speedup,
-    forbiddenForceAnchors,
-  });
-  const thresholds = buildMovementThresholds(noiseStats.sigmaByMotorDeg, {
-    activeAnchor: driveAnchor,
-    restAnchors,
-  });
-
-  const intervalMs = Math.max(20, AUTO_TUNE_SAMPLE_INTERVAL_MS);
-  const stallSpeedDegPerSec = Math.max(
-    AUTO_TUNE_STAIRCASE_STALL_SPEED_DEG_PER_SEC,
-    computeStallSpeedThresholdDegPerSec(thresholds.sigmaAct, intervalMs / 1000),
-  );
-
-  const formatValue = (value, digits = 4) => (Number.isFinite(value) ? value.toFixed(digits) : 'n/a');
-  const logTrial = (label, force, result) => {
-    const travel = formatValue(result?.travelDeg, 3);
-    console.log(`; auto-tune ${label}: test=${formatValue(force)} moved=${result?.moved ? 'yes' : 'no'} travel=${travel}deg stalled=${result?.stalled ? 'yes' : 'no'}`);
-  };
-
-  const originReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
-  const originAngles = parseEncoderReply(originReply?.reply);
-
+  let returnedToOrigin = false;
   const returnAtEnd = async (returnForce) => {
+    returnedToOrigin = true;
     if (Array.isArray(axes) && Array.isArray(mmPerDeg)) {
       await returnMotorsToOrigin(sendFn, {
         motorIds,
@@ -1075,147 +1070,194 @@ export async function tuneForce(sendFn, plan, options = {}) {
         fixedAnchors,
         forbiddenForceAnchors,
       });
+    } else {
+      await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
     }
   };
 
-  const breakaway = await findBreakawayForce(sendFn, {
-    motorIds,
-    activeAnchor: driveAnchor,
-    fixedAnchor,
-    restAnchors,
-    idleForce: baseLow,
-    startForce: baseLow,
-    capForceLimit,
-    originAngles,
-    thresholds,
-    forbiddenForceAnchors,
-    onStep: ({ step, maxSteps, force, moved, travelDeg }) => {
-      if (moved) logTrial(`probe ${step}/${maxSteps}`, force, { moved, travelDeg, stalled: false });
-    },
-  });
-  const { forceStart, lastNoMoveForce, firstMoveForce } = breakaway;
-  if (!Number.isFinite(forceStart)) {
-    await returnAtEnd(baseLow);
-    console.log('; auto-tune force failed to find force-start; using provided/default forces');
-    return {
-      ...fallback,
-      tuningMeta: {
-        tuning_failed: true,
-        method: 'incremental-compliance',
-        noise_sigma_deg: noiseStats.sigmaByMotorDeg,
-      },
+  try {
+    const noiseStats = await calibrateEncoderNoise(sendFn, {
+      motorIds,
+      fixedAnchor,
+      idleForce: baseLow,
+      speedup,
+      forbiddenForceAnchors,
+    });
+    const thresholds = buildMovementThresholds(noiseStats.sigmaByMotorDeg, {
+      activeAnchor: driveAnchor,
+      restAnchors,
+    });
+
+    const intervalMs = Math.max(20, AUTO_TUNE_SAMPLE_INTERVAL_MS);
+    const stallSpeedDegPerSec = Math.max(
+      AUTO_TUNE_STAIRCASE_STALL_SPEED_DEG_PER_SEC,
+      computeStallSpeedThresholdDegPerSec(thresholds.sigmaAct, intervalMs / 1000),
+    );
+
+    const formatValue = (value, digits = 4) => (Number.isFinite(value) ? value.toFixed(digits) : 'n/a');
+    const logTrial = (label, force, result) => {
+      const travel = formatValue(result?.travelDeg, 3);
+      console.log(`; auto-tune ${label}: test=${formatValue(force)} moved=${result?.moved ? 'yes' : 'no'} travel=${travel}deg stalled=${result?.stalled ? 'yes' : 'no'}`);
     };
-  }
-  const idleCandidate = Math.max(baseLow, DEFAULT_FORCE_LOW_N, AUTO_TUNE_IDLE_FORCE_RATIO * forceStart);
-  const adjustedIdle = clampAutoTuneForce(idleCandidate) ?? baseLow;
-  if (adjustedIdle > idleForce + 1e-12) {
-    idleForce = adjustedIdle;
-  }
 
-  let capForceUsed = capForceLimit;
-  if (capForceUsed < forceStart - 1e-12) {
-    console.log('; auto-tune force cap below force-start; using force-start for cap');
-    capForceUsed = forceStart;
-  }
+    const originReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
+    const originAngles = parseEncoderReply(originReply?.reply);
 
-  const runStaircaseStep = async (force, label) => {
-    const result = await runStaircaseForceStep(sendFn, {
+    const breakaway = await findBreakawayForce(sendFn, {
       motorIds,
       activeAnchor: driveAnchor,
       fixedAnchor,
       restAnchors,
-      idleForce,
-      testForce: force,
+      idleForce: baseLow,
+      startForce: baseLow,
+      capForceLimit,
       originAngles,
-      sampleIntervalMs: intervalMs,
-      maxStepMs: AUTO_TUNE_STAIRCASE_STEP_WINDOW_MS,
-      stallSettleMs: AUTO_TUNE_STAIRCASE_SETTLE_MS,
-      stallSpeedDegPerSec,
       thresholds,
       forbiddenForceAnchors,
+      onStep: ({ step, maxSteps, force, moved, travelDeg }) => {
+        if (moved) logTrial(`probe ${step}/${maxSteps}`, force, { moved, travelDeg, stalled: false });
+      },
     });
-    if (label) {
-      logTrial(label, force, result);
+    const { forceStart, lastNoMoveForce, firstMoveForce, fixedSlipped, fixedDriftDeg } = breakaway;
+    if (fixedSlipped || !Number.isFinite(forceStart)) {
+      await returnAtEnd(baseLow);
+      if (fixedSlipped) {
+        console.log(`; auto-tune force aborted: fixed anchor drifted ${formatValue(fixedDriftDeg, 2)}deg during breakaway search; using provided/default forces`);
+      } else {
+        console.log('; auto-tune force failed to find force-start; using provided/default forces');
+      }
+      return {
+        ...fallback,
+        tuningMeta: {
+          tuning_failed: true,
+          fixed_slipped: Boolean(fixedSlipped),
+          ...(fixedSlipped ? { fixed_drift_deg: fixedDriftDeg } : {}),
+          method: 'incremental-compliance',
+          noise_sigma_deg: noiseStats.sigmaByMotorDeg,
+        },
+      };
     }
-    return result;
-  };
+    const idleCandidate = Math.max(baseLow, DEFAULT_FORCE_LOW_N, AUTO_TUNE_IDLE_FORCE_RATIO * forceStart);
+    const adjustedIdle = clampAutoTuneForce(idleCandidate) ?? baseLow;
+    if (adjustedIdle > idleForce + 1e-12) {
+      idleForce = adjustedIdle;
+    }
 
-  const edgeResult = await findEdgeForce(sendFn, {
-    forceStart,
-    capForceLimit: capForceUsed,
-    trialFn: runStaircaseStep,
-    bracketFactor: AUTO_TUNE_BRACKET_FACTOR,
-    maxBracketSteps: AUTO_TUNE_MAX_BRACKET_STEPS,
-    minUsefulTravelDeg: thresholds.thetaActThr,
-  });
+    let capForceUsed = capForceLimit;
+    if (capForceUsed < forceStart - 1e-12) {
+      console.log('; auto-tune force cap below force-start; using force-start for cap');
+      capForceUsed = forceStart;
+    }
 
-  const forceEdge = edgeResult?.forceEdge;
-  const dMax = edgeResult?.dMax;
+    const runStaircaseStep = async (force, label) => {
+      const result = await runStaircaseForceStep(sendFn, {
+        motorIds,
+        activeAnchor: driveAnchor,
+        fixedAnchor,
+        restAnchors,
+        idleForce,
+        testForce: force,
+        originAngles,
+        sampleIntervalMs: intervalMs,
+        maxStepMs: AUTO_TUNE_STAIRCASE_STEP_WINDOW_MS,
+        stallSettleMs: AUTO_TUNE_STAIRCASE_SETTLE_MS,
+        stallSpeedDegPerSec,
+        thresholds,
+        forbiddenForceAnchors,
+      });
+      if (label) {
+        logTrial(label, force, result);
+      }
+      return result;
+    };
 
-  if (!Number.isFinite(forceEdge) || !Number.isFinite(dMax) || dMax <= 0) {
-    await returnAtEnd(idleForce);
-    const reason = edgeResult?.reason ?? 'unknown';
-    const safeMax = Math.max(forceStart, Math.min(DEFAULT_FORCE_MAX_N, capForceUsed));
-    console.log(`; auto-tune force failed to measure edge force (${reason}); using bounded default ${safeMax}N`);
-    return {
+    const edgeResult = await findEdgeForce(sendFn, {
+      forceStart,
+      capForceLimit: capForceUsed,
+      trialFn: runStaircaseStep,
+      bracketFactor: AUTO_TUNE_BRACKET_FACTOR,
+      maxBracketSteps: AUTO_TUNE_MAX_BRACKET_STEPS,
+      minUsefulTravelDeg: thresholds.thetaActThr,
+    });
+
+    const forceEdge = edgeResult?.forceEdge;
+    const dMax = edgeResult?.dMax;
+
+    if (!Number.isFinite(forceEdge) || !Number.isFinite(dMax) || dMax <= 0) {
+      await returnAtEnd(idleForce);
+      const reason = edgeResult?.reason ?? 'unknown';
+      const safeMax = Math.max(forceStart, Math.min(DEFAULT_FORCE_MAX_N, capForceUsed));
+      console.log(`; auto-tune force failed to measure edge force (${reason}); using bounded default ${safeMax}N`);
+      return {
+        forceLow: idleForce,
+        forceMid: forceStart,
+        forceMax: safeMax,
+        tuningMeta: {
+          method: 'incremental-compliance',
+          tuning_failed: true,
+          force_start: forceStart,
+          force_cap: capForceUsed,
+          edge_reason: reason,
+          edge_samples: edgeResult?.samples ?? [],
+          noise_sigma_deg: noiseStats.sigmaByMotorDeg,
+        },
+      };
+    }
+
+    console.log(
+      `; auto-tune selected: idle=${formatValue(idleForce)} start=${formatValue(forceStart)} `
+      + `edge=${formatValue(forceEdge)} d_max=${formatValue(dMax, 3)}deg`,
+    );
+
+    const tuned = {
       forceLow: idleForce,
       forceMid: forceStart,
-      forceMax: safeMax,
+      forceMax: forceEdge,
       tuningMeta: {
         method: 'incremental-compliance',
-        tuning_failed: true,
+        active_anchor: driveAnchor,
+        fixed_anchor: fixedAnchor,
+        rest_anchors: restAnchors,
+        idle_force_initial: baseLow,
+        idle_force_final: idleForce,
         force_start: forceStart,
+        force_edge: forceEdge,
         force_cap: capForceUsed,
-        edge_reason: reason,
+        force_start_bracket_no: lastNoMoveForce,
+        force_start_bracket_yes: firstMoveForce,
+        d_max_deg: dMax,
+        edge_at_cap: Math.abs(forceEdge - capForceUsed) <= 1e-9,
+        edge_reason: edgeResult?.reason,
+        edge_knee: edgeResult?.knee ?? null,
         edge_samples: edgeResult?.samples ?? [],
+        noise_samples: noiseStats.samples,
+        noise_duration_ms: noiseStats.durationMs,
         noise_sigma_deg: noiseStats.sigmaByMotorDeg,
+        move_thresholds_deg: {
+          active: thresholds.thetaActThr,
+          residual_active: thresholds.thetaResThr,
+          residual_sum: thresholds.sumResidualThr,
+          other_by_anchor: Object.fromEntries(thresholds.thetaOtherByAnchor.entries()),
+        },
+        stall_speed_deg_per_sec: stallSpeedDegPerSec,
+        stall_window_ms: AUTO_TUNE_STAIRCASE_SETTLE_MS,
       },
     };
+
+    await returnAtEnd(tuned.forceLow);
+
+    return tuned;
+  } catch (error) {
+    try {
+      await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
+      if (!returnedToOrigin) {
+        await returnAtEnd(idleForce);
+      }
+    } catch {
+      // Preserve the original failure if cleanup also fails.
+    }
+    throw error;
   }
-
-  console.log(
-    `; auto-tune selected: idle=${formatValue(idleForce)} start=${formatValue(forceStart)} `
-    + `edge=${formatValue(forceEdge)} d_max=${formatValue(dMax, 3)}deg`,
-  );
-
-  const tuned = {
-    forceLow: idleForce,
-    forceMid: forceStart,
-    forceMax: forceEdge,
-    tuningMeta: {
-      method: 'incremental-compliance',
-      active_anchor: driveAnchor,
-      fixed_anchor: fixedAnchor,
-      rest_anchors: restAnchors,
-      idle_force_initial: baseLow,
-      idle_force_final: idleForce,
-      force_start: forceStart,
-      force_edge: forceEdge,
-      force_cap: capForceUsed,
-      force_start_bracket_no: lastNoMoveForce,
-      force_start_bracket_yes: firstMoveForce,
-      d_max_deg: dMax,
-      edge_at_cap: Math.abs(forceEdge - capForceUsed) <= 1e-9,
-      edge_reason: edgeResult?.reason,
-      edge_knee: edgeResult?.knee ?? null,
-      edge_samples: edgeResult?.samples ?? [],
-      noise_samples: noiseStats.samples,
-      noise_duration_ms: noiseStats.durationMs,
-      noise_sigma_deg: noiseStats.sigmaByMotorDeg,
-      move_thresholds_deg: {
-        active: thresholds.thetaActThr,
-        residual_active: thresholds.thetaResThr,
-        residual_sum: thresholds.sumResidualThr,
-        other_by_anchor: Object.fromEntries(thresholds.thetaOtherByAnchor.entries()),
-      },
-      stall_speed_deg_per_sec: stallSpeedDegPerSec,
-      stall_window_ms: AUTO_TUNE_STAIRCASE_SETTLE_MS,
-    },
-  };
-
-  await returnAtEnd(tuned.forceLow);
-
-  return tuned;
 }
 
 function range(n) {

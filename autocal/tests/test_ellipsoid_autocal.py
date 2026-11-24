@@ -52,6 +52,28 @@ def test_feasible_ceiling_adapts_higher_for_five_anchor_geometry():
     assert top_hp5 < top_hp4 - 200.0  # more negative = higher feasible sphere on 4-low-anchor HP5
 
 
+def test_highest_held_mm_handles_nonmonotonic_feasibility_and_rejects_infeasible_home(monkeypatch):
+    import autocal.ellipsoid_autocal as ea
+    anchors = np.asarray(TRUTH["hangprinter_4"], dtype=float)
+
+    # Non-monotonic span: feasible on [0, -500], infeasible pocket on (-500, -900),
+    # feasible again above -900. Grid scan must stop before the infeasible pocket
+    # instead of bisecting past it, and the returned height must itself be feasible.
+    def nonmonotonic_span(_anchors, _held, held_mm, _machine_type=None):
+        if -900.0 < held_mm < -500.0:
+            return 0.0
+        return 600.0
+
+    monkeypatch.setattr(ea, "_row_min_span_mm", nonmonotonic_span)
+    selected = highest_held_mm(anchors, 3, machine_type="hangprinter_4")
+    assert -500.0 <= selected <= -400.0
+    assert nonmonotonic_span(anchors, 3, selected) >= ea.MIN_ROW_SPAN_MM
+
+    monkeypatch.setattr(ea, "_row_min_span_mm", lambda *_args, **_kwargs: 0.0)
+    with pytest.raises(ValueError, match="feasible ellipsoid sweep span at home"):
+        highest_held_mm(anchors, 3, machine_type="hangprinter_4")
+
+
 def _blind_mesh(anchors, offsets, held_length, level_length, mesh_id, visit=1):
     """Rows as the collector records them, measured exactly at the true geometry."""
     norms = np.linalg.norm(anchors, axis=1)
