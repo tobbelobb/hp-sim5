@@ -297,7 +297,18 @@ def test_planning_ridge_requires_a_finite_positive_value(value):
 
 
 
-@pytest.mark.parametrize("args, expected", [([], 0.5), (["--stable-step-mm", "0.2"], 0.2), (["--stable-step-mm", "0"], 0.0)])
+@pytest.mark.parametrize("args, expected", [
+    ([], 1.0),
+    (["--precision", "low"], 5.0),
+    (["--precision", "medium"], 1.0),
+    (["--precision", "high"], 0.5),
+    (["--precision", "2.5"], 2.5),
+    (["--precision", "0"], 0.0),
+    (["--thoroughness", "low"], 5.0),
+    (["--thoroughness", "0.25"], 0.25),
+    (["--stable-step-mm", "0.2"], 0.2),
+    (["--stable-step-mm", "0"], 0.0),
+])
 def test_stable_step_reaches_the_loop(monkeypatch, tmp_path, args, expected):
     captured = {}
     monkeypatch.setattr(ac, "full_auto_loop", lambda **kwargs: captured.update(kwargs) or 0)
@@ -305,10 +316,17 @@ def test_stable_step_reaches_the_loop(monkeypatch, tmp_path, args, expected):
     assert captured["stable_step_mm"] == expected
 
 
-@pytest.mark.parametrize("value", ["-0.1", "nan", "inf"])
-def test_stable_step_must_be_a_finite_nonnegative_distance(tmp_path, value):
+@pytest.mark.parametrize("args", [
+    ["--stable-step-mm", "-0.1"],
+    ["--stable-step-mm", "nan"],
+    ["--stable-step-mm", "inf"],
+    ["--precision", "bogus"],
+    ["--precision", "-1"],
+    ["--precision", "low", "--stable-step-mm", "0.5"],
+])
+def test_stable_step_must_be_a_finite_nonnegative_distance(tmp_path, args):
     with pytest.raises(SystemExit):
-        ac.main(["--machine-type", "hp3", "--dataset", str(tmp_path / "d.json"), "--stable-step-mm", value])
+        ac.main(["--machine-type", "hp3", "--dataset", str(tmp_path / "d.json"), *args])
 
 
 def test_log_entries_put_wall_and_sim_time_before_the_message():

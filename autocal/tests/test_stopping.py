@@ -93,7 +93,7 @@ def test_stop_file_requests_acceptance_and_io_errors_do_not(tmp_path, monkeypatc
 
 def test_one_coordinate_beyond_the_limit_resets_stability(tmp_path):
     # Uniform shifts would hide a mean- or norm-based step; the rule is per coordinate.
-    policy = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop")
+    policy = stopping.StoppingPolicy(patience=20, stop_file=tmp_path / "stop", stable_step_mm=0.5)
     base = _fit(1, 0.0)["plan"]["anchors"]
     history = []
 
@@ -109,6 +109,22 @@ def test_one_coordinate_beyond_the_limit_resets_stability(tmp_path):
     assert fit_with_d_z(3, 1.01).decision == "collect" and policy.stable_streak == 0  # 0.51 mm in one coordinate
     assert fit_with_d_z(4, 1.3).decision == "collect" and policy.stable_streak == 1
     assert fit_with_d_z(5, 1.1).decision == "accept"
+
+
+def test_precision_presets_and_numeric_values():
+    assert stopping.resolve_precision_mm(None) == 1.0
+    assert stopping.resolve_precision_mm("low") == 5.0
+    assert stopping.resolve_precision_mm("MEDIUM") == 1.0
+    assert stopping.resolve_precision_mm("high") == 0.5
+    assert stopping.resolve_precision_mm("2.5") == 2.5
+    assert stopping.resolve_precision_mm("0") == 0.0
+    for bad in ("unknown", "-1", "nan", "inf"):
+        try:
+            stopping.resolve_precision_mm(bad)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"expected ValueError for {bad!r}")
 
 
 def _hp5_fit(iteration, offset, *, std=.4, rms=.03, sweeps=None):

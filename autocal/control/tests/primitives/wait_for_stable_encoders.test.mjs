@@ -157,4 +157,24 @@ describe('waitForStableEncoders', () => {
       nowFn: () => nowMs,
     })).rejects.toThrow('Timed out waiting for encoder stability after 12000ms');
   });
+
+  test('watchMotorIndices settles on watched motors while still validating every motor', async () => {
+    // Motor 0 is steady, motor 1 drifts slowly (e.g. nearly-slack idle sensor).
+    const validated = [];
+    const result = await replay((ms) => `0 ${ms * 0.01}`, {
+      watchMotorIndices: [0],
+      validateAngles: (angles) => validated.push(angles.slice()),
+    });
+    expect(result.elapsedMs).toBe(1500);
+    expect(validated.length).toBeGreaterThanOrEqual(4);
+    expect(validated.at(-1)[1]).toBeGreaterThan(0);
+
+    // Fixed-anchor validation errors on an unwatched motor must still abort immediately.
+    await expect(replay(() => '0 5', {
+      watchMotorIndices: [0],
+      validateAngles: (angles) => {
+        if (Math.abs(angles[1]) > 1.5) throw new Error('fixed slipped');
+      },
+    })).rejects.toThrow('fixed slipped');
+  });
 });

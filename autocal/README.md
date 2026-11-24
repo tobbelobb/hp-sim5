@@ -107,8 +107,8 @@ new measurements and agree within 2 mm in every anchor coordinate. The stop reas
 is `good-fit`. HP5 and HP5r can also stop with `stable-estimate` when two
 successive new sweeps meet the same coverage and rank checks, range RMS is at
 most 0.12 mm, sweep jackknife is at most 2 mm, and every anchor coordinate moves
-by at most `--stable-step-mm` on each update. These checks measure consistency
-and observability. `--stable-step-mm 0` disables both early stops.
+by at most `--precision` (default `medium` = 1 mm; `low` = 5 mm, `high` = 0.5 mm, or a numeric distance in mm; aliases `--thoroughness` and `--stable-step-mm`) on each update. These checks measure consistency
+and observability. `--precision 0` disables both early stops.
 
 `--fit-home-offsets` is enabled by default. It estimates the non-translational
 home-length offsets with the point fit before the anchor fit. Offsets are only
@@ -499,7 +499,8 @@ Remove `--sim` and `--speedup` to use a real machine:
 
 The loop stops once the estimate stops moving: two consecutive sweeps, each the
 planner's most informative candidate, must each move every anchor coordinate by
-at most `--stable-step-mm` (0.5 mm; 0 disables). Fit cost is not a progress
+at most `--precision` (`low` = 5 mm, `medium` = 1 mm default, `high` = 0.5 mm,
+or a numeric distance in mm; `0` disables; aliases `--thoroughness`, `--stable-step-mm`). Fit cost is not a progress
 measure here, because it rises as sweeps reach harder poses, and expected
 information gain shrinks like 1/n without ever reaching a plateau. Stability is
 not accuracy: a systematic bias moves no estimate. Three iterations
@@ -636,7 +637,7 @@ research overrides. `--regularization` keeps its 1e-6 default and requires a
 finite positive value; the resulting covariance is not calibrated uncertainty.
 
 `--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3 as a fallback
-to the `--stable-step-mm` stop.
+to the `--precision` (`--thoroughness` / `--stable-step-mm`) stop.
 
 ### Ellipsoid autocal (sphere meshes)
 
@@ -653,9 +654,10 @@ a row also holds that free line, the level line, and is an ordinary force sweep
 with five points per direction. The heights:
 
 1. the bootstrap rows, with the held line at home (the lowest sphere);
-2. half way up to the highest the held anchor's clearance allows (the effector
-   stays 10% of the anchor's home distance away), by the fit of the first;
-3. that highest sphere, by the fit of the first two;
+2. half way up to the highest feasible sphere whose rows all keep a usable
+   coupled arc (bisected with `predict_sweep_positions` and backed off by 10%
+   for anchor-estimate margin), by the fit of the first;
+3. that highest feasible sphere, by the fit of the first two;
 4. further ellipsoids split the largest gap between the held lengths so far,
    tried ones included, up to six.
 
@@ -677,7 +679,7 @@ finds no measurable interval is rejected and the run goes on.
 The fit estimates home offsets, corrects line stretch at the recorded constant
 forces (also on HP3/HP4) and starts from the blind seed at 1x, 2x and 4x scale.
 From the third ellipsoid on, the run stops when the last ellipsoid moved no
-anchor coordinate by more than `--stable-step-mm` and leaving out any one row
+anchor coordinate by more than `--precision` (default 1 mm) and leaving out any one row
 moves none by more than twice that. The reported uncertainty is that row
 jackknife. `--no-collect` replays a dataset ellipsoid by ellipsoid.
 

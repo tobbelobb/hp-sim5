@@ -5,7 +5,7 @@ import { collectSweepData, MACHINE_CONFIGS } from '../../behaviors/sweep_data_co
 import { tuneForce } from '../../behaviors/force_tuning.mjs';
 import { collectWithSlipRecovery } from '../../behaviors/slip_recovery.mjs';
 import { UnmeasurableSweepError } from '../../behaviors/spool_reserve.mjs';
-import { returnMotorsToOriginOneAtATime } from '../../primitives/uncalibrated_actions.mjs';
+import { returnMotorsToOrigin } from '../../primitives/uncalibrated_actions.mjs';
 
 jest.mock('../../behaviors/force_tuning.mjs', () => ({
   ...jest.requireActual('../../behaviors/force_tuning.mjs'),
@@ -19,7 +19,7 @@ jest.mock('../../primitives/uncalibrated_actions.mjs', () => ({
   ...jest.requireActual('../../primitives/uncalibrated_actions.mjs'),
   waitForStableEncoders: jest.fn().mockResolvedValue(undefined),
   getCurrentLengths: jest.fn().mockResolvedValue([1, 2, 3, 0]),
-  returnMotorsToOriginOneAtATime: jest.fn().mockResolvedValue(undefined),
+  returnMotorsToOrigin: jest.fn().mockResolvedValue(undefined),
 }));
 
 function interruptedCollection(outputFile, args = {}, interrupt = true) {
@@ -38,7 +38,7 @@ function interruptedCollection(outputFile, args = {}, interrupt = true) {
 beforeEach(() => {
   tuneForce.mockReset();
   collectWithSlipRecovery.mockReset();
-  returnMotorsToOriginOneAtATime.mockReset().mockResolvedValue(undefined);
+  returnMotorsToOrigin.mockReset().mockResolvedValue(undefined);
 });
 
 test.each([false, true])('only resolved later boundary failures become rejected-probe evidence, later=%s', async later => {
@@ -54,7 +54,7 @@ test.each([false, true])('only resolved later boundary failures become rejected-
       expect(dataset.sweeps).toEqual([]);
       expect(dataset.acquisition_rejections).toHaveLength(1);
       expect(dataset.acquisition_rejections[0]).toMatchObject({ fixed_anchors: [0,3], fixed_lengths: [0,0], reason: 'No coupled interval' });
-      expect(returnMotorsToOriginOneAtATime).toHaveBeenCalledTimes(1);
+      expect(returnMotorsToOrigin).toHaveBeenCalledTimes(1);
     } else {
       await expect(pending).rejects.toThrow('No coupled interval');
       expect(existsSync(outputFile)).toBe(false);
@@ -67,7 +67,7 @@ test('failed return to origin aborts without publishing a boundary', async () =>
   const outputFile = path.join(directory, 'sweeps.json');
   tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
   collectWithSlipRecovery.mockRejectedValue(new UnmeasurableSweepError('No coupled interval'));
-  returnMotorsToOriginOneAtATime.mockRejectedValueOnce(new Error('Return failed'));
+  returnMotorsToOrigin.mockRejectedValueOnce(new Error('Return failed'));
   try {
     await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', completedSweeps: 3 }, false)).rejects.toThrow('Return failed');
     expect(existsSync(outputFile)).toBe(false);
@@ -91,7 +91,7 @@ test.each([1, 2])('ordinary return failures abort collection with maxSweeps=%s',
   tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .2, forceMax: 2 });
   collectWithSlipRecovery.mockResolvedValue({ forces: { forceLow: .01, forceMid: .2, forceMax: 2 },
     dataPoints: [{ l_drive: 1, l_sensor: 2 }], recoveries: [] });
-  returnMotorsToOriginOneAtATime.mockRejectedValue(new Error('Return movement failed'));
+  returnMotorsToOrigin.mockRejectedValue(new Error('Return movement failed'));
   try {
     await expect(interruptedCollection(outputFile, { fixedTargets: '0,0', maxSweeps, returnToOrigin: true }, false))
       .rejects.toThrow('Return movement failed');
@@ -261,8 +261,8 @@ test.each([1, 2])('redundant-machine returns keep the top held and other low win
       machineType: 'hangprinter_5_pulley_reduced', machineConfig: MACHINE_CONFIGS.hangprinter_5_pulley_reduced,
       motorIds: ['40.0', '41.0', '42.0', '43.0', '44.0'], speedup: 1,
     });
-    expect(returnMotorsToOriginOneAtATime).toHaveBeenCalledTimes(maxSweeps);
-    for (const [, options] of returnMotorsToOriginOneAtATime.mock.calls) {
+    expect(returnMotorsToOrigin).toHaveBeenCalledTimes(maxSweeps);
+    for (const [, options] of returnMotorsToOrigin.mock.calls) {
       expect(options).toMatchObject({ midForce: .01, forbiddenForceAnchors: [4], returnFirstAnchors: [4] });
     }
   } finally { rmSync(directory, {recursive: true, force: true}); }

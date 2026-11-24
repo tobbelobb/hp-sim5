@@ -1,4 +1,4 @@
-import { returnMotorsToOriginAllAtOnce } from '../../primitives/uncalibrated_actions.mjs';
+import { returnMotorsToOrigin, returnMotorsToOriginAllAtOnce } from '../../primitives/uncalibrated_actions.mjs';
 
 describe('returnMotorsToOriginAllAtOnce', () => {
   test('holds ongoing force motion before the first encoder read', async () => {
@@ -106,5 +106,90 @@ describe('returnMotorsToOriginAllAtOnce', () => {
 
     expect(lengths).toEqual([0, 0, 0]);
     expect(postMoveReads).toBeGreaterThan(1);
+  });
+
+  test('normalizes multi-axis feed so the fastest motor runs at requested feed', async () => {
+    const sent = [];
+    const angles = [30, 40];
+    let nowMs = 0;
+    const send = async (line) => {
+      sent.push(line);
+      if (line.startsWith('G1 H2')) {
+        angles[0] = 0;
+        angles[1] = 0;
+      }
+      return { reply: angles.join(' ') };
+    };
+    send.simulationClock = { now: () => nowMs, sleep: async (ms) => { nowMs += ms; } };
+
+    await returnMotorsToOriginAllAtOnce(send, {
+      motorIds: ['40.0', '41.0'],
+      axes: ['X', 'Y'],
+      mmPerDeg: [1, 1],
+      feed: 1000,
+      speedup: 1,
+    });
+    const move = sent.find((line) => line.startsWith('G1 H2'));
+    // Euclidean norm = 50, max axis delta = 40 -> effective feed = 1000 * 50 / 40 = 1250.
+    expect(move).toBe('G1 H2 X-30.000 Y-40.000 F1250');
+  });
+});
+
+describe('returnMotorsToOrigin', () => {
+  test('completes in one coordinated move on RRF and corrects stale firmware positions', async () => {
+    const sent = [];
+    const angles = [0, -100, 120];
+    const commands = [0, -110, 120]; // motor 1 has a 10 mm stale offset from saturation
+    let nowMs = 0;
+    const send = async (line) => {
+      sent.push(line);
+      if (line.startsWith('G1 H2')) {
+        for (const match of line.matchAll(/([XYZ])(-?[\d.]+)/g)) {
+          const idx = 'XYZ'.indexOf(match[1]);
+          commands[idx] += Number(match[2]);
+          angles[idx] = commands[idx];
+        }
+      }
+      return { reply: angles.join(' ') };
+    };
+    send.firmware = 'rrf';
+    send.simulationClock = { now: () => nowMs, sleep: async (ms) => { nowMs += ms; } };
+
+    const lengths = await returnMotorsToOrigin(send, {
+      motorIds: ['40.0', '41.0', '42.0'],
+      axes: ['X', 'Y', 'Z'],
+      mmPerDeg: [1, 1, 1],
+      feed: 1400,
+    });
+    expect(lengths).toEqual([0, 0, 0]);
+    // First coordinated move lands at [0, -10, 0], second coordinated move corrects Y to 0.
+    expect(sent.filter((line) => line.startsWith('G1 H2'))).toHaveLength(2);
+  });
+
+  test('routes Klipper returns to one-at-a-time sequential moves', async () => {
+    const sent = [];
+    const angles = [10, 20];
+    let nowMs = 0;
+    const send = async (line) => {
+      sent.push(line);
+      if (line.startsWith('G1 H2')) {
+        for (const match of line.matchAll(/([XY])(-?[\d.]+)/g)) {
+          angles['XY'.indexOf(match[1])] += Number(match[2]);
+        }
+      }
+      return { reply: angles.join(' ') };
+    };
+    send.firmware = 'klipper';
+    send.simulationClock = { now: () => nowMs, sleep: async (ms) => { nowMs += ms; } };
+
+    await returnMotorsToOrigin(send, {
+      motorIds: ['40.0', '41.0'],
+      axes: ['X', 'Y'],
+      mmPerDeg: [1, 1],
+      feed: 1400,
+    });
+    const moves = sent.filter((line) => line.startsWith('G1 H2'));
+    expect(moves).toHaveLength(2);
+    expect(moves.every((line) => (line.match(/[XY]-?[\d.]+/g) || []).length === 1)).toBe(true);
   });
 });

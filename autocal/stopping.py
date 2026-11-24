@@ -20,7 +20,13 @@ from autocal._autocal_common import (
 # to what the data can resolve ("stabilizing predictions" stopping). Agreement
 # is not accuracy: systematic bias moves no estimate.
 STABLE_SWEEPS = 2
-STABLE_STEP_MM = 0.5
+PRECISION_PRESETS_MM = {
+    "low": 5.0,
+    "medium": 1.0,
+    "high": 0.5,
+}
+DEFAULT_PRECISION = "medium"
+STABLE_STEP_MM = PRECISION_PRESETS_MM[DEFAULT_PRECISION]
 HP5_GOOD_STEP_MM = 2.0
 HP5_GOOD_STD_MM = 1.0
 HP5_GOOD_RMS_MM = 0.05
@@ -28,6 +34,29 @@ HP5_GOOD_RMS_MM = 0.05
 # settle. Require repeatable anchor estimates and a sweep jackknife in this case.
 HP5_STABLE_RMS_MM = 0.12
 HP5_STABLE_UNCERTAINTY_MM = 2.0
+
+
+def resolve_precision_mm(value: object) -> float:
+    """Resolve --precision / --thoroughness preset ('low', 'medium', 'high') or numeric mm."""
+    if value is None:
+        return STABLE_STEP_MM
+    if isinstance(value, str):
+        key = value.strip().lower()
+        if key in PRECISION_PRESETS_MM:
+            return PRECISION_PRESETS_MM[key]
+        try:
+            parsed = float(key)
+        except ValueError as exc:
+            presets = ", ".join(f"{name}={mm:g}mm" for name, mm in PRECISION_PRESETS_MM.items())
+            raise ValueError(f"Expected {presets}, or a nonnegative distance in mm; got {value!r}") from exc
+    else:
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Expected a finite nonnegative distance in mm; got {value!r}") from exc
+    if not np.isfinite(parsed) or parsed < 0.0:
+        raise ValueError(f"Convergence target must be a finite nonnegative distance in mm; got {value!r}")
+    return parsed
 
 
 def history_rank_position(history_candidates, *, iteration: int) -> Optional[int]:
@@ -90,15 +119,18 @@ class StoppingPolicy:
 
     def announce(self, log_console: Callable[[str], None]) -> None:
         if self.stable_step_mm > 0.0:
+            hp5_good_step = max(HP5_GOOD_STEP_MM, 2.0 * self.stable_step_mm)
+            hp5_good_std = max(HP5_GOOD_STD_MM, self.stable_step_mm)
+            hp5_stable_unc = max(HP5_STABLE_UNCERTAINTY_MM, 2.0 * self.stable_step_mm)
             log_console(
                 f"; full-auto: stops when {STABLE_SWEEPS} consecutive sweeps each move every anchor "
-                f"coordinate by at most {self.stable_step_mm:g} mm (--stable-step-mm 0 disables)"
+                f"coordinate by at most {self.stable_step_mm:g} mm (--precision 0 disables)"
             )
             if self.machine_type in ("hangprinter_5", "hangprinter_5_pulley_reduced"):
                 log_console(f"; HP5 also accepts two good fits: range RMS <={HP5_GOOD_RMS_MM:g} mm, "
-                            f"estimated anchor std <={HP5_GOOD_STD_MM:g} mm, agreement <={HP5_GOOD_STEP_MM:g} mm")
+                            f"estimated anchor std <={hp5_good_std:g} mm, agreement <={hp5_good_step:g} mm")
                 log_console(f"; HP5 stable-fit fallback: range RMS <={HP5_STABLE_RMS_MM:g} mm, "
-                            f"sweep jackknife <={HP5_STABLE_UNCERTAINTY_MM:g} mm")
+                            f"sweep jackknife <={hp5_stable_unc:g} mm")
 
     def _step(self, history, iteration: int) -> Optional[float]:
         current = next((c for c in reversed(history) if int(c.get("iteration", -1)) == int(iteration)), None)
@@ -128,11 +160,14 @@ class StoppingPolicy:
                or (plan.get("machine_type") in ("hangprinter_5", "hangprinter_5_pulley_reduced")
                    and any(point.get("extra_sensor_ranges") for point in points)))
         groups = len(measurement_groups(dataset)) if hp5 else 0
+        hp5_good_step = max(HP5_GOOD_STEP_MM, 2.0 * self.stable_step_mm)
+        hp5_good_std = max(HP5_GOOD_STD_MM, self.stable_step_mm)
+        hp5_stable_unc = max(HP5_STABLE_UNCERTAINTY_MM, 2.0 * self.stable_step_mm)
         qualified = (hp5 and admissible and not underconstrained and self.stable_step_mm > 0
                      and groups >= 4 and extra_coverage >= 0.5
                      and not plan.get("info_rank_deficient", True)
                      and (plan.get("pose_fit") or {}).get("stretch_corrected", False)
-                     and std is not None and std <= HP5_GOOD_STD_MM and rms is not None)
+                     and std is not None and std <= hp5_good_std and rms is not None)
         if admissible:
             self.no_improve = 0 if improved else self.no_improve + 1
             step_mm = self._step(history, iteration)
@@ -140,13 +175,13 @@ class StoppingPolicy:
             if hp5:
                 uncertainty = _float_or_none(current.get("anchor_uncertainty_mm"))
                 stable = (stable and qualified and groups > self.last_hp5_groups and rms <= HP5_STABLE_RMS_MM
-                          and uncertainty is not None and uncertainty <= HP5_STABLE_UNCERTAINTY_MM)
+                          and uncertainty is not None and uncertainty <= hp5_stable_unc)
             self.stable_streak = self.stable_streak + 1 if stable else 0
         elif hp5:
             self.stable_streak = 0
         if qualified and rms <= HP5_GOOD_RMS_MM:
             self.good_fit_streak = (self.good_fit_streak + 1
-                                    if step_mm is not None and step_mm <= HP5_GOOD_STEP_MM
+                                    if step_mm is not None and step_mm <= hp5_good_step
                                     and len(points) > self.last_good_points else 1)
             self.last_good_points = len(points)
         else:
