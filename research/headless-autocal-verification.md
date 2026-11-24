@@ -64,8 +64,8 @@ independent settling boundary. The first assertion of identical timestamps
 failed; the documented contract separates these offsets from measurement error.
 The final extended suite passed both tests in 573.81 seconds, including the
 clock-corrected fresh full-auto run, matched-input parity and interruption
-cleanup. Its [parity result](../output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/browser/parity.json)
-and [full-auto manifest](../output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/hp3/sweeps.headless/manifest.json)
+cleanup. Its [parity result](../output/legacy/standalone/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/browser/parity.json)
+and [full-auto manifest](../output/legacy/standalone/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/hp3/sweeps.headless/manifest.json)
 record these bounds and the source hashes.
 
 ## Extended reference recording, 2026-10-09
@@ -123,7 +123,7 @@ owned services. Fast Python checks passed 75 tests; collector regressions passed
 55 tests across 13 suites, including motion, settling and noise sampling with
 the simulation clock. The two extended checks passed too.
 
-Artifacts are retained in [headless verification output](../output/headless-verification/).
+Artifacts are retained in [headless verification output](../output/legacy/standalone/headless-verification/).
 The [notebook](../research/output/session-headless-autocal-validation/research.md) records
 failed trials, tolerance decisions and completed work. Per-run manifests contain
 the actual scene/config/source hashes and clock bounds; earlier failed runs

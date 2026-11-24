@@ -15,7 +15,8 @@ Research has three useful levels:
   than copying their narratives. Update an existing relevant note before creating one.
 
 Before investigating, search the curated guide, relevant topic notes, and report
-abstracts. Read evidence behind claims that affect your next decision. Historical
+abstracts. Use the experiment-lookup skill to find raw runs in local storage and
+Drive. Read evidence behind claims that affect your next decision. Historical
 results have a source revision and scope; they do not automatically describe today's
 solver. Do not load the entire corpus into the conversation.
 

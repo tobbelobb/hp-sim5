@@ -1,9 +1,9 @@
 # Research topic guide
 
-These summaries describe archived evidence, not new experiments or a statement
-about the current solver. Each entry keeps the scope of its referenced reports
-and notebooks. Raw session artifacts under `research/output/` may be absent in another checkout. The [local catalog](output/index.md) also lists
-integration checks, incomplete sessions and their status.
+These summaries describe the solver revisions and conditions in the linked reports.
+The [local catalog](output/index.md) also lists integration checks, incomplete
+sessions, and their status. Use experiment-lookup to find reusable run payloads
+in `output/experiments/` and on Drive.
 
 The local catalog is a generated snapshot of the session directories available on
 one machine. Its embedded abstracts remain useful when raw files are absent,
@@ -12,6 +12,12 @@ Completed program archives under `research/output/` preserve selected reports
 and evidence in Git; prefer those links when continuing in another environment.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
+
+## Anchor layout and research tooling
+
+- [Anchor-layout search within a 2 m radius](output/session-anchor-layouts/report.md)
+- [Research Program usefulness audit](output/session-program-usefulness/report.md)
+- [Research instruction audit](output/session-research-instruction-audit/report.md)
 
 ## Rough-bootstrap robustness: HP5r seed 3 was a one-sample force auto-tune plateau rule
 

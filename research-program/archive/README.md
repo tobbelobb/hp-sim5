@@ -1,6 +1,7 @@
 # Historical feature material
 
-The original design and implementation audits are retained
-here to explain how the feature grew. Their old paths, tasks and operating
-instructions are obsolete. Runtime code never reads this directory.
-Current roles live in `../role-instructions/`; current tools in `../program/`.
+This directory holds the original designs, tasks, and historical cloud evidence.
+The [Research Program usefulness audit](../../research/output/session-program-usefulness/report.md)
+and [instruction audit](../../research/output/session-research-instruction-audit/report.md)
+are in the research corpus. For today's workflow see the [CLI guide](../README.md)
+and [role instructions](../roles/).

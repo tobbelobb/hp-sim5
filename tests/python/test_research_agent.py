@@ -145,6 +145,7 @@ def test_invalid_experiments_do_not_write_success_artifacts(experiment_root, opt
     with pytest.raises(ValueError, match=message):
         run_experiment(experiment_root, record=False, **options)
     assert not (experiment_root / 'research/output').exists()
+    assert not (experiment_root / 'output/experiments').exists()
 
 
 def test_input_and_artifact_path_boundaries(experiment_root):
@@ -155,22 +156,41 @@ def test_input_and_artifact_path_boundaries(experiment_root):
         read_run(experiment_root, '../outside')
 
 
+def test_read_shared_run_from_two_investigations_and_read_legacy_run(experiment_root, monkeypatch):
+    from hp_sim5_research.experiments import read_run
+
+    shared_id, legacy_id = 'a' * 32, 'b' * 32
+    shared = experiment_root / 'output/experiments' / shared_id
+    session = experiment_root / 'research/output/session-old'
+    legacy = session / 'experiments' / legacy_id
+    for directory in (shared, legacy):
+        directory.mkdir(parents=True)
+        (directory / 'manifest.json').write_text('{}')
+    monkeypatch.setenv('HP_SIM5_SESSION_DIR', str(session))
+    assert read_run(experiment_root, shared_id) == read_run(experiment_root, legacy_id) == {}
+    monkeypatch.setenv('HP_SIM5_SESSION_DIR', str(session.with_name('session-new')))
+    assert read_run(experiment_root, shared_id) == {}
+
+
 @pytest.mark.slow
 def test_fresh_experiment_and_readback_with_shared_worktree_output(experiment_root, tmp_path):
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     shared = tmp_path.parent / (tmp_path.name + '-shared-output')
     shared.mkdir()
-    (experiment_root / 'research').mkdir()
-    (experiment_root / 'research/output').symlink_to(shared, target_is_directory=True)
+    (experiment_root / 'output').mkdir()
+    (experiment_root / 'output/experiments').symlink_to(shared, target_is_directory=True)
     first = run_experiment(experiment_root, steps=3, record=False)
     second = run_experiment(experiment_root, steps=3, record=False)
     assert Path(first['artifacts']['manifest']).is_relative_to(shared)
     assert read_run(experiment_root, first['run_id']) == first
     assert len(read_run(experiment_root, first['run_id'], 0, 4)['samples']) == 4
+    replay = run_experiment(experiment_root, first['artifacts']['scene'], steps=3, record=False)
+    assert replay['scene_sha256'] == first['scene_sha256']
+    assert replay['scene'] == f"output/experiments/{first['run_id']}/scene.usda"
     assert all(value == 0 for value in compare_runs(experiment_root, first['run_id'], second['run_id'])[
         'metric_delta_candidate_minus_baseline'].values())
     escaped_id = 'f' * 32
-    (shared / 'scratch/experiments' / escaped_id).symlink_to(tmp_path.parent, target_is_directory=True)
+    (shared / escaped_id).symlink_to(tmp_path.parent, target_is_directory=True)
     with pytest.raises(ValueError, match='inside the experiment output'):
         read_run(experiment_root, escaped_id)
 
@@ -196,9 +216,16 @@ async def test_browser_interventions_keep_a_valid_mcp_object_result(tmp_path):
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_stdio_mcp_discovery_execution_readback_and_error():
+async def test_stdio_mcp_discovery_execution_readback_and_error(experiment_root):
     from mcp import Client, StdioServerParameters
-    parameters = StdioServerParameters(command=sys.executable, args=[str(ROOT / 'scripts/hp_sim5_mcp.py')])
+    server = experiment_root / 'test_mcp_server.py'
+    server.write_text(
+        'import runpy\n'
+        f'namespace = runpy.run_path({str(ROOT / "scripts/hp_sim5_mcp.py")!r})\n'
+        f'namespace["run_experiment"].__globals__["ROOT"] = namespace["Path"]({str(experiment_root)!r})\n'
+        'namespace["mcp"].run(transport="stdio")\n'
+    )
+    parameters = StdioServerParameters(command=sys.executable, args=[str(server)])
     async with Client(parameters, read_timeout_seconds=30) as client:
         tools = (await client.list_tools()).tools
         assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments',

@@ -30,6 +30,10 @@ from .interfaces import ArtifactRecord
 
 DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
 DRIVE_UPLOAD_BASE = "https://www.googleapis.com/upload/drive/v3"
+DEFAULT_DRIVE_URI = "gdrive://hp-sim5-artifacts"
+LOCAL_STORE_DIR = "output"
+EXPERIMENTS_DIR = "experiments"
+UPLOAD_PENDING_DIR = "upload-pending"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 FOLDER_MIME = "application/vnd.google-apps.folder"
 DEFAULT_CHUNK_BYTES = 8 * 1024 * 1024  # 8 MiB (multiple of 256 KiB required by Drive resumable API)
@@ -84,6 +88,7 @@ def retry_upload_command(experiment_id: str, scratch_dir: Path | str, store_uri:
     import shlex
 
     return shlex.join([
+        ".venv/bin/python",
         "scripts/hp_sim5_run.py",
         "artifacts",
         "--store",
@@ -121,6 +126,29 @@ def write_upload_pending(
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def manifest_summary(manifest: Mapping[str, Any]) -> dict[str, Any]:
+    meta = manifest.get("metadata", {})
+    return {
+        "experiment_id": manifest["experiment_id"],
+        "stored_at": manifest.get("stored_at", ""),
+        "total_bytes": manifest.get("total_bytes", 0),
+        "file_count": manifest.get("file_count", 0),
+        **{key: meta.get(key) for key in ("kind", "machine", "status", "backend", "git_revision", "summary")},
+        "tags": list(meta.get("tags") or []),
+    }
+
+
+def _selected_files(manifest: Mapping[str, Any], rel_paths: Sequence[str] | None) -> list[dict[str, Any]]:
+    files = manifest.get("files", [])
+    if rel_paths is None:
+        return files
+    wanted = {_validate_rel_path(path) for path in rel_paths}
+    missing = wanted - {item["rel_path"] for item in files}
+    if missing:
+        raise FileNotFoundError(f"Files absent from experiment manifest: {', '.join(sorted(missing))}")
+    return [item for item in files if item["rel_path"] in wanted]
 
 
 def compute_file_digests(path: Path, *, chunk_bytes: int = 1024 * 1024) -> tuple[int, str, str]:
@@ -224,7 +252,7 @@ class LocalArtifactStore:
     def __init__(self, root: Path | str, *, scheme: str = "local") -> None:
         self.root = Path(root).expanduser().resolve()
         self._scheme = scheme
-        self.experiments_dir = self.root / "experiments"
+        self.experiments_dir = self.root / EXPERIMENTS_DIR
         self.index_path = self.root / INDEX_NAME
 
     @property
@@ -293,6 +321,8 @@ class LocalArtifactStore:
     ) -> dict[str, Any]:
         exp_id = _validate_experiment_id(experiment_id)
         src_root = Path(local_dir).resolve()
+        if not src_root.is_dir():
+            raise FileNotFoundError(f"Artifact source directory not found: {src_root}")
         records: list[dict[str, Any]] = []
         total_bytes = 0
         for file_path in sorted(src_root.rglob("*")):
@@ -336,18 +366,7 @@ class LocalArtifactStore:
                             entries[row["experiment_id"]] = row
                         except (ValueError, KeyError):
                             continue
-                meta = manifest.get("metadata", {})
-                entries[manifest["experiment_id"]] = {
-                    "experiment_id": manifest["experiment_id"],
-                    "stored_at": manifest["stored_at"],
-                    "total_bytes": manifest["total_bytes"],
-                    "file_count": manifest["file_count"],
-                    "kind": meta.get("kind"),
-                    "machine": meta.get("machine"),
-                    "status": meta.get("status"),
-                    "tags": list(meta.get("tags", [])),
-                    "git_revision": meta.get("git_revision"),
-                }
+                entries[manifest["experiment_id"]] = manifest_summary(manifest)
                 with tempfile.NamedTemporaryFile(
                     mode="w", encoding="utf-8", dir=self.root, prefix=".idx-", delete=False
                 ) as tmp:
@@ -399,11 +418,8 @@ class LocalArtifactStore:
         manifest = self.get_manifest(experiment_id)
         dest = Path(dest_dir)
         dest.mkdir(parents=True, exist_ok=True)
-        wanted = set(rel_paths) if rel_paths is not None else None
-        for item in manifest.get("files", []):
-            rel = item["rel_path"]
-            if wanted is not None and rel not in wanted:
-                continue
+        for item in _selected_files(manifest, rel_paths):
+            rel = _validate_rel_path(item["rel_path"])
             self.get_file(experiment_id, rel, dest / rel)
         _atomic_write_json(dest / MANIFEST_NAME, manifest)
         return dest
@@ -420,31 +436,27 @@ class LocalArtifactStore:
         *,
         tags: Sequence[str] = (),
         kind: str | None = None,
-        limit: int = 100,
+        limit: int | None = 100,
     ) -> list[dict[str, Any]]:
-        rows: list[dict[str, Any]] = []
+        indexed: dict[str, dict[str, Any]] = {}
         if self.index_path.is_file():
             for line in self.index_path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
                     try:
-                        rows.append(json.loads(line))
-                    except ValueError:
+                        row = json.loads(line)
+                        indexed[row["experiment_id"]] = row
+                    except (ValueError, KeyError):
                         continue
-        elif self.experiments_dir.is_dir():
-            for manifest_path in sorted(self.experiments_dir.glob(f"*/{MANIFEST_NAME}")):
-                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                meta = manifest.get("metadata", {})
-                rows.append({
-                    "experiment_id": manifest["experiment_id"],
-                    "stored_at": manifest.get("stored_at", ""),
-                    "total_bytes": manifest.get("total_bytes", 0),
-                    "file_count": manifest.get("file_count", 0),
-                    "kind": meta.get("kind"),
-                    "machine": meta.get("machine"),
-                    "status": meta.get("status"),
-                    "tags": list(meta.get("tags", [])),
-                    "git_revision": meta.get("git_revision"),
-                })
+        # A synced/mounted store may contain manifests written through the Drive API.
+        rows = []
+        for manifest_path in sorted(self.experiments_dir.glob(f"*/{MANIFEST_NAME}")):
+            row = indexed.get(manifest_path.parent.name)
+            if row is None:
+                try:
+                    row = manifest_summary(json.loads(manifest_path.read_text(encoding="utf-8")))
+                except (FileNotFoundError, ValueError, KeyError):
+                    continue
+            rows.append(row)
         required_tags = set(tags)
         filtered = [
             row
@@ -485,12 +497,14 @@ class OAuthRefreshTokenProvider:
         refresh_token: str,
         token_url: str = GOOGLE_TOKEN_URL,
         quota_project_id: str | None = None,
+        timeout_s: float = 30.0,
     ) -> None:
         self.client_id = client_id
         self.client_secret = client_secret
         self.refresh_token = refresh_token
         self.token_url = token_url
         self.quota_project_id = quota_project_id
+        self.timeout_s = timeout_s
         self._access_token: str | None = None
         self._expires_at: float = 0.0
 
@@ -511,47 +525,55 @@ class OAuthRefreshTokenProvider:
             method="POST",
         )
         try:
-            with urlopen(req, timeout=30) as resp:
+            with urlopen(req, timeout=self.timeout_s) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
+            token = payload.get("access_token") if isinstance(payload, dict) else None
+            if not isinstance(token, str) or not token.strip():
+                raise ValueError("missing access token")
+            self._expires_at = now + float(payload.get("expires_in", 3600))
+            self._access_token = token
         except HTTPError as err:
             detail = err.read().decode("utf-8", errors="replace")
             raise DriveAuthError(f"OAuth2 token refresh failed (HTTP {err.code}): {detail}") from None
-        self._access_token = payload["access_token"]
-        self._expires_at = now + float(payload.get("expires_in", 3600))
+        except (OSError, ValueError, TypeError, http.client.HTTPException) as err:
+            raise DriveAuthError(f"Could not refresh Drive access token: {type(err).__name__}") from None
         return self._access_token
 
 
 def default_adc_path(credentials_path: Path | str | None = None) -> Path | None:
     """Return the active standard Google ADC JSON path if one exists on disk."""
-    candidates: list[Path] = []
-    if credentials_path:
-        candidates.append(Path(credentials_path).expanduser())
-    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-        candidates.append(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).expanduser())
-    candidates.append(Path.home() / ".config/gcloud/application_default_credentials.json")
-    for cand in candidates:
-        if cand.is_file():
-            return cand
-    return None
+    configured = credentials_path or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    path = (Path(configured).expanduser() if configured else
+            Path.home() / ".config/gcloud/application_default_credentials.json")
+    return path if path.is_file() else None
 
 
 def load_drive_token_provider(
     *,
     credentials_path: Path | str | None = None,
+    timeout_s: float = 30.0,
 ) -> tuple[Callable[[], str], str | None]:
     """Resolve Google Drive access token provider from standard Google ADC credentials."""
     cand = default_adc_path(credentials_path)
     if cand is not None:
-        data = json.loads(cand.read_text(encoding="utf-8"))
-        if data.get("type") == "authorized_user" or {"client_id", "client_secret", "refresh_token"} <= set(data):
-            qp = data.get("quota_project_id")
-            provider = OAuthRefreshTokenProvider(
-                client_id=data["client_id"],
-                client_secret=data["client_secret"],
-                refresh_token=data["refresh_token"],
-                quota_project_id=qp,
-            )
-            return provider, qp
+        try:
+            data = json.loads(cand.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            raise DriveAuthError(f"Could not read Google ADC credentials at {cand}") from None
+        fields = ("client_id", "client_secret", "refresh_token")
+        if not isinstance(data, dict) or not all(isinstance(data.get(key), str) and data[key] for key in fields):
+            raise DriveAuthError(f"Expected authorized-user Google ADC credentials at {cand}")
+        qp = data.get("quota_project_id")
+        provider = OAuthRefreshTokenProvider(
+            client_id=data["client_id"],
+            client_secret=data["client_secret"],
+            refresh_token=data["refresh_token"],
+            quota_project_id=qp,
+            timeout_s=timeout_s,
+        )
+        return provider, qp
+    if configured := credentials_path or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        raise DriveAuthError(f"Google ADC credentials file not found: {Path(configured).expanduser()}")
 
     raise DriveAuthError(
         "No Google Application Default Credentials found. Mint ADC with Colab + Drive file scope:\n"
@@ -613,6 +635,7 @@ class GoogleDriveArtifactStore:
         else:
             self._token_provider, detected_qp = load_drive_token_provider(
                 credentials_path=credentials_path,
+                timeout_s=min(timeout_s, 30.0),
             )
             self._quota_project = quota_project if quota_project is not None else detected_qp
             self._uses_adc = True
@@ -787,7 +810,16 @@ class GoogleDriveArtifactStore:
     def _find_experiments_folder(self) -> str | None:
         if self._experiments_id_cache:
             return self._experiments_id_cache
-        root_id = self._ensure_root()
+        # Lookup must not create folders when pointed at a missing store.
+        root_id = self._root_id_cache
+        if not root_id:
+            root_id = "root"
+            for segment in filter(None, self.root_folder.split("/")):
+                folder = self._find_child(root_id, segment, mime_type=FOLDER_MIME)
+                if not folder:
+                    return None
+                root_id = folder["id"]
+            self._root_id_cache = root_id
         exps = self._find_child(root_id, "experiments", mime_type=FOLDER_MIME)
         if not exps:
             return None
@@ -989,6 +1021,8 @@ class GoogleDriveArtifactStore:
     ) -> dict[str, Any]:
         exp_id = _validate_experiment_id(experiment_id)
         src_root = Path(local_dir).resolve()
+        if not src_root.is_dir():
+            raise FileNotFoundError(f"Artifact source directory not found: {src_root}")
         meta = dict(metadata or {})
         self._ensure_path_folder(exp_id, ".")
 
@@ -1029,11 +1063,13 @@ class GoogleDriveArtifactStore:
                 "hp_sim5_kind": meta.get("kind") or "",
                 "hp_sim5_machine": meta.get("machine") or "",
                 "hp_sim5_status": meta.get("status") or "",
+                "hp_sim5_backend": meta.get("backend") or "",
                 "hp_sim5_stored_at": stored_at,
                 "hp_sim5_total_bytes": str(total_bytes),
                 "hp_sim5_file_count": str(len(records)),
                 "hp_sim5_git_revision": meta.get("git_revision") or "",
                 "hp_sim5_tags": tags_csv,
+                "hp_sim5_summary": " ".join(str(meta.get("summary") or "").split()),
             }.items()
         }
         self._ensure_path_folder(exp_id, ".", app_properties=app_props)
@@ -1141,11 +1177,8 @@ class GoogleDriveArtifactStore:
         manifest = self.get_manifest(experiment_id)
         dest = Path(dest_dir)
         dest.mkdir(parents=True, exist_ok=True)
-        wanted = set(rel_paths) if rel_paths is not None else None
-        for item in manifest.get("files", []):
-            rel = item["rel_path"]
-            if wanted is not None and rel not in wanted:
-                continue
+        for item in _selected_files(manifest, rel_paths):
+            rel = _validate_rel_path(item["rel_path"])
             remote_id = item.get("remote_id")
             if remote_id:
                 self._download_file_id(remote_id, dest / rel, expected_sha256=item.get("sha256"))
@@ -1159,7 +1192,7 @@ class GoogleDriveArtifactStore:
         *,
         tags: Sequence[str] = (),
         kind: str | None = None,
-        limit: int = 100,
+        limit: int | None = 100,
     ) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         for folder in self._list_experiment_folders():
@@ -1175,27 +1208,17 @@ class GoogleDriveArtifactStore:
                     "kind": props.get("hp_sim5_kind") or None,
                     "machine": props.get("hp_sim5_machine") or None,
                     "status": props.get("hp_sim5_status") or None,
+                    "backend": props.get("hp_sim5_backend") or None,
                     "tags": [t for t in tags_raw.split(",") if t],
                     "git_revision": props.get("hp_sim5_git_revision") or None,
+                    "summary": props.get("hp_sim5_summary") or None,
                 }
             else:
                 try:
                     manifest = self.get_manifest(folder["name"])
                 except FileNotFoundError:
                     continue
-                meta = manifest.get("metadata", {})
-                row = {
-                    "experiment_id": manifest.get("experiment_id", folder["name"]),
-                    "stored_at": manifest.get("stored_at", ""),
-                    "store_uri": self.uri,
-                    "total_bytes": manifest.get("total_bytes", 0),
-                    "file_count": manifest.get("file_count", 0),
-                    "kind": meta.get("kind"),
-                    "machine": meta.get("machine"),
-                    "status": meta.get("status"),
-                    "tags": list(meta.get("tags", [])),
-                    "git_revision": meta.get("git_revision"),
-                }
+                row = {**manifest_summary({"experiment_id": folder["name"], **manifest}), "store_uri": self.uri}
             rows.append(row)
         required_tags = set(tags)
         filtered = [

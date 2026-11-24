@@ -6,7 +6,7 @@ The scope is the active local/cloud manager, launched worker, reviewer and
 single-agent entry paths, including their optional documentation. Historical
 reports, frozen submissions and old task cards are evidence, not instructions.
 
-## Current instruction graph
+## Instruction graph at the time of the audit
 
 Solid arrows mean a required read or injected text. Dotted arrows mean optional
 navigation. The launcher/code nodes matter: Markdown links alone miss text that

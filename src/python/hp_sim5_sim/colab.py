@@ -23,13 +23,17 @@ import textwrap
 from typing import Any, Sequence
 import uuid
 
+from .experiment_lookup import directory_metadata
 from .interfaces import ArtifactStore, ExperimentResult, ExperimentSpec
+from .provenance import git_provenance
 from .storage import (
     ArtifactUploadError,
+    DriveMountArtifactStore,
     GoogleDriveArtifactStore,
+    LOCAL_STORE_DIR,
     LocalArtifactStore,
-    MANIFEST_NAME,
     ScratchWorkspace,
+    UPLOAD_PENDING_DIR,
     UPLOAD_PENDING_NAME,
     retry_upload_command,
     write_upload_pending,
@@ -184,6 +188,7 @@ def bundle_workspace(
     dest.parent.mkdir(parents=True, exist_ok=True)
     file_count = 0
     rrf_hash = hashlib.sha256()
+    provenance = git_provenance(root)
 
     def _skip(rel: str, parts: tuple[str, ...]) -> bool:
         if any(part in BUNDLE_EXCLUDE_PARTS for part in parts):
@@ -214,18 +219,13 @@ def bundle_workspace(
                 if rel.startswith("RRF/"):
                     rrf_hash.update(rel.encode() + b"\0" + path.read_bytes())
 
-        # Embed git revision so portable remote checkouts preserve provenance without .git/.
-        try:
-            rev = subprocess.check_output(
-                ["git", "rev-parse", "HEAD"], cwd=root, stderr=subprocess.DEVNULL, text=True
-            ).strip()
-        except (OSError, subprocess.CalledProcessError):
-            rev = "unknown"
-        rev_bytes = (rev + "\n").encode("utf-8")
-        rev_info = tarfile.TarInfo(name=".hp_sim5_git_revision")
-        rev_info.size = len(rev_bytes)
-        tar.addfile(rev_info, io.BytesIO(rev_bytes))
-        file_count += 1
+        # Portable remote workspaces have no .git directory.
+        for key, value in provenance.items():
+            data = (str(value).lower() if isinstance(value, bool) else str(value)).encode("utf-8")
+            info = tarfile.TarInfo(name=f".hp_sim5_{key}")
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+            file_count += 1
 
         included_native = False
         if include_portable_native:
@@ -266,6 +266,7 @@ class ColabConfig:
     direct_drive_upload: bool = False
     default_local_store_dir: Path | None = None
     command_timeout_s: float = 7200.0
+    persist_by_default: bool = True
 
 
 class ColabSession:
@@ -780,21 +781,7 @@ class ColabScheduler:
             if exps_root.is_dir():
                 for exp_dir in sorted(p for p in exps_root.iterdir() if p.is_dir()):
                     exp_id = exp_dir.name
-                    meta: dict[str, Any] = {}
-                    man_file = exp_dir / MANIFEST_NAME
-                    if man_file.is_file():
-                        try:
-                            meta = dict(json.loads(man_file.read_text(encoding="utf-8")).get("metadata") or {})
-                        except ValueError:
-                            meta = {}
-                    elif (exp_dir / "result.json").is_file():
-                        try:
-                            rdata = json.loads((exp_dir / "result.json").read_text(encoding="utf-8"))
-                            for k in ("kind", "status", "backend", "wall_s", "simulated_s", "total_steps", "metrics"):
-                                if rdata.get(k) is not None:
-                                    meta[k] = rdata[k]
-                        except ValueError:
-                            pass
+                    meta = directory_metadata(exp_dir)
                     if effective_store is not None:
                         try:
                             effective_store.put_directory(exp_id, exp_dir, metadata=meta)
@@ -874,14 +861,16 @@ class ColabScheduler:
         need_rerun = any(s.recording_mode != "none" for s in spec_list)
         need_native = any(s.solver == "native" for s in spec_list)
 
-        # Never silently discard Colab results: default to a persistent local store when neither
-        # --store, --remote-store, nor --keep-scratch is given.
+        # Default to persistent local storage when the caller hasn't chosen how to keep results.
         effective_store: ArtifactStore | None = store
-        if effective_store is None and not self.config.remote_store_uri and not keep_scratch:
+        if (
+            self.config.persist_by_default and effective_store is None
+            and not self.config.remote_store_uri and not keep_scratch
+        ):
             default_dir = (
                 Path(self.config.default_local_store_dir).expanduser().resolve()
                 if self.config.default_local_store_dir is not None
-                else (self.repo_root / "output/experiments").resolve()
+                else (self.repo_root / LOCAL_STORE_DIR).resolve()
             )
             effective_store = LocalArtifactStore(default_dir)
             print(
@@ -895,29 +884,37 @@ class ColabScheduler:
         # OAuth access token minted locally (never copying refresh_token/client_secret to Colab).
         direct_drive_config: dict[str, Any] | None = None
         direct_drive_token_payload: dict[str, Any] | None = None
-        if (
-            isinstance(effective_store, GoogleDriveArtifactStore)
-            and self.config.direct_drive_upload
-            and not self.config.remote_store_uri
-        ):
-            # Resolve/create <root>/experiments and mint short-lived token BEFORE allocating Colab VM.
-            exp_folder_id = effective_store.ensure_experiments_folder()
-            access_token, quota_project = effective_store.mint_access_token()
+        drive = effective_store if isinstance(effective_store, GoogleDriveArtifactStore) and not self.config.remote_store_uri else None
+        if drive is not None:
+            try:
+                exp_folder_id = drive.ensure_experiments_folder()
+            except (OSError, RuntimeError) as err:
+                raise ArtifactUploadError(
+                    f"Could not open {drive.uri} before starting Colab: {err}",
+                    store_uri=drive.uri,
+                ) from err
+        if drive is not None and self.config.direct_drive_upload:
+            access_token, quota_project = drive.mint_access_token()
             direct_drive_token_payload = {
                 "access_token": access_token,
                 "quota_project": quota_project,
             }
             direct_drive_config = {
-                "root_folder": effective_store.root_folder,
-                "root_folder_id": effective_store._explicit_root_id,
+                "root_folder": drive.root_folder,
+                "root_folder_id": drive._explicit_root_id,
                 "experiments_folder_id": exp_folder_id,
-                "api_base": effective_store.api_base,
-                "upload_base": effective_store.upload_base,
-                "chunk_bytes": effective_store.chunk_bytes,
+                "api_base": drive.api_base,
+                "upload_base": drive.upload_base,
+                "chunk_bytes": drive.chunk_bytes,
                 "token_remote_path": "/content/.hp_sim5_drive_token.json",
             }
 
-        with ScratchWorkspace(f"colab-batch-{uuid.uuid4().hex[:8]}", keep=keep_scratch) as local_ws:
+        scratch_base = (
+            self.repo_root / LOCAL_STORE_DIR / UPLOAD_PENDING_DIR
+            if isinstance(effective_store, (GoogleDriveArtifactStore, DriveMountArtifactStore))
+            or self.config.remote_store_uri else None
+        )
+        with ScratchWorkspace(f"colab-batch-{uuid.uuid4().hex[:8]}", base_dir=scratch_base, keep=keep_scratch) as local_ws:
             assert local_ws.path is not None
             ws_dir = local_ws.path
             bundle_tar = ws_dir / "hp_sim5_bundle.tar.gz"
@@ -1120,7 +1117,9 @@ class ColabScheduler:
                     exp_dir = extract_dir / "store/experiments" / res.experiment_id
                     if not exp_dir.is_dir():
                         continue
-                    meta = dict(res.manifest.get("metadata", {})) if res.manifest else {}
+                    meta = directory_metadata(exp_dir)
+                    if res.manifest:
+                        meta.update(res.manifest.get("metadata") or {})
                     meta.setdefault("kind", res.kind)
                     meta.setdefault("status", res.status)
                     meta.setdefault("backend", res.backend)
@@ -1151,6 +1150,15 @@ class ColabScheduler:
                             break
 
             if upload_errors:
+                if len(upload_errors) > 1:
+                    first = upload_errors[0]
+                    raise ArtifactUploadError(
+                        "\n".join(map(str, upload_errors)),
+                        experiment_id=first.experiment_id,
+                        scratch_dir=first.scratch_dir,
+                        store_uri=first.store_uri,
+                        result=first.result,
+                    )
                 raise upload_errors[0]
             if shutdown_error is not None:
                 raise shutdown_error

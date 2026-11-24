@@ -44,6 +44,7 @@ autocal/old_data
 !/.agents/skills/cloud-research-client/
 !/.agents/skills/research-program/
 !/.agents/skills/research-corpus/
+!/.agents/skills/experiment-lookup/
 autocal/logo_work
 autocal/data/old_data/
 human_docs/old_debugging_conversations/
@@ -74,7 +75,7 @@ public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak
 .codex
 /.research-programs*/
 /.research-state/
-experiments
+/experiments/
 autocal/data/progressive_experiment/
 autocal/tests/test_progressive_fitting_experiment.py
 autocal/tools/experiment_progressive_fitting.py
@@ -112,8 +113,7 @@ hangprinter-org/status/Hangprinter_HP4_authentic_photo_layout.png
 hangprinter-org/status/Hangprinter_HP4_original_photo_composite.png
 hangprinter-org/status/My_Ceiling_Unit_Jan_2022.JPG
 hangprinter-org/status/Texas_ceiling_unit_HP4_Dec_2023.jpg
-research/sessions/2026-11-09-interactive-research-e7b03767/
-research/sessions/2026-11-10-interactive-research-8108ae7d/
+/research/sessions
 hp-sim5-bug-report-2026-11-16.txt
 research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro-output/reset-generation/recording.rrd
 research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro-output/scene-content/recording.rrd

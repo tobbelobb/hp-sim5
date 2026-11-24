@@ -19,7 +19,7 @@ those differences. Turning a Goal-mode flag on is not sufficient to fix them.
 ## What the saved runs show
 
 The [data file](data.json) lists every included snapshot, session, classification
-and source hash. [audit.py](audit.py) recomputes the counts and timing arithmetic.
+and source hash. [audit.py](https://github.com/tobbelobb/hp-sim5/blob/e8b52019/research/reports/program-usefulness/audit.py) recomputes the counts and timing arithmetic.
 
 | Evidence group | Work actually commissioned | Observed result |
 | --- | --- | --- |
@@ -72,11 +72,11 @@ Representative results:
 
 | Direct session | Retained result and producer verification | Practical limitation |
 | --- | --- | --- |
-| [Exact spool-model reuse](../../../research/output/session-2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/report.md) | Three-repeat median replay savings of 2.54% and 10.36%; reports unchanged eleven-fixture results and 5,184 numerical fields | Fitting throughput; no collection or accuracy improvement. I recomputed those percentages from saved timings. |
-| [Guarded encoder settling](../../../research/output/session-2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9/report.md) | Matched 36-point collection: 429.668 → 320.364 simulated seconds, 25.4% shorter | One simulated collection pair; equal final calibration accuracy on new data was not established. |
-| [Stable encoder averaging](../../../research/output/session-2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/report.md) | Small averaging fix; complete automatic simulated collection and more stable repeated fits | The fresh-baseline comparison took more time for lower anchor error; the report explicitly rejects an unconditional speed claim. |
-| [Warm-started anchor solve](../../../research/output/session-2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/report.md) | Matched jobs with identical 180-point datasets: 2.706 → 2.420 mm applied-anchor RMSE | Simulation, single matched pairs and limited machine/settings scope. Its notebook explicitly continues the same investigation across four turns. |
-| [Constant-objective shortcut](../../../research/output/session-2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/report.md) | Four complete regression suites: 2.81% less mean wall time and 4.31% less child CPU; reports unchanged numerical results | Conditional compute saving; no collection-time or accuracy improvement. I recomputed the timing gains from saved trials. |
+| [Exact spool-model reuse](../session-2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/report.md) | Three-repeat median replay savings of 2.54% and 10.36%; reports unchanged eleven-fixture results and 5,184 numerical fields | Fitting throughput; no collection or accuracy improvement. I recomputed those percentages from saved timings. |
+| [Guarded encoder settling](../session-2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9/report.md) | Matched 36-point collection: 429.668 → 320.364 simulated seconds, 25.4% shorter | One simulated collection pair; equal final calibration accuracy on new data was not established. |
+| [Stable encoder averaging](../session-2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/report.md) | Small averaging fix; complete automatic simulated collection and more stable repeated fits | The fresh-baseline comparison took more time for lower anchor error; the report explicitly rejects an unconditional speed claim. |
+| [Warm-started anchor solve](../session-2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/report.md) | Matched jobs with identical 180-point datasets: 2.706 → 2.420 mm applied-anchor RMSE | Simulation, single matched pairs and limited machine/settings scope. Its notebook explicitly continues the same investigation across four turns. |
+| [Constant-objective shortcut](data.json) | Four complete regression suites: 2.81% less mean wall time and 4.31% less child CPU; reports unchanged numerical results | Conditional compute saving; no collection-time or accuracy improvement. I recomputed the timing gains from saved trials. |
 
 Relevant historical implementation commits, including `54e88492`, `854430c6`,
 `9422620c`, `294e24c8` and `79e53cbb`, are ancestors of this checkout. That
@@ -93,7 +93,7 @@ The cloud pilot and audit target platform operation. They cannot fairly be
 graded as failed attempts at the much broader old autocal task.
 
 The completed local audit repeats a conclusion already present in the
-[October 23 CM-E1 report](../../../research/output/session-2026-10-23-consensus-membership/report.md):
+[October 23 CM-E1 report](../session-2026-10-23-consensus-membership/report.md):
 a small aggregate gain coexists with two per-dataset regressions. Its new value
 is fixed independent review and durable admission. If you already knew that
 finding, its marginal research value is understandably small. Both statements
@@ -108,18 +108,18 @@ caused the difference is established by this archive.
 
 | Difference | Current evidence | Likely consequence — interpretation |
 | --- | --- | --- |
-| The objective shifted toward reviewed knowledge | [autocal.txt](../../prompts/autocal.txt) explicitly says to implement the best supported change and run regressions. The [manager workflow](../../../src/python/hp_sim5_research/program_instructions/manager.md) emphasizes a small investigation, evidence, review, a decision and result saving. | An accurate answer about existing evidence can satisfy the manager even when the human expected a delivered improvement. |
-| Existing topic prompts were not selected automatically | [ProgramManager](../../../src/python/hp_sim5_research/program_manager.py) adds the strategy contract; [WorkerDispatcher](../../../src/python/hp_sim5_research/program_workers.py) adds an assignment and supplied instructions. This audit preceded the new `prompt_portfolio` triage registry. | The new layer enumerates `research/prompts/` candidates with decision metadata for the manager to compare, then records the selected prompt on `route_plan`; live Program behavior still needs validation. |
+| The objective shifted toward reviewed knowledge | [autocal.txt](https://github.com/tobbelobb/hp-sim5/blob/1360d980/research/prompts/autocal.txt) explicitly says to implement the best supported change and run regressions. The [manager workflow](https://github.com/tobbelobb/hp-sim5/blob/1360d980/research/program-manager.md) emphasizes a small investigation, evidence, review, a decision and result saving. | An accurate answer about existing evidence can satisfy the manager even when the human expected a delivered improvement. |
+| Existing topic prompts were not selected automatically | [ProgramManager](https://github.com/tobbelobb/hp-sim5/blob/1360d980/src/python/hp_sim5_research/program_manager.py) adds the strategy contract; [WorkerDispatcher](https://github.com/tobbelobb/hp-sim5/blob/1360d980/src/python/hp_sim5_research/program_workers.py) adds an assignment and supplied instructions. This audit preceded the new `prompt_portfolio` triage registry. | The new layer enumerates `research/prompts/` candidates with decision metadata for the manager to compare, then records the selected prompt on `route_plan`; live Program behavior still needs validation. |
 | Worker continuity changed | Workers always launch with `--batch`, one prompt, a fresh session and a wall deadline. An assignment dispatches once; recovery does not resume its model conversation/world. The direct warm-start notebook records four turns in the same investigation. | Short independent inspections replace opportunities to try a failed idea, repair it, test another and finish a patch within one continuing investigation. This need not require any new resume machinery: a longer, properly scoped worker can already do more. |
 | Small budgets dominate the live record | Nine caps above have an eight-minute median; the final live regression expires at fifteen minutes during a parent permission wait. | Setup, queue brokerage and permissions can consume a meaningful fraction of the entire scientific allocation. An early response can mean insufficient opportunity rather than efficient completion. |
-| Reviewed acceptance does not require a delivered improvement | [Task 016](../../program-tasks/016-live-manager-release.md) permits a small production-tool check plus saved evidence. `keep/report_only` is valid. | Passing an orchestration demonstration says little about replacing the human's practical improvement workflow. |
-| Integration ends before merging | [ProgramIntegrations](../../../src/python/hp_sim5_research/program_integration.py) prepares/checks a combined candidate and reports `automatic_merge_or_push: false`; the manager prompt says not to merge experimental candidates automatically. | The desired review-and-merge chore is not actually automated end to end. This is deliberate current behavior, not a hidden merge failure. |
+| Reviewed acceptance does not require a delivered improvement | [Task 016](https://github.com/tobbelobb/hp-sim5/blob/1360d980/research/program-tasks/016-live-manager-release.md) permits a small production-tool check plus saved evidence. `keep/report_only` is valid. | Passing an orchestration demonstration says little about replacing the human's practical improvement workflow. |
+| Integration ends before merging | [ProgramIntegrations](https://github.com/tobbelobb/hp-sim5/blob/1360d980/src/python/hp_sim5_research/program_integration.py) prepares/checks a combined candidate and reports `automatic_merge_or_push: false`; the manager prompt says not to merge experimental candidates automatically. | The desired review-and-merge chore is not actually automated end to end. This is deliberate current behavior, not a hidden merge failure. |
 | Runtime failures are real | Original live gate: headers/client/MCP failures. Cloud audit: worktree output, caches, Viewer/rendering/protocol, invalid status and browser-history responses, plus a permission stall. | Some short runs were diagnosing real blockers. A report about a scientific question should expose those blockers immediately instead of burying them in limitations. |
 
 Current local managers and default workers enable the client's Goal feature.
 The five October 26–27 actual attempts record `goal_mode: true`; the earlier
 three pilot attempts deliberately record false. In cloud, the
-[adapter](../../../.agents/skills/cloud-research-client/scripts/codex_cloud/adapter.py) uses the
+[adapter](https://github.com/tobbelobb/hp-sim5/blob/1360d980/src/python/hp_sim5_research/codex_cloud/adapter.py) uses the
 parent's actors: CLI Goal/model settings do not configure them. A settings flag
 also does not prove an explicit goal was established or continued. The archive
 therefore supports a continuity/budget explanation much more directly than a
@@ -225,11 +225,7 @@ they reduce your work in that measured cycle.
 
 ## Reproduction and source boundaries
 
-Run from the repository root:
-
-```bash
-.venv/bin/python research/reports/program-usefulness/audit.py
-```
+The audit script is preserved at the linked historical revision.
 
 The script needs this machine's ignored `research/output` evidence as well as
 committed archives. The saved JSON retains the counts, paths, classifications
@@ -240,15 +236,15 @@ programs already included above and add no independent runs.
 
 Primary program evidence:
 
-- [Original live gate](../../../research/output/session-2026-10-24-live-manager-release/report.md)
-  and its [snapshot](../../../research/output/session-2026-10-24-live-manager-release/program-export.json).
-- [October 24 cloud pilot](../../cloud-client-pilot/2026-10-24/README.md)
-  and [snapshot](../../cloud-client-pilot/2026-10-24/program-export.json).
-- Initial local program [snapshot](../../../research/output/program-d71e9395e72e43db97d4e21c0d052f51/program.json).
-- [Completed local evidence audit](../../../research/output/session-2026-10-26-cm-saved-evidence-review/report.md)
-  and [snapshot](../../../research/output/program-e31e5321be5940baacf677409b2579e0/program.json).
-- [Cloud audit](../../../research/output/program-7aa80aa18f10499e85cb24ffeae712cb/selected/output/research/sessions/2026-10-26-cloud-platform-audit/report.md)
-  and [snapshot](../../../research/output/program-7aa80aa18f10499e85cb24ffeae712cb/program.json).
+- [Original live gate](../session-2026-10-24-live-manager-release/report.md)
+  and its [snapshot](../session-2026-10-24-live-manager-release/program-export.json).
+- [October 24 cloud pilot](../../../research-program/archive/cloud-client/cloud-client-pilot/2026-10-24/README.md)
+  and [snapshot](../../../research-program/archive/cloud-client/cloud-client-pilot/2026-10-24/program-export.json).
+- Initial local program [snapshot](../program-d71e9395e72e43db97d4e21c0d052f51/program.json).
+- [Completed local evidence audit](../program-e31e5321be5940baacf677409b2579e0/selected/output/research/managers/program-e31e5321be5940baacf677409b2579e0/controller-38b77d44dc4746209eff34744c3cd990/report.md)
+  and [snapshot](../program-e31e5321be5940baacf677409b2579e0/program.json).
+- [Cloud audit](../program-7aa80aa18f10499e85cb24ffeae712cb/selected/output/research/sessions/2026-10-26-cloud-platform-audit/report.md)
+  and [snapshot](../program-7aa80aa18f10499e85cb24ffeae712cb/program.json).
 
 No external publications or undocumented platform behavior are needed for these
 findings. The recommendations above are hypotheses to test, not measured gains.

@@ -77,7 +77,8 @@ For Claude Agent SDK deployments, include project settings/skills (`setting_sour
 in Python or `settingSources` in TypeScript) and the tools required for the task.
 The .claude/skills links expose the same portable skills used by Codex. If a managed
 service uploads skills instead of discovering repository directories, upload
-.agents/skills/research-program and .agents/skills/research-corpus, and include the
+.agents/skills/research-program, .agents/skills/research-corpus, and
+.agents/skills/experiment-lookup, and include the
 referenced research-program directory in the environment. Use a self-hosted sandbox
 when native toolchain or background-service requirements exceed the managed sandbox.
 This repository supplies a filesystem/shell contract, not an API provisioner.

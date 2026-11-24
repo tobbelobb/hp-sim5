@@ -17,10 +17,10 @@ benchmarks sequential, with no tests or other simulation jobs competing for CPU.
 Schedule the existing real firmware logo commands with the production player:
 
 ```bash
-mkdir -p output/headless-profile
+mkdir -p output/experiments/headless-profile
 node scripts/headless_commands.mjs \
   public/RRF_CAN_commands/Hangprinter_logo6_hp4_w_line_layers.can \
-  output/headless-profile/logo.json .002 RRF/run/vsd/sys/config_hp4_w_line_layers.g
+  output/experiments/headless-profile/logo.json .002 RRF/run/vsd/sys/config_hp4_w_line_layers.g
 ```
 
 Use the corresponding HP3 input and config for HP3. Each JSON object occupies
@@ -47,30 +47,30 @@ forces and settling behavior can differ from the original trace.
 
 ```bash
 node scripts/profile_headless.mjs --machine hp4 \
-  --commands output/headless-profile/logo.json --steps 30000 --layering on \
-  --output output/headless-profile/plain.json
+  --commands output/experiments/headless-profile/logo.json --steps 30000 --layering on \
+  --output output/experiments/headless-profile/plain.json
 
 node scripts/profile_headless.mjs --machine hp4 \
-  --commands output/headless-profile/logo.json --steps 30000 --layering on \
-  --systems --repeats 1 --compare output/headless-profile/plain.json \
-  --output output/headless-profile/systems.json
+  --commands output/experiments/headless-profile/logo.json --steps 30000 --layering on \
+  --systems --repeats 1 --compare output/experiments/headless-profile/plain.json \
+  --output output/experiments/headless-profile/systems.json
 
-node --cpu-prof --cpu-prof-dir=output/headless-profile --cpu-prof-name=physics.cpuprofile \
+node --cpu-prof --cpu-prof-dir=output/experiments/headless-profile --cpu-prof-name=physics.cpuprofile \
   scripts/profile_headless.mjs --machine hp4 \
-  --commands output/headless-profile/logo.json --steps 30000 --layering on \
-  --repeats 1 --compare output/headless-profile/plain.json \
-  --output output/headless-profile/cpu.json
+  --commands output/experiments/headless-profile/logo.json --steps 30000 --layering on \
+  --repeats 1 --compare output/experiments/headless-profile/plain.json \
+  --output output/experiments/headless-profile/cpu.json
 
-node scripts/summarize_v8_profile.mjs output/headless-profile/physics.cpuprofile \
-  output/headless-profile/cpu.json > output/headless-profile/cpu-summary.json
+node scripts/summarize_v8_profile.mjs output/experiments/headless-profile/physics.cpuprofile \
+  output/experiments/headless-profile/cpu.json > output/experiments/headless-profile/cpu-summary.json
 
 node scripts/profile_headless.mjs --machine hp4 \
-  --commands output/headless-profile/logo.json --steps 30000 --layering on \
-  --heap-sampling --repeats 1 --compare output/headless-profile/plain.json \
-  --output output/headless-profile/heap.json
+  --commands output/experiments/headless-profile/logo.json --steps 30000 --layering on \
+  --heap-sampling --repeats 1 --compare output/experiments/headless-profile/plain.json \
+  --output output/experiments/headless-profile/heap.json
 
-node scripts/summarize_v8_profile.mjs output/headless-profile/heap.json.0.heapprofile \
-  > output/headless-profile/heap-summary.json
+node scripts/summarize_v8_profile.mjs output/experiments/headless-profile/heap.json.0.heapprofile \
+  > output/experiments/headless-profile/heap-summary.json
 ```
 
 Repeat for HP3/HP4, `--layering on/off`, and logo/autocal workloads. Keep the same

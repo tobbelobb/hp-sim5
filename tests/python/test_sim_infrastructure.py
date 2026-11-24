@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -153,6 +154,10 @@ def test_local_artifact_store_roundtrip_dedupe_and_integrity(tmp_path):
     listed = store.list_experiments(tags=["hp3"], kind="autocal")
     assert len(listed) == 1 and listed[0]["experiment_id"] == "exp-a"
     assert store.list_experiments(tags=["hp4"]) == []
+    synced = store.experiments_dir / "synced-run"
+    synced.mkdir()
+    (synced / "experiment_manifest.json").write_text(json.dumps({**manifest, "experiment_id": "synced-run"}))
+    assert {row["experiment_id"] for row in store.list_experiments()} == {"exp-a", "synced-run"}
 
     # Retrieval
     out = tmp_path / "restored"
@@ -405,7 +410,7 @@ def _start_fake_drive_server(state: _FakeDriveState):
     return server, base
 
 
-def test_google_drive_store_chunked_resumable_retry_dedupe_and_verify(tmp_path):
+def test_google_drive_store_chunked_resumable_retry_dedupe_and_verify(tmp_path, monkeypatch, capsys):
     chunk_size = 256 * 1024
     # Simulate a transient 503 on the second chunk (offset 256 KiB) to test 308 resume recovery!
     state = _FakeDriveState(fail_once_on_chunk_offset=chunk_size)
@@ -428,7 +433,10 @@ def test_google_drive_store_chunked_resumable_retry_dedupe_and_verify(tmp_path):
         manifest = store.put_directory(
             "drv-exp-1",
             run_dir,
-            metadata={"kind": "autocal", "machine": "hangprinter_4", "status": "ok", "tags": ["drive", "hp4"]},
+            metadata={
+                "kind": "autocal", "machine": "hangprinter_4", "status": "ok", "tags": ["drive", "hp4"],
+                "summary": "Reduced preload remained stable.\n" + "a" * 120,
+            },
         )
         assert manifest["file_count"] == 2
         assert chunk_size in state.failed_offsets  # proved transient failure happened and resumed!
@@ -444,11 +452,53 @@ def test_google_drive_store_chunked_resumable_retry_dedupe_and_verify(tmp_path):
         # Listing & retrieval
         listed = store.list_experiments(tags=["hp4"], kind="autocal")
         assert len(listed) == 1 and listed[0]["experiment_id"] == "drv-exp-1"
+        assert listed[0]["summary"].startswith("Reduced preload remained stable.")
+        assert store.get_manifest("drv-exp-1")["metadata"]["summary"] == manifest["metadata"]["summary"]
+
+        from scripts import hp_sim5_run
+
+        local_tree = tmp_path / "research/output/legacy"
+        local_tree.mkdir(parents=True)
+        (local_tree / "manifest.json").write_text(json.dumps({
+            "run_id": "legacy-local", "label": "Reduced preload in the reference scene",
+            "commands_sha256": "d", "git_revision": "abc012",
+        }))
+        monkeypatch.setattr(hp_sim5_run, "ROOT", tmp_path)
+        monkeypatch.setattr(hp_sim5_run, "DEFAULT_LOCAL_STORE", tmp_path / "output")
+        open_store = hp_sim5_run.store_from_uri
+        monkeypatch.setattr(hp_sim5_run, "store_from_uri", lambda uri: store if uri == store.uri else open_store(uri))
+        assert hp_sim5_run.main(["artifacts", "--store", store.uri, "find", "reduced", "PRELOAD"]) == 0
+        found = {row["experiment_id"]: row for row in json.loads(capsys.readouterr().out)}
+        assert set(found) == {"legacy-local", "drv-exp-1"}
+        assert found["legacy-local"]["metadata_path"] == str(local_tree / "manifest.json")
+        assert found["drv-exp-1"]["artifact_uri"] == f"{store.uri}/experiments/drv-exp-1"
+
+        monkeypatch.delenv("HP_SIM5_ARTIFACT_STORE", raising=False)
+        monkeypatch.setattr(hp_sim5_run, "default_adc_path", lambda: tmp_path / "adc.json")
+        monkeypatch.setattr(hp_sim5_run, "GoogleDriveArtifactStore", lambda **kwargs: store)
+        assert hp_sim5_run.main(["artifacts", "find", "reduced", "PRELOAD"]) == 0
+        assert {row["experiment_id"] for row in json.loads(capsys.readouterr().out)} == set(found)
+        additional = LocalArtifactStore(tmp_path / "other")
+        additional.put_directory("other-local", run_dir, metadata={"summary": "Reduced preload"})
+        assert hp_sim5_run.main(["artifacts", "find", "--also-store", additional.uri, "reduced", "PRELOAD"]) == 0
+        assert {row["experiment_id"] for row in json.loads(capsys.readouterr().out)} == {*found, "other-local"}
+        monkeypatch.setenv("HP_SIM5_ARTIFACT_STORE", store.uri)
+        assert hp_sim5_run.main(["artifacts", "find", "--local-only", "reduced", "PRELOAD"]) == 0
+        assert [row["experiment_id"] for row in json.loads(capsys.readouterr().out)] == ["legacy-local"]
+
+        missing_store = GoogleDriveArtifactStore(
+            root_folder="missing-folder", token_provider=lambda: "test-token", api_base=store.api_base,
+        )
+        file_count = len(state.files)
+        assert missing_store.list_experiments() == []
+        assert len(state.files) == file_count
 
         restored = tmp_path / "restored"
         store.get_experiment("drv-exp-1", restored)
         assert (restored / "nested/recording.rrd").read_bytes() == big_bytes
         assert (restored / "sweeps.json").read_text() == '{"sweeps":[1,2,3]}\n'
+        with pytest.raises(FileNotFoundError, match="missing.json"):
+            store.get_experiment("drv-exp-1", restored, rel_paths=["missing.json"])
 
         # Download integrity failure detection
         state.corrupt_file_name = "recording.rrd"
@@ -472,6 +522,43 @@ def test_google_drive_store_reports_clear_scope_error():
             store.list_experiments()
     finally:
         server.shutdown()
+
+
+@pytest.mark.parametrize("contents", ["not json", '{"type": "authorized_user"}'])
+def test_malformed_adc_reports_drive_auth_error(tmp_path, contents):
+    credentials = tmp_path / "adc.json"
+    credentials.write_text(contents)
+    with pytest.raises(DriveAuthError, match="Google ADC credentials"):
+        GoogleDriveArtifactStore(credentials_path=credentials)
+
+
+def test_missing_adc_override_never_uses_host_credentials(tmp_path, monkeypatch):
+    host_adc = tmp_path / ".config/gcloud/application_default_credentials.json"
+    host_adc.parent.mkdir(parents=True)
+    host_adc.write_text('{"client_id":"host","client_secret":"dummy","refresh_token":"dummy"}')
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+    GoogleDriveArtifactStore()
+    missing = tmp_path / "missing.json"
+    with pytest.raises(DriveAuthError, match="file not found"):
+        GoogleDriveArtifactStore(credentials_path=missing)
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(missing))
+    with pytest.raises(DriveAuthError, match="file not found"):
+        GoogleDriveArtifactStore()
+
+
+@pytest.mark.parametrize("failure", [TimeoutError(), http.client.BadStatusLine("")])
+def test_drive_token_refresh_errors_use_configured_timeout(monkeypatch, failure):
+    from hp_sim5_sim import storage
+
+    def fail(_request, *, timeout):
+        assert timeout == 5
+        raise failure
+
+    monkeypatch.setattr(storage, "urlopen", fail)
+    provider = OAuthRefreshTokenProvider(client_id="test", client_secret="dummy", refresh_token="dummy", timeout_s=5)
+    with pytest.raises(DriveAuthError, match="Could not refresh"):
+        provider()
 
 
 def test_oauth_refresh_token_provider_caches_and_refreshes():
@@ -624,6 +711,87 @@ def test_cli_artifacts_roundtrip(tmp_path):
         cwd=ROOT, capture_output=True, text=True, check=True,
     )
     assert (out_dir / "data.json").read_text() == '{"x": 42}\n'
+
+
+def test_cli_retains_new_runs_with_provenance_and_allows_discard(tmp_path, monkeypatch, capsys):
+    from scripts import hp_sim5_run
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "-c", "user.name=Test", "-c", "user.email=test@example.org",
+         "commit", "--allow-empty", "-qm", "revision"],
+        check=True,
+    )
+    revision = subprocess.check_output(["git", "-C", str(tmp_path), "rev-parse", "HEAD"], text=True).strip()
+    (tmp_path / "uncommitted-input").write_text("dirty")
+    monkeypatch.setattr(hp_sim5_run, "ROOT", tmp_path)
+    monkeypatch.setattr(hp_sim5_run, "DEFAULT_LOCAL_STORE", tmp_path / "output")
+    monkeypatch.delenv("HP_SIM5_ARTIFACT_STORE", raising=False)
+    monkeypatch.delenv("HP_SIM5_SESSION_DIR", raising=False)
+
+    assert hp_sim5_run.main([
+        "run", "--kind", "command", "--id", "known-run", "--summary", "Sampled a baseline",
+        "--tag", "baseline", "--command", "{python}",
+    ]) == 0
+    result = json.loads(capsys.readouterr().out)
+    metadata = result["manifest"]["metadata"]
+    assert metadata["git_revision"] == revision
+    assert metadata["git_dirty"] is True
+    assert metadata["summary"] == "Sampled a baseline"
+
+    assert hp_sim5_run.main([
+        "artifacts", "find", "--local-only", "--revision", revision[:8], "--tag", "baseline", "sampled",
+    ]) == 0
+    assert [row["experiment_id"] for row in json.loads(capsys.readouterr().out)] == ["known-run"]
+    restored = tmp_path / "restored"
+    assert hp_sim5_run.main([
+        "artifacts", "get", "known-run", str(restored), "--file", "spec.json",
+    ]) == 0
+    assert json.loads((restored / "spec.json").read_text())["command"] == ["{python}"]
+    capsys.readouterr()
+
+    previous = LocalArtifactStore(hp_sim5_run.DEFAULT_LOCAL_STORE / "experiments")
+    previous.put_directory("old-layout", restored, metadata={"summary": "Retained before consolidation"})
+    assert hp_sim5_run.main(["artifacts", "manifest", "old-layout"]) == 0
+    assert json.loads(capsys.readouterr().out)["store_uri"] == previous.uri
+    assert hp_sim5_run.main(["artifacts", "find", "--local-only", "old-layout"]) == 0
+    assert [row["store_uri"] for row in json.loads(capsys.readouterr().out)] == [previous.uri]
+
+    assert hp_sim5_run.main([
+        "run", "--discard", "--kind", "command", "--id", "throwaway", "--command", "{python}",
+    ]) == 0
+    assert json.loads(capsys.readouterr().out)["artifact_uri"] is None
+    assert not (hp_sim5_run.DEFAULT_LOCAL_STORE / "experiments/throwaway").exists()
+
+
+@pytest.mark.parametrize("packaged", [False, True])
+def test_lookup_prefers_canonical_run_and_keeps_local_results_on_drive_error(tmp_path, monkeypatch, capsys, packaged):
+    from scripts import hp_sim5_run
+
+    run_id = "a" * 32
+    shared = tmp_path / "output/experiments" / run_id
+    for base in (tmp_path / "output/legacy/session/experiments", tmp_path / "research/output/scratch/experiments",
+                 shared.parent):
+        directory = base / run_id
+        directory.mkdir(parents=True)
+        (directory / "manifest.json").write_text(json.dumps({"run_id": run_id, "commands_sha256": "hash"}))
+    if packaged:
+        LocalArtifactStore(shared.parent.parent).put_directory(run_id, shared, metadata={"kind": "recorded_experiment"})
+    monkeypatch.setattr(hp_sim5_run, "ROOT", tmp_path)
+    monkeypatch.setattr(hp_sim5_run, "DEFAULT_LOCAL_STORE", tmp_path / "output")
+    monkeypatch.setattr(hp_sim5_run, "default_adc_path", lambda: tmp_path / "broken-adc.json")
+    monkeypatch.delenv("HP_SIM5_ARTIFACT_STORE", raising=False)
+
+    def unavailable(**_kwargs):
+        raise DriveAuthError("fixture credentials invalid")
+
+    monkeypatch.setattr(hp_sim5_run, "GoogleDriveArtifactStore", unavailable)
+    assert hp_sim5_run.main(["artifacts", "find", run_id]) == 0
+    result = capsys.readouterr()
+    row, = json.loads(result.out)
+    assert row["experiment_id"] == run_id
+    assert row.get("metadata_path") == (None if packaged else str(shared / "manifest.json"))
+    assert "WARNING:" in result.err and "fixture credentials invalid" in result.err
 
 
 # ---------------------------------------------------------------------------
@@ -892,13 +1060,12 @@ def test_colab_defaults_to_persistent_local_store_and_never_returns_content_uri(
     fake_remote.mkdir()
     stub = _make_stub_colab(tmp_path, log_file=log_file, fake_remote=fake_remote)
 
-    default_store_dir = tmp_path / "default_experiments"
+    default_store_dir = tmp_path / "output"
     cfg = ColabConfig(
         colab_bin=str(stub),
         build_portable_native=False,
-        default_local_store_dir=default_store_dir,
     )
-    scheduler = ColabScheduler(ROOT, config=cfg)
+    scheduler = ColabScheduler(tmp_path, config=cfg)
     spec = ExperimentSpec(experiment_id="colab-default-1", kind="autocal", machine="hangprinter_3", solver="wasm")
 
     # store=None, keep_scratch=False -> persisted in default_store_dir!
@@ -906,8 +1073,8 @@ def test_colab_defaults_to_persistent_local_store_and_never_returns_content_uri(
     assert res.status == "ok"
     assert res.artifact_uri is not None
     assert "/content/" not in res.artifact_uri
-    assert str(default_store_dir.resolve()) in res.artifact_uri
     default_store = LocalArtifactStore(default_store_dir)
+    assert res.artifact_uri == f"{default_store.uri}/experiments/colab-default-1"
     assert default_store.exists("colab-default-1", "sweeps.json")
 
     # store=None, keep_scratch=True -> scratch kept locally, artifact_uri is None (never /content/...)
@@ -976,6 +1143,52 @@ def test_failed_upload_preserves_scratch_and_supports_cli_retry(tmp_path):
     colab_preserved = Path(colab_exc.value.scratch_dir or "")
     assert (colab_preserved / "sweeps.json").is_file()
     assert (colab_preserved / UPLOAD_PENDING_NAME).is_file()
+
+
+def test_schedulers_retain_failed_drive_uploads_under_output(tmp_path):
+    class FailingDrive(GoogleDriveArtifactStore):
+        def ensure_experiments_folder(self):
+            return "fake-folder"
+
+        def put_directory(self, *args, **kwargs):
+            raise DriveAuthError("Drive scope rejected after the run")
+
+    fake_remote = tmp_path / "remote"
+    fake_remote.mkdir()
+    stub = _make_stub_colab(tmp_path, log_file=tmp_path / "calls.jsonl", fake_remote=fake_remote)
+    scheduler = ColabScheduler(tmp_path, config=ColabConfig(colab_bin=str(stub), build_portable_native=False))
+    specs = [ExperimentSpec(kind="autocal", solver="wasm", experiment_id=f"retry-drive-{i}") for i in (1, 2)]
+    store = FailingDrive(token_provider=lambda: "unused")
+    retry_dir = tmp_path / "output/upload-pending"
+
+    local = LocalScheduler(tmp_path)
+    with pytest.raises(ArtifactUploadError) as local_failure:
+        local.run(ExperimentSpec(kind="command", command=["{python}"]), store=store)
+    local_run = Path(local_failure.value.scratch_dir)
+    assert local_run.is_relative_to(retry_dir)
+    assert json.loads((local_run / UPLOAD_PENDING_NAME).read_text())["store_uri"] == store.uri
+
+    with pytest.raises(ArtifactUploadError) as failure:
+        scheduler.run_batch(specs, store=store)
+
+    assert Path(failure.value.scratch_dir).is_relative_to(retry_dir)
+    for spec in specs:
+        assert spec.experiment_id in str(failure.value)
+        run_dir, = retry_dir.glob(f"*/extracted/store/experiments/{spec.experiment_id}")
+        assert (run_dir / "sweeps.json").is_file()
+        assert json.loads((run_dir / UPLOAD_PENDING_NAME).read_text())["store_uri"] == store.uri
+
+
+def test_colab_checks_explicit_drive_before_allocating_session(tmp_path):
+    class UnavailableDrive(GoogleDriveArtifactStore):
+        def ensure_experiments_folder(self):
+            raise DriveAuthError("Drive scope required")
+
+    scheduler = ColabScheduler(tmp_path)
+    store = UnavailableDrive(token_provider=lambda: "unused")
+    with pytest.raises(ArtifactUploadError, match="before starting Colab: Drive scope required"):
+        scheduler.run(ExperimentSpec(kind="autocal", solver="wasm"), store=store)
+    assert not (tmp_path / "output").exists()
 
 
 def test_parallel_index_updates_local_and_drive_no_lost_entries(tmp_path):
@@ -1147,7 +1360,7 @@ def test_colab_direct_drive_upload_bypasses_local_and_rescues_failures(tmp_path)
         remote_def = tmp_path / "remote_default"
         remote_def.mkdir()
         stub_def = _make_stub_colab(tmp_path, log_file=log_def, fake_remote=remote_def, direct_mode="ok")
-        sched_def = ColabScheduler(ROOT, config=ColabConfig(colab_bin=str(stub_def), build_portable_native=False))
+        sched_def = ColabScheduler(tmp_path, config=ColabConfig(colab_bin=str(stub_def), build_portable_native=False))
         spec0 = ExperimentSpec(experiment_id="default-vialocal-1", kind="autocal", machine="hangprinter_3", solver="wasm")
         res0 = sched_def.run(spec0, store=store)
         assert res0.status == "ok"
@@ -1161,7 +1374,7 @@ def test_colab_direct_drive_upload_bypasses_local_and_rescues_failures(tmp_path)
         remote_ok.mkdir()
         stub_ok = _make_stub_colab(tmp_path, log_file=log_ok, fake_remote=remote_ok, direct_mode="ok")
         sched_ok = ColabScheduler(
-            ROOT,
+            tmp_path,
             config=ColabConfig(colab_bin=str(stub_ok), build_portable_native=False, direct_drive_upload=True),
         )
         spec1 = ExperimentSpec(experiment_id="direct-1", kind="autocal", machine="hangprinter_3", solver="wasm")
@@ -1188,7 +1401,7 @@ def test_colab_direct_drive_upload_bypasses_local_and_rescues_failures(tmp_path)
         remote_r.mkdir()
         stub_r = _make_stub_colab(tmp_path, log_file=log_r, fake_remote=remote_r, direct_mode="rescue")
         sched_r = ColabScheduler(
-            ROOT,
+            tmp_path,
             config=ColabConfig(colab_bin=str(stub_r), build_portable_native=False, direct_drive_upload=True),
         )
         spec2 = ExperimentSpec(experiment_id="rescue-1", kind="autocal", machine="hangprinter_4", solver="wasm", tags=["rescued"])
