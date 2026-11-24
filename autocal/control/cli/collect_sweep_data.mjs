@@ -568,6 +568,8 @@ async function collect(argv, session) {
 
   if (!session.bridge) await openBridge(session, args, machineType, speedup);
   const bridgeCtx = session.bridge;
+  const browserSim = args.sim && !args.headlessUrl;
+  session.browserSim ||= browserSim;
   const reference = session.reference;
   let send = null;
   try {
@@ -642,6 +644,8 @@ async function collect(argv, session) {
       if (args.trace) {
         await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
       }
+      // Undo the idle pause from a previous session, and any pause from the scene setup above.
+      if (browserSim) bridgeCtx.broadcast({ type: 'resume' });
     }
 
     await send.simulationClock?.refresh?.();
@@ -658,6 +662,7 @@ async function collect(argv, session) {
           // Enabling layering rebakes/reset the browser scene, including its speed.
           if (speedup !== 1) await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
           if (args.trace) await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
+          if (browserSim) bridgeCtx.broadcast({ type: 'resume' });
         } : null,
       onRecovery: recovery => reference.emit('sweep_recovery', recovery, bridgeCtx.simulationClock),
       onPoint: async (point, config) => {
@@ -691,6 +696,8 @@ async function main() {
     if (session.rrfProcess && !session.persistRrfSimulator) stopProcess(session.rrfProcess);
     if (session.klippyProcess) stopKlippyApiServer(session.klippyProcess);
     stepReadline?.close();
+    // Stop an idle browser simulator from spinning a CPU after autocal, whatever the outcome.
+    if (session.browserSim) session.bridge.broadcast({ type: 'pause' });
     const clients = [...(session.bridge?.wss?.clients ?? [])];
     const disconnected = clients.map(client => new Promise(resolve => {
       client.once('close', resolve);

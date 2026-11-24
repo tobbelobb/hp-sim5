@@ -333,6 +333,14 @@ export function createExternalCommandController({
       commands?.handleUserReset?.();
       return;
     }
+    if (payload.type === 'pause') {
+      runtime?.pause?.();
+      return;
+    }
+    if (payload.type === 'resume') {
+      runtime?.resume?.();
+      return;
+    }
     if (payload.type === 'set_speed_scale' && Number.isFinite(payload.value) && payload.value > 0) {
       commands?.applyTimeScaleChange?.(payload.value, { show: true });
       return;
