@@ -336,17 +336,27 @@ def stretch_identifiability_diagnostics(
     kept: Optional[np.ndarray] = None,
     active_a: Optional[np.ndarray] = None,
     active_prior_inv: Optional[np.ndarray] = None,
-    k_hat: float = 1.0,
+    k_grav_hat: Optional[float] = 1.0,
+    k_sensor_hat: Optional[float] = None,
+    has_gravity: bool = True,
+    split_alpha: bool = True,
+    lev_weights: Optional[np.ndarray] = None,
 ) -> Dict[str, object]:
-    """Diagnose whether compliance k and true EA (via gravity mg) separated from anchors and alpha.
+    """Diagnose whether true EA (via gravity mg) separated from motor force scale alpha.
 
     Specifically checks the config.g transfer trap: multiplying alpha_i, F_{0,i}, c_i, and EA
     together leaves every sensor-force stretch term invariant; only gravity mg fixes absolute EA.
+    `ea_estimated_n` is derived strictly from the gravity compliance `k_grav_hat` when the
+    gravity-vs-sensor split is active, never from the sensor-force scale `k_sensor_hat`.
     """
-    n = anchors.shape[0]
     sigma = max(float(sigma_mm), _MIN_NUIS_SCALE_MM)
     mask_pts = np.ones(len(positions), dtype=bool) if kept is None else np.asarray(kept, dtype=bool)
     mask = (mask_pts[:, None] & measured).ravel()
+    row_sqrt_w = (
+        np.repeat(np.sqrt(np.maximum(np.asarray(lev_weights, dtype=float), 0.0)), anchors.shape[0])[mask]
+        if lev_weights is not None
+        else None
+    )
 
     _, dirs_to_a, t_grav, _, _, t_nom, g = static_tension_superposition(anchors, positions, measured, basis)
     direction = -dirs_to_a * measured[:, :, None]
@@ -355,11 +365,15 @@ def stretch_identifiability_diagnostics(
     num_anchor_params = num_geom - num_offsets
 
     # Gravity-vs-sensor split matrix: column 0 = dk_grav (1/EA), column 1 = dalpha_sensor (alpha/EA).
-    t_cmd = t_nom - t_grav
-    b_split = np.stack([g * t_grav, g * t_cmd], axis=2) * measured[:, :, None]
+    pos_mask = (t_nom > 0.0).astype(float)
+    t_grav_eff = t_grav * pos_mask
+    t_cmd_eff = (t_nom - t_grav) * pos_mask
+    b_split = np.stack([g * t_grav_eff, g * t_cmd_eff], axis=2) * measured[:, :, None]
     a_split = project_pose_orthogonal(direction, measured, b_split)
 
     j_split = np.hstack([j_geom.reshape(-1, num_geom)[mask], -a_split.reshape(-1, 2)[mask]])
+    if row_sqrt_w is not None:
+        j_split = j_split * row_sqrt_w[:, None]
     i_split = (j_split.T @ j_split) / (sigma ** 2)
     prior_split = np.r_[
         np.full(num_anchor_params, 1e-6),
@@ -371,10 +385,12 @@ def stretch_identifiability_diagnostics(
     ea_grav_std = float(np.sqrt(max(cov_split[num_geom, num_geom], 0.0)))
     alpha_sensor_std = float(np.sqrt(max(cov_split[num_geom + 1, num_geom + 1], 0.0)))
 
-    # Singular values of the active nuisance matrix (or split matrix) on kept measurements.
+    # Joint posterior uncertainty of the active fitted stretch basis on kept measurements.
     if active_a is not None and active_a.shape[2] > 0:
         x_nuis = active_a.reshape(-1, active_a.shape[2])[mask]
         j_act = np.hstack([j_geom.reshape(-1, num_geom)[mask], -x_nuis])
+        if row_sqrt_w is not None:
+            j_act = j_act * row_sqrt_w[:, None]
         i_act = (j_act.T @ j_act) / (sigma ** 2)
         p_inv = np.asarray(active_prior_inv, dtype=float)
         prior_act = np.r_[
@@ -383,18 +399,35 @@ def stretch_identifiability_diagnostics(
             p_inv ** 2,
         ]
         cov_act = np.linalg.pinv(i_act + np.diag(prior_act))
-        k_joint_std = float(np.sqrt(max(cov_act[num_geom, num_geom], 0.0)))
+        if split_alpha and has_gravity and active_a.shape[2] >= 2:
+            # Active columns 0, 1 are [dk_grav, dalpha_scale] where k_sensor = 1 + dk_grav + dalpha_scale.
+            c_grav = cov_act[num_geom, num_geom]
+            c_sens = (
+                cov_act[num_geom, num_geom]
+                + cov_act[num_geom + 1, num_geom + 1]
+                + 2.0 * cov_act[num_geom, num_geom + 1]
+            )
+            ea_grav_std = max(ea_grav_std, float(np.sqrt(max(c_grav, 0.0))))
+            k_joint_std = float(np.sqrt(max(c_sens, 0.0)))
+        else:
+            k_joint_std = float(np.sqrt(max(cov_act[num_geom, num_geom], 0.0)))
         svals = np.linalg.svd(x_nuis, compute_uv=False).tolist()
     else:
         k_joint_std = alpha_sensor_std
         svals = np.linalg.svd(a_split.reshape(-1, 2)[mask], compute_uv=False).tolist()
 
-    # True EA is separated for config.g only when gravity shrinks the 1/EA posterior std well below
-    # both the prior and the 10% calibration transfer threshold.
-    ea_separated = bool(ea_grav_std < min(0.5 * PRIOR_K_SIGMA, 0.10))
-    ea_estimated_n = float(basis["ea_cfg"] / k_hat) if k_hat > 0 else None
+    k_sensor_eff = float(1.0 if (k_sensor_hat is None and k_grav_hat is None) else (k_grav_hat if k_sensor_hat is None else k_sensor_hat))
+    # True EA is separated for config.g only when the gravity-vs-sensor split is active and gravity
+    # shrinks the 1/EA posterior std well below both the prior and the 10% transfer threshold.
+    ea_separated = bool(split_alpha and has_gravity and ea_grav_std < min(0.5 * PRIOR_K_SIGMA, 0.10))
+    k_grav_out = float(k_grav_hat) if (split_alpha and has_gravity and k_grav_hat is not None) else None
+    ea_estimated_n = float(basis["ea_cfg"] / k_grav_out) if (k_grav_out is not None and k_grav_out > 0.0) else None
+    alpha_hat = float(k_sensor_eff / k_grav_out) if (k_grav_out is not None and k_grav_out > 0.0) else None
     return {
-        "k_hat": float(k_hat),
+        "k_hat": k_sensor_eff,
+        "k_grav_hat": k_grav_out,
+        "k_sensor_hat": k_sensor_eff,
+        "alpha_hat": alpha_hat,
         "k_joint_std": k_joint_std,
         "ea_estimated_n": ea_estimated_n,
         "ea_grav_std": ea_grav_std,
@@ -490,10 +523,16 @@ def fit_pose_varpro(
     a0 = np.asarray(baseline["anchors"], dtype=float)
     o0 = np.asarray(baseline["home_offsets_mm"], dtype=float)
     pos0, abs0 = fit_point_positions(a0, lengths, o0, stretch=stretch_nom)
-    dist0, dirs_to_a0, _, t_unit0, known0, t_nom0, g0 = static_tension_superposition(a0, pos0, measured, basis)
+    dist0, dirs_to_a0, t_grav0, t_unit0, known0, t_nom0, g0 = static_tension_superposition(a0, pos0, measured, basis)
     r0_base = np.where(measured, dist0 - abs0, 0.0)
     j_geom0, dir0 = _geometric_jacobian(a0, pos0, measured, machine_type, num_offsets)
-    a_k0 = project_pose_orthogonal(dir0, measured, (g0 * np.maximum(t_nom0, 0.0) * measured)[:, :, None])
+    has_gravity = bool(basis["weight"] > 0.0 and np.max(np.abs(t_grav0)) > 1e-6)
+    pos_mask0 = (t_nom0 > 0.0).astype(float)
+    if has_gravity:
+        b_k0 = np.stack([g0 * t_nom0 * pos_mask0, g0 * (t_nom0 - t_grav0) * pos_mask0], axis=2) * measured[:, :, None]
+    else:
+        b_k0 = (g0 * np.maximum(t_nom0, 0.0) * measured)[:, :, None]
+    a_k0 = project_pose_orthogonal(dir0, measured, b_k0)
     j_geom_k0 = np.concatenate([j_geom0, -a_k0], axis=2)
 
     ripple_period: Optional[int] = fixed_ripple_period
@@ -510,7 +549,7 @@ def fit_pose_varpro(
         used = lengths if kept_mask is None else np.where(kept_mask[:, None], lengths, np.nan)
         meas = np.isfinite(used)
         positions, abs_corr = fit_point_positions(anchors, used, offsets, stretch=stretch_nom)
-        dist, dirs_to_a, _, t_unit, known, t_nom, g = static_tension_superposition(anchors, positions, meas, basis)
+        dist, dirs_to_a, t_grav, t_unit, known, t_nom, g = static_tension_superposition(anchors, positions, meas, basis)
         direction = -dirs_to_a * meas[:, :, None]
         r0 = np.where(meas, dist - abs_corr, 0.0)
 
@@ -520,9 +559,20 @@ def fit_pose_varpro(
 
         cols, p_inv, names = [], [], []
         if "k" in active_blocks:
-            cols.append(g * np.maximum(t_nom, 0.0))
-            p_inv.append(1.0 / PRIOR_K_SIGMA)
-            names.append("dk_common")
+            pos_mask = (t_nom > 0.0).astype(float)
+            if has_gravity and "alpha_split" in active_blocks:
+                # Hierarchical split: dk_grav scales (T_grav + T_cmd), dalpha_scale scales T_cmd only,
+                # so k_grav = 1 + dk_grav = EA_cfg/EA_true and k_sensor = 1 + dk_grav + dalpha_scale = alpha * EA_cfg/EA_true.
+                cols.append(g * t_nom * pos_mask)
+                p_inv.append(1.0 / PRIOR_K_SIGMA)
+                names.append("dk_grav")
+                cols.append(g * (t_nom - t_grav) * pos_mask)
+                p_inv.append(1.0 / PRIOR_ALPHA_SPLIT_SIGMA)
+                names.append("dalpha_scale")
+            else:
+                cols.append(g * np.maximum(t_nom, 0.0))
+                p_inv.append(1.0 / PRIOR_K_SIGMA)
+                names.append("dk_common")
         if "ripple" in active_blocks and ripple_period is not None:
             ph = (basis["angles"] % (2.0 * np.pi)) * ripple_period
             for m in sensor_motors:
@@ -573,25 +623,25 @@ def fit_pose_varpro(
     if ripple_period is not None:
         active_list.append("ripple")
 
+    mask_f = (kept_init[:, None] & measured).ravel()
+    y_lin = r0_base.ravel()[mask_f]
+    g_lin = j_geom0.reshape(-1, j_geom0.shape[2])[mask_f]
+    sc0 = max(1.4826 * float(np.median(np.abs(y_lin - np.median(y_lin)))), _MIN_ROBUST_SCALE_MM)
+
+    def _lin_fit(blocks: Sequence[str]) -> Tuple[float, float, np.ndarray]:
+        _, a_c, p_c, _, _, _, _ = build_blocks(a0, o0, None, tuple(blocks))
+        ac_m = a_c.reshape(-1, a_c.shape[2])[mask_f]
+        x_mat = np.hstack([g_lin, ac_m])
+        reg = np.r_[np.full(g_lin.shape[1], 1e-10), (sc0 * p_c) ** 2]
+        beta = np.linalg.solve(x_mat.T @ x_mat + np.diag(reg), x_mat.T @ y_lin)
+        res = y_lin - x_mat @ beta
+        sse = float(np.sum(res ** 2))
+        return float(np.sqrt(sse / max(int(np.sum(kept_init)), 1))), sse, res
+
     # Gate real-world nuisance blocks (hysteresis, directional friction, gradual/step creep)
     # strictly when residual exceeds the noise floor and drops materially on linearized fit.
     if allow_real_world_nuisance and num_sweeps >= 4:
-        mask_f = (kept_init[:, None] & measured).ravel()
-        y_lin = r0_base.ravel()[mask_f]
-        g_lin = j_geom0.reshape(-1, j_geom0.shape[2])[mask_f]
-        sc0 = max(1.4826 * float(np.median(np.abs(y_lin - np.median(y_lin)))), _MIN_ROBUST_SCALE_MM)
-
-        def lin_fit_rms_sse(blocks: Sequence[str]) -> Tuple[float, float]:
-            _, a_c, p_c, _, _, _, _ = build_blocks(a0, o0, None, tuple(blocks))
-            ac_m = a_c.reshape(-1, a_c.shape[2])[mask_f]
-            x_mat = np.hstack([g_lin, ac_m])
-            reg = np.r_[np.full(g_lin.shape[1], 1e-10), (sc0 * p_c) ** 2]
-            beta = np.linalg.solve(x_mat.T @ x_mat + np.diag(reg), x_mat.T @ y_lin)
-            res = y_lin - x_mat @ beta
-            sse = float(np.sum(res ** 2))
-            return float(np.sqrt(sse / max(int(np.sum(kept_init)), 1))), sse
-
-        cur_rms, cur_sse = lin_fit_rms_sse(active_list)
+        cur_rms, cur_sse, _ = _lin_fit(active_list)
         if cur_rms > _EXTRA_NUISANCE_RMS_FLOOR_MM:
             # Forward-select the strongest genuine nuisance block first (highest SSE drop)
             # rather than a fixed order so true friction/creep isn't shadowed by hysteresis.
@@ -599,7 +649,7 @@ def fit_pose_varpro(
             while remaining and cur_rms > _EXTRA_NUISANCE_RMS_FLOOR_MM and cur_sse > 0.0:
                 best = None
                 for blk, min_drop in remaining:
-                    cand_rms, cand_sse = lin_fit_rms_sse([*active_list, blk])
+                    cand_rms, cand_sse, _ = _lin_fit([*active_list, blk])
                     drop = 1.0 - cand_sse / cur_sse
                     if drop >= min_drop and (best is None or drop > best[0]):
                         best = (drop, blk, cand_rms, cand_sse)
@@ -612,10 +662,30 @@ def fit_pose_varpro(
             # when residual is still large (>0.12 mm) and RW-creep explains >55% of remaining SSE.
             if cur_rms > 0.12:
                 trial_list = [b for b in active_list if b != "creep"] + ["rw_creep"]
-                rw_rms, rw_sse = lin_fit_rms_sse(trial_list)
+                rw_rms, rw_sse, _ = _lin_fit(trial_list)
                 if cur_sse > 0.0 and (1.0 - rw_sse / cur_sse) >= 0.55:
                     active_list = trial_list
                     cur_rms, cur_sse = rw_rms, rw_sse
+
+    # Gate the gravity-vs-sensor split (`dk_grav` vs `dalpha_scale`) on either gravity identifiability
+    # or strong direct residual evidence of alpha != 1, avoiding weak-gravity collinearity on single-force runs.
+    ea_sep_threshold = min(0.5 * PRIOR_K_SIGMA, 0.10)
+    if has_gravity:
+        cur_rms, cur_sse, res_lin = _lin_fit(active_list)
+        mad_lin = 1.4826 * float(np.median(np.abs(res_lin - np.median(res_lin))))
+        sigma_lin = max(mad_lin, _MIN_NUIS_SCALE_MM)
+        diag0 = stretch_identifiability_diagnostics(
+            a0, pos0, measured, basis,
+            machine_type=machine_type, num_offsets=num_offsets,
+            sigma_mm=sigma_lin, kept=kept_init, has_gravity=True, split_alpha=True,
+        )
+        split_identifiable = bool(diag0["ea_grav_std"] < ea_sep_threshold)
+        split_needed = False
+        if not split_identifiable and cur_rms > _EXTRA_NUISANCE_RMS_FLOOR_MM and cur_sse > 0.0:
+            _, split_sse, _ = _lin_fit([*active_list, "alpha_split"])
+            split_needed = (1.0 - split_sse / cur_sse) >= 0.25
+        if split_identifiable or split_needed:
+            active_list.append("alpha_split")
 
     active_blocks = tuple(active_list)
 
@@ -626,14 +696,19 @@ def fit_pose_varpro(
         return anchors, offsets
 
     def solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=None):
+        """Solve the regularized weighted VarPro inner problem:
+            min_psi sum_p w_pt[p] * ||r0[p] - A[p] @ psi||^2 + ||(nuis_scale * p_inv) * psi||^2.
+        Uses sqrt(w_pt) so the normal equations Xw.T @ Xw apply statistical weights `w_pt`
+        (matching the outer objective's sqrt(lev_weights) residual scaling).
+        """
         q = a_mat.shape[2]
         if q == 0:
             return r0, np.zeros(0), np.zeros(0)
         y = r0.ravel()
         x_mat = a_mat.reshape(-1, q)
         if w_pt is not None:
-            w = np.repeat(w_pt, n)
-            xw, yw = x_mat * w[:, None], y * w
+            sqrt_w = np.sqrt(np.maximum(np.repeat(w_pt, n), 0.0))
+            xw, yw = x_mat * sqrt_w[:, None], y * sqrt_w
         else:
             xw, yw = x_mat, y
         lam = (nuis_scale * p_inv) ** 2
@@ -642,20 +717,6 @@ def fit_pose_varpro(
         prior_res = (nuis_scale * p_inv) * psi
         return r_corr, psi, prior_res
 
-    _, _, _, col_names, _, _, _ = build_blocks(a0, o0, None, active_blocks)
-    num_prior = num_offsets + len(col_names)
-    has_creep = ("creep" in active_blocks) or ("rw_creep" in active_blocks)
-
-    def residuals_fn(x, prior_weight, nuis_scale, kept=None, pt_weights=None, lev_weights=None):
-        anchors, offsets = unpack(x)
-        r0, a_mat, p_inv, _, _, _, _ = build_blocks(anchors, offsets, kept, active_blocks)
-        w_in = pt_weights
-        if lev_weights is not None:
-            w_in = lev_weights if w_in is None else w_in * lev_weights
-        r_corr, _, prior_res = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
-        r_out = r_corr * np.sqrt(lev_weights)[:, None] if lev_weights is not None else r_corr
-        return np.concatenate([r_out.ravel(), offsets[offset_lines] * prior_weight, prior_res])
-
     start = np.concatenate([np.clip(anchors_matrix_to_opt_vec(a0, machine_type), anchor_lb, anchor_ub), o0[offset_lines]])
     bounds = (
         np.concatenate([anchor_lb, np.full(num_offsets, -np.inf)]),
@@ -663,92 +724,127 @@ def fit_pose_varpro(
     )
     x_scale = np.concatenate([np.full(num_anchor_params, 100.0), np.ones(num_offsets)])
 
-    fit = least_squares(
-        residuals_fn,
-        start,
-        args=(_MIN_ROBUST_SCALE_MM / home_offset_prior_sigma_mm, 0.05),
-        bounds=bounds,
-        x_scale=x_scale,
-        loss=robust_loss("soft_l1", num_prior),
-        f_scale=1.0,
-        max_nfev=80,
-    )
+    def _run_varpro_solve(blocks: Tuple[str, ...], x_start: np.ndarray):
+        _, _, _, c_names, _, _, _ = build_blocks(a0, o0, None, blocks)
+        num_prior = num_offsets + len(c_names)
+        has_creep = ("creep" in blocks) or ("rw_creep" in blocks)
+        split_alpha = bool(has_gravity and "alpha_split" in blocks)
 
-    kept = np.ones(num_points, dtype=bool)
-    scale = 0.05
-    nuis_scale = 0.05
-    pt_weights = np.ones(num_points)
-    lev_weights: Optional[np.ndarray] = None
-    for _ in range(3):
-        ac, oc = unpack(fit.x)
-        r0, a_mat, p_inv, _, _, _, lev = build_blocks(ac, oc, kept, active_blocks)
-        r_corr, _, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=pt_weights * kept)
-        lev_weights = _estimate_force_leverage_weights(r_corr, lev, kept) if allow_real_world_nuisance else None
-        eff_r = r_corr * np.sqrt(lev_weights)[:, None] if lev_weights is not None else r_corr
-        lr = eff_r[kept][measured[kept]]
-        mad = 1.4826 * float(np.median(np.abs(lr - np.median(lr))))
-        scale = max(mad, _MIN_ROBUST_SCALE_MM)
-        nuis_scale = max(mad, 0.01 if has_creep else _MIN_NUIS_SCALE_MM)
-        eff_pt = np.linalg.norm(eff_r, axis=1)
-        pt_weights = 1.0 / (1.0 + (eff_pt / (3.0 * scale)) ** 2)
-        fit = least_squares(
+        def residuals_fn(x, prior_weight, nuis_scale, kept=None, pt_weights=None, lev_weights=None):
+            anchors, offsets = unpack(x)
+            r0, a_mat, p_inv, _, _, _, _ = build_blocks(anchors, offsets, kept, blocks)
+            w_in = pt_weights
+            if lev_weights is not None:
+                w_in = lev_weights if w_in is None else w_in * lev_weights
+            r_corr, _, prior_res = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
+            r_out = r_corr * np.sqrt(lev_weights)[:, None] if lev_weights is not None else r_corr
+            return np.concatenate([r_out.ravel(), offsets[offset_lines] * prior_weight, prior_res])
+
+        fit_res = least_squares(
             residuals_fn,
-            fit.x,
-            args=(scale / home_offset_prior_sigma_mm, nuis_scale, kept, pt_weights * kept, lev_weights),
+            x_start,
+            args=(_MIN_ROBUST_SCALE_MM / home_offset_prior_sigma_mm, 0.05),
             bounds=bounds,
             x_scale=x_scale,
-            loss=robust_loss("arctan", num_prior),
-            f_scale=3.0 * scale,
-            max_nfev=60,
+            loss=robust_loss("soft_l1", num_prior),
+            f_scale=1.0,
+            max_nfev=80,
         )
-        ac, oc = unpack(fit.x)
-        r0, a_mat, p_inv, _, _, _, _ = build_blocks(ac, oc, None, active_blocks)
+
+        kept = np.ones(num_points, dtype=bool)
+        scale = 0.05
+        nuis_scale = 0.05
+        pt_weights = np.ones(num_points)
+        lev_weights: Optional[np.ndarray] = None
+        for _ in range(3):
+            ac, oc = unpack(fit_res.x)
+            r0, a_mat, p_inv, _, _, _, lev = build_blocks(ac, oc, kept, blocks)
+            r_corr, _, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=pt_weights * kept)
+            lev_weights = _estimate_force_leverage_weights(r_corr, lev, kept) if allow_real_world_nuisance else None
+            eff_r = r_corr * np.sqrt(lev_weights)[:, None] if lev_weights is not None else r_corr
+            lr = eff_r[kept][measured[kept]]
+            mad = 1.4826 * float(np.median(np.abs(lr - np.median(lr))))
+            scale = max(mad, _MIN_ROBUST_SCALE_MM)
+            nuis_scale = max(mad, 0.01 if has_creep else _MIN_NUIS_SCALE_MM)
+            eff_pt = np.linalg.norm(eff_r, axis=1)
+            pt_weights = 1.0 / (1.0 + (eff_pt / (3.0 * scale)) ** 2)
+            fit_res = least_squares(
+                residuals_fn,
+                fit_res.x,
+                args=(scale / home_offset_prior_sigma_mm, nuis_scale, kept, pt_weights * kept, lev_weights),
+                bounds=bounds,
+                x_scale=x_scale,
+                loss=robust_loss("arctan", num_prior),
+                f_scale=3.0 * scale,
+                max_nfev=60,
+            )
+            ac, oc = unpack(fit_res.x)
+            r0, a_mat, p_inv, _, _, _, _ = build_blocks(ac, oc, None, blocks)
+            w_in = pt_weights * kept * (lev_weights if lev_weights is not None else 1.0)
+            r_corr, _, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
+            eff_pt = np.linalg.norm(r_corr * (np.sqrt(lev_weights)[:, None] if lev_weights is not None else 1.0), axis=1)
+            within = eff_pt <= REJECT_SCALES * scale
+            if np.array_equal(within, kept) or within.mean() < 0.5:
+                break
+            kept = within
+
+        anchors_final, offsets_final = unpack(fit_res.x)
+        r0, a_mat, p_inv, col_names, pos_f, meas_f, _ = build_blocks(anchors_final, offsets_final, None, blocks)
         w_in = pt_weights * kept * (lev_weights if lev_weights is not None else 1.0)
-        r_corr, _, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
-        eff_pt = np.linalg.norm(r_corr * (np.sqrt(lev_weights)[:, None] if lev_weights is not None else 1.0), axis=1)
-        within = eff_pt <= REJECT_SCALES * scale
-        if np.array_equal(within, kept) or within.mean() < 0.5:
-            break
-        kept = within
+        r_corr, psi, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
+        per_point = np.linalg.norm(r_corr, axis=1)
+        rms_vp = float(np.sqrt(np.mean(per_point[kept] ** 2)))
+        psi_dict = dict(zip(col_names, psi.tolist()))
+        if split_alpha:
+            k_grav_hat: Optional[float] = 1.0 + float(psi_dict.get("dk_grav", 0.0))
+            k_sensor_hat = float(k_grav_hat) + float(psi_dict.get("dalpha_scale", 0.0))
+        else:
+            k_grav_hat = None
+            k_sensor_hat = 1.0 + float(psi_dict.get("dk_common", 0.0))
 
-    anchors_final, offsets_final = unpack(fit.x)
-    r0, a_mat, p_inv, col_names, pos_f, meas_f, _ = build_blocks(anchors_final, offsets_final, None, active_blocks)
-    w_in = pt_weights * kept * (lev_weights if lev_weights is not None else 1.0)
-    r_corr, psi, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
-    per_point = np.linalg.norm(r_corr, axis=1)
-    rms_vp = float(np.sqrt(np.mean(per_point[kept] ** 2)))
-    psi_dict = dict(zip(col_names, psi.tolist()))
-    k_hat = 1.0 + float(psi_dict.get("dk_common", 0.0))
+        diag = stretch_identifiability_diagnostics(
+            anchors_final,
+            pos_f,
+            meas_f,
+            basis,
+            machine_type=machine_type,
+            num_offsets=num_offsets,
+            sigma_mm=nuis_scale,
+            kept=kept,
+            active_a=a_mat,
+            active_prior_inv=p_inv,
+            k_grav_hat=k_grav_hat,
+            k_sensor_hat=k_sensor_hat,
+            has_gravity=has_gravity,
+            split_alpha=split_alpha,
+            lev_weights=lev_weights,
+        )
+        diag.update({
+            "active_blocks": list(blocks),
+            "ripple_period": ripple_period,
+            "ripple_cv_gain": ripple_cv_gain,
+            "force_leverage_weighted": lev_weights is not None,
+            "psi": psi_dict,
+        })
+        ok = not (
+            not fit_res.success
+            or not (_K_BOUNDS[0] <= k_sensor_hat <= _K_BOUNDS[1])
+            or (split_alpha and k_grav_hat is not None and not (_K_BOUNDS[0] <= k_grav_hat <= _K_BOUNDS[1]))
+            or diag["k_joint_std"] >= _MAX_K_POSTERIOR_RATIO * PRIOR_K_SIGMA
+            or rms_vp > 1.05 * rms_base
+            or (_at_far_bound(anchors_final, dataset) and not _at_far_bound(a0, dataset))
+        )
+        return ok, fit_res, anchors_final, offsets_final, rms_vp, scale, per_point, kept, diag
 
-    diag = stretch_identifiability_diagnostics(
-        anchors_final,
-        pos_f,
-        meas_f,
-        basis,
-        machine_type=machine_type,
-        num_offsets=num_offsets,
-        sigma_mm=nuis_scale,
-        kept=kept,
-        active_a=a_mat,
-        active_prior_inv=p_inv,
-        k_hat=k_hat,
-    )
-    diag.update({
-        "active_blocks": list(active_blocks),
-        "ripple_period": ripple_period,
-        "ripple_cv_gain": ripple_cv_gain,
-        "force_leverage_weighted": lev_weights is not None,
-        "psi": psi_dict,
-    })
+    ok, fit, anchors_final, offsets_final, rms_vp, scale, per_point, kept, diag = _run_varpro_solve(active_blocks, start)
+    # If gravity separation emerged after anchor convergence (e.g. initial residual inflated sigma_lin),
+    # perform one warm-started polish with `alpha_split` so `ea_estimated_n` is separated from alpha.
+    if ok and has_gravity and "alpha_split" not in active_blocks and diag["ea_grav_std"] < ea_sep_threshold:
+        split_res = _run_varpro_solve((*active_blocks, "alpha_split"), fit.x)
+        if split_res[0]:
+            ok, fit, anchors_final, offsets_final, rms_vp, scale, per_point, kept, diag = split_res
 
-    # Safety guards: require convergence, identifiable & plausible k, non-bound anchors, and no RMS regression.
-    if (
-        not fit.success
-        or not (_K_BOUNDS[0] <= k_hat <= _K_BOUNDS[1])
-        or diag["k_joint_std"] >= _MAX_K_POSTERIOR_RATIO * PRIOR_K_SIGMA
-        or rms_vp > 1.05 * rms_base
-        or (_at_far_bound(anchors_final, dataset) and not _at_far_bound(a0, dataset))
-    ):
+    if not ok:
         return None
 
     return {

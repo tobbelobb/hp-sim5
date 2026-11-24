@@ -8,7 +8,7 @@ every position lies on a single sphere around the D anchor.
 """
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -298,13 +298,16 @@ def rank_candidates_force_aware(
     measure_extra_ranges: bool = False,
     observed_stretch=None,
     candidate_force_scales: Sequence[float] = (1.0,),
+    effective_scale_fn: Optional[Callable[[SweepConfig, float], Optional[float]]] = None,
     nuisance_prior_sigma: Tuple[float, float] = (0.35, 0.35),
 ) -> List[Tuple[float, SweepConfig, float]]:
     """Rank (sweep, force_scale) candidates by Schur-complement Ds-optimal anchor information gain.
 
     When `observed_stretch` is provided, marginalizes out both gravity compliance (1/EA) and
     sensor-force compliance (alpha/EA) via the Schur complement so confounded single-force
-    sweeps on the z_D <-> alpha/EA ridge no longer receive inflated scores.
+    sweeps on the z_D <-> alpha/EA ridge no longer receive inflated scores. When
+    `effective_scale_fn` is provided, each requested force scale is mapped to the actual
+    feasible/capped force scale (or skipped if infeasible) before scoring and deduplicated.
     """
     from autocal.pose_fit import fit_point_positions
 
@@ -316,6 +319,17 @@ def rank_candidates_force_aware(
     basis = _stretch_basis_from_stretch(observed_stretch, num_anchors)
     force_scales = tuple(float(s) for s in candidate_force_scales) or (1.0,)
 
+    def _feasible_scales(cfg: SweepConfig) -> List[float]:
+        resolved: List[float] = []
+        for req in force_scales:
+            eff = req if effective_scale_fn is None else effective_scale_fn(cfg, req)
+            if eff is None or not np.isfinite(eff) or eff <= 0.0:
+                continue
+            eff_f = float(eff)
+            if not any(abs(eff_f - prev) <= 1e-3 for prev in resolved):
+                resolved.append(eff_f)
+        return resolved
+
     if basis is None:
         base = pose_information(anchors, observed_lengths_mm, stretch=observed_stretch, **options)
         prior = np.full(base.shape[0], float(regularization))
@@ -324,6 +338,9 @@ def rank_candidates_force_aware(
         base_logdet = np.linalg.slogdet(base)[1]
         scored: List[Tuple[float, SweepConfig, float]] = []
         for cfg in candidates:
+            scales = _feasible_scales(cfg)
+            if not scales:
+                continue
             positions = predict_sweep_positions(anchors, cfg, points_per_sweep, SWEEP_PRETENSION_SHARE)
             if positions.shape[0] == 0:
                 continue
@@ -334,7 +351,7 @@ def rank_candidates_force_aware(
             info_c = pose_information(anchors, lengths, positions=positions, **options)
             gain = float(np.linalg.slogdet(base + info_c)[1] - base_logdet)
             if np.isfinite(gain):
-                for scale in force_scales:
+                for scale in scales:
                     scored.append((gain, cfg, scale))
         scored.sort(key=lambda item: (item[0], -item[2]), reverse=True)
         return scored[:top_k]
@@ -361,6 +378,9 @@ def rank_candidates_force_aware(
 
     scored = []
     for cfg in candidates:
+        scales = _feasible_scales(cfg)
+        if not scales:
+            continue
         positions = predict_sweep_positions(anchors, cfg, points_per_sweep, SWEEP_PRETENSION_SHARE)
         if positions.shape[0] == 0:
             continue
@@ -368,7 +388,7 @@ def rank_candidates_force_aware(
         active = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
         if not measure_extra_ranges:
             lengths[:, [axis for axis in range(num_anchors) if axis not in active]] = np.nan
-        for scale in force_scales:
+        for scale in scales:
             cand_basis = _candidate_stretch_basis(
                 basis, cfg, positions.shape[0], num_anchors,
                 force_scale=scale,

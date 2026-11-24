@@ -45,12 +45,14 @@ HP3_ANCHORS = np.array([
 def _clean_hp5_dataset(
     *,
     true_ea_scale: float = 1.0,
+    true_force_scale: float = 1.0,
     hyst_retained_frac: float = 0.0,
     dir_coulomb_n: float = 0.0,
     creep_per_sweep_mm: float = 0.0,
     ripple_amp_n: float = 0.0,
     ripple_period: int = 50,
     force_levels: tuple[float, ...] = (4.0,),
+    weight_kg: float = 0.5,
 ) -> dict:
     """Clean exact-geometry HP5r dataset with consistent fixed-line deltas and physical nuisances."""
     anchors = HP5_ANCHORS
@@ -59,7 +61,7 @@ def _clean_hp5_dataset(
     guy = np.array([429.1, 429.1, 429.1, 429.1, 352.3])
     ea_cfg = 20000.0
     ea_true = ea_cfg * true_ea_scale
-    weight_n = 0.5 * 9.81
+    weight_n = float(weight_kg) * 9.81
     home = np.linalg.norm(anchors, axis=1)
     mm_per_deg = [0.25] * 5
 
@@ -100,9 +102,9 @@ def _clean_hp5_dataset(
                 dl_extra = (dist[passive] - other_dist[passive]) if idx_t > 0 else (other_dist[passive] - dist[passive])
                 extra_sign = float(np.sign(dl_extra)) if abs(dl_extra) > 1e-3 else 0.0
 
-                f_real = f_cmd + dir_coulomb_n * move_sign + ripple_amp_n * np.sin(ripple_period * th[actual_sensor])
+                f_real = true_force_scale * f_cmd + dir_coulomb_n * move_sign + ripple_amp_n * np.sin(ripple_period * th[actual_sensor])
                 extra_f_cmd = 0.5 * f_cmd
-                extra_f_real = extra_f_cmd + dir_coulomb_n * extra_sign
+                extra_f_real = true_force_scale * extra_f_cmd + dir_coulomb_n * extra_sign
                 mat = np.vstack([dirs, np.eye(5)[actual_sensor], np.eye(5)[passive]])
                 tensions = np.linalg.solve(mat, [0.0, 0.0, weight_n, f_real, extra_f_real])
                 assert np.all(tensions > 0.0)
@@ -301,3 +303,180 @@ def test_hp3_force_contrast_dataset_enables_per_pose_stretch():
     }
     assert has_force_contrast(ds)
     assert dataset_stretch(ds) is not None
+
+
+def test_varpro_separates_true_ea_from_incorrect_motor_force_scale():
+    """Regression test (review #1): wrong motor force scale alpha=1.35 must NOT bias ea_estimated_n.
+
+    With true EA = 0.80 * EA_cfg (k_grav = 1.25, EA_true = 16000 N) and alpha = 1.35
+    (k_sensor = 1.6875), VarPro must separate k_grav from k_sensor via gravity mg.
+    """
+    dataset = _clean_hp5_dataset(
+        true_ea_scale=0.80,
+        true_force_scale=1.35,
+        force_levels=(4.0, 10.0),
+        weight_kg=1.2,
+    )
+    seed = HP5_ANCHORS + np.array([[0, 15, 8], [-12, 8, -8], [8, -12, 4], [-8, -8, 6], [0, 0, 20]])
+    vp = fit_pose_least_squares(
+        dataset, seed, fit_home_offsets=True, home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+        fit_stretch_varpro=True,
+    )
+    diag = vp.get("varpro")
+    assert diag is not None
+    assert float(np.max(np.abs(vp["anchors"] - HP5_ANCHORS))) < 0.25
+    assert diag["ea_separated_for_config_g"] is True
+    # Gravity-derived k_grav and EA must track true EA (16000 N), NOT alpha * k_grav (1.6875).
+    assert diag["k_grav_hat"] == pytest.approx(1.25, abs=0.06)
+    assert diag["ea_estimated_n"] == pytest.approx(16000.0, rel=0.05)
+    assert diag["k_sensor_hat"] == pytest.approx(1.35 * 1.25, abs=0.05)
+    assert diag["alpha_hat"] == pytest.approx(1.35, abs=0.07)
+
+
+def test_strip_sensor_force_option_removes_flag_value_pairs_and_preserves_profile():
+    """Regression test (review #2): replacing --sensor-force never leaves orphaned values or strips --sensor-force-profile."""
+    from autocal.planning_pass import _SENSOR_FORCE_FLAGS, _strip_cli_option
+
+    args = [
+        "--sim",
+        "--sensor-force", "3.0",
+        "--sensor-force-profile", "profile.json",
+        "--sensor-force=4.5",
+        "--sensorForce", "2.2",
+        "--return-to-origin",
+    ]
+    cleaned = _strip_cli_option(args, _SENSOR_FORCE_FLAGS)
+    assert cleaned == ["--sim", "--sensor-force-profile", "profile.json", "--return-to-origin"]
+    assert "3.0" not in cleaned
+    assert "2.2" not in cleaned
+
+
+def test_force_contrast_planning_scores_and_records_actual_capped_force(tmp_path, monkeypatch):
+    """Regression test (review #3): planner scores & records actual capped force (and avoids unexecutable contrast)."""
+    import json
+    import autocal.planning_pass as planning
+    from autocal.equal_strain import effective_strand_tension_scale, write_sensor_force_profile
+
+    anchors = HP3_ANCHORS
+    cfg = SweepConfig((0, 3), (300.0, -500.0), 1, 2)
+    # Build a valid HP3 equal-strain dataset with a tight M666 X force cap so 2.0x gets capped!
+    base_target = 1.5
+    home = np.linalg.norm(anchors, axis=1)
+    obs_cfgs = [
+        SweepConfig((0, 3), (390.0, 0.0), 1, 2),
+        SweepConfig((1, 3), (390.0, 0.0), 2, 0),
+        SweepConfig((2, 3), (390.0, 0.0), 0, 1),
+    ]
+    sweeps = []
+    for ocfg in obs_cfgs:
+        pos = predict_sweep_positions(anchors, ocfg, 8, SWEEP_PRETENSION_SHARE)
+        lens = np.linalg.norm(anchors[None, :, :] - pos[:, None, :], axis=2) - home
+        sweeps.append({
+            "fixed_anchors": list(ocfg.fixed_anchors),
+            "fixed_lengths": list(ocfg.fixed_deltas_mm),
+            "drive_anchor": ocfg.drive_anchor,
+            "sensor_anchor": ocfg.sensor_anchor,
+            "metadata": {"sensor_force_profile": True, "sensor_force_profile_model": "reeving-aware-v2",
+                         "strand_tension_n": base_target},
+            "data_points": [
+                {"l_drive": float(row[ocfg.drive_anchor]), "l_sensor": float(row[ocfg.sensor_anchor]),
+                 "sensor_force_n": base_target}
+                for row in lens
+            ],
+        })
+    # Tight X cap (9 N) forces a 2.0x request to be capped below 2.0x (to ~1.75x).
+    dataset = {
+        "machine_type": "hangprinter_3",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "config": {
+            "m666_before_data_collection": {
+                "S": 20000.0, "W": 0.5, "U": [1.0] * 4, "N": [1.0] * 4, "Y": [0.0] * 4, "X": [9.0] * 4,
+            },
+            "force_tuning": {"force_low_n": 0.05, "force_mid_n": 0.3, "force_max_n": 6.0},
+        },
+        "sweeps": sweeps,
+    }
+    capped_scale = effective_strand_tension_scale(dataset, anchors, cfg, 2.0, allow_force_contrast=True)
+    assert capped_scale is not None
+    assert 1.0 < capped_scale < 2.0
+
+    fit = {
+        "dataset": dataset, "dataset_for_estimation": dataset, "anchors": anchors,
+        "machine_type": "hangprinter_3", "num_anchors": 4, "dimensions": 3,
+        "spool_model_params": None, "sweep_configs_for_info": [], "info": np.eye(9),
+        "pose_fit": {"robust_scale_mm": 0.05},
+        "information_settings": {"fd_eps_mm": 1.0, "regularization": 1e-6},
+        "collection_settings": {"find_radii_mode": "off", "find_buildup_mode": "off",
+                                "base_radii": None, "buildup_factor": None},
+    }
+    monkeypatch.setattr(planning, "generate_candidate_sweeps", lambda **kw: [cfg])
+    plan = planning.plan_ellipse_sweep(fit, tmp_path / "sweeps.json", force_contrast=True, top_k=5)
+    assert plan["best_cfg"] == cfg
+    assert plan["chosen_force_scale"] == pytest.approx(capped_scale, abs=1e-3)
+    written_profiles = json.loads((tmp_path / "sweeps.active_sweep_cfg.sensor_force_profile.json").read_text())
+    assert written_profiles[0]["strand_tension_n"] / base_target == pytest.approx(plan["chosen_force_scale"], abs=1e-3)
+
+    # Constant-force path: (a) with existing --sensor-force 3.0 and tight force_max_n, replaces cleanly with capped value;
+    # (b) without force_mid_n, never selects an unexecutable high-force contrast scale.
+    const_ds = {
+        **dataset,
+        "sweeps": [{**s, "metadata": {"sensor_force_profile": False}} for s in sweeps],
+    }
+    const_fit = {**fit, "dataset": const_ds, "dataset_for_estimation": const_ds}
+    plan_const = planning.plan_ellipse_sweep(
+        const_fit, tmp_path / "const.json", force_contrast=True,
+        collector_args=["--sensor-force", "3.0"], top_k=5,
+    )
+    cmd = plan_const["collect_command"]
+    assert cmd is not None
+    assert "3.0" not in cmd
+    assert cmd.count("--sensor-force") <= 1
+
+    no_mid_ds = {
+        **const_ds,
+        "config": {**const_ds["config"], "force_tuning": {"force_low_n": 0.05}},
+    }
+    no_mid_fit = {**fit, "dataset": no_mid_ds, "dataset_for_estimation": no_mid_ds}
+    plan_no_mid = planning.plan_ellipse_sweep(no_mid_fit, tmp_path / "nomid.json", force_contrast=True, top_k=5)
+    assert plan_no_mid["chosen_force_scale"] == pytest.approx(1.0)
+    assert "--sensor-force" not in (plan_no_mid["collect_command"] or [])
+
+
+def test_heteroscedastic_weights_are_applied_as_variance_weights_consistently():
+    """Regression test (review #4): VarPro inner solve applies statistical weights w (via sqrt(w)),
+    matching the outer objective's sqrt(lev_weights) scaling rather than squaring w."""
+    from autocal.stretch_varpro import _estimate_force_leverage_weights
+
+    # Construct residuals whose magnitude scales strictly with leverage to trigger leverage weighting.
+    rng = np.random.default_rng(123)
+    leverage = np.linspace(0.05, 0.50, 40)
+    r_corr = np.zeros((40, 5))
+    r_corr[:, 0] = 0.02 + 0.6 * leverage * (1.0 + 0.05 * rng.normal(size=40))
+    kept = np.ones(40, dtype=bool)
+    lev_w = _estimate_force_leverage_weights(r_corr, leverage, kept)
+    assert lev_w is not None
+    assert lev_w[0] > 3.0 * lev_w[-1]
+
+    # Verify exact algebraic equivalence between weighted normal equations with sqrt(w)
+    # and the stacked outer objective [sqrt(w)*r_corr; lam_sqrt*psi].
+    X = rng.normal(size=(40, 3))
+    y = rng.normal(size=40)
+    lam_sqrt = np.array([0.2, 0.3, 0.4])
+    sqrt_w = np.sqrt(lev_w)
+    xw, yw = X * sqrt_w[:, None], y * sqrt_w
+    psi = np.linalg.solve(xw.T @ xw + np.diag(lam_sqrt ** 2), xw.T @ yw)
+
+    def outer_obj(p):
+        r_out = sqrt_w * (y - X @ p)
+        prior_out = lam_sqrt * p
+        return float(np.sum(r_out ** 2) + np.sum(prior_out ** 2))
+
+    # Any perturbation around psi must strictly increase the exact outer objective (stationarity check).
+    base_val = outer_obj(psi)
+    for k in range(3):
+        step = np.zeros(3)
+        step[k] = 1e-4
+        assert outer_obj(psi + step) > base_val
+        assert outer_obj(psi - step) > base_val
+

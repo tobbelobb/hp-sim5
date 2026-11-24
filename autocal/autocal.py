@@ -941,7 +941,9 @@ def _full_auto_loop(
         varpro = plan.get("stretch_varpro")
         if isinstance(varpro, dict):
             _log_line(
-                f"{log_prefix}: stretch_varpro k_hat={_fmt_float(varpro.get('k_hat'))} "
+                f"{log_prefix}: stretch_varpro k_grav={_fmt_float(varpro.get('k_grav_hat'))} "
+                f"k_sensor={_fmt_float(varpro.get('k_sensor_hat', varpro.get('k_hat')))} "
+                f"alpha={_fmt_float(varpro.get('alpha_hat'))} "
                 f"k_std={_fmt_float(varpro.get('k_joint_std'))} "
                 f"ea_grav_std={_fmt_float(varpro.get('ea_grav_std'))} "
                 f"ea_separated_for_config_g={bool(varpro.get('ea_separated_for_config_g'))} "

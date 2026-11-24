@@ -227,6 +227,60 @@ def _capped_strand_tension(anchors, cfgs, params):
     return target
 
 
+def _resolved_profile_params(
+    dataset: dict,
+    anchors: np.ndarray,
+    cfgs: Sequence[SweepConfig],
+    *,
+    strand_tension_scale: float = 1.0,
+    allow_force_contrast: bool = False,
+):
+    """Resolve effective (capped) equal-strain parameters and achieved scale ratio, or None."""
+    params = force_planning_parameters(dataset, allow_force_contrast=allow_force_contrast)
+    if params is None:
+        return None
+    extra_force = params.pop("extra_sensor_force_n")
+    target_recorded = params.pop("target_recorded")
+    if not target_recorded:
+        # The first profiles fix the dataset's target; plan it for the rough sweeps too.
+        params["strand_tension_n"] = _capped_strand_tension(anchors, [*dataset_sweep_configs(dataset), *cfgs], params)
+    base_target = float(params["strand_tension_n"])
+    if strand_tension_scale != 1.0:
+        scaled = base_target * float(strand_tension_scale)
+        capped = float(_capped_strand_tension(anchors, cfgs, {**params, "strand_tension_n": scaled}))
+        params["strand_tension_n"] = capped
+        actual_scale = capped / base_target if base_target > 0.0 else float(strand_tension_scale)
+        if extra_force is not None:
+            max_extra = float((dataset.get("config") or {}).get("force_tuning", {}).get("force_max_n", np.inf))
+            extra_force = min(max_extra, extra_force * actual_scale)
+    else:
+        actual_scale = 1.0
+    return params, extra_force, actual_scale
+
+
+def effective_strand_tension_scale(
+    dataset: dict,
+    anchors: np.ndarray,
+    cfg: SweepConfig,
+    requested_scale: float,
+    *,
+    allow_force_contrast: bool = True,
+) -> float | None:
+    """Actual feasible force scale after firmware force capping for one candidate sweep, or None if infeasible."""
+    resolved = _resolved_profile_params(
+        dataset, anchors, [cfg],
+        strand_tension_scale=requested_scale, allow_force_contrast=allow_force_contrast,
+    )
+    if resolved is None:
+        return None
+    params, _, actual_scale = resolved
+    try:
+        sensor_force_profiles(anchors, cfg, **params)
+    except InfeasibleForceProfileError:
+        return None
+    return float(actual_scale)
+
+
 def write_sensor_force_profile(
     path: Path,
     dataset: dict,
@@ -237,20 +291,13 @@ def write_sensor_force_profile(
     allow_force_contrast: bool = False,
 ) -> bool:
     """Write the collector's force table for the sweeps. Needs the firmware's line description and tuned forces."""
-    params = force_planning_parameters(dataset, allow_force_contrast=allow_force_contrast)
-    if params is None:
+    resolved = _resolved_profile_params(
+        dataset, anchors, cfgs,
+        strand_tension_scale=strand_tension_scale, allow_force_contrast=allow_force_contrast,
+    )
+    if resolved is None:
         return False
-    extra_force = params.pop("extra_sensor_force_n")
-    target_recorded = params.pop("target_recorded")
-    if not target_recorded:
-        # The first profiles fix the dataset's target; plan it for the rough sweeps too.
-        params["strand_tension_n"] = _capped_strand_tension(anchors, [*dataset_sweep_configs(dataset), *cfgs], params)
-    if strand_tension_scale != 1.0:
-        scaled = params["strand_tension_n"] * float(strand_tension_scale)
-        params["strand_tension_n"] = _capped_strand_tension(anchors, cfgs, {**params, "strand_tension_n": scaled})
-        if extra_force is not None:
-            max_extra = float((dataset.get("config") or {}).get("force_tuning", {}).get("force_max_n", np.inf))
-            extra_force = min(max_extra, extra_force * float(strand_tension_scale))
+    params, extra_force, _ = resolved
     profiles = [profile for cfg in cfgs for profile in sensor_force_profiles(anchors, cfg, **params)]
     if extra_force is not None:
         for profile in profiles:
