@@ -325,12 +325,12 @@ def _full_auto_loop(
         _log_console("== Calibration summary ==")
         _log_console(f"Found parameters of {uncertainty_label(uncertainty)} quality")
         _log_console(f"Anchor uncertainty (mm, lower is better): {_fmt_float(uncertainty)}")
-        _log_console("; Spread of anchors refitted without one sweep at a time. "
-                     "It misses bias that every sweep shares, such as unmodelled line stretch.")
+        _log_line("; Spread of anchors refitted without one sweep at a time. "
+                  "It misses bias that every sweep shares, such as unmodelled line stretch.")
         single_unit = meta_for_summary.get("single_unit_coordinates") or []
         if single_unit:
-            _log_console(f"; {', '.join(single_unit)} rest on a single sweep: the refit without it lost them, "
-                         "so their spread comes from the other refits and that sweep is not cross-checked.")
+            _log_line(f"; {', '.join(single_unit)} rest on a single sweep: the refit without it lost them, "
+                      "so their spread comes from the other refits and that sweep is not cross-checked.")
         if m669:
             _log_console(f"Anchors (M669): {m669}")
         elif anchor_str:
