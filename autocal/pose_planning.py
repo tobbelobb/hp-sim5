@@ -213,23 +213,28 @@ def _candidate_stretch_basis(
     num_anchors: int,
     *,
     force_scale: float = 1.0,
-    base_sensor_force_n: Optional[float] = None,
+    base_sensor_force_n: Optional[float | np.ndarray] = None,
     extra_sensor_force_n: Optional[float] = None,
+    max_extra_force_n: Optional[float] = None,
 ) -> dict:
     """Build a synthetic per-point stretch basis for a candidate (sweep, force_scale) action."""
     if base_sensor_force_n is None:
         base_sensor_force_n = float(np.median(stretch_basis["forces"])) if len(stretch_basis["forces"]) else 2.0
+    base_arr = np.broadcast_to(np.asarray(base_sensor_force_n, dtype=float), (num_anchors,))
     sensors = np.full(num_points, int(cfg.sensor_anchor), dtype=int)
     # Match the two-direction collector: second half reverses drive/sensor roles.
     if num_points >= 2:
         sensors[num_points // 2:] = int(cfg.drive_anchor)
-    forces = np.full(num_points, float(base_sensor_force_n) * float(force_scale), dtype=float)
+    forces = base_arr[sensors] * float(force_scale)
     known = np.full((num_points, num_anchors), np.nan)
     active = {*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor}
     if extra_sensor_force_n is not None and np.isfinite(extra_sensor_force_n) and extra_sensor_force_n > 0.0:
+        ext_f = float(extra_sensor_force_n) * float(force_scale)
+        if max_extra_force_n is not None and np.isfinite(max_extra_force_n):
+            ext_f = min(float(max_extra_force_n), ext_f)
         for axis in range(num_anchors):
             if axis not in active:
-                known[:, axis] = float(extra_sensor_force_n) * float(force_scale)
+                known[:, axis] = ext_f
     return {
         **stretch_basis,
         "sensors": sensors,
@@ -298,6 +303,9 @@ def rank_candidates_force_aware(
     measure_extra_ranges: bool = False,
     observed_stretch=None,
     candidate_force_scales: Sequence[float] = (1.0,),
+    base_sensor_force_n: Optional[float | np.ndarray] = None,
+    base_extra_force_n: Optional[float] = None,
+    max_extra_force_n: Optional[float] = None,
     effective_scale_fn: Optional[Callable[[SweepConfig, float], Optional[float]]] = None,
     nuisance_prior_sigma: Tuple[float, float] = (0.35, 0.35),
 ) -> List[Tuple[float, SweepConfig, float]]:
@@ -306,8 +314,10 @@ def rank_candidates_force_aware(
     When `observed_stretch` is provided, marginalizes out both gravity compliance (1/EA) and
     sensor-force compliance (alpha/EA) via the Schur complement so confounded single-force
     sweeps on the z_D <-> alpha/EA ridge no longer receive inflated scores. When
-    `effective_scale_fn` is provided, each requested force scale is mapped to the actual
-    feasible/capped force scale (or skipped if infeasible) before scoring and deduplicated.
+    `base_sensor_force_n` (and `base_extra_force_n`) are provided, candidates are evaluated at
+    those exact intended Newtons rather than inferring a baseline from past recorded forces.
+    When `effective_scale_fn` is provided, candidates are pre-ranked analytically and feasibility
+    / force capping is evaluated lazily in ranked order with branch-and-bound early stopping.
     """
     from autocal.pose_fit import fit_point_positions
 
@@ -319,16 +329,37 @@ def rank_candidates_force_aware(
     basis = _stretch_basis_from_stretch(observed_stretch, num_anchors)
     force_scales = tuple(float(s) for s in candidate_force_scales) or (1.0,)
 
-    def _feasible_scales(cfg: SweepConfig) -> List[float]:
-        resolved: List[float] = []
-        for req in force_scales:
-            eff = req if effective_scale_fn is None else effective_scale_fn(cfg, req)
+    def _resolve_lazy(
+        pre_ranked: List[Tuple[float, SweepConfig, float]],
+        rescore_fn: Callable[[SweepConfig, float], Optional[float]],
+    ) -> List[Tuple[float, SweepConfig, float]]:
+        if effective_scale_fn is None:
+            return pre_ranked[:top_k]
+        verified: List[Tuple[float, SweepConfig, float]] = []
+        seen_eff: dict[int, List[float]] = {}
+        min_eval = max(int(top_k), 8)
+        for upper_gain, cfg, req in pre_ranked:
+            if len(verified) >= min_eval:
+                verified.sort(key=lambda item: (round(item[0], 6), -item[2]), reverse=True)
+                if verified[min(int(top_k), len(verified)) - 1][0] >= upper_gain + 1e-6:
+                    break
+            eff = effective_scale_fn(cfg, req)
             if eff is None or not np.isfinite(eff) or eff <= 0.0:
                 continue
             eff_f = float(eff)
-            if not any(abs(eff_f - prev) <= 1e-3 for prev in resolved):
-                resolved.append(eff_f)
-        return resolved
+            prev_list = seen_eff.setdefault(id(cfg), [])
+            if any(abs(eff_f - prev) <= 1e-3 for prev in prev_list):
+                continue
+            prev_list.append(eff_f)
+            if abs(eff_f - req) <= 1e-4:
+                gain = upper_gain
+            else:
+                gain = rescore_fn(cfg, eff_f)
+                if gain is None or not np.isfinite(gain):
+                    continue
+            verified.append((float(gain), cfg, eff_f))
+        verified.sort(key=lambda item: (round(item[0], 6), -item[2]), reverse=True)
+        return verified[:top_k]
 
     if basis is None:
         base = pose_information(anchors, observed_lengths_mm, stretch=observed_stretch, **options)
@@ -336,11 +367,9 @@ def rank_candidates_force_aware(
         prior[base.shape[0] - num_offsets:] += 1.0 / HOME_OFFSET_PRIOR_SIGMA_MM ** 2
         base = base + np.diag(prior)
         base_logdet = np.linalg.slogdet(base)[1]
+        gain_by_cfg: dict[int, float] = {}
         scored: List[Tuple[float, SweepConfig, float]] = []
         for cfg in candidates:
-            scales = _feasible_scales(cfg)
-            if not scales:
-                continue
             positions = predict_sweep_positions(anchors, cfg, points_per_sweep, SWEEP_PRETENSION_SHARE)
             if positions.shape[0] == 0:
                 continue
@@ -351,10 +380,11 @@ def rank_candidates_force_aware(
             info_c = pose_information(anchors, lengths, positions=positions, **options)
             gain = float(np.linalg.slogdet(base + info_c)[1] - base_logdet)
             if np.isfinite(gain):
-                for scale in scales:
+                gain_by_cfg[id(cfg)] = gain
+                for scale in force_scales:
                     scored.append((gain, cfg, scale))
-        scored.sort(key=lambda item: (item[0], -item[2]), reverse=True)
-        return scored[:top_k]
+        scored.sort(key=lambda item: (round(item[0], 6), -item[2]), reverse=True)
+        return _resolve_lazy(scored, lambda cfg, _s: gain_by_cfg.get(id(cfg)))
 
     # Joint observed information over (anchors, home_offsets, dk_grav, dalpha_sensor).
     obs_positions, _ = fit_point_positions(
@@ -373,14 +403,39 @@ def rank_candidates_force_aware(
     base_logdet = float(np.linalg.slogdet(base_eff)[1])
 
     extra_known = basis["known"][np.isfinite(basis["known"])]
-    extra_force = float(np.median(extra_known)) if (measure_extra_ranges and extra_known.size) else None
-    base_sensor_force = float(np.min(basis["forces"])) if basis["forces"].size else 2.0
+    if base_extra_force_n is not None:
+        extra_force = float(base_extra_force_n) if measure_extra_ranges else None
+    else:
+        extra_force = float(np.median(extra_known)) if (measure_extra_ranges and extra_known.size) else None
+    if base_sensor_force_n is not None:
+        base_sensor_force: float | np.ndarray = base_sensor_force_n
+    else:
+        base_sensor_force = float(np.min(basis["forces"])) if basis["forces"].size else 2.0
+
+    geom_cache: dict[int, Tuple[np.ndarray, np.ndarray]] = {}
+
+    def _score_candidate(cfg: SweepConfig, scale: float) -> Optional[float]:
+        cached = geom_cache.get(id(cfg))
+        if cached is None:
+            return None
+        positions, lengths = cached
+        cand_basis = _candidate_stretch_basis(
+            basis, cfg, positions.shape[0], num_anchors,
+            force_scale=scale,
+            base_sensor_force_n=base_sensor_force,
+            extra_sensor_force_n=extra_force,
+            max_extra_force_n=max_extra_force_n,
+        )
+        info_c = point_joint_stretch_information(
+            anchors, lengths, positions,
+            machine_type=machine_type, sigma_mm=sigma_mm, stretch_basis=cand_basis,
+        )
+        eff = schur_anchor_information(base_joint + info_c, num_geom, nuis_prior)
+        gain = float(np.linalg.slogdet(eff)[1] - base_logdet)
+        return gain if np.isfinite(gain) else None
 
     scored = []
     for cfg in candidates:
-        scales = _feasible_scales(cfg)
-        if not scales:
-            continue
         positions = predict_sweep_positions(anchors, cfg, points_per_sweep, SWEEP_PRETENSION_SHARE)
         if positions.shape[0] == 0:
             continue
@@ -388,24 +443,14 @@ def rank_candidates_force_aware(
         active = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
         if not measure_extra_ranges:
             lengths[:, [axis for axis in range(num_anchors) if axis not in active]] = np.nan
-        for scale in scales:
-            cand_basis = _candidate_stretch_basis(
-                basis, cfg, positions.shape[0], num_anchors,
-                force_scale=scale,
-                base_sensor_force_n=base_sensor_force,
-                extra_sensor_force_n=extra_force,
-            )
-            info_c = point_joint_stretch_information(
-                anchors, lengths, positions,
-                machine_type=machine_type, sigma_mm=sigma_mm, stretch_basis=cand_basis,
-            )
-            eff = schur_anchor_information(base_joint + info_c, num_geom, nuis_prior)
-            gain = float(np.linalg.slogdet(eff)[1] - base_logdet)
-            if np.isfinite(gain):
+        geom_cache[id(cfg)] = (positions, lengths)
+        for scale in force_scales:
+            gain = _score_candidate(cfg, scale)
+            if gain is not None:
                 scored.append((gain, cfg, scale))
     # Prefer lower force on near-ties so hysteresis does not pre-stretch lines unnecessarily.
     scored.sort(key=lambda item: (round(item[0], 6), -item[2]), reverse=True)
-    return scored[:top_k]
+    return _resolve_lazy(scored, _score_candidate)
 
 
 def rank_candidates_pose_information(

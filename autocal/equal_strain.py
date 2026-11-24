@@ -205,25 +205,54 @@ def _feasible(tensions, lines, cfg, minimum_force_n, maximum_force_n):
     return feasible
 
 
-def _capped_strand_tension(anchors, cfgs, params):
+def _capped_strand_tension(
+    anchors,
+    cfgs,
+    params,
+    *,
+    extra_force_base: float | None = None,
+    extra_force_max: float = np.inf,
+    base_target: float | None = None,
+):
     """Largest strand target, at most the planned one, that leaves every sweep enough poses under the force cap."""
     target = params["strand_tension_n"]
     if params["maximum_force_n"] is None or not cfgs:
         return target
     options = {key: params[key] for key in ("mover_weight_n", "strands", "extra_line_length_mm",
                                             "mechanical_advantage", "compliant_force_n")}
+    num_axes = len(params["strands"])
+    max_force = np.asarray(params["maximum_force_n"], dtype=float)
+
+    def _compliant_for(trial_target: float) -> float:
+        if extra_force_base is not None and base_target is not None and base_target > 0.0:
+            return float(min(extra_force_max, extra_force_base * (trial_target / base_target)))
+        return float(options["compliant_force_n"])
+
     sweeps = []
+    uncapped_compliant = _compliant_for(target)
     for cfg in cfgs:
         lines = [*cfg.fixed_anchors, cfg.drive_anchor, cfg.sensor_anchor]
+        extra_axes = [axis for axis in range(num_axes) if axis not in lines]
         positions = predict_sweep_positions(anchors, cfg, _PROFILE_POINTS, _PROFILE_PRETENSION_SHARE)
-        uncapped = _feasible(_planned_tensions(anchors, positions, lines, strand_tension_n=target, **options),
-                             lines, cfg, params["minimum_force_n"], None)
-        sweeps.append((cfg, lines, positions, _CAPPED_POSE_SHARE * np.sum(uncapped)))
+        uncapped = _feasible(
+            _planned_tensions(anchors, positions, lines, strand_tension_n=target,
+                              **{**options, "compliant_force_n": uncapped_compliant}),
+            lines, cfg, params["minimum_force_n"], None,
+        )
+        sweeps.append((cfg, lines, extra_axes, positions, _CAPPED_POSE_SHARE * np.sum(uncapped)))
     for scale in np.linspace(1.0, 0.1, 37):
-        if all(np.sum(_feasible(_planned_tensions(anchors, positions, lines, strand_tension_n=scale * target, **options),
-                                lines, cfg, params["minimum_force_n"], params["maximum_force_n"])) >= needed
-               for cfg, lines, positions, needed in sweeps):
-            return scale * target
+        trial_target = scale * target
+        trial_compliant = _compliant_for(trial_target)
+        trial_opts = {**options, "compliant_force_n": trial_compliant}
+        if all(
+            (extra_force_base is None or not extra_axes or all(trial_compliant <= max_force[a] for a in extra_axes))
+            and np.sum(_feasible(
+                _planned_tensions(anchors, positions, lines, strand_tension_n=trial_target, **trial_opts),
+                lines, cfg, params["minimum_force_n"], max_force,
+            )) >= needed
+            for cfg, lines, extra_axes, positions, needed in sweeps
+        ):
+            return trial_target
     return target
 
 
@@ -247,12 +276,17 @@ def _resolved_profile_params(
     base_target = float(params["strand_tension_n"])
     if strand_tension_scale != 1.0:
         scaled = base_target * float(strand_tension_scale)
-        capped = float(_capped_strand_tension(anchors, cfgs, {**params, "strand_tension_n": scaled}))
+        base_extra = extra_force
+        max_extra = float((dataset.get("config") or {}).get("force_tuning", {}).get("force_max_n", np.inf))
+        capped = float(_capped_strand_tension(
+            anchors, cfgs, {**params, "strand_tension_n": scaled},
+            extra_force_base=base_extra, extra_force_max=max_extra, base_target=base_target,
+        ))
         params["strand_tension_n"] = capped
         actual_scale = capped / base_target if base_target > 0.0 else float(strand_tension_scale)
-        if extra_force is not None:
-            max_extra = float((dataset.get("config") or {}).get("force_tuning", {}).get("force_max_n", np.inf))
-            extra_force = min(max_extra, extra_force * actual_scale)
+        if base_extra is not None:
+            extra_force = float(min(max_extra, base_extra * actual_scale))
+            params["compliant_force_n"] = extra_force
     else:
         actual_scale = 1.0
     return params, extra_force, actual_scale

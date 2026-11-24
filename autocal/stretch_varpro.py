@@ -464,6 +464,36 @@ def _estimate_force_leverage_weights(
     return float(np.median(var_p[kept])) / var_p
 
 
+def _solve_varpro_inner(
+    r0: np.ndarray,
+    a_mat: np.ndarray,
+    p_inv: np.ndarray,
+    nuis_scale: float,
+    w_pt: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Solve the regularized weighted VarPro inner problem:
+        min_psi sum_p w_pt[p] * ||r0[p] - A[p] @ psi||^2 + ||(nuis_scale * p_inv) * psi||^2.
+    Uses sqrt(w_pt) so the normal equations Xw.T @ Xw apply statistical weights `w_pt`
+    (matching the outer objective's sqrt(lev_weights) residual scaling).
+    """
+    q = a_mat.shape[2]
+    if q == 0:
+        return r0, np.zeros(0), np.zeros(0)
+    n = r0.shape[1]
+    y = r0.ravel()
+    x_mat = a_mat.reshape(-1, q)
+    if w_pt is not None:
+        sqrt_w = np.sqrt(np.maximum(np.repeat(w_pt, n), 0.0))
+        xw, yw = x_mat * sqrt_w[:, None], y * sqrt_w
+    else:
+        xw, yw = x_mat, y
+    lam = (nuis_scale * p_inv) ** 2
+    psi = np.linalg.solve(xw.T @ xw + np.diag(lam), xw.T @ yw)
+    r_corr = (y - x_mat @ psi).reshape(r0.shape)
+    prior_res = (nuis_scale * p_inv) * psi
+    return r_corr, psi, prior_res
+
+
 def fit_pose_varpro(
     dataset: dict,
     baseline: dict,
@@ -695,28 +725,6 @@ def fit_pose_varpro(
         offsets[offset_lines] = x[num_anchor_params:num_anchor_params + num_offsets]
         return anchors, offsets
 
-    def solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=None):
-        """Solve the regularized weighted VarPro inner problem:
-            min_psi sum_p w_pt[p] * ||r0[p] - A[p] @ psi||^2 + ||(nuis_scale * p_inv) * psi||^2.
-        Uses sqrt(w_pt) so the normal equations Xw.T @ Xw apply statistical weights `w_pt`
-        (matching the outer objective's sqrt(lev_weights) residual scaling).
-        """
-        q = a_mat.shape[2]
-        if q == 0:
-            return r0, np.zeros(0), np.zeros(0)
-        y = r0.ravel()
-        x_mat = a_mat.reshape(-1, q)
-        if w_pt is not None:
-            sqrt_w = np.sqrt(np.maximum(np.repeat(w_pt, n), 0.0))
-            xw, yw = x_mat * sqrt_w[:, None], y * sqrt_w
-        else:
-            xw, yw = x_mat, y
-        lam = (nuis_scale * p_inv) ** 2
-        psi = np.linalg.solve(xw.T @ xw + np.diag(lam), xw.T @ yw)
-        r_corr = (y - x_mat @ psi).reshape(r0.shape)
-        prior_res = (nuis_scale * p_inv) * psi
-        return r_corr, psi, prior_res
-
     start = np.concatenate([np.clip(anchors_matrix_to_opt_vec(a0, machine_type), anchor_lb, anchor_ub), o0[offset_lines]])
     bounds = (
         np.concatenate([anchor_lb, np.full(num_offsets, -np.inf)]),
@@ -736,7 +744,7 @@ def fit_pose_varpro(
             w_in = pt_weights
             if lev_weights is not None:
                 w_in = lev_weights if w_in is None else w_in * lev_weights
-            r_corr, _, prior_res = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
+            r_corr, _, prior_res = _solve_varpro_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
             r_out = r_corr * np.sqrt(lev_weights)[:, None] if lev_weights is not None else r_corr
             return np.concatenate([r_out.ravel(), offsets[offset_lines] * prior_weight, prior_res])
 
@@ -759,7 +767,7 @@ def fit_pose_varpro(
         for _ in range(3):
             ac, oc = unpack(fit_res.x)
             r0, a_mat, p_inv, _, _, _, lev = build_blocks(ac, oc, kept, blocks)
-            r_corr, _, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=pt_weights * kept)
+            r_corr, _, _ = _solve_varpro_inner(r0, a_mat, p_inv, nuis_scale, w_pt=pt_weights * kept)
             lev_weights = _estimate_force_leverage_weights(r_corr, lev, kept) if allow_real_world_nuisance else None
             eff_r = r_corr * np.sqrt(lev_weights)[:, None] if lev_weights is not None else r_corr
             lr = eff_r[kept][measured[kept]]
@@ -781,7 +789,7 @@ def fit_pose_varpro(
             ac, oc = unpack(fit_res.x)
             r0, a_mat, p_inv, _, _, _, _ = build_blocks(ac, oc, None, blocks)
             w_in = pt_weights * kept * (lev_weights if lev_weights is not None else 1.0)
-            r_corr, _, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
+            r_corr, _, _ = _solve_varpro_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
             eff_pt = np.linalg.norm(r_corr * (np.sqrt(lev_weights)[:, None] if lev_weights is not None else 1.0), axis=1)
             within = eff_pt <= REJECT_SCALES * scale
             if np.array_equal(within, kept) or within.mean() < 0.5:
@@ -791,7 +799,7 @@ def fit_pose_varpro(
         anchors_final, offsets_final = unpack(fit_res.x)
         r0, a_mat, p_inv, col_names, pos_f, meas_f, _ = build_blocks(anchors_final, offsets_final, None, blocks)
         w_in = pt_weights * kept * (lev_weights if lev_weights is not None else 1.0)
-        r_corr, psi, _ = solve_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
+        r_corr, psi, _ = _solve_varpro_inner(r0, a_mat, p_inv, nuis_scale, w_pt=w_in)
         per_point = np.linalg.norm(r_corr, axis=1)
         rms_vp = float(np.sqrt(np.mean(per_point[kept] ** 2)))
         psi_dict = dict(zip(col_names, psi.tolist()))

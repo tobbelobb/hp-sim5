@@ -6,6 +6,7 @@ from autocal.fit_stage import fit_ellipse_dataset
 from autocal.equal_strain import (
     InfeasibleForceProfileError,
     effective_strand_tension_scale,
+    force_planning_parameters,
     is_equal_strain,
     profile_policy_error,
     write_sensor_force_profile,
@@ -23,6 +24,7 @@ _PLANNING_OPTIONS = _PLANNING_ONLY + ("fd_eps_mm", "regularization", "collector_
 _FORCE_CONTRAST_SCALES = (1.0, 2.0)
 _SENSOR_FORCE_FLAGS = (
     "--sensor-force",
+    "--force-sensor",
     "--sensorForce",
     "--sensor-collection-force",
     "--sensorCollectionForce",
@@ -142,10 +144,10 @@ def plan_ellipse_sweep(
     if isinstance(force_tuning, dict) and force_tuning.get("force_mid_n") is not None:
         raw_mid = float(force_tuning["force_mid_n"])
         if np.isfinite(raw_mid) and raw_mid > 0.0:
-            const_base_force = 5.0 * raw_mid
             raw_max = force_tuning.get("force_max_n")
             if isinstance(raw_max, (int, float)) and np.isfinite(raw_max) and float(raw_max) > 0.0:
                 const_max_force = float(raw_max)
+            const_base_force = min(const_max_force, 5.0 * raw_mid)
 
     if machine_type.startswith("hangprinter_"):
         # Point-fit information. With a fitted spool model, candidates are placed by
@@ -160,7 +162,18 @@ def plan_ellipse_sweep(
         if force_contrast:
             effective_scale_fn = None
             cand_scales: Sequence[float] = _FORCE_CONTRAST_SCALES
+            plan_base_sensor_force: Optional[float | np.ndarray] = None
+            plan_base_extra_force: Optional[float] = None
+            plan_max_extra_force: Optional[float] = None
+            measure_extra = has_extra_sensor_data(dataset)
             if needs_profile:
+                prof_params = force_planning_parameters(dataset, allow_force_contrast=True)
+                if prof_params is not None:
+                    plan_base_sensor_force = float(prof_params["strand_tension_n"]) * np.asarray(prof_params["strands"], dtype=float)
+                    plan_base_extra_force = prof_params.get("extra_sensor_force_n")
+                    raw_max = (force_tuning or {}).get("force_max_n")
+                    if isinstance(raw_max, (int, float)) and np.isfinite(raw_max) and float(raw_max) > 0.0:
+                        plan_max_extra_force = float(raw_max)
                 def _profile_effective_scale(cfg_placed: SweepConfig, req_scale: float) -> Optional[float]:
                     return effective_strand_tension_scale(
                         dataset, anchors, commanded[id(cfg_placed)], req_scale, allow_force_contrast=True,
@@ -171,6 +184,9 @@ def plan_ellipse_sweep(
                 # score the nominal 1.0x action rather than an unexecutable high-force candidate.
                 cand_scales = (1.0,)
             else:
+                plan_base_sensor_force = const_base_force
+                plan_base_extra_force = const_base_force if measure_extra else None
+                plan_max_extra_force = const_max_force if np.isfinite(const_max_force) else None
                 def _const_effective_scale(_cfg_placed: SweepConfig, req_scale: float) -> Optional[float]:
                     target_f = min(const_max_force, const_base_force * float(req_scale))
                     eff = target_f / const_base_force
@@ -185,10 +201,13 @@ def plan_ellipse_sweep(
                 points_per_sweep=int(np.median([len(sweep["data_points"]) for sweep in estimation_dataset["sweeps"]])),
                 sigma_mm=float(fit["pose_fit"]["robust_scale_mm"]),
                 regularization=float(regularization),
-                top_k=len(candidates) * len(cand_scales) if needs_profile else int(top_k),
-                measure_extra_ranges=has_extra_sensor_data(dataset),
+                top_k=int(top_k),
+                measure_extra_ranges=measure_extra,
                 observed_stretch=obs_stretch,
                 candidate_force_scales=cand_scales,
+                base_sensor_force_n=plan_base_sensor_force,
+                base_extra_force_n=plan_base_extra_force,
+                max_extra_force_n=plan_max_extra_force,
                 effective_scale_fn=effective_scale_fn,
             )
             ranked_with_force = [(score, commanded[id(cfg)], scale) for score, cfg, scale in ranked_raw]
