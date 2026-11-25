@@ -60,3 +60,21 @@ def test_matched_pair_fixture_covers_ten_metres_each_way():
         drum = data[f'{direction}/dPosition_test']
         assert sign * (drum[-1] - drum[0]) == pytest.approx(10.0, abs=0.05)
         assert data[f'{direction}/dForce_test'].mean() == pytest.approx(125, abs=3)
+
+
+def test_darus5171_and_4614_fixtures_have_expected_coverage():
+    import csv
+    with (FIXTURES / 'darus5171_fdp_fc_map.csv').open() as f:
+        ident = list(csv.DictReader(f))
+    assert len(ident) == 75
+    assert {r['rope'] for r in ident} == {'LIROS_D-Pro', 'Trowis_VectranHT_T190PU', 'Trowis_PolyTropFOX'}
+
+    with (FIXTURES / 'darus5171_stat_valid.csv').open() as f:
+        valid = list(csv.DictReader(f))
+    assert len(valid) == 54
+    assert {r['rope'] for r in valid} == {'LIROS_D-Pro', 'Trowis_VectranHT_T190PU', 'Trowis_PolyTropFOX'}
+
+    with (FIXTURES / 'darus4614_planeA.csv').open() as f:
+        plane_a = list(csv.DictReader(f))
+    assert len(plane_a) == 48  # 8 experiments x 6 poses (P0..P5)
+    assert {r['pose'] for r in plane_a} == {'P0', 'P1', 'P2', 'P3', 'P4', 'P5'}

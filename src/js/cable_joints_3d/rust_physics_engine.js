@@ -284,6 +284,8 @@ export class RustPhysicsEngine {
       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
     data[o + 15] = world.getResource('dt') ?? -1;
+    data[o + 19] = Math.max(0, finite('spoolRadialFlattening', 0));
+    data[o + 20] = +flag('strainedSpoolStorage', false);
     const topology = this.transport.step(dt);
     this.observationVersion = (this.observationVersion ?? 0) + 1;
     this.refreshMemory();

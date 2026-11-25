@@ -5,7 +5,7 @@ use super::*;
 pub const HEADER: usize = 9;
 pub const LINK: usize = 5;
 pub const SEGMENT: usize = 16;
-pub const OPTIONS: usize = 20;
+pub const OPTIONS: usize = 21;
 const VEL: u32 = 1;
 const OMEGA: u32 = 2;
 const GRAVITY: u32 = 4;
@@ -164,8 +164,12 @@ struct Cable {
     strain: Vec<f64>,
     // Per link on a wheel with a worn bearing.
     wheels: Vec<Option<Wheel>>,
-    // Accumulated hysteretic elongation strain (active when data[9] > 0).
+    // Accumulated hysteretic elongation strain (active when options[11] > 0).
     hyst_strain: f64,
+    // LIFO coiled segments `(nominal_drum_arc, rest_per_nom_arc)` for the two
+    // spool ends (index 0 = link 0, index 1 = link `count`), used when strained
+    // spool storage or tension-dependent running radius is enabled.
+    spool_coils: [Vec<(f64, f64)>; 2],
 }
 /// A wheel whose bearing resists turning. The line turns it through capstan
 /// friction, against the bearing's friction torque and the wheel's inertia.
@@ -567,7 +571,17 @@ impl PhysicsWorld {
         }
         let cables: Vec<Cable> = paths
             .into_iter()
-            .map(|data| Cable { data, ratio: Vec::new(), slip: Vec::new(), tried: Vec::new(), merged: Vec::new(), strain: Vec::new(), wheels: Vec::new(), hyst_strain: 0.0 })
+            .map(|data| Cable {
+                data,
+                ratio: Vec::new(),
+                slip: Vec::new(),
+                tried: Vec::new(),
+                merged: Vec::new(),
+                strain: Vec::new(),
+                wheels: Vec::new(),
+                hyst_strain: 0.0,
+                spool_coils: [Vec::new(), Vec::new()],
+            })
             .collect();
         let mut by_id = std::collections::BTreeMap::<u64, Vec<(usize, usize)>>::new();
         for (p, c) in cables.iter().enumerate() {
@@ -628,6 +642,8 @@ impl PhysicsWorld {
                         &mut self.entities,
                         layering,
                         self.options[5] != 0.0,
+                        self.options[19],
+                        self.options[20] != 0.0,
                     ),
                     6 => merge(cable, &self.entities, layering, &mut self.topology_version),
                     7 => split(
@@ -886,8 +902,72 @@ fn project_spool(e: &mut Entity) {
     }
 }
 
-fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: bool) {
+fn segment_tension(c: &Cable, i: usize) -> f64 {
+    let cpl = c.data[3];
+    if !(cpl.is_finite() && cpl > EPS) {
+        return 0.0;
+    }
+    if i < c.strain.len() {
+        c.data[c.jo(i) + 11].max(0.0)
+    } else {
+        let d = length(sub(c.point(i, 0), c.point(i, 1)));
+        let rest = c.rest(i);
+        if rest > EPS {
+            (d - rest).max(0.0) / (rest * cpl)
+        } else {
+            0.0
+        }
+    }
+}
+
+/// Convert nominal drum arc `d_nom` (+ winding onto spool, - unwinding off spool)
+/// into rest-length transfer, tracking LIFO storage-tension coils so winding at
+/// `F_S` and unwinding at `F_L` conserves material and captures storage-tension slip.
+fn spool_rest_delta(coils: &mut Vec<(f64, f64)>, d_nom: f64, rho_now: f64) -> f64 {
+    if d_nom > EPS {
+        if let Some(top) = coils.last_mut() {
+            if (top.1 - rho_now).abs() <= 1e-6 {
+                top.0 += d_nom;
+            } else {
+                coils.push((d_nom, rho_now));
+            }
+        } else {
+            coils.push((d_nom, rho_now));
+        }
+        d_nom * rho_now
+    } else if d_nom < -EPS {
+        let mut need = -d_nom;
+        let mut paid = 0.0;
+        while need > EPS {
+            let Some(top) = coils.last_mut() else {
+                paid += need * rho_now;
+                break;
+            };
+            let take = need.min(top.0);
+            paid += take * top.1;
+            top.0 -= take;
+            need -= take;
+            if top.0 <= EPS {
+                coils.pop();
+            }
+        }
+        -paid
+    } else {
+        0.0
+    }
+}
+
+fn update_attachments(
+    c: &mut Cable,
+    es: &mut [Entity],
+    layering: bool,
+    clamp: bool,
+    radial_flattening: f64,
+    strained_spool: bool,
+) {
     let half = if layering { c.data[6] } else { 0.0 };
+    let spool_physics = (radial_flattening.is_finite() && radial_flattening > 0.0) || strained_spool;
+    let cpl = c.data[3];
     for i in 0..c.count() {
         let ids = [c.entity(i, 0), c.entity(i, 1)];
         let (points, mut ends, radii) = geometry(c, i, es, layering);
@@ -1015,6 +1095,32 @@ fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: b
                 }
             }
         }
+        if spool_physics {
+            let force = segment_tension(c, i);
+            let n = c.count();
+            for side in 0..2 {
+                let is_end_spool =
+                    hybrid(c.kind(i + side)) && ((side == 0 && i == 0) || (side == 1 && i + 1 == n));
+                if !is_end_spool || shifts[side].abs() <= EPS {
+                    continue;
+                }
+                let radius = radii[side].0;
+                let r_scale = if radial_flattening.is_finite() && radial_flattening > 0.0 && radius > EPS {
+                    ((radius - radial_flattening * force) / radius).max(0.5)
+                } else {
+                    1.0
+                };
+                let strain_scale = if strained_spool && cpl.is_finite() && cpl > EPS {
+                    1.0 / (1.0 + force * cpl)
+                } else {
+                    1.0
+                };
+                let rho_now = r_scale * strain_scale;
+                let d_nom = if side == 0 { shifts[0] } else { -shifts[1] };
+                let d_rest = spool_rest_delta(&mut c.spool_coils[side], d_nom, rho_now);
+                shifts[side] = if side == 0 { d_rest } else { -d_rest };
+            }
+        }
         c.set_stored(i, c.stored(i) + shifts[0]);
         let jo = c.jo(i);
         c.data[jo + 3] -= shifts[0];
@@ -1024,7 +1130,11 @@ fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: b
             let li = i + side;
             let lo = c.lo(li);
             let id = ids[side];
-            if !hybrid(c.kind(li)) || (side == 0 && i != 0) || (side == 1 && i + 1 != c.count()) {
+            if spool_physics
+                || !hybrid(c.kind(li))
+                || (side == 0 && i != 0)
+                || (side == 1 && i + 1 != c.count())
+            {
                 continue;
             }
             let knot = c.data[lo + 3];

@@ -15,7 +15,7 @@ const SPEED: f64 = 2.0;
 ///
 /// The drums are flywheels whose angular velocity is reset every step, as a perfect speed
 /// servo. Span rope moves at the rest-length flow off the test drum times (1 + strain).
-fn rope_per_drum(force: f64, ea: f64) -> f64 {
+fn rope_per_drum(force: f64, ea: f64, radial_flattening: f64, strained_spool: bool) -> f64 {
     let span = 2.0;
     let test = wheel(0, [-span / 2.0, 0.0, 0.0], RADIUS, 0.5, 1e6, None);
     let load = wheel(1, [span / 2.0, 0.0, 0.0], RADIUS, 0.5, 1e6, None);
@@ -30,6 +30,8 @@ fn rope_per_drum(force: f64, ea: f64) -> f64 {
     let links = [(SPOOL_END, false, 15.0), (SPOOL_END, true, 15.0)];
     let mut w = world(vec![test, load], vec![path(&links, &segs, ea, 0.0, 4.0)]);
     w.options[1] = 0.0;
+    w.options[19] = radial_flattening;
+    w.options[20] = f64::from(strained_spool);
     let dt = 0.001;
     let step = |w: &mut PhysicsWorld| {
         for id in 0..2 {
@@ -53,14 +55,19 @@ fn rope_per_drum(force: f64, ea: f64) -> f64 {
     let drum = (w.entities[0][66] - angle0).abs() * RADIUS;
     let mean = tensions / steps as f64;
     assert!((mean - force).abs() < 0.01 * force, "tension {mean} vs {force}");
-    assert!((stored0 - stored(&mut w, 0, 0) - drum).abs() < 1e-6 * drum, "rest flow per drum arc");
+    if radial_flattening == 0.0 && !strained_spool {
+        assert!((stored0 - stored(&mut w, 0, 0) - drum).abs() < 1e-6 * drum, "rest flow per drum arc");
+    }
     rope / drum
 }
 
 /// Simulated ratio slope over the rig's force range, in ppm of drum travel per N.
-fn simulated_slope(ea: f64) -> f64 {
+fn simulated_slope(ea: f64, radial_flattening: f64, strained_spool: bool) -> f64 {
     let forces = [70.0, 125.0, 180.0];
-    let ratios: Vec<f64> = forces.iter().map(|&f| rope_per_drum(f, ea)).collect();
+    let ratios: Vec<f64> = forces
+        .iter()
+        .map(|&f| rope_per_drum(f, ea, radial_flattening, strained_spool))
+        .collect();
     fit(&forces, &ratios) * 1e6
 }
 
@@ -100,15 +107,23 @@ fn measured_slope() -> (f64, Vec<f64>) {
     (sxy / sxx * 1e6, slopes)
 }
 
-/// hp-sim5 stores spooled rope as rest length, so at constant tension span rope outruns the
-/// drum surface by the strain: the slope is +1e6/EA ppm/N.
+/// Legacy mode (options[19..=20] = 0): spooled rope is stored as rest length at fixed radius,
+/// so at constant tension span rope outruns the drum surface by the strain: +1e6/EA ppm/N.
 #[test]
 fn spool_pays_out_rest_length() {
     for ea in [1e5, 3e5] {
-        let slope = simulated_slope(ea);
+        let slope = simulated_slope(ea, 0.0, false);
         eprintln!("EA {ea:.0e} N: simulated slope {slope:+.3} ppm/N, 1e6/EA {:+.3}", 1e6 / ea);
         assert!((slope - 1e6 / ea).abs() < 0.02 * 1e6 / ea);
     }
+}
+
+/// Pure strained spool storage (no radial flattening) cancels the span strain at constant
+/// tension (F_S == F_L), giving zero slope regardless of EA.
+#[test]
+fn strained_spool_cancels_constant_tension_strain() {
+    let slope = simulated_slope(82_400.0, 0.0, true);
+    assert!(slope.abs() < 0.1, "expected ~0 ppm/N, got {slope:+.3}");
 }
 
 #[test]
@@ -119,15 +134,15 @@ fn rig_data_slope_is_negative_in_every_cell() {
     assert!(cells.iter().all(|&s| (-12.0..-5.0).contains(&s)));
 }
 
-/// The real rope runs slower than the drum as tension rises (running radius shrinks), the
-/// opposite of the simulated strain effect. Any EA gives a positive simulated slope, so this
-/// fails until the spool–rope interface models a tension-dependent running radius or strained
-/// storage. EA 3e5 N is a placeholder for the 6 mm LIROS D-Pro until it is identified.
+/// Blind cross-dataset prediction: LIROS D-Pro 6 mm parameters identified purely on DaRUS-5171
+/// FDP-FC-MAP (EA = 83.8 kN, radial flattening k_r = 0.422 um/N = 8.41 ppm/N on R = 50.18 mm)
+/// predict DaRUS-3600's 348-run pooled slope (-8.69 ppm/N) within 0.3 ppm/N.
 #[test]
-#[ignore = "known model gap: hp-sim5 has no tension-dependent running radius (DaRUS-3600 Stage 1)"]
 fn rig_matches_measured_running_radius() {
     let (measured, _) = measured_slope();
-    let simulated = simulated_slope(3e5);
+    let ea_dpro = 83_800.0;
+    let k_r_dpro = 0.422e-6;
+    let simulated = simulated_slope(ea_dpro, k_r_dpro, true);
     eprintln!("simulated {simulated:+.2} ppm/N, measured {measured:+.2} ppm/N");
-    assert!((simulated - measured).abs() < 2.0, "simulated {simulated:+.2} vs measured {measured:+.2} ppm/N");
+    assert!((simulated - measured).abs() < 1.0, "simulated {simulated:+.2} vs measured {measured:+.2} ppm/N");
 }
