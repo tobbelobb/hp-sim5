@@ -4,7 +4,7 @@ The first 24.26 s of the 13.9 kg standard-control run give a useful split betwee
 
 ## Replay in hp-sim-3d
 
-Select **COPacabana (13.9 kg)** as the only machine. **Replay targets** drives the eight drums from the logged cable-position targets. **Replay encoders** drives them from measured payout using the same actuator model. Both show the blue FARO path and the simulated reflector trace. Turn on **Closed loop motors** and turn off line layering to reproduce the numerical comparison. The nominal PlaneA G-code, Logo and Squares go through the catalogued firmware planners. The experiment buttons use a separate translation of the 100 Hz robot log, preserving reversals and all five stationary intervals.
+Select **COPacabana (13.9 kg)** as the only machine. **Replay targets** drives the eight drums from the logged cable-position targets. **Replay encoders** drives them from measured payout using the same actuator model. The white trace follows the larger sphere, which represents the FARO reflector. The blue path shows where the tracker measured that reflector. The smaller sphere below it marks the payload center of mass. All eight cables attach at the corners of the wireframe. Turn on **Closed loop motors** and turn off line layering to reproduce the numerical comparison. The nominal PlaneA G-code, Logo and Squares go through the catalogued firmware planners. The experiment buttons use a separate translation of the 100 Hz robot log, preserving reversals and all five stationary intervals.
 
 ## Physical assumptions
 
