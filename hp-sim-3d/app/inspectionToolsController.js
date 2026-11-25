@@ -226,6 +226,7 @@ export function createInspectionToolsController({
   quality,
 } = {}) {
   const referencePathCache = new Map();
+  let activeLoad = 0;
   let measurePointerCandidate = null;
 
   function getOverlayState() {
@@ -268,6 +269,7 @@ export function createInspectionToolsController({
 
   function setSegments(segments, { metadata = null, color = null } = {}) {
     const overlay = getOverlayState();
+    activeLoad++;
     overlay.segments = Array.isArray(segments) ? segments : null;
     overlay.metadata = metadata;
     overlay.key = metadata?.key || null;
@@ -290,6 +292,7 @@ export function createInspectionToolsController({
   function setVisibility(visible) {
     const overlay = getOverlayState();
     const target = Boolean(visible);
+    if (!target) activeLoad++;
     if (overlay.visible === target) {
       return;
     }
@@ -306,6 +309,7 @@ export function createInspectionToolsController({
     setActive = false,
     makeVisible = false,
   } = {}) {
+    const load = setActive ? ++activeLoad : null;
     if (cacheKey && referencePathCache.has(cacheKey)) {
       const cached = referencePathCache.get(cacheKey);
       if (setActive) {
@@ -359,7 +363,7 @@ export function createInspectionToolsController({
     if (cacheKey) {
       referencePathCache.set(cacheKey, record);
     }
-    if (setActive) {
+    if (load === activeLoad) {
       setSegments(record.segments, { metadata: record.metadata, color: record.color });
       if (makeVisible) {
         setVisibility(true);

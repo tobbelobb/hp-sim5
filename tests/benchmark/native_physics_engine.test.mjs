@@ -450,3 +450,22 @@ test('exportCheckpoint/importCheckpoint round-trip across a fresh Node process m
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('preloaded hybrid drums retain their cable and tension on the first stationary step', async () => {
+  const { CablePathComponent } = await import('../../src/js/cable_joints_3d/cable_joints_core.js');
+  const scene = fs.readFileSync(new URL('../../public/usd_scenes/copacabana.usda', import.meta.url), 'utf8');
+  const { world, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
+  try {
+    const paths = world.query([CablePathComponent]).map(id => world.getComponent(id, CablePathComponent));
+    const stored = paths.map(path => path.stored[0]);
+    assert.equal(paths.length, 8);
+    world.update(dt);
+    paths.forEach((path, i) => {
+      assert.ok(Math.abs(path.stored[0] - stored[i]) < 1e-6);
+      const span = world.getComponent(path.jointEntities.at(-1), CableJointComponent);
+      assert.ok(Math.abs(span.constraintForceMagnitude - path.initialStorageTension) < 1);
+    });
+  } finally {
+    world.getResource('cableSolverBackend').dispose();
+  }
+});

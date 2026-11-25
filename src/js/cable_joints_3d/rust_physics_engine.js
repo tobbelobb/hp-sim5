@@ -233,7 +233,9 @@ export class RustPhysicsEngine {
         const j = n ? get(c.jointEntities[li === n ? n - 1 : li], CableJointComponent) : null;
         const entity = j ? (li === n ? j.entityB : j.entityA) : null;
         const knot = get(entity, ecs.HybridKnotAngleComponent);
-        const copyDefault = knot && !Number.isFinite(knot.pathAngles?.[id])
+        // The generated default angle assumes unloaded storage. Let Rust derive a new
+        // knot from geometric occupancy once it initializes the preloaded winding.
+        const copyDefault = knot && !(c.initialStorageTension > 0) && !Number.isFinite(knot.pathAngles?.[id])
           && Number.isFinite(knot.pathAngles?.__default__)
           && Object.keys(knot.pathAngles).every(k => k === '__default__');
         data.set([kinds.indexOf(c.linkTypes[li]), +Boolean(c.cw[li]), c.stored[li],

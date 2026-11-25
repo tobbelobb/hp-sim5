@@ -396,6 +396,7 @@ export function createMachineSceneController({
 
   async function resetAfterMachineListChange({ resetView = false } = {}) {
     if (state.machines.length === 0) {
+      getCommands()?.setReferenceVisibilityForReset?.();
       quality?.clearQualityMonitors?.();
       quality?.updateQualityHudVisibility?.();
       view?.resetForEmptyScene?.();

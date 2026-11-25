@@ -267,9 +267,6 @@ export function createCommandJobController({
     const presetUrl = buildRepositoryFileUrl(preset.path);
     console.info(`hp-sim-3d: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(presetUrl));
     const { referencePresetKey } = preset;
-    inspectionTools?.loadForPreset?.(referencePresetKey, { setActive: true, makeVisible: preset.preserveTiming }).catch((error) => {
-      console.warn('hp-sim-3d: failed to prepare reference path for preset', referencePresetKey, error);
-    });
     const format = preset.format;
     let worker = null;
     if (format === FileFormat.GCODE) {
@@ -291,6 +288,9 @@ export function createCommandJobController({
     if (!startSimulationWithWorker(worker, jobDescriptor)) {
       return;
     }
+    inspectionTools?.loadForPreset?.(referencePresetKey, { setActive: true, makeVisible: preset.preserveTiming }).catch((error) => {
+      console.warn('hp-sim-3d: failed to prepare reference path for preset', referencePresetKey, error);
+    });
     if (preset.traceEntity) {
       const renderer = world.getResource('renderSystem');
       const entity = world.query([SceneEntityInfoComponent]).find(id =>
