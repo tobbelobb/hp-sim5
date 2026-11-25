@@ -1,6 +1,6 @@
 # COPacabana dynamic PlaneA replay
 
-The first 24.26 s of the 13.9 kg standard-control run give a useful split between drive tracking and cable mechanics. Feeding the eight recorded motor targets into the simulator gives 25.4 mm RMS reflector error. Substituting the encoder readings reduces it to 15.8 mm. The two inputs give nearly identical force errors, around 176 N RMS. Neither reaches the measured positional repeatability.
+The first 24.26 s of the 13.9 kg standard-control run give a useful split between drive tracking and cable mechanics. Feeding the eight recorded motor targets into the simulator gives 25.4 mm RMS reflector error. Substituting the encoder readings reduces it to 15.8 mm. Both give about 176 N RMS disagreement between simulated platform tensions and logged actuator readings. Neither reaches the measured positional repeatability.
 
 ## Replay in hp-sim-3d
 
@@ -35,7 +35,20 @@ The table below uses stationary intervals beginning 0.5 s after the platform tar
 
 ![Settled reflector error and measured repeat scatter by pose](settled-error.png)
 
-P4 is the clearest failure. Even after settling, the simulation misses the recorded cable forces by 303 N RMS. There is also an independent observability problem. Multiplying each measured force by its nominal span direction and adding the weight leaves 180 N of net force at P4. A stationary platform requires the actual external forces to balance. That calculation assumes the nominal platform orientation, the home pulley tangents and that the recorded forces act directly on the platform. Verifying force measurement location, transmission friction and actual attachment directions would help distinguish an error in that mapping from a material-law error. A single tracked point cannot resolve platform orientation. The results cover one standard-control cycle. Transfer to other payloads and adaptive control remains open.
+### Force-channel audit
+
+The 176.2 N encoder-replay RMS compares simulated **platform-side** cable tensions with the eight logged `f[i]` channels. The authors' importer reads the same channels in the same order. The robot designers locate the integrated force sensors in the actuators. Between each sensor and the platform lies the cable guidance. The force targets `f_tar[i]` are a separate controller quantity. [Replication data and importer](https://doi.org/10.18419/DARUS-4614) · [COPacabana hardware description, §4.1](https://duepublico2.uni-due.de/servlets/MCRFileNodeServlet/duepublico_derivate_00071251/IFToMM_D-A-CH_2020_paper_9.pdf)
+
+An independent calculation using the raw 100 Hz log, the logged six pose coordinates and a swivel-pulley tangent recomputed at each sample gives a P4 cable resultant of **(−162.4, +49.8, +75.7) N**. Adding the 13.9 kg weight gives **(−162.4, +49.8, −60.6) N**, magnitude **180.4 N**. During those 2.51 s the FARO reflector's peak-to-peak movement was 0.24, 0.14 and 0.06 mm along X, Y and Z. Across all 30 standard-control visits to P4 at this load, the residual ranges from 168.3 to 205.0 N, median 180.0 N. At 29.1 kg under standard control the median is 191.8 N. Changing just the assumed mass can only affect Z. The corresponding `f_tar` residual in the first light-load P4 hold is 248.0 N, and the logged `wc[0..2]` averages (409, 508, 941). Neither supplies independent platform force ground truth. The six controller pose channels also lack independent attitude verification. [Raw-log calculation](evidence/force_balance.py)
+
+| Mean tension at P4 (N), encoder replay | A | B | C | D | I | J | L | O |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Logged | 316 | 133 | 200 | 390 | 348 | 303 | 345 | 605 |
+| Simulated at platform | 76 | 51 | 71 | 97 | 30 | 22 | 41 | 63 |
+
+Two errors can coexist. At the logged P4 pose, the smallest RMS change to the eight mean readings that balances both force and moment about the XML center of mass is 36.9 N per cable. The balanced values are all positive and still differ from the simulated means by about 300 N RMS. Many other sets of tensions also balance the same load. Much of the discrepancy is in internal preload, which can change greatly while cables pull against each other and the platform stays almost still. An independent tension measurement would identify where the actual platform sits among these force distributions.
+
+The force readings are repeatable enough to investigate. Before fitting a rope law to their absolute levels, verify the physical sensor-to-cable assignment, calibration under known loads and tension transfer through each guide in both travel directions. A platform-side load cell on one line or a documented calibration of the full route would distinguish explanations that the current measurements leave open. In the meantime, the registered tracker tests position directly, and matched-pose changes with payload or preload give a separate differential force test. [Autocal handoff](autocal-handoff.md)
 
 ## Reproduce
 
@@ -45,6 +58,8 @@ From the repository root, run the following commands. Both validations use the b
 node scripts/reference_data/validate_4614_replay.mjs planeATargets
 node scripts/reference_data/validate_4614_replay.mjs planeAEncoders
 ```
+
+To reproduce the raw-log audit across eight conditions, five poses and 30 exports, pass the cache directory (or the original `experiments/` directory) to `.venv/bin/python research/output/session-copacabana-planea/evidence/force_balance.py output/reference_cache/4614`. It writes one CSV row per settled visit to stdout.
 
 With the raw measurements mounted, rebuild the comparison inputs with `.venv/bin/python scripts/reference_data/extract_4614_replay.py`. Recompile the nominal firmware examples with `.venv/bin/python scripts/compile_machine_commands.py --machine copacabana`.
 

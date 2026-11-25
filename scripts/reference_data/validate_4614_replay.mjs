@@ -60,7 +60,8 @@ function measure() {
   if (row.time - rows[holdStart].time > .5) {
     let hold = holds.at(-1);
     if (hold?.start !== holdStart) {
-      hold = { start: holdStart, count: 0, trackerSquared: 0, forceSquared: 0, netForce: [0, 0, 0] };
+      hold = { start: holdStart, count: 0, trackerSquared: 0, forceSquared: 0, netForce: [0, 0, 0],
+        predictedForce: axes.map(() => 0), loggedForce: axes.map(() => 0) };
       holds.push(hold);
     }
     // Static force closure using the nominal unrotated pose and home tangent anchors.
@@ -69,6 +70,8 @@ function measure() {
       const direction = [span.x - row.target[0], span.y - row.target[1], span.z - row.target[2]];
       const scale = row.force[i] / Math.hypot(...direction);
       direction.forEach((v, k) => { net[k] += scale * v; });
+      hold.predictedForce[i] += joints[i].constraintForceMagnitude;
+      hold.loggedForce[i] += row.force[i];
       hold.forceSquared += (joints[i].constraintForceMagnitude - row.force[i]) ** 2;
     });
     net.forEach((v, k) => { hold.netForce[k] += v; });
@@ -110,6 +113,8 @@ try {
       pose: `P${i + 1}`,
       reflector_rms_mm: 1000 * rms(h.trackerSquared, h.count),
       force_rms_N: rms(h.forceSquared, h.count * joints.length),
+      mean_simulated_cable_forces_N: h.predictedForce.map(v => v / h.count),
+      mean_logged_cable_forces_N: h.loggedForce.map(v => v / h.count),
       measured_force_closure_N: Math.hypot(...h.netForce) / h.count,
     })),
   }, null, 2));
