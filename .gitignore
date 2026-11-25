@@ -117,3 +117,8 @@ hangprinter-org/status/Texas_ceiling_unit_HP4_Dec_2023.jpg
 hp-sim5-bug-report-2026-11-16.txt
 research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro-output/reset-generation/recording.rrd
 research/output/program-2026-11-18-which-new-minimal-reproducible-cases-exist-where-hp-sim5-returns-600802e7/session-2026-11-18-investigate-flight-recorder-and-serialization-round-trip-correct-fe3f2bc3/repro-output/scene-content/recording.rrd
+
+# Large external datasets live outside Git; see their restore instructions.
+/ai_docs/externally_captured_reference_data/Cable_Actuator_Test_Rig_Stuttgart_2023_DaRUS-3600
+/ai_docs/externally_captured_reference_data/Experimental_modelling_of_synthetic_fibre_ropes_for_compensation_2026_DaRUS-5171
+/ai_docs/externally_captured_reference_data/Experimental_Investigation_2025_DaRUS-4614
