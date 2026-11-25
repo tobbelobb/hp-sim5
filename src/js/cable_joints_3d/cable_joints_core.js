@@ -99,6 +99,12 @@ export class CablePathComponent {
     this.dampingPerUnitLength = Number.isFinite(dampingPerUnitLength) ? Math.max(0.0, dampingPerUnitLength) : 0.0;
     this.hysteresisFraction = 0.0;
     this.hysteresisRecoveryTime = 0.0;
+    // Per-cable spool constitutive overrides (null inherits world resources).
+    this.spoolRadialFlattening = null;
+    this.strainedSpoolStorage = null;
+    this.initialStorageTension = 0.0;
+    // Serialized spool winding history (Float64Array) preserved across re-prepare, checkpoints, and backend swaps.
+    this.spoolHistory = null;
     this.solverIterations = Number.isFinite(solverIterations)
       ? Math.max(1, Math.floor(solverIterations))
       : 1;
@@ -938,17 +944,36 @@ function _hybridStoredDeltaFromRotation(thetaBefore, deltaAngle, cw, baseRadius,
   return signedDeltaTheta * fallbackRadius;
 }
 
-// Predict endpoint winding using the same layer/ramp model as the cable solver.
+// Authoritative geometric drum occupancy for a link (delegates to Rust when spool physics is active).
+export function cableGeometricStoredLength(world, path, linkIndex) {
+  const backend = world?.getResource?.('cableSolverBackend');
+  const geom = backend?.spoolGeomStored?.(path, linkIndex);
+  if (Number.isFinite(geom)) {
+    return geom;
+  }
+  return path?.stored?.[linkIndex] ?? 0.0;
+}
+
+// Predict endpoint stored material length after rotating the endpoint motor by `deltaAngle`.
+// Delegates to the Rust solver when prepared so layering, strained spooling, radial flattening,
+// and the LIFO coil history remain authoritative without duplicating physics in JavaScript.
 export function cableStoredLengthAfterRotation(world, path, linkIndex, entityId, deltaAngle) {
+  const layering = layeringEnabled(world);
+  const backend = world?.getResource?.('cableSolverBackend');
+  const predicted = backend?.predictSpoolStoredAfterRotation?.(path, linkIndex, deltaAngle, layering);
+  if (Number.isFinite(predicted)) {
+    return predicted;
+  }
   const stored = path.stored[linkIndex] ?? 0.0;
+  const geomStored = cableGeometricStoredLength(world, path, linkIndex);
   const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius ?? 0.0;
-  const halfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
+  const halfWidth = layering ? (path.cableHalfWidth ?? 0.0) : 0.0;
   const endpointSign = linkIndex === 0 ? 1.0 : -1.0;
   if (path.linkTypes[linkIndex] !== 'hybrid') {
     return stored + endpointSign * (path.cw[linkIndex] ? 1.0 : -1.0)
       * deltaAngle * (baseRadius + halfWidth);
   }
-  const theta = _storedToThetaSigned(stored, baseRadius, halfWidth, baseRadius * KNOT_SPAN);
+  const theta = _storedToThetaSigned(geomStored, baseRadius, halfWidth, baseRadius * KNOT_SPAN);
   return stored + _hybridStoredDeltaFromRotation(
     theta, endpointSign * deltaAngle, path.cw[linkIndex], baseRadius, halfWidth, baseRadius + halfWidth,
   );
@@ -1014,7 +1039,7 @@ function _effectiveRollingRadius(world, path, linkIndex, baseRadius) {
     return { radius: effectiveRadius, theta: 0.0 };
   }
 
-  const stored = Math.max(0.0, path.stored[linkIndex] ?? 0.0);
+  const stored = Math.max(0.0, cableGeometricStoredLength(world, path, linkIndex));
   if (!(stored > EPSILON)) {
     return { radius: effectiveRadius, theta: 0.0 };
   }

@@ -82,3 +82,74 @@ pub unsafe extern "C" fn engine_topology_version(world: *const PhysicsWorld) -> 
 pub extern "C" fn engine_options_len() -> usize {
     OPTIONS
 }
+/// # Safety
+/// `world` must be live; `index` is in `0..path_count`.
+#[no_mangle]
+pub unsafe extern "C" fn engine_set_cable_spool_params(
+    world: *mut PhysicsWorld,
+    index: usize,
+    radial_flattening: f64,
+    strained_mode: f64,
+    init_storage_tension: f64,
+) {
+    (*world).set_cable_spool_params_raw(index, radial_flattening, strained_mode, init_storage_tension);
+}
+/// # Safety
+/// `world` must be live; `index` is in `0..path_count`.
+#[no_mangle]
+pub unsafe extern "C" fn engine_spool_state_len(world: *const PhysicsWorld, index: usize) -> usize {
+    (*world).export_spool_state(index).len()
+}
+/// # Safety
+/// `world` must be live and `out` must point to at least `cap` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn engine_export_spool_state(
+    world: *const PhysicsWorld,
+    index: usize,
+    out: *mut f64,
+    cap: usize,
+) -> usize {
+    let state = (*world).export_spool_state(index);
+    let n = state.len().min(cap);
+    if n > 0 && !out.is_null() {
+        std::ptr::copy_nonoverlapping(state.as_ptr(), out, n);
+    }
+    n
+}
+/// # Safety
+/// `world` must be live and `data` must point to `len` readable f64s when `len > 0`.
+#[no_mangle]
+pub unsafe extern "C" fn engine_import_spool_state(
+    world: *mut PhysicsWorld,
+    index: usize,
+    data: *const f64,
+    len: usize,
+) -> u32 {
+    if len == 0 || data.is_null() {
+        return 0;
+    }
+    let slice = std::slice::from_raw_parts(data, len);
+    u32::from((*world).import_spool_state(index, slice))
+}
+/// # Safety
+/// `world` must be live; `index` is in `0..path_count`, `side` is `0` or `1`.
+#[no_mangle]
+pub unsafe extern "C" fn engine_spool_geom_stored(
+    world: *const PhysicsWorld,
+    index: usize,
+    side: usize,
+) -> f64 {
+    (*world).spool_geom_stored(index, side)
+}
+/// # Safety
+/// `world` must be live; `index` is in `0..path_count`, `side` is `0` or `1`.
+#[no_mangle]
+pub unsafe extern "C" fn engine_predict_spool_stored_after_rotation(
+    world: *const PhysicsWorld,
+    index: usize,
+    side: usize,
+    delta_angle: f64,
+    layering: u32,
+) -> f64 {
+    (*world).predict_spool_stored_after_rotation(index, side, delta_angle, layering != 0)
+}

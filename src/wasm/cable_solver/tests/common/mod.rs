@@ -1,5 +1,5 @@
 //! Scenario builders shared by the analytic cable tests.
-#![allow(dead_code)]
+#![allow(dead_code, unused_imports)]
 pub use hp_sim5_cable_solver::{
     engine::{PhysicsWorld, HEADER, LINK, SEGMENT},
     Entity,
