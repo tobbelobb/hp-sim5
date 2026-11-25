@@ -1,6 +1,6 @@
 # COPacabana dynamic PlaneA replay
 
-The first 24.26 s of the 13.9 kg standard-control run give a useful split between drive tracking and cable mechanics. Feeding the eight recorded motor targets into the simulator gives 25.8 mm RMS reflector error. Substituting the encoder readings reduces it to 16.4 mm. The two inputs give nearly identical force errors, around 189 N RMS. Neither reaches the measured positional repeatability.
+The first 24.26 s of the 13.9 kg standard-control run give a useful split between drive tracking and cable mechanics. Feeding the eight recorded motor targets into the simulator gives 25.4 mm RMS reflector error. Substituting the encoder readings reduces it to 15.8 mm. The two inputs give nearly identical force errors, around 176 N RMS. Neither reaches the measured positional repeatability.
 
 ## Replay in hp-sim-3d
 
@@ -18,8 +18,8 @@ The validator samples predicted XYZ at the reflector and the platform-side const
 
 | Input or predictor | Reflector RMS (mm) | Peak (mm) | Cable force RMS (N) |
 |---|---:|---:|---:|
-| Recorded motor targets | 25.8 | 48.6 | 189.3 |
-| Recorded motor encoders | 16.4 | 21.6 | 189.4 |
+| Recorded motor targets | 25.4 | 48.8 | 176.6 |
+| Recorded motor encoders | 15.8 | 21.2 | 176.2 |
 | Logged Cartesian target plus fixed reflector offset | 27.0 | | |
 | Hold each cable at its measured P0 force | | | 184.8 |
 
@@ -27,15 +27,15 @@ The table below uses stationary intervals beginning 0.5 s after the platform tar
 
 | Pose | Encoder replay reflector RMS (mm) | Repeat scatter (mm) | Encoder replay force RMS (N) | Net force from measured tensions and gravity (N) |
 |---|---:|---:|---:|---:|
-| P1 | 5.1 | 0.63 | 91 | 126 |
-| P2 | 15.5 | 0.66 | 20 | 64 |
-| P3 | 19.9 | 0.70 | 26 | 77 |
-| P4 | 20.4 | 0.40 | 322 | 180 |
-| P5 | 19.2 | 0.48 | 236 | 88 |
+| P1 | 2.5 | 0.63 | 75 | 126 |
+| P2 | 16.5 | 0.66 | 16 | 64 |
+| P3 | 19.3 | 0.70 | 18 | 77 |
+| P4 | 18.8 | 0.40 | 303 | 180 |
+| P5 | 19.3 | 0.48 | 216 | 88 |
 
 ![Settled reflector error and measured repeat scatter by pose](settled-error.png)
 
-P4 is the clearest failure. Even after settling, the simulation misses the recorded cable forces by 322 N RMS. There is also an independent observability problem. Multiplying each measured force by its nominal span direction and adding the weight leaves 180 N of net force at P4. A stationary platform requires the actual external forces to balance. That calculation assumes the nominal platform orientation, the home pulley tangents and that the recorded forces act directly on the platform. Verifying force measurement location, transmission friction and actual attachment directions would help distinguish an error in that mapping from a material-law error. A single tracked point cannot resolve platform orientation. The results cover one standard-control cycle. Transfer to other payloads and adaptive control remains open.
+P4 is the clearest failure. Even after settling, the simulation misses the recorded cable forces by 303 N RMS. There is also an independent observability problem. Multiplying each measured force by its nominal span direction and adding the weight leaves 180 N of net force at P4. A stationary platform requires the actual external forces to balance. That calculation assumes the nominal platform orientation, the home pulley tangents and that the recorded forces act directly on the platform. Verifying force measurement location, transmission friction and actual attachment directions would help distinguish an error in that mapping from a material-law error. A single tracked point cannot resolve platform orientation. The results cover one standard-control cycle. Transfer to other payloads and adaptive control remains open.
 
 ## Reproduce
 
@@ -48,4 +48,4 @@ node scripts/reference_data/validate_4614_replay.mjs planeAEncoders
 
 With the raw measurements mounted, rebuild the comparison inputs with `.venv/bin/python scripts/reference_data/extract_4614_replay.py`. Recompile the nominal firmware examples with `.venv/bin/python scripts/compile_machine_commands.py --machine copacabana`.
 
-Local run ID is `copacabana-planeA`, based on commit `2b38c968` plus the accompanying working-tree changes. The observation fixture SHA-256 is `8cfe5279136f11093bffc81c13168a73c1451540daf12a9a3c2fa627f6683f2d`. The target and encoder streams have SHA-256 prefixes `ca921001a3818ffd` and `7e912375d1d57628`.
+Local run ID is `copacabana-planeA-preload` at simulation revision `2bc87ece`. The observation fixture SHA-256 is `8cfe5279136f11093bffc81c13168a73c1451540daf12a9a3c2fa627f6683f2d`. The target and encoder streams have SHA-256 prefixes `ca921001a3818ffd` and `7e912375d1d57628`.
