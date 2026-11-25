@@ -65,17 +65,38 @@ on a single-layer grooved 100.36 mm drum) to Hangprinter fishing line / thin bra
   Layering radius/theta, hybrid rolling↔attachment transitions, and hybrid-knot synchronization
   use `geom_stored`, while material conservation (`sum(rest) + sum(stored) == totalRestLength`)
   and XPBD strain use unstretched rest length.
-- **Effective lever arm:** When `k_r > 0`, end-spool constraint rows scale the lever arm to
-  `r_eff = max(0.5 * r, r - k_r * F)` for torque-mode Jacobian and reported motor load torque.
+- **Effective lever arm (small-strain approximation):** When `k_r > 0`, end-spool constraint rows
+  scale the lever arm to `r_eff = max(0.5 * r, r - k_r * F_current)` (instantaneous liftoff running
+  radius) for torque-mode Jacobian and reported motor load torque. During unwinding of historical
+  coils stored at `F_S != F_current`, `r_eff(F_current)` approximates the finite-difference material
+  derivative `dL_0/dtheta` to `O(F_S/EA + k_r * |F_current - F_S| / R)` (`< 0.3 %` in the small-strain
+  elastic regime), with shaft-vs-span work ratio governed by the stored elastic strain transition
+  (verified in `spool_physics.rs::historical_unwinding_jacobian_and_work_balance`).
 - **Explicit initial spool state:** Pre-wound rope on a spool end defaults to `initialStorageTension = 0 N`
   (unstretched) unless explicitly configured per cable (`set_cable_spool_params` in Rust,
   `cablePath:initialStorageTension` in USDA, or `path.initialStorageTension` in JS).
-- **Winding-history lifecycle:** Per-cable winding history (`SpoolEnd` LIFO stacks, bounded to
-  256 material-preserving coalesced coils per end) is exported/imported through the C ABI
-  (`engine_export_spool_state` / `engine_import_spool_state`) and automatically preserved in
-  `CablePathComponent.spoolHistory` across ECS `structureVersion` rebuilds, checkpoints, and
-  Native↔WASM backend switches. External edits to `c.stored(li)` trigger an automatic clean
-  resync; toggling spool physics OFF at runtime clears inactive stacks cleanly.
+- **Winding-history lifecycle & supported persistence:** Per-cable winding history (`SpoolEnd` LIFO
+  stacks, bounded to 256 material-preserving coalesced coils per end) crosses the C ABI via
+  `engine_export_spool_state` / `engine_import_spool_state`, and is supported across:
+  1. **Resumable numeric checkpoints:** `RustPhysicsEngine.exportCheckpoint()` / `importCheckpoint()`
+     (formatVersion 2, capturing regions + per-cable spool histories, failing loudly on invalid or
+     corrupted spool state).
+  2. **ECS `structureVersion` rebuilds & Native↔WASM backend switches** via `CablePathComponent.spoolHistory`.
+  3. **Authoritative JS queries:** `cableGeometricStoredLength()` and `cableStoredLengthAfterRotation()`
+     delegate to Rust (`engine_spool_geom_stored` / `engine_predict_spool_stored_after_rotation`) so
+     flight-recorder target diagnostics (`cableTargetLengthDelta`) and 3D wrap/knot rendering match the
+     solver without duplicating spool physics in JavaScript.
+  - **Explicitly unsupported persistence:** Flight-recorder snapshots (`flightRecorderSnapshot.js` /
+    `hp_sim5_mcp.py`) are observations, not resumable checkpoints, and USDA scene files only serialize
+    initial configuration attributes (`cablePath:spoolRadialFlattening`, `cablePath:strainedSpoolStorage`,
+    `cablePath:initialStorageTension`), not mid-run coil stacks.
+- **Runtime parameter-change semantics:** Spool parameters are intended to be set at initialization
+  or between experiments. Changing `spoolRadialFlattening`, `strainedSpoolStorage` (while spool
+  physics remains active), or cable stiffness mid-run preserves existing `(geom, rest)` coils and
+  applies the new parameters to subsequent winding and current flattening. Disabling spool physics
+  clears the internal coil history (re-enabling later reconstructs from `c.stored(li)` using
+  `initialStorageTension`). Changing `initialStorageTension` affects only uninitialized ends or
+  subsequent external-edit resyncs.
 - **Single solver architecture:** `RustPhysicsEngine` (via `NativePhysicsEngine` or
   `WasmPhysicsEngine`) is the sole physics solver; there is no separate JS reference physics
   implementation (`cable_joints_core.js` only holds ECS components and snapshot helpers).
@@ -135,11 +156,13 @@ both **strictly frozen RMSE** (using `b0` frozen from `FDP-FC-MAP`, zero validat
 - On **both bare 12-strand braids** (D-Pro XTR, Vectran HT), the full 2-parameter model beats
   Legacy, Strained-only, and Flattening-only on **both** frozen and centered RMSE (landing inside
   the 100–200 ppm LSV repeat scatter at both +2 and +3 m/s).
-- On **TPU-jacketed PolyTropFOX**, the full model beats every ablation by 2.8×–6.7× on strictly
-  frozen RMSE (1043 vs 2885–6945 ppm); cyclic run-in of the soft TPU jacket between the
-  `2025-02-21` ident split and `2025-03-03` validation split reduces its validation slope, which
-  makes single-mechanism ablations look smaller on centered RMSE only after absorbing 2800–4300 ppm
-  of free mean-offset error.
+- On **TPU-jacketed PolyTropFOX**, although the full model achieves the best strictly frozen
+  absolute held-out RMSE (1043 vs 2885–6945 ppm), **both single-effect models achieve better
+  centered RMSE** (flattening-only `366 ppm` and strained-only `540 ppm` vs full `980 ppm`).
+  This is direct evidence that the 2-parameter linear model does not explain all of the
+  TPU-jacketed rope's tension-dependent and viscoelastic run-in behavior (between the `2025-02-21`
+  ident split and `2025-03-03` validation split), and is preserved openly without fitting extra
+  parameters.
 - **True measured motor-trajectory replay** (`darus5171_replay_wc180_dp75.csv`, full 20 s / 28 m
   wind at ~77 N → turnaround → 10 m unwind at ~177 N, driving both drums strictly from recorded
   encoders `(x_T(t), x_L(t))` with **zero feedforward** and **zero rest-length edits**):

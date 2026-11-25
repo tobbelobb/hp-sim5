@@ -67,6 +67,72 @@ export class RustPhysicsEngine {
       if (state?.length) path.spoolHistory = state;
     }
   }
+  pathIndexFor(path) {
+    return this.pathIndices?.get(path) ?? -1;
+  }
+  spoolGeomStored(path, linkIndex) {
+    if (!this.world || !this.transport.spoolGeomStored) return NaN;
+    const p = this.pathIndexFor(path);
+    if (p < 0 || !Array.isArray(path?.linkTypes)) return NaN;
+    const last = path.linkTypes.length - 1;
+    if (linkIndex !== 0 && linkIndex !== last) return NaN;
+    return this.transport.spoolGeomStored(p, linkIndex === 0 ? 0 : 1);
+  }
+  predictSpoolStoredAfterRotation(path, linkIndex, deltaAngle, layering) {
+    if (!this.world || !this.transport.predictSpoolStoredAfterRotation) return NaN;
+    const p = this.pathIndexFor(path);
+    if (p < 0 || !Array.isArray(path?.linkTypes)) return NaN;
+    const last = path.linkTypes.length - 1;
+    if (linkIndex !== 0 && linkIndex !== last) return NaN;
+    return this.transport.predictSpoolStoredAfterRotation(p, linkIndex === 0 ? 0 : 1, deltaAngle, Boolean(layering));
+  }
+  // Export a full resumable numeric checkpoint (entity/options/path regions + per-cable spool histories).
+  // Non-finite sentinel slots (NaN / ±Infinity) are stringified so plain JSON.stringify is lossless.
+  // Note: flight-recorder snapshots and USDA files are observations/initial scenes, not resumable checkpoints.
+  exportCheckpoint() {
+    if (!this.world) throw new Error('Cannot export checkpoint before physics engine is prepared');
+    this.refreshMemory();
+    this.syncSpoolHistory(this.world);
+    const encode = arr => Array.from(arr, v => Number.isFinite(v) ? v : String(v));
+    const regions = this.regions.map(region => encode(region.data));
+    const spoolStates = this.pathIds.map((_, p) => encode(this.transport.exportSpoolState?.(p) ?? []));
+    return { formatVersion: 2, regions, spoolStates };
+  }
+  // Restore a checkpoint produced by `exportCheckpoint()`. Throws on mismatched shapes or corrupt spool state.
+  importCheckpoint(checkpoint) {
+    if (!this.world) throw new Error('Prepare physics engine before importing checkpoint');
+    if (!checkpoint || checkpoint.formatVersion !== 2 || !Array.isArray(checkpoint.regions)) {
+      throw new Error('Invalid physics checkpoint format (expected formatVersion 2)');
+    }
+    this.refreshMemory();
+    if (checkpoint.regions.length !== this.regions.length) {
+      throw new Error(`Checkpoint region count mismatch: ${checkpoint.regions.length} vs ${this.regions.length}`);
+    }
+    const decode = arr => Float64Array.from(arr, v => typeof v === 'string' ? Number(v) : v);
+    for (let i = 0; i < this.regions.length; i++) {
+      if (checkpoint.regions[i].length !== this.regions[i].data.length) {
+        throw new Error(`Checkpoint region ${i} length mismatch: ${checkpoint.regions[i].length} vs ${this.regions[i].data.length}`);
+      }
+      this.regions[i].data.set(decode(checkpoint.regions[i]));
+    }
+    if (Array.isArray(checkpoint.spoolStates)) {
+      if (checkpoint.spoolStates.length !== this.pathIds.length) {
+        throw new Error(`Checkpoint spoolStates count mismatch: ${checkpoint.spoolStates.length} vs ${this.pathIds.length}`);
+      }
+      for (const [p, id] of this.pathIds.entries()) {
+        const raw = checkpoint.spoolStates[p];
+        if (!raw?.length) continue;
+        const buf = raw instanceof Float64Array ? raw : decode(raw);
+        if (!this.transport.importSpoolState?.(p, buf)) {
+          throw new Error(`Failed to import spool state for path entity ${id}`);
+        }
+        const path = this.world.getComponent(id, CablePathComponent);
+        if (path) path.spoolHistory = buf.slice();
+      }
+    }
+  }
+  // Apply per-cable spool parameters (falling back to world resources). Runtime parameter-change
+  // semantics match engine.rs: intended for setup/between runs; toggling off clears coil history.
   applyCableSpoolParams(world = this.world) {
     if (!world || !this.pathIds?.length || !this.transport.setCableSpoolParams) return;
     const worldKrRaw = world.getResource('spoolRadialFlattening');
@@ -88,7 +154,7 @@ export class RustPhysicsEngine {
     this.syncSpoolHistory(this.world);
     this.unbind();
     this.transport.destroy();
-    this.regions = []; this.revision = -1; this.world = null; this.pathIds = [];
+    this.regions = []; this.revision = -1; this.world = null; this.pathIds = []; this.pathIndices = new WeakMap();
   }
   prepare(world) {
     this.dispose(); this.world = world;
@@ -188,7 +254,9 @@ export class RustPhysicsEngine {
         if (path?.spoolHistory?.length) {
           const buf = path.spoolHistory instanceof Float64Array
             ? path.spoolHistory : Float64Array.from(path.spoolHistory);
-          this.transport.importSpoolState(p, buf);
+          if (!this.transport.importSpoolState(p, buf)) {
+            throw new Error(`Invalid or corrupted spoolHistory for cable path entity ${id}`);
+          }
         }
       }
     }
@@ -236,6 +304,7 @@ export class RustPhysicsEngine {
   syncPaths(world) {
     this.regions = [this.entityRegion, this.optionsRegion];
     this.pathShapes = [];
+    this.pathIndices = new WeakMap();
     for (const [p, id] of this.pathIds.entries()) {
       const group = `path:${id}`;
       this.unbind(group, false); this.refreshMemory();
@@ -243,6 +312,7 @@ export class RustPhysicsEngine {
       this.bindingRegion = region;
       const data = region.data, o = 0, n = data[o];
       const path = world.getComponent(id, CablePathComponent), oldJoints = path.jointEntities;
+      this.pathIndices.set(path, p);
       const newJoints = Array.from({ length: n }, (_, i) => data[o + H + (n + 1) * L + i * J]);
       for (const removed of oldJoints) if (!newJoints.includes(removed)) world.destroyEntity(removed);
       path.jointEntities = newJoints;

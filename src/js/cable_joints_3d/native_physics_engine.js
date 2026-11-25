@@ -49,6 +49,9 @@ export class NativePhysicsEngine extends RustPhysicsEngine {
       setCableSpoolParams: (index, kr, strainedMode, initTension) => host.setCableSpoolParams(index, kr, strainedMode, initTension),
       exportSpoolState: index => host.exportSpoolState(index),
       importSpoolState: (index, data) => host.importSpoolState(index, data),
+      spoolGeomStored: (index, side) => host.spoolGeomStored(index, side),
+      predictSpoolStoredAfterRotation: (index, side, deltaAngle, layering) =>
+        host.predictSpoolStoredAfterRotation(index, side, deltaAngle, Boolean(layering)),
       step: dt => host.step(dt), destroy: () => { host?.dispose(); host = null; },
     });
     this.artifact = artifact;

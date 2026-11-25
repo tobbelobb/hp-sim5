@@ -131,3 +131,25 @@ pub unsafe extern "C" fn engine_import_spool_state(
     let slice = std::slice::from_raw_parts(data, len);
     u32::from((*world).import_spool_state(index, slice))
 }
+/// # Safety
+/// `world` must be live; `index` is in `0..path_count`, `side` is `0` or `1`.
+#[no_mangle]
+pub unsafe extern "C" fn engine_spool_geom_stored(
+    world: *const PhysicsWorld,
+    index: usize,
+    side: usize,
+) -> f64 {
+    (*world).spool_geom_stored(index, side)
+}
+/// # Safety
+/// `world` must be live; `index` is in `0..path_count`, `side` is `0` or `1`.
+#[no_mangle]
+pub unsafe extern "C" fn engine_predict_spool_stored_after_rotation(
+    world: *const PhysicsWorld,
+    index: usize,
+    side: usize,
+    delta_angle: f64,
+    layering: u32,
+) -> f64 {
+    (*world).predict_spool_stored_after_rotation(index, side, delta_angle, layering != 0)
+}

@@ -49,6 +49,14 @@ export class WasmPhysicsEngine extends RustPhysicsEngine {
         exports.free_buffer(ptr, data.length);
         return ok;
       },
+      spoolGeomStored(index, side) {
+        return exports.engine_spool_geom_stored ? exports.engine_spool_geom_stored(handle, index, side) : NaN;
+      },
+      predictSpoolStoredAfterRotation(index, side, deltaAngle, layering) {
+        return exports.engine_predict_spool_stored_after_rotation
+          ? exports.engine_predict_spool_stored_after_rotation(handle, index, side, deltaAngle, layering ? 1 : 0)
+          : NaN;
+      },
       step(dt) {
         const invalidRow = exports.engine_step(handle, dt) >>> 0;
         if (invalidRow) throw new RangeError(`Non-finite physics position at entity row ${invalidRow - 1}`);

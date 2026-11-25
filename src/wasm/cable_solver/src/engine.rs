@@ -440,7 +440,7 @@ struct Cable {
     wheels: Vec<Option<Wheel>>,
     // Accumulated hysteretic elongation strain (active when options[11] > 0).
     hyst_strain: f64,
-    // Per-cable spool constitutive parameters (None falls back to world options[19..=20]).
+    // Per-cable spool constitutive parameters (None defaults to disabled: k_r=0, strained=false).
     radial_flattening: Option<f64>,
     strained_spool: Option<bool>,
     init_storage_tension: f64,
@@ -923,6 +923,16 @@ impl PhysicsWorld {
     /// - `radial_flattening`: drum running-radius contraction per unit tension (m/N, >= 0).
     /// - `strained_spool`: store coiled rope strained at its winding tension with LIFO memory.
     /// - `init_storage_tension`: explicit tension (N, >= 0) at which pre-wound stored rope was wound.
+    ///
+    /// Runtime parameter-change semantics:
+    /// - Spool parameters are intended to be configured at initialization or between experiments.
+    /// - Changing `radial_flattening`, `strained_spool` (while keeping spool physics enabled), or
+    ///   cable stiffness mid-run preserves already-wound `(geom, rest)` coil records and applies
+    ///   the updated parameters to subsequent winding and current flattening.
+    /// - Disabling spool physics (`radial_flattening == 0 && !strained_spool`) clears the internal
+    ///   LIFO history; re-enabling later reconstructs from `c.stored(li)` using `init_storage_tension`.
+    /// - Changing `init_storage_tension` affects only uninitialized spool ends or future external-edit
+    ///   resyncs; it does not retroactively rewrite already-initialized coil history.
     pub fn set_cable_spool_params(
         &mut self,
         index: usize,
@@ -943,7 +953,7 @@ impl PhysicsWorld {
         );
     }
     /// C-ABI / JS helper for per-cable spool parameters.
-    /// Negative or non-finite `radial_flattening` / `strained_mode` inherits world options[19..=20].
+    /// Negative or non-finite `radial_flattening` / `strained_mode` resets to default (disabled).
     pub fn set_cable_spool_params_raw(
         &mut self,
         index: usize,
@@ -971,9 +981,91 @@ impl PhysicsWorld {
     }
     /// Geometric nominal drum arc occupied on spool end `side` (0 = link 0, 1 = link `count`).
     pub fn spool_geom_stored(&self, index: usize, side: usize) -> f64 {
-        let c = &self.cables[index];
+        let Some(c) = self.cables.get(index) else {
+            return f64::NAN;
+        };
         let li = if side == 0 { 0 } else { c.count() };
         c.geom_stored(li)
+    }
+    /// Authoritative pure prediction of stored unstretched material length on spool end `side`
+    /// after rotating the endpoint motor by `delta_angle` around its spool axis.
+    /// Matches `update_attachments` kinematics (`c.cw(li, side == 0)` and `geom_stored` layering)
+    /// and previews material transfer through the active LIFO coil stack without mutating state.
+    pub fn predict_spool_stored_after_rotation(
+        &self,
+        index: usize,
+        side: usize,
+        delta_angle: f64,
+        layering: bool,
+    ) -> f64 {
+        let Some(c) = self.cables.get(index) else {
+            return f64::NAN;
+        };
+        let n = c.count();
+        if n == 0 || side > 1 {
+            return f64::NAN;
+        }
+        let li = if side == 0 { 0 } else { n };
+        let seg_i = if side == 0 { 0 } else { n - 1 };
+        let id = c.entity(seg_i, side);
+        let stored_rest = c.stored(li);
+        if !delta_angle.is_finite() || delta_angle.abs() <= EPS {
+            return stored_rest;
+        }
+        let e = &self.entities[id];
+        let base = if has(e, RADIUS) && e[104].is_finite() {
+            e[104]
+        } else {
+            0.0
+        };
+        let half = if layering { c.data[6] } else { 0.0 };
+        // Convert motor rotation about `spool.axisLocal` into rotation about the cable plane normal.
+        let axis_sign = if has(e, SPOOL) && has(e, LOCAL_AXIS) {
+            let d = dot(v(e, 76), v(e, 44));
+            if d < -EPS { -1.0 } else { 1.0 }
+        } else {
+            1.0
+        };
+        let plane_delta = axis_sign * delta_angle;
+        let cw_eff = c.cw(li, side == 0);
+        let (k_r, strained, init_f) = c.spool_config();
+        let spool_physics = k_r > 0.0 || strained;
+        let geom_now = if spool_physics && c.spool_ends[side].initialized {
+            c.spool_ends[side].geom_stored
+        } else if spool_physics {
+            let r_init = c.radius(&self.entities, li, id, layering).0;
+            let rho_init = spool_rho(r_init, k_r, c.data[3], strained, init_f);
+            if rho_init > EPS { stored_rest / rho_init } else { stored_rest }
+        } else {
+            stored_rest
+        };
+        let shift = if c.kind(li) != 3 {
+            (if cw_eff { 1.0 } else { -1.0 }) * plane_delta * (base + half)
+        } else {
+            let theta = stored_theta(geom_now, base, half);
+            stored_delta(theta, plane_delta, cw_eff, base, half, base + half)
+        };
+        // In `update_attachments`, link 0 adds `shift` to stored while link `n` subtracts `shift`.
+        let d_geom = if side == 0 { shift } else { -shift };
+        if !spool_physics || !hybrid(c.kind(li)) {
+            return stored_rest + d_geom;
+        }
+        let r_now = if half > EPS && base.is_finite() && geom_now > EPS {
+            (base + half).max(stored_radius(geom_now, base, half).0)
+        } else {
+            base + half
+        };
+        let force = segment_tension(c, seg_i);
+        let rho_now = spool_rho(r_now, k_r, c.data[3], strained, force);
+        let rho_init = spool_rho(r_now, k_r, c.data[3], strained, init_f);
+        let d_rest = if c.spool_ends[side].initialized {
+            c.spool_ends[side].preview_rest_delta(d_geom, rho_now, rho_init)
+        } else {
+            let mut tmp = SpoolEnd::default();
+            tmp.reset_from_stored(stored_rest, rho_init);
+            tmp.preview_rest_delta(d_geom, rho_now, rho_init)
+        };
+        stored_rest + d_rest
     }
     /// Number of coalesced coil entries currently in the LIFO stack of spool end `side`.
     pub fn spool_coil_count(&self, index: usize, side: usize) -> usize {
@@ -1104,7 +1196,7 @@ impl PhysicsWorld {
                         &mut self.options[10],
                         &mut self.topology_version,
                     ),
-                    8 => hybrid_states(cable, &mut self.entities, layering),
+                    8 => hybrid_states(cable, &mut self.entities, layering, self.options[5] != 0.0),
                     _ => unreachable!(),
                 }
                 self.sync_shared(Some(p));
@@ -1683,7 +1775,7 @@ fn transition_threshold(c: &Cable) -> f64 {
         1e-6
     }
 }
-fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool) {
+fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: bool) {
     if c.count() == 0 {
         return;
     }
@@ -1746,19 +1838,33 @@ fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool) {
                 if geom_arc <= transition_threshold(c) {
                     continue;
                 }
-                c.data[lo] = 3.0;
-                c.data[lo + 1] = f64::from(cw);
                 if spool_physics {
                     let force = segment_tension(c, i);
                     let rho_now = spool_rho(r, k_r, cpl, strained, force);
                     let rho_init = spool_rho(r, k_r, cpl, strained, init_f);
                     c.spool_ends[side].sync_with_stored(c.stored(li), rho_init);
                     let d_geom = geom_arc - c.geom_stored(li);
+                    let d_rest_preview =
+                        c.spool_ends[side].preview_rest_delta(d_geom, rho_now, rho_init);
+                    // Reject the rewrap cleanly if absorbing the tangent arc would violate the
+                    // minimum free-span rest-length invariant, leaving link state and coil stack untouched.
+                    if clamp && c.data[jo + 3].is_finite() && c.data[jo + 3] - d_rest_preview < 1e-6
+                    {
+                        continue;
+                    }
+                    c.data[lo] = 3.0;
+                    c.data[lo + 1] = f64::from(cw);
                     let d_rest = c.spool_ends[side].apply_geom_delta(d_geom, rho_now, rho_init);
                     c.data[jo + 3] -= d_rest;
                     c.set_stored(li, c.stored(li) + d_rest);
                 } else {
-                    c.data[jo + 3] -= geom_arc - c.stored(li);
+                    let d_rest = geom_arc - c.stored(li);
+                    if clamp && c.data[jo + 3].is_finite() && c.data[jo + 3] - d_rest < 1e-6 {
+                        continue;
+                    }
+                    c.data[lo] = 3.0;
+                    c.data[lo + 1] = f64::from(cw);
+                    c.data[jo + 3] -= d_rest;
                     c.set_stored(li, geom_arc);
                 }
                 put_v(&mut c.data, jo + 4 + side * 3, p);
@@ -2626,6 +2732,10 @@ impl PhysicsWorld {
                                 if (i == 0 && side == 0) || (i + 1 == count && side == 1) {
                                     let (k_r, _, _) = c.spool_config();
                                     if k_r > 0.0 {
+                                        // Instantaneous liftoff running radius r_eff(F_current).
+                                        // Small-strain approximation to dC/dtheta during historical
+                                        // coil unwinding: error is O(F/EA + k_r*|F_L - F_S|/R) (<0.3%
+                                        // for braided Dyneema/Vectran in the linear-elastic regime).
                                         let force = segment_tension(c, i);
                                         r_eff = (r - k_r * force).max(0.5 * r);
                                     }

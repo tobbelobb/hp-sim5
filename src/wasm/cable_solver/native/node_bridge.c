@@ -24,6 +24,8 @@ extern void engine_set_cable_spool_params(PhysicsWorld *, size_t, double, double
 extern size_t engine_spool_state_len(const PhysicsWorld *, size_t);
 extern size_t engine_export_spool_state(const PhysicsWorld *, size_t, double *, size_t);
 extern uint32_t engine_import_spool_state(PhysicsWorld *, size_t, const double *, size_t);
+extern double engine_spool_geom_stored(const PhysicsWorld *, size_t, size_t);
+extern double engine_predict_spool_stored_after_rotation(const PhysicsWorld *, size_t, size_t, double, uint32_t);
 
 typedef struct {
     PhysicsWorld *world;
@@ -193,6 +195,34 @@ static napi_value import_spool_state(napi_env env, napi_callback_info info) {
     uint32_t ok = engine_import_spool_state(host->world, (size_t)index, data ? data : &empty, len);
     CHECK(napi_get_boolean(env, ok != 0, &result)); return result;
 }
+static napi_value spool_geom_stored(napi_env env, napi_callback_info info) {
+    size_t argc = 2; napi_value args[2], result;
+    Host *host = receiver(env, info, &argc, args); if (!host) return NULL;
+    double index, side;
+    if (argc != 2 || napi_get_value_double(env, args[0], &index) != napi_ok ||
+        !index_valid(index, host->paths) ||
+        napi_get_value_double(env, args[1], &side) != napi_ok || !index_valid(side, 2)) {
+        napi_throw_range_error(env, NULL, "Invalid native spool geom query"); return NULL;
+    }
+    CHECK(napi_create_double(env, engine_spool_geom_stored(host->world, (size_t)index, (size_t)side), &result));
+    return result;
+}
+static napi_value predict_spool_stored_after_rotation(napi_env env, napi_callback_info info) {
+    size_t argc = 4; napi_value args[4], result;
+    Host *host = receiver(env, info, &argc, args); if (!host) return NULL;
+    double index, side, delta_angle;
+    bool layering;
+    if (argc != 4 || napi_get_value_double(env, args[0], &index) != napi_ok ||
+        !index_valid(index, host->paths) ||
+        napi_get_value_double(env, args[1], &side) != napi_ok || !index_valid(side, 2) ||
+        napi_get_value_double(env, args[2], &delta_angle) != napi_ok ||
+        napi_get_value_bool(env, args[3], &layering) != napi_ok) {
+        napi_throw_range_error(env, NULL, "Invalid native spool rotation prediction"); return NULL;
+    }
+    double predicted = engine_predict_spool_stored_after_rotation(
+        host->world, (size_t)index, (size_t)side, delta_angle, layering ? 1u : 0u);
+    CHECK(napi_create_double(env, predicted, &result)); return result;
+}
 static napi_value create(napi_env env, napi_callback_info info) {
     size_t argc = 3, entity_len, path_len;
     napi_value args[3], object;
@@ -253,8 +283,10 @@ static napi_value create(napi_env env, napi_callback_info info) {
         {"setCableSpoolParams", NULL, set_cable_spool_params, NULL, NULL, NULL, napi_default, NULL},
         {"exportSpoolState", NULL, export_spool_state, NULL, NULL, NULL, napi_default, NULL},
         {"importSpoolState", NULL, import_spool_state, NULL, NULL, NULL, napi_default, NULL},
+        {"spoolGeomStored", NULL, spool_geom_stored, NULL, NULL, NULL, napi_default, NULL},
+        {"predictSpoolStoredAfterRotation", NULL, predict_spool_stored_after_rotation, NULL, NULL, NULL, napi_default, NULL},
     };
-    CHECK(napi_define_properties(env, object, 8, properties)); return object;
+    CHECK(napi_define_properties(env, object, 10, properties)); return object;
 invalid:
     napi_throw_range_error(env, NULL, "Invalid prepared native cable path"); return NULL;
 }

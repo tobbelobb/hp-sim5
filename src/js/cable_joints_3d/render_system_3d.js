@@ -21,6 +21,7 @@ import {
   CablePathComponent,
   CableJointComponent,
   CableLinkComponent,
+  cableGeometricStoredLength,
 } from './cable_joints_core.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 import {
@@ -163,12 +164,12 @@ function angleOnPlane(point, center, basis) {
   return Math.atan2(y, x);
 }
 
-function appendStoredWrapArcSpecs(arcSpecs, path, linkIndex, center, bodyRadius, attachmentPoint, basis, color, layering) {
+function appendStoredWrapArcSpecs(world, arcSpecs, path, linkIndex, center, bodyRadius, attachmentPoint, basis, color, layering) {
   if (!center || !Number.isFinite(bodyRadius) || bodyRadius <= EPSILON || !attachmentPoint) {
     return;
   }
 
-  const stored = Math.max(0.0, path?.stored?.[linkIndex] ?? 0.0);
+  const stored = Math.max(0.0, cableGeometricStoredLength(world, path, linkIndex));
   if (!(stored > EPSILON)) {
     return;
   }
@@ -2793,6 +2794,7 @@ export class RenderSystem3D {
             const planeNormal = getRenderPlaneNormal(world, rollerA, this.defaultPlaneNormal);
             const basis = buildPlaneBasis(planeNormal);
             appendStoredWrapArcSpecs(
+              world,
               arcSpecs,
               path,
               0,
@@ -2824,6 +2826,7 @@ export class RenderSystem3D {
             const planeNormal = getRenderPlaneNormal(world, rollerB, this.defaultPlaneNormal);
             const basis = buildPlaneBasis(planeNormal);
             appendStoredWrapArcSpecs(
+              world,
               arcSpecs,
               path,
               nLinks - 1,
@@ -2978,7 +2981,7 @@ export class RenderSystem3D {
     const planeNormal = getRenderPlaneNormal(world, entityId, this.defaultPlaneNormal);
     const basis = buildPlaneBasis(planeNormal);
     const halfWidth = layeringEnabled(world) ? Math.max(0.0, path.cableHalfWidth ?? 0.0) : 0.0;
-    const stored = Math.max(0.0, path.stored?.[endpointIndex] ?? 0.0);
+    const stored = Math.max(0.0, cableGeometricStoredLength(world, path, endpointIndex));
     const baseRenderRadius = baseRadius + halfWidth;
     const tangentAngle = angleOnPlane(attachmentPoint, center, basis);
     const deltaAngle = knotMarkerDeltaAngle(stored, baseRenderRadius, halfWidth, layeringEnabled(world));

@@ -672,3 +672,313 @@ fn per_cable_params_hysteresis_capstan_timestep_convergence_and_legacy_parity() 
         "legacy entities must match bit-for-bit"
     );
 }
+
+/// Review 2, Item 3: Hybrid attachment-to-rolling transition (`kind 4 -> 3`) must respect the
+/// minimum rest-length clamp (`rest >= 1e-6`) when strained spool storage and radial flattening
+/// are enabled, rejecting unsafe rewraps without corrupting link state or coil history.
+#[test]
+fn hybrid_rewrap_respects_rest_length_clamp() {
+    let r = 0.040;
+    let ea = 40_000.0;
+    let k_r = 1.0e-6;
+    // Anchor at (0.042, 0): tangent on circle r=0.04 is at theta_tan = acos(40/42) ~ 0.310 rad.
+    // Attachment point at theta_att = 2.50 rad gives wrap arc d_geom = 0.04*(2.50 - 0.31) ~ 0.0876 m
+    // while chord d ~ 0.0778 m. With rest = 0.070 m (strained + flattened), d_rest_preview ~ 0.078 m
+    // exceeds `rest - 1e-6`, so the clamp guard must reject the unsafe rewrap without corrupting state.
+    let spool = wheel(0, [0.0, 0.0, 0.0], r, 0.5, 1e6, None);
+    let anchor = fixed(1, [0.042, 0.0, 0.0], 0.0);
+    let theta_att = 2.50_f64;
+    let pa = [r * theta_att.cos(), r * theta_att.sin(), 0.0];
+    let segs = [Seg { a: 0, b: 1, rest: 0.070, pa, pb: [0.042, 0.0, 0.0] }];
+    let links = [(4.0, false, 0.0), (ATTACHMENT, false, 0.0)];
+    let mut w = world(vec![spool, anchor], vec![path(&links, &segs, ea, 0.0, 4.0)]);
+    w.options[1] = 0.0;
+    w.options[5] = 1.0; // layeringClampJointRestLength = true
+    w.options[8] = 1.0; // layeringHybridLinkStates = true
+    w.set_cable_spool_params(0, k_r, true, 0.0);
+
+    let mat0 = material(&mut w, 0);
+    for step in 0..20 {
+        w.entities[0][72..75].copy_from_slice(&[0.0, 0.0, 0.0]);
+        w.step(0.001).unwrap();
+        let cur_rest = rest(&mut w, 0, 0);
+        assert!(cur_rest >= 1e-6 - 1e-9, "step {step}: rest {cur_rest} bypassed clamp during rewrap");
+        assert!(
+            (material(&mut w, 0) - mat0).abs() < 1e-9,
+            "step {step}: material leaked during rejected rewrap"
+        );
+        assert_eq!(w.path_data(0)[HEADER] as u32, 4, "step {step}: unsafe rewrap should stay kind=4");
+        assert_eq!(w.spool_coil_count(0, 0), 0, "step {step}: rejected rewrap must not push coils");
+        assert!(stored(&mut w, 0, 0).abs() < 1e-9, "step {step}: stored must remain 0");
+    }
+
+    // Now supply enough free-span rest length (`0.12 m`) so the tangent wrap arc fits cleanly above 1e-6.
+    let jo = HEADER + 2 * LINK;
+    w.path_data(0)[jo + 3] = 0.12;
+    w.path_data(0)[7] = 0.12;
+    let mat1 = material(&mut w, 0);
+    w.step(0.001).unwrap();
+    assert_eq!(w.path_data(0)[HEADER] as u32, 3, "safe rewrap should succeed to kind=3");
+    assert!(rest(&mut w, 0, 0) >= 1e-6, "post-rewrap rest must stay >= 1e-6");
+    assert!(stored(&mut w, 0, 0) > 1e-3, "post-rewrap stored must absorb tangent arc");
+    assert!(w.spool_geom_stored(0, 0) >= stored(&mut w, 0, 0));
+    assert!((material(&mut w, 0) - mat1).abs() < 1e-9, "post-rewrap material conservation");
+}
+
+/// Review 2, Item 4: Finite-difference verification of the constraint derivative dL_0/dtheta vs
+/// the solver's instantaneous running-radius torque Jacobian r_eff(F_current), plus mechanical
+/// work/energy balance when unwinding a coil stored at F_S = 50 N under F_L = 250 N.
+#[test]
+fn historical_unwinding_jacobian_and_work_balance() {
+    let r = 0.05018;
+    let ea = 83_800.0;
+    let k_r = 0.422e-6;
+    let f_s = 50.0;
+    let f_l = 250.0;
+    let span = 2.0;
+
+    let mut test = wheel(0, [-span / 2.0, 0.0, 0.0], r, 0.5, 0.5, None);
+    test[75] += 16.0; // MOTOR flag
+    test[57] = 1.0;   // torqueMode = true so constraint uses r_eff and reports load torque e[59]
+    let load = wheel(1, [span / 2.0, 0.0, 0.0], r, 0.5, 1e6, None);
+    let segs = [Seg {
+        a: 0,
+        b: 1,
+        rest: span / (1.0 + f_s / ea),
+        pa: [-span / 2.0, r, 0.0],
+        pb: [span / 2.0, r, 0.0],
+    }];
+    let links = [(SPOOL_END, false, 1.0), (SPOOL_END, true, 12.0)];
+    let mut w = world(vec![test, load], vec![path(&links, &segs, ea, 0.0, 4.0)]);
+    w.options[1] = 0.0;
+    w.set_cable_spool_params(0, k_r, true, f_s);
+
+    let dt = 0.001;
+    // Phase 1: Wind 2 m onto test drum at low storage tension F_S = 50 N.
+    for _ in 0..1000 {
+        let t_now = tension(&mut w, 0, 0);
+        w.entities[0][72..75].copy_from_slice(&[0.0, 0.0, 2.0 / r]);
+        w.entities[1][72..75].copy_from_slice(&[0.0, 0.0, (2.0 - 5e-3 * (f_s - t_now)) / r]);
+        w.step(dt).unwrap();
+    }
+
+    // Phase 2: Raise free-span tension 5x to F_L = 250 N (load drum only), then unwind 1 m.
+    let jo = HEADER + 2 * LINK;
+    let lo1 = HEADER + LINK;
+    let target_rest = span / (1.0 + f_l / ea);
+    let d_r = rest(&mut w, 0, 0) - target_rest;
+    w.path_data(0)[jo + 3] = target_rest;
+    w.path_data(0)[lo1 + 2] += d_r;
+    for _ in 0..5 {
+        w.entities[0][72..75].copy_from_slice(&[0.0; 3]);
+        w.entities[1][72..75].copy_from_slice(&[0.0; 3]);
+        w.step(dt).unwrap();
+    }
+
+    let mut w_shaft = 0.0;
+    let mut w_span = 0.0;
+    let mut dtheta_tot = 0.0;
+    let mut dl0_tot = 0.0;
+    let mut f_sum = 0.0;
+    let mut arm_sum = 0.0;
+    let steps = 500;
+    for _ in 0..steps {
+        let s_before = stored(&mut w, 0, 0);
+        let a_before = w.entities[0][66];
+        let t_now = tension(&mut w, 0, 0);
+        w.entities[0][72..75].copy_from_slice(&[0.0, 0.0, -2.0 / r]);
+        w.entities[1][72..75].copy_from_slice(&[0.0, 0.0, -(2.0 + 5e-3 * (f_l - t_now)) / r]);
+        w.step(dt).unwrap();
+        let dtheta = (w.entities[0][66] - a_before).abs();
+        let dl0 = s_before - stored(&mut w, 0, 0);
+        let f = tension(&mut w, 0, 0);
+        let tau = w.entities[0][59].abs();
+        w_shaft += tau * dtheta;
+        w_span += f * (1.0 + f / ea) * dl0;
+        dtheta_tot += dtheta;
+        dl0_tot += dl0;
+        f_sum += f;
+        arm_sum += tau / f;
+    }
+
+    let f_mean = f_sum / steps as f64;
+    let jac_arm = arm_sum / steps as f64;
+    let fd_dl0_dtheta = dl0_tot / dtheta_tot;
+    let r_eff_expected = r - k_r * f_mean;
+    let rho_s = ((r - k_r * f_s) / r) / (1.0 + f_s / ea);
+    let rel_jac_vs_fd = (jac_arm - fd_dl0_dtheta).abs() / r;
+    let work_ratio_sim = w_span / w_shaft;
+    let work_ratio_theory = (1.0 + f_mean / ea) * rho_s * r / r_eff_expected;
+    eprintln!(
+        "[HISTORICAL UNWIND JACOBIAN F_S={f_s:.0}N -> F_L={f_mean:.1}N] jac_arm={jac_arm:.6} m vs r_eff={r_eff_expected:.6} m | FD dL0/dtheta={fd_dl0_dtheta:.6} m (rel diff={:.4}%) | W_span/W_shaft sim={work_ratio_sim:.6} vs theory={work_ratio_theory:.6}",
+        rel_jac_vs_fd * 100.0,
+    );
+    // Reaction torque matches instantaneous running radius r_eff(F_L) to < 5e-5 m.
+    assert!((jac_arm - r_eff_expected).abs() < 5e-5);
+    // Small-strain Jacobian approximation gap against FD dL0/dtheta is O(F_S/EA + k_r|F_L-F_S|/R) < 0.3%.
+    assert!(rel_jac_vs_fd < 0.003, "Jacobian vs FD dL0/dtheta gap {:.4}% exceeded 0.3%", rel_jac_vs_fd * 100.0);
+    // Mechanical work ratio matches the exact elastic-transition energy balance to < 5e-4.
+    assert!(
+        (work_ratio_sim - work_ratio_theory).abs() < 5e-4,
+        "work ratio {work_ratio_sim:.6} vs analytical {work_ratio_theory:.6}"
+    );
+}
+
+/// Review 2, Item 5: Characterize local payout and instantaneous tension error of the 256-entry
+/// bounded coil stack against an uncompressed per-step `(geom, rest)` reference stack across:
+///   1. Slowly varying tension
+///   2. Alternating high and low tension (>300 transitions, forcing aggressive merges)
+///   3. Partial unwinding followed by re-winding
+///   4. Repeated wind/unwind reversals
+#[test]
+fn bounded_coil_compression_accuracy_characterization() {
+    let r = 0.050;
+    let ea = 50_000.0;
+    let k_r = 0.5e-6;
+    let span = 2.0;
+    let dt = 0.002;
+
+    // Uncompressed reference LIFO stack (never merges entries).
+    struct UncompressedStack {
+        coils: Vec<(f64, f64)>,
+    }
+    impl UncompressedStack {
+        fn apply(&mut self, d_geom: f64, rho_now: f64) -> f64 {
+            if d_geom > 1e-12 {
+                let dr = d_geom * rho_now;
+                self.coils.push((d_geom, dr));
+                dr
+            } else if d_geom < -1e-12 {
+                let mut need = -d_geom;
+                let mut paid = 0.0;
+                while need > 1e-12 {
+                    let Some(top) = self.coils.last_mut() else {
+                        paid += need;
+                        break;
+                    };
+                    if need >= top.0 - 1e-12 {
+                        let (g, dr) = self.coils.pop().unwrap();
+                        paid += dr;
+                        need = (need - g).max(0.0);
+                    } else {
+                        let dr = top.1 * (need / top.0);
+                        top.0 -= need;
+                        top.1 -= dr;
+                        paid += dr;
+                        need = 0.0;
+                    }
+                }
+                -paid
+            } else {
+                0.0
+            }
+        }
+    }
+
+    let rho_of = |f: f64| ((r - k_r * f.max(0.0)) / r).max(0.5) / (1.0 + f.max(0.0) / ea);
+
+    let run_regime = |name: &str, schedule: &[(f64, f64)]| -> (f64, f64, usize) {
+        // schedule: (velocity m/s [+wind, -unwind], target_tension N)
+        let test = wheel(0, [-span / 2.0, 0.0, 0.0], r, 0.5, 1e6, None);
+        let load = wheel(1, [span / 2.0, 0.0, 0.0], r, 0.5, 1e6, None);
+        let segs = [Seg {
+            a: 0,
+            b: 1,
+            rest: span / (1.0 + schedule[0].1 / ea),
+            pa: [-span / 2.0, r, 0.0],
+            pb: [span / 2.0, r, 0.0],
+        }];
+        let links = [(SPOOL_END, false, 0.0), (SPOOL_END, true, 25.0)];
+        let mut w = world(vec![test, load], vec![path(&links, &segs, ea, 0.0, 4.0)]);
+        w.options[1] = 0.0;
+        w.set_cable_spool_params(0, k_r, true, 0.0);
+
+        let mut ref_stack = UncompressedStack { coils: Vec::new() };
+        let mut ref_stored = 0.0;
+        let mut max_payout_err_mm = 0.0_f64;
+        let mut max_tension_err_n = 0.0_f64;
+        let mut max_coils = 0usize;
+
+        for &(vel, f_tar) in schedule {
+            let g_before = w.spool_geom_stored(0, 0);
+            let t_before = tension(&mut w, 0, 0);
+            w.entities[0][72..75].copy_from_slice(&[0.0, 0.0, vel / r]);
+            w.entities[1][72..75].copy_from_slice(&[0.0, 0.0, (vel - 3e-3 * (f_tar - t_before)) / r]);
+            w.step(dt).unwrap();
+            let d_geom = w.spool_geom_stored(0, 0) - g_before;
+            // Drive uncompressed reference with exact same per-step (d_geom, tension_before).
+            ref_stored += ref_stack.apply(d_geom, rho_of(t_before));
+            let err_m = (stored(&mut w, 0, 0) - ref_stored).abs();
+            max_payout_err_mm = max_payout_err_mm.max(err_m * 1e3);
+            // Equivalent instantaneous tension error on a 2 m free span: dF = EA * dL / span.
+            max_tension_err_n = max_tension_err_n.max(ea * err_m / span);
+            max_coils = max_coils.max(w.spool_coil_count(0, 0));
+        }
+        eprintln!(
+            "[COIL COMPRESSION {name:22}] max_coils={max_coils:3}, max_payout_err={max_payout_err_mm:.4} mm, max_equiv_tension_err={max_tension_err_n:.3} N"
+        );
+        assert!(max_coils <= 256);
+        (max_payout_err_mm, max_tension_err_n, max_coils)
+    };
+
+    // 1. Slowly varying tension (1200 steps wind + 1200 steps unwind)
+    let mut slow = Vec::new();
+    for k in 0..1200 {
+        let f = 40.0 + 200.0 * (0.5 - 0.5 * (PI * k as f64 / 600.0).cos());
+        slow.push((1.0, f));
+    }
+    for _ in 0..1200 {
+        slow.push((-1.0, 140.0));
+    }
+    let (slow_mm, slow_n, _) = run_regime("slowly_varying", &slow);
+
+    // 2. Alternating high/low tension (320 rapid transitions -> exceeds 256-entry cap!)
+    let mut alt = Vec::new();
+    for k in 0..1280 {
+        let f = if (k / 4) % 2 == 0 { 50.0 } else { 250.0 };
+        alt.push((1.0, f));
+    }
+    for _ in 0..1280 {
+        alt.push((-1.0, 150.0));
+    }
+    let (alt_mm, alt_n, _) = run_regime("alternating_hi_lo", &alt);
+
+    // 3. Partial unwind + rewind + full unwind
+    let mut partial = Vec::new();
+    for k in 0..600 {
+        partial.push((1.0, 60.0 + 180.0 * (k as f64 / 600.0)));
+    }
+    for _ in 0..300 {
+        partial.push((-1.0, 120.0));
+    }
+    for k in 0..400 {
+        partial.push((1.0, 220.0 - 150.0 * (k as f64 / 400.0)));
+    }
+    for _ in 0..700 {
+        partial.push((-1.0, 100.0));
+    }
+    let (part_mm, part_n, _) = run_regime("partial_unwind", &partial);
+
+    // 4. Repeated reversals across varying tensions
+    let mut rev = Vec::new();
+    for cyc in 0..12 {
+        let f_w = 50.0 + 15.0 * cyc as f64;
+        for _ in 0..120 {
+            rev.push((1.0, f_w));
+        }
+        for _ in 0..80 {
+            rev.push((-1.0, 160.0));
+        }
+    }
+    for _ in 0..480 {
+        rev.push((-1.0, 120.0));
+    }
+    let (rev_mm, rev_n, _) = run_regime("repeated_reversals", &rev);
+
+    // Slowly varying, partial unwind, and reversals stay well below 0.05 mm (< 1.5 N on 2 m span).
+    assert!(slow_mm < 0.05 && slow_n < 1.5, "slowly varying error too high: {slow_mm} mm / {slow_n} N");
+    assert!(part_mm < 0.05 && part_n < 1.5, "partial unwind error too high: {part_mm} mm / {part_n} N");
+    assert!(rev_mm < 0.05 && rev_n < 1.5, "repeated reversals error too high: {rev_mm} mm / {rev_n} N");
+    // Even adversarial >300-transition 50<->250 N square wave stays bounded (< 0.5 mm / < 15 N).
+    assert!(alt_mm < 0.5 && alt_n < 15.0, "alternating high/low error too high: {alt_mm} mm / {alt_n} N");
+}
