@@ -28,10 +28,11 @@ Dyneema braids rather than identical production lots.
 on a single-layer grooved 100.36 mm drum) to Hangprinter fishing line / thin braided Dyneema
 (typically 0.5–1.5 mm, multi-layer ungrooved spools).**
 
-- The **constitutive mechanisms** (strained spool storage with LIFO storage-tension memory,
-  separate geometric occupancy vs unstretched material length, and tension-dependent radial
-  flattening) are general to braided tensioned ropes on drums and are kept **strictly opt-in**
-  (`spoolRadialFlattening = 0`, `strainedSpoolStorage = false` by default).
+- Elastic spools in hp-sim-3d and headless autocal store material at its winding strain by default,
+  using the cable's configured axial stiffness. Explicitly set `strainedSpoolStorage = false` to
+  reproduce a legacy control. The low-level Rust API accepts explicit per-cable parameters.
+- Radial flattening requires a rope/drum coefficient in m/N. COPacabana uses the rig's
+  `0.422 µm/N` as a transfer estimate. Uncharacterized spools assume zero contraction.
 - The **numerical parameters** depend strongly on rope diameter, braid architecture, drum groove
   geometry, and single-layer vs multi-layer bedding (`k_r` on multi-layer ungrooved spools may
   include coil-into-coil bedding and must be identified on target Hangprinter hardware before

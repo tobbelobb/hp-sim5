@@ -137,14 +137,14 @@ export class RustPhysicsEngine {
     if (!world || !this.pathIds?.length || !this.transport.setCableSpoolParams) return;
     const worldKrRaw = world.getResource('spoolRadialFlattening');
     const worldKr = Number.isFinite(worldKrRaw) && worldKrRaw > 0 ? worldKrRaw : 0;
-    const worldStrained = world.getResource('strainedSpoolStorage') === true;
+    const worldStrained = world.getResource('strainedSpoolStorage');
     for (const [p, id] of this.pathIds.entries()) {
       const path = world.getComponent(id, CablePathComponent);
       if (!path) continue;
       const kr = Number.isFinite(path.spoolRadialFlattening) && path.spoolRadialFlattening >= 0
         ? path.spoolRadialFlattening : worldKr;
-      const strained = typeof path.strainedSpoolStorage === 'boolean'
-        ? path.strainedSpoolStorage : worldStrained;
+      const strained = path.strainedSpoolStorage ?? worldStrained
+        ?? (Number.isFinite(path.stiffnessPerUnitLength) && path.stiffnessPerUnitLength > 0);
       const initF = Number.isFinite(path.initialStorageTension) && path.initialStorageTension > 0
         ? path.initialStorageTension : 0;
       this.transport.setCableSpoolParams(p, kr, +strained, initF);

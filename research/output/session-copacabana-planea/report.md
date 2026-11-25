@@ -8,7 +8,7 @@ Select **COPacabana (13.9 kg)** as the only machine. **Replay targets** drives t
 
 ## Physical assumptions
 
-The scene uses the eight crossed attachments, 13.9 kg mass, center of gravity and inertia tensor from the XML. Its origin is the platform reference at P0, 0.6 m above the XML origin. The simulated marker is a massless rigid-body member at the registered P0 reflector offset. The 37/33 mm swivel pulleys are approximated by fixed exit tangents computed at home. Each simulated drum has a 49 mm radius. The firmware and scene use equivalent direct drive at the output of the 5:1 gearbox. Torque capacity is the XML motor limit times five. Rotor inertia, damping and the 0.2 m offset from drum to guide are simulation assumptions. The simulation uses 83.8 kN axial stiffness transferred from the earlier rope identification. Initial span and storage tensions come from the eight P0 force readings. Later force readings are reserved for comparison.
+The scene uses the eight crossed attachments, 13.9 kg mass, center of gravity and inertia tensor from the XML. Its origin is the platform reference at P0, 0.6 m above the XML origin. The simulated marker is a massless rigid-body member at the registered P0 reflector offset. The 37/33 mm swivel pulleys are approximated by fixed exit tangents computed at home. Each simulated drum has a 49 mm radius. The firmware and scene use equivalent direct drive at the output of the 5:1 gearbox. Torque capacity is the XML motor limit times five. Rotor inertia, damping and the 0.2 m offset from drum to guide are simulation assumptions. The simulation uses 83.8 kN axial stiffness and 0.422 µm/N radial contraction transferred from the independent 6 mm D-Pro XTR rig identification. COPacabana uses a related SK78 braid. Initial span and storage tensions come from the eight P0 force readings. Later force readings are reserved for comparison.
 
 The motion source is Export 1 in robot/20_Std_Load13900/PlaneA. The converter differences rounded cumulative displacements, with 3,200 microsteps per equivalent drum revolution. It encodes those intervals into the simulator's compact CAN format. The source machine ran TwinCAT. The FARO and controller clocks are independent. We register coordinates from the survey reference and subtract one constant time offset estimated from the measured reflector and controller pose crossing the five leg midplanes. Those crossings give offsets of 1.5331–1.5412 s, median 1.5357 s. Absolute transport latency cannot be distinguished from clock offset. [Replication data, Reichenbach, Clar, Pott and Verl, CC BY 4.0](https://doi.org/10.18419/DARUS-4614).
 
@@ -18,33 +18,35 @@ The validator samples predicted XYZ at the reflector and the platform-side const
 
 | Input or predictor | Reflector RMS (mm) | Peak (mm) | Cable force RMS (N) |
 |---|---:|---:|---:|
-| Recorded motor targets | 25.4 | 48.8 | 176.6 |
-| Recorded motor encoders | 15.8 | 21.2 | 176.2 |
+| Recorded motor targets | 25.4 | 48.7 | 177.0 |
+| Recorded motor encoders | 15.8 | 21.2 | 176.4 |
 | Logged Cartesian target plus fixed reflector offset | 27.0 | | |
 | Hold each cable at its measured P0 force | | | 184.8 |
+
+On this encoder replay, disabling both spool effects gave 15.94 mm reflector RMS and 175.83 N force RMS. Strained storage alone gave 15.84 mm and 176.22 N. Enabling both gave 15.77 mm and 176.43 N. Across three fresh Node/WASM processes per setting, rotating their order, the median cumulative time in `world.update(dt)` for all 12,130 steps was 731 ms with both disabled, 750 ms with storage alone and 745 ms with both enabled. The timings cover this machine and command stream and exclude rendering and I/O.
 
 The table below uses stationary intervals beginning 0.5 s after the platform target stops. Repeat scatter is the root sum of the tracker coordinate variances across repeated visits in the earlier PlaneA fixture. It estimates repeatability at rest. It does not measure clock uncertainty during motion.
 
 | Pose | Encoder replay reflector RMS (mm) | Repeat scatter (mm) | Encoder replay force RMS (N) | Net force from measured tensions and gravity (N) |
 |---|---:|---:|---:|---:|
 | P1 | 2.5 | 0.63 | 75 | 126 |
-| P2 | 16.5 | 0.66 | 16 | 64 |
+| P2 | 16.4 | 0.66 | 16 | 64 |
 | P3 | 19.3 | 0.70 | 18 | 77 |
-| P4 | 18.8 | 0.40 | 303 | 180 |
-| P5 | 19.3 | 0.48 | 216 | 88 |
+| P4 | 18.6 | 0.40 | 303 | 180 |
+| P5 | 19.2 | 0.48 | 216 | 88 |
 
 ![Settled reflector error and measured repeat scatter by pose](settled-error.png)
 
 ### Force-channel audit
 
-The 176.2 N encoder-replay RMS compares simulated **platform-side** cable tensions with the eight logged `f[i]` channels. The authors' importer reads the same channels in the same order. The robot designers locate the integrated force sensors in the actuators. Between each sensor and the platform lies the cable guidance. The force targets `f_tar[i]` are a separate controller quantity. [Replication data and importer](https://doi.org/10.18419/DARUS-4614) · [COPacabana hardware description, §4.1](https://duepublico2.uni-due.de/servlets/MCRFileNodeServlet/duepublico_derivate_00071251/IFToMM_D-A-CH_2020_paper_9.pdf)
+The 176.4 N encoder-replay RMS compares simulated **platform-side** cable tensions with the eight logged `f[i]` channels. The authors' importer reads the same channels in the same order. The robot designers locate the integrated force sensors in the actuators. Between each sensor and the platform lies the cable guidance. The force targets `f_tar[i]` are a separate controller quantity. [Replication data and importer](https://doi.org/10.18419/DARUS-4614) · [COPacabana hardware description, §4.1](https://duepublico2.uni-due.de/servlets/MCRFileNodeServlet/duepublico_derivate_00071251/IFToMM_D-A-CH_2020_paper_9.pdf)
 
 An independent calculation using the raw 100 Hz log, the logged six pose coordinates and a swivel-pulley tangent recomputed at each sample gives a P4 cable resultant of **(−162.4, +49.8, +75.7) N**. Adding the 13.9 kg weight gives **(−162.4, +49.8, −60.6) N**, magnitude **180.4 N**. During those 2.51 s the FARO reflector's peak-to-peak movement was 0.24, 0.14 and 0.06 mm along X, Y and Z. Across all 30 standard-control visits to P4 at this load, the residual ranges from 168.3 to 205.0 N, median 180.0 N. At 29.1 kg under standard control the median is 191.8 N. Changing just the assumed mass can only affect Z. The corresponding `f_tar` residual in the first light-load P4 hold is 248.0 N, and the logged `wc[0..2]` averages (409, 508, 941). Neither supplies independent platform force ground truth. The six controller pose channels also lack independent attitude verification. [Raw-log calculation](evidence/force_balance.py)
 
 | Mean tension at P4 (N), encoder replay | A | B | C | D | I | J | L | O |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Logged | 316 | 133 | 200 | 390 | 348 | 303 | 345 | 605 |
-| Simulated at platform | 76 | 51 | 71 | 97 | 30 | 22 | 41 | 63 |
+| Simulated at platform | 75 | 51 | 71 | 96 | 30 | 21 | 41 | 61 |
 
 Two errors can coexist. At the logged P4 pose, the smallest RMS change to the eight mean readings that balances both force and moment about the XML center of mass is 36.9 N per cable. The balanced values are all positive and still differ from the simulated means by about 300 N RMS. Many other sets of tensions also balance the same load. Much of the discrepancy is in internal preload, which can change greatly while cables pull against each other and the platform stays almost still. An independent tension measurement would identify where the actual platform sits among these force distributions.
 
@@ -63,4 +65,4 @@ To reproduce the raw-log audit across eight conditions, five poses and 30 export
 
 With the raw measurements mounted, rebuild the comparison inputs with `.venv/bin/python scripts/reference_data/extract_4614_replay.py`. Recompile the nominal firmware examples with `.venv/bin/python scripts/compile_machine_commands.py --machine copacabana`.
 
-Local run ID is `copacabana-planeA-preload` at simulation revision `2bc87ece`. The observation fixture SHA-256 is `8cfe5279136f11093bffc81c13168a73c1451540daf12a9a3c2fa627f6683f2d`. The target and encoder streams have SHA-256 prefixes `ca921001a3818ffd` and `7e912375d1d57628`.
+The earlier strained-storage-only replay is archived under run ID `copacabana-planeA-preload` at simulation revision `2bc87ece`. The observation fixture SHA-256 is `8cfe5279136f11093bffc81c13168a73c1451540daf12a9a3c2fa627f6683f2d`. The target and encoder streams have SHA-256 prefixes `ca921001a3818ffd` and `7e912375d1d57628`.
