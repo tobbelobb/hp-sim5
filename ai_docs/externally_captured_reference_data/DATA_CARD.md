@@ -214,3 +214,5 @@ force-distribution benchmarking with fixed pulley-exit anchors (not winch drums 
     replay tests.
   - Dynamic COPacabana `CircPath` closed-loop trajectory replay with modeled winches and
     nonlinear low-tension `EA(F)` / frame compliance investigation.
+
+The catalog now includes dynamic replay of the first 13.9 kg standard-control PlaneA cycle, using either the eight target channels or the eight encoder channels. Each 10 ms measurement interval is subdivided into 2 ms simulator steps, including dwells. The tracker overlay follows the registered reflector in the P0-relative frame. [Dynamic comparison and reproduction commands](../../research/output/session-copacabana-planea/report.md).

@@ -13,6 +13,10 @@ and evidence in Git; prefer those links when continuing in another environment.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Full-machine hardware validation
+
+- [COPacabana dynamic PlaneA replay against the FARO tracker and eight cable forces](output/session-copacabana-planea/report.md)
+
 ## Anchor layout and research tooling
 
 - [Anchor-layout search within a 2 m radius](output/session-anchor-layouts/report.md)

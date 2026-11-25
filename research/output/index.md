@@ -292,6 +292,8 @@ One result sentence per session; follow the report for evidence.
 
 - [Autocal ranking, bounded updates and identifiability](session-b7deb1bcc9cb418388273e2b7b9adc8c/report.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
+- [COPacabana PlaneA replay](session-copacabana-planea/report.md) — On the first 13.9 kg standard-control cycle, measured encoder replay reduced reflector RMS error from 25.8 to 16.4 mm while cable force error remained 189 N RMS.
+
 - [Unassigned research session with unsuccessful exit](session-f9120c9b4bda4eaaa8eacff2cb00ece7/research.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
 - [Autocal validation, collection throughput and compiled Python physics](session-fdb616a454af4a6d9c1db074fbdc207d/report.md) — Saved autocal and throughput evidence plus compiled-solver follow-up, updated 2026-10-08.

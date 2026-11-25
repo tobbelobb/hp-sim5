@@ -540,7 +540,7 @@ function resolveJoint(jointPath, jointPrim, context) {
 
   const resolvedWorld0 = computeWorldPoint(body0.transform, resolvedLocal0);
   const resolvedWorld1 = computeWorldPoint(body1.transform, resolvedLocal1);
-  const derivedRestLength = resolvedWorld0.distanceTo(resolvedWorld1);
+  const derivedRestLength = resolvedWorld0.distanceTo(resolvedWorld1) / (1 + pathContext.initialStrain);
 
   let resolvedRestLength = null;
   if (initPolicy === DERIVE_ALL_POLICY) {
@@ -697,6 +697,12 @@ function resolvePath(pathPrim, pathPath, index, readWorldTransform, bodyCache, s
   }
 
   const bodies = entityPaths.map((bodyPath) => buildBodyContext(index, bodyPath, readWorldTransform, bodyCache));
+  const tension = Number(getAttribute(pathPrim, 'cablePath:initialTension') ?? 0);
+  const stiffness = Number(getAttribute(pathPrim, 'cablePath:stiffnessPerUnitLength') ?? Infinity);
+  if (!Number.isFinite(tension) || tension < 0 || (tension > 0 && !(stiffness > 0))) {
+    throw new Error(`${pathPath}: invalid cablePath:initialTension or stiffnessPerUnitLength.`);
+  }
+  const initialStrain = tension > 0 ? tension / stiffness : 0;
   const jointResults = jointDefs.map((jointDef, jointIndex) => resolveJoint(
     jointDef.jointPath,
     jointDef.jointPrim,
@@ -709,6 +715,7 @@ function resolvePath(pathPrim, pathPath, index, readWorldTransform, bodyCache, s
       clockwise0: effectiveCW(clockwise, jointIndex, true),
       clockwise1: effectiveCW(clockwise, jointIndex + 1, false),
       pathContext: {
+        initialStrain,
         linkTypes,
         storedValues,
         halfWidth,

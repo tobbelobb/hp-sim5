@@ -61,7 +61,7 @@ function sanitizeGcodeLine(rawLine) {
   return line.trim();
 }
 
-export function parseGcodeText(text) {
+export function parseGcodeText(text, { includeTravel = false } = {}) {
   if (typeof text !== 'string' || text.length === 0) {
     return { segments: [], bounds: null };
   }
@@ -166,7 +166,7 @@ export function parseGcodeText(text) {
     const moveDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
     // Extrusion without motion (a prime after a retract) stays as a
     // zero-length segment so the reference accounts for all filament.
-    if (extrusionDelta > GCODE_EXTRUSION_EPSILON) {
+    if (extrusionDelta > GCODE_EXTRUSION_EPSILON || (includeTravel && moveDistance > 0)) {
       const segment = {
         start: [startPos.X, startPos.Y, startPos.Z],
         end: [nextPos.X, nextPos.Y, nextPos.Z],
@@ -300,6 +300,7 @@ export function createInspectionToolsController({
   }
 
   async function loadReferencePath(cacheKey, loader, {
+    includeTravel = false,
     metadataOverrides = {},
     color = null,
     setActive = false,
@@ -320,7 +321,7 @@ export function createInspectionToolsController({
     }
 
     const text = await loader();
-    const parsed = parseGcodeText(text);
+    const parsed = parseGcodeText(text, { includeTravel });
     const converted = convertParsedSegmentsToSimulation(parsed);
     let totalLengthMm = 0;
     let totalExtrusionMm = 0;
@@ -367,7 +368,7 @@ export function createInspectionToolsController({
     return record;
   }
 
-  async function loadForPreset(presetKey, { setActive = true } = {}) {
+  async function loadForPreset(presetKey, { setActive = true, makeVisible = false } = {}) {
     const descriptor = PRESET_GCODE_MAP[presetKey];
     if (!descriptor?.url) {
       return null;
@@ -380,8 +381,10 @@ export function createInspectionToolsController({
           label: descriptor.label || presetKey,
           source: { type: 'preset', presetKey, href: descriptor.url },
         },
+        includeTravel: descriptor.includeTravel,
         color: descriptor.color,
         setActive,
+        makeVisible,
       });
     } catch (error) {
       console.error('hp-sim-3d: failed to load preset G-code reference', presetKey, error);

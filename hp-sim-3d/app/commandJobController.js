@@ -1,3 +1,4 @@
+import { SceneEntityInfoComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { detectFileFormat, FileFormat, isKlipperFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { parseRrfMotorAxisMapFromConfigText } from '../../integrations/rrf/rrfFirmwareModel.js';
 import { DEFAULT_PRESET_KEY } from './appState.js';
@@ -202,6 +203,8 @@ export function createCommandJobController({
       runtime.reset({ autoPause: false });
       view?.reapplyViewState?.({ clearExtrusions: true });
     }
+    const renderer = world.getResource('renderSystem');
+    if (renderer) renderer.positionTraceEntity = null;
     quality?.resetQualityMonitors?.({ keepReference: true });
     setPrintActive(true);
     hidePrintStatus();
@@ -264,7 +267,7 @@ export function createCommandJobController({
     const presetUrl = buildRepositoryFileUrl(preset.path);
     console.info(`hp-sim-3d: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(presetUrl));
     const { referencePresetKey } = preset;
-    inspectionTools?.loadForPreset?.(referencePresetKey, { setActive: true }).catch((error) => {
+    inspectionTools?.loadForPreset?.(referencePresetKey, { setActive: true, makeVisible: preset.preserveTiming }).catch((error) => {
       console.warn('hp-sim-3d: failed to prepare reference path for preset', referencePresetKey, error);
     });
     const format = preset.format;
@@ -288,13 +291,24 @@ export function createCommandJobController({
     if (!startSimulationWithWorker(worker, jobDescriptor)) {
       return;
     }
+    if (preset.traceEntity) {
+      const renderer = world.getResource('renderSystem');
+      const entity = world.query([SceneEntityInfoComponent]).find(id =>
+        world.getComponent(id, SceneEntityInfoComponent).name === preset.traceEntity);
+      if (renderer && entity != null) {
+        renderer.positionTraceEntity = entity;
+        renderer.clearPositionTracePoints();
+        renderer.setPositionTraceEnabled(true);
+        inspectionTools?.updatePositionTraceToggleUI?.();
+      }
+    }
     if (state.simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
     }
     if (isRrfFormat(format) || format === FileFormat.GCODE) {
       await configureWorkerForActiveMachine(worker, format);
     }
-    worker.postMessage({ type: 'filename_fetch', filename: presetUrl });
+    worker.postMessage({ type: 'filename_fetch', filename: presetUrl, preserveTiming: preset.preserveTiming });
   }
 
   async function queueCommandFile(file, detectedFormat = null) {
@@ -582,6 +596,8 @@ export function createCommandJobController({
   }
 
   function bindUi() {
+    dom.referenceReplayBtn?.addEventListener('click', () => runPreset('planeATargets'));
+    dom.encoderReplayBtn?.addEventListener('click', () => runPreset('planeAEncoders'));
     dom.printLogoBtn?.addEventListener('click', () => runPreset('hangprinterLogo'));
     dom.printSquareBtn?.addEventListener('click', () => runPreset('straightMoves'));
     if (dom.uploadBtn && dom.gcodeInput) {

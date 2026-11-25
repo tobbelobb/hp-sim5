@@ -17,6 +17,7 @@ def test_catalogued_files_exist():
         paths = [entry['scene'], entry['rrf_config'], entry['klipper_config']]
         for gcode, compiled in entry['compiled_commands'].items():
             paths += [gcode, *compiled.values()]
+        paths.extend(entry.get('reference_replay', {}).get('streams', {}).values())
         for path in paths:
             assert (ROOT / path).is_file(), f'{entry["name"]}: {path}'
 
@@ -57,7 +58,7 @@ def test_catalogued_collector_types_are_accepted_by_the_dataset_schema():
 def test_each_scene_has_one_machine_per_line_layering_choice():
     for scene in machines.CATALOG['scenes']:
         variants = sorted(entry['line_layering'] for entry in machines.CATALOG['machines'] if entry['scene'] == scene)
-        assert variants == ([False] if scene in ('public/usd_scenes/hp5.usda', 'public/usd_scenes/hp5_pulley_reduced.usda') else [False, True]), scene
+        assert variants == ([False] if scene in ('public/usd_scenes/hp5.usda', 'public/usd_scenes/hp5_pulley_reduced.usda', 'public/usd_scenes/copacabana.usda') else [False, True]), scene
     assert {entry['scene'] for entry in machines.CATALOG['machines']} == set(machines.CATALOG['scenes'])
 
 

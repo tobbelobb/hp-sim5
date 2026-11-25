@@ -1,0 +1,14 @@
+; ISO 9283 PlaneA nominal waypoints in mm from P0. Simulation planner example.
+G21
+G90
+G92 X0 Y0 Z0
+G1 X97.4 Y-2.5 Z-150.6 F30000
+G4 P3000
+G1 X847.9 Y448.3 Z98.8
+G4 P3000
+G1 X847.9 Y-450.8 Z98.8
+G4 P3000
+G1 X-750.5 Y-450.8 Z-400
+G4 P3000
+G1 X-750.5 Y448.3 Z-400
+G4 P3000

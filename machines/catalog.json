@@ -56,6 +56,11 @@
       "autocal_solver_iterations": 20,
       "physics_substeps": 1,
       "solver_iterations": 10
+    },
+    "public/usd_scenes/copacabana.usda": {
+      "name": "COPacabana (13.9 kg)",
+      "physics_substeps": 1,
+      "solver_iterations": 10
     }
   },
   "machines": [
@@ -434,6 +439,36 @@
         "public/gcode/draw_squares_bigger.gcode": {
           "klipper": "public/mcu_commands/hp5_pulley_reduced/draw_squares_bigger_no_buildup.serial",
           "rrf": "public/RRF_CAN_commands/draw_squares_bigger_hp5_pulley_reduced_no_buildup.can"
+        }
+      }
+    },
+    {
+      "name": "COPacabana (13.9 kg)",
+      "nicknames": [
+        "copacabana"
+      ],
+      "scene": "public/usd_scenes/copacabana.usda",
+      "line_layering": false,
+      "rrf_config": "RRF/run/vsd/sys/config_copacabana.g",
+      "klipper_config": "public/klipper/copacabana/printer-copacabana-linux-mcu.cfg",
+      "compiled_commands": {
+        "public/gcode/Hangprinter_logo6.gcode": {
+          "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_copacabana.can"
+        },
+        "public/gcode/draw_squares_bigger.gcode": {
+          "rrf": "public/RRF_CAN_commands/draw_squares_bigger_copacabana.can"
+        },
+        "public/gcode/copacabana_planeA.gcode": {
+          "rrf": "public/RRF_CAN_commands/copacabana_planeA_copacabana.can",
+          "klipper": "public/mcu_commands/copacabana_planeA.serial"
+        }
+      },
+      "reference_replay": {
+        "referencePresetKey": "copacabanaPlaneATracker",
+        "traceEntity": "Reflector",
+        "streams": {
+          "planeATargets": "public/RRF_CAN_commands/copacabana_planeA_targets.can",
+          "planeAEncoders": "public/RRF_CAN_commands/copacabana_planeA_encoders.can"
         }
       }
     }

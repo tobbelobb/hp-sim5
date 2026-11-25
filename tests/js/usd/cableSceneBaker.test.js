@@ -74,6 +74,14 @@ def Xform "World"
     expectVectorClose(getAttribute(jointPrim, 'localPos1'), new Vector3(0.0, 0.0, 0.0));
     expect(getAttribute(jointPrim, 'restLength')).toBeCloseTo(expectedTangent.distanceTo(new Vector3(3.0, 0.0, 0.0)));
 
+    const loadedSource = source.replace('custom double cablePath:halfWidth', `
+      custom double cablePath:initialTension = 100
+      custom double cablePath:stiffnessPerUnitLength = 1000
+      custom double cablePath:halfWidth`);
+    const loaded = await UsdOpen(bakeCableSceneUsdaSource(loadedSource).source);
+    expect(getAttribute(loaded.GetPrimAtPath('/World/Scene/JointA'), 'restLength'))
+      .toBeCloseTo(getAttribute(jointPrim, 'restLength') / 1.1, 9);
+
     expect(getAttribute(pathPrim, 'cablePath:initPolicy')).toBe('manual');
     expect(getAttribute(pathPrim, 'cablePath:storedMode')).toEqual(['manual', 'manual']);
     expect(getAttribute(pathPrim, 'cablePath:stored')).toEqual([0.0, 0.0]);

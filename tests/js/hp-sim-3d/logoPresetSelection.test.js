@@ -91,3 +91,13 @@ for (const name of ['hp5', 'hp5_pulley_reduced']) {
     }
   });
 }
+
+test.each(['planeATargets', 'planeAEncoders'])('%s replays the selected experiment alone', key => {
+  const scene = 'copacabana.usda';
+  const replay = resolvePresetCommand(key, false, [scene]);
+  expect(replay.traceEntity).toBe('Reflector');
+  expect(replay.preserveTiming).toBe(true);
+  expect(replay.path).toContain(key === 'planeATargets' ? 'targets.can' : 'encoders.can');
+  expect(resolvePresetCommand(key, false, [scene, HP3_USDA_KEY])).toBeNull();
+  expect(resolvePresetCommand(key, false, [])).toBeNull();
+});
