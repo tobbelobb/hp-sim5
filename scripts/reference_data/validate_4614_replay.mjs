@@ -42,11 +42,11 @@ function measure() {
   const row = rows[sample];
   if (!row || Math.round(row.time / dt) !== tick) return;
   const { x, y, z } = world.getComponent(named.get('Reflector'), PositionComponent).pos;
+  const nominal = row.target.map((v, k) => v + [homeMarker.x, homeMarker.y, homeMarker.z][k]);
   const distance = Math.hypot(x - row.marker[0], y - row.marker[1], z - row.marker[2]);
   maxDistance = Math.max(distance, maxDistance);
   positionSquared += distance ** 2;
-  nominalSquared += (homeMarker.x + row.target[0] - row.marker[0]) ** 2
-    + (homeMarker.y + row.target[1] - row.marker[1]) ** 2 + (homeMarker.z + row.target[2] - row.marker[2]) ** 2;
+  nominalSquared += nominal.reduce((sum, v, k) => sum + (v - row.marker[k]) ** 2, 0);
   if (sample > 0) {
     joints.forEach((joint, i) => {
       forceSquared += (joint.constraintForceMagnitude - row.force[i]) ** 2;
@@ -61,6 +61,7 @@ function measure() {
     let hold = holds.at(-1);
     if (hold?.start !== holdStart) {
       hold = { start: holdStart, count: 0, trackerSquared: 0, forceSquared: 0, netForce: [0, 0, 0],
+        simulatedMinusNominal: [0, 0, 0], measuredMinusNominal: [0, 0, 0],
         predictedForce: axes.map(() => 0), loggedForce: axes.map(() => 0) };
       holds.push(hold);
     }
@@ -77,6 +78,10 @@ function measure() {
     net.forEach((v, k) => { hold.netForce[k] += v; });
     hold.count++;
     hold.trackerSquared += distance ** 2;
+    [x, y, z].forEach((v, k) => {
+      hold.simulatedMinusNominal[k] += v - nominal[k];
+      hold.measuredMinusNominal[k] += row.marker[k] - nominal[k];
+    });
   }
   sample++;
 }
@@ -112,6 +117,9 @@ try {
     settled: holds.map((h, i) => ({
       pose: `P${i + 1}`,
       reflector_rms_mm: 1000 * rms(h.trackerSquared, h.count),
+      // The controller target separates simulator error from the real machine's own pose error.
+      simulated_minus_nominal_mm: h.simulatedMinusNominal.map(v => 1000 * v / h.count),
+      measured_minus_nominal_mm: h.measuredMinusNominal.map(v => 1000 * v / h.count),
       force_rms_N: rms(h.forceSquared, h.count * joints.length),
       mean_simulated_cable_forces_N: h.predictedForce.map(v => v / h.count),
       mean_logged_cable_forces_N: h.loggedForce.map(v => v / h.count),

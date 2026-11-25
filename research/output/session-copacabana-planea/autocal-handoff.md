@@ -8,7 +8,7 @@ The production Rust solver can store geometric drum occupancy separately from un
 
 At the two revisions compared below, both effects were opt-in. The default was zero radial contraction and disabled strained storage. COPacabana enabled strained storage on eight paths, initializing them from the P0 force readings. It initially left radial contraction at zero. The four Hangprinter CI scenes and the two generated hysteresis/stick-slip variants enabled neither new effect. Geometric line layering has its own switch. The diff contains no autocal estimator, collector or benchmark workflow changes. [Scene attributes](../../../public/usd_scenes/copacabana.usda) · [Path and world defaults](../../../src/js/cable_joints_3d/rust_physics_engine.js) · [Benchmark scenarios](../../../autocal/tools/benchmark_history.py)
 
-The subsequent production change enables strained storage by default for elastic spools in hp-sim-3d and headless autocal. COPacabana now also uses the independently identified D-Pro flattening coefficient. When reproducing the historical control on a newer build, explicitly disable both effects.
+The subsequent production change enables strained storage and radius-scaled radial flattening by default on every elastic spool, in hp-sim-3d, headless autocal and the Rust API. When reproducing the historical control on a newer build, explicitly disable both effects.
 
 ## What GitHub actually measured
 

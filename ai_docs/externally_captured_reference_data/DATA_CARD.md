@@ -24,19 +24,20 @@ Dyneema braids rather than identical production lots.
 
 ### Relevance & non-extrapolation warning for Hangprinter ropes
 
-**Do NOT directly apply these 6 mm industrial rope parameters (`EA = 83.8 kN`, `k_r = 0.422 µm/N`
-on a single-layer grooved 100.36 mm drum) to Hangprinter fishing line / thin braided Dyneema
-(typically 0.5–1.5 mm, multi-layer ungrooved spools).**
+**Do NOT directly apply the 6 mm industrial EA (`83.8 kN`) to Hangprinter fishing line / thin
+braided Dyneema (typically 0.5–1.5 mm, multi-layer ungrooved spools).** Each machine sets its own EA.
 
-- Elastic spools in hp-sim-3d and headless autocal store material at its winding strain by default,
-  using the cable's configured axial stiffness. Explicitly set `strainedSpoolStorage = false` to
-  reproduce a legacy control. The low-level Rust API accepts explicit per-cable parameters.
-- Radial flattening requires a rope/drum coefficient in m/N. COPacabana uses the rig's
-  `0.422 µm/N` as a transfer estimate. Uncharacterized spools assume zero contraction.
-- The **numerical parameters** depend strongly on rope diameter, braid architecture, drum groove
-  geometry, and single-layer vs multi-layer bedding (`k_r` on multi-layer ungrooved spools may
-  include coil-into-coil bedding and must be identified on target Hangprinter hardware before
-  enabling in production scenes).
+- Elastic spools store material at its winding strain by default, using the cable's configured
+  axial stiffness. This needs no new parameter.
+- Elastic spools also contract their running radius with tension by default. A rope pressed onto a
+  drum of radius `R` carries line load `F/R`, so its centreline sinks by `F/(R·E_t)` independently of
+  rope diameter. The default `k_r = 2.12e-8 m²/N / R` (effective `E_t ≈ 47 MPa`) reproduces the
+  identified `0.422 µm/N` on the `R = 50.18 mm` D-Pro rig and gives `0.432 µm/N` on COPacabana's
+  49 mm drums. Coil-on-coil bedding of thin line on multi-layer spools is unmeasured; identify it on
+  Hangprinter hardware before trusting absolute flattening there.
+- Opt out with `strainedSpoolStorage = false` and `spoolRadialFlattening = 0` (world resources or
+  `cablePath:` attributes) to isolate effects or reproduce legacy controls. A `cablePath:` value
+  `>= 0` in m/N overrides the default per cable.
 
 ## File formats
 

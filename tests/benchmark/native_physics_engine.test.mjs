@@ -19,8 +19,9 @@ test('local defaults are native, isolated, editable and safe to clear', () => {
   first.world.update(first.dt);
   const backend = first.world.getResource('cableSolverBackend');
   const spoolParams = () => backend.transport.exportSpoolState(0).slice(1, 3);
-  assert.deepEqual(Array.from(spoolParams()), [0, 1]); // HP3 has elastic line and no measured flattening coefficient.
+  assert.deepEqual(Array.from(spoolParams()), [-1, -1]); // Inherit both constitutive parameters from Rust.
   first.world.setResource('strainedSpoolStorage', false);
+  first.world.setResource('spoolRadialFlattening', 0);
   first.world.update(first.dt);
   assert.deepEqual(Array.from(spoolParams()), [0, 0]);
   const id = first.world.query([PositionComponent])[0];
@@ -466,7 +467,7 @@ test('preloaded hybrid drums retain their cable and tension on the first station
     assert.equal(paths.length, 8);
     world.update(dt);
     paths.forEach((path, i) => {
-      assert.equal(path.spoolRadialFlattening, 0.422e-6);
+      assert.equal(path.spoolRadialFlattening, null); // Inherits the radius-scaled solver default.
       assert.ok(Math.abs(path.stored[0] - stored[i]) < 1e-6);
       const span = world.getComponent(path.jointEntities.at(-1), CableJointComponent);
       assert.ok(Math.abs(span.constraintForceMagnitude - path.initialStorageTension) < 1);

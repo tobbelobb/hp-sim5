@@ -510,7 +510,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 64.0
             custom double cablePath:initialStorageTension = 64.0
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -528,7 +527,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 60.1
             custom double cablePath:initialStorageTension = 60.1
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -546,7 +544,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 64.0
             custom double cablePath:initialStorageTension = 64.0
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -564,7 +561,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 59.5
             custom double cablePath:initialStorageTension = 59.5
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -582,7 +578,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 28.4
             custom double cablePath:initialStorageTension = 28.4
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -600,7 +595,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 24.7
             custom double cablePath:initialStorageTension = 24.7
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -618,7 +612,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 25.2
             custom double cablePath:initialStorageTension = 25.2
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -636,7 +629,6 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 21.8
             custom double cablePath:initialStorageTension = 21.8
-            custom double cablePath:spoolRadialFlattening = 0.000000422
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0

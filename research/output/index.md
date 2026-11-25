@@ -292,7 +292,7 @@ One result sentence per session; follow the report for evidence.
 
 - [Autocal ranking, bounded updates and identifiability](session-b7deb1bcc9cb418388273e2b7b9adc8c/report.md) — Retrospective summary of saved evidence, written 2026-10-08.
 
-- [COPacabana PlaneA replay](session-copacabana-planea/report.md) — On the first 13.9 kg standard-control cycle, encoder replay reduced reflector RMS error from 25.4 to 15.8 mm, while the logged actuator forces differed from simulated platform tensions by 176 N RMS and left a 180 N static force residual at P4.
+- [COPacabana PlaneA replay](session-copacabana-planea/report.md) — The simulator settles within 2.5 mm of the commanded pose. The real platform's Y travel is 3.5–4.6 % short of commanded in every PlaneA experiment, so the 16–20 mm settled reflector error is the machine's geometry error relative to its XML, not cable physics.
 
 - [Unassigned research session with unsuccessful exit](session-f9120c9b4bda4eaaa8eacff2cb00ece7/research.md) — Retrospective summary of saved evidence, written 2026-10-08.
 

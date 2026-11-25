@@ -644,7 +644,7 @@ fn per_cable_params_hysteresis_capstan_timestep_convergence_and_legacy_parity() 
     assert!((r2 / g2 - r1 / g1).abs() < 1e-4, "dt=2ms vs 1ms diverged: {} vs {}", r2 / g2, r1 / g1);
     assert!((r1 / g1 - r05 / g05).abs() < 5e-5, "dt=1ms vs 0.5ms diverged: {} vs {}", r1 / g1, r05 / g05);
 
-    // (d) Legacy parity: disabled options produce exact bit-for-bit equality with untouched default.
+    // (d) Unconfigured elastic spools match explicit D-Pro reference parameters.
     let make_default = || {
         let test = wheel(0, [-1.0, 0.0, 0.0], r, 0.5, 1e6, None);
         let load = wheel(1, [1.0, 0.0, 0.0], r, 0.5, 1e6, None);
@@ -655,7 +655,7 @@ fn per_cable_params_hysteresis_capstan_timestep_convergence_and_legacy_parity() 
     };
     let mut wa = make_default();
     let mut wb = make_default();
-    wb.set_cable_spool_params(0, 0.0, false, 0.0);
+    wb.set_cable_spool_params(0, 0.422e-6 * 0.05018 / r, true, 0.0);
     for _ in 0..100 {
         for ww in [&mut wa, &mut wb] {
             ww.entities[0][72..75].copy_from_slice(&[0.0, 0.0, -20.0]);
@@ -665,11 +665,11 @@ fn per_cable_params_hysteresis_capstan_timestep_convergence_and_legacy_parity() 
     }
     assert!(
         wa.path_data(0).iter().zip(wb.path_data(0)).all(|(a, b)| a.to_bits() == b.to_bits()),
-        "legacy path_data must match bit-for-bit"
+        "default path_data must match bit-for-bit"
     );
     assert!(
         wa.entities.iter().flatten().zip(wb.entities.iter().flatten()).all(|(a, b)| a.to_bits() == b.to_bits()),
-        "legacy entities must match bit-for-bit"
+        "default entities must match bit-for-bit"
     );
 }
 
