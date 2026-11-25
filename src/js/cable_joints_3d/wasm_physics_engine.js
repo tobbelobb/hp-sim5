@@ -28,6 +28,27 @@ export class WasmPhysicsEngine extends RustPhysicsEngine {
       entities: () => new Float64Array(exports.memory.buffer, exports.engine_entities(handle), exports.engine_entity_count(handle) * 160),
       options: () => new Float64Array(exports.memory.buffer, exports.engine_options(handle), exports.engine_options_len()),
       path: index => new Float64Array(exports.memory.buffer, exports.engine_path(handle, index), exports.engine_path_len(handle, index)),
+      setCableSpoolParams(index, kr, strainedMode, initTension) {
+        exports.engine_set_cable_spool_params?.(handle, index, kr, strainedMode, initTension);
+      },
+      exportSpoolState(index) {
+        if (!exports.engine_spool_state_len || !exports.engine_export_spool_state) return new Float64Array(0);
+        const len = exports.engine_spool_state_len(handle, index) >>> 0;
+        if (!len) return new Float64Array(0);
+        const ptr = exports.alloc_buffer(len);
+        const written = exports.engine_export_spool_state(handle, index, ptr, len) >>> 0;
+        const copy = new Float64Array(exports.memory.buffer, ptr, written).slice();
+        exports.free_buffer(ptr, len);
+        return copy;
+      },
+      importSpoolState(index, data) {
+        if (!exports.engine_import_spool_state || !data?.length) return false;
+        const ptr = exports.alloc_buffer(data.length);
+        new Float64Array(exports.memory.buffer, ptr, data.length).set(data);
+        const ok = (exports.engine_import_spool_state(handle, index, ptr, data.length) >>> 0) !== 0;
+        exports.free_buffer(ptr, data.length);
+        return ok;
+      },
       step(dt) {
         const invalidRow = exports.engine_step(handle, dt) >>> 0;
         if (invalidRow) throw new RangeError(`Non-finite physics position at entity row ${invalidRow - 1}`);

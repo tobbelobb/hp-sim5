@@ -99,6 +99,12 @@ export class CablePathComponent {
     this.dampingPerUnitLength = Number.isFinite(dampingPerUnitLength) ? Math.max(0.0, dampingPerUnitLength) : 0.0;
     this.hysteresisFraction = 0.0;
     this.hysteresisRecoveryTime = 0.0;
+    // Per-cable spool constitutive overrides (null inherits world resources).
+    this.spoolRadialFlattening = null;
+    this.strainedSpoolStorage = null;
+    this.initialStorageTension = 0.0;
+    // Serialized spool winding history (Float64Array) preserved across re-prepare, checkpoints, and backend swaps.
+    this.spoolHistory = null;
     this.solverIterations = Number.isFinite(solverIterations)
       ? Math.max(1, Math.floor(solverIterations))
       : 1;

@@ -5,7 +5,7 @@ use super::*;
 pub const HEADER: usize = 9;
 pub const LINK: usize = 5;
 pub const SEGMENT: usize = 16;
-pub const OPTIONS: usize = 21;
+pub const OPTIONS: usize = 20;
 const VEL: u32 = 1;
 const OMEGA: u32 = 2;
 const GRAVITY: u32 = 4;
@@ -148,6 +148,280 @@ fn spool_frame(es: &[Entity], id: usize) -> (Q, Q, Q) {
     }
 }
 
+/// Maximum coalesced coil entries retained per spool end (bounded memory).
+const MAX_SPOOL_COILS: usize = 256;
+/// Adjacent wound segments whose rest-per-geometric ratio differs by at most this
+/// tolerance are coalesced by summing `(geom, rest)`, conserving both exactly.
+const SPOOL_COIL_MERGE_TOL: f64 = 1e-6;
+/// Version tag for serialized per-cable spool state.
+const SPOOL_STATE_VERSION: f64 = 1.0;
+
+/// Coiled rope history on one spool end (`end = 0` for link `0`, `end = 1` for link `count`).
+///
+/// Invariants when `initialized` is true:
+/// - `geom_stored == base_geom + sum(coils.geom_arc)` is the nominal geometric drum arc
+///   occupied by wound rope (used for layering radius/theta, hybrid transitions, and knot checks).
+/// - `c.stored(li) == base_rest + sum(coils.rest_len)` is the unstretched material length stored
+///   on the drum (so `sum(rest) + sum(stored) == totalRestLength` holds at every step).
+/// - `(base_geom, base_rest)` stores pre-wound rope from initialization (explicitly wound at
+///   `init_storage_tension`, defaulting to 0 N = unstretched).
+/// - `coils` is a LIFO stack of `(geom_arc, rest_len)` for rope wound during simulation,
+///   with `geom_arc > 0` and `rest_len > 0`.
+#[derive(Clone, Default)]
+struct SpoolEnd {
+    initialized: bool,
+    geom_stored: f64,
+    base_geom: f64,
+    base_rest: f64,
+    coils: Vec<(f64, f64)>,
+}
+
+impl SpoolEnd {
+    fn reset_from_stored(&mut self, stored_rest: f64, rho_init: f64) {
+        let rho = if rho_init.is_finite() && rho_init > EPS {
+            rho_init
+        } else {
+            1.0
+        };
+        self.initialized = true;
+        self.base_rest = stored_rest;
+        self.base_geom = stored_rest / rho;
+        self.geom_stored = self.base_geom;
+        self.coils.clear();
+    }
+    fn reset_empty(&mut self) {
+        self.initialized = true;
+        self.geom_stored = 0.0;
+        self.base_geom = 0.0;
+        self.base_rest = 0.0;
+        self.coils.clear();
+    }
+    fn clear_inactive(&mut self) {
+        self.initialized = false;
+        self.geom_stored = 0.0;
+        self.base_geom = 0.0;
+        self.base_rest = 0.0;
+        self.coils.clear();
+    }
+    fn total_rest(&self) -> f64 {
+        self.base_rest + self.coils.iter().map(|c| c.1).sum::<f64>()
+    }
+    fn total_geom(&self) -> f64 {
+        self.base_geom + self.coils.iter().map(|c| c.0).sum::<f64>()
+    }
+    fn sync_with_stored(&mut self, stored_rest: f64, rho_init: f64) {
+        if !self.initialized || (stored_rest - self.total_rest()).abs() > 1e-7 {
+            self.reset_from_stored(stored_rest, rho_init);
+        } else {
+            self.geom_stored = self.total_geom();
+        }
+    }
+    /// Pure preview of the rest-length delta produced by nominal geometric arc transfer `d_geom`
+    /// (`> 0` winding onto spool, `< 0` unwinding off spool). Does not mutate the stack.
+    fn preview_rest_delta(&self, d_geom: f64, rho_now: f64, rho_init: f64) -> f64 {
+        if d_geom > EPS {
+            let mut rem = d_geom;
+            let mut rest = 0.0;
+            if self.geom_stored < 0.0 {
+                let recover = rem.min(-self.geom_stored);
+                rest += recover * rho_init;
+                rem -= recover;
+            }
+            rest + rem * rho_now
+        } else if d_geom < -EPS {
+            let mut need = -d_geom;
+            let mut paid = 0.0;
+            for &(g, r) in self.coils.iter().rev() {
+                if need <= EPS {
+                    break;
+                }
+                if need >= g - EPS {
+                    paid += r;
+                    need = (need - g).max(0.0);
+                } else {
+                    paid += r * (need / g);
+                    need = 0.0;
+                }
+            }
+            if need > EPS && self.base_geom > EPS {
+                if need >= self.base_geom - EPS {
+                    paid += self.base_rest;
+                    need = (need - self.base_geom).max(0.0);
+                } else {
+                    paid += self.base_rest * (need / self.base_geom);
+                    need = 0.0;
+                }
+            }
+            if need > EPS {
+                paid += need * rho_init;
+            }
+            -paid
+        } else {
+            0.0
+        }
+    }
+    /// Exact inverse of `preview_rest_delta`: returns the nominal geometric arc transfer `d_geom`
+    /// that yields rest-length delta `target_d_rest`. Does not mutate the stack.
+    fn geom_for_rest_delta(&self, target_d_rest: f64, rho_now: f64, rho_init: f64) -> f64 {
+        let r_now = rho_now.max(EPS);
+        let r_init = rho_init.max(EPS);
+        if target_d_rest > EPS {
+            let mut rem_r = target_d_rest;
+            let mut geom = 0.0;
+            if self.geom_stored < 0.0 {
+                let neg_r = (-self.geom_stored) * r_init;
+                if rem_r >= neg_r {
+                    geom += -self.geom_stored;
+                    rem_r -= neg_r;
+                } else {
+                    return rem_r / r_init;
+                }
+            }
+            geom + rem_r / r_now
+        } else if target_d_rest < -EPS {
+            let mut need_r = -target_d_rest;
+            let mut geom = 0.0;
+            for &(g, r) in self.coils.iter().rev() {
+                if need_r <= EPS {
+                    break;
+                }
+                if need_r >= r - EPS {
+                    geom += g;
+                    need_r = (need_r - r).max(0.0);
+                } else {
+                    geom += g * (need_r / r);
+                    need_r = 0.0;
+                }
+            }
+            if need_r > EPS && self.base_rest > EPS && self.base_geom > EPS {
+                if need_r >= self.base_rest - EPS {
+                    geom += self.base_geom;
+                    need_r = (need_r - self.base_rest).max(0.0);
+                } else {
+                    geom += self.base_geom * (need_r / self.base_rest);
+                    need_r = 0.0;
+                }
+            }
+            if need_r > EPS {
+                geom += need_r / r_init;
+            }
+            -geom
+        } else {
+            0.0
+        }
+    }
+    /// Commit nominal geometric arc transfer `d_geom` and return the exact rest-length delta.
+    fn apply_geom_delta(&mut self, d_geom: f64, rho_now: f64, rho_init: f64) -> f64 {
+        let d_rest = if d_geom > EPS {
+            let mut rem = d_geom;
+            let mut rest = 0.0;
+            if self.base_geom < 0.0 && self.coils.is_empty() {
+                let recover = rem.min(-self.base_geom);
+                let dr = recover * rho_init;
+                self.base_geom += recover;
+                self.base_rest += dr;
+                if self.base_geom.abs() <= EPS {
+                    self.base_geom = 0.0;
+                    self.base_rest = 0.0;
+                }
+                rest += dr;
+                rem -= recover;
+            }
+            if rem > EPS {
+                let dr = rem * rho_now;
+                if let Some(top) = self.coils.last_mut() {
+                    if (top.1 / top.0 - rho_now).abs() <= SPOOL_COIL_MERGE_TOL {
+                        // Material-preserving coalescing: exact sum of both geom and rest.
+                        top.0 += rem;
+                        top.1 += dr;
+                    } else {
+                        self.coils.push((rem, dr));
+                    }
+                } else {
+                    self.coils.push((rem, dr));
+                }
+                if self.coils.len() > MAX_SPOOL_COILS {
+                    let mut best = 0;
+                    let mut best_diff = f64::INFINITY;
+                    for k in 0..self.coils.len() - 1 {
+                        let diff = (self.coils[k].1 / self.coils[k].0
+                            - self.coils[k + 1].1 / self.coils[k + 1].0)
+                            .abs();
+                        if diff < best_diff {
+                            best_diff = diff;
+                            best = k;
+                        }
+                    }
+                    let next = self.coils.remove(best + 1);
+                    self.coils[best].0 += next.0;
+                    self.coils[best].1 += next.1;
+                }
+                rest += dr;
+            }
+            rest
+        } else if d_geom < -EPS {
+            let mut need = -d_geom;
+            let mut paid = 0.0;
+            while need > EPS {
+                let Some(top) = self.coils.last_mut() else {
+                    break;
+                };
+                if need >= top.0 - EPS {
+                    let (g, r) = self.coils.pop().unwrap();
+                    paid += r;
+                    need = (need - g).max(0.0);
+                } else {
+                    let dr = top.1 * (need / top.0);
+                    top.0 -= need;
+                    top.1 -= dr;
+                    paid += dr;
+                    need = 0.0;
+                }
+            }
+            if need > EPS && self.base_geom > EPS {
+                if need >= self.base_geom - EPS {
+                    paid += self.base_rest;
+                    need = (need - self.base_geom).max(0.0);
+                    self.base_geom = 0.0;
+                    self.base_rest = 0.0;
+                } else {
+                    let dr = self.base_rest * (need / self.base_geom);
+                    self.base_geom -= need;
+                    self.base_rest -= dr;
+                    paid += dr;
+                    need = 0.0;
+                }
+            }
+            if need > EPS {
+                let dr = need * rho_init;
+                self.base_geom -= need;
+                self.base_rest -= dr;
+                paid += dr;
+            }
+            -paid
+        } else {
+            0.0
+        };
+        self.geom_stored = self.total_geom();
+        d_rest
+    }
+}
+
+fn spool_rho(radius: f64, k_r: f64, cpl: f64, strained: bool, tension: f64) -> f64 {
+    let f = tension.max(0.0);
+    let r_scale = if k_r.is_finite() && k_r > 0.0 && radius > EPS {
+        ((radius - k_r * f) / radius).max(0.5)
+    } else {
+        1.0
+    };
+    let strain_scale = if strained && cpl.is_finite() && cpl > EPS {
+        1.0 / (1.0 + f * cpl)
+    } else {
+        1.0
+    };
+    r_scale * strain_scale
+}
+
 #[derive(Clone)]
 struct Cable {
     // Public records are mutable observations/edits. Scratch is kept in Rust.
@@ -166,10 +440,12 @@ struct Cable {
     wheels: Vec<Option<Wheel>>,
     // Accumulated hysteretic elongation strain (active when options[11] > 0).
     hyst_strain: f64,
-    // LIFO coiled segments `(nominal_drum_arc, rest_per_nom_arc)` for the two
-    // spool ends (index 0 = link 0, index 1 = link `count`), used when strained
-    // spool storage or tension-dependent running radius is enabled.
-    spool_coils: [Vec<(f64, f64)>; 2],
+    // Per-cable spool constitutive parameters (None falls back to world options[19..=20]).
+    radial_flattening: Option<f64>,
+    strained_spool: Option<bool>,
+    init_storage_tension: f64,
+    // Geometric occupancy and LIFO coil history for the two spool ends (0 and `count`).
+    spool_ends: [SpoolEnd; 2],
 }
 /// A wheel whose bearing resists turning. The line turns it through capstan
 /// friction, against the bearing's friction torque and the wheel's inertia.
@@ -234,6 +510,28 @@ impl Cable {
         let o = self.lo(i);
         self.data[o + 2] = s;
     }
+    fn spool_config(&self) -> (f64, bool, f64) {
+        let k_r = match self.radial_flattening {
+            Some(v) if v.is_finite() => v.max(0.0),
+            _ => 0.0,
+        };
+        let strained = self.strained_spool.unwrap_or(false);
+        let init_f = if self.init_storage_tension.is_finite() && self.init_storage_tension > 0.0 {
+            self.init_storage_tension
+        } else {
+            0.0
+        };
+        (k_r, strained, init_f)
+    }
+    fn geom_stored(&self, i: usize) -> f64 {
+        if i == 0 && self.spool_ends[0].initialized {
+            self.spool_ends[0].geom_stored
+        } else if i == self.count() && self.spool_ends[1].initialized {
+            self.spool_ends[1].geom_stored
+        } else {
+            self.stored(i)
+        }
+    }
     fn entity(&self, i: usize, side: usize) -> usize {
         self.data[self.jo(i) + 1 + side] as usize
     }
@@ -251,8 +549,9 @@ impl Cable {
             return (base, 0.0);
         }
         let effective = base + half;
-        if (i == 0 || i == self.count()) && hybrid(self.kind(i)) && self.stored(i) > EPS {
-            let (r, t) = stored_radius(self.stored(i).max(0.0), base, half);
+        let geom = self.geom_stored(i);
+        if (i == 0 || i == self.count()) && hybrid(self.kind(i)) && geom > EPS {
+            let (r, t) = stored_radius(geom.max(0.0), base, half);
             (effective.max(r), t)
         } else {
             (effective, 0.0)
@@ -580,7 +879,10 @@ impl PhysicsWorld {
                 strain: Vec::new(),
                 wheels: Vec::new(),
                 hyst_strain: 0.0,
-                spool_coils: [Vec::new(), Vec::new()],
+                radial_flattening: None,
+                strained_spool: None,
+                init_storage_tension: 0.0,
+                spool_ends: [SpoolEnd::default(), SpoolEnd::default()],
             })
             .collect();
         let mut by_id = std::collections::BTreeMap::<u64, Vec<(usize, usize)>>::new();
@@ -617,6 +919,157 @@ impl PhysicsWorld {
     pub fn path_count(&self) -> usize {
         self.cables.len()
     }
+    /// Configure per-cable spool constitutive parameters:
+    /// - `radial_flattening`: drum running-radius contraction per unit tension (m/N, >= 0).
+    /// - `strained_spool`: store coiled rope strained at its winding tension with LIFO memory.
+    /// - `init_storage_tension`: explicit tension (N, >= 0) at which pre-wound stored rope was wound.
+    pub fn set_cable_spool_params(
+        &mut self,
+        index: usize,
+        radial_flattening: f64,
+        strained_spool: bool,
+        init_storage_tension: f64,
+    ) {
+        let kr = if radial_flattening.is_finite() {
+            radial_flattening.max(0.0)
+        } else {
+            0.0
+        };
+        self.set_cable_spool_params_raw(
+            index,
+            kr,
+            if strained_spool { 1.0 } else { 0.0 },
+            init_storage_tension,
+        );
+    }
+    /// C-ABI / JS helper for per-cable spool parameters.
+    /// Negative or non-finite `radial_flattening` / `strained_mode` inherits world options[19..=20].
+    pub fn set_cable_spool_params_raw(
+        &mut self,
+        index: usize,
+        radial_flattening: f64,
+        strained_mode: f64,
+        init_storage_tension: f64,
+    ) {
+        if let Some(c) = self.cables.get_mut(index) {
+            c.radial_flattening = if radial_flattening.is_finite() && radial_flattening >= 0.0 {
+                Some(radial_flattening)
+            } else {
+                None
+            };
+            c.strained_spool = if !strained_mode.is_finite() || strained_mode < 0.0 {
+                None
+            } else {
+                Some(strained_mode != 0.0)
+            };
+            c.init_storage_tension = if init_storage_tension.is_finite() {
+                init_storage_tension.max(0.0)
+            } else {
+                0.0
+            };
+        }
+    }
+    /// Geometric nominal drum arc occupied on spool end `side` (0 = link 0, 1 = link `count`).
+    pub fn spool_geom_stored(&self, index: usize, side: usize) -> f64 {
+        let c = &self.cables[index];
+        let li = if side == 0 { 0 } else { c.count() };
+        c.geom_stored(li)
+    }
+    /// Number of coalesced coil entries currently in the LIFO stack of spool end `side`.
+    pub fn spool_coil_count(&self, index: usize, side: usize) -> usize {
+        self.cables[index].spool_ends[side.min(1)].coils.len()
+    }
+    /// Export per-cable spool parameters and both spool ends' winding histories for checkpointing,
+    /// ECS re-prepare, or Native↔WASM backend transfer.
+    pub fn export_spool_state(&self, index: usize) -> Vec<f64> {
+        let Some(c) = self.cables.get(index) else {
+            return Vec::new();
+        };
+        let kr_tag = c.radial_flattening.unwrap_or(-1.0);
+        let strained_tag = match c.strained_spool {
+            None => -1.0,
+            Some(false) => 0.0,
+            Some(true) => 1.0,
+        };
+        let mut out = vec![
+            SPOOL_STATE_VERSION,
+            kr_tag,
+            strained_tag,
+            c.init_storage_tension,
+        ];
+        for end in &c.spool_ends {
+            out.push(f64::from(end.initialized));
+            out.push(end.geom_stored);
+            out.push(end.base_geom);
+            out.push(end.base_rest);
+            out.push(end.coils.len() as f64);
+            for &(g, r) in &end.coils {
+                out.push(g);
+                out.push(r);
+            }
+        }
+        out
+    }
+    /// Import per-cable spool parameters and winding histories produced by `export_spool_state`.
+    pub fn import_spool_state(&mut self, index: usize, data: &[f64]) -> bool {
+        let Some(c) = self.cables.get_mut(index) else {
+            return false;
+        };
+        if data.len() < 4 || data[0] != SPOOL_STATE_VERSION {
+            return false;
+        }
+        if !data.iter().all(|v| v.is_finite()) {
+            return false;
+        }
+        let radial_flattening = if data[1] < 0.0 { None } else { Some(data[1]) };
+        let strained_spool = if data[2] < 0.0 {
+            None
+        } else {
+            Some(data[2] != 0.0)
+        };
+        let init_storage_tension = data[3].max(0.0);
+        let mut cursor = 4;
+        let mut ends = [SpoolEnd::default(), SpoolEnd::default()];
+        for end in &mut ends {
+            if cursor + 5 > data.len() {
+                return false;
+            }
+            end.initialized = data[cursor] != 0.0;
+            end.geom_stored = data[cursor + 1];
+            end.base_geom = data[cursor + 2];
+            end.base_rest = data[cursor + 3];
+            let count = data[cursor + 4];
+            if count < 0.0 || count.fract() != 0.0 || count as usize > MAX_SPOOL_COILS {
+                return false;
+            }
+            let n = count as usize;
+            if end.base_geom < 0.0 && n > 0 {
+                return false;
+            }
+            cursor += 5;
+            if cursor + 2 * n > data.len() {
+                return false;
+            }
+            end.coils = Vec::with_capacity(n);
+            for k in 0..n {
+                let g = data[cursor + 2 * k];
+                let r = data[cursor + 2 * k + 1];
+                if g <= 0.0 || r <= 0.0 {
+                    return false;
+                }
+                end.coils.push((g, r));
+            }
+            cursor += 2 * n;
+        }
+        if cursor != data.len() {
+            return false;
+        }
+        c.radial_flattening = radial_flattening;
+        c.strained_spool = strained_spool;
+        c.init_storage_tension = init_storage_tension;
+        c.spool_ends = ends;
+        true
+    }
     /// Rejects a non-finite current position before modifying the world.
     pub fn step(&mut self, dt: f64) -> Result<(), InvalidPosition> {
         if let Some(row) = self.entities.iter().position(|e| {
@@ -642,8 +1095,6 @@ impl PhysicsWorld {
                         &mut self.entities,
                         layering,
                         self.options[5] != 0.0,
-                        self.options[19],
-                        self.options[20] != 0.0,
                     ),
                     6 => merge(cable, &self.entities, layering, &mut self.topology_version),
                     7 => split(
@@ -907,7 +1358,7 @@ fn segment_tension(c: &Cable, i: usize) -> f64 {
     if !(cpl.is_finite() && cpl > EPS) {
         return 0.0;
     }
-    if i < c.strain.len() {
+    if i < c.strain.len() || c.data[c.jo(i) + 11] > 0.0 {
         c.data[c.jo(i) + 11].max(0.0)
     } else {
         let d = length(sub(c.point(i, 0), c.point(i, 1)));
@@ -920,55 +1371,39 @@ fn segment_tension(c: &Cable, i: usize) -> f64 {
     }
 }
 
-/// Convert nominal drum arc `d_nom` (+ winding onto spool, - unwinding off spool)
-/// into rest-length transfer, tracking LIFO storage-tension coils so winding at
-/// `F_S` and unwinding at `F_L` conserves material and captures storage-tension slip.
-fn spool_rest_delta(coils: &mut Vec<(f64, f64)>, d_nom: f64, rho_now: f64) -> f64 {
-    if d_nom > EPS {
-        if let Some(top) = coils.last_mut() {
-            if (top.1 - rho_now).abs() <= 1e-6 {
-                top.0 += d_nom;
-            } else {
-                coils.push((d_nom, rho_now));
-            }
-        } else {
-            coils.push((d_nom, rho_now));
+fn sync_cable_spools(c: &mut Cable, es: &[Entity], layering: bool) {
+    let (k_r, strained, init_f) = c.spool_config();
+    let active = k_r > 0.0 || strained;
+    if !active || c.count() == 0 {
+        for end in &mut c.spool_ends {
+            end.clear_inactive();
         }
-        d_nom * rho_now
-    } else if d_nom < -EPS {
-        let mut need = -d_nom;
-        let mut paid = 0.0;
-        while need > EPS {
-            let Some(top) = coils.last_mut() else {
-                paid += need * rho_now;
-                break;
-            };
-            let take = need.min(top.0);
-            paid += take * top.1;
-            top.0 -= take;
-            need -= take;
-            if top.0 <= EPS {
-                coils.pop();
-            }
+        return;
+    }
+    let cpl = c.data[3];
+    let n = c.count();
+    for (side, li) in [(0usize, 0usize), (1usize, n)] {
+        if !hybrid(c.kind(li)) {
+            c.spool_ends[side].clear_inactive();
+            continue;
         }
-        -paid
-    } else {
-        0.0
+        let seg_i = if side == 0 { 0 } else { n - 1 };
+        let id = c.entity(seg_i, side);
+        let base_r = c.radius(es, li, id, layering).0;
+        let rho_init = spool_rho(base_r, k_r, cpl, strained, init_f);
+        let stored_rest = c.stored(li);
+        c.spool_ends[side].sync_with_stored(stored_rest, rho_init);
     }
 }
 
-fn update_attachments(
-    c: &mut Cable,
-    es: &mut [Entity],
-    layering: bool,
-    clamp: bool,
-    radial_flattening: f64,
-    strained_spool: bool,
-) {
+fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: bool) {
     let half = if layering { c.data[6] } else { 0.0 };
-    let spool_physics = (radial_flattening.is_finite() && radial_flattening > 0.0) || strained_spool;
+    sync_cable_spools(c, es, layering);
+    let (k_r, strained, init_f) = c.spool_config();
+    let spool_physics = k_r > 0.0 || strained;
     let cpl = c.data[3];
-    for i in 0..c.count() {
+    let n_segs = c.count();
+    for i in 0..n_segs {
         let ids = [c.entity(i, 0), c.entity(i, 1)];
         let (points, mut ends, radii) = geometry(c, i, es, layering);
         for side in 0..2 {
@@ -977,7 +1412,7 @@ fn update_attachments(
             let id = ids[side];
             if c.kind(li) != 3
                 || (side == 0 && i != 0)
-                || (side == 1 && i + 1 != c.count())
+                || (side == 1 && i + 1 != n_segs)
                 || es[id][133] == 0.0
             {
                 continue;
@@ -1004,7 +1439,7 @@ fn update_attachments(
                 frame: e.prev_frame,
                 ..e
             };
-            let theta = stored_theta(c.stored(li), es[id][104], half).abs();
+            let theta = stored_theta(c.geom_stored(li), es[id][104], half).abs();
             let sign = if c.cw(li, side == 0) == (side == 0) {
                 -1.0
             } else {
@@ -1015,7 +1450,7 @@ fn update_attachments(
             c.data[lo + 4] = 1.0;
             es[id][135] += 1.0;
         }
-        let mut shifts = [0.0; 2];
+        let mut geom_shifts = [0.0; 2];
         for side in 0..2 {
             let e = ends[side];
             let (radius, theta) = radii[side];
@@ -1044,10 +1479,10 @@ fn update_attachments(
                 }
             }
             let cw = c.cw(i + side, side == 0);
-            shifts[side] = arc(old_rel, new_rel, [0.0; 3], radius, cw, normal, false);
+            geom_shifts[side] = arc(old_rel, new_rel, [0.0; 3], radius, cw, normal, false);
             // A wheel no motor turns follows the line; its rotation carries
             // no material (the row moves it, see `transport`).
-            shifts[side] += if hybrid(kind) {
+            geom_shifts[side] += if hybrid(kind) {
                 stored_delta(theta, e.delta, cw, es[ids[side]][104], half, radius)
             } else if passive_wheel(c, i + side, es) {
                 0.0
@@ -1057,23 +1492,66 @@ fn update_attachments(
                 -e.delta * radius
             };
         }
+
+        // Compute per-side spool constitutive conversion factors and preview rest transfers
+        // BEFORE clamping so clamping enforces the minimum segment rest length in true material units
+        // and never mutates the spool coil stack on rolled-back moves.
+        let force = if spool_physics { segment_tension(c, i) } else { 0.0 };
+        let is_end_spool = [
+            spool_physics && i == 0 && hybrid(c.kind(i)),
+            spool_physics && i + 1 == n_segs && hybrid(c.kind(i + 1)),
+        ];
+        let rho_now = [
+            if is_end_spool[0] { spool_rho(radii[0].0, k_r, cpl, strained, force) } else { 1.0 },
+            if is_end_spool[1] { spool_rho(radii[1].0, k_r, cpl, strained, force) } else { 1.0 },
+        ];
+        let rho_init = [
+            if is_end_spool[0] { spool_rho(radii[0].0, k_r, cpl, strained, init_f) } else { 1.0 },
+            if is_end_spool[1] { spool_rho(radii[1].0, k_r, cpl, strained, init_f) } else { 1.0 },
+        ];
+        let mut rest_shifts = [
+            if is_end_spool[0] {
+                c.spool_ends[0].preview_rest_delta(geom_shifts[0], rho_now[0], rho_init[0])
+            } else {
+                geom_shifts[0]
+            },
+            if is_end_spool[1] {
+                -c.spool_ends[1].preview_rest_delta(-geom_shifts[1], rho_now[1], rho_init[1])
+            } else {
+                geom_shifts[1]
+            },
+        ];
+
         let rest = c.rest(i);
         if clamp && rest.is_finite() {
-            let unclamped = rest - shifts[0] + shifts[1];
+            let unclamped = rest - rest_shifts[0] + rest_shifts[1];
             if unclamped < 1e-6 {
                 let lift = 1e-6 - unclamped;
-                let a = shifts[0].max(0.0);
-                let b = (-shifts[1]).max(0.0);
-                let da = if a + b > EPS {
+                let a = rest_shifts[0].max(0.0);
+                let b = (-rest_shifts[1]).max(0.0);
+                let da_rest = if a + b > EPS {
                     lift * (a / (a + b))
                 } else {
                     0.0
                 };
-                let db = lift - da;
-                shifts[0] -= da;
-                shifts[1] += db;
+                let db_rest = lift - da_rest;
+                let target_rest = [rest_shifts[0] - da_rest, rest_shifts[1] + db_rest];
+                let target_geom = [
+                    if is_end_spool[0] {
+                        c.spool_ends[0].geom_for_rest_delta(target_rest[0], rho_now[0], rho_init[0])
+                    } else {
+                        target_rest[0]
+                    },
+                    if is_end_spool[1] {
+                        -c.spool_ends[1].geom_for_rest_delta(-target_rest[1], rho_now[1], rho_init[1])
+                    } else {
+                        target_rest[1]
+                    },
+                ];
+                let corr_geom = [target_geom[0] - geom_shifts[0], target_geom[1] - geom_shifts[1]];
+                geom_shifts = target_geom;
                 for side in [1, 0] {
-                    let shift = if side == 0 { -da } else { db };
+                    let shift = corr_geom[side];
                     let kind = c.kind(i + side);
                     let e = ends[side];
                     if !hybrid(kind) && !rolling(kind) {
@@ -1095,45 +1573,34 @@ fn update_attachments(
                 }
             }
         }
-        if spool_physics {
-            let force = segment_tension(c, i);
-            let n = c.count();
-            for side in 0..2 {
-                let is_end_spool =
-                    hybrid(c.kind(i + side)) && ((side == 0 && i == 0) || (side == 1 && i + 1 == n));
-                if !is_end_spool || shifts[side].abs() <= EPS {
-                    continue;
-                }
-                let radius = radii[side].0;
-                let r_scale = if radial_flattening.is_finite() && radial_flattening > 0.0 && radius > EPS {
-                    ((radius - radial_flattening * force) / radius).max(0.5)
-                } else {
-                    1.0
-                };
-                let strain_scale = if strained_spool && cpl.is_finite() && cpl > EPS {
-                    1.0 / (1.0 + force * cpl)
-                } else {
-                    1.0
-                };
-                let rho_now = r_scale * strain_scale;
-                let d_nom = if side == 0 { shifts[0] } else { -shifts[1] };
-                let d_rest = spool_rest_delta(&mut c.spool_coils[side], d_nom, rho_now);
-                shifts[side] = if side == 0 { d_rest } else { -d_rest };
-            }
-        }
-        c.set_stored(i, c.stored(i) + shifts[0]);
+
+        // Commit accepted geometric shifts into the spool history and apply exact material transfers.
+        rest_shifts[0] = if is_end_spool[0] {
+            c.spool_ends[0].apply_geom_delta(geom_shifts[0], rho_now[0], rho_init[0])
+        } else {
+            geom_shifts[0]
+        };
+        rest_shifts[1] = if is_end_spool[1] {
+            -c.spool_ends[1].apply_geom_delta(-geom_shifts[1], rho_now[1], rho_init[1])
+        } else {
+            geom_shifts[1]
+        };
+        c.set_stored(i, c.stored(i) + rest_shifts[0]);
         let jo = c.jo(i);
-        c.data[jo + 3] -= shifts[0];
-        c.set_stored(i + 1, c.stored(i + 1) - shifts[1]);
-        c.data[jo + 3] += shifts[1];
+        c.data[jo + 3] -= rest_shifts[0];
+        c.set_stored(i + 1, c.stored(i + 1) - rest_shifts[1]);
+        c.data[jo + 3] += rest_shifts[1];
+
+        // Hybrid-knot geometric synchronization: compare knot-implied geometric drum occupancy
+        // against `c.geom_stored(li)` (not unstretched rest length) and transfer any geometric
+        // correction consistently through the spool model so geometry and material stay coupled.
         for side in 0..2 {
             let li = i + side;
             let lo = c.lo(li);
             let id = ids[side];
-            if spool_physics
-                || !hybrid(c.kind(li))
+            if !hybrid(c.kind(li))
                 || (side == 0 && i != 0)
-                || (side == 1 && i + 1 != c.count())
+                || (side == 1 && i + 1 != n_segs)
             {
                 continue;
             }
@@ -1145,7 +1612,8 @@ fn update_attachments(
             if !knot.is_finite() || !base.is_finite() {
                 continue;
             }
-            let theta = stored_theta(c.stored(li), base, half).abs();
+            let cur_geom = c.geom_stored(li);
+            let theta = stored_theta(cur_geom, base, half).abs();
             let sign = if c.cw(li, side == 0) == (side == 0) {
                 -1.0
             } else {
@@ -1156,11 +1624,31 @@ fn update_attachments(
                     sign * theta,
                     wrap(relative_angle(es, id, ends[side], point) - knot),
                 );
-            let stored = theta_stored(target, base, half);
-            let delta = stored - c.stored(li);
-            if stored.is_finite() && delta.abs() > 1e-3 {
-                c.set_stored(li, stored);
-                c.data[jo + 3] -= delta;
+            let target_geom = theta_stored(target, base, half);
+            let delta_geom = target_geom - cur_geom;
+            if target_geom.is_finite() && delta_geom.abs() > 1e-3 {
+                if is_end_spool[side] {
+                    let mut d_geom = delta_geom;
+                    if clamp {
+                        let d_rest_preview =
+                            c.spool_ends[side].preview_rest_delta(d_geom, rho_now[side], rho_init[side]);
+                        if c.data[jo + 3] - d_rest_preview < 1e-6 {
+                            let max_rest = c.data[jo + 3] - 1e-6;
+                            d_geom = c.spool_ends[side].geom_for_rest_delta(
+                                max_rest,
+                                rho_now[side],
+                                rho_init[side],
+                            );
+                        }
+                    }
+                    let d_rest =
+                        c.spool_ends[side].apply_geom_delta(d_geom, rho_now[side], rho_init[side]);
+                    c.set_stored(li, c.stored(li) + d_rest);
+                    c.data[jo + 3] -= d_rest;
+                } else {
+                    c.set_stored(li, target_geom);
+                    c.data[jo + 3] -= delta_geom;
+                }
             }
         }
         for (side, point) in points.iter().enumerate() {
@@ -1199,6 +1687,9 @@ fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool) {
     if c.count() == 0 {
         return;
     }
+    let (k_r, strained, init_f) = c.spool_config();
+    let spool_physics = k_r > 0.0 || strained;
+    let cpl = c.data[3];
     for li in [0, c.count()] {
         let side = usize::from(li != 0);
         let i = if side == 0 { 0 } else { c.count() - 1 };
@@ -1209,15 +1700,21 @@ fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool) {
         let lo = c.lo(li);
         let jo = c.jo(i);
         let kind = c.kind(li);
-        if kind == 3 && c.stored(li) < -transition_threshold(c) {
-            let stored = c.stored(li);
+        let geom = c.geom_stored(li);
+        if kind == 3 && geom < -transition_threshold(c) {
+            let stored_rest = c.stored(li);
             c.data[lo] = 4.0;
             let r = c.radius(es, li, id, layering).0;
             let n = plane(es, id);
-            c.data[jo + 3] += stored;
+            c.data[jo + 3] += stored_rest;
             c.set_stored(li, 0.0);
+            if spool_physics {
+                c.spool_ends[side].reset_empty();
+            } else {
+                c.spool_ends[side].clear_inactive();
+            }
             if r.is_finite() && r > EPS {
-                let a = -stored / r * (if c.data[lo + 1] != 0.0 { 1.0 } else { -1.0 });
+                let a = -geom / r * (if c.data[lo + 1] != 0.0 { 1.0 } else { -1.0 });
                 let point = add(rotate_axis(sub(c.point(i, side), center), n, a), center);
                 put_v(&mut c.data, jo + 4 + 3 * side, point);
             }
@@ -1245,14 +1742,25 @@ fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool) {
             } else {
                 None
             };
-            if let Some((cw, p, stored)) = candidate {
-                if stored <= transition_threshold(c) {
+            if let Some((cw, p, geom_arc)) = candidate {
+                if geom_arc <= transition_threshold(c) {
                     continue;
                 }
                 c.data[lo] = 3.0;
                 c.data[lo + 1] = f64::from(cw);
-                c.data[jo + 3] -= stored - c.stored(li);
-                c.set_stored(li, stored);
+                if spool_physics {
+                    let force = segment_tension(c, i);
+                    let rho_now = spool_rho(r, k_r, cpl, strained, force);
+                    let rho_init = spool_rho(r, k_r, cpl, strained, init_f);
+                    c.spool_ends[side].sync_with_stored(c.stored(li), rho_init);
+                    let d_geom = geom_arc - c.geom_stored(li);
+                    let d_rest = c.spool_ends[side].apply_geom_delta(d_geom, rho_now, rho_init);
+                    c.data[jo + 3] -= d_rest;
+                    c.set_stored(li, c.stored(li) + d_rest);
+                } else {
+                    c.data[jo + 3] -= geom_arc - c.stored(li);
+                    c.set_stored(li, geom_arc);
+                }
                 put_v(&mut c.data, jo + 4 + side * 3, p);
                 if c.data[lo + 4] == 2.0 {
                     if es[id][135] == 0.0 {
@@ -1266,7 +1774,7 @@ fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool) {
                 if !c.data[lo + 3].is_finite() {
                     let e = endpoint(es, id, c.entity(i, 1 - side));
                     let half = if layering { c.data[6] } else { 0.0 };
-                    let theta = stored_theta(stored, es[id][104], half).abs();
+                    let theta = stored_theta(c.geom_stored(li), es[id][104], half).abs();
                     let sign = if c.cw(li, side == 0) == (side == 0) {
                         -1.0
                     } else {
@@ -2114,7 +2622,15 @@ impl PhysicsWorld {
                         if hybrid(c.kind(li)) {
                             let r = c.radius(&self.entities, li, id, self.options[3] != 0.0).0;
                             if r > EPS {
-                                stored = (if c.cw(li, side == 0) { 1.0 } else { -1.0 }) * r;
+                                let mut r_eff = r;
+                                if (i == 0 && side == 0) || (i + 1 == count && side == 1) {
+                                    let (k_r, _, _) = c.spool_config();
+                                    if k_r > 0.0 {
+                                        let force = segment_tension(c, i);
+                                        r_eff = (r - k_r * force).max(0.5 * r);
+                                    }
+                                }
+                                stored = (if c.cw(li, side == 0) { 1.0 } else { -1.0 }) * r_eff;
                                 if side == 1 {
                                     stored = -stored;
                                 }

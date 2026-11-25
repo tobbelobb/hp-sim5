@@ -69,6 +69,9 @@ function serializeTuple(values) {
 }
 
 function serializeScalar(value) {
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
   if (typeof value === 'number') {
     return formatNumber(value);
   }

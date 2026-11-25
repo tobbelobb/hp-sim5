@@ -182,3 +182,76 @@ test('USDA stepper stick-slip and cable elongation hysteresis attributes load in
     instance.world.getResource('cableSolverBackend').dispose();
   }
 });
+
+test('spool physics preserves history across ECS rebuilds, backend transfer, and matches Native vs Wasm', async () => {
+  const { CablePathComponent } = await import('../../src/js/cable_joints_3d/cable_joints_core.js');
+  const { StepperMotorComponent } = await import('../../hp-sim-3d/app/hangprinter_stepper_motor.js');
+  const wasmModule = new WebAssembly.Module(
+    fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url))
+  );
+  let scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3.usda', import.meta.url), 'utf8');
+  scene = scene.replace(/(^\s*custom double cablePath:stiffnessPerUnitLength\s*=\s*[-+\d.eE]+)\s*$/gm,
+    '$1\n            custom double cablePath:spoolRadialFlattening = 0.000000422\n            custom bool cablePath:strainedSpoolStorage = true\n            custom double cablePath:initialStorageTension = 25');
+
+  const runCase = (mode) => {
+    const backend = mode === 'wasm' ? new WasmPhysicsEngine(wasmModule) : new NativePhysicsEngine();
+    const instance = createHeadlessWorld(scene, { cableSolverBackend: backend });
+    const { world, dt } = instance;
+    let activeBackend = backend;
+    try {
+      const motors = world.query([StepperMotorComponent]).map(id => world.getComponent(id, StepperMotorComponent));
+      const paths = world.query([CablePathComponent]).map(id => world.getComponent(id, CablePathComponent));
+      assert(paths.length > 0 && paths.every(p =>
+        Math.abs(p.spoolRadialFlattening - 0.422e-6) < 1e-12
+        && p.strainedSpoolStorage === true
+        && p.initialStorageTension === 25));
+
+      // Phase 1: Wind at elevated torque to build non-trivial LIFO coils.
+      for (const m of motors) { m.torqueMode = true; m.targetTorque = 0.25; }
+      for (let i = 0; i < 80; i++) world.update(dt);
+
+      if (mode === 'rebuild') {
+        // Force a full Rust PhysicsWorld recreation via ECS structureVersion bump.
+        world.structureVersion += 1;
+      } else if (mode === 'transfer') {
+        // Dispose Native backend (which snapshots spoolHistory into ECS) and continue on Wasm.
+        activeBackend.dispose();
+        const wasmBackend = new WasmPhysicsEngine(wasmModule);
+        const sys = world.systems.find(s => s.backend === activeBackend);
+        sys.backend = wasmBackend;
+        world.setResource('cableSolverBackend', wasmBackend);
+        activeBackend = wasmBackend;
+      }
+
+      // Phase 2: Reverse torque to unwind the stored coils at a different tension.
+      for (const m of motors) { m.targetTorque = -0.10; }
+      for (let i = 0; i < 80; i++) world.update(dt);
+
+      activeBackend.syncSpoolHistory(world);
+      return {
+        stored: paths.map(p => [...p.stored]),
+        totalRest: paths.map(p => p.totalRestLength),
+        histories: paths.map(p => Array.from(p.spoolHistory ?? [])),
+      };
+    } finally {
+      activeBackend.dispose();
+    }
+  };
+
+  const nativeCont = runCase('native');
+  const wasmCont = runCase('wasm');
+  const rebuilt = runCase('rebuild');
+  const transferred = runCase('transfer');
+
+  assert(nativeCont.histories.every(h => h.length >= 14), 'spoolHistory must be exported');
+  for (const [label, other] of [['wasm', wasmCont], ['rebuild', rebuilt], ['transfer', transferred]]) {
+    for (let p = 0; p < nativeCont.stored.length; p++) {
+      for (let k = 0; k < nativeCont.stored[p].length; k++) {
+        assert(Math.abs(nativeCont.stored[p][k] - other.stored[p][k]) < 1e-12,
+          `${label}: stored[${p}][${k}] mismatch (${nativeCont.stored[p][k]} vs ${other.stored[p][k]})`);
+      }
+      assert(Math.abs(nativeCont.totalRest[p] - other.totalRest[p]) < 1e-12,
+        `${label}: totalRest[${p}] mismatch`);
+    }
+  }
+});

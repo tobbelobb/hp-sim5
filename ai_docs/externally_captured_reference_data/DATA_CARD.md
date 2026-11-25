@@ -5,12 +5,37 @@ Practical notes for using the three datasets against hp-sim5. Restore instructio
 (`read_scope`, `read_tracker`, `dataset_root`, `incomplete`). Nothing in this repository
 writes into a dataset directory.
 
-## One rope across all three sets
+## Rope SKUs across the three datasets (important transfer caveat)
 
-LIROS D-Pro 01505-0600, 6 mm (a Dyneema braid), is the rope in DaRUS-3600, in the `LIROS_D-Pro`
-experiments of DaRUS-5171, and on the COPacabana robot of DaRUS-4614 (Reichenbach et al. 2023,
-section 3.1). Parameters identified on one set can therefore be carried to the others without
-a material change.
+The three datasets share 6 mm 12-strand braided LIROS D-Pro Dyneema rope, **but across two
+closely related SKUs — not one identical SKU**:
+
+- **DaRUS-3600 (2023)** and **DaRUS-4614 (COPacabana, 2025):** LIROS D-Pro `01505-0600`, 6 mm
+  12-strand Dyneema SK78, standard coating (Reichenbach et al. 2023, section 3.1).
+- **DaRUS-5171 (2026 thesis, Table 4.1):**
+  - `LIROS_D-Pro`: **LIROS D-Pro XTR**, 6 mm 12-strand Dyneema SK99 with XTR-Grip-Coating
+    (56 kN breaking load, 23 g/m);
+  - `Trowis_VectranHT_T190PU`: 6 mm 12-strand Vectran HT T190, PU coating (38 kN, 29 g/m);
+  - `Trowis_PolyTropFOX`: 6 mm 12-strand Polyester with TPU jacket (9 kN, 32 g/m).
+
+Transferring `(EA, k_r)` identified on DaRUS-5171 `LIROS_D-Pro` (SK99 XTR) into DaRUS-3600 and
+DaRUS-4614 (SK78 `01505-0600`) therefore tests transfer across closely related 6 mm 12-strand
+Dyneema braids rather than identical production lots.
+
+### Relevance & non-extrapolation warning for Hangprinter ropes
+
+**Do NOT directly apply these 6 mm industrial rope parameters (`EA = 83.8 kN`, `k_r = 0.422 µm/N`
+on a single-layer grooved 100.36 mm drum) to Hangprinter fishing line / thin braided Dyneema
+(typically 0.5–1.5 mm, multi-layer ungrooved spools).**
+
+- The **constitutive mechanisms** (strained spool storage with LIFO storage-tension memory,
+  separate geometric occupancy vs unstretched material length, and tension-dependent radial
+  flattening) are general to braided tensioned ropes on drums and are kept **strictly opt-in**
+  (`spoolRadialFlattening = 0`, `strainedSpoolStorage = false` by default).
+- The **numerical parameters** depend strongly on rope diameter, braid architecture, drum groove
+  geometry, and single-layer vs multi-layer bedding (`k_r` on multi-layer ungrooved spools may
+  include coil-into-coil bedding and must be identified on target Hangprinter hardware before
+  enabling in production scenes).
 
 ## File formats
 
@@ -25,140 +50,144 @@ a material change.
 - **`.nc`** files are the NC motion programs that produced a run; **`.svdx`** files are TwinCAT
   Scope projects (not needed for analysis).
 
+## Reproducibility & provenance summary
+
+| Dataset | DOI / Version | Generator script | Committed fixture(s) | Split / Role | Units & Key Assumptions |
+|---|---|---|---|---|---|
+| DaRUS-3600 (CATi, 2023) | `doi:10.18419/DARUS-3600`, V1.0 | `scripts/reference_data/summarize_3600.py`, `extract_3600_pair.py`, `extract_replay_traces.py` | `darus3600_runs.csv` (348 passes), `darus3600_WF125_F120000_torque_pair.npz`, `darus3600_replay_pair.csv` | Cross-dataset blind evaluation (0.5, 2.0, 5.0 m/s; 70–180 N) + measured-encoder replay | Lengths in m, forces in N, speed in m/s; `R_D = 50.18 mm`; pre-wound `init_storage_tension = force`; `dTorque_*` logged at 1/10 scale |
+| DaRUS-5171 (Thesis, 2026) | `doi:10.18419/DARUS-5171`, V1.0 | `scripts/reference_data/summarize_5171.py`, `extract_replay_traces.py` | `darus5171_fdp_fc_map.csv` (75 ident runs), `darus5171_stat_valid.csv` (54 held-out valid runs), `darus5171_replay_wc180_dp75.csv` | Ident: `FDP-FC-MAP` (25/rope); Held-out valid: `StatCompensationValid` (18/rope at +2, +3 m/s); Replay: `WC180/Export 1.csv` | `R_D = 50.18 mm`; LSV absolute scale accuracy ±500 ppm (nuisance intercept `b0` frozen from ident split, reported alongside centered RMSE); linear slope fit `np.polyfit(x_T, x_lsv, 1)` |
+| DaRUS-4614 (COPacabana, 2025) | `doi:10.18419/DARUS-4614`, V1.0 | `scripts/reference_data/summarize_4614.py` | `darus4614_planeA.csv` (48 rows: 8 conditions × 6 poses) | Static swivel-pulley IK + static stiffness/force-distribution benchmark (all 5 non-home poses × 2 payloads × APC25/50/75) | Geometry & `I = diag(1,1,1)` from `COPacabana.xml` (pulley radii 37/33 mm, swivel axes `±X`); fixed pulley-exit anchors (no winches/dynamics); Kabsch tracker RMSD 0.33 mm |
+
+### Lifecycle & solver design contract
+
+- **Geometric occupancy vs material length:** Each active spool end tracks geometric drum arc
+  occupancy (`geom_stored`) separately from unstretched stored material length (`c.stored(li)`).
+  Layering radius/theta, hybrid rolling↔attachment transitions, and hybrid-knot synchronization
+  use `geom_stored`, while material conservation (`sum(rest) + sum(stored) == totalRestLength`)
+  and XPBD strain use unstretched rest length.
+- **Effective lever arm:** When `k_r > 0`, end-spool constraint rows scale the lever arm to
+  `r_eff = max(0.5 * r, r - k_r * F)` for torque-mode Jacobian and reported motor load torque.
+- **Explicit initial spool state:** Pre-wound rope on a spool end defaults to `initialStorageTension = 0 N`
+  (unstretched) unless explicitly configured per cable (`set_cable_spool_params` in Rust,
+  `cablePath:initialStorageTension` in USDA, or `path.initialStorageTension` in JS).
+- **Winding-history lifecycle:** Per-cable winding history (`SpoolEnd` LIFO stacks, bounded to
+  256 material-preserving coalesced coils per end) is exported/imported through the C ABI
+  (`engine_export_spool_state` / `engine_import_spool_state`) and automatically preserved in
+  `CablePathComponent.spoolHistory` across ECS `structureVersion` rebuilds, checkpoints, and
+  Native↔WASM backend switches. External edits to `c.stored(li)` trigger an automatic clean
+  resync; toggling spool physics OFF at runtime clears inactive stacks cleanly.
+- **Single solver architecture:** `RustPhysicsEngine` (via `NativePhysicsEngine` or
+  `WasmPhysicsEngine`) is the sole physics solver; there is no separate JS reference physics
+  implementation (`cable_joints_core.js` only holds ECS components and snapshot helpers).
+
 ## DaRUS-3600: cable actuator test rig (CATi), 2023
 
 Complete (393 files). Test winch (W7 in the settings) and load winch (W8) with the rope between
-them. Grooved single-layer drums of nominal diameter 100.36 mm, groove pitch 7 mm, 5:1 planetary
-gear on the test winch.
+them. Grooved single-layer drums of nominal diameter 100.36 mm (`R_D = 50.18 mm`), groove pitch
+7 mm, 5:1 planetary gear on the test winch.
 
 - Grid: `{Torque,Velocity}_based/WF{70,125,180}_F{30000,120000,300000}/{Unwind,Rewind}`. `WF`
-  is the target force in N and `F` the feed in mm/min (0.5, 2 and 5 m/s). Each cell has about
-  10 exports per direction; the paper used 10.
-- Each export is one pass. The NC program winds from 1 m to 18 m and sets `bTrigger_Record`
-  between 4 m and 14 m, so the recorded window is 10 m at constant speed. Use
-  `Scope.recorded('bTrigger_Record')`.
-- Units: positions in m, velocities in m/s, forces in N, power in W.
-- `dTorque_test` and `dTorque_load` are logged at **1/10 scale**: the authors' `catanalyze.m`
-  multiplies by 10. With that correction the test-winch torque matches force × drum radius
-  (0.655 × 10 / 0.049 ≈ 134 N against 125 N target). The load-winch torque and both power
-  channels do not yet balance against the measured force; do not use them as ground truth.
-- `dForce_test` and `dForce_load` come from compression load cells in the spooling traverses.
-  On unwind the load side reads about 2 N higher (expected with pulley friction). On rewind the
-  load side still reads higher, by about 8.7 N, which has the wrong sign for friction. Treat
-  the force difference as unexplained until a calibration offset is ruled out.
-- Optical travel: `dPosition_lsv_enc` (laser surface velocimeter, Polytec LSV-2100) and
-  `dPosition_asco_enc` (ASCOspeed). Both are specified at 0.05 % absolute accuracy and 0.02 to
-  0.03 % repeatability. Over one 10 m pass they disagree on scale by about 0.13 %, which is the
-  same order as the rope strain. Absolute travel ratios are therefore not usable; only
-  comparisons with the same sensor across forces and speeds are.
-- Sensor validity: the LSV is configured with `ZeroVelocity=0.15` m/s and the ASCOspeed notes
-  give a minimum feed of 0.3 m/s. Neither tracks the rope through a reversal or a slow segment.
-- `Data/Cablerobot_profile/cablerobot_path.csv` is a single-cable force and length trajectory at
-  10 ms (`f_ist[0]`, `l_ist[0]`), not a rig run.
+  is the target force in N and `F` the feed in mm/min (0.5, 2 and 5 m/s).
+- Each export is one pass (`bTrigger_Record` over 10 m constant-speed window).
+- `dTorque_test` and `dTorque_load` are logged at **1/10 scale** (`catanalyze.m` multiplies by 10).
+- `dForce_test` and `dForce_load`: load side reads higher in both directions (+2 N unwind, +8.7 N
+  rewind); treat the inter-load-cell difference as an unexplained calibration offset.
+- Optical travel: `dPosition_lsv_enc` (Polytec LSV-2100, ±0.05 % absolute accuracy, 0.02–0.03 %
+  repeatability, `ZeroVelocity = 0.15 m/s`) vs `dPosition_asco_enc` (0.3 m/s minimum). Use LSV.
 
-### Stage 1 result (2026-11-25): rope travel per drum travel falls with force
+### Stage 1 & cross-dataset validation (`darus3600_rig.rs`)
 
-`scripts/reference_data/summarize_3600.py` → `tests/fixtures/reference_data/darus3600_runs.csv`
-(348 runs), then `scripts/reference_data/report_3600.py`:
-
-- The LSV/drum travel ratio falls by **7 to 10 ppm per N** in all 12 control × direction × speed
-  cells (each slope 11 to 30 standard errors from zero). From 70 N to 180 N that is about 1000 ppm,
-  10 mm over the 10 m pass. Winding and unwinding show the same slope, so this is a force-dependent
-  running radius (rope flattening in the groove, diameter shrinking under load), not hysteresis.
-- hp-sim5's legacy spool model (`options[19..=20] = 0`) pays rope off a spool as rest length at
-  fixed radius, giving a positive slope `+1e6/EA ppm/N`. Adding strained spool storage with LIFO
-  storage-tension memory (`options[20] = 1`) and tension-dependent radial flattening (`options[19] = k_r`,
-  m/N) in `engine.rs` closes this gap: LIROS D-Pro parameters identified purely on DaRUS-5171
-  (`EA = 83.8 kN`, `k_r = 0.422 µm/N`) blindly predict `-8.41 ppm/N` against DaRUS-3600's `-8.69 ppm/N`.
-  Verified in `src/wasm/cable_solver/tests/darus3600_rig.rs`.
-- Run-to-run scatter: LSV ±100 to 200 ppm per run, ASCO ±400 to 700 ppm. Use LSV.
-- Speed changes the ratio by up to ±400 ppm with no common trend between the two control modes.
-  The paper attributes this to the preload controller's speed offset, so it is not rope physics.
-- The intercept (the absolute ratio) is within the sensors' 0.05 % absolute accuracy and must
-  not be fitted.
+- Measured pooled LSV/drum slope across all 12 control × direction × speed cells (348 runs):
+  **−8.69 ppm/N** (cell slopes −6.96 to −10.11 ppm/N; within-cell repeat RMS 74–164 ppm).
+- Blind transfer of DaRUS-5171 `LIROS_D-Pro` parameters (`EA = 83.8 kN`, `k_r = 0.422 µm/N`,
+  identified live from `darus5171_fdp_fc_map.csv`) predicts **−8.43 ppm/N** at all three rig
+  speeds (0.5, 2.0, 5.0 m/s) against measured speed-cell means −9.25, −8.01, −8.83 ppm/N.
+- **Measured-encoder replay** (`darus3600_replay_pair.csv`, 125 N, 2 m/s, zero feedforward):
+  upgraded solver reduces span-travel error on both unwind (1169 → 1008 ppm) and rewind
+  (2856 → 1093 ppm) and cuts unwind/rewind asymmetry from **1760 ppm** (legacy) to **13 ppm**
+  (measured asymmetry: 72 ppm).
 
 ## DaRUS-5171: synthetic fibre rope modelling and slip compensation, 2026
 
-Complete (3488 files verified). Ropes: `LIROS_D-Pro` (6 mm 12-strand Dyneema SK99, 56 kN breaking
-load, 23 g/m), `Trowis_VectranHT_T190PU` (6 mm 12-strand Vectran HT T190, 38 kN, 29 g/m, PU coating),
-`Trowis_PolyTropFOX` (6 mm 12-strand Polyester with TPU jacket, 9 kN, 32 g/m), plus `Winch_Testbed`
-and `CableDirectDrive_Testbed` experiments. Each rope has identification runs (`*Ident*`) and
-matching validation runs (`*Valid*`):
-
-- friction: `PreloadedViscousFrictionIdent`, `PreloadedLuGreFrictionIdent` and `...Validation`;
-- capstan friction under varying force: `DynCapstanFrictionIdent` with `{RW,UW}_{Rising,Falling}`
-  (loading and unloading show the same Euler-Eytelwein slope `exp(mu*beta) - 1`: ~0.23 unwinding,
-  ~0.47 rewinding including traverse pulley);
-- slip: `SlipIdent` (`V-FC-MAP` force × velocity and `FDP-FC-MAP` 5×5 storage tension `F_S` ×
-  unwinding tension `F_L` on the two-winch SWP rig);
-- linear direct drive (`Lda` = *Lineardirektantrieb*, SDA testbed): `StatSlipIdentLda` (`WC75` ...
-  `WC375`), `DynSlipIdentLda`, `VelDynCompValidLda`, `PowerDynCompValidLda`. Here the load winch
-  is replaced by a 4 m Bosch Rexroth linear motor carriage (`ML3P11`) with an `IMScompact` linear
-  encoder (±1 µm repeatability, valid at zero speed and through reversals) and an in-line `Kistler
-  9311C` piezo load cell (`f_kistler1`).
-- temperature: `TempSlip` (the `theta_T`, `theta_L` channels are IR surface temperatures in °C;
-  PT1 saturation +6 to +9 K over ~25 min, slip effect ≤5 mm / 10 m on D-Pro and negligible on
-  Vectran and PolyTropFOX);
-- robot-like motion: `CableRobotProfileFullIdent`, validated by `StatCompensationValid`,
-  `VelDynCompensationValid` and `PowerDynCompensationValid`, and their `...Lda` variants.
+Complete (3488 files verified). Three 6 mm 12-strand ropes (`LIROS_D-Pro` SK99 XTR,
+`Trowis_VectranHT_T190PU`, `Trowis_PolyTropFOX`) on both the two-winch SWP rig and the 4 m
+linear direct-drive SDA (`*Lda`) testbed (1 µm `IMScompact` optical scale + `Kistler 9311C`
+piezo load cell).
 
 ### SDA (`*Lda`) force scaling quirk
-In `*Lda` runs, `f_kistler1`, `f_L`, and the linear motor's own electromagnetic force `f_Lm` all
-agree to ~1 % and read **~1.43–1.54×** the test-winch traverse channel `f_T` in both directions
-(ratio ~1.44 unwinding, ~1.51 rewinding, i.e. `sqrt(2) ≈ 1.414` from the 90° traverse deflection
-pulley plus ±3.5 % pulley friction). Use `f_kistler1` as the true span force on SDA.
+In `*Lda` runs, `f_kistler1`, `f_L`, and `f_Lm` agree to ~1 % and read **~1.43–1.54×** `f_T`
+(`sqrt(2)` from the 90° traverse deflection pulley plus ±3.5 % pulley friction). Use `f_kistler1`
+as the true span force on SDA.
 
-### Stage 2 & 3 result (2026-11-25): 2-parameter spool + stiffness law across 3 ropes
+### Stage 2 & 3 results: identification, 4-way blind ablation, and measured replay (`darus5171_ropes.rs`)
 
-Separating winding storage tension `F_S` from unwinding tension `F_L` in `SlipIdent/Data/FDP-FC-MAP`
-(`scripts/reference_data/summarize_5171.py` → `tests/fixtures/reference_data/darus5171_fdp_fc_map.csv`)
-directly identifies axial stiffness `EA = 1 / c_FL` and drum radial flattening
-`k_r = -(c_FS + c_FL) * R_D` (`R_D = 50.18 mm`) for all three ropes:
+All parameters are identified strictly on `FDP-FC-MAP` via linear regression `np.polyfit(x_T, x_lsv, 1)`
+and evaluated blind on held-out `StatCompensationValid` (`n = 18` per rope, +2 and +3 m/s) using
+both **strictly frozen RMSE** (using `b0` frozen from `FDP-FC-MAP`, zero validation fitting) and
+**centered RMSE**:
 
-| Rope (6 mm braid) | `EA` (kN) | `k_r` (µm/N) | `c_FS`, `c_FL` (ppm/N) | Ident RMS | Blind `StatCompensationValid` RMSE (n=18) |
-|---|---:|---:|---|---:|---|
-| LIROS D-Pro (Dyneema) | 83.8 | 0.422 | −20.35, +11.93 | 91 ppm | 968 → **155 ppm** (+84.0%) |
-| Trowis Vectran HT (LCP) | 98.4 | 0.421 | −18.55, +10.16 | 92 ppm | 821 → **160 ppm** (+80.5%) |
-| Trowis PolyTropFOX (PES/TPU) | 51.0 | 1.546 | −50.41, +19.61 | 1252 ppm | 1449 → **972 ppm** (+33.0%) |
+| Rope (6 mm braid) | `EA` (kN) | `k_r` (µm/N) | `b0` (ppm) | Ident RMS | Legacy (frozen / centered) | Strained-only (frozen / centered) | Flattening-only (frozen / centered) | **Full upgraded (frozen / centered)** |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| LIROS D-Pro XTR (SK99) | 83.8 | 0.422 | +1670 | 91 ppm | 2786 / 889 | 1178 / 396 | 1648 / 537 | **158 / 155 ppm** |
+| Trowis Vectran HT (LCP) | 98.4 | 0.421 | −6828 | 92 ppm | 2718 / 720 | 1352 / 304 | 1588 / 372 | **290 / 161 ppm** |
+| Trowis PolyTropFOX (PES/TPU) | 51.0 | 1.546 | +1270 | 1252 ppm | 6945 / 1294 | 4343 / 540 | 2885 / 366 | **1043 / 980 ppm** |
 
-- Both bare 6 mm 12-strand braids (Dyneema, Vectran) share the exact same radial flattening
-  `k_r = 0.42 µm/N` (~1.3 % diameter flattening at 180 N) and land inside the LSV's 100–200 ppm
-  repeat scatter on held-out `StatCompensationValid` runs at +2 and +3 m/s.
-- Soft TPU-jacketed PolyTropFOX flattens ~3.7× more and has ~1000 ppm viscoelastic/jacket scatter
-  even in its identification split (consistent with thesis Table 4.10).
-- On `DynSlipIdentLda` (1 µm IMScompact scale, 100–400 N dynamic reversals), loading-vs-unloading
-  elongation hysteresis width is small (+0.05 to +0.08 mm on ~2 m span, <1 % of elastic stretch),
-  whereas strained spool storage + radial flattening is 10–25 mm over 10 m.
-- Verified in `src/wasm/cable_solver/tests/darus5171_ropes.rs`.
+- On **both bare 12-strand braids** (D-Pro XTR, Vectran HT), the full 2-parameter model beats
+  Legacy, Strained-only, and Flattening-only on **both** frozen and centered RMSE (landing inside
+  the 100–200 ppm LSV repeat scatter at both +2 and +3 m/s).
+- On **TPU-jacketed PolyTropFOX**, the full model beats every ablation by 2.8×–6.7× on strictly
+  frozen RMSE (1043 vs 2885–6945 ppm); cyclic run-in of the soft TPU jacket between the
+  `2025-02-21` ident split and `2025-03-03` validation split reduces its validation slope, which
+  makes single-mechanism ablations look smaller on centered RMSE only after absorbing 2800–4300 ppm
+  of free mean-offset error.
+- **True measured motor-trajectory replay** (`darus5171_replay_wc180_dp75.csv`, full 20 s / 28 m
+  wind at ~77 N → turnaround → 10 m unwind at ~177 N, driving both drums strictly from recorded
+  encoders `(x_T(t), x_L(t))` with **zero feedforward** and **zero rest-length edits**):
+  - **Measured:** mean tension `176.9 N`, drift `−5.1 N`, `lsv_ratio = 1.002238`.
+  - **Legacy solver:** loses tension during the wind/turnaround and enters unwind nearly slack
+    (`21.4 N` mean, `+103.7 N` drift — **155.5 N** mean force error).
+  - **Upgraded solver:** tracks the full 28 m trajectory to **`186.1 N` mean** (9.2 N / 5.2 % error),
+    `−22.7 N` drift, and `lsv_ratio + b0 = 1.002033` (**206 ppm** error).
 
-## DaRUS-4614: COPacabana adaptive preload control, 2025
+## DaRUS-4614: COPacabana static IK & cable-stiffness benchmark, 2025
 
-An 8-cable robot (`COPacabana.xml`: anchor and platform points, crossed cable layout, pulley radii
-0.037 m upper and 0.033 m lower, IPAnema3 winches, LIROS D-Pro 6 mm rope). The robot scope (10 ms
-on CircPath, 100 ms on 10_Std PlaneA) logs `x[0..7]`, `x_tar`, `v`, `v_tar`, `f[0..7]`, `f_tar`,
-platform pose `p[0..5]` and `p_tar`, wrench `wc`, and power. The FARO laser tracker logs platform
-reflector position at 100 Hz in its own frame; Kabsch registration against `00_Lasertracker_Ref`
-gives 0.33 mm RMSD.
+8-cable parallel robot (`COPacabana.xml`: crossed layout, swivel pulley radii 37 mm upper /
+33 mm lower, swivel entry axes `±X`, `I = diag(1, 1, 1)`). Scope in `darus4614_copacabana.rs` is
+explicitly bounded to (1) exact swivel-pulley IK verification and (2) static cable-stiffness /
+force-distribution benchmarking with fixed pulley-exit anchors (not winch drums or dynamic motion).
 
-- **Units and exact pulley kinematics:** `x[i]` and `x_tar[i]` are cable length deltas in **metres**
-  relative to platform pose `[0, 0, 0]`. Each base anchor in `COPacabana.xml` is the entry point of
-  a swivel pulley with radius `r` and entry axis `[a31, a32, a33]` (`±X`). Implementing this pulley
-  IK reproduces logged `x_tar[0..7]` across all 6 PlaneA poses to **0.084 mm** without `WiPy.pyd`.
-- **Experiments:** `10_Std_Load29100`, `20_Std_Load13900` (standard control, payloads 29.1 and
-  13.9 kg) and `3x_Apc_Load29100_V{25,50,75}`, `4x_Apc_Load13900_V{25,50,75}` (adaptive preload).
-- **Stage 4 result (2026-11-25):** `scripts/reference_data/summarize_4614.py` →
-  `tests/fixtures/reference_data/darus4614_planeA.csv`, verified in
-  `src/wasm/cable_solver/tests/darus4614_copacabana.rs`. Transferring `EA = 83.8 kN` **blind**
-  from DaRUS-5171 into an 8-cable `PhysicsWorld` model of COPacabana predicts:
-  - P1 APC75 − STD tension rise at 13.9 kg: mean **74.6 N** simulated vs **75.8 N** measured
-    (1.6 % error, per-cable RMSE 14.4 N);
-  - P1 APC75 − APC25 tension rise at 29.1 kg: mean **57.2 N** simulated vs **69.7 N** measured
-    (per-cable RMSE 15.8 N);
-  - 29.1 − 13.9 kg vertical elastic sag: **−2.62 mm** simulated (symmetric load sharing) vs
-    **−3.69 mm** (P0) and **−4.40 mm** (P1) measured by the FARO laser tracker (larger in hardware
-    because lower-cable preload/stiction shifts more of the +149 N delta onto the upper cables, and
-    braided Dyneema softens to ~30–45 kN below ~80 N as seen at low-tension poses P2/P3).
-- Note on absolute PlaneA/CircPath errors: measured tracker spans show ~−4.5 % Y compression
-  (~±20 mm on PlaneA, −84 mm on CircPath) common to both payloads and all modes, while repeat
-  scatter is 1.0–1.7 mm; differential comparisons (APC preload deltas and payload-mass deltas)
-  cancel this static machine/frame offset cleanly.
+- **Swivel-pulley IK:** Reproduces logged `x_tar[0..7]` across P0..P5 × 8 cables to **0.084 mm**.
+- **All-pose blind APC stiffness benchmark** (`EA = 83.8 kN` live from DaRUS-5171, baseline
+  initialized from actual measured `lo_row.f[i]` across all 5 non-home poses P1..P5 × both
+  payloads 13.9 & 29.1 kg × APC25/50/75 = 25 pair×pose conditions, 200 cable readings):
+  - Overall blind per-cable `dF` RMSE across all 200 readings: **31.1 N**.
+  - Workspace center P1 (well-tensioned, `min_F >= 61 N`): 13.9 kg APC75−STD RMSE **14.4 N**
+    (mean +74.6 vs +75.8 N); 29.1 kg APC75−APC25 RMSE **15.8 N** (mean +57.2 vs +69.7 N).
+  - Low-tension boundary poses P2/P3 (`min_F` down to 1–34 N) show noticeably larger `dF`
+    over-prediction (RMSE up to 67.6 N at P2 APC75), consistent with low-tension braid softening
+    below ~60–80 N.
+- **Blind payload-sag residual (29.1 − 13.9 kg):** Simulated **−2.62 mm** vs FARO tracker
+  **−3.69 mm** at P0 (error **+1.07 mm**, 29.0 %) and **−4.40 mm** at P1 (error **+1.79 mm**,
+  40.5 %). Preserved openly as an unmodeled residual; candidate hypotheses (not proven causes)
+  include low-tension braid softening, re-homing preload differences between `20_Std` and `10_Std`,
+  pulley/traverse friction shifting load to upper cables, and finite frame compliance.
+
+## Status of planned validation items (completed vs deferred)
+
+- **Completed in PR #129:**
+  - DaRUS-3600: 348-run multi-speed validation, cross-dataset blind prediction from 5171, and
+    measured-encoder unwind/rewind replay.
+  - DaRUS-5171: 3-rope identification (`FDP-FC-MAP`), held-out 4-way ablation (`StatCompensationValid`)
+    with both frozen and centered RMSE, and feedforward-free measured-encoder replay (`WC180/Export 1`).
+  - DaRUS-4614: Swivel-pulley IK verification, all-pose (P1..P5) / all-APC-level static stiffness
+    benchmark, and quantified payload-sag residual.
+  - Solver correctness: Geometric occupancy vs material separation across multi-revolution layering,
+    effective-radius torque Jacobian, explicit initial storage tension, lifecycle export/import
+    across Rust/Native/WASM/ECS rebuilds, adversarial clamp & hybrid-knot invariants.
+- **Deferred (future work, explicitly out of scope for PR #129):**
+  - Dynamic capstan friction (`DynCapstanFrictionIdent`) and LuGre/viscous winch friction
+    identification (`PreloadedLuGreFrictionIdent`) from DaRUS-5171.
+  - Thermal slip (`TempSlip`) and dynamic SDA (`*Lda` / `VelDynCompValidLda` / `PowerDynCompValidLda`)
+    replay tests.
+  - Dynamic COPacabana `CircPath` closed-loop trajectory replay with modeled winches and
+    nonlinear low-tension `EA(F)` / frame compliance investigation.

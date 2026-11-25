@@ -44,6 +44,15 @@ function applyCablePath(world, prim, jointKeys, registry, machineId, iterations)
     if (hystFrac !== null && hystFrac > 0) pathComp.hysteresisFraction = hystFrac;
     const hystRec = readNumericAttribute(prim, "cablePath:hysteresisRecoveryTime");
     if (hystRec !== null && hystRec >= 0) pathComp.hysteresisRecoveryTime = hystRec;
+    const radialFlat = readNumericAttribute(prim, "cablePath:spoolRadialFlattening");
+    if (radialFlat !== null && radialFlat >= 0) pathComp.spoolRadialFlattening = radialFlat;
+    const strainedSpool = getAttribute(prim, "cablePath:strainedSpoolStorage");
+    if (typeof strainedSpool === "boolean") pathComp.strainedSpoolStorage = strainedSpool;
+    else if (typeof strainedSpool === "number" && Number.isFinite(strainedSpool)) {
+        pathComp.strainedSpoolStorage = strainedSpool !== 0;
+    }
+    const initStorageTension = readNumericAttribute(prim, "cablePath:initialStorageTension");
+    if (initStorageTension !== null && initStorageTension >= 0) pathComp.initialStorageTension = initStorageTension;
     const cablePath = world.createEntity();
     world.addComponent(cablePath, pathComp);
     world.addComponent(cablePath, new MachineTagComponent(machineId));

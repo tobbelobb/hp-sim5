@@ -58,10 +58,37 @@ export class RustPhysicsEngine {
     this.bindings = keep;
   }
   invalidate() { this.unbind(); this.dirty = true; }
+  syncSpoolHistory(world = this.world) {
+    if (!world || !this.pathIds?.length || !this.transport.exportSpoolState) return;
+    for (const [p, id] of this.pathIds.entries()) {
+      const path = world.getComponent(id, CablePathComponent);
+      if (!path) continue;
+      const state = this.transport.exportSpoolState(p);
+      if (state?.length) path.spoolHistory = state;
+    }
+  }
+  applyCableSpoolParams(world = this.world) {
+    if (!world || !this.pathIds?.length || !this.transport.setCableSpoolParams) return;
+    const worldKrRaw = world.getResource('spoolRadialFlattening');
+    const worldKr = Number.isFinite(worldKrRaw) && worldKrRaw > 0 ? worldKrRaw : 0;
+    const worldStrained = world.getResource('strainedSpoolStorage') === true;
+    for (const [p, id] of this.pathIds.entries()) {
+      const path = world.getComponent(id, CablePathComponent);
+      if (!path) continue;
+      const kr = Number.isFinite(path.spoolRadialFlattening) && path.spoolRadialFlattening >= 0
+        ? path.spoolRadialFlattening : worldKr;
+      const strained = typeof path.strainedSpoolStorage === 'boolean'
+        ? path.strainedSpoolStorage : worldStrained;
+      const initF = Number.isFinite(path.initialStorageTension) && path.initialStorageTension > 0
+        ? path.initialStorageTension : 0;
+      this.transport.setCableSpoolParams(p, kr, +strained, initF);
+    }
+  }
   dispose() {
+    this.syncSpoolHistory(this.world);
     this.unbind();
     this.transport.destroy();
-    this.regions = []; this.revision = -1; this.world = null;
+    this.regions = []; this.revision = -1; this.world = null; this.pathIds = [];
   }
   prepare(world) {
     this.dispose(); this.world = world;
@@ -155,6 +182,17 @@ export class RustPhysicsEngine {
       paths.push(data.length, ...data);
     }
     this.transport.create(bodies, new Float64Array(paths), this.pathIds.length);
+    if (this.transport.importSpoolState) {
+      for (const [p, id] of this.pathIds.entries()) {
+        const path = get(id, CablePathComponent);
+        if (path?.spoolHistory?.length) {
+          const buf = path.spoolHistory instanceof Float64Array
+            ? path.spoolHistory : Float64Array.from(path.spoolHistory);
+          this.transport.importSpoolState(p, buf);
+        }
+      }
+    }
+    this.applyCableSpoolParams(world);
     this.entityRegion = this.region(this.transport.entities(), () => this.transport.entities());
     this.optionsRegion = this.region(this.transport.options(), () => this.transport.options());
     this.bindingRegion = this.entityRegion;
@@ -284,8 +322,7 @@ export class RustPhysicsEngine {
       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
     data[o + 15] = world.getResource('dt') ?? -1;
-    data[o + 19] = Math.max(0, finite('spoolRadialFlattening', 0));
-    data[o + 20] = +flag('strainedSpoolStorage', false);
+    this.applyCableSpoolParams(world);
     const topology = this.transport.step(dt);
     this.observationVersion = (this.observationVersion ?? 0) + 1;
     this.refreshMemory();

@@ -78,3 +78,12 @@ def test_darus5171_and_4614_fixtures_have_expected_coverage():
         plane_a = list(csv.DictReader(f))
     assert len(plane_a) == 48  # 8 experiments x 6 poses (P0..P5)
     assert {r['pose'] for r in plane_a} == {'P0', 'P1', 'P2', 'P3', 'P4', 'P5'}
+
+    with (FIXTURES / 'darus5171_replay_wc180_dp75.csv').open() as f:
+        replay_5171 = list(csv.DictReader(f))
+    assert len(replay_5171) >= 700
+    assert any(r['trig_rec'] == '1' for r in replay_5171)
+
+    with (FIXTURES / 'darus3600_replay_pair.csv').open() as f:
+        replay_3600 = list(csv.DictReader(f))
+    assert {r['phase'] for r in replay_3600} == {'unwind', 'rewind'}

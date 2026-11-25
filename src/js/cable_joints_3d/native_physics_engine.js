@@ -46,6 +46,9 @@ export class NativePhysicsEngine extends RustPhysicsEngine {
     super({
       create(bodies, paths, count) { host = addon.create(bodies, paths, count); },
       entities: () => host.entities(), options: () => host.options(), path: index => host.path(index),
+      setCableSpoolParams: (index, kr, strainedMode, initTension) => host.setCableSpoolParams(index, kr, strainedMode, initTension),
+      exportSpoolState: index => host.exportSpoolState(index),
+      importSpoolState: (index, data) => host.importSpoolState(index, data),
       step: dt => host.step(dt), destroy: () => { host?.dispose(); host = null; },
     });
     this.artifact = artifact;
