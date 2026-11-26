@@ -97,7 +97,7 @@ jobs:
         run: cmake -S RRF -B RRF/build
       - name: Build rrf_simulator
         if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
-        run: cmake --build RRF/build --target rrf_simulator -j 2
+        run: cmake --build RRF/build --target rrf_simulator -j "$(nproc)"
       - name: Build physics for slow tests
         if: matrix.suite == 'slow' || steps.benchmark.outputs.run == 'true'
         run: |
