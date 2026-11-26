@@ -260,6 +260,11 @@ void NetworkInterfaceHost::StopListening() noexcept
 
 bool NetworkInterfaceHost::StartListening(TcpPort port) noexcept
 {
+    if (!HostIdle::IsServerMode())
+    {
+        return true;
+    }
+
     StopListening();
 
     listenFd = socket(AF_INET, SOCK_STREAM, 0);

@@ -17,6 +17,11 @@ void SetServerMode(bool enabled) noexcept
     }
 }
 
+bool IsServerMode() noexcept
+{
+    return serverMode.load(std::memory_order_relaxed);
+}
+
 void SetServerIdle(bool idle) noexcept
 {
     const bool mode = serverMode.load(std::memory_order_relaxed);

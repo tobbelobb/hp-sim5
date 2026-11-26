@@ -44,9 +44,7 @@ for ((i=1; i<=ITERATIONS; i++)); do
         continue
     fi
 
-    diff_count=$(diff "$BASE_LOG" "$TEST_LOG" | wc -l)
-
-    if [[ "$diff_count" -eq 4 ]]; then
+    if diff -q <(tail -n +2 "$BASE_LOG") <(tail -n +2 "$TEST_LOG") > /dev/null; then
         ((correct++))
         ((tries++))
         printf "✅"

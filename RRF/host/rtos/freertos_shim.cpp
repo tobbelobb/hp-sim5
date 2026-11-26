@@ -695,6 +695,10 @@ void ExitCritical() noexcept
 
 void Yield() noexcept
 {
+    if (!HostIdle::IsServerMode())
+    {
+        return;
+    }
     if (HostIdle::IsServerIdle())
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
