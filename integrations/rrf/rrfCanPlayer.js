@@ -317,7 +317,7 @@ export class RrfCanPlayer {
             changed = true;
         }
 
-        if (changed) {
+        if (changed || this.preserveTiming) {
             if (bucketIdx === 0) {
                 this.baselineEmitted = true;
             }
@@ -419,6 +419,10 @@ export class RrfCanPlayer {
 
         const axis = this._assignAxisName(motorId);
         const totalTicks = accelTicks + steadyTicks + decelTicks;
+        if (this.preserveTiming && totalTicks > 0) {
+            const endBucket = Math.ceil((whenToExecute + totalTicks) / this.ticksPerBucket) - 1;
+            this.maxBucketSeen = Math.max(this.maxBucketSeen, endBucket);
+        }
         const state = this._ensureAxisState(axis);
         if (state) {
             state.lastTick = Math.max(state.lastTick, whenToExecute + totalTicks);
@@ -701,7 +705,8 @@ export class RrfCanPlayer {
         await this._flushReadyBuckets(true);
     }
 
-    async run(stream, format = FileFormat.RRF_CAN) {
+    async run(stream, format = FileFormat.RRF_CAN, { preserveTiming = false } = {}) {
+        this.preserveTiming = preserveTiming;
         this._resetState();
         try {
             if (format === FileFormat.RRF_CAN_BINARY) {
@@ -747,7 +752,7 @@ self.addEventListener('message', async (e) => {
                     throw new Error(`Failed to fetch ${filename}`);
                 }
                 const format = detectFileFormat(filename) || FileFormat.RRF_CAN;
-                await rrfCanPlayer.run(response.body, isRrfFormat(format) ? format : FileFormat.RRF_CAN);
+                await rrfCanPlayer.run(response.body, isRrfFormat(format) ? format : FileFormat.RRF_CAN, { preserveTiming: e.data.preserveTiming });
             } catch (err) {
                 console.error('RrfCanPlayer fetch failed:', err);
                 postMessage({ type: 'error', message: err.message });

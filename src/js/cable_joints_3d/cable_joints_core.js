@@ -39,6 +39,16 @@ export class CableLinkComponent {
   }
 }
 
+// A swivel pulley's fixed mount: the line arrives along `axis` (world, unit)
+// at `entry` (world). The physics turns the wheel about the axis towards the
+// line leaving it and writes its centre and plane to Position/CableLink.
+export class SwivelPulleyComponent {
+  constructor(entry, axis) {
+    this.entry = entry.clone();
+    this.axis = axis.clone().normalize();
+  }
+}
+
 // Represents a single segment constraint between two entities
 export class CableJointComponent {
   constructor(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {

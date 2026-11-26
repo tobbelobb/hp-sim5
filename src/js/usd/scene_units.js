@@ -7,6 +7,7 @@ const LENGTH_ATTRIBUTES = new Set([
   'physics:maxDistance',
   'localPos0',
   'localPos1',
+  'swivel:center',
   'restLength',
   'cablePath:stored',
   'cablePath:totalLength',

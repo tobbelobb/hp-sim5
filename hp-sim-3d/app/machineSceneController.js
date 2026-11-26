@@ -1,3 +1,4 @@
+import { resolvePresetCommand } from './commandPresetResolver.js';
 import { OpenText as UsdOpenText, getAttribute } from '../../src/js/usd/stage.js';
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
 import { buildScenePlan, setupScene } from './setupScene.js';
@@ -395,6 +396,7 @@ export function createMachineSceneController({
 
   async function resetAfterMachineListChange({ resetView = false } = {}) {
     if (state.machines.length === 0) {
+      getCommands()?.setReferenceVisibilityForReset?.();
       quality?.clearQualityMonitors?.();
       quality?.updateQualityHudVisibility?.();
       view?.resetForEmptyScene?.();
@@ -474,6 +476,9 @@ export function createMachineSceneController({
   }
 
   function updateMachineMenuUI() {
+    for (const [button, key] of [[dom.referenceReplayBtn, 'planeATargets'], [dom.encoderReplayBtn, 'planeAEncoders']]) {
+      if (button) button.hidden = !resolvePresetCommand(key, state.lineLayeringEnabled, getActiveSourceKeys());
+    }
     updatePresetMachineSelections();
     updateCustomMachineList();
     updateRemoveAllButtonState();

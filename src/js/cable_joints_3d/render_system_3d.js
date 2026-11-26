@@ -21,6 +21,7 @@ import {
   CablePathComponent,
   CableJointComponent,
   CableLinkComponent,
+  SwivelPulleyComponent,
   cableGeometricStoredLength,
 } from './cable_joints_core.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
@@ -1297,6 +1298,7 @@ export class RenderSystem3D {
   }
 
   clearPositionTrace({ keepMarkers = false } = {}) {
+    this.positionTracePoints = [];
     this.drawnPositionTraceCount = 0;
     this._updatePointObject(this.positionTracePointsObject, [], null, DEFAULT_TRACE_Z);
     if (!keepMarkers) {
@@ -1306,7 +1308,6 @@ export class RenderSystem3D {
   }
 
   clearPositionTracePoints() {
-    this.positionTracePoints = [];
     this.clearPositionTrace({ keepMarkers: true });
   }
 
@@ -1716,22 +1717,20 @@ export class RenderSystem3D {
   // Called without drawing while the tab is hidden, so the trace has no gaps.
   samplePositionTrace(world) {
     if (!this.positionTraceEnabled) return;
-    const extruderEntities = world.query([ExtruderComponent]);
-    if (extruderEntities.length > 0) {
-      const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
-      const tip = extruderComp?.tipPos || extruderComp?.centerPos;
-      const tipZ = finiteOr(tip?.z, DEFAULT_TRACE_Z);
-      if (tip && Number.isFinite(tip.x) && Number.isFinite(tip.y)) {
-        const last = this.positionTracePoints[this.positionTracePoints.length - 1];
-        if (
-          !last
-          || Math.abs(last.x - tip.x) > 1e-9
-          || Math.abs(last.y - tip.y) > 1e-9
-          || Math.abs((last.z ?? DEFAULT_TRACE_Z) - tipZ) > 1e-9
-        ) {
-          this.positionTracePoints.push({ x: tip.x, y: tip.y, z: tipZ });
-        }
-      }
+    let point;
+    if (this.positionTraceEntity != null) {
+      point = world.getComponent(this.positionTraceEntity, PositionComponent)?.pos;
+    } else {
+      const [entity] = world.query([ExtruderComponent]);
+      const extruder = entity == null ? null : world.getComponent(entity, ExtruderComponent);
+      point = extruder?.tipPos || extruder?.centerPos;
+    }
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+    const z = finiteOr(point.z, DEFAULT_TRACE_Z);
+    const last = this.positionTracePoints.at(-1);
+    if (!last || Math.abs(last.x - point.x) > 1e-9 || Math.abs(last.y - point.y) > 1e-9
+      || Math.abs((last.z ?? DEFAULT_TRACE_Z) - z) > 1e-9) {
+      this.positionTracePoints.push({ x: point.x, y: point.y, z });
     }
   }
 
@@ -2095,6 +2094,7 @@ export class RenderSystem3D {
     this._clearBorderWalls();
     this.clearExtrusions();
     this.clearPositionTrace({ keepMarkers: true });
+    this.positionTraceEntity = null;
     this.referencePaths = [];
     this.referenceVisible = false;
     this.referenceRequestedVisible = false;
@@ -2589,7 +2589,13 @@ export class RenderSystem3D {
         : radius;
       mesh.scale.set(radius, isCylinder ? height : radius, radius);
 
-      if (orientationComp?.quaternion) {
+      // A swivel wheel's plane follows its line, so its axis is the live plane normal.
+      const swivelNormal = world.getComponent(entityId, SwivelPulleyComponent)
+        ? world.getComponent(entityId, CableLinkComponent)?.cablePlaneNormal : null;
+      if (swivelNormal) {
+        mesh.quaternion.setFromUnitVectors(CYLINDER_LOCAL_UP,
+          new THREE.Vector3(swivelNormal.x, swivelNormal.y, swivelNormal.z).normalize());
+      } else if (orientationComp?.quaternion) {
         const q = orientationComp.quaternion;
         if (isCylinder) {
           const axisLocal = getSpoolLocalAxis(spoolState);

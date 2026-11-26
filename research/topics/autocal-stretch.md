@@ -132,3 +132,5 @@ effector attitude is underdetermined by the existing ranges. In the archived
 nominal HP5r pair the sweep workflow gives 1.06 mm after 4,686 simulated seconds
 and the ellipsoid gives 2.94 mm after 6,495 simulated seconds, with the same
 point objective.
+
+The [DaRUS spool-physics handoff](../output/session-copacabana-planea/autocal-handoff.md) compares the six native CI scenarios before and after strained drum storage and radial flattening became available. All six ran with both effects disabled in that historical comparison. Subsequent builds use strained storage and radius-scaled flattening on all elastic spools by default. For a future enabled run, it proposes varying winding tension independently of payout tension before estimating anchor geometry.

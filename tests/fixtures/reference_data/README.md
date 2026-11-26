@@ -13,6 +13,7 @@ The raw datasets and how to restore them are described in
 | `darus5171_stat_valid.csv` | 8 KB | `scripts/reference_data/summarize_5171.py` | 54 held-out `StatCompensationValid` unwinding runs across the same 3 ropes (3×3 storage × unwinding tensions at +2 and +3 m/s) |
 | `darus5171_replay_wc180_dp75.csv` | 44 KB | `scripts/reference_data/extract_replay_traces.py` | Decimated (25 ms, 801 rows) measured `LIROS_D-Pro` `FDP-FC-MAP/WC180/Export 1.csv` wind (~77 N) → turnaround → unwind (~177 N) motor/force/LSV trajectory for feedforward-free Rust replay |
 | `darus4614_planeA.csv` | 27 KB | `scripts/reference_data/summarize_4614.py` | COPacabana 8-cable robot PlaneA summary (8 load/control conditions × 6 poses P0..P5): Kabsch-registered FARO laser-tracker poses, repeatability, motor positions `x[0..7]` and cable forces `f[0..7]` |
+| `darus4614_planeA_cycle.csv` | 196 KB | `scripts/reference_data/extract_4614_replay.py` | 50 Hz registered FARO reflector coordinates and nominal platform target (m, P0-relative), eight recorded cable forces (N), and robot time (s), first 13.9 kg standard-control PlaneA cycle |
 
 Regenerate them from a restored dataset with, for example,
 `.venv/bin/python scripts/reference_data/summarize_3600.py tests/fixtures/reference_data/darus3600_runs.csv`.

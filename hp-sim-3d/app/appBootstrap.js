@@ -31,6 +31,8 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
     simApp,
     simButtons,
     printLogoBtn: ownerDocument.getElementById('printLogoBtn'),
+    encoderReplayBtn: ownerDocument.getElementById('encoderReplayBtn'),
+    referenceReplayBtn: ownerDocument.getElementById('referenceReplayBtn'),
     printSquareBtn: ownerDocument.getElementById('printSquareBtn'),
     uploadBtn: ownerDocument.getElementById('uploadBtn'),
     gcodeInput: ownerDocument.getElementById('gcodeFile'),

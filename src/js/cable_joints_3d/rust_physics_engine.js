@@ -1,5 +1,5 @@
 import * as ecs from './ecs.js';
-import { CableLinkComponent, CableJointComponent, CablePathComponent } from './cable_joints_core.js';
+import { CableLinkComponent, CableJointComponent, CablePathComponent, SwivelPulleyComponent } from './cable_joints_core.js';
 import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 
@@ -136,15 +136,14 @@ export class RustPhysicsEngine {
   applyCableSpoolParams(world = this.world) {
     if (!world || !this.pathIds?.length || !this.transport.setCableSpoolParams) return;
     const worldKrRaw = world.getResource('spoolRadialFlattening');
-    const worldKr = Number.isFinite(worldKrRaw) && worldKrRaw > 0 ? worldKrRaw : 0;
-    const worldStrained = world.getResource('strainedSpoolStorage') === true;
+    const worldKr = Number.isFinite(worldKrRaw) && worldKrRaw >= 0 ? worldKrRaw : -1;
+    const worldStrained = world.getResource('strainedSpoolStorage');
     for (const [p, id] of this.pathIds.entries()) {
       const path = world.getComponent(id, CablePathComponent);
       if (!path) continue;
       const kr = Number.isFinite(path.spoolRadialFlattening) && path.spoolRadialFlattening >= 0
         ? path.spoolRadialFlattening : worldKr;
-      const strained = typeof path.strainedSpoolStorage === 'boolean'
-        ? path.strainedSpoolStorage : worldStrained;
+      const strained = path.strainedSpoolStorage ?? worldStrained ?? -1;
       const initF = Number.isFinite(path.initialStorageTension) && path.initialStorageTension > 0
         ? path.initialStorageTension : 0;
       this.transport.setCableSpoolParams(p, kr, +strained, initF);
@@ -173,7 +172,7 @@ export class RustPhysicsEngine {
         velocity: ecs.VelocityComponent, angular: ecs.AngularVelocityComponent, mass: ecs.MassComponent,
         inertia: ecs.MomentOfInertiaComponent, encoder: ecs.EncoderComponent, member: ecs.RigidBodyMemberComponent,
         body: ecs.RigidBodyComponent, radius: ecs.RadiusComponent, friction: ecs.CoefficientOfFrictionComponent,
-        bearing: ecs.BearingFrictionComponent,
+        bearing: ecs.BearingFrictionComponent, swivel: SwivelPulleyComponent,
         link: CableLinkComponent, spool: SpoolStateComponent, motor: StepperMotorComponent };
       const c = Object.fromEntries(Object.entries(types).map(([key, Type]) => [key, get(id, Type)]));
       putV(a, 0, c.position?.pos); putQ(a, 3, c.orientation?.quaternion);
@@ -197,13 +196,14 @@ export class RustPhysicsEngine {
       a[75] = (c.velocity ? 1 : 0) | (c.angular ? 2 : 0) | (get(id, ecs.GravityAffectedComponent) ? 4 : 0)
         | (c.spool ? 8 : 0) | (c.motor ? 16 : 0) | (c.body ? 32 : 0) | (c.inertia ? 64 : 0)
         | (c.mass ? 128 : 0) | (c.link ? 256 : 0) | (c.link?.cablePlaneNormalLocal ? 512 : 0) | (c.radius ? 1024 : 0)
-        | (c.bearing ? 2048 : 0);
+        | (c.bearing ? 2048 : 0) | (c.swivel ? 4096 : 0);
       putV(a, 76, c.spool?.axisLocal); putQ(a, 79, c.spool?.referenceOrientation);
       putV(a, 83, c.body?.syncedPosition); putQ(a, 86, c.body?.syncedOrientation);
       putV(a, 90, c.link?.prevCableAttachmentTimePos); putQ(a, 93, c.link?.prevCableAttachmentTimeOrientation);
       putQ(a, 97, c.link?.prevCableAttachmentTimeLocalOrientation); putV(a, 101, c.link?.cablePlaneNormal);
       a[104] = c.radius?.radius ?? NaN; a[105] = c.friction?.mu ?? 0; a[106] = c.member?.physicalMass ?? NaN;
       a[137] = c.bearing?.torque ?? 0;
+      putV(a, 138, c.swivel?.entry); putV(a, 141, c.swivel?.axis);
       const m = c.motor;
       a.set([m?.commandedAngle ?? 0, m?.deltaAngle ?? 0, m?.holdingTorque ?? 0,
         m?.numPolePairs ?? 50, m?.dampingCoeff ?? 0, m?.maxSpeedRad ?? 600, +Boolean(m?.closedLoop),
@@ -233,7 +233,9 @@ export class RustPhysicsEngine {
         const j = n ? get(c.jointEntities[li === n ? n - 1 : li], CableJointComponent) : null;
         const entity = j ? (li === n ? j.entityB : j.entityA) : null;
         const knot = get(entity, ecs.HybridKnotAngleComponent);
-        const copyDefault = knot && !Number.isFinite(knot.pathAngles?.[id])
+        // The generated default angle assumes unloaded storage. Let Rust derive a new
+        // knot from geometric occupancy once it initializes the preloaded winding.
+        const copyDefault = knot && !(c.initialStorageTension > 0) && !Number.isFinite(knot.pathAngles?.[id])
           && Number.isFinite(knot.pathAngles?.__default__)
           && Object.keys(knot.pathAngles).every(k => k === '__default__');
         data.set([kinds.indexOf(c.linkTypes[li]), +Boolean(c.cw[li]), c.stored[li],

@@ -458,8 +458,39 @@ function buildBodyContext(index, path, readWorldTransform, bodyCache) {
     radius,
     planeNormal: planeNormal.lengthSq() > EPSILON ? planeNormal.normalize() : DEFAULT_PLANE_NORMAL.clone(),
   };
+  const swivelAxis = readVectorAttribute(prim, 'swivel:axis');
+  if (swivelAxis) {
+    context.swivel = { entry: context.position.clone(), axis: transform.orientation.transformVector(swivelAxis).normalize() };
+  }
   bodyCache.set(path, context);
   return context;
+}
+
+// A swivel pulley (prim at its entry point) turns about its entry axis towards
+// the neighbour farther from that axis. The other neighbour feeds the line in
+// along the axis. Its wheel centre sits one radius out, in their common plane.
+function orientSwivel(body, before, after, radius) {
+  const { entry, axis } = body.swivel;
+  const radial = (other) => {
+    const d = other.position.clone().subtract(entry);
+    return d.subtract(axis, d.dot(axis));
+  };
+  const [toBefore, toAfter] = [radial(before), radial(after)];
+  const out = toAfter.length() >= toBefore.length() ? toAfter : toBefore;
+  if (out.lengthSq() <= EPSILON || !(radius > EPSILON)) {
+    throw new Error(`${body.path}: swivel pulley needs a radius and a line leaving off its axis.`);
+  }
+  out.normalize();
+  body.swivel.feed = out === toAfter ? before : after;
+  body.position = entry.clone().add(out, radius);
+  body.transform = { ...body.transform, position: body.position.clone() };
+  body.planeNormal = out.cross(axis).normalize();
+  setDeclaration(body.prim, 'swivel:center', fromVector3(body.position), 'point3d', 'custom');
+}
+
+// Where a line aims at `body` from `other`: a swivel pulley's feed aims at its entry point.
+function aimPoint(body, other) {
+  return body.swivel?.feed === other ? body.swivel.entry : body.position;
 }
 
 function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, clockwise1, pathContext) {
@@ -471,7 +502,7 @@ function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, 
   let world0 = body0.position.clone();
   let world1 = body1.position.clone();
 
-  if (rolling0 && rolling1 && planesAreParallel(body0.planeNormal, body1.planeNormal)) {
+  if (rolling0 && rolling1 && !body0.swivel && !body1.swivel && planesAreParallel(body0.planeNormal, body1.planeNormal)) {
     if (!(radius0 > EPSILON) || !(radius1 > EPSILON)) {
       throw new Error(`Cannot derive rolling-to-rolling tangent without radii on ${body0.path} and ${body1.path}.`);
     }
@@ -487,11 +518,15 @@ function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, 
     world0 = tangents.a_sphere;
     world1 = tangents.b_sphere;
   } else {
-    if (rolling0) {
-      world0 = deriveRollingSidePoint(body0, body1, linkType0, radius0, clockwise0, true);
+    if (body0.swivel?.feed === body1) {
+      world0 = body0.swivel.entry.clone();
+    } else if (rolling0) {
+      world0 = deriveRollingSidePoint(body0, { position: aimPoint(body1, body0) }, linkType0, radius0, clockwise0, true);
     }
-    if (rolling1) {
-      world1 = deriveRollingSidePoint(body1, body0, linkType1, radius1, clockwise1, false);
+    if (body1.swivel?.feed === body0) {
+      world1 = body1.swivel.entry.clone();
+    } else if (rolling1) {
+      world1 = deriveRollingSidePoint(body1, { position: aimPoint(body0, body1) }, linkType1, radius1, clockwise1, false);
     }
   }
 
@@ -540,7 +575,7 @@ function resolveJoint(jointPath, jointPrim, context) {
 
   const resolvedWorld0 = computeWorldPoint(body0.transform, resolvedLocal0);
   const resolvedWorld1 = computeWorldPoint(body1.transform, resolvedLocal1);
-  const derivedRestLength = resolvedWorld0.distanceTo(resolvedWorld1);
+  const derivedRestLength = resolvedWorld0.distanceTo(resolvedWorld1) / (1 + pathContext.initialStrain);
 
   let resolvedRestLength = null;
   if (initPolicy === DERIVE_ALL_POLICY) {
@@ -598,6 +633,10 @@ function resolveStoredValue(linkIndex, pathContext) {
   const hasAuthoredStored = Number.isFinite(storedValues[linkIndex]);
   const storedMode = storedModes[linkIndex];
   const autoStored = computeAutoStored(linkIndex, linkType, pathContext);
+  // A swivel pulley's wrap is fixed by where its line leaves.
+  if (pathContext.bodies[linkIndex].swivel) {
+    return autoStored;
+  }
 
   if (initPolicy === MANUAL_MODE) {
     if (!hasAuthoredStored) {
@@ -697,6 +736,19 @@ function resolvePath(pathPrim, pathPath, index, readWorldTransform, bodyCache, s
   }
 
   const bodies = entityPaths.map((bodyPath) => buildBodyContext(index, bodyPath, readWorldTransform, bodyCache));
+  bodies.forEach((body, i) => {
+    if (!body.swivel) return;
+    if (i === 0 || i === bodies.length - 1 || linkTypes[i] !== 'rolling') {
+      throw new Error(`${pathPath}: swivel pulley ${body.path} must be an interior rolling link.`);
+    }
+    orientSwivel(body, bodies[i - 1], bodies[i + 1], body.radius + halfWidth);
+  });
+  const tension = Number(getAttribute(pathPrim, 'cablePath:initialTension') ?? 0);
+  const stiffness = Number(getAttribute(pathPrim, 'cablePath:stiffnessPerUnitLength') ?? Infinity);
+  if (!Number.isFinite(tension) || tension < 0 || (tension > 0 && !(stiffness > 0))) {
+    throw new Error(`${pathPath}: invalid cablePath:initialTension or stiffnessPerUnitLength.`);
+  }
+  const initialStrain = tension > 0 ? tension / stiffness : 0;
   const jointResults = jointDefs.map((jointDef, jointIndex) => resolveJoint(
     jointDef.jointPath,
     jointDef.jointPrim,
@@ -709,6 +761,7 @@ function resolvePath(pathPrim, pathPath, index, readWorldTransform, bodyCache, s
       clockwise0: effectiveCW(clockwise, jointIndex, true),
       clockwise1: effectiveCW(clockwise, jointIndex + 1, false),
       pathContext: {
+        initialStrain,
         linkTypes,
         storedValues,
         halfWidth,

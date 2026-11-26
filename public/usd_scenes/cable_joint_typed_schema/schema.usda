@@ -140,6 +140,10 @@ class "CablePathAPI" (
         """
     )
 
+    uniform double cablePath:initialTension = 0.0 (
+        doc = "Tension in N used to derive initial free span rest lengths as length / (1 + tension / EA)."
+    )
+
     uniform double cablePath:dampingPerUnitLength = 0.0 (
         doc = """Axial damping of the cable in N*s.
 
@@ -162,5 +166,31 @@ class "CablePathAPI" (
         Runtime property representing the overall tension state of the cable.
         Updated during simulation based on constraint forces.
         """
+    )
+}
+
+class "SwivelPulleyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        string className = "SwivelPulleyAPI"
+        string doc = """A swivel pulley (prims tagged `SwivelPulley`, an interior 'rolling' link).
+
+        The prim's translate is the fixed entry point where the line from the previous
+        body arrives along the swivel axis. The wheel (`radius`) turns about that axis
+        towards the line leaving it, so its centre sits one radius from the entry point
+        in the plane of the axis and that line. The neighbour nearer the axis is the feed
+        and must lie on the axis line for the arrival to be exact. Its wrap,
+        cablePath:stored, is always derived from this geometry.
+        """
+    }
+)
+{
+    vector3d swivel:axis (
+        doc = "Swivel axis, along which the line arrives, in the prim's frame."
+    )
+
+    point3d swivel:center (
+        doc = "Baked world position of the wheel centre at the authored pose."
     )
 }

@@ -18,6 +18,11 @@ const CABLE_LINK: u32 = 256;
 const LOCAL_AXIS: u32 = 512;
 const RADIUS: u32 = 1024;
 const BEARING: u32 = 2048;
+/// A swivel pulley: a wheel whose fork turns about a fixed entry axis (slots
+/// 141..144) through a fixed entry point (138..141), where the line from its
+/// feed (entity id in slot 144, set each step) arrives along the axis. Its
+/// centre and plane follow the line leaving it.
+const SWIVEL: u32 = 4096;
 const IDENTITY: Q = [0.0, 0.0, 0.0, 1.0];
 const Z: V = [0.0, 0.0, 1.0];
 const TAU: f64 = 2.0 * PI;
@@ -407,10 +412,22 @@ impl SpoolEnd {
     }
 }
 
+/// Default radial compliance of rope on a drum, k_r·R in m²/N. A rope pressed onto a drum of
+/// radius R carries line load F/R, so its centreline sinks by F/(R·E_t) whatever its diameter.
+/// An effective E_t ≈ 67 MPa follows from k_r = 0.299 µm/N (physical cable Newtons, F_true = √2·f_logged
+/// for the 90° SW-G3.1 carriage-pulley sensor) on the R = 50.18 mm DaRUS-5171 D-Pro rig. Stored
+/// negated in `Cable::spool_config` so explicit per-cable k_r (m/N, >= 0) stays distinct.
+const DEFAULT_SPOOL_RADIAL_COMPLIANCE: f64 = 0.299e-6 * 0.05018;
+
+/// Running-radius contraction per newton at radius `r` (negative `k_r` is a compliance in m²/N).
+fn flattening_at(k_r: f64, r: f64) -> f64 {
+    if k_r < 0.0 { -k_r / r } else { k_r }
+}
+
 fn spool_rho(radius: f64, k_r: f64, cpl: f64, strained: bool, tension: f64) -> f64 {
     let f = tension.max(0.0);
-    let r_scale = if k_r.is_finite() && k_r > 0.0 && radius > EPS {
-        ((radius - k_r * f) / radius).max(0.5)
+    let r_scale = if k_r.is_finite() && k_r != 0.0 && radius > EPS {
+        ((radius - flattening_at(k_r, radius) * f) / radius).max(0.5)
     } else {
         1.0
     };
@@ -440,7 +457,7 @@ struct Cable {
     wheels: Vec<Option<Wheel>>,
     // Accumulated hysteretic elongation strain (active when options[11] > 0).
     hyst_strain: f64,
-    // Per-cable spool constitutive parameters (None defaults to disabled: k_r=0, strained=false).
+    // Per-cable spool constitutive parameters (None: elastic cables use the defaults, others none).
     radial_flattening: Option<f64>,
     strained_spool: Option<bool>,
     init_storage_tension: f64,
@@ -511,11 +528,9 @@ impl Cable {
         self.data[o + 2] = s;
     }
     fn spool_config(&self) -> (f64, bool, f64) {
-        let k_r = match self.radial_flattening {
-            Some(v) if v.is_finite() => v.max(0.0),
-            _ => 0.0,
-        };
-        let strained = self.strained_spool.unwrap_or(false);
+        let elastic = self.data[3].is_finite() && self.data[3] > EPS;
+        let k_r = self.radial_flattening.unwrap_or(if elastic { -DEFAULT_SPOOL_RADIAL_COMPLIANCE } else { 0.0 });
+        let strained = self.strained_spool.unwrap_or(elastic);
         let init_f = if self.init_storage_tension.is_finite() && self.init_storage_tension > 0.0 {
             self.init_storage_tension
         } else {
@@ -795,6 +810,11 @@ fn geometry(c: &Cable, i: usize, es: &[Entity], layering: bool) -> AttachmentGeo
         buf[o + 16] = f64::from(rolling(kind));
         buf[o + 17] = f64::from(hybrid(kind));
         buf[o + 18] = f64::from(kind == 4);
+        // The feed line meets a swivel pulley at its fixed entry point.
+        if has(&es[ids[side]], SWIVEL) && es[ids[side]][144] == ids[1 - side] as f64 {
+            put_v(&mut buf, o, v(&es[ids[side]], 138));
+            buf[o + 16] = 0.0;
+        }
     }
     // The same pure tangent kernel used by the standalone ABI.
     attachment_data(&mut buf);
@@ -953,7 +973,7 @@ impl PhysicsWorld {
         );
     }
     /// C-ABI / JS helper for per-cable spool parameters.
-    /// Negative or non-finite `radial_flattening` / `strained_mode` resets to default (disabled).
+    /// Negative or non-finite `radial_flattening` / `strained_mode` inherits the solver default. Zero explicitly disables the corresponding effect.
     pub fn set_cable_spool_params_raw(
         &mut self,
         index: usize,
@@ -1029,7 +1049,7 @@ impl PhysicsWorld {
         let plane_delta = axis_sign * delta_angle;
         let cw_eff = c.cw(li, side == 0);
         let (k_r, strained, init_f) = c.spool_config();
-        let spool_physics = k_r > 0.0 || strained;
+        let spool_physics = k_r != 0.0 || strained;
         let geom_now = if spool_physics && c.spool_ends[side].initialized {
             c.spool_ends[side].geom_stored
         } else if spool_physics {
@@ -1175,6 +1195,9 @@ impl PhysicsWorld {
         self.integrate(dt);
         self.sync_bodies(false);
         let layering = self.options[3] != 0.0;
+        for c in &self.cables {
+            swivel(c, &mut self.entities, layering);
+        }
         for stage in 4..=8 {
             if stage == 5 || self.options[stage] == 0.0 {
                 continue;
@@ -1465,7 +1488,7 @@ fn segment_tension(c: &Cable, i: usize) -> f64 {
 
 fn sync_cable_spools(c: &mut Cable, es: &[Entity], layering: bool) {
     let (k_r, strained, init_f) = c.spool_config();
-    let active = k_r > 0.0 || strained;
+    let active = k_r != 0.0 || strained;
     if !active || c.count() == 0 {
         for end in &mut c.spool_ends {
             end.clear_inactive();
@@ -1488,11 +1511,60 @@ fn sync_cable_spools(c: &mut Cable, es: &[Entity], layering: bool) {
     }
 }
 
+/// Turns each swivel pulley's fork about its entry axis towards the line
+/// leaving it: the wheel centre sits one radius from the entry point, in the
+/// plane of the axis and the leaving line's far end.
+fn swivel(c: &Cable, es: &mut [Entity], layering: bool) {
+    for li in 1..c.count() {
+        let id = c.entity(li - 1, 1);
+        if !has(&es[id], SWIVEL) {
+            continue;
+        }
+        let (entry, axis) = (v(&es[id], 138), norm(v(&es[id], 141)));
+        // The line arrives along the axis, so the far end lies off it.
+        let far = |seg: usize, side: usize, link: usize| {
+            let p = if attachment_kind(c.kind(link)) {
+                world_pos(es, c.entity(seg, side)).unwrap_or(c.point(seg, side))
+            } else {
+                c.point(seg, side)
+            };
+            let rel = sub(p, entry);
+            sub(rel, scale(axis, dot(rel, axis)))
+        };
+        let (before, after) = (far(li - 1, 0, li - 1), far(li, 1, li + 1));
+        let (radial, feed) = if length(after) >= length(before) {
+            (after, c.entity(li - 1, 0))
+        } else {
+            (before, c.entity(li, 1))
+        };
+        es[id][144] = feed as f64;
+        let r = c.radius(es, li, id, layering).0;
+        if length(radial) <= EPS || !r.is_finite() {
+            continue;
+        }
+        let out = norm(radial);
+        put_v(&mut es[id], 0, add(entry, scale(out, r)));
+        put_v(&mut es[id], 101, norm(cross(out, axis)));
+    }
+}
+/// `rel`, taken about a swivel wheel's previous centre `prev`, turned with its
+/// fork to the current centre `pos`.
+fn swivel_turn(e: &Entity, prev: V, pos: V, rel: V) -> V {
+    let (entry, axis) = (v(e, 138), norm(v(e, 141)));
+    let radial = |p: V| {
+        let d = sub(p, entry);
+        sub(d, scale(axis, dot(d, axis)))
+    };
+    let (from, to) = (radial(prev), radial(pos));
+    let angle = atan2(dot(cross(from, to), axis), dot(from, to));
+    rotate(axis_angle(axis, angle), rel)
+}
+
 fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: bool) {
     let half = if layering { c.data[6] } else { 0.0 };
     sync_cable_spools(c, es, layering);
     let (k_r, strained, init_f) = c.spool_config();
-    let spool_physics = k_r > 0.0 || strained;
+    let spool_physics = k_r != 0.0 || strained;
     let cpl = c.data[3];
     let n_segs = c.count();
     for i in 0..n_segs {
@@ -1569,6 +1641,9 @@ fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: b
                 if dot(normal, normal) > EPS {
                     normal = norm(normal);
                 }
+            }
+            if has(&es[ids[side]], SWIVEL) {
+                old_rel = swivel_turn(&es[ids[side]], prev, pos, old_rel);
             }
             let cw = c.cw(i + side, side == 0);
             geom_shifts[side] = arc(old_rel, new_rel, [0.0; 3], radius, cw, normal, false);
@@ -1780,7 +1855,7 @@ fn hybrid_states(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: bool) 
         return;
     }
     let (k_r, strained, init_f) = c.spool_config();
-    let spool_physics = k_r > 0.0 || strained;
+    let spool_physics = k_r != 0.0 || strained;
     let cpl = c.data[3];
     for li in [0, c.count()] {
         let side = usize::from(li != 0);
@@ -2731,13 +2806,13 @@ impl PhysicsWorld {
                                 let mut r_eff = r;
                                 if (i == 0 && side == 0) || (i + 1 == count && side == 1) {
                                     let (k_r, _, _) = c.spool_config();
-                                    if k_r > 0.0 {
+                                    if k_r != 0.0 {
                                         // Instantaneous liftoff running radius r_eff(F_current).
                                         // Small-strain approximation to dC/dtheta during historical
                                         // coil unwinding: error is O(F/EA + k_r*|F_L - F_S|/R) (<0.3%
                                         // for braided Dyneema/Vectran in the linear-elastic regime).
                                         let force = segment_tension(c, i);
-                                        r_eff = (r - k_r * force).max(0.5 * r);
+                                        r_eff = (r - flattening_at(k_r, r) * force).max(0.5 * r);
                                     }
                                 }
                                 stored = (if c.cw(li, side == 0) { 1.0 } else { -1.0 }) * r_eff;

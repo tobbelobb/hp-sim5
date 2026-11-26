@@ -18,6 +18,10 @@ use common::*;
 const SPOOL_END: f64 = 3.0;
 /// Nominal SWP/CATi drum radius (100.36 mm nominal diameter).
 const RADIUS: f64 = 0.05018;
+/// SW-G3.1 90° carriage-pulley force-sensor conversion (`F_true = sqrt(2) * f_logged`).
+/// Raw CSV fixtures preserve logged sensor values untouched; conversion to physical Newtons
+/// happens explicitly here.
+const WINCH_FORCE_SCALE: f64 = std::f64::consts::SQRT_2;
 
 /// Constitutive-law verification harness in `PhysicsWorld` (NOT an open-loop replay; see
 /// `measured_motor_trajectory_replay_5171` for the feedforward-free measured-encoder replay).
@@ -182,8 +186,8 @@ fn load_ident() -> Vec<IdentRow> {
             let f: Vec<&str> = l.split(',').collect();
             IdentRow {
                 rope: f[col("rope")].to_string(),
-                f_s: f[col("f_wind")].parse().unwrap(),
-                f_l: f[col("f_unwind")].parse().unwrap(),
+                f_s: f[col("f_wind")].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,
+                f_l: f[col("f_unwind")].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,
                 lsv_ratio: f[col("lsv_ratio")].parse().unwrap(),
                 drum_l_ratio: f[col("drum_l_ratio")].parse().unwrap(),
             }
@@ -203,8 +207,8 @@ fn load_valid() -> Vec<ValidRow> {
             let f: Vec<&str> = l.split(',').collect();
             ValidRow {
                 rope: f[col("rope")].to_string(),
-                f_s: f[col("f_s_nom")].parse().unwrap(),
-                f_l: f[col("f_unwind")].parse().unwrap(),
+                f_s: f[col("f_s_nom")].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,
+                f_l: f[col("f_unwind")].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,
                 speed: f[col("speed_test")].parse().unwrap(),
                 lsv_ratio: f[col("lsv_ratio")].parse().unwrap(),
             }
@@ -231,7 +235,7 @@ fn multi_rope_storage_and_unwinding_slopes_match_solver() {
         let ea = 1e6 / meas_lsv[2];
         let k_r = -(meas_lsv[1] + meas_lsv[2]) * 1e-6 * RADIUS;
 
-        let grid = [75.0, 130.0, 180.0];
+        let grid = [75.0 * WINCH_FORCE_SCALE, 130.0 * WINCH_FORCE_SCALE, 180.0 * WINCH_FORCE_SCALE];
         let (mut sim_fs, mut sim_fl, mut sim_lsv, mut sim_dl) = (vec![], vec![], vec![], vec![]);
         for &s in &grid {
             for &l in &grid {
@@ -394,13 +398,13 @@ fn measured_motor_trajectory_replay_5171() {
         .map(|l| {
             let f: Vec<&str> = l.split(',').collect();
             [
-                f[0].parse().unwrap(), // t
-                f[1].parse().unwrap(), // x_t
-                f[2].parse().unwrap(), // x_l
-                f[3].parse().unwrap(), // f_t
-                f[4].parse().unwrap(), // f_l
-                f[5].parse().unwrap(), // x_lsv
-                f[6].parse().unwrap(), // trig_rec
+                f[0].parse().unwrap(),                                   // t
+                f[1].parse().unwrap(),                                   // x_t
+                f[2].parse().unwrap(),                                   // x_l
+                f[3].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,        // f_t (physical N)
+                f[4].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,        // f_l (physical N)
+                f[5].parse().unwrap(),                                   // x_lsv
+                f[6].parse().unwrap(),                                   // trig_rec
             ]
         })
         .collect();
@@ -491,18 +495,18 @@ fn measured_motor_trajectory_replay_5171() {
     );
 
     // Legacy loses tension during the 18 m wind pass and enters the 10 m unwind pass nearly slack
-    // (~21 N mean vs 177 N measured, drifting +104 N), whereas Upgraded tracks the entire 28 m
-    // wind -> turnaround -> unwind trajectory within ~9 N of measured tension and ~200 ppm on LSV!
+    // (~30 N mean vs ~250 N physical measured, drifting +147 N), whereas Upgraded tracks the entire
+    // 28 m wind -> turnaround -> unwind trajectory within ~13 N of measured tension and ~200 ppm on LSV!
     assert!(
-        (leg_f - meas_f_mean).abs() > 100.0,
-        "expected huge legacy mean-tension error (>100 N), got {leg_f:.1} vs {meas_f_mean:.1} N"
+        (leg_f - meas_f_mean).abs() > 140.0,
+        "expected huge legacy mean-tension error (>140 N), got {leg_f:.1} vs {meas_f_mean:.1} N"
     );
     assert!(
-        (upg_f - meas_f_mean).abs() < 25.0,
+        (upg_f - meas_f_mean).abs() < 35.0,
         "upgraded replay mean tension {upg_f:.1} N drifted too far from measured {meas_f_mean:.1} N"
     );
     assert!(
-        upg_drift.abs() < 40.0 && upg_drift.abs() < leg_drift.abs() * 0.5,
+        upg_drift.abs() < 55.0 && upg_drift.abs() < leg_drift.abs() * 0.5,
         "upgraded drift {upg_drift:+.1} N should stay small vs legacy {leg_drift:+.1} N"
     );
     assert!(

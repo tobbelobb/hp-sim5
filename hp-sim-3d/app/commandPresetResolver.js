@@ -26,6 +26,12 @@ export const PRESET_GCODE_MAP = Object.freeze({
     label: 'Draw Squares (G-code)',
     color: '#79b1e0',
   },
+  copacabanaPlaneATracker: {
+    url: new URL('../../public/gcode/copacabana_planeA_tracker.gcode', import.meta.url).href,
+    label: 'PlaneA · FARO tracker (13.9 kg)',
+    includeTravel: true,
+    color: '#79b1e0',
+  },
   straightMovesBigger: {
     url: new URL('../../public/gcode/draw_squares_bigger.gcode', import.meta.url).href,
     label: 'Draw Bigger Squares (G-code)',
@@ -34,10 +40,15 @@ export const PRESET_GCODE_MAP = Object.freeze({
 });
 
 export function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourceKeys = []) {
-  const preset = COMMAND_PRESETS[presetKey];
-  if (!preset) {
-    return null;
+  if (!COMMAND_PRESETS[presetKey]) {
+    if (activeSourceKeys.length !== 1) return null;
+    const replay = machineForSourceKey(activeSourceKeys[0], lineLayeringEnabled)?.reference_replay;
+    const path = replay?.streams[presetKey];
+    return path ? { path, referencePresetKey: replay.referencePresetKey, traceEntity: replay.traceEntity,
+      preserveTiming: true, kinematicMotors: Boolean(replay.kinematicStreams?.includes(presetKey)),
+      format: FileFormat.RRF_CAN_BINARY } : null;
   }
+  const preset = COMMAND_PRESETS[presetKey];
   const machine = [...activeSourceKeys, UPLOADED_SCENE_SOURCE_KEY]
     .map((sourceKey) => machineForSourceKey(sourceKey, lineLayeringEnabled === true))
     .find(Boolean);

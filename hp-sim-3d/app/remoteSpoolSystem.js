@@ -6,6 +6,8 @@ import { ExtruderComponent } from './hangprinter_extruder.js';
 import { SpoolTagComponent, SpoolStateComponent } from './hangprinter_spools.js';
 import { StepperMotorComponent } from './hangprinter_stepper_motor.js';
 import {
+  STEPPER_KINEMATIC_RESOURCE,
+  applyKinematicSpoolAngle,
   setStepperTorqueMode,
   setStepperPositionMode,
 } from './hangprinter_runtime.js';
@@ -279,6 +281,9 @@ export class RemoteSpoolSystem {
               continue;
             }
             stepperComp.commandedAngle = axisValue;
+            if (world.getResource(STEPPER_KINEMATIC_RESOURCE) === true) {
+              applyKinematicSpoolAngle(world, entityId, stepperComp.commandedAngle - stepperComp.deltaAngle);
+            }
           }
         }
         if (commandType === 'Add to reference') {

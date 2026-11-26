@@ -33,6 +33,7 @@ export default defineConfig(async () => {
     ignore: [
       'node_modules/**',
       'output/**',
+      'ai_docs/externally_captured_reference_data/**',
       'attic/**',
       'dist/**',
       'dist-hangprinter-org/**',
@@ -116,7 +117,7 @@ export default defineConfig(async () => {
     build: { rollupOptions: { input: inputs } },
     server: {
       watch: {
-        ignored: ['**/output/**', '**/.venv/**', '**/autocal/data/**', '**/RRF/**', '**/klipper/**',
+        ignored: ['**/ai_docs/externally_captured_reference_data/**', '**/output/**', '**/.venv/**', '**/autocal/data/**', '**/RRF/**', '**/klipper/**',
                   '**/attic/**', '**/build/**', '**/__pycache__/**', '**/dist*/**'],
       },
     },
