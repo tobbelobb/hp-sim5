@@ -92,14 +92,15 @@ def test_klipper_home_tension_is_the_stretch_already_in_the_lines(klipper):
 POSITION = re.compile(r'^X:([-\d.]+) Y:([-\d.]+) Z:([-\d.]+).* Count ([-\d ]+) Machine', re.M)
 
 
-def rrf(code, tmp_path):
-    shutil.copytree(ROOT / 'RRF/run/vsd/sys', tmp_path / 'sys')
-    (tmp_path / 'gcodes').mkdir()
-    (tmp_path / 'logs').mkdir()
+def rrf(code, tmp_path, config='config_copacabana.g'):
+    if not (tmp_path / 'sys').exists():
+        shutil.copytree(ROOT / 'RRF/run/vsd/sys', tmp_path / 'sys')
+        (tmp_path / 'gcodes').mkdir()
+        (tmp_path / 'logs').mkdir()
     # The host file-input reader needs trailing data to execute short files.
     (tmp_path / 'gcodes/test.gcode').write_text(code + '\n' + '; padding\n' * 1000)
     result = subprocess.run([str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(tmp_path), '--gcode',
-                             'gcodes/test.gcode', '-c', 'sys/config_copacabana.g', '--can-log', 'logs/test.csv'],
+                             'gcodes/test.gcode', '-c', f'sys/{config}', '--can-log', 'logs/test.csv'],
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     return result.stdout + result.stderr
@@ -108,8 +109,7 @@ def rrf(code, tmp_path):
 @pytest.mark.skipif(not (ROOT / 'RRF/build/rrf_simulator').exists(), reason='build RRF/build/rrf_simulator first')
 def test_rrf_motor_steps_follow_swivel_lengths(tmp_path):
     target = np.array([600., 600., 0.])
-    zero_axes = 'M669 V' + ':'.join(['0'] * 24)
-    output = rrf(f'G28\nG1 X{target[0]} Y{target[1]} Z{target[2]} F1200\nM400\nM114\n{zero_axes}\n', tmp_path)
+    output = rrf(f'G28\nG1 X{target[0]} Y{target[1]} Z{target[2]} F1200\nM400\nM114\n', tmp_path)
     (*position, counts), = POSITION.findall(output)
     np.testing.assert_allclose(np.array(position, float), target, atol=.05)
     counts = np.array(counts.split(), float)[:8]
@@ -120,4 +120,31 @@ def test_rrf_motor_steps_follow_swivel_lengths(tmp_path):
     assert np.max(abs(counts - steps_per_mm * swivel)) <= 1
     # The old fixed tangent points would be several motor steps off.
     assert np.max(abs(counts - steps_per_mm * pinhole)) > 5
+
+
+MOVE = 'M666 F1\nG1 X300 Y-200 Z100 F1200\nM400\nM114\n'
+
+
+@pytest.mark.skipif(not (ROOT / 'RRF/build/rrf_simulator').exists(), reason='build RRF/build/rrf_simulator first')
+def test_rrf_rejected_swivel_geometry_changes_nothing(tmp_path):
+    zero_axes = 'M669 N8 A0:0:2000 V' + ':'.join(['0'] * 24)
+    output = rrf(f'G28\n{zero_axes}\n{MOVE}', tmp_path)
     assert 'Swivel pulley A needs a nonzero V axis' in output
+    plain = rrf(f'G28\n{MOVE}', tmp_path)
+    assert POSITION.findall(output) == POSITION.findall(plain)
+
+
+@pytest.mark.skipif(not (ROOT / 'RRF/build/rrf_simulator').exists(), reason='build RRF/build/rrf_simulator first')
+@pytest.mark.parametrize('config', ['config_copacabana.g', 'config_hp4.g'])
+def test_rrf_saved_parameters_reload(tmp_path, config):
+    direct = rrf(f'G28\nM500\n{MOVE}', tmp_path, config)
+    override = (tmp_path / 'sys/config-override.g').read_text()
+    assert max(map(len, override.splitlines())) < 256
+    # Reload the saved parameters over neutral geometry before the same move.
+    scrambled = 'M669 A0:-2000:-100 B2000:1000:-100 C-2000:1000:-100 D0:0:3000'
+    if 'copacabana' in config:
+        scrambled += '\nM669 R' + ':'.join(['0'] * 8) + '\nM666 T' + ':'.join(['0'] * 8)
+    reloaded = rrf(f'{scrambled}\nM98 P"config-override.g"\nG28\n{MOVE}', tmp_path, config)
+    # GCodes3.cpp writes workplace offsets with %zu, which the host printf lacks.
+    assert [l for l in reloaded.splitlines() if 'Error' in l and 'G10' not in l] == []
+    assert POSITION.findall(reloaded) == POSITION.findall(direct)
