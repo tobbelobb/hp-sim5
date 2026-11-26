@@ -103,7 +103,9 @@ def history_commit(parent, rows):
 
 
 def collect(artifacts):
-    incoming = [row for path in sorted(artifacts.glob('*/*.jsonl')) for row in read_results(path)]
+    # A single download goes into the destination directly. Multiple downloads use named subdirectories.
+    result_paths = sorted([*artifacts.glob('*.jsonl'), *artifacts.glob('*/*.jsonl')])
+    incoming = [row for path in result_paths for row in read_results(path)]
     contributed = read_results(BACKFILL_DIR / 'results.jsonl') + read_results(BACKFILL_DIR / 'retry.jsonl')
     if not incoming and not contributed:
         return

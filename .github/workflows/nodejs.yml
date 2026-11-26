@@ -44,7 +44,7 @@ jobs:
       CI: true
       RUN_RRF_HTTP_ENDPOINT_TESTS: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: ${{ matrix.suite == 'benchmark' && 2 || 1 }}
       - name: Check benchmark inputs
@@ -69,7 +69,7 @@ jobs:
             flex-compensation-dev/hangprinter-flex-compensation
       - name: Use latest Node.js LTS
         if: matrix.suite != 'benchmark' || steps.benchmark.outputs.run == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 'lts/*'
           check-latest: true
@@ -111,7 +111,7 @@ jobs:
         run: .venv/bin/python -m pytest -v --durations=10 -o faulthandler_timeout=60 -m "slow and not heavy" --basetemp="${{ runner.temp }}/slow-integration"
       - name: Upload simulator startup logs
         if: failure() && matrix.suite == 'slow'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: slow-integration-startup-logs
           path: |
@@ -137,7 +137,7 @@ jobs:
         run: python3 scripts/autocal_benchmark_ci.py review "$AUTOCAL_BENCHMARK_OUTPUT/$MACHINE.jsonl"
       - name: Upload benchmark result and log
         if: "!cancelled() && steps.benchmark.outputs.run == 'true'"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark-${{ matrix.machine }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/autocal-benchmark/
@@ -151,9 +151,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download benchmark results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: benchmark-*
           path: ${{ runner.temp }}/autocal-benchmark-incoming
