@@ -4,7 +4,7 @@
 
 ## Question
 
-The simulator stores rope on elastic spools at its winding strain and contracts the running radius with tension (`spool_rho` in `src/wasm/cable_solver/src/engine.rs`, default radial compliance `1.50e-8 m²/N`). Do the firmwares print more accurately when their flex compensation models the same two effects?
+The simulator stores rope on elastic spools at its winding strain and contracts the running radius with tension (`spool_rho` in `src/wasm/cable_solver/src/engine.rs`, default radial compliance `1.50e-8 m²/N`). Do the firmwares print more accurately on HP3, HP4, HP5, HP5r and COPacabana when their flex compensation models the same two effects?
 
 ## Firmware model
 
@@ -43,9 +43,9 @@ No run missed a step.
 - Flattening constants of 0.0075, 0.015 and 0.03 mm²/N scored 94.5, 95.2 and 93.8. The simulator's own constant scored best.
 - Applying the correction only to rope wound in past home scored 90.5. Rope paid out past home and later rewound is stored strained, so a model that treats it as unstrained loses accuracy.
 
-### COPacabana (exploratory)
+### COPacabana
 
-On COPacabana, RRF squares with `M666 K0.015 V1` added scored 67.1 against 45.2 without it. Shape RMS fell from 0.685 to 0.213 mm. The COPacabana configuration is unchanged in this PR.
+COPacabana's spools are pre-wound at the homed tension and use the simulator's default flattening, so the same `K0.015 V1` applies. With the options enabled, its squares score rises from 45.2 to 67.1 (RRF) and from 45.7 to 67.3 (Klipper). Shape RMS falls from about 0.68 to 0.21 mm, with no missed steps. Its configs enable both options. The measured PlaneA reference replays are not firmware compilations and are unchanged.
 
 ## Alternative explanations and limits
 

@@ -244,7 +244,7 @@ One result sentence per session; follow the report for evidence.
 
 - [Rough-bootstrap robustness: the HP5r seed-3 failure was a one-sample force auto-tune plateau rule](program-2026-11-20-autocal-on-imperfect-machines-pr-121-follow-up-1-a-wrong-configu-4b12cdf0/session-2026-11-21-rough-bootstrap-robustness-on-imperfect-machines-hp5-pulley-redu-20f0ffb5/report.md) — No result summary available.
 
-- [Firmware spool flattening and strained storage](session-2026-11-26-firmware-spool-storage/report.md) — Modelling drum flattening and strained rope storage in RRF and Klipper flex compensation raises the closed-loop headless Print Squares score on HP3, HP4, HP5 and HP5r with both firmwares (for example HP4 RRF 85.9 → 95.2, HP5r Klipper 90.7 → 96.3).
+- [Firmware spool flattening and strained storage](session-2026-11-26-firmware-spool-storage/report.md) — Modelling drum flattening and strained rope storage in RRF and Klipper flex compensation raises the closed-loop headless Print Squares score on HP3, HP4, HP5, HP5r and COPacabana with both firmwares (for example HP4 RRF 85.9 → 95.2, COPacabana Klipper 45.7 → 67.3).
 
 - [Unsuccessful launch with no research record](session-32819264e12440d7b49abc9d4cfae1d3/abstract.md) — Retrospective summary of saved evidence, written 2026-10-08.
 

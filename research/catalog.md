@@ -22,7 +22,7 @@ Four hash-named sessions contain substantive autocal work: three have final repo
 
 ## Firmware spool models
 
-- [Firmware spool flattening and strained storage](output/session-2026-11-26-firmware-spool-storage/report.md) (2026-11-26, simulation, PR #132). Stateless flex-compensation correction in RRF (`M666 K`, `V`) and Klipper. Headless Print Squares scores rise on HP3, HP4, HP5 and HP5r with both firmwares, for example HP4 RRF from 85.9 to 95.2. The simulator's own flattening constant scored best. An exploratory COPacabana run went from 45.2 to 67.1 with the options on.
+- [Firmware spool flattening and strained storage](output/session-2026-11-26-firmware-spool-storage/report.md) (2026-11-26, simulation, PR #132). Stateless flex-compensation correction in RRF (`M666 K`, `V`) and Klipper. Headless Print Squares scores rise on HP3, HP4, HP5 and HP5r with both firmwares, for example HP4 RRF from 85.9 to 95.2. The simulator's own flattening constant scored best. COPacabana now enables them too, which raises its squares score from 45.2 to 67.1 (RRF) and from 45.7 to 67.3 (Klipper).
 
 ## Anchor layout and research tooling
 
