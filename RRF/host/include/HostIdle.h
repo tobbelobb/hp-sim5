@@ -5,6 +5,7 @@
 namespace HostIdle
 {
 void SetServerMode(bool enabled) noexcept;
+bool IsServerMode() noexcept;
 void SetServerIdle(bool idle) noexcept;
 bool IsServerIdle() noexcept;
 }

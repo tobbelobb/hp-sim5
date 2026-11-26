@@ -4,7 +4,6 @@ set -o pipefail
 
 # Usage: ./run_logo_determinism_test.sh [iterations]
 ITERATIONS="${1:-10}"
-LINES_TO_IGNORE=4 # Define this constant globally for clarity
 
 # Resolve repo root (directory where this script lives)
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -16,7 +15,7 @@ BASE_LOG="$VSD_DIR/logs/Hangprinter_logo6.csv"
 TEST_LOG="$VSD_DIR/logs/Hangprinter_logo6_2.csv"
 # The reference baseline is stored compressed to keep the checkout small.
 BASE_LOG_GZ="$BASE_LOG.gz"
-if [[ ! -f "$BASE_LOG" && -f "$BASE_LOG_GZ" ]]; then
+if [[ -f "$BASE_LOG_GZ" && ( ! -f "$BASE_LOG" || "$BASE_LOG_GZ" -nt "$BASE_LOG" ) ]]; then
     gzip -dc "$BASE_LOG_GZ" > "$BASE_LOG"
 fi
 
@@ -54,49 +53,16 @@ for ((i=1; i<=ITERATIONS; i++)); do
         continue
     fi
 
-    # Primary check: exactly 4 lines of diff (likely just timestamp header differences)
-    diff_count=$(diff "$BASE_LOG" "$TEST_LOG" | wc -l)
-
-    if [[ "$diff_count" -eq 4 ]]; then
-        # Standard Success Case
+    # Strict check: all motion lines (everything after the line-1 JSON timestamp header) must match identically
+    if diff -q <(tail -n +2 "$BASE_LOG") <(tail -n +2 "$TEST_LOG") > /dev/null; then
         ((correct++))
         ((tries++))
         printf "✅"
     else
-        # Primary failure case. Now we run the lenient check to see if it's "close enough" (only differs at the end)
-
-        # 1. Get file lengths to calculate truncation point
-        base_lines=$(wc -l < "$BASE_LOG")
-        test_lines=$(wc -l < "$TEST_LOG")
-
-        lines_to_keep=$((base_lines - LINES_TO_IGNORE))
-        if [[ "$test_lines" -lt "$lines_to_keep" ]]; then
-            ((incorrect++))
-            ((tries++))
-            printf "❌"
-            break
-        fi
-
-        # 2. Perform the truncated comparison
-        # Use process substitution and 'head -n' to truncate the files before diffing
-        # We ignore the first line (header) using sed within the head truncation to avoid line 1 mismatch errors
-        diff_truncated=$(diff <(head -n "$lines_to_keep" "$BASE_LOG" | sed '1d') <(head -n "$lines_to_keep" "$TEST_LOG" | sed '1d'))
-
-        if [[ -z "$diff_truncated" ]]; then
-            # Lenient Success Case: Files are identical up to the last 4 lines.
-            echo -n "☑️ " # Use a different symbol to denote lenient pass
-            ((correct++))
-            ((tries++))
-            # Continue the loop for the next iteration instead of breaking
-            continue
-        else
-            # Actual Failure Case: Differences found even when ignoring the end lines.
-            ((incorrect++))
-            ((tries++))
-            printf "❌"
-            # Keep the 'break' here to stop all iterations on a genuine failure
-            break
-        fi
+        ((incorrect++))
+        ((tries++))
+        printf "❌"
+        break
     fi
 done
 

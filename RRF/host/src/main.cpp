@@ -895,6 +895,7 @@ int main(int argc, char** argv)
             return 1;
         }
 
+        HostIdle::SetServerMode(options.serverMode);
         HostNetworkConfig::SetHttpPort(options.serverPort);
 
         CanMessageBuffer::Init(kDefaultCanBuffers);
@@ -903,6 +904,7 @@ int main(int argc, char** argv)
         reprap.Init();
         reprapInitialised = true;
         HostTiming::Reset();
+        reprap.GetMove().ResetHostTiming();
         HostCanCapture::Reset();
         HostTorqueMode::Instance().SetCallback(
             [](uint8_t driver, float torque) { HostCanCapture::LogTorqueModeChange(driver, torque); });
