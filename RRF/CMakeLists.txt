@@ -188,6 +188,7 @@ set(RRF_HEADERS_TO_USE
     Movement/Kinematics/CoreKinematics.h
     Movement/Kinematics/HangprinterKinematics.h
     Movement/Kinematics/ForwardWorkspace.h
+    Movement/Kinematics/SwivelPulley.h
     # Tier 3 Dependencies
     Movement/DriveMovement.h
     Movement/DDA.h
