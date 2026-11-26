@@ -92,6 +92,8 @@ public:
         return StepClockRate;
     }
 
+    static constexpr uint32_t MaxPlausibleMovementDelay = StepClockRate;
+
     static void IncreaseMovementDelay(uint32_t increase) noexcept
     {
         movementDelay.fetch_add(increase, std::memory_order_relaxed);
@@ -103,9 +105,10 @@ public:
     }
 
 #if SUPPORT_CAN_EXPANSION
-    static void ProcessMovementDelayRequest(uint32_t delayRequested) noexcept
+    static uint32_t ProcessMovementDelayRequest(uint32_t delayRequested) noexcept
     {
         movementDelay.store(delayRequested, std::memory_order_relaxed);
+        return delayRequested;
     }
 
     static Ticks CheckMovementDelayIncreased() noexcept

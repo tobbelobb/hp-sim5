@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+GCodeFileInfo& GCodeFileInfo::operator=(const GCodeFileInfo&) noexcept = default;
+
 void GCodeFileInfo::Init() noexcept
 {
     fileSize = 0;

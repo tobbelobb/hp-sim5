@@ -167,3 +167,25 @@ inline void StepDriversLow(uint32_t) noexcept
 }  // namespace StepPins
 
 constexpr uint32_t DefaultStandstillCurrentPercent = 75;
+
+#ifndef NUM_CAN_PORTS
+#define NUM_CAN_PORTS 2
+#endif
+
+struct CanParameters
+{
+    unsigned int instanceNumber;
+    Pin txPin;
+    Pin rxPin;
+#if SAME70
+    GpioPinFunction txPinFunction;
+    GpioPinFunction rxPinFunction;
+#else
+    GpioPinFunction pinsFunction;
+#endif
+};
+
+inline constexpr CanParameters CanBusParams[NUM_CAN_PORTS] = {
+    {1, NoPin, NoPin, GpioPinFunction::A, GpioPinFunction::A},
+    {0, NoPin, NoPin, GpioPinFunction::A, GpioPinFunction::A},
+};

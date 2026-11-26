@@ -119,6 +119,11 @@ public:
     bool SetDateTime(time_t t) noexcept;
 
     void AppendUsbReply(OutputBuffer* buffer, bool rawMessage) noexcept {};
+    void DisconnectUsb() noexcept {}
+    bool IsAuxPanelDue(size_t) const noexcept
+    {
+        return false;
+    }
     void AppendAuxReply(size_t auxNumber, OutputBuffer* buf, bool rawMessage) noexcept {};
     void AppendAuxReply(size_t auxNumber, const char* _ecv_array msg,
                         bool rawMessage) noexcept {};
@@ -319,9 +324,25 @@ public:
     };
 #endif
     //
+    struct OutputOnExtrudeConfig
+    {
+        int32_t ports[2] = {-1, -1};
+        float pwm[2] = {0.0f, 0.0f};
+    };
+
+    OutputOnExtrudeConfig ReconfigureOutputOnExtrude(
+        const OutputOnExtrudeConfig& newConfig) noexcept
+    {
+        const OutputOnExtrudeConfig old = outputOnExtrude;
+        outputOnExtrude = newConfig;
+        return old;
+    }
     bool IsOutputOnExtrudeActive() const noexcept
     {
-        return true;
+        return (outputOnExtrude.ports[0] >= 0) || (outputOnExtrude.ports[1] >= 0);
+    }
+    void SetOutputsOnExtrude(bool, bool) noexcept
+    {
     }
     void ExtrudeOn() noexcept
     {
@@ -358,7 +379,14 @@ public:
     // --- Static debug members (copied from your version) ---
     static inline bool shouldTurnOffHeaters{false};
     static inline bool hasGenericDebug{false};
-    static inline String<StringLength256> genericDebugBuffer;
+    static inline String<StringLength256> genericDebugBufferStorage;
+    static inline String<StringLength256>* genericDebugBuffer{&genericDebugBufferStorage};
+    static inline bool hasMoveWarning{false};
+    static inline String<StringLength256> moveWarningBufferStorage;
+    static inline String<StringLength256>* moveWarningBuffer{&moveWarningBufferStorage};
+    static void EnsureDebugBuffers() noexcept
+    {
+    }
 
 protected:
     DECLARE_OBJECT_MODEL_WITH_ARRAYS
@@ -418,6 +446,7 @@ private:
     // Hotend state
     float filamentWidth;
     UniqueId uniqueId;
+    OutputOnExtrudeConfig outputOnExtrude;
 
     friend class ConfigurableFolder;
     void NotifyDirectoriesChanged() noexcept;

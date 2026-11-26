@@ -10,7 +10,7 @@
 [submodule "RRF/CANlib"]
 	path = RRF/CANlib
 	url = https://github.com/tobbelobb/CANlib.git
-	branch = 3.7-dev-rebase-2
+	branch = 3.7-dev-rebase-3
   ignore = untracked
 [submodule "RRF/CoreN2G"]
 	path = RRF/CoreN2G
@@ -25,12 +25,12 @@
 [submodule "RRF/RRFLibraries"]
 	path = RRF/RRFLibraries
 	url = https://github.com/tobbelobb/RRFLibraries.git
-	branch = 3.7-dev-rebase
+	branch = 3.7-dev-rebase-2
   ignore = untracked
 [submodule "RRF/LibTinyusb"]
 	path = RRF/LibTinyusb
 	url = https://github.com/Duet3d/LibTinyusb.git
-	branch = master
+	branch = 3.7-dev
   ignore = untracked
 [submodule "RRF/RepRapFirmware.wiki"]
 	path = RRF/RepRapFirmware.wiki

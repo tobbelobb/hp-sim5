@@ -55,6 +55,10 @@ public:
     }
     bool Seek(FilePosition pos) noexcept;
     FilePosition Length() const noexcept;
+    uint32_t ClusterSize() const noexcept
+    {
+        return 4096;
+    }
     bool IsCloseRequested() const noexcept
     {
         return closeRequested;

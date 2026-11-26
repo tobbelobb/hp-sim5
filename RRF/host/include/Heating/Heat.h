@@ -90,6 +90,10 @@ public:
         THROWS(GCodeException);
     GCodeResult TuneHeater(GCodeBuffer& gb, const StringRef& reply)
         THROWS(GCodeException);
+    bool IsTuningHeater() const noexcept
+    {
+        return false;
+    }
     GCodeResult ConfigureSensor(GCodeBuffer& gb, const StringRef& reply)
         THROWS(GCodeException);
     GCodeResult SetPidParameters(unsigned int heater, GCodeBuffer& gb,
@@ -143,8 +147,8 @@ public:
                                    const StringRef& reply) noexcept;
     void SwitchOff(int heater) noexcept;
     void SetFanFeedForwardPwm(unsigned int heater, float fanPwm) const noexcept;
-    void SetExtrusionFeedForward(unsigned int heater, float pwmBoost,
-                                 float tempBoost) const noexcept;
+    void SetExtrusionFeedForward(unsigned int heater, float pwmBoost, float tempBoost,
+                                 bool isNonPrintingMove = false) const noexcept;
 
 #if HAS_MASS_STORAGE || HAS_SBC_INTERFACE
     bool WriteModelParameters(FileStore* f) const noexcept;
@@ -1102,7 +1106,7 @@ inline void Heat::SetFanFeedForwardPwm(unsigned int, float) const noexcept
     // Host stub ignores fan feed-forward
 }
 
-inline void Heat::SetExtrusionFeedForward(unsigned int, float, float) const noexcept
+inline void Heat::SetExtrusionFeedForward(unsigned int, float, float, bool) const noexcept
 {
     // Host stub ignores extrusion feed-forward
 }

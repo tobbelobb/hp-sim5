@@ -3,7 +3,7 @@
 
 //#include <AsyncSerial.h>
 //#include <USARTClass.h>
-//#include <SerialCDC.h>
+#include <SerialCDC.h>
 //
 // extern AsyncSerial serialUart1;
 // extern USARTClass serialUart2;

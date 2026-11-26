@@ -6,7 +6,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
@@ -162,6 +162,7 @@ set(RRF_SOURCES_TO_USE
 
     # Should we stub these?
     CAN/ExpansionManager.cpp
+    CAN/CanMessageGenericConstructor.cpp
     Platform/Logger.cpp
     GCodes/CollisionAvoider.cpp
     Platform/PortControl.cpp
@@ -242,6 +243,7 @@ set(RRF_HEADERS_TO_USE
     Movement/ExtruderShaper.h
     Movement/MoveSegment.h
     Movement/MovementProfile.h
+    Movement/PhaseStep.h
     Movement/BedProbing/RandomProbePointSet.h
     Movement/MoveDebugFlags.h
     Hardware/ExceptionHandlers.h
@@ -338,6 +340,7 @@ set(CANlib_HEADERS_TO_USE
     TemperatureError.h
     CANlibNotifyIndices.h
     CanMessageGenericTableFormat.h
+    CanMessageGenericTables.h
     HeaterModel.h
 )
 

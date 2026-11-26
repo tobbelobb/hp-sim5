@@ -101,14 +101,16 @@ CanRequestId AllocateRequestId(CanAddress, CanMessageBuffer*) noexcept
 }
 
 GCodeResult SendRequestAndGetStandardReply(CanMessageBuffer* buf, CanRequestId,
-                                           const StringRef& reply, uint8_t*) noexcept
+                                           const StringRef& reply, uint8_t*,
+                                           uint32_t*) noexcept
 {
     FreeBuffer(buf);
     return ReturnOk(reply);
 }
 
 GCodeResult SendRequestAndGetCustomReply(
-    CanMessageBuffer* buf, CanRequestId, const StringRef& reply, uint8_t*, CanMessageType,
+    CanMessageBuffer* buf, CanRequestId, const StringRef& reply, uint8_t*, uint32_t*,
+    CanMessageType,
     function_ref_noexcept<void(const CanMessageBuffer*) noexcept>) noexcept
 {
     FreeBuffer(buf);
@@ -144,9 +146,24 @@ void CheckCanAddress(uint32_t, const GCodeBuffer&) THROWS(GCodeException)
 {
 }
 
-uint16_t GetTimeStampCounter() noexcept
+uint16_t GetTimeStampCounter(size_t) noexcept
 {
     return 0;
+}
+
+uint32_t Convert16bitReceivedTimeStampTo32bits(uint16_t ts) noexcept
+{
+    return ts;
+}
+
+GCodeResult SetRemotePhaseStepParam(DriverId, char, float, const StringRef& reply) noexcept
+{
+    return ReturnOk(reply);
+}
+
+GCodeResult SetRemoteDriverStepMode(DriverId, unsigned int, const StringRef& reply) noexcept
+{
+    return ReturnOk(reply);
 }
 
 GCodeResult GetRemoteFirmwareDetails(uint32_t, GCodeBuffer&, const StringRef& reply)
@@ -247,7 +264,7 @@ GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const String
 
 #if SUPPORT_HANGPRINTER
         Kinematics& kin = reprap.GetMove().GetKinematics();
-        if (kin.GetKinematicsType() == KinematicsType::hangprinter)
+        if (kin.GetLegacyType() == KinematicsType::hangprinter)
         {
             gb.MustSee('P');
             size_t drivesCount = reprap.GetGCodes().GetVisibleAxes();

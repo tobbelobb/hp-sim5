@@ -6,7 +6,9 @@
 #define protected public
 #include <CAN/CanMotion.h>
 #include <GCodes/GCodes.h>
+#include <Heating/Heat.h>
 #include <Movement/Move.h>
+#include <Networking/Network.h>
 #include <Platform/RepRap.h>
 #include <PrintMonitor/PrintMonitor.h>
 #undef protected
@@ -656,8 +658,8 @@ bool WaitForPrintCompletion() noexcept
             }
         }
 
-        uint64_t const scheduled = reprap.GetMove().GetScheduledMoves();
-        uint64_t const completed = reprap.GetMove().GetCompletedMoves();
+        uint64_t const scheduled = reprap.GetMove().GetScheduledMoves(0);
+        uint64_t const completed = reprap.GetMove().GetCompletedMoves(0);
         if constexpr (kTraceCompletion)
         {
             static uint64_t debugCounter = 0;
@@ -843,7 +845,11 @@ int main(int argc, char** argv)
     {
         if (reprapInitialised)
         {
-            reprap.Exit();
+            reprap.GetHeat().Exit();
+            reprap.GetMove().Exit();
+            reprap.GetGCodes().Exit();
+            reprap.GetNetwork().Exit();
+            reprap.GetPlatform().Exit();
             reprapInitialised = false;
         }
         HostCanCapture::Shutdown();
