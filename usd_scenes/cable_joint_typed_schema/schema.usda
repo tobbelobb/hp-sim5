@@ -140,6 +140,10 @@ class "CablePathAPI" (
         """
     )
 
+    uniform double cablePath:initialTension = 0.0 (
+        doc = "Tension in N used to derive initial free span rest lengths as length / (1 + tension / EA)."
+    )
+
     uniform double cablePath:dampingPerUnitLength = 0.0 (
         doc = """Axial damping of the cable in N*s.
 
