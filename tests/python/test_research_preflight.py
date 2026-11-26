@@ -42,7 +42,7 @@ async def test_non_json_runtime_result_returns_http_error_and_keeps_service_usab
 @pytest.fixture
 def runtime(tmp_path, monkeypatch):
     config = world_configuration(ROOT, {'machine': 'hp3'}, backend='headless-js')
-    firmware = {'M115': 'RepRapFirmware', 'M669': 'Kinematics is Hangprinter\n'
+    firmware = {'M115': 'RepRapFirmware', 'M669': 'Kinematics is hangprinter\n'
                 'A:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\n'
                 'C:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00', 'M666': 'M666 A1'}
     state = dict(world_id='retained-world', generation=3, step=42,

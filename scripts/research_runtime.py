@@ -25,7 +25,7 @@ from hp_sim5_research.services import process_live
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.browser import BrowserConnection
 from hp_sim5_research.autocal_jobs import AutocalJobs
-from hp_sim5_research.configuration import world_configuration, prepare_world
+from hp_sim5_research.configuration import is_hangprinter_config, world_configuration, prepare_world
 from hp_sim5_research.preflight import preflight
 from hp_sim5_research.test_jobs import TestJobs
 
@@ -147,7 +147,7 @@ class Runtime:
                                                        str(ws_port), str(collector_port), self.endpoint])
                 ready = await asyncio.to_thread(wait_ready, process, self.collector_url, 'status', log, token=self.token, timeout=40)
                 metadata['firmware_initial'] = ready['firmware_initial']
-                if 'Kinematics is Hangprinter' not in metadata['firmware_initial']['M669'] or not metadata['firmware_initial']['M666'].startswith('M666 A1'):
+                if not is_hangprinter_config(metadata['firmware_initial']):
                     raise RuntimeError('RRF did not load the matching Hangprinter configuration')
                 self.socket_task = asyncio.create_task(self.session.run_socket(f'ws://127.0.0.1:{ws_port}'))
                 await asyncio.wait_for(self.session.connected.wait(), timeout=5)

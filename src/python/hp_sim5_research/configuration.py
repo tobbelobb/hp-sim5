@@ -36,6 +36,11 @@ def firmware_path(machine):
     return str(Path(machine['rrf_config']).relative_to('RRF/run/vsd'))
 
 
+def is_hangprinter_config(firmware):
+    return ('kinematics is hangprinter' in firmware.get('M669', '').lower() and
+            firmware.get('M666', '').startswith('M666 A1'))
+
+
 @dataclass(frozen=True)
 class WorldConfiguration:
     machine: str
