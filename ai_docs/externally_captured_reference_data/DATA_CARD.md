@@ -217,4 +217,12 @@ force-distribution benchmarking with fixed pulley-exit anchors (not winch drums 
   - Dynamic COPacabana `CircPath` closed-loop trajectory replay with modeled winches and
     nonlinear low-tension `EA(F)` / frame compliance investigation.
 
-The catalog now includes dynamic replay of the first 13.9 kg standard-control PlaneA cycle, using either the eight target channels or the eight encoder channels. Each 10 ms measurement interval is subdivided into 2 ms simulator steps, including dwells. The tracker overlay follows the registered reflector in the P0-relative frame. [Dynamic comparison and reproduction commands](../../research/output/session-copacabana-planea/report.md).
+The catalog now includes dynamic replay of the first 13.9 kg standard-control PlaneA cycle with live moving swivel pulleys (`SwivelPulleyAPI`, matching `pulley_ik` to `1e-15 m`) and the FARO `Reflector` placed at its physical bottom-rail height (`z = 0.0225 m`, removing the `0.496232 m` `COP_Ref.csv`-vs-XML Z-origin offset). **Replay targets** drives the eight drums through closed-loop motor dynamics; **Replay encoders** disables motor dynamics (`kinematicMotors`) for exact spool animation (`3.55e-15 rad` max error). Each 10 ms measurement interval is subdivided into 2 ms simulator steps, including dwells.
+
+### DaRUS-4614 force, wrench, and drive-lag quirks
+
+- **Carriage-pulley `1/√2` force scaling (`F_true ≈ √2 · f_logged`):** Like the DaRUS-5171 SDA rig, COPacabana's `SW-G3.1` winches measure proximal tension on a 90° carriage pulley (Trautwein et al. 2020, Fig. 4). Static gravity balance (13.9 kg, 29.1 kg, and their difference), motor electrical power vs `-v[i]·f[i]` (`r = 0.970–0.996` on all 8 axes, confirming 1-to-1 channel mapping), and 40-hold force-closure fits all converge on `F_true / f_logged ≈ 1.38–1.41` (`√2`), plus asymmetric pulley-train friction (`~3.6 %` on lower 1-pulley routes vs `~12.8 %` on upper 3-pulley column routes) and `56–119 N` per-axis winch/gearbox Coulomb friction.
+- **Unnormalized `wc[0..5]`:** TwinCAT multiplied `f[0..7]` by unnormalized cable vectors `l_i` (lengths ~3.0–3.7 m) instead of unit vectors `u_i`.
+- **Uniform `60.5 ms` drive lag:** Recorded encoder payout `x(t)` lags `x_tar(t)` by `60.5 ms` across all eight axes (`0.74–0.99 mm` residual RMS vs `7.9–14.4 mm` raw following error).
+
+[Dynamic comparison and reproduction commands](../../research/output/session-copacabana-planea/report.md).

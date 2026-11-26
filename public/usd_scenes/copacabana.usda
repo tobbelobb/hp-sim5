@@ -381,7 +381,7 @@ def Xform "World"
         def Circle "Reflector" {
             token[] ecs:tags = ["Attachment"]
             double radius = 0.025
-            double3 xformOp:translate = (0.00683161, -0.19803316, 0.51873101)
+            double3 xformOp:translate = (0.00683161, -0.19803316, 0.02250000)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             float physics:mass = 0
         }

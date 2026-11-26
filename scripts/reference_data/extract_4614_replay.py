@@ -12,6 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'RRF'))
 from csv2can import convert_csv_to_highly_compressed
 
+# Centerline height of the 45x45 mm bottom -Y aluminum rail (z in [0, 0.045] m in cad/platform.stl)
+# where the FARO SMR nest is bolted, aligned with AttachA..D (z = 0.0225 m).
+REFLECTOR_LOCAL_Z = 0.0225
+
 
 def crossing_times(time, points):
     """Times at which the measured displacement crosses each PlaneA leg's midplane."""
@@ -70,6 +74,11 @@ def main():
         raise ValueError('Tracker does not cover the first robot cycle continuously')
     sample = time[::2]
     cycle = np.column_stack([np.interp(sample, aligned, xyz) for xyz in tracker.T])
+    # COP_Ref.csv has its Z origin ~0.50 m below the XML homing origin; shift Z so the home SMR sits
+    # at its physical bottom-rail height (REFLECTOR_LOCAL_Z) instead of near the top of the platform.
+    z_origin_offset = cycle[0, 2] - REFLECTOR_LOCAL_Z
+    cycle[:, 2] -= z_origin_offset
+    print(f'Removed tracker-vs-XML Z-origin offset {z_origin_offset:.6f} m -> P0 reflector {cycle[0].round(7)}')
     force = np.column_stack([scope[f'f[{i}]'][::2] for i in range(8)])
     header = 't,x,y,z,' + ','.join(f'f{i}' for i in range(8)) + ',target_x,target_y,target_z'
     np.savetxt(ROOT / 'tests/fixtures/reference_data/darus4614_planeA_cycle.csv',

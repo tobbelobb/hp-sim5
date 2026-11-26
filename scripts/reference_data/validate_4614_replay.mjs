@@ -4,8 +4,9 @@ import { Readable } from 'node:stream';
 import { findMachine } from '../../machines/catalog.js';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
-import { SceneEntityInfoComponent, PositionComponent } from '../../src/js/cable_joints_3d/ecs.js';
+import { SceneEntityInfoComponent, PositionComponent, EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { CableJointComponent } from '../../src/js/cable_joints_3d/cable_joints_core.js';
+import { StepperMotorComponent } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { FileFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { parseRrfMotorAxisMapFromConfigText } from '../../integrations/rrf/rrfFirmwareModel.js';
 
@@ -17,11 +18,20 @@ const machine = findMachine('copacabana');
 const url = path => new URL('../../' + path, import.meta.url);
 const read = path => fs.readFileSync(url(path), 'utf8');
 const backend = new WasmPhysicsEngine(new WebAssembly.Module(fs.readFileSync(url('public/wasm/cable_solver.wasm'))));
+const kinematicMotors = Boolean(machine.reference_replay.kinematicStreams?.includes(replay));
 const { world, remote, dt } = createHeadlessWorld(read(machine.scene), {
-  cableSolverBackend: backend, lineLayeringEnabled: false, closedLoopMotorsEnabled: true,
+  cableSolverBackend: backend, lineLayeringEnabled: false, closedLoopMotorsEnabled: !kinematicMotors, kinematicMotors,
 });
 const named = new Map(world.query([SceneEntityInfoComponent]).map(id => [world.getComponent(id, SceneEntityInfoComponent).name, id]));
 const axes = Array.from('ABCDIJLO');
+const spools = axes.map(axis => {
+  const id = named.get(`Spool${axis}`);
+  return {
+    stepper: world.getComponent(id, StepperMotorComponent),
+    encoder: world.getComponent(id, EncoderComponent),
+  };
+});
+let maxSpoolTrackingErrorRad = 0;
 const joints = axes.map(axis => world.getComponent(named.get(`Joint${axis}_1`), CableJointComponent));
 const rows = read('tests/fixtures/reference_data/darus4614_planeA_cycle.csv').trim().split('\n').slice(1)
   .map(line => {
@@ -91,6 +101,10 @@ measure();
 player.sendCommand = async command => {
   remote.addCommand(command);
   world.update(dt);
+  for (const { stepper, encoder } of spools) {
+    const err = Math.abs(encoder.angle - (stepper.commandedAngle - stepper.deltaAngle));
+    if (err > maxSpoolTrackingErrorRad) maxSpoolTrackingErrorRad = err;
+  }
   tick++;
   measure();
 };
@@ -101,10 +115,15 @@ try {
     || world.getResource('errorState')?.hasError) {
     throw Error(`Incomplete comparison at tick ${tick}, sample ${sample}`);
   }
+  if (kinematicMotors && maxSpoolTrackingErrorRad > 1e-9) {
+    throw Error(`Kinematic encoder replay spool tracking error ${maxSpoolTrackingErrorRad} rad exceeded 1e-9 rad`);
+  }
   const rms = (sum, count) => Math.sqrt(sum / count);
   const forceCount = (sample - 1) * joints.length;
   console.log(JSON.stringify({
     replay,
+    kinematic_motors: kinematicMotors,
+    max_spool_tracking_error_rad: maxSpoolTrackingErrorRad,
     duration_s: tick * dt,
     samples: sample,
     reflector_rms_mm: 1000 * rms(positionSquared, sample),

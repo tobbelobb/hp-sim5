@@ -466,6 +466,9 @@
       "reference_replay": {
         "referencePresetKey": "copacabanaPlaneATracker",
         "traceEntity": "Reflector",
+        "kinematicStreams": [
+          "planeAEncoders"
+        ],
         "streams": {
           "planeATargets": "public/RRF_CAN_commands/copacabana_planeA_targets.can",
           "planeAEncoders": "public/RRF_CAN_commands/copacabana_planeA_encoders.can"

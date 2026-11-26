@@ -45,7 +45,8 @@ export function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourc
     const replay = machineForSourceKey(activeSourceKeys[0], lineLayeringEnabled)?.reference_replay;
     const path = replay?.streams[presetKey];
     return path ? { path, referencePresetKey: replay.referencePresetKey, traceEntity: replay.traceEntity,
-      preserveTiming: true, format: FileFormat.RRF_CAN_BINARY } : null;
+      preserveTiming: true, kinematicMotors: Boolean(replay.kinematicStreams?.includes(presetKey)),
+      format: FileFormat.RRF_CAN_BINARY } : null;
   }
   const preset = COMMAND_PRESETS[presetKey];
   const machine = [...activeSourceKeys, UPLOADED_SCENE_SOURCE_KEY]

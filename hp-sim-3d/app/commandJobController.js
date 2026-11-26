@@ -10,6 +10,7 @@ import {
   resolvePresetCommand,
 } from './commandPresetResolver.js';
 import { buildRepositoryFileUrl } from './machineCatalog.js';
+import { setKinematicMotorMode } from './hangprinter_runtime.js';
 import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { KLIPPER_UPLOAD_PIPELINE, shouldUseRawKlipperUploadPipeline } from './workerController.js';
 
@@ -167,6 +168,7 @@ export function createCommandJobController({
     stopAndClearWorkers();
     resetJobTracking();
     runtime.reset({ autoPause: true });
+    setKinematicMotorMode(world, false);
     runtime.setTimeScale(1.0);
     view?.resetViewStateDefaults?.();
     view?.setNavigationCursorActive?.(false);
@@ -203,6 +205,7 @@ export function createCommandJobController({
       runtime.reset({ autoPause: false });
       view?.reapplyViewState?.({ clearExtrusions: true });
     }
+    setKinematicMotorMode(world, Boolean(jobDescriptor?.kinematicMotors));
     const renderer = world.getResource('renderSystem');
     if (renderer) renderer.positionTraceEntity = null;
     quality?.resetQualityMonitors?.({ keepReference: true });
@@ -284,6 +287,7 @@ export function createCommandJobController({
       type: 'preset',
       key: presetKey,
       label: PRESET_GCODE_MAP[referencePresetKey]?.label || presetKey,
+      kinematicMotors: Boolean(preset.kinematicMotors),
     };
     if (!startSimulationWithWorker(worker, jobDescriptor)) {
       return;
