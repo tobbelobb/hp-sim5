@@ -827,6 +827,8 @@ export function createViewController({
       applySecondaryControlsVisibility();
     });
     dom.canvas?.addEventListener('pointerdown', (event) => {
+      // Canvas input handlers preventDefault, which also blocks the browser from clearing text selections.
+      window.getSelection()?.removeAllRanges();
       if (isMobileLayout() && secondaryControlsUserPreference !== false) {
         showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }

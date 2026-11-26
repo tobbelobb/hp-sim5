@@ -171,6 +171,10 @@ select {
   font: inherit;
 }
 
+button {
+  user-select: none;
+}
+
 body {
   display: flex;
 }
