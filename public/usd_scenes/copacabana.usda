@@ -535,6 +535,7 @@ def Xform "World"
         # Initial span and storage tensions apply the explicit sqrt(2) factor for the 90 deg
         # carriage-pulley force sensor (Trautwein et al. 2020 Fig. 4) to the raw P0 readings
         # [64.0, 60.1, 64.0, 59.5, 28.4, 24.7, 25.2, 21.8] N so home vertical force matches 13.9 kg.
+        # Stiffness EA = 118.5 kN matches the DaRUS-5171 6 mm D-Pro XTR identification in physical N.
         def Xform "CablePathA" (
             apiSchemas = ["CablePathAPI"]
         )
@@ -545,7 +546,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 90.51
             custom double cablePath:initialStorageTension = 90.51
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
@@ -562,7 +563,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 84.99
             custom double cablePath:initialStorageTension = 84.99
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
@@ -579,7 +580,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 90.51
             custom double cablePath:initialStorageTension = 90.51
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
@@ -596,7 +597,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 84.15
             custom double cablePath:initialStorageTension = 84.15
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
@@ -613,7 +614,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 40.16
             custom double cablePath:initialStorageTension = 40.16
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
@@ -630,7 +631,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 34.93
             custom double cablePath:initialStorageTension = 34.93
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
@@ -647,7 +648,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 35.64
             custom double cablePath:initialStorageTension = 35.64
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
@@ -664,7 +665,7 @@ def Xform "World"
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 30.83
             custom double cablePath:initialStorageTension = 30.83
-            custom double cablePath:stiffnessPerUnitLength = 83800.0
+            custom double cablePath:stiffnessPerUnitLength = 118500.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
             custom token[] cablePath:storedMode = ["manual", "auto", "manual"]

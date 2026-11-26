@@ -1,8 +1,8 @@
 # COPacabana dynamic PlaneA replay
 
-The first 24.26 s of the 13.9 kg standard-control run separate drive tracking, swivel-pulley kinematics, proximal force-sensor scaling, and hardware geometry mismatch. With live moving swivel pulleys, the reflector at its physical bottom-rail height (`z = 0.0225 m`), and the confirmed `√2` carriage-pulley sensor scaling applied explicitly to P0 initial pretension/storage tensions (preserving raw logged `f[i]` in all fixtures), feeding the eight recorded motor targets through closed-loop motor dynamics gives **25.4 mm** RMS reflector error (`50.1 mm` peak) and **173.1 N** raw / **258.3 N** `√2`-scaled cable-force RMS. Replaying the recorded encoder readings directly with motor dynamics disabled (`max_spool_tracking_error_rad = 3.55e-15 rad`) reduces reflector error to **15.8 mm** RMS (`23.7 mm` peak) and **172.4 N** raw / **257.9 N** `√2`-scaled cable-force RMS.
+The first 24.26 s of the 13.9 kg standard-control run separate drive tracking, swivel-pulley kinematics, proximal force-sensor scaling, and hardware geometry mismatch. With live moving swivel pulleys, the reflector at its physical bottom-rail height (`z = 0.0225 m`), physical-Newton rope parameters (`EA = 118.5 kN`, default radial compliance `1.50e-8 m²/N`), and the confirmed `√2` carriage-pulley sensor scaling applied explicitly to P0 initial pretension/storage tensions (preserving raw logged `f[i]` in all fixtures), feeding the eight recorded motor targets through closed-loop motor dynamics gives **25.5 mm** RMS reflector error (`50.0 mm` peak) and **173.0 N** raw / **258.2 N** `√2`-scaled cable-force RMS. Replaying the recorded encoder readings directly with motor dynamics disabled (`max_spool_tracking_error_rad = 3.55e-15 rad`) reduces reflector error to **16.0 mm** RMS (`22.5 mm` peak) and **172.4 N** raw / **258.0 N** `√2`-scaled cable-force RMS.
 
-**Almost all of the settled error belongs to the real machine's anisotropic geometry mismatch and proximal force-sensor/friction chain, not to the simulated cables.** At every settled pose the simulated reflector lies within **2.1 mm** of the controller's commanded pose on every axis (within **1.6 mm** at P1–P4). The measured reflector misses that same commanded pose by up to **20.6 mm**, almost entirely along Y. Model-free, registration-independent raw tracker spans confirm an anisotropic discrepancy across every experiment and trajectory:
+**Almost all of the settled error belongs to the real machine's anisotropic geometry mismatch and proximal force-sensor/friction chain, not to the simulated cables.** At every settled pose the simulated reflector lies within **1.6 mm** of the controller's commanded pose on every axis (within **1.3 mm** at P1–P4). The measured reflector misses that same commanded pose by up to **20.6 mm**, almost entirely along Y. Model-free, registration-independent raw tracker spans confirm an anisotropic discrepancy across every experiment and trajectory:
 - **PlaneA (all 8 experiments):** `P2→P3` and `P4→P5` (pure 899.1 mm Y moves) travel **3.5–4.6 % short** (`0.954–0.966×`), while `P3→P4` (1674.4 mm `-X-Z` move) travels **0.4–0.5 % long** (`1.004–1.005×`).
 - **CircPath (13.9 kg and 29.1 kg):** Y bounding span (1751.0 mm commanded) travels **4.8–5.7 % short** (`−83.7` to `−99.6 mm`), while X span (1669.9 mm) travels **0.7–0.9 % long** (`+11.4` to `+15.7 mm`) and Z span (526.5 mm) travels **0.6 % long** (`+3.1 mm`).
 
@@ -19,7 +19,7 @@ Reichenbach et al. (2024 APC paper, §3) note that COPacabana's frame and platfo
 | Drum radius (`0.049 m`), gearbox (`5:1`), motor torque (`32 × 5 = 160 Nm`) | Exact from `COPacabana.xml` (`wegaufz/wegaufn` implies `49.10 mm`; `r_drum = 0.049 m` cancels in step conversion) | Published controller XML (preserved) |
 | Home `Reflector` offset `(0.006832, −0.198033, 0.022500) m` | Kabsch-registered P0 `(X, Y)` + bottom 45×45 mm rail centerline `z = 0.0225 m` (`cad/platform.stl`, DaRUS-4614 photos) | Confirmed physical/coordinate fix (`0.496232 m` `COP_Ref`-vs-XML Z-origin offset removed) |
 | Initial span & storage tensions `F0` | Raw P0 `f[0..7] × √2` (`[90.51, 84.99, 90.51, 84.15, 40.16, 34.93, 35.64, 30.83] N`) | Confirmed `1/√2` 90° carriage-pulley sensor correction (raw `f[i]` preserved in CSV fixtures) |
-| Cable `EA = 83.8 kN`, radial compliance `k_r = 2.12e-8 / R` | Transferred from DaRUS-5171 6 mm D-Pro XTR rig ID (PR #129) | Independent rig ID (see DaRUS-5171/3600 `√2` note in `DATA_CARD.md`) |
+| Cable `EA = 118.5 kN`, radial compliance `k_r = 1.50e-8 / R` (`0.306 µm/N` at `49 mm`) | Re-identified from DaRUS-5171 6 mm D-Pro XTR in physical Newtons (`F_true = √2 · f_logged`) | Independent rig ID (`DATA_CARD.md`) |
 | Rotor inertia (`0.005 kg·m²`), damping (`0.11`), `0.2 m` drum offset | Unidentified simulation assumptions (bypassed in kinematic **Replay encoders**) | hp-sim5 simulation assumptions |
 
 ## Replay in hp-sim-3d
@@ -38,20 +38,20 @@ The validator samples predicted XYZ at the bottom-rail `Reflector` and the platf
 
 | Input or predictor | Motor dynamics | Max spool tracking err (rad) | Reflector RMS (mm) | Peak (mm) | Force RMS vs raw `f[i]` (N) | Force RMS vs `√2·f[i]` (N) |
 |---|---|---:|---:|---:|---:|---:|
-| Recorded motor targets (`planeATargets`) | Closed-loop servo | `2.36e-2` | 25.4 | 50.1 | 173.1 | 258.3 |
-| Recorded motor encoders (`planeAEncoders`) | Disabled (kinematic) | `3.55e-15` | 15.8 | 23.7 | 172.4 | 257.9 |
+| Recorded motor targets (`planeATargets`) | Closed-loop servo | `2.35e-2` | 25.5 | 50.0 | 173.0 | 258.2 |
+| Recorded motor encoders (`planeAEncoders`) | Disabled (kinematic) | `3.55e-15` | 16.0 | 22.5 | 172.4 | 258.0 |
 | Logged Cartesian target plus fixed reflector offset | — | — | 27.0 | | | |
 | Hold each cable at its measured P0 force | — | — | | | 184.8 | |
 
-The table below uses stationary intervals beginning 0.5 s after the platform target stops (`planeAEncoders`, moving swivel pulleys, kinematic motors, bottom-rail reflector, `√2`-scaled P0 pretension). Repeat scatter is the root sum of the tracker coordinate variances across repeated visits in the earlier PlaneA fixture.
+The table below uses stationary intervals beginning 0.5 s after the platform target stops (`planeAEncoders`, moving swivel pulleys, kinematic motors, bottom-rail reflector, physical-Newton `EA = 118.5 kN` and `√2`-scaled P0 pretension). Repeat scatter is the root sum of the tracker coordinate variances across repeated visits in the earlier PlaneA fixture.
 
 | Pose | Encoder replay reflector RMS (mm) | Simulated − commanded XYZ (mm) | Measured − commanded XYZ (mm) | Repeat scatter (mm) | Force RMS raw / `√2` (N) | Closure raw / `√2` (N) |
 |---|---:|---:|---:|---:|---:|---:|
-| P1 | 1.6 | (0.0, 0.1, 0.4) | (−0.5, 0.3, 1.9) | 0.63 | 60 / 102 | 127 / 127 |
-| P2 | 15.8 | (−1.8, −1.3, −0.1) | (1.0, −16.8, −0.7) | 0.66 | 17 / 16 | 64 / 54 |
-| P3 | 18.6 | (−1.3, 1.1, −0.2) | (3.7, 17.5, 6.8) | 0.70 | 19 / 23 | 77 / 62 |
-| P4 | 19.5 | (1.5, 1.6, 1.0) | (−4.3, 19.2, 7.0) | 0.40 | 300 / 447 | 180 / 242 |
-| P5 | 20.3 | (2.1, −1.0, 1.2) | (−2.7, −20.6, 0.6) | 0.48 | 212 / 322 | 92 / 90 |
+| P1 | 1.7 | (0.0, 0.0, 0.3) | (−0.5, 0.3, 1.9) | 0.63 | 60 / 102 | 127 / 127 |
+| P2 | 16.1 | (−1.3, −0.9, −0.1) | (1.0, −16.8, −0.7) | 0.66 | 17 / 16 | 64 / 54 |
+| P3 | 18.8 | (−0.9, 0.7, −0.2) | (3.7, 17.5, 6.8) | 0.70 | 19 / 23 | 77 / 62 |
+| P4 | 19.9 | (1.1, 1.2, 0.7) | (−4.3, 19.2, 7.0) | 0.40 | 300 / 446 | 180 / 242 |
+| P5 | 20.4 | (1.6, −0.7, 0.8) | (−2.7, −20.6, 0.6) | 0.48 | 212 / 322 | 92 / 90 |
 
 ![Settled reflector error and measured repeat scatter by pose](settled-error.png)
 
@@ -66,14 +66,14 @@ Auditing the raw TwinCAT Scope logs (`Export 1.csv` across PlaneA and CircPath, 
    - Differential payload (`29.1 − 13.9 kg`) at P0 (`149.1 / 108.1 N` = **`1.379`**),
    - Motor electrical power slope `power[i]` vs `-v[i]·f[i]` across all 8 cables (`[1.464, 1.487, 1.429, 1.327, 1.465, 1.432, 1.226, 1.347]`, mean **`1.397`**, plus `56–119 N` per-axis winch/gearbox Coulomb friction),
    - Static force-closure fit across all 40 PlaneA holds (`g = 1.412`).
-   - **Cross-dataset check on DaRUS-3600 & DaRUS-5171 (PR #129):** The same `SW-G3.1` winch family exhibits the identical `~√2` scaling in DaRUS-3600 (`d(t_test·10)/d(f_test)` unwind/rewind midpoint = `0.07094 Nm/N = 1.4137 · R_D`), DaRUS-5171 SWP (regenerating unwind slope `d(P_T)/d(-v_T·f_T) = 1.201 > 1.0`), and DaRUS-5171 SDA (`Δf_kistler1 / Δf_T = 1.453` unwind / `1.476` rewind against the calibrated Kistler 9311C). Because the shared factor cancels in `F/EA` and `k_r·F`, PR #129's blind `5171 → 3600` transfer is invariant, while physical `EA` scales up by `√2` (e.g., 6 mm D-Pro XTR `83.8 → 118.5 kN`) and `k_r` scales down by `√2` (`0.422 → 0.298 µm/N`); full rig re-identification is tracked as follow-up work in `DATA_CARD.md`.
+   - **Cross-dataset check & physical-Newton re-identification on DaRUS-3600 & DaRUS-5171:** The same `SW-G3.1` winch family exhibits the identical `~√2` scaling in DaRUS-3600 (`d(t_test·10)/d(f_test)` unwind/rewind midpoint = `0.07094 Nm/N = 1.4137 · R_D`), DaRUS-5171 SWP (regenerating unwind slope `d(P_T)/d(-v_T·f_T) = 1.201 > 1.0`), and DaRUS-5171 SDA (`Δf_kistler1 / Δf_T = 1.453` unwind / `1.476` rewind against the calibrated Kistler 9311C). All three Rust validation suites (`darus5171_ropes.rs`, `darus3600_rig.rs`, `darus4614_copacabana.rs`), `DEFAULT_SPOOL_RADIAL_COMPLIANCE` (`0.299e-6 * 0.05018 ≈ 1.50e-8 m²/N`, `E_t ≈ 67 MPa`), and `copacabana.usda` (`EA = 118.5 kN`) now operate in physical cable Newtons (`WINCH_FORCE_SCALE = √2`), while preserving raw logged sensor readings untouched in all CSV fixtures; see `DATA_CARD.md` for full re-validated numbers including the non-cancelling gravity-sag test (`−1.85 mm` simulated vs `−3.69 / −4.40 mm` FARO).
 3. **Direction-dependent asymmetric upper vs lower cable-guidance friction.** Lower cables route over one frame pulley between winch and platform, while upper cables route up the vertical frame columns over three pulleys. Actuator-side readings therefore exceed platform tension during retraction (`F_act ≈ F_plat · (1 + η)`) and undershoot it during payout (`F_act ≈ F_plat / (1 + η)`). Fitting all 40 PlaneA holds with `g = 1.412`, lower loss `η_lo = 3.6 %`, and upper column loss `η_up = 12.8 %` collapses the static force-closure residual from **133.4 N to 46.2 N** (Trautwein et al. 2020 §4.1 already cautions that actuator sensors provide only qualitative platform forces).
 4. **Unnormalized `wc[0..5]` in TwinCAT Scope & angular-unit audit.** Regressing the logged wrench `wc[0..5]` against `f[0..7]` at P0/P1 fits to `1.2e-12` with per-cable multipliers equal to the cable lengths `‖l_i‖` (~3.0–3.7 m): TwinCAT multiplied `f` by unnormalized cable vectors `l_i` instead of unit vectors `u_i` (a read-only dataset quirk; `hp-sim5` does not compute `wc`). In `evidence/force_balance.py`, passing `degrees=True` to `Rotation.from_euler('XYZ', ...)` matches the DaRUS-4614 metadata (verified `< 0.0007 N` change on PlaneA and `< 0.0029 N` on CircPath because logged `max|p[3..5]| ≤ 8.4e-5`). [Raw-log calculation](evidence/force_balance.py)
 
 | Mean tension at P4 (N), encoder replay | A | B | C | D | I | J | L | O |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Logged (`f[i]`, unscaled actuator sensor) | 316 | 133 | 200 | 390 | 348 | 303 | 345 | 605 |
-| Simulated at platform (XML geometry, `F0 = √2·f[0]`) | 78 | 52 | 73 | 100 | 35 | 21 | 47 | 65 |
+| Simulated at platform (XML geometry, `EA = 118.5 kN`, `F0 = √2·f[0]`) | 78 | 53 | 73 | 100 | 35 | 22 | 47 | 66 |
 
 ### Constrained calibration ablation (ongoing investigation)
 
@@ -107,6 +107,8 @@ npx jest tests/js/hp-sim-3d/copacabanaPlaneAReplay.test.js
 ```
 
 To reproduce the raw-log audit across eight conditions, five poses and 30 exports, pass the cache directory (or the original `experiments/` directory) to `.venv/bin/python research/output/session-copacabana-planea/evidence/force_balance.py output/reference_cache/4614`. It writes one CSV row per settled visit to stdout.
+
+To reproduce the constrained calibration ablation (Stages A0–F2, trained on `20_Std_Load13900` PlaneA and evaluated blind on the 7 held-out PlaneA experiments and both `CircPath` trajectories with explicit weights `1.0 mm` / `12.0 N` logged force and parameter bounds), run `.venv/bin/python research/output/session-copacabana-planea/evidence/calibration_ablation.py` (pass `--planea-only` if `CircPath` Scope/tracker files are not mounted).
 
 With the raw measurements mounted, rebuild the comparison inputs with `.venv/bin/python scripts/reference_data/extract_4614_replay.py`. Recompile the nominal firmware examples with `.venv/bin/python scripts/compile_machine_commands.py --machine copacabana`.
 

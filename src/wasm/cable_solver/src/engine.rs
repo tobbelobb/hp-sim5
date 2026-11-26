@@ -414,9 +414,10 @@ impl SpoolEnd {
 
 /// Default radial compliance of rope on a drum, k_r·R in m²/N. A rope pressed onto a drum of
 /// radius R carries line load F/R, so its centreline sinks by F/(R·E_t) whatever its diameter.
-/// An effective E_t ≈ 47 MPa follows from k_r = 0.422 µm/N on the R = 50.18 mm DaRUS-5171 D-Pro rig. Stored
+/// An effective E_t ≈ 67 MPa follows from k_r = 0.299 µm/N (physical cable Newtons, F_true = √2·f_logged
+/// for the 90° SW-G3.1 carriage-pulley sensor) on the R = 50.18 mm DaRUS-5171 D-Pro rig. Stored
 /// negated in `Cable::spool_config` so explicit per-cable k_r (m/N, >= 0) stays distinct.
-const DEFAULT_SPOOL_RADIAL_COMPLIANCE: f64 = 0.422e-6 * 0.05018;
+const DEFAULT_SPOOL_RADIAL_COMPLIANCE: f64 = 0.299e-6 * 0.05018;
 
 /// Running-radius contraction per newton at radius `r` (negative `k_r` is a compliance in m²/N).
 fn flattening_at(k_r: f64, r: f64) -> f64 {

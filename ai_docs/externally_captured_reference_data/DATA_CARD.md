@@ -24,17 +24,18 @@ Dyneema braids rather than identical production lots.
 
 ### Relevance & non-extrapolation warning for Hangprinter ropes
 
-**Do NOT directly apply the 6 mm industrial EA (`83.8 kN`) to Hangprinter fishing line / thin
+**Do NOT directly apply the 6 mm industrial EA (`118.5 kN`) to Hangprinter fishing line / thin
 braided Dyneema (typically 0.5–1.5 mm, multi-layer ungrooved spools).** Each machine sets its own EA.
 
 - Elastic spools store material at its winding strain by default, using the cable's configured
   axial stiffness. This needs no new parameter.
 - Elastic spools also contract their running radius with tension by default. A rope pressed onto a
   drum of radius `R` carries line load `F/R`, so its centreline sinks by `F/(R·E_t)` independently of
-  rope diameter. The default `k_r = 2.12e-8 m²/N / R` (effective `E_t ≈ 47 MPa`) reproduces the
-  identified `0.422 µm/N` on the `R = 50.18 mm` D-Pro rig and gives `0.432 µm/N` on COPacabana's
-  49 mm drums. Coil-on-coil bedding of thin line on multi-layer spools is unmeasured; identify it on
-  Hangprinter hardware before trusting absolute flattening there.
+  rope diameter. The default `k_r = 1.50e-8 m²/N / R` (effective `E_t ≈ 67 MPa`) reproduces the
+  identified `0.299 µm/N` (in physical Newtons, `F_true = √2 · f_logged`) on the `R = 50.18 mm`
+  D-Pro rig and gives `0.306 µm/N` on COPacabana's 49 mm drums. Coil-on-coil bedding of thin line
+  on multi-layer spools is unmeasured; identify it on Hangprinter hardware before trusting absolute
+  flattening there.
 - Opt out with `strainedSpoolStorage = false` and `spoolRadialFlattening = 0` (world resources or
   `cablePath:` attributes) to isolate effects or reproduce legacy controls. A `cablePath:` value
   `>= 0` in m/N overrides the default per cable.
@@ -120,15 +121,18 @@ them. Grooved single-layer drums of nominal diameter 100.36 mm (`R_D = 50.18 mm`
 
 ### Stage 1 & cross-dataset validation (`darus3600_rig.rs`)
 
+All force-dependent metrics below are expressed in **physical cable Newtons** (`F_true = √2 · f_logged`,
+applied explicitly in Rust while preserving raw logged sensor readings in the committed CSV fixtures):
+
 - Measured pooled LSV/drum slope across all 12 control × direction × speed cells (348 runs):
-  **−8.69 ppm/N** (cell slopes −6.96 to −10.11 ppm/N; within-cell repeat RMS 74–164 ppm).
-- Blind transfer of DaRUS-5171 `LIROS_D-Pro` parameters (`EA = 83.8 kN`, `k_r = 0.422 µm/N`,
-  identified live from `darus5171_fdp_fc_map.csv`) predicts **−8.43 ppm/N** at all three rig
-  speeds (0.5, 2.0, 5.0 m/s) against measured speed-cell means −9.25, −8.01, −8.83 ppm/N.
-- **Measured-encoder replay** (`darus3600_replay_pair.csv`, 125 N, 2 m/s, zero feedforward):
-  upgraded solver reduces span-travel error on both unwind (1169 → 1008 ppm) and rewind
-  (2856 → 1093 ppm) and cuts unwind/rewind asymmetry from **1760 ppm** (legacy) to **13 ppm**
-  (measured asymmetry: 72 ppm).
+  **−6.15 ppm/N** (cell slopes −4.92 to −7.15 ppm/N; within-cell repeat RMS 74–164 ppm).
+- Blind transfer of DaRUS-5171 `LIROS_D-Pro` parameters (`EA = 118.5 kN`, `k_r = 0.299 µm/N`,
+  identified live from `darus5171_fdp_fc_map.csv`) predicts **−5.96 ppm/N** at all three rig
+  speeds (0.5, 2.0, 5.0 m/s) against measured speed-cell means −6.54, −5.66, −6.25 ppm/N.
+- **Measured-encoder replay** (`darus3600_replay_pair.csv`, 177 N physical / 125 N logged, 2 m/s,
+  zero feedforward): upgraded solver reduces span-travel error on both unwind (1169 → 1008 ppm)
+  and rewind (2856 → 1093 ppm) and cuts unwind/rewind asymmetry from **1760 ppm** (legacy) to
+  **13 ppm** (measured asymmetry: 72 ppm).
 
 ## DaRUS-5171: synthetic fibre rope modelling and slip compensation, 2026
 
@@ -144,16 +148,16 @@ as the true span force on SDA.
 
 ### Stage 2 & 3 results: identification, 4-way blind ablation, and measured replay (`darus5171_ropes.rs`)
 
-All parameters are identified strictly on `FDP-FC-MAP` via linear regression `np.polyfit(x_T, x_lsv, 1)`
-and evaluated blind on held-out `StatCompensationValid` (`n = 18` per rope, +2 and +3 m/s) using
-both **strictly frozen RMSE** (using `b0` frozen from `FDP-FC-MAP`, zero validation fitting) and
-**centered RMSE**:
+All parameters are identified strictly on `FDP-FC-MAP` in physical cable Newtons (`F_true = √2 · f_logged`)
+via linear regression `np.polyfit(x_T, x_lsv, 1)` and evaluated blind on held-out `StatCompensationValid`
+(`n = 18` per rope, +2 and +3 m/s) using both **strictly frozen RMSE** (using `b0` frozen from
+`FDP-FC-MAP`, zero validation fitting) and **centered RMSE**:
 
 | Rope (6 mm braid) | `EA` (kN) | `k_r` (µm/N) | `b0` (ppm) | Ident RMS | Legacy (frozen / centered) | Strained-only (frozen / centered) | Flattening-only (frozen / centered) | **Full upgraded (frozen / centered)** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| LIROS D-Pro XTR (SK99) | 83.8 | 0.422 | +1670 | 91 ppm | 2786 / 889 | 1178 / 396 | 1648 / 537 | **158 / 155 ppm** |
-| Trowis Vectran HT (LCP) | 98.4 | 0.421 | −6828 | 92 ppm | 2718 / 720 | 1352 / 304 | 1588 / 372 | **290 / 161 ppm** |
-| Trowis PolyTropFOX (PES/TPU) | 51.0 | 1.546 | +1270 | 1252 ppm | 6945 / 1294 | 4343 / 540 | 2885 / 366 | **1043 / 980 ppm** |
+| LIROS D-Pro XTR (SK99) | 118.5 | 0.299 | +1670 | 91 ppm | 2786 / 889 | 1178 / 396 | 1648 / 537 | **158 / 155 ppm** |
+| Trowis Vectran HT (LCP) | 139.2 | 0.298 | −6828 | 92 ppm | 2718 / 720 | 1352 / 304 | 1588 / 372 | **290 / 161 ppm** |
+| Trowis PolyTropFOX (PES/TPU) | 72.1 | 1.093 | +1270 | 1252 ppm | 6945 / 1294 | 4343 / 540 | 2885 / 366 | **1043 / 980 ppm** |
 
 - On **both bare 12-strand braids** (D-Pro XTR, Vectran HT), the full 2-parameter model beats
   Legacy, Strained-only, and Flattening-only on **both** frozen and centered RMSE (landing inside
@@ -166,13 +170,14 @@ both **strictly frozen RMSE** (using `b0` frozen from `FDP-FC-MAP`, zero validat
   ident split and `2025-03-03` validation split), and is preserved openly without fitting extra
   parameters.
 - **True measured motor-trajectory replay** (`darus5171_replay_wc180_dp75.csv`, full 20 s / 28 m
-  wind at ~77 N → turnaround → 10 m unwind at ~177 N, driving both drums strictly from recorded
-  encoders `(x_T(t), x_L(t))` with **zero feedforward** and **zero rest-length edits**):
-  - **Measured:** mean tension `176.9 N`, drift `−5.1 N`, `lsv_ratio = 1.002238`.
+  wind at ~109 N physical / 77 N logged → turnaround → 10 m unwind at ~250 N physical / 177 N logged,
+  driving both drums strictly from recorded encoders `(x_T(t), x_L(t))` with **zero feedforward**
+  and **zero rest-length edits**):
+  - **Measured (physical N):** mean tension `250.1 N`, drift `−7.2 N`, `lsv_ratio = 1.002238`.
   - **Legacy solver:** loses tension during the wind/turnaround and enters unwind nearly slack
-    (`21.4 N` mean, `+103.7 N` drift — **155.5 N** mean force error).
-  - **Upgraded solver:** tracks the full 28 m trajectory to **`186.1 N` mean** (9.2 N / 5.2 % error),
-    `−22.7 N` drift, and `lsv_ratio + b0 = 1.002033` (**206 ppm** error).
+    (`30.2 N` mean, `+146.7 N` drift — **219.9 N** mean force error).
+  - **Upgraded solver:** tracks the full 28 m trajectory to **`263.2 N` mean** (13.1 N / 5.2 % error),
+    `−32.1 N` drift, and `lsv_ratio + b0 = 1.002033` (**206 ppm** error).
 
 ## DaRUS-4614: COPacabana static IK & cable-stiffness benchmark, 2025
 
@@ -180,22 +185,26 @@ both **strictly frozen RMSE** (using `b0` frozen from `FDP-FC-MAP`, zero validat
 33 mm lower, swivel entry axes `±X`, `I = diag(1, 1, 1)`). Scope in `darus4614_copacabana.rs` is
 explicitly bounded to (1) exact swivel-pulley IK verification and (2) static cable-stiffness /
 force-distribution benchmarking with fixed pulley-exit anchors (not winch drums or dynamic motion).
+All force-dependent comparisons apply `WINCH_FORCE_SCALE = √2` explicitly in Rust (raw logged
+values remain untouched in `darus4614_planeA.csv`).
 
 - **Swivel-pulley IK:** Reproduces logged `x_tar[0..7]` across P0..P5 × 8 cables to **0.084 mm**.
-- **All-pose blind APC stiffness benchmark** (`EA = 83.8 kN` live from DaRUS-5171, baseline
-  initialized from actual measured `lo_row.f[i]` across all 5 non-home poses P1..P5 × both
-  payloads 13.9 & 29.1 kg × APC25/50/75 = 25 pair×pose conditions, 200 cable readings):
-  - Overall blind per-cable `dF` RMSE across all 200 readings: **31.1 N**.
-  - Workspace center P1 (well-tensioned, `min_F >= 61 N`): 13.9 kg APC75−STD RMSE **14.4 N**
-    (mean +74.6 vs +75.8 N); 29.1 kg APC75−APC25 RMSE **15.8 N** (mean +57.2 vs +69.7 N).
-  - Low-tension boundary poses P2/P3 (`min_F` down to 1–34 N) show noticeably larger `dF`
-    over-prediction (RMSE up to 67.6 N at P2 APC75), consistent with low-tension braid softening
-    below ~60–80 N.
-- **Blind payload-sag residual (29.1 − 13.9 kg):** Simulated **−2.62 mm** vs FARO tracker
-  **−3.69 mm** at P0 (error **+1.07 mm**, 29.0 %) and **−4.40 mm** at P1 (error **+1.79 mm**,
-  40.5 %). Preserved openly as an unmodeled residual; candidate hypotheses (not proven causes)
-  include low-tension braid softening, re-homing preload differences between `20_Std` and `10_Std`,
-  pulley/traverse friction shifting load to upper cables, and finite frame compliance.
+- **All-pose blind APC stiffness benchmark** (`EA = 118.5 kN` live from DaRUS-5171 in physical N,
+  baseline initialized from actual measured `√2 · lo_row.f[i]` across all 5 non-home poses P1..P5 ×
+  both payloads 13.9 & 29.1 kg × APC25/50/75 = 25 pair×pose conditions, 200 cable readings):
+  - Overall blind per-cable `dF` RMSE across all 200 readings: **45.3 N** (physical N).
+  - Workspace center P1 (well-tensioned, `min_F >= 86 N` physical): 13.9 kg APC75−STD RMSE **20.3 N**
+    (mean +105.5 vs +107.2 N); 29.1 kg APC75−APC25 RMSE **22.4 N** (mean +80.9 vs +98.6 N).
+  - Low-tension boundary poses P2/P3 (`min_F` down to 1–49 N physical) show noticeably larger `dF`
+    over-prediction (RMSE up to 95.6 N at P2 APC75), consistent with low-tension braid softening
+    below ~80–110 N.
+- **Blind payload-sag residual (29.1 − 13.9 kg):** Because gravity (`m·g`) is already in physical
+  Newtons and does not cancel `√2`, updating `EA` from `83.8 → 118.5 kN` reduces simulated
+  linear-elastic sag from `−2.62 mm` to **−1.85 mm** vs FARO tracker **−3.69 mm** at P0 (error
+  **+1.84 mm**, 49.8 %) and **−4.40 mm** at P1 (error **+2.55 mm**, 58.0 %). Preserved openly as
+  an unmodeled residual — strengthening the case for nonlinear low-tension braid softening,
+  structural/frame compliance, re-homing preload offsets between `20_Std` and `10_Std`, and
+  pulley/traverse friction redistributing load to upper cables.
 
 ## Status of planned validation items (completed vs deferred)
 
@@ -225,7 +234,7 @@ The catalog now includes dynamic replay of the first 13.9 kg standard-control Pl
   - **DaRUS-4614 (COPacabana):** P0 static gravity balance at 13.9 kg (`1.393`), 29.1 kg (`1.386`), differential payload (`1.379`), motor electrical power vs `-v[i]·f[i]` (`r = 0.970–0.996` on all 8 axes, mean slope `1.397` + `56–119 N` winch Coulomb friction), and 40-hold force-closure fit (`1.412`, with `~3.6 %` lower 1-pulley vs `~12.8 %` upper 3-pulley column friction).
   - **DaRUS-3600 (CATi):** Test-winch `d(t_test·10)/d(f_test)` unwind/rewind midpoint is `0.07094 Nm/N = 1.4137 · R_D` (`R_D = 0.05018 m`).
   - **DaRUS-5171 (SWP & SDA):** On SWP (`FDP-FC-MAP`), regenerating unwind slope `d(P_T)/d(-v_T·f_T) = 1.201 > 1.0` (physically impossible without `F_true > f_T`; motoring wind slope `1.483`). On SDA (`StatSlipIdentLda`, 75–375 N), `Δf_kistler1 / Δf_T = 1.453` (unwind) and `1.476` (rewind).
-  - **Impact on PR #129:** Because the shared `√2` factor cancels in `F/EA` and `k_r·F`, PR #129's blind `5171 → 3600` transfer (`−8.43` vs `−8.69 ppm/N`) and `5171 → 4614` APC `dF` comparisons are invariant. However, physical rope stiffness and flattening parameters shift by `√2` (`EA_true = √2 · EA_raw`: 6 mm D-Pro XTR `118.5 kN`, Vectran HT `139.2 kN`, PolyTropFOX `72.1 kN`; `k_r,true = k_r,raw / √2`: `0.298`, `0.298`, `1.093 µm/N`). Re-identifying the rig constants and default `DEFAULT_SPOOL_RADIAL_COMPLIANCE` against true span Newtons is tracked as a follow-up investigation so PR #129's baseline stays reproducible.
+  - **Re-identification applied in PR #130:** All three Rust benchmark suites (`darus5171_ropes.rs`, `darus3600_rig.rs`, `darus4614_copacabana.rs`), `DEFAULT_SPOOL_RADIAL_COMPLIANCE` (`0.299e-6 * 0.05018 ≈ 1.50e-8 m²/N`, `E_t ≈ 67 MPa`), and `copacabana.usda` (`EA = 118.5 kN`) have been converted to physical cable Newtons (`WINCH_FORCE_SCALE = √2`), while preserving raw logged sensor readings untouched in all CSV fixtures. All `5171` 4-way ablations, `5171 → 3600` blind transfer (`−5.96` vs `−6.15 ppm/N`), and encoder replays retain their full predictive improvements; on the non-cancelling `4614` gravity-sag test (`m·g` is already in physical N), stiffer `EA = 118.5 kN` reduces simulated elastic sag from `−2.62 mm` to `−1.85 mm` vs FARO `−3.69 / −4.40 mm` (50–58 % under-prediction), reinforcing the role of nonlinear low-tension rope stiffness and structural compliance.
 - **Unnormalized `wc[0..5]` in DaRUS-4614:** TwinCAT multiplied `f[0..7]` by unnormalized cable vectors `l_i` (lengths ~3.0–3.7 m) instead of unit vectors `u_i` (read-only dataset artifact; not computed in `hp-sim5`).
 - **Uniform `60.5 ms` drive lag in DaRUS-4614:** Recorded encoder payout `x(t)` lags `x_tar(t)` by `60.5 ms` across all eight axes (`0.74–0.99 mm` residual RMS vs `7.9–14.4 mm` raw following error).
 

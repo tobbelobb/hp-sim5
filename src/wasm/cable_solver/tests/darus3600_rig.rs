@@ -17,6 +17,10 @@ use common::*;
 const SPOOL_END: f64 = 3.0;
 /// Rig drum radius (nominal drum diameter 100.36 mm).
 const RADIUS: f64 = 0.05018;
+/// SW-G3.1 90° carriage-pulley force-sensor conversion (`F_true = sqrt(2) * f_logged`).
+/// Raw CSV fixtures preserve logged sensor values untouched; conversion to physical Newtons
+/// happens explicitly here.
+const WINCH_FORCE_SCALE: f64 = std::f64::consts::SQRT_2;
 const SPEEDS: [f64; 3] = [0.5, 2.0, 5.0];
 
 /// Rope travel in the span per drum travel over a 10 m pass at `force` and `speed`.
@@ -76,9 +80,9 @@ fn rope_per_drum(
     rope / drum
 }
 
-/// Simulated ratio slope over the rig's force range, in ppm of drum travel per N.
+/// Simulated ratio slope over the rig's physical force range, in ppm of drum travel per N.
 fn simulated_slope(speed: f64, ea: f64, radial_flattening: f64, strained_spool: bool) -> f64 {
-    let forces = [70.0, 125.0, 180.0];
+    let forces = [70.0 * WINCH_FORCE_SCALE, 125.0 * WINCH_FORCE_SCALE, 180.0 * WINCH_FORCE_SCALE];
     let ratios: Vec<f64> = forces
         .iter()
         .map(|&f| rope_per_drum(f, speed, ea, radial_flattening, strained_spool))
@@ -108,7 +112,11 @@ fn identify_dpro_from_5171() -> (f64, f64) {
         if f[col("rope")] != "LIROS_D-Pro" {
             continue;
         }
-        let r = [1.0, f[col("f_wind")].parse::<f64>().unwrap(), f[col("f_unwind")].parse::<f64>().unwrap()];
+        let r = [
+            1.0,
+            f[col("f_wind")].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,
+            f[col("f_unwind")].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,
+        ];
         let y = (f[col("lsv_ratio")].parse::<f64>().unwrap() - 1.0) * 1e6;
         for i in 0..3 {
             b[i] += r[i] * y;
@@ -157,7 +165,7 @@ fn measured_cells() -> (f64, Vec<(String, f64, f64)>) {
     for line in lines.filter(|l| !l.trim().is_empty()) {
         let f: Vec<&str> = line.split(',').collect();
         let cell = cells.entry(format!("{} {} {}", f[control], f[direction], f[speed])).or_default();
-        cell.0.push(f[force].parse().unwrap());
+        cell.0.push(f[force].parse::<f64>().unwrap() * WINCH_FORCE_SCALE);
         cell.1.push(f[lsv].parse().unwrap());
     }
     let (mut sxy, mut sxx, mut out) = (0.0, 0.0, vec![]);
@@ -210,17 +218,17 @@ fn rig_data_slope_is_negative_in_every_cell() {
         eprintln!("  {k:26}: slope={s:+.2} ppm/N, within-cell repeat RMS={r:.1} ppm");
     }
     assert_eq!(cells.len(), 12);
-    assert!(cells.iter().all(|(_, s, _)| (-12.0..-5.0).contains(s)));
+    assert!(cells.iter().all(|(_, s, _)| (-9.0..-3.5).contains(s)));
 }
 
 /// Blind cross-dataset prediction across all 3 experimental rig speeds (0.5, 2.0, 5.0 m/s):
-/// LIROS D-Pro XTR parameters identified live from DaRUS-5171 `FDP-FC-MAP` predict DaRUS-3600's
-/// 348-run pooled slope (-8.69 ppm/N) and per-speed cells without fitting on 3600.
+/// LIROS D-Pro XTR parameters identified live from DaRUS-5171 `FDP-FC-MAP` (in physical Newtons)
+/// predict DaRUS-3600's 348-run pooled slope (-6.15 ppm/N) and per-speed cells without fitting on 3600.
 #[test]
 fn rig_matches_measured_running_radius_across_speeds() {
     let (ea_dpro, k_r_dpro) = identify_dpro_from_5171();
-    assert!((ea_dpro - 83_800.0).abs() < 200.0, "5171 D-Pro EA drifted: {ea_dpro:.1}");
-    assert!((k_r_dpro * 1e6 - 0.422).abs() < 0.005, "5171 D-Pro k_r drifted: {:.4}", k_r_dpro * 1e6);
+    assert!((ea_dpro - 118_500.0).abs() < 250.0, "5171 D-Pro EA drifted: {ea_dpro:.1}");
+    assert!((k_r_dpro * 1e6 - 0.299).abs() < 0.005, "5171 D-Pro k_r drifted: {:.4}", k_r_dpro * 1e6);
 
     let (measured_pooled, cells) = measured_cells();
     for speed in SPEEDS {
@@ -257,12 +265,12 @@ fn measured_motor_trajectory_replay_3600() {
     for line in text.lines().skip(1).filter(|l| !l.trim().is_empty()) {
         let f: Vec<&str> = line.split(',').collect();
         phases.entry(f[0].to_string()).or_default().push([
-            f[1].parse().unwrap(), // t
-            f[2].parse().unwrap(), // x_t
-            f[3].parse().unwrap(), // x_l
-            f[4].parse().unwrap(), // f_t
-            f[5].parse().unwrap(), // f_l
-            f[6].parse().unwrap(), // x_lsv
+            f[1].parse().unwrap(),                                   // t
+            f[2].parse().unwrap(),                                   // x_t
+            f[3].parse().unwrap(),                                   // x_l
+            f[4].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,        // f_t (physical N)
+            f[5].parse::<f64>().unwrap() * WINCH_FORCE_SCALE,        // f_l (physical N)
+            f[6].parse().unwrap(),                                   // x_lsv
         ]);
     }
     let mut upgraded_ratios = Vec::new();
