@@ -481,6 +481,10 @@ export function buildM666AdjustmentCommand({ forcedBaseRadii = null, forcedBuild
   }
   if (Number.isFinite(forcedBuildupFactor)) {
     fields.push(`Q${formatM666Number(Number(forcedBuildupFactor))}`);
+    // Buildup replaces spool flattening and strained storage; RRF rejects them together.
+    if (Number(forcedBuildupFactor) !== 0) {
+      fields.push('K0', 'V0');
+    }
   }
   if (fields.length === 0) {
     return null;
@@ -1752,6 +1756,9 @@ export async function collectSweepData(send, context) {
     await send(m666AdjustmentCommand);
     const m666AfterReply = await send('M666');
     m666Adjusted = parseM666(m666AfterReply?.reply);
+    if (Number.isFinite(forcedBuildupFactor) && Math.abs(Number(m666Adjusted?.Q) - Number(forcedBuildupFactor)) > 1e-4) {
+      throw new Error(`Firmware did not accept ${m666AdjustmentCommand}: ${m666AfterReply?.reply}`);
+    }
   }
 
   const m666ForCollection = (m666Adjusted && typeof m666Adjusted === 'object') ? m666Adjusted : m666Before;

@@ -18,7 +18,7 @@ POSITION = re.compile(r'^X:([-\d.]+) Y:([-\d.]+) Z:([-\d.]+)(?: U:([-\d.]+))?.* 
 
 
 class FlexModePositionTest(unittest.TestCase):
-    def run_gcode(self, code, config='config_hp4.g', hidden_anchor=False):
+    def run_gcode(self, code, config='config_hp4.g', hidden_anchor=False, allow_error=False):
         with tempfile.TemporaryDirectory(prefix='rrf-flex-') as directory:
             vsd = Path(directory)
             shutil.copytree(ROOT / 'RRF/run/vsd/sys', vsd / 'sys')
@@ -40,7 +40,8 @@ class FlexModePositionTest(unittest.TestCase):
             with (vsd / 'logs/test.csv').open() as capture:
                 next(capture)  # JSON metadata
                 motion = list(csv.reader(capture))
-            self.assertNotIn('Error:', result.stdout)
+            if not allow_error:
+                self.assertNotIn('Error:', result.stdout)
             return positions, counts, motion, result.stdout
 
     def test_cube_corner_mode_requires_exactly_eight_anchors(self):
@@ -91,6 +92,51 @@ class FlexModePositionTest(unittest.TestCase):
                 for actual, wanted in zip(positions[2][:3], (-200., 300., 100.)):
                     self.assertAlmostEqual(actual, wanted, delta=.1)
                 self.assertTrue(any(row[1] == '44' and abs(float(row[6])) > 0 for row in motion))
+
+    def test_spool_storage_excludes_buildup(self):
+        _, _, _, output = self.run_gcode('M666 Q0 K0.015 V1\nM666\n')
+        self.assertIn('Q0.0000 K0.0150 V1', output)
+        # A rejected command changes nothing, not even its other parameters.
+        _, _, _, output = self.run_gcode('M666 Q0 K0.015 V1\nM666 Q0.007 R31:31:31:31\nM666\nM666 V2\nM666 K-1\n'
+                                         'M666\nM666 V0 K0 Q0.007\nM666\n', allow_error=True)
+        replies = re.findall(r'^M666 A1 (Q\S+ K\S+ V\d)\nR(\S+)$', output, re.M)
+        self.assertEqual(replies, [('Q0.0000 K0.0150 V1', '30.00:30.00:30.00:30.00')] * 2
+                         + [('Q0.0070 K0.0000 V0', '30.00:30.00:30.00:30.00')], output)
+
+    def test_spool_storage_survives_m500_and_m501(self):
+        with tempfile.TemporaryDirectory(prefix='rrf-m500-') as directory:
+            vsd = Path(directory)
+            shutil.copytree(ROOT / 'RRF/run/vsd/sys', vsd / 'sys')
+            (vsd / 'gcodes').mkdir()
+            (vsd / 'logs').mkdir()
+            outputs = []
+            for code in ('M666 K0.02 V1 W0.081\nM500\n', 'M666 K0 V0 W1\nM501\nM666\n'):
+                (vsd / 'gcodes/test.gcode').write_text(code + '; padding\n' * 1000)
+                outputs.append(subprocess.run([str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(vsd),
+                    '--gcode', 'gcodes/test.gcode', '-c', 'sys/config_hp4.g', '--can-log', 'logs/test.csv'],
+                    capture_output=True, text=True, timeout=30, check=True).stdout)
+            saved = (vsd / 'sys/config-override.g').read_text()
+        hangprinter = saved[saved.index('; Hangprinter parameters'):saved.index('; Workplace')]
+        self.assertTrue(all(len(line) < 160 for line in hangprinter.splitlines()), hangprinter)
+        self.assertIn('M666 U2:2:2:4 ', hangprinter)
+        self.assertIn('Q0.0000 K0.0200 V1', outputs[1])
+        self.assertRegex(outputs[1], r'\bW0\.08100\b')
+
+    def test_spool_storage_forward_transform_matches_targets(self):
+        code = 'G28\nM666 F1\nG1 X400 Y-300 Z50 F3000\nM400\nM114\nG1 X-500 Y450 Z300\nM400\nM114\n'
+        for machine in ('hp3', 'hp4', 'hp5', 'hp5_pulley_reduced'):
+            with self.subTest(machine=machine):
+                runs = [self.run_gcode(f'M666 Q0 {model}\n' + code, f'config_{machine}.g')
+                        for model in ('K0 V0', 'K0.015 V1')]
+                for positions, _, _, output in runs:
+                    self.assertEqual(len(positions), 2, output)
+                    for position, wanted in zip(positions, ((400., -300., 50.), (-500., 450., 300.))):
+                        for actual, expected in zip(position[:3], wanted):
+                            self.assertAlmostEqual(actual, expected, delta=.03)
+                # The spool model moves some motor by at least 0.1 mm, so the
+                # forward transform must invert it to recover the same pose.
+                shift = max(abs(a - b) for a, b in zip(runs[0][1][1], runs[1][1][1]))
+                self.assertGreaterEqual(shift, 2, (runs[0][1], runs[1][1]))
 
     def test_reported_weight_preserves_light_mover_precision(self):
         _, _, _, output = self.run_gcode('M666 W0.081\nM666\n')

@@ -13,9 +13,11 @@ M669 S130 T0.5                  ; Segments per second and min segment length
 ; Anchor Location
 M669 A0.0:-1900.0:-280.0 B1645.44826719:950.0:-280.0 C-1645.44826719:950.0:-280.0 D0.0:0.0:1900.0
 M666 Q0.0 R30.0:30.0:30.0:30.0
+M666 K0.015 V1 ; Spool flattening and strained storage. Both exclude Q.
 ; Explanation:
 ; ; M669 defines the positions of the anchors, expressed as X:Y:Z distances between a line's pivot points, when the machine is homed.
 ; ; M666 sets Q=spool buildup, R=spool radii (incl buildup, when homed)
+; ; M666 K=spool flattening in mm^2/N (line at tension T sinks K*T/R into the spool), V1=line stays stretched on the spool
 
 M208 Z2000.00  ; set maximum Z somewhere below D anchor. See M669 ... D<number>
 M208 S1 Z-10.0 ; set minimum Z
