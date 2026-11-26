@@ -71,12 +71,7 @@ def test_collector_bootstraps_and_preserves_repeats(tmp_path, monkeypatch, capsy
     legacy_row = dict(old, fingerprint=legacy)
     del legacy_row['fingerprint_version']
     list(history.verified_results([legacy_row]))
-    history.write_results(artifacts / 'original' / 'result.jsonl', [new])
-    diagnostic = artifacts / 'original' / 'diagnostics' / 'sweeps.full_auto_log.jsonl'
-    diagnostic.parent.mkdir()
-    diagnostic.write_text('{"event": "summary"}\n')
     failure = dict(new, measurement_id='ci:42:2:hangprinter_3', status='timeout', recorded_at='9999')
-    history.write_results(artifacts / 'rerun' / 'result.jsonl', [failure])
 
     monkeypatch.delenv('GITHUB_RUN_ID')
     repeat = dict(history.measurement(second, machine, repeat=2), status='ok', accuracy_mm=1.15, total_sim_s=112)
@@ -94,6 +89,17 @@ def test_collector_bootstraps_and_preserves_repeats(tmp_path, monkeypatch, capsy
     history.write_results(ci.BACKFILL_DIR / 'retry.jsonl', [dict(retry, commit=first[:12])])
     assert git('rev-parse', '--is-shallow-repository') == 'true'
     assert '1 mm target' in '\n'.join(ci.review_measurement(new, ci.remote_history()[1]))
+
+    single_artifact = tmp_path / 'single-artifact'
+    history.write_results(single_artifact / 'result.jsonl', [new])
+    ci.collect(single_artifact)
+    assert new in ci.remote_history()[1]
+
+    history.write_results(artifacts / 'original' / 'result.jsonl', [new])
+    diagnostic = artifacts / 'original' / 'diagnostics' / 'sweeps.full_auto_log.jsonl'
+    diagnostic.parent.mkdir()
+    diagnostic.write_text('{"event": "summary"}\n')
+    history.write_results(artifacts / 'rerun' / 'result.jsonl', [failure])
     ci.collect(artifacts)
     assert git('rev-parse', '--is-shallow-repository') == 'false'
     tip, archived = ci.remote_history()

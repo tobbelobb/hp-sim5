@@ -10,7 +10,7 @@ import time
 import uuid
 from urllib.request import urlopen
 
-from .configuration import world_configuration
+from .configuration import is_hangprinter_config, world_configuration
 from .experiments import write_json
 from .services import request, register_test_process
 from .test_jobs import MAX_TIMEOUT_S, SUITES, job_environment, retire_group
@@ -100,9 +100,7 @@ async def preflight(runtime, root, expected_configuration=None):
         if not state.get('connected'):
             return blocked('Collector bridge has no ready physics client', 'Inspect collector/physics logs and runtime_status')
         firmware = state.get('firmware_initial', {})
-        if ('RepRapFirmware' not in firmware.get('M115', '') or
-                'Kinematics is Hangprinter' not in firmware.get('M669', '') or
-                not firmware.get('M666', '').startswith('M666 A1')):
+        if 'RepRapFirmware' not in firmware.get('M115', '') or not is_hangprinter_config(firmware):
             return blocked('Collector did not identify matched Hangprinter firmware', 'Inspect world manifest and collector.log')
         return {'outcome': 'passed', 'connected': True, 'busy': state.get('busy'), 'firmware_initial': firmware}
 
