@@ -532,6 +532,9 @@ def Xform "World"
             custom rel physics:body1 = </World/HangprinterScene/AttachO>
         }
 
+        # Initial span and storage tensions apply the explicit sqrt(2) factor for the 90 deg
+        # carriage-pulley force sensor (Trautwein et al. 2020 Fig. 4) to the raw P0 readings
+        # [64.0, 60.1, 64.0, 59.5, 28.4, 24.7, 25.2, 21.8] N so home vertical force matches 13.9 kg.
         def Xform "CablePathA" (
             apiSchemas = ["CablePathAPI"]
         )
@@ -540,8 +543,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointA_0>, </World/HangprinterScene/JointA_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
-            custom double cablePath:initialTension = 64.0
-            custom double cablePath:initialStorageTension = 64.0
+            custom double cablePath:initialTension = 90.51
+            custom double cablePath:initialStorageTension = 90.51
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -557,8 +560,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointB_0>, </World/HangprinterScene/JointB_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0, 0]
-            custom double cablePath:initialTension = 60.1
-            custom double cablePath:initialStorageTension = 60.1
+            custom double cablePath:initialTension = 84.99
+            custom double cablePath:initialStorageTension = 84.99
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -574,8 +577,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointC_0>, </World/HangprinterScene/JointC_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0, 0]
-            custom double cablePath:initialTension = 64.0
-            custom double cablePath:initialStorageTension = 64.0
+            custom double cablePath:initialTension = 90.51
+            custom double cablePath:initialStorageTension = 90.51
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -591,8 +594,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointD_0>, </World/HangprinterScene/JointD_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0, 0]
-            custom double cablePath:initialTension = 59.5
-            custom double cablePath:initialStorageTension = 59.5
+            custom double cablePath:initialTension = 84.15
+            custom double cablePath:initialStorageTension = 84.15
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -608,8 +611,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointI_0>, </World/HangprinterScene/JointI_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
-            custom double cablePath:initialTension = 28.4
-            custom double cablePath:initialStorageTension = 28.4
+            custom double cablePath:initialTension = 40.16
+            custom double cablePath:initialStorageTension = 40.16
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -625,8 +628,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointJ_0>, </World/HangprinterScene/JointJ_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
-            custom double cablePath:initialTension = 24.7
-            custom double cablePath:initialStorageTension = 24.7
+            custom double cablePath:initialTension = 34.93
+            custom double cablePath:initialStorageTension = 34.93
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -642,8 +645,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointL_0>, </World/HangprinterScene/JointL_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
-            custom double cablePath:initialTension = 25.2
-            custom double cablePath:initialStorageTension = 25.2
+            custom double cablePath:initialTension = 35.64
+            custom double cablePath:initialStorageTension = 35.64
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
@@ -659,8 +662,8 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointO_0>, </World/HangprinterScene/JointO_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
-            custom double cablePath:initialTension = 21.8
-            custom double cablePath:initialStorageTension = 21.8
+            custom double cablePath:initialTension = 30.83
+            custom double cablePath:initialStorageTension = 30.83
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0

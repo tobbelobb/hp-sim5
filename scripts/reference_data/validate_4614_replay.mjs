@@ -1,6 +1,7 @@
 // Replay the same 2 ms commands and WASM scene as hp-sim-3d, including stationary intervals.
 import fs from 'node:fs';
 import { Readable } from 'node:stream';
+import { pathToFileURL } from 'node:url';
 import { findMachine } from '../../machines/catalog.js';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
@@ -10,139 +11,173 @@ import { StepperMotorComponent } from '../../hp-sim-3d/app/hangprinter_stepper_m
 import { FileFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { parseRrfMotorAxisMapFromConfigText } from '../../integrations/rrf/rrfFirmwareModel.js';
 
-globalThis.self = { addEventListener() {} };
-globalThis.postMessage = message => { if (message.type === 'error') throw Error(message.message); };
-const { RrfCanPlayer } = await import('../../integrations/rrf/rrfCanPlayer.js');
-const replay = process.argv[2] ?? 'planeATargets';
-const machine = findMachine('copacabana');
+const SENSOR_FORCE_SCALE = Math.SQRT2;
 const url = path => new URL('../../' + path, import.meta.url);
 const read = path => fs.readFileSync(url(path), 'utf8');
-const backend = new WasmPhysicsEngine(new WebAssembly.Module(fs.readFileSync(url('public/wasm/cable_solver.wasm'))));
-const kinematicMotors = Boolean(machine.reference_replay.kinematicStreams?.includes(replay));
-const { world, remote, dt } = createHeadlessWorld(read(machine.scene), {
-  cableSolverBackend: backend, lineLayeringEnabled: false, closedLoopMotorsEnabled: !kinematicMotors, kinematicMotors,
-});
-const named = new Map(world.query([SceneEntityInfoComponent]).map(id => [world.getComponent(id, SceneEntityInfoComponent).name, id]));
-const axes = Array.from('ABCDIJLO');
-const spools = axes.map(axis => {
-  const id = named.get(`Spool${axis}`);
-  return {
-    stepper: world.getComponent(id, StepperMotorComponent),
-    encoder: world.getComponent(id, EncoderComponent),
-  };
-});
-let maxSpoolTrackingErrorRad = 0;
-const joints = axes.map(axis => world.getComponent(named.get(`Joint${axis}_1`), CableJointComponent));
-const rows = read('tests/fixtures/reference_data/darus4614_planeA_cycle.csv').trim().split('\n').slice(1)
-  .map(line => {
-    const values = line.split(',').map(Number);
-    return { time: values[0], marker: values.slice(1, 4), force: values.slice(4, 12), target: values.slice(12) };
-  });
-let tick = 0, sample = 0, positionSquared = 0, forceSquared = 0, maxDistance = 0;
-const homeAttach = axes.map(axis => world.getComponent(named.get('Attach' + axis), PositionComponent).pos.clone());
-const holds = [];
-let holdStart = 0;
-const homeMarker = world.getComponent(named.get('Reflector'), PositionComponent).pos.clone();
-let nominalSquared = 0;
-let constantForceSquared = 0;
-function measure() {
-  const row = rows[sample];
-  if (!row || Math.round(row.time / dt) !== tick) return;
-  const { x, y, z } = world.getComponent(named.get('Reflector'), PositionComponent).pos;
-  const nominal = row.target.map((v, k) => v + [homeMarker.x, homeMarker.y, homeMarker.z][k]);
-  const distance = Math.hypot(x - row.marker[0], y - row.marker[1], z - row.marker[2]);
-  maxDistance = Math.max(distance, maxDistance);
-  positionSquared += distance ** 2;
-  nominalSquared += nominal.reduce((sum, v, k) => sum + (v - row.marker[k]) ** 2, 0);
-  if (sample > 0) {
-    joints.forEach((joint, i) => {
-      forceSquared += (joint.constraintForceMagnitude - row.force[i]) ** 2;
-      constantForceSquared += (rows[0].force[i] - row.force[i]) ** 2;
-    });
-  }
-  // Once the nominal target has held still for 0.5 s, compare observations at rest.
-  if (sample && row.target.some((v, i) => Math.abs(v - rows[sample - 1].target[i]) > 1e-7)) {
-    holdStart = sample;
-  }
-  if (row.time - rows[holdStart].time > .5) {
-    let hold = holds.at(-1);
-    if (hold?.start !== holdStart) {
-      hold = { start: holdStart, count: 0, trackerSquared: 0, forceSquared: 0, netForce: [0, 0, 0],
-        simulatedMinusNominal: [0, 0, 0], measuredMinusNominal: [0, 0, 0],
-        predictedForce: axes.map(() => 0), loggedForce: axes.map(() => 0) };
-      holds.push(hold);
+
+let cachedRrfCanPlayer = null;
+async function getRrfCanPlayer() {
+  if (!cachedRrfCanPlayer) {
+    if (!globalThis.self) globalThis.self = { addEventListener() {} };
+    if (!globalThis.postMessage) {
+      globalThis.postMessage = message => { if (message?.type === 'error') throw Error(message.message); };
     }
-    // Static force closure using the nominal unrotated pose and the simulated pulley exit tangents.
-    const net = [0, 0, -13.9 * 9.81];
-    joints.forEach((joint, i) => {
-      const exit = joint.attachmentPointA_world;
-      const direction = [0, 1, 2].map(k => [exit.x, exit.y, exit.z][k] - [homeAttach[i].x, homeAttach[i].y, homeAttach[i].z][k] - row.target[k]);
-      const scale = row.force[i] / Math.hypot(...direction);
-      direction.forEach((v, k) => { net[k] += scale * v; });
-      hold.predictedForce[i] += joints[i].constraintForceMagnitude;
-      hold.loggedForce[i] += row.force[i];
-      hold.forceSquared += (joints[i].constraintForceMagnitude - row.force[i]) ** 2;
-    });
-    net.forEach((v, k) => { hold.netForce[k] += v; });
-    hold.count++;
-    hold.trackerSquared += distance ** 2;
-    [x, y, z].forEach((v, k) => {
-      hold.simulatedMinusNominal[k] += v - nominal[k];
-      hold.measuredMinusNominal[k] += row.marker[k] - nominal[k];
-    });
+    ({ RrfCanPlayer: cachedRrfCanPlayer } = await import('../../integrations/rrf/rrfCanPlayer.js'));
   }
-  sample++;
+  return cachedRrfCanPlayer;
 }
-const player = new RrfCanPlayer();
-player.setDt(dt);
-player.setAsapMode(true);
-player.setDriverToAxis(parseRrfMotorAxisMapFromConfigText(read(machine.rrf_config)));
-measure();
-player.sendCommand = async command => {
-  remote.addCommand(command);
-  world.update(dt);
-  for (const { stepper, encoder } of spools) {
-    const err = Math.abs(encoder.angle - (stepper.commandedAngle - stepper.deltaAngle));
-    if (err > maxSpoolTrackingErrorRad) maxSpoolTrackingErrorRad = err;
+
+export async function runCopacabanaReplay(replay = 'planeATargets') {
+  const RrfCanPlayer = await getRrfCanPlayer();
+  const machine = findMachine('copacabana');
+  const backend = new WasmPhysicsEngine(new WebAssembly.Module(fs.readFileSync(url('public/wasm/cable_solver.wasm'))));
+  const kinematicMotors = Boolean(machine.reference_replay.kinematicStreams?.includes(replay));
+  const { world, remote, dt } = createHeadlessWorld(read(machine.scene), {
+    cableSolverBackend: backend, lineLayeringEnabled: false, closedLoopMotorsEnabled: !kinematicMotors, kinematicMotors,
+  });
+  const named = new Map(world.query([SceneEntityInfoComponent]).map(id => [world.getComponent(id, SceneEntityInfoComponent).name, id]));
+  const axes = Array.from('ABCDIJLO');
+  const spools = axes.map(axis => {
+    const id = named.get(`Spool${axis}`);
+    return {
+      stepper: world.getComponent(id, StepperMotorComponent),
+      encoder: world.getComponent(id, EncoderComponent),
+    };
+  });
+  let maxSpoolTrackingErrorRad = 0;
+  const joints = axes.map(axis => world.getComponent(named.get(`Joint${axis}_1`), CableJointComponent));
+  const rows = read('tests/fixtures/reference_data/darus4614_planeA_cycle.csv').trim().split('\n').slice(1)
+    .map(line => {
+      const values = line.split(',').map(Number);
+      return { time: values[0], marker: values.slice(1, 4), force: values.slice(4, 12), target: values.slice(12) };
+    });
+  let tick = 0, sample = 0, positionSquared = 0, forceSquared = 0, forceScaledSquared = 0, maxDistance = 0;
+  const homeAttach = axes.map(axis => world.getComponent(named.get('Attach' + axis), PositionComponent).pos.clone());
+  const holds = [];
+  let holdStart = 0;
+  const homeMarker = world.getComponent(named.get('Reflector'), PositionComponent).pos.clone();
+  let nominalSquared = 0;
+  let constantForceSquared = 0;
+  function measure() {
+    const row = rows[sample];
+    if (!row || Math.round(row.time / dt) !== tick) return;
+    const { x, y, z } = world.getComponent(named.get('Reflector'), PositionComponent).pos;
+    const nominal = row.target.map((v, k) => v + [homeMarker.x, homeMarker.y, homeMarker.z][k]);
+    const distance = Math.hypot(x - row.marker[0], y - row.marker[1], z - row.marker[2]);
+    maxDistance = Math.max(distance, maxDistance);
+    positionSquared += distance ** 2;
+    nominalSquared += nominal.reduce((sum, v, k) => sum + (v - row.marker[k]) ** 2, 0);
+    if (sample > 0) {
+      joints.forEach((joint, i) => {
+        forceSquared += (joint.constraintForceMagnitude - row.force[i]) ** 2;
+        forceScaledSquared += (joint.constraintForceMagnitude - SENSOR_FORCE_SCALE * row.force[i]) ** 2;
+        constantForceSquared += (rows[0].force[i] - row.force[i]) ** 2;
+      });
+    }
+    // Once the nominal target has held still for 0.5 s, compare observations at rest.
+    if (sample && row.target.some((v, i) => Math.abs(v - rows[sample - 1].target[i]) > 1e-7)) {
+      holdStart = sample;
+    }
+    if (row.time - rows[holdStart].time > .5) {
+      let hold = holds.at(-1);
+      if (hold?.start !== holdStart) {
+        hold = { start: holdStart, count: 0, trackerSquared: 0, forceSquared: 0, forceScaledSquared: 0,
+          netForce: [0, 0, 0], netForceScaled: [0, 0, 0],
+          simulatedMinusNominal: [0, 0, 0], measuredMinusNominal: [0, 0, 0],
+          predictedForce: axes.map(() => 0), loggedForce: axes.map(() => 0) };
+        holds.push(hold);
+      }
+      // Static force closure using the nominal unrotated pose and the simulated pulley exit tangents.
+      const net = [0, 0, -13.9 * 9.81];
+      const netScaled = [0, 0, -13.9 * 9.81];
+      joints.forEach((joint, i) => {
+        const exit = joint.attachmentPointA_world;
+        const direction = [0, 1, 2].map(k => [exit.x, exit.y, exit.z][k] - [homeAttach[i].x, homeAttach[i].y, homeAttach[i].z][k] - row.target[k]);
+        const norm = Math.hypot(...direction);
+        const scale = row.force[i] / norm;
+        const scaleScaled = (SENSOR_FORCE_SCALE * row.force[i]) / norm;
+        direction.forEach((v, k) => {
+          net[k] += scale * v;
+          netScaled[k] += scaleScaled * v;
+        });
+        hold.predictedForce[i] += joints[i].constraintForceMagnitude;
+        hold.loggedForce[i] += row.force[i];
+        hold.forceSquared += (joints[i].constraintForceMagnitude - row.force[i]) ** 2;
+        hold.forceScaledSquared += (joints[i].constraintForceMagnitude - SENSOR_FORCE_SCALE * row.force[i]) ** 2;
+      });
+      net.forEach((v, k) => {
+        hold.netForce[k] += v;
+        hold.netForceScaled[k] += netScaled[k];
+      });
+      hold.count++;
+      hold.trackerSquared += distance ** 2;
+      [x, y, z].forEach((v, k) => {
+        hold.simulatedMinusNominal[k] += v - nominal[k];
+        hold.measuredMinusNominal[k] += row.marker[k] - nominal[k];
+      });
+    }
+    sample++;
   }
-  tick++;
+  const player = new RrfCanPlayer();
+  player.setDt(dt);
+  player.setAsapMode(true);
+  player.setDriverToAxis(parseRrfMotorAxisMapFromConfigText(read(machine.rrf_config)));
   measure();
-};
-try {
-  await player.run(Readable.toWeb(fs.createReadStream(url(machine.reference_replay.streams[replay]))),
-    FileFormat.RRF_CAN_BINARY, { preserveTiming: true });
-  if (holds.length !== 5 || sample !== rows.length || !Number.isFinite(positionSquared + forceSquared)
-    || world.getResource('errorState')?.hasError) {
-    throw Error(`Incomplete comparison at tick ${tick}, sample ${sample}`);
+  player.sendCommand = async command => {
+    remote.addCommand(command);
+    world.update(dt);
+    for (const { stepper, encoder } of spools) {
+      const err = Math.abs(encoder.angle - (stepper.commandedAngle - stepper.deltaAngle));
+      if (err > maxSpoolTrackingErrorRad) maxSpoolTrackingErrorRad = err;
+    }
+    tick++;
+    measure();
+  };
+  try {
+    await player.run(Readable.toWeb(fs.createReadStream(url(machine.reference_replay.streams[replay]))),
+      FileFormat.RRF_CAN_BINARY, { preserveTiming: true });
+    if (holds.length !== 5 || sample !== rows.length || !Number.isFinite(positionSquared + forceSquared)
+      || world.getResource('errorState')?.hasError) {
+      throw Error(`Incomplete comparison at tick ${tick}, sample ${sample}`);
+    }
+    if (kinematicMotors && maxSpoolTrackingErrorRad > 1e-9) {
+      throw Error(`Kinematic encoder replay spool tracking error ${maxSpoolTrackingErrorRad} rad exceeded 1e-9 rad`);
+    }
+    const rms = (sum, count) => Math.sqrt(sum / count);
+    const forceCount = (sample - 1) * joints.length;
+    return {
+      replay,
+      kinematic_motors: kinematicMotors,
+      max_spool_tracking_error_rad: maxSpoolTrackingErrorRad,
+      duration_s: tick * dt,
+      samples: sample,
+      reflector_rms_mm: 1000 * rms(positionSquared, sample),
+      nominal_rms_mm: 1000 * rms(nominalSquared, sample),
+      reflector_max_mm: 1000 * maxDistance,
+      cable_force_rms_N: rms(forceSquared, forceCount),
+      cable_force_rms_scaled_sqrt2_N: rms(forceScaledSquared, forceCount),
+      initial_force_baseline_rms_N: rms(constantForceSquared, forceCount),
+      settled: holds.map((h, i) => ({
+        pose: `P${i + 1}`,
+        reflector_rms_mm: 1000 * rms(h.trackerSquared, h.count),
+        // The controller target separates simulator error from the real machine's own pose error.
+        simulated_minus_nominal_mm: h.simulatedMinusNominal.map(v => 1000 * v / h.count),
+        measured_minus_nominal_mm: h.measuredMinusNominal.map(v => 1000 * v / h.count),
+        force_rms_N: rms(h.forceSquared, h.count * joints.length),
+        force_rms_scaled_sqrt2_N: rms(h.forceScaledSquared, h.count * joints.length),
+        mean_simulated_cable_forces_N: h.predictedForce.map(v => v / h.count),
+        mean_logged_cable_forces_N: h.loggedForce.map(v => v / h.count),
+        measured_force_closure_N: Math.hypot(...h.netForce) / h.count,
+        measured_force_closure_scaled_sqrt2_N: Math.hypot(...h.netForceScaled) / h.count,
+      })),
+    };
+  } finally {
+    backend.dispose();
   }
-  if (kinematicMotors && maxSpoolTrackingErrorRad > 1e-9) {
-    throw Error(`Kinematic encoder replay spool tracking error ${maxSpoolTrackingErrorRad} rad exceeded 1e-9 rad`);
-  }
-  const rms = (sum, count) => Math.sqrt(sum / count);
-  const forceCount = (sample - 1) * joints.length;
-  console.log(JSON.stringify({
-    replay,
-    kinematic_motors: kinematicMotors,
-    max_spool_tracking_error_rad: maxSpoolTrackingErrorRad,
-    duration_s: tick * dt,
-    samples: sample,
-    reflector_rms_mm: 1000 * rms(positionSquared, sample),
-    nominal_rms_mm: 1000 * rms(nominalSquared, sample),
-    reflector_max_mm: 1000 * maxDistance,
-    cable_force_rms_N: rms(forceSquared, forceCount),
-    initial_force_baseline_rms_N: rms(constantForceSquared, forceCount),
-    settled: holds.map((h, i) => ({
-      pose: `P${i + 1}`,
-      reflector_rms_mm: 1000 * rms(h.trackerSquared, h.count),
-      // The controller target separates simulator error from the real machine's own pose error.
-      simulated_minus_nominal_mm: h.simulatedMinusNominal.map(v => 1000 * v / h.count),
-      measured_minus_nominal_mm: h.measuredMinusNominal.map(v => 1000 * v / h.count),
-      force_rms_N: rms(h.forceSquared, h.count * joints.length),
-      mean_simulated_cable_forces_N: h.predictedForce.map(v => v / h.count),
-      mean_logged_cable_forces_N: h.loggedForce.map(v => v / h.count),
-      measured_force_closure_N: Math.hypot(...h.netForce) / h.count,
-    })),
-  }, null, 2));
-} finally {
-  backend.dispose();
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runCopacabanaReplay(process.argv[2] ?? 'planeATargets').then(result => {
+    console.log(JSON.stringify(result, null, 2));
+  });
 }

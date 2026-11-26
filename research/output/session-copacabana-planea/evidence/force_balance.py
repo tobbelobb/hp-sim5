@@ -19,7 +19,7 @@ def vectors(nodes, fields):
 
 def directions(geometry, poses):
     base, local, axis, radii = geometry
-    rotations = Rotation.from_euler('XYZ', poses[:, 3:]).as_matrix()
+    rotations = Rotation.from_euler('XYZ', poses[:, 3:], degrees=True).as_matrix()
     attach = poses[:, None, :3] + local @ rotations.transpose(0, 2, 1)
     delta = attach - base
     axial = np.sum(delta * axis, axis=2, keepdims=True)
@@ -74,7 +74,7 @@ def main():
                     # that balance both the weight and moments about the XML center of mass.
                     mean_pose = pose[keep].mean(axis=0)
                     unit = directions(geometry, mean_pose[None, :])[0]
-                    arms = Rotation.from_euler('XYZ', mean_pose[3:]).apply(geometry[1])
+                    arms = Rotation.from_euler('XYZ', mean_pose[3:], degrees=True).apply(geometry[1])
                     matrix = np.vstack((unit.T, np.cross(arms, unit).T))
                     imbalance = matrix @ logged_force[keep].mean(axis=0) + np.r_[gravity, np.zeros(3)]
                     adjustment = np.linalg.lstsq(matrix, -imbalance, rcond=None)[0]
