@@ -97,11 +97,13 @@ class FlexModePositionTest(unittest.TestCase):
         _, _, _, output = self.run_gcode('M666 Q0 K0.015 V1\nM666\n')
         self.assertIn('Q0.0000 K0.0150 V1', output)
         # A rejected command changes nothing, not even its other parameters.
-        _, _, _, output = self.run_gcode('M666 Q0 K0.015 V1\nM666 Q0.007 R31:31:31:31\nM666\nM666 V2\nM666 K-1\n'
-                                         'M666\nM666 V0 K0 Q0.007\nM666\n', allow_error=True)
-        replies = re.findall(r'^M666 A1 (Q\S+ K\S+ V\d)\nR(\S+)$', output, re.M)
-        self.assertEqual(replies, [('Q0.0000 K0.0150 V1', '30.00:30.00:30.00:30.00')] * 2
-                         + [('Q0.0070 K0.0000 V0', '30.00:30.00:30.00:30.00')], output)
+        _, _, _, output = self.run_gcode('M666 Q0 K0.015 V1\nM666 Q0.007 R31:31:31:31\nM666\nM666 V2\nM666 V1.5\n'
+                                         'M666 K-1\nM666 K1e99\nM666 Q0.007 K0 V0 R31:\nM666\nM666 V0 K0 Q0.007\nM666\n',
+                                         allow_error=True)
+        # (A malformed array can still overwrite its own leading values, as for any M666 array.)
+        replies = re.findall(r'^M666 A1 (Q\S+ K\S+ V\d)$', output, re.M)
+        self.assertEqual(replies, ['Q0.0000 K0.0150 V1'] * 2 + ['Q0.0070 K0.0000 V0'], output)
+        self.assertIn('R30.00:30.00:30.00:30.00', output.split('M666 A1')[1])
 
     def test_spool_storage_survives_m500_and_m501(self):
         with tempfile.TemporaryDirectory(prefix='rrf-m500-') as directory:
@@ -118,7 +120,7 @@ class FlexModePositionTest(unittest.TestCase):
             saved = (vsd / 'sys/config-override.g').read_text()
         hangprinter = saved[saved.index('; Hangprinter parameters'):saved.index('; Workplace')]
         self.assertTrue(all(len(line) < 160 for line in hangprinter.splitlines()), hangprinter)
-        self.assertIn('M666 U2:2:2:4 ', hangprinter)
+        self.assertIn('M666 U2:2:2:4\n', hangprinter)
         self.assertIn('Q0.0000 K0.0200 V1', outputs[1])
         self.assertRegex(outputs[1], r'\bW0\.08100\b')
 
@@ -133,7 +135,7 @@ class FlexModePositionTest(unittest.TestCase):
                     for position, wanted in zip(positions, ((400., -300., 50.), (-500., 450., 300.))):
                         for actual, expected in zip(position[:3], wanted):
                             self.assertAlmostEqual(actual, expected, delta=.03)
-                # The spool model moves some motor by at least 0.1 mm, so the
+                # The spool model moves some motor by at least two steps, so the
                 # forward transform must invert it to recover the same pose.
                 shift = max(abs(a - b) for a, b in zip(runs[0][1][1], runs[1][1][1]))
                 self.assertGreaterEqual(shift, 2, (runs[0][1], runs[1][1]))

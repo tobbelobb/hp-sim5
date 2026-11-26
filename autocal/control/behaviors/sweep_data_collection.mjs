@@ -1756,7 +1756,7 @@ export async function collectSweepData(send, context) {
     await send(m666AdjustmentCommand);
     const m666AfterReply = await send('M666');
     m666Adjusted = parseM666(m666AfterReply?.reply);
-    if (Number.isFinite(forcedBuildupFactor) && Math.abs(Number(m666Adjusted?.Q) - Number(forcedBuildupFactor)) > 1e-4) {
+    if (Number.isFinite(forcedBuildupFactor) && !(Math.abs(Number(m666Adjusted?.Q) - Number(forcedBuildupFactor)) <= 1e-4)) {
       throw new Error(`Firmware did not accept ${m666AdjustmentCommand}: ${m666AfterReply?.reply}`);
     }
   }
