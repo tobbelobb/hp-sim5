@@ -13,9 +13,11 @@ M669 S130 T0.5                  ; Segments per second and min segment length
 ; Anchor Location
 M669 A0:-1900:-280 B1900:0:-280 C0:1900:-280 D-1900:0:-280 I0:0:1900
 M666 Q0.0 R30.0:30.0:30.0:30.0:30.0
+M666 K0.015 V1 ; Spool flattening and strained storage. Both exclude Q.
 ; Explanation:
 ; ; M669 defines the positions of the anchors, expressed as X:Y:Z distances between a line's pivot points, when the machine is homed.
 ; ; M666 sets Q=spool buildup, R=spool radii (incl buildup, when homed)
+; ; M666 K=spool flattening in mm^2/N (line at tension T sinks K*T/R into the spool), V1=line stays stretched on the spool
 
 M208 Z2000.00  ; set maximum Z somewhere below I anchor. See M669 ... I<number>
 M208 S1 Z-10.0 ; set minimum Z
@@ -28,7 +30,7 @@ M666 H20:20:20:20:20  ; Spool gear teeth
 
 ; Flex compensation
 M666 W0.081                     ; Mover weighs X kg.
-M666 S20000.0                   ; Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
+M666 S20000.0                   ; Axial stiffness EA (rough approximation) for Garda 1.1 mm line (unit N).
                                 ; The real value is somewhere between 20k and 100k.
                                 ; Lower value gives more flex compensation.
 M666 I3.0:3.0:3.0:3.0:3.0           ; Min planned force in all directions (unit N).
