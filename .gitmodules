@@ -1,6 +1,7 @@
 [submodule "klipper"]
 	path = klipper
 	url = https://github.com/tobbelobb/klipper.git
+	branch = master
   ignore = untracked
 [submodule "RRF/ReprapFirmware"]
 	path = RRF/ReprapFirmware
