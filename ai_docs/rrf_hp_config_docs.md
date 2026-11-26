@@ -11,8 +11,10 @@ M666 O parameter sets the number of lines per spool. Used by the spool buildup c
 M666 Q parameter sets the spool buildup factor. "How quickly the line builds up", derived from line thickness and shape. Usually derived through auto calibration.
 M666 Q can be approximated by hand. Example: line diameter: 0.5 mm, spool height: 8.0 mm, (line_cross_section_area)/(height*pi): ((0.5/2)*(0.5/2)*pi)/(8.0*pi) = 0.0078 mm. Measure and fill in your own numbers. In practice you might want to compensate a bit more or a bit less.
 M666 parameters W, S, I, X, T, and Y are related to the flex compensation feature.
+M666 K parameter sets the spool flattening in mm^2/N. Line wound at tension T onto a spool of radius R sinks K*T/R into the layers below, so each spool turn stores less line. 0.015 fits braided Dyneema on 30-50 mm spools. Default 0. Only used by flex compensation. Cannot be combined with a nonzero Q.
+M666 V1 tells flex compensation that line stays stretched on the spool, at the strain T/S it was wound with. Default V0. Cannot be combined with a nonzero Q. K and V assume that line on the spool was wound at the tension it is paid out with.
 M666 W parameter sets the effectors weight in kilograms.
-M666 S parameter sets the Spring constant (rough approximation) of the line in units of N/m. HP4 uses Garda 1.1 mm line, which has a spring constant of about 20000 N/m.
+M666 S parameter sets the line's axial stiffness EA in N (a rough approximation). A line of length L then has spring constant S/L in N/mm. HP4 uses Garda 1.1 mm line, with S about 20000 N.
 M666 I parameter sets the minimum planned force in each direction (unit N).
 M666 X parameter sets the maximum planned force in each direction (unit N). This is a safety limit, and will affect moves close to the edges of the reachable volume the most.
 M666 Y parameter sets the guy wire lengths. Needed for flex compensation. Guy wires go between spool and final line roller.

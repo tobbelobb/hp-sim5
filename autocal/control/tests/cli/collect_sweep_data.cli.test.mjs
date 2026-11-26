@@ -237,11 +237,12 @@ m569_address: 43.0
     expect(buildM666AdjustmentCommand({
       forcedBaseRadii: null,
       forcedBuildupFactor: 0.63661977,
-    })).toBe('M666 Q0.63661977');
+    })).toBe('M666 Q0.63661977 K0 V0');
     expect(buildM666AdjustmentCommand({
       forcedBaseRadii: [30, 30, 30],
       forcedBuildupFactor: 0.63661977,
-    })).toBe('M666 R30:30:30 Q0.63661977');
+    })).toBe('M666 R30:30:30 Q0.63661977 K0 V0');
+    expect(buildM666AdjustmentCommand({ forcedBuildupFactor: 0 })).toBe('M666 Q0');
   });
 
   test('parseBridgeArgs captures spool override flags', () => {

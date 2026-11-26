@@ -105,7 +105,7 @@ def rrf_tikhonov(tmp_path_factory):
 
 def test_rrf_tikhonov_keeps_soft_minimum_and_hard_physical_limits(rrf_tikhonov):
     def solve(position, mass=.081, upper=170., ignore_pretension=0):
-        values = [5, 1, 0, ignore_pretension, mass, .001, 0., *position,
+        values = [5, 1, 0, ignore_pretension, mass, .001, 0., 0., 0, *position,
                   *ANCHORS.ravel(), *([3.]*5), *([upper]*5),
                   *([1.]*5), *([1.]*5), *([0.]*5), *([0.]*15)]
         result = subprocess.run([str(rrf_tikhonov)], input=' '.join(map(str, values))+'\n',

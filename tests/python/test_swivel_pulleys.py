@@ -49,7 +49,7 @@ def klipper():
     n = len(ANCHORS)
     d = lambda values: ffi.new('double[]', [float(v) for v in np.ravel(values)])
     lib.winch_flex_configure(wf, n, d(ANCHORS), d(ATTACHMENTS), 0., 13.9, EA, d([50.] * n), d([700.] * n),
-                             d([GUY] * n), 1, 0, 0, ffi.new('int[]', [1] * n), ffi.new('int[]', [1] * n))
+                             d([GUY] * n), 1, 0, 0, ffi.new('int[]', [1] * n), ffi.new('int[]', [1] * n), 0., 0)
     lib.winch_flex_set_swivels(wf, d(RADII), d(AXES), d(np.zeros(n)))
     lib.winch_flex_set_anchor_mode(wf, 3)
 
@@ -151,4 +151,7 @@ def test_rrf_saved_parameters_reload(tmp_path, config):
     reloaded = rrf(f'{scrambled}\nM98 P"config-override.g"\nG28\n{MOVE}', tmp_path, config)
     # GCodes3.cpp writes workplace offsets with %zu, which the host printf lacks.
     assert [l for l in reloaded.splitlines() if 'Error' in l and 'G10' not in l] == []
-    assert POSITION.findall(reloaded) == POSITION.findall(direct)
+    # Same motor counts; the forward transform converges to .001 mm from its seed.
+    reloaded, direct = POSITION.findall(reloaded), POSITION.findall(direct)
+    assert [r[-1] for r in reloaded] == [r[-1] for r in direct] and len(direct) > 0
+    assert np.allclose([list(map(float, r[:-1])) for r in reloaded], [list(map(float, r[:-1])) for r in direct], atol=.002)

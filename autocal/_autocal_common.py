@@ -728,6 +728,9 @@ def _format_m666_from_length_model(length_model: object) -> Optional[str]:
         parts.append(f"R{radii_spec}")
     if q_spec is not None:
         parts.append(f"Q{q_spec}")
+        # Buildup replaces spool flattening and strained storage; RRF rejects them together.
+        if np.any(buildup_vals != 0):
+            parts.extend(("K0", "V0"))
     return " ".join(parts)
 
 
