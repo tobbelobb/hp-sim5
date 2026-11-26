@@ -132,6 +132,10 @@ def test_rrf_rejected_swivel_geometry_changes_nothing(tmp_path):
     assert 'Swivel pulley A needs a nonzero V axis' in output
     plain = rrf(f'G28\n{MOVE}', tmp_path)
     assert POSITION.findall(output) == POSITION.findall(plain)
+    # An array of the wrong length for a new anchor count must not change the count either.
+    hp4 = rrf('M669 N5 R37:37:37:37\nM669 N5 P-1\nM500\n', tmp_path, 'config_hp4.g')
+    assert 'expected 5' in hp4
+    assert 'M669 K6 N4\n' in (tmp_path / 'sys/config-override.g').read_text()
 
 
 @pytest.mark.skipif(not (ROOT / 'RRF/build/rrf_simulator').exists(), reason='build RRF/build/rrf_simulator first')
