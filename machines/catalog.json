@@ -453,9 +453,11 @@
       "klipper_config": "public/klipper/copacabana/printer-copacabana-linux-mcu.cfg",
       "compiled_commands": {
         "public/gcode/Hangprinter_logo6.gcode": {
+          "klipper": "public/mcu_commands/copacabana/Hangprinter_logo6.serial",
           "rrf": "public/RRF_CAN_commands/Hangprinter_logo6_copacabana.can"
         },
         "public/gcode/draw_squares_bigger.gcode": {
+          "klipper": "public/mcu_commands/copacabana/draw_squares_bigger.serial",
           "rrf": "public/RRF_CAN_commands/draw_squares_bigger_copacabana.can"
         },
         "public/gcode/copacabana_planeA.gcode": {

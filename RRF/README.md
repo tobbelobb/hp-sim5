@@ -62,6 +62,15 @@ forces. It is meant for machines like CubeCorners, where single lines attach to
 spread out points and together stop the mover from rotating. Without `M666 E`
 the mover is treated as a point.
 
+Hangprinter `M669 R` sets a swivel pulley radius per anchor (0, the default,
+is a fixed point anchor) and `M669 V` the direction the line travels as it
+enters each pulley, X:Y:Z per anchor. The fork turns about that axis, so the
+line leaves from a tangent point that moves with the mover; the anchor is then
+the point where the line enters the pulley. Line lengths, flex force directions
+and the forward transform all follow the wrap. `M666 T` sets the tension per
+anchor that the lines had when the motors were zeroed at the origin, so flex
+compensation only adds the stretch beyond it. COPacabana uses all three.
+
 After building, run `.venv/bin/python RRF/tests/test_flex_mode_position.py`
 from the repo root to check mode changes, subsequent motion, and visible and
 invisible anchor drives through the real G-code and CAN pipeline.
