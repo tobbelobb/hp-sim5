@@ -5,7 +5,7 @@
 [submodule "RRF/ReprapFirmware"]
 	path = RRF/ReprapFirmware
 	url = https://github.com/tobbelobb/RepRapFirmware.git
-  branch = 3.7-x64-rebase-3
+	branch = 3.7-dev-rebase-4
   ignore = untracked
 [submodule "RRF/CANlib"]
 	path = RRF/CANlib
