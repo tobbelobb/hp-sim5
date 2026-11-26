@@ -260,7 +260,7 @@ def test_format_m666_from_length_model_includes_r_and_q():
         "modeled_buildup_factor": [0.012, 0.012, 0.012],
     }
     cmd = ac._format_m666_from_length_model(length_model)
-    assert cmd == "M666 R30:29.5:30.25 Q0.012"
+    assert cmd == "M666 R30:29.5:30.25 Q0.012 K0 V0"
 
 
 def test_format_m666_from_length_model_handles_per_anchor_q():
@@ -269,7 +269,8 @@ def test_format_m666_from_length_model_handles_per_anchor_q():
         "modeled_buildup_factor": [0.01, 0.02, 0.03],
     }
     cmd = ac._format_m666_from_length_model(length_model)
-    assert cmd == "M666 R30:30:30 Q0.01:0.02:0.03"
+    assert cmd == "M666 R30:30:30 Q0.01:0.02:0.03 K0 V0"
+    assert ac._format_m666_from_length_model({"effective_radii_mm": [30.0], "modeled_buildup_factor": [0.0]}) == "M666 R30 Q0"
 
 
 def test_resolve_length_model_base_params_prefers_base_override_for_r():

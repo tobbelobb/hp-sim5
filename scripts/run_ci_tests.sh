@@ -30,6 +30,11 @@ echo ""
 echo "== Python research, service and integration tests =="
 (cd "$ROOT" && .venv/bin/python -m pytest tests/python research-program/tests)
 
+echo ""
+echo "== Firmware kinematics and batch output tests =="
+(cd "$ROOT" && .venv/bin/python -m pytest -p no:cacheprovider klipper/test/klippy/test_winch.py klipper/test/klippy/test_serialqueue.py)
+(cd "$ROOT" && .venv/bin/python RRF/tests/test_flex_mode_position.py)
+
 run_with_retries() {
   local label="$1"
   local cmd="$2"

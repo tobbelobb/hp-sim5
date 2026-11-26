@@ -104,6 +104,17 @@ class FlexModePositionTest(unittest.TestCase):
         replies = re.findall(r'^M666 A1 (Q\S+ K\S+ V\d)$', output, re.M)
         self.assertEqual(replies, ['Q0.0000 K0.0150 V1'] * 2 + ['Q0.0070 K0.0000 V0'], output)
         self.assertIn('R30.00:30.00:30.00:30.00', output.split('M666 A1')[1])
+        # Another invalid value in the same command also keeps the spool model.
+        _, _, _, output = self.run_gcode('M666 K0 V0 Q0.007 F3\nM666\nM666 K0 V0 S0 F3\nM666\n', allow_error=True)
+        self.assertEqual(re.findall(r'^M666 A1 (Q\S+ K\S+ V\d)$', output, re.M), ['Q0.0000 K0.0150 V1'] * 2, output)
+        self.assertEqual(re.findall(r'^S(\S+)$', output, re.M), ['20000.00'] * 2, output)
+
+    def test_spool_storage_requires_positive_finite_stiffness(self):
+        _, _, _, output = self.run_gcode('M666 S0\nM666 S-1\nM666 S1e99\nM666 K0 V0 S0\nM666 K0.015\nM666\n',
+                                         allow_error=True)
+        # With spool storage enabled S must stay usable; without it the old S rules apply.
+        self.assertRegex(output, r'(?m)^M666 A1 Q0\.0000 K0\.0000 V0$')
+        self.assertRegex(output, r'(?m)^S0\.00$')
 
     def test_spool_storage_survives_m500_and_m501(self):
         with tempfile.TemporaryDirectory(prefix='rrf-m500-') as directory:

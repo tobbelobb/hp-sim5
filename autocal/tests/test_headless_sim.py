@@ -78,6 +78,16 @@ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
     assert partial.read_text() == '{"point":{"l_drive":1}}\n'
 
 
+def test_rejected_spool_model_fails_parameter_application():
+    service = HeadlessSimulation.__new__(HeadlessSimulation)
+    service.manifest = {}
+    replies = {'M669': 'A:0, -1900, -280', 'M666': 'M666 A1 Q0.0000 K0.0150 V1'}
+    service.request = lambda kind, line: {'result': {'reply': replies.get(line, '')}}
+    service.apply_parameters(['M669 A0:-1900:-280', 'M666 R30:30:30:30 Q0'])
+    with pytest.raises(RuntimeError, match='did not accept'):
+        service.apply_parameters(['M666 R30:30:30:30 Q0.007'])
+
+
 @pytest.mark.slow
 def test_application_waits_for_a_disconnected_collectors_advance(tmp_path):
     from argparse import Namespace

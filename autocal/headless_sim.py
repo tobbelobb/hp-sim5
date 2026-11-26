@@ -297,3 +297,10 @@ class HeadlessSimulation:
         self.manifest["applied_parameters"] = [command for command in commands if command]
         self.manifest["firmware_final"] = {command: self.request("gcode", line=command)["result"]["reply"]
                                            for command in ("M669", "M666")}
+        # RRF keeps its old spool model when it rejects an M666, so check the Q it reports.
+        for command in commands:
+            wanted = re.search(r'^M666\b.*\bQ([-+\d.eE:]+)', command or '')
+            reported = re.search(r'\bQ([-+\d.eE]+)', self.manifest["firmware_final"]["M666"] or '')
+            if wanted and not (reported and all(abs(float(reported[1]) - float(q)) <= 1e-4
+                                                for q in wanted[1].split(':'))):
+                raise RuntimeError(f"Firmware did not accept {command}: {self.manifest['firmware_final']['M666']}")
