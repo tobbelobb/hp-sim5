@@ -21,6 +21,7 @@ import {
   CablePathComponent,
   CableJointComponent,
   CableLinkComponent,
+  SwivelPulleyComponent,
   cableGeometricStoredLength,
 } from './cable_joints_core.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
@@ -2588,7 +2589,13 @@ export class RenderSystem3D {
         : radius;
       mesh.scale.set(radius, isCylinder ? height : radius, radius);
 
-      if (orientationComp?.quaternion) {
+      // A swivel wheel's plane follows its line, so its axis is the live plane normal.
+      const swivelNormal = world.getComponent(entityId, SwivelPulleyComponent)
+        ? world.getComponent(entityId, CableLinkComponent)?.cablePlaneNormal : null;
+      if (swivelNormal) {
+        mesh.quaternion.setFromUnitVectors(CYLINDER_LOCAL_UP,
+          new THREE.Vector3(swivelNormal.x, swivelNormal.y, swivelNormal.z).normalize());
+      } else if (orientationComp?.quaternion) {
         const q = orientationComp.quaternion;
         if (isCylinder) {
           const axisLocal = getSpoolLocalAxis(spoolState);

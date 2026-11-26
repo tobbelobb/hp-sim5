@@ -29,10 +29,7 @@ const rows = read('tests/fixtures/reference_data/darus4614_planeA_cycle.csv').tr
     return { time: values[0], marker: values.slice(1, 4), force: values.slice(4, 12), target: values.slice(12) };
   });
 let tick = 0, sample = 0, positionSquared = 0, forceSquared = 0, maxDistance = 0;
-const spans = axes.map(axis => {
-  const position = prim => world.getComponent(named.get(prim + axis), PositionComponent).pos;
-  return position('Anchor').clone().subtract(position('Attach'));
-});
+const homeAttach = axes.map(axis => world.getComponent(named.get('Attach' + axis), PositionComponent).pos.clone());
 const holds = [];
 let holdStart = 0;
 const homeMarker = world.getComponent(named.get('Reflector'), PositionComponent).pos.clone();
@@ -65,10 +62,11 @@ function measure() {
         predictedForce: axes.map(() => 0), loggedForce: axes.map(() => 0) };
       holds.push(hold);
     }
-    // Static force closure using the nominal unrotated pose and home tangent anchors.
+    // Static force closure using the nominal unrotated pose and the simulated pulley exit tangents.
     const net = [0, 0, -13.9 * 9.81];
-    spans.forEach((span, i) => {
-      const direction = [span.x - row.target[0], span.y - row.target[1], span.z - row.target[2]];
+    joints.forEach((joint, i) => {
+      const exit = joint.attachmentPointA_world;
+      const direction = [0, 1, 2].map(k => [exit.x, exit.y, exit.z][k] - [homeAttach[i].x, homeAttach[i].y, homeAttach[i].z][k] - row.target[k]);
       const scale = row.force[i] / Math.hypot(...direction);
       direction.forEach((v, k) => { net[k] += scale * v; });
       hold.predictedForce[i] += joints[i].constraintForceMagnitude;

@@ -8,6 +8,8 @@
 //!      fixed pulley tangent anchors (not winch drums or dynamic motion).
 //!   3. Blind vertical elastic sag prediction between `13.9 kg` and `29.1 kg`, preserving the
 //!      29-40% discrepancy openly as an unmodeled residual (without fitting extra parameters).
+//!   4. `PhysicsWorld` swivel pulleys (entity flag 4096) against the same IK: kinematics while the
+//!      platform travels P0..P5, and statics against the fixed-tangent model at every pose.
 //!
 //! Rope SKU note: `EA = 83.8 kN` is identified live from DaRUS-5171 `FDP-FC-MAP` on 6 mm LIROS
 //! D-Pro XTR (SK99) and transferred blind to COPacabana's 6 mm LIROS D-Pro 01505-0600 (SK78).
@@ -415,4 +417,166 @@ fn copacabana_blind_payload_sag_quantifies_prediction_error() {
     assert!(dz_sim_mm < 0.0 && dz_meas_p1_mm < 0.0, "sag must be negative (downward)");
     assert!(err_p0_mm.abs() < 1.5, "P0 sag prediction error {err_p0_mm:+.2} mm exceeded 1.5 mm");
     assert!(err_p1_mm.abs() < 2.0, "P1 sag prediction error {err_p1_mm:+.2} mm exceeded 2.0 mm");
+}
+
+/// Swivel wheel centre and wrap arc `r * beta` of cable `i` at platform position `pos`.
+fn swivel_center_and_wrap(i: usize, pos: [f64; 3]) -> ([f64; 3], f64) {
+    let (l_tot, _, l_tan) = pulley_ik(i, pos);
+    let a = ANCHORS[i];
+    let u_s = SWIVEL[i];
+    let v: [f64; 3] = std::array::from_fn(|k| pos[k] + PLATFORMS[i][k] - a[k]);
+    let z = dot3(v, u_s);
+    let v_rad: [f64; 3] = std::array::from_fn(|k| v[k] - z * u_s[k]);
+    let rho = norm3(v_rad);
+    (std::array::from_fn(|k| a[k] + PULLEY_R[i] * v_rad[k] / rho), l_tot - l_tan)
+}
+
+/// Length of the feed line arriving along each swivel axis.
+const FEED: f64 = 0.2;
+
+/// COPacabana with moving swivel pulleys: per cable a fixed feed point `FEED` before the entry
+/// point (against the swivel axis), a frictionless swivel wheel and the platform attachment.
+/// Rest lengths share `delta_rest` as in `build_copacabana`, and `EA` is scaled so each line's
+/// spring constant equals `build_copacabana`'s. Rows stretch only their free spans: material on
+/// a wheel, like the wrap here, is unstrained. A `kinematic` platform is held where it is put.
+fn build_swivel_copacabana(pos: [f64; 3], mass_kg: f64, ea: f64, delta_rest: [f64; 8], kinematic: bool) -> PhysicsWorld {
+    let (m, inertia) = if kinematic { (1e12, 1e12) } else { (mass_kg, 1.0) };
+    let mut plat = base(0, pos);
+    plat[75] = (1 | 2 | 4 | 32 | 64 | 128 | 256) as f64;
+    plat[52] = 1.0;
+    plat[54] = 1.0;
+    plat[56] = 1.0;
+    plat[83..86].copy_from_slice(&pos);
+    plat[124] = m;
+    for k in 0..3 {
+        plat[25 + 4 * k] = inertia;
+        plat[34 + 4 * k] = 1.0 / inertia;
+    }
+    let mut entities = vec![plat];
+    let feed: [[f64; 3]; 8] = std::array::from_fn(|i| std::array::from_fn(|k| ANCHORS[i][k] - FEED * SWIVEL[i][k]));
+    for i in 0..8 {
+        entities.push(fixed(1 + i, feed[i], 0.0));
+    }
+    for i in 0..8 {
+        let (c, _) = swivel_center_and_wrap(i, pos);
+        let mut e = fixed(9 + i, c, 0.0);
+        e[75] = (256 | 1024 | 4096) as f64;
+        e[104] = PULLEY_R[i];
+        e[138..141].copy_from_slice(&ANCHORS[i]);
+        e[141..144].copy_from_slice(&SWIVEL[i]);
+        let out: [f64; 3] = std::array::from_fn(|k| (c[k] - ANCHORS[i][k]) / PULLEY_R[i]);
+        let u = SWIVEL[i];
+        e[101..104].copy_from_slice(&[out[1] * u[2] - out[2] * u[1], out[2] * u[0] - out[0] * u[2], out[0] * u[1] - out[1] * u[0]]);
+        entities.push(e);
+    }
+    for i in 0..8 {
+        let b_world: [f64; 3] = std::array::from_fn(|k| pos[k] + PLATFORMS[i][k]);
+        let mut e = base(17 + i, b_world);
+        e[75] = 256.0;
+        e[50] = 0.0;
+        e[14..17].copy_from_slice(&PLATFORMS[i]);
+        e[131] = i as f64;
+        entities.push(e);
+    }
+    let mut paths = Vec::with_capacity(8);
+    for i in 0..8 {
+        let (l_tot, t_pt, l_tan) = pulley_ik(i, pos);
+        let (_, wrap) = swivel_center_and_wrap(i, pos);
+        let b_world: [f64; 3] = std::array::from_fn(|k| pos[k] + PLATFORMS[i][k]);
+        let segs = [
+            Seg { a: 1 + i, b: 9 + i, rest: FEED, pa: feed[i], pb: ANCHORS[i] },
+            Seg { a: 9 + i, b: 17 + i, rest: l_tan + delta_rest[i], pa: t_pt, pb: b_world },
+        ];
+        let links = [(ATTACHMENT, false, 0.0), (ROLLING, SWIVEL_CW, wrap), (ATTACHMENT, false, 0.0)];
+        let mut p = path(&links, &segs, ea * (FEED + l_tan) / l_tot, 0.0, 8.0);
+        p[1] = 1000.0 + i as f64;
+        for s in 0..2 {
+            p[HEADER + 3 * LINK + s * SEGMENT] = 2000.0 + (2 * i + s) as f64;
+        }
+        paths.push(p);
+    }
+    let mut w = world(entities, paths);
+    w.options[1] = 0.0;
+    w.options[2] = if kinematic { 0.0 } else { -G };
+    w
+}
+/// Winding sense of the line over a swivel wheel (its plane normal is `e_rad x u_s`).
+const SWIVEL_CW: bool = true;
+
+fn platform_poses() -> Vec<[f64; 3]> {
+    let rows = load_plane_a();
+    ["P0", "P1", "P2", "P3", "P4", "P5"].iter().map(|p| find_row(&rows, "20_Std_Load13900", p).tar).collect()
+}
+
+/// Carrying the platform through P0..P5 swivels every pulley with it: the exit tangent, the
+/// wrap arc `r * beta` and the total line length stay on `pulley_ik`, and no material is lost.
+#[test]
+fn swivel_pulleys_follow_pulley_ik_across_plane_a() {
+    let poses = platform_poses();
+    let mut w = build_swivel_copacabana(poses[0], 0.0, 83_800.0, [0.0; 8], true);
+    let material0: [f64; 8] = std::array::from_fn(|i| material(&mut w, i));
+    let (mut tangent_err, mut wrap_err, mut length_err, mut material_err) = (0.0_f64, 0.0_f64, 0.0_f64, 0.0_f64);
+    for leg in poses.windows(2) {
+        let n = 500;
+        for s in 1..=n {
+            let t = s as f64 / n as f64;
+            let pos: [f64; 3] = std::array::from_fn(|k| leg[0][k] + t * (leg[1][k] - leg[0][k]));
+            w.entities[0][0..3].copy_from_slice(&pos);
+            w.entities[0][69..75].fill(0.0);
+            w.step(0.002).unwrap();
+        }
+        for i in 0..8 {
+            let (l_tot, t_pt, _) = pulley_ik(i, leg[1]);
+            let (_, wrap) = swivel_center_and_wrap(i, leg[1]);
+            let t_sim = [seg_field(&mut w, i, 1, 4), seg_field(&mut w, i, 1, 5), seg_field(&mut w, i, 1, 6)];
+            let b_sim = [seg_field(&mut w, i, 1, 7), seg_field(&mut w, i, 1, 8), seg_field(&mut w, i, 1, 9)];
+            let entry = [seg_field(&mut w, i, 0, 7), seg_field(&mut w, i, 0, 8), seg_field(&mut w, i, 0, 9)];
+            let span = norm3(std::array::from_fn(|k| b_sim[k] - t_sim[k]));
+            tangent_err = tangent_err.max(norm3(std::array::from_fn(|k| t_sim[k] - t_pt[k])));
+            tangent_err = tangent_err.max(norm3(std::array::from_fn(|k| entry[k] - ANCHORS[i][k])));
+            wrap_err = wrap_err.max((stored(&mut w, i, 1) - wrap).abs());
+            length_err = length_err.max((stored(&mut w, i, 1) + span - l_tot).abs());
+            material_err = material_err.max((material(&mut w, i) - material0[i]).abs());
+        }
+    }
+    eprintln!(
+        "swivel vs pulley_ik over P0..P5: tangent {:.2e} m, wrap {:.2e} m, length {:.2e} m, material {:.2e} m",
+        tangent_err, wrap_err, length_err, material_err
+    );
+    assert!(tangent_err < 1e-9, "tangent point off pulley_ik by {tangent_err:.2e} m");
+    assert!(wrap_err < 1e-9, "wrap arc off r*beta by {wrap_err:.2e} m");
+    assert!(length_err < 1e-9, "line length off pulley_ik by {length_err:.2e} m");
+    assert!(material_err < 1e-9, "material drifted by {material_err:.2e} m");
+}
+
+/// At every PlaneA pose the platform hung on swivel pulleys settles where the fixed-tangent
+/// model built from `pulley_ik` does, with the same cable tensions.
+#[test]
+fn swivel_pulley_statics_match_fixed_pulley_ik_tangents() {
+    let ea = 83_800.0;
+    let rows = load_plane_a();
+    let (mut pos_err, mut force_err) = (0.0_f64, 0.0_f64);
+    for pose in ["P0", "P1", "P2", "P3", "P4", "P5"] {
+        let row = find_row(&rows, "20_Std_Load13900", pose);
+        let delta: [f64; 8] = std::array::from_fn(|i| -pulley_ik(i, row.tar).0 * row.f[i].max(0.0) / ea);
+        let mut fixed_world = build_copacabana(row.tar, 13.9, ea, delta);
+        let (pos_fixed, f_fixed) = settle_copacabana(&mut fixed_world, 1000);
+        let mut swivel_world = build_swivel_copacabana(row.tar, 13.9, ea, delta, false);
+        let dt = 0.002;
+        for _ in 0..1000 {
+            for slot in 69..75 {
+                swivel_world.entities[0][slot] *= 0.92;
+            }
+            swivel_world.step(dt).unwrap();
+        }
+        let pos_swivel = [swivel_world.entities[0][0], swivel_world.entities[0][1], swivel_world.entities[0][2]];
+        let f_swivel: [f64; 8] = std::array::from_fn(|i| tension(&mut swivel_world, i, 1));
+        let dp = norm3(std::array::from_fn(|k| pos_swivel[k] - pos_fixed[k])) * 1e3;
+        let df = (0..8).map(|i| (f_swivel[i] - f_fixed[i]).abs()).fold(0.0, f64::max);
+        eprintln!("  {pose}: swivel - fixed pose {dp:.4} mm, max |dF| {df:.3} N");
+        pos_err = pos_err.max(dp);
+        force_err = force_err.max(df);
+    }
+    assert!(pos_err < 0.005, "swivel statics moved {pos_err:.4} mm from fixed pulley_ik tangents");
+    assert!(force_err < 0.1, "swivel tensions differ by {force_err:.3} N from fixed pulley_ik tangents");
 }

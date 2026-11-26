@@ -583,6 +583,81 @@ def Xform "World"
 
     expect(() => bakeCableSceneUsdaSource(source)).toThrow(/manual/);
   });
+
+  test('swivels a pulley towards its leaving line and derives its exit tangent and wrap', async () => {
+    // COPacabana cable A at PlaneA P0 (COPacabana.xml, shifted by P0).
+    const entry = new Vector3(-2.427578, 1.959987, 2.15796);
+    const b = new Vector3(-0.15, 0.2365, 0.0225);
+    const axis = new Vector3(-1, 0, 0);
+    const r = 0.037;
+    const source = `#usda 1.0
+
+def Xform "World"
+{
+    def Xform "Scene"
+    {
+        def Xform "Feed"
+        {
+            double3 xformOp:translate = (-2.227578, 1.959987, 2.15796)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Circle "Pulley"
+        {
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.037
+            double3 xformOp:translate = (-2.427578, 1.959987, 2.15796)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            custom vector3d swivel:axis = (-1, 0, 0)
+        }
+
+        def Xform "Attach"
+        {
+            double3 xformOp:translate = (-0.15, 0.2365, 0.0225)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def CableJoint "Joint0"
+        {
+            custom rel physics:body0 = </World/Scene/Feed>
+            custom rel physics:body1 = </World/Scene/Pulley>
+        }
+
+        def CableJoint "Joint1"
+        {
+            custom rel physics:body0 = </World/Scene/Pulley>
+            custom rel physics:body1 = </World/Scene/Attach>
+        }
+
+        def Xform "CablePathA" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [0, 1, 0]
+            custom rel cablePath:joints = [</World/Scene/Joint0>, </World/Scene/Joint1>]
+            custom token[] cablePath:linkTypes = ["attachment", "rolling", "attachment"]
+            custom double[] cablePath:stored = [0, 0, 0]
+        }
+    }
+}
+`;
+    const stage = await UsdOpen(bakeCableSceneUsdaSource(source).source);
+    const get = (path, name) => getAttribute(stage.GetPrimAtPath(`/World/Scene/${path}`), name);
+    // WireX/IPAnema swivel-pulley inverse kinematics.
+    const v = b.clone().subtract(entry), z = v.dot(axis);
+    const radial = v.clone().subtract(axis, z), rho = radial.length(), d = Math.hypot(rho - r, z);
+    const theta = Math.atan2(z, rho - r) + Math.acos(r / d);
+    const center = entry.clone().add(radial, r / rho);
+    const exit = center.clone().add(radial, r * Math.cos(theta) / rho).add(axis, r * Math.sin(theta));
+    // The exit tangent is the fixed home tangent the scene used before swivel pulleys.
+    expect(exit.distanceTo(new Vector3(-2.45564020, 1.92160407, 2.11040222))).toBeLessThan(1e-8);
+    expectVectorClose(get('Pulley', 'swivel:center'), center);
+    expectVectorClose(get('Joint0', 'localPos1'), entry.clone().subtract(center));
+    expectVectorClose(get('Joint1', 'localPos0'), exit.clone().subtract(center));
+    expect(get('Joint0', 'restLength')).toBeCloseTo(0.2, 12);
+    expect(get('Joint1', 'restLength')).toBeCloseTo(Math.sqrt(d * d - r * r), 12);
+    expect(get('CablePathA', 'cablePath:stored')[1]).toBeCloseTo(r * (Math.PI - theta), 12);
+  });
 });
 
 test.each(['hp3', 'hp5'])('%s derives tight spans with and without layering', name => {

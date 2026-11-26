@@ -1,5 +1,5 @@
 import * as ecs from './ecs.js';
-import { CableLinkComponent, CableJointComponent, CablePathComponent } from './cable_joints_core.js';
+import { CableLinkComponent, CableJointComponent, CablePathComponent, SwivelPulleyComponent } from './cable_joints_core.js';
 import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 
@@ -172,7 +172,7 @@ export class RustPhysicsEngine {
         velocity: ecs.VelocityComponent, angular: ecs.AngularVelocityComponent, mass: ecs.MassComponent,
         inertia: ecs.MomentOfInertiaComponent, encoder: ecs.EncoderComponent, member: ecs.RigidBodyMemberComponent,
         body: ecs.RigidBodyComponent, radius: ecs.RadiusComponent, friction: ecs.CoefficientOfFrictionComponent,
-        bearing: ecs.BearingFrictionComponent,
+        bearing: ecs.BearingFrictionComponent, swivel: SwivelPulleyComponent,
         link: CableLinkComponent, spool: SpoolStateComponent, motor: StepperMotorComponent };
       const c = Object.fromEntries(Object.entries(types).map(([key, Type]) => [key, get(id, Type)]));
       putV(a, 0, c.position?.pos); putQ(a, 3, c.orientation?.quaternion);
@@ -196,13 +196,14 @@ export class RustPhysicsEngine {
       a[75] = (c.velocity ? 1 : 0) | (c.angular ? 2 : 0) | (get(id, ecs.GravityAffectedComponent) ? 4 : 0)
         | (c.spool ? 8 : 0) | (c.motor ? 16 : 0) | (c.body ? 32 : 0) | (c.inertia ? 64 : 0)
         | (c.mass ? 128 : 0) | (c.link ? 256 : 0) | (c.link?.cablePlaneNormalLocal ? 512 : 0) | (c.radius ? 1024 : 0)
-        | (c.bearing ? 2048 : 0);
+        | (c.bearing ? 2048 : 0) | (c.swivel ? 4096 : 0);
       putV(a, 76, c.spool?.axisLocal); putQ(a, 79, c.spool?.referenceOrientation);
       putV(a, 83, c.body?.syncedPosition); putQ(a, 86, c.body?.syncedOrientation);
       putV(a, 90, c.link?.prevCableAttachmentTimePos); putQ(a, 93, c.link?.prevCableAttachmentTimeOrientation);
       putQ(a, 97, c.link?.prevCableAttachmentTimeLocalOrientation); putV(a, 101, c.link?.cablePlaneNormal);
       a[104] = c.radius?.radius ?? NaN; a[105] = c.friction?.mu ?? 0; a[106] = c.member?.physicalMass ?? NaN;
       a[137] = c.bearing?.torque ?? 0;
+      putV(a, 138, c.swivel?.entry); putV(a, 141, c.swivel?.axis);
       const m = c.motor;
       a.set([m?.commandedAngle ?? 0, m?.deltaAngle ?? 0, m?.holdingTorque ?? 0,
         m?.numPolePairs ?? 50, m?.dampingCoeff ?? 0, m?.maxSpeedRad ?? 600, +Boolean(m?.closedLoop),

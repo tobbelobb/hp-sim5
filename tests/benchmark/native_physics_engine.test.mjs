@@ -476,3 +476,50 @@ test('preloaded hybrid drums retain their cable and tension on the first station
     world.getResource('cableSolverBackend').dispose();
   }
 });
+
+test('COPacabana swivel pulleys start on the home exit tangents and follow the platform', async () => {
+  const { CablePathComponent, SwivelPulleyComponent } = await import('../../src/js/cable_joints_3d/cable_joints_core.js');
+  const { RadiusComponent, SceneEntityInfoComponent } = await import('../../src/js/cable_joints_3d/ecs.js');
+  const scene = fs.readFileSync(new URL('../../public/usd_scenes/copacabana.usda', import.meta.url), 'utf8');
+  const { world, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
+  // COPacabana.xml pulley exit tangents with the platform at PlaneA P0.
+  const home = {
+    A: [-2.45564020, 1.92160407, 2.11040222], B: [2.43938998, 1.90616065, 2.12297120],
+    C: [2.43680577, -1.93762581, 2.10208379], D: [-2.46148631, -1.92695656, 2.11108697],
+    I: [-2.32170727, 1.57024540, -0.88446145], J: [2.33778332, 1.57410907, -0.80826155],
+    L: [2.33144089, -1.57358523, -0.88433828], O: [-2.40803774, -1.57307330, -0.80667932],
+  };
+  // Exact swivel-pulley exit tangent (WireX/IPAnema) for a line leaving towards `b`.
+  const exitTangent = ({ entry, axis }, r, b) => {
+    const v = b.clone().subtract(entry), z = v.dot(axis);
+    const radial = v.clone().subtract(axis, z), rho = radial.length();
+    const theta = Math.atan2(z, rho - r) + Math.acos(r / Math.hypot(rho - r, z));
+    return entry.clone().add(radial, r * (1 + Math.cos(theta)) / rho).add(axis, r * Math.sin(theta));
+  };
+  try {
+    const paths = world.query([CablePathComponent]).map(id => world.getComponent(id, CablePathComponent));
+    const material = path => path.stored.reduce((sum, s) => sum + s, 0)
+      + path.jointEntities.reduce((sum, id) => sum + world.getComponent(id, CableJointComponent).restLength, 0);
+    const before = paths.map(material);
+    const check = tolerance => paths.forEach(path => {
+      const span = world.getComponent(path.jointEntities[1], CableJointComponent);
+      const swivel = world.getComponent(span.entityA, SwivelPulleyComponent);
+      const r = world.getComponent(span.entityA, RadiusComponent).radius;
+      const b = world.getComponent(span.entityB, PositionComponent).pos;
+      assert.ok(span.attachmentPointA_world.distanceTo(exitTangent(swivel, r, b)) < tolerance);
+      assert.ok(path.stored[1] > 0 && path.stored[1] < Math.PI * r);
+    });
+    paths.forEach(path => {
+      const axis = world.getComponent(path.jointEntities[1], SceneEntityInfoComponent).name[5];
+      const [x, y, z] = home[axis];
+      assert.ok(world.getComponent(path.jointEntities[1], CableJointComponent).attachmentPointA_world
+        .distanceTo({ x, y, z }) < 1e-7, axis);
+    });
+    check(1e-9);
+    for (let step = 0; step < 300; step++) world.update(dt);
+    check(1e-5);
+    paths.forEach((path, i) => assert.ok(Math.abs(material(path) - before[i]) < 1e-9));
+  } finally {
+    world.getResource('cableSolverBackend').dispose();
+  }
+});

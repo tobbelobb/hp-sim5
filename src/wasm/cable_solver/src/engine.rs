@@ -18,6 +18,11 @@ const CABLE_LINK: u32 = 256;
 const LOCAL_AXIS: u32 = 512;
 const RADIUS: u32 = 1024;
 const BEARING: u32 = 2048;
+/// A swivel pulley: a wheel whose fork turns about a fixed entry axis (slots
+/// 141..144) through a fixed entry point (138..141), where the line from its
+/// feed (entity id in slot 144, set each step) arrives along the axis. Its
+/// centre and plane follow the line leaving it.
+const SWIVEL: u32 = 4096;
 const IDENTITY: Q = [0.0, 0.0, 0.0, 1.0];
 const Z: V = [0.0, 0.0, 1.0];
 const TAU: f64 = 2.0 * PI;
@@ -804,6 +809,11 @@ fn geometry(c: &Cable, i: usize, es: &[Entity], layering: bool) -> AttachmentGeo
         buf[o + 16] = f64::from(rolling(kind));
         buf[o + 17] = f64::from(hybrid(kind));
         buf[o + 18] = f64::from(kind == 4);
+        // The feed line meets a swivel pulley at its fixed entry point.
+        if has(&es[ids[side]], SWIVEL) && es[ids[side]][144] == ids[1 - side] as f64 {
+            put_v(&mut buf, o, v(&es[ids[side]], 138));
+            buf[o + 16] = 0.0;
+        }
     }
     // The same pure tangent kernel used by the standalone ABI.
     attachment_data(&mut buf);
@@ -1184,6 +1194,9 @@ impl PhysicsWorld {
         self.integrate(dt);
         self.sync_bodies(false);
         let layering = self.options[3] != 0.0;
+        for c in &self.cables {
+            swivel(c, &mut self.entities, layering);
+        }
         for stage in 4..=8 {
             if stage == 5 || self.options[stage] == 0.0 {
                 continue;
@@ -1497,6 +1510,55 @@ fn sync_cable_spools(c: &mut Cable, es: &[Entity], layering: bool) {
     }
 }
 
+/// Turns each swivel pulley's fork about its entry axis towards the line
+/// leaving it: the wheel centre sits one radius from the entry point, in the
+/// plane of the axis and the leaving line's far end.
+fn swivel(c: &Cable, es: &mut [Entity], layering: bool) {
+    for li in 1..c.count() {
+        let id = c.entity(li - 1, 1);
+        if !has(&es[id], SWIVEL) {
+            continue;
+        }
+        let (entry, axis) = (v(&es[id], 138), norm(v(&es[id], 141)));
+        // The line arrives along the axis, so the far end lies off it.
+        let far = |seg: usize, side: usize, link: usize| {
+            let p = if attachment_kind(c.kind(link)) {
+                world_pos(es, c.entity(seg, side)).unwrap_or(c.point(seg, side))
+            } else {
+                c.point(seg, side)
+            };
+            let rel = sub(p, entry);
+            sub(rel, scale(axis, dot(rel, axis)))
+        };
+        let (before, after) = (far(li - 1, 0, li - 1), far(li, 1, li + 1));
+        let (radial, feed) = if length(after) >= length(before) {
+            (after, c.entity(li - 1, 0))
+        } else {
+            (before, c.entity(li, 1))
+        };
+        es[id][144] = feed as f64;
+        let r = c.radius(es, li, id, layering).0;
+        if length(radial) <= EPS || !r.is_finite() {
+            continue;
+        }
+        let out = norm(radial);
+        put_v(&mut es[id], 0, add(entry, scale(out, r)));
+        put_v(&mut es[id], 101, norm(cross(out, axis)));
+    }
+}
+/// `rel`, taken about a swivel wheel's previous centre `prev`, turned with its
+/// fork to the current centre `pos`.
+fn swivel_turn(e: &Entity, prev: V, pos: V, rel: V) -> V {
+    let (entry, axis) = (v(e, 138), norm(v(e, 141)));
+    let radial = |p: V| {
+        let d = sub(p, entry);
+        sub(d, scale(axis, dot(d, axis)))
+    };
+    let (from, to) = (radial(prev), radial(pos));
+    let angle = atan2(dot(cross(from, to), axis), dot(from, to));
+    rotate(axis_angle(axis, angle), rel)
+}
+
 fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: bool) {
     let half = if layering { c.data[6] } else { 0.0 };
     sync_cable_spools(c, es, layering);
@@ -1578,6 +1640,9 @@ fn update_attachments(c: &mut Cable, es: &mut [Entity], layering: bool, clamp: b
                 if dot(normal, normal) > EPS {
                     normal = norm(normal);
                 }
+            }
+            if has(&es[ids[side]], SWIVEL) {
+                old_rel = swivel_turn(&es[ids[side]], prev, pos, old_rel);
             }
             let cw = c.cw(i + side, side == 0);
             geom_shifts[side] = arc(old_rel, new_rel, [0.0; 3], radius, cw, normal, false);

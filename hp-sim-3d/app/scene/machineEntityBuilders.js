@@ -19,7 +19,7 @@ import {
     MachineTagComponent,
     SceneEntityInfoComponent,
 } from "../../../src/js/cable_joints_3d/ecs.js";
-import { CableLinkComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import { CableLinkComponent, SwivelPulleyComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import {
     SpoolTagComponent,
     SpoolStateComponent,
@@ -57,12 +57,20 @@ function buildMachineBody(context, registry, prim, readTransform) {
         apply = applySpool;
     } else if (tags.includes("Wheel")) {
         apply = applyWheel;
+    } else if (tags.includes("SwivelPulley")) {
+        apply = applySwivelPulley;
     } else if (tags.includes("Anchor")) {
         apply = applyAnchor;
     } else if (tags.includes("Pinhole") || tags.includes("Eyelet") || tags.includes("Attachment")) {
         apply = applyPinhole;
     } else {
         return null;
+    }
+    if (apply === applySwivelPulley) {
+        const missing = ["radius", "swivel:axis", "swivel:center"].filter((attribute) => getAttribute(prim, attribute) == null);
+        if (missing.length > 0) {
+            throw new Error(`${context.sceneRootPath}/${prim.name}: SwivelPulley is missing required attributes: ${missing.join(", ")} (swivel:center is baked).`);
+        }
     }
     if (apply === applySpool || apply === applyWheel) {
         const missing = ["radius", "physics:mass", "physics:inertiaTensor"]
@@ -166,6 +174,29 @@ function applyAnchor(world, context, registry, prim, transform) {
     if (getAttribute(prim, "cable:linkable")) {
         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, transform.orientation, DEFAULT_PLANE_NORMAL));
     }
+    registerNamedEntity(world, registry, namespace, prim, ent);
+}
+
+// The prim sits at the fixed entry point. Its wheel starts at the baked centre
+// and the physics swivels it from there.
+function applySwivelPulley(world, context, registry, prim, transform) {
+    const { color, friction, restitution } = materialProperties(context.stage, prim);
+    const palette = context.options.palette || null;
+    const namespace = context.options.namespace || null;
+    const [axis, center] = ["swivel:axis", "swivel:center"].map((name) => new Vector3(...getAttribute(prim, name)));
+    const entry = transform.position.clone();
+    const worldAxis = transform.orientation.transformVector(axis).normalize();
+    const out = center.clone().subtract(entry).normalize();
+    const ent = world.createEntity();
+    world.addComponent(ent, new MachineTagComponent(context.options.namespace || 'default'));
+    world.addComponent(ent, new PositionComponent(center.x, center.y, center.z));
+    world.addComponent(ent, new RadiusComponent(getAttribute(prim, "radius")));
+    world.addComponent(ent, new MassComponent(-1.0));
+    world.addComponent(ent, new RenderableComponent('cylinder', palette?.wheel ?? palette?.spool ?? color ?? '#a0a0a0',
+        { height: Number(getAttribute(prim, "height")) || null }));
+    addMaterialComponents(world, ent, restitution, friction);
+    world.addComponent(ent, new CableLinkComponent(center.x, center.y, center.z, null, out.cross(worldAxis).normalize()));
+    world.addComponent(ent, new SwivelPulleyComponent(entry, worldAxis));
     registerNamedEntity(world, registry, namespace, prim, ent);
 }
 

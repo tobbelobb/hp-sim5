@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    doc = "COPacabana, DaRUS-4614. Coordinates relative to PlaneA P0. Fixed pulley exit tangents at home."
+    doc = "COPacabana, DaRUS-4614. Coordinates relative to PlaneA P0. Swivel pulleys (entry points, radii, axes) from COPacabana.xml; each drum feeds its pulley along the swivel axis from 0.2 m."
     defaultPrim = "HangprinterScene"
     metersPerUnit = 1
     startTimeCode = 0
@@ -22,7 +22,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             double3 xformOp:rotateXYZ = (0, 0, 0)
-            double3 xformOp:translate = (-2.65564020, 1.92160407, 2.11040222)
+            double3 xformOp:translate = (-2.22757800, 1.91098700, 2.15796000)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -33,12 +33,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorA" ()
+        def Circle "AnchorA" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-2.45564020, 1.92160407, 2.11040222)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.037
+            double height = 0.006
+            double3 xformOp:translate = (-2.42757800, 1.95998700, 2.15796000)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (-1, 0, 0)
         }
 
         def Circle "AttachA" (
@@ -63,7 +67,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (2.63938998, 1.90616065, 2.12297120)
+            double3 xformOp:translate = (2.21124300, 1.99312800, 2.17073500)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -74,12 +78,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorB" ()
+        def Circle "AnchorB" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (2.43938998, 1.90616065, 2.12297120)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.037
+            double height = 0.006
+            double3 xformOp:translate = (2.41124300, 1.94412800, 2.17073500)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (1, 0, 0)
         }
 
 
@@ -105,7 +113,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (2.63680577, -1.93762581, 2.10208379)
+            double3 xformOp:translate = (2.20863000, -1.92723700, 2.14928500)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -116,12 +124,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorC" ()
+        def Circle "AnchorC" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (2.43680577, -1.93762581, 2.10208379)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.037
+            double height = 0.006
+            double3 xformOp:translate = (2.40863000, -1.97623700, 2.14928500)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (1, 0, 0)
         }
 
         def Circle "AttachC" (
@@ -146,7 +158,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (-2.66148631, -1.92695656, 2.11108697)
+            double3 xformOp:translate = (-2.23343700, -2.01441500, 2.15860300)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -157,12 +169,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorD" ()
+        def Circle "AnchorD" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-2.46148631, -1.92695656, 2.11108697)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.037
+            double height = 0.006
+            double3 xformOp:translate = (-2.43343700, -1.96541500, 2.15860300)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (-1, 0, 0)
         }
 
 
@@ -188,7 +204,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (-2.52170727, 1.57024540, -0.88446145)
+            double3 xformOp:translate = (-2.09885600, 1.56086400, -0.92517400)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -199,12 +215,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorI" ()
+        def Circle "AnchorI" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-2.32170727, 1.57024540, -0.88446145)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.033
+            double height = 0.006
+            double3 xformOp:translate = (-2.29885600, 1.60986400, -0.92517400)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (-1, 0, 0)
         }
 
         def Circle "AttachI" (
@@ -229,7 +249,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (2.53778332, 1.57410907, -0.80826155)
+            double3 xformOp:translate = (2.11532700, 1.66412600, -0.84810200)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -240,12 +260,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorJ" ()
+        def Circle "AnchorJ" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (2.33778332, 1.57410907, -0.80826155)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.033
+            double height = 0.006
+            double3 xformOp:translate = (2.31532700, 1.61512600, -0.84810200)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (1, 0, 0)
         }
 
 
@@ -271,7 +295,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (2.53144089, -1.57358523, -0.88433828)
+            double3 xformOp:translate = (2.10863100, -1.56428100, -0.92503100)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -282,12 +306,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorL" ()
+        def Circle "AnchorL" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (2.33144089, -1.57358523, -0.88433828)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.033
+            double height = 0.006
+            double3 xformOp:translate = (2.30863100, -1.61328100, -0.92503100)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (1, 0, 0)
         }
 
         def Circle "AttachL" (
@@ -312,7 +340,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.049
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (-2.60803774, -1.57307330, -0.80667932)
+            double3 xformOp:translate = (-2.18598500, -1.66336300, -0.84676800)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -323,12 +351,16 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorO" ()
+        def Circle "AnchorO" (
+            apiSchemas = ["SwivelPulleyAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-2.40803774, -1.57307330, -0.80667932)
+            token[] ecs:tags = ["SwivelPulley"]
+            double radius = 0.033
+            double height = 0.006
+            double3 xformOp:translate = (-2.38598500, -1.61436300, -0.84676800)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            custom vector3d swivel:axis = (-1, 0, 0)
         }
 
 
@@ -506,14 +538,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointA_0>, </World/HangprinterScene/JointA_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 64.0
             custom double cablePath:initialStorageTension = 64.0
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -523,14 +555,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointB_0>, </World/HangprinterScene/JointB_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 60.1
             custom double cablePath:initialStorageTension = 60.1
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -540,14 +572,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointC_0>, </World/HangprinterScene/JointC_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 64.0
             custom double cablePath:initialStorageTension = 64.0
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -557,14 +589,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointD_0>, </World/HangprinterScene/JointD_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0, 0]
             custom double cablePath:initialTension = 59.5
             custom double cablePath:initialStorageTension = 59.5
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -574,14 +606,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointI_0>, </World/HangprinterScene/JointI_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 28.4
             custom double cablePath:initialStorageTension = 28.4
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -591,14 +623,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointJ_0>, </World/HangprinterScene/JointJ_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 24.7
             custom double cablePath:initialStorageTension = 24.7
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -608,14 +640,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointL_0>, </World/HangprinterScene/JointL_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 25.2
             custom double cablePath:initialStorageTension = 25.2
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -625,14 +657,14 @@ def Xform "World"
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointO_0>, </World/HangprinterScene/JointO_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [3.0, 0 ,0]
             custom double cablePath:initialTension = 21.8
             custom double cablePath:initialStorageTension = 21.8
             custom double cablePath:stiffnessPerUnitLength = 83800.0
             custom double cablePath:dampingPerUnitLength = 5.0
             custom double cablePath:halfWidth = 0.0
-            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
