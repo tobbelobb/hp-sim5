@@ -81,19 +81,19 @@ To test which parameters genuinely improve out-of-sample prediction — rather t
 
 | Stage (progressively relaxed) | Train PlaneA Pos / F | 7 Held-out PlaneA Pos / F | Held-out CircPath Pos / F | Fitted parameters (`d0` mm, `η = (lo, up)`) |
 |---|---:|---:|---:|---|
-| **A0:** Published XML, `EA = 83.8 kN`, `g = 1.0` | `17.76 mm` / `178.2 N` | `17.59 mm` / `184.2 N` | `23.70 mm` / `172.6 N` | baseline |
-| **A1:** Published XML, `EA = 118.5 kN`, `g = √2` | `17.66 mm` / `176.9 N` | `17.48 mm` / `183.6 N` | `24.29 mm` / `170.5 N` | `EA = 83.8·√2`, `g = √2` |
-| **B:** + fit `EA` (`g = √2`) | `17.29 mm` / `175.3 N` | `16.79 mm` / `168.7 N` | `23.32 mm` / `171.3 N` | `EA = 78.4 kN` |
-| **C:** + fit `EA, g, η_lo, η_up` | `16.57 mm` / `173.2 N` | `15.71 mm` / `159.2 N` | `22.38 mm` / `171.7 N` | hits bounds (`g=2.0, η=35%`) |
-| **D:** + fit home offset `d0` (`g = √2`) | `19.82 mm` / `52.8 N` | `19.90 mm` / `55.8 N` | `30.65 mm` / `102.8 N` | `EA = 149 kN`, `η = (10%, 10%)`, `d0 = (−23, −9, −37)` |
-| **E:** + fit encoder scale `s_enc` (`g = √2`) | `9.95 mm` / `41.6 N` | `10.14 mm` / `50.1 N` | `15.52 mm` / `97.9 N` | `EA = 174 kN`, `η = (7.5%, 13.4%)`, `d0 = (−4, −5, −79)`, `s = 0.978` |
-| **F2:** + fit anchor scale ONLY (`s_enc = 1`, `g = √2`) | `9.10 mm` / `40.0 N` | `9.19 mm` / `47.0 N` | `14.72 mm` / **`69.4 N`** | `EA = 185 kN`, `η = (8.7%, 15.9%)`, `d0 = (0, −5, −107)`, `sc = (1.002, 0.996, 0.938)` |
-| **F1:** + fit `s_enc` and anchor scale (`g = √2`) | `2.56 mm` / `35.7 N` | **`2.74 mm` / `39.4 N`** | **`9.55 mm`** / `96.1 N` | `EA = 95.8 kN`, `η = (6.6%, 17.2%)`, `d0 = (+5, −5, −178)`, `s = 0.984`, `sc = (0.980, 0.976, 0.927)` |
+| **A0:** Published XML, `EA = 83.8 kN`, `g = 1.0` | `17.75 mm` / `188.3 N` | `16.86 mm` / `176.1 N` | `31.47 mm` / `186.7 N` | baseline |
+| **A1:** Published XML, `EA = 118.5 kN`, `g = √2` | `17.57 mm` / `186.8 N` | `16.77 mm` / `177.8 N` | `31.51 mm` / `184.8 N` | `EA = 83.8·√2`, `g = √2` |
+| **B:** + fit `EA` (`g = √2`) | `16.46 mm` / `186.8 N` | `15.39 mm` / `158.4 N` | `30.09 mm` / `182.8 N` | hits lower bound (`EA = 30.0 kN`) |
+| **C:** + fit `EA, g, η_lo, η_up` | `15.76 mm` / `181.9 N` | `15.84 mm` / `150.4 N` | `32.93 mm` / `182.1 N` | hits bounds (`EA = 30 kN, g = 2.0, η = 35%`) |
+| **D:** + fit home offset `d0` (`g = √2`) | `17.08 mm` / `42.0 N` | `16.91 mm` / `50.6 N` | `31.65 mm` / `215.5 N` | `EA = 185 kN`, `η = (7.4%, 13.4%)`, `d0 = (−11, −4, −59)` |
+| **E:** + fit encoder scale `s_enc` (`g = √2`) | `13.14 mm` / `45.0 N` | `12.70 mm` / `49.6 N` | `24.17 mm` / `177.4 N` | `EA = 77.4 kN`, `η = (5.7%, 21.8%)`, `d0 = (0, 0, −187)`, `s = 0.983` |
+| **F2:** + fit anchor scale ONLY (`s_enc = 1`, `g = √2`) | `9.96 mm` / `37.8 N` | `9.79 mm` / `79.7 N` | `15.05 mm` / **`68.0 N`** | `EA = 300 kN` (bound), `η = (8.4%, 15.0%)`, `d0 = (+2, −3, −64)`, `sc = (0.985, 1.019, 0.969)` |
+| **F1:** + fit `s_enc` and anchor scale (`g = √2`) | `2.60 mm` / `34.6 N` | **`2.74 mm` / `38.4 N`** | **`9.16 mm`** / `96.8 N` | `EA = 96.4 kN`, `η = (6.4%, 16.4%)`, `d0 = (+7, −5, −165)`, `s = 0.983`, `sc = (0.956, 0.992, 0.949)` |
 
-**Key conclusions from the ablation:**
-1. **Elasticity, force scaling, and pulley friction alone (Stages A–C) cannot resolve either position (`16–24 mm`) or force (`159–184 N`) errors.**
-2. **A home offset alone (Stage D) collapses held-out force RMS by 3.3× (`184 → 55.8 N` on PlaneA, `173 → 103 N` on CircPath)** without altering anchor widths or payout scale, confirming that the P4/CircPath tension spikes come from geometric over-constraint relative to the homing pose — yet `d0` alone cannot fix the 3.5–5.7 % Y-travel shortfall.
-3. **Anchor-width changes are strongly collinear with `s_enc` and `d0_z`:** Holding `s_enc = 1.000` (Stage F2) leaves `sx = 1.002, sy = 0.996` (within 0.4 % of `COPacabana.xml`!) and achieves the **lowest held-out CircPath force RMS (`69.4 N`)**, shifting only vertical span (`sz = 0.938`, `d0_z = −107 mm`). Allowing both `s_enc` and `(sx, sy, sz)` (Stage F1) reaches `2.74 mm` on held-out PlaneA and `9.55 mm` on CircPath, but trades off CircPath force accuracy (`69.4 → 96.1 N`).
+**Key conclusions from the ablation (with verified `0.084 mm` swivel-pulley IK):**
+1. **Elasticity, force scaling, and pulley friction alone (Stages A–C) cannot resolve either position (`15–33 mm`) or force (`150–188 N`) errors**, driving `EA` to its lower bound (`30 kN`).
+2. **A home offset alone (Stage D) collapses held-out PlaneA force RMS by 3.5× (`178 → 50.6 N`)** without altering anchor widths or payout scale, yet leaves PlaneA position error unfixed (`16.9 mm`) and degrades held-out `CircPath` force (`185 → 215.5 N`).
+3. **Anchor-width changes are strongly collinear with `s_enc`, `EA`, and `d0_z`:** Holding `s_enc = 1.000` (Stage F2) achieves the **lowest held-out `CircPath` force RMS (`68.0 N`)** with `sc = (0.985, 1.019, 0.969)`, but hits the `EA = 300 kN` upper bound and degrades held-out PlaneA force (`79.7 N`). Allowing both `s_enc` and `(sx, sy, sz)` (Stage F1) reaches `2.74 mm / 38.4 N` on held-out PlaneA and `9.16 mm` on `CircPath`, but trades off `CircPath` force accuracy (`68.0 → 96.8 N`).
 4. **Therefore we do NOT overwrite `COPacabana.xml` geometry or transmission in `copacabana.usda`.** Reconciling the exact physical anchor/homing geometry requires independent survey measurements of the anchor points in the `COP_Ref.csv` frame (Trautwein et al. 2020 §3.1/§4.1 note that COPacabana anchors are reconfigured using 1D beam distances into CAD rather than full 6-DOF re-calibration). [Autocal handoff](autocal-handoff.md)
 
 ## Reproduce

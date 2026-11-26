@@ -76,8 +76,9 @@ def pulley_ik(pos, rot_mat, a_pts, b_pts, u_axes, radii):
     dist = np.linalg.norm(radial, axis=1, keepdims=True)
     r = radii[:, None]
     d_r = dist - r
-    beta = np.arctan2(axial, d_r) + np.arccos(np.clip(r / np.hypot(d_r, axial), -1.0, 1.0))
-    tangent = a_pts + r * ((1.0 + np.cos(beta)) * radial / dist + np.sin(beta) * u_axes)
+    theta_t = np.arctan2(axial, d_r) + np.arccos(np.clip(r / np.hypot(d_r, axial), -1.0, 1.0))
+    beta = np.pi - theta_t
+    tangent = a_pts + r * ((1.0 + np.cos(theta_t)) * radial / dist + np.sin(theta_t) * u_axes)
     span = tangent - attach
     l_span = np.linalg.norm(span, axis=1)
     l_tot = l_span + radii * beta[:, 0]
@@ -106,6 +107,26 @@ def solve_static_pose(p_init, l0, a_pts, b_pts, u_axes, radii, mass_kg, ea):
     l_tot, _, _, _ = pulley_ik(pos, rot, a_pts, b_pts, u_axes, radii)
     forces = ea * np.maximum(0.0, (l_tot - l0) / l0)
     return pos, rot, forces
+
+
+def verify_pulley_ik_targets(csv_path: Path, geom):
+    """Verify Python swivel-pulley IK matches logged motor targets `xtar[0..7]` across P0..P5."""
+    a_xml, b_xml, u_xml, r_pul = geom
+    l_origin, _, _, _ = pulley_ik(np.zeros(3), np.eye(3), a_xml, b_xml, u_xml, r_pul)
+    max_err_mm = 0.0
+    with csv_path.open() as f:
+        for row in csv.DictReader(f):
+            if row['experiment'] != '20_Std_Load13900':
+                continue
+            tar = np.array([float(row['tar_x']), float(row['tar_y']), float(row['tar_z'])])
+            xtar = np.array([float(row[f'xtar{i}']) for i in range(8)])
+            l_ik, _, _, _ = pulley_ik(tar, np.eye(3), a_xml, b_xml, u_xml, r_pul)
+            err_mm = float(np.max(np.abs((l_ik - l_origin) - xtar)) * 1000.0)
+            max_err_mm = max(max_err_mm, err_mm)
+    if max_err_mm >= 0.2:
+        raise AssertionError(f'Pulley IK mismatch vs logged x_tar: {max_err_mm:.4f} mm (expected < 0.2 mm)')
+    print(f'Verified swivel-pulley IK vs logged x_tar (P0..P5 x 8 cables): max err = {max_err_mm:.4f} mm', file=sys.stderr)
+    return max_err_mm
 
 
 def load_planea_fixture(csv_path: Path):
@@ -257,6 +278,7 @@ def main():
     if not xml_path.exists():
         xml_path = base_dir.parent / 'COPacabana.xml'
     geom = load_xml_geometry(xml_path)
+    verify_pulley_ik_targets(args.planea_csv, geom)
     a_xml, b_xml, u_xml, r_pul = geom
     exps, planea = load_planea_fixture(args.planea_csv)
     train_exp = ['20_Std_Load13900']
