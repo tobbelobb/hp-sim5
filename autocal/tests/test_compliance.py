@@ -439,3 +439,32 @@ def test_estimate_compliance_scale_explicitly_pairs_verified_antiphase_probes_be
             pr["antiphase_verified"] = False
     est_unverified = estimate_compliance_scale(ds_paired, HP3_ANCHORS)
     assert est_unverified is None or est_unverified["num_antiphase_pairs"] == 0
+
+
+def test_python_cli_compliance_probe_flag_forwarding(tmp_path, monkeypatch):
+    dataset = tmp_path / "sweeps.json"
+    dataset.write_text(
+        '{"version":"1.0","machine_type":"hangprinter_3","num_anchors":4,"dimensions":3,"sweeps":[]}'
+    )
+    seen_collector_args = []
+
+    def fake_run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless):
+        seen_collector_args.append((args.compliance_probe, list(collector_args)))
+        return 0
+
+    monkeypatch.setattr(ac, "_run_full_auto", fake_run_full_auto)
+    for extra, expected_state, expected_flag in (
+        ([], None, None),
+        (["--compliance-probe"], True, ["--compliance-probe", "2,3,1"]),
+        (["--no-compliance-probe"], False, ["--no-compliance-probe"]),
+    ):
+        rc = ac.main(["--no-collect", "--machine-type", "hangprinter_3", "--dataset", str(dataset), *extra])
+        assert rc == 0
+        state, forwarded = seen_collector_args[-1]
+        assert state is expected_state
+        if expected_flag is None:
+            assert "--compliance-probe" not in forwarded
+            assert "--no-compliance-probe" not in forwarded
+        else:
+            for tok in expected_flag:
+                assert tok in forwarded

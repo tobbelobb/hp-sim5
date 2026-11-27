@@ -1683,10 +1683,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")
-    if not bool(args.compliance_probe) and not _arg_has_flag(
+    if args.compliance_probe is False and not _arg_has_flag(
         collector_args, "--no-compliance-probe", "--compliance-probe"
     ):
         collector_args.append("--no-compliance-probe")
+    elif args.compliance_probe is True and not _arg_has_flag(
+        collector_args, "--no-compliance-probe", "--compliance-probe"
+    ):
+        collector_args.extend(["--compliance-probe", "2,3,1"])
     if args.no_collect and not (args.dataset or Path("autocal/data/default_dataset.json")).exists():
         parser.error("--no-collect needs an existing dataset; pass --dataset to one that exists")
     if args.dataset is not None:

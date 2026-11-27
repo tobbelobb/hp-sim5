@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Union
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -59,6 +59,9 @@ class FlexModel:
     spool_flattening: float = 0.0
     strained_spool_storage: bool = False
     home_tension_n: Sequence[float] = ()
+    _vec_cache: Dict[int, Dict[str, np.ndarray]] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
 
     @classmethod
     def from_m666(
@@ -209,6 +212,91 @@ class FlexModel:
         denom = np.where(denom > 1e-9, denom, 1e-9)
         return (unstretched_length_mm - home_flex + (tension * guy) / (s_eff * ma)) / denom
 
+    def _arrays_for(self, num_axes: int) -> Dict[str, np.ndarray]:
+        cached = self._vec_cache.get(num_axes)
+        if cached is not None:
+            return cached
+        ma = np.array([max(_axis_value(self.mechanical_advantage, a, 1.0), 1e-9) for a in range(num_axes)], dtype=float)
+        strands = np.array([max(_axis_value(self.lines_per_axis, a, 1.0), 1e-9) for a in range(num_axes)], dtype=float)
+        guy = np.array([_axis_value(self.guy_wire_lengths, a, 0.0) for a in range(num_axes)], dtype=float)
+        ea_eff = np.array([self.effective_stiffness_n(a) for a in range(num_axes)], dtype=float)
+        s_eff = ea_eff * ma * strands
+        inv_ma_strands = 1.0 / (ma * strands)
+        radii = np.array(
+            [_axis_value(self.spool_radii_mm, a, 0.0) if self.spool_radii_mm else 0.0 for a in range(num_axes)],
+            dtype=float,
+        )
+        flat_coeff = np.where(
+            (self.spool_flattening > 0.0) & np.isfinite(radii) & (radii > 1e-9),
+            self.spool_flattening / np.maximum(radii * radii, 1e-18),
+            0.0,
+        )
+        t_home_raw = np.array(
+            [_axis_value(self.home_tension_n, a, 0.0) if self.home_tension_n else 0.0 for a in range(num_axes)],
+            dtype=float,
+        )
+        t_home = np.where(np.isfinite(t_home_raw) & (t_home_raw > 0.0), t_home_raw, 0.0)
+        vec = {
+            "ma": ma,
+            "strands": strands,
+            "guy": guy,
+            "ea_eff": ea_eff,
+            "s_eff": s_eff,
+            "s_eff_ma": s_eff * ma,
+            "inv_ma_strands": inv_ma_strands,
+            "flat_coeff": flat_coeff,
+            "t_home": t_home,
+        }
+        if self.has_spool_physics:
+            t_strand_h = t_home * inv_ma_strands
+            r_h = np.maximum(1.0 - t_strand_h * flat_coeff, 0.5) if self.spool_flattening > 0.0 else 1.0
+            s_h = (1.0 / (1.0 + t_strand_h / ea_eff)) if self.strained_spool_storage else 1.0
+            vec["rho_init"] = np.asarray(r_h * s_h, dtype=float)
+        else:
+            vec["rho_init"] = np.ones(num_axes, dtype=float)
+        self._vec_cache[num_axes] = vec
+        return vec
+
+    def spool_rho_matrix(self, tensions_n: np.ndarray) -> np.ndarray:
+        """Vectorized `spool_rho` across all axes for a `(P, N)` tension matrix."""
+        t_arr = np.asarray(tensions_n, dtype=float)
+        if not self.has_spool_physics:
+            return np.ones_like(t_arr, dtype=float)
+        vec = self._arrays_for(t_arr.shape[1])
+        tension = np.where(np.isfinite(t_arr) & (t_arr > 0.0), t_arr, 0.0)
+        t_strand = tension * vec["inv_ma_strands"][None, :]
+        r_scale = (
+            np.maximum(1.0 - t_strand * vec["flat_coeff"][None, :], 0.5)
+            if self.spool_flattening > 0.0
+            else 1.0
+        )
+        s_scale = (
+            1.0 / (1.0 + t_strand / vec["ea_eff"][None, :])
+            if self.strained_spool_storage
+            else 1.0
+        )
+        return np.asarray(r_scale * s_scale, dtype=float)
+
+    def corrected_distance_matrix(
+        self,
+        unstretched_length_mm: np.ndarray,
+        tensions_n: np.ndarray,
+        *,
+        home_distance_mm: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        """Vectorized `corrected_distance_mm` across all axes for `(P, N)` matrices."""
+        mat = np.asarray(unstretched_length_mm, dtype=float)
+        t_arr = np.asarray(tensions_n, dtype=float)
+        vec = self._arrays_for(mat.shape[1])
+        tension = np.where(np.isfinite(t_arr) & (t_arr > 0.0), t_arr, 0.0)
+        if home_distance_mm is not None and self.has_home_tension:
+            hd = np.asarray(home_distance_mm, dtype=float)
+            home_flex = (vec["t_home"] * (hd * vec["ma"] + vec["guy"]) / vec["s_eff_ma"])[None, :]
+        else:
+            home_flex = 0.0
+        denom = np.maximum(1.0 - tension / vec["s_eff"][None, :], 1e-9)
+        return (mat - home_flex + (tension * vec["guy"][None, :]) / vec["s_eff_ma"][None, :]) / denom
+
 
 def extract_spool_history(dataset: dict) -> Dict[str, object]:
     """Extract per-sweep-direction winding metadata needed by `spool_rest_correction_mm`."""
@@ -291,11 +379,89 @@ def slice_spool_history(
     return {"num_points": int(np.sum(mask_arr)), "passes": passes}
 
 
+def _compute_pass_spool_overrides(
+    lengths: np.ndarray,
+    finite: np.ndarray,
+    rho: np.ndarray,
+    model: FlexModel,
+    history: Dict[str, object],
+) -> List[Tuple[np.ndarray, int, np.ndarray]]:
+    """Compute drive pullout and LIFO sensor rewind overrides for each pass in `history`."""
+    num_axes = lengths.shape[1]
+    vec = model._arrays_for(num_axes)
+    rho_init = vec["rho_init"]
+    inv_ma_strands = vec["inv_ma_strands"]
+    flat_coeff = vec["flat_coeff"]
+    ea_eff = vec["ea_eff"]
+    safe_l = np.where(finite, lengths, 0.0)
+    overrides: List[Tuple[np.ndarray, int, np.ndarray]] = []
+    for entry in history.get("passes", ()):
+        rows = entry["rows"]
+        if rows.size == 0:
+            continue
+        da = int(entry["drive_anchor"])
+        sa = int(entry["sensor_anchor"])
+        pullout_n = float(entry["pullout_force_n"])
+        if 0 <= da < num_axes and pullout_n > 0.0:
+            t_strand = pullout_n * float(inv_ma_strands[da])
+            r_pull = max(1.0 - t_strand * float(flat_coeff[da]), 0.5) if model.spool_flattening > 0.0 else 1.0
+            s_pull = (1.0 / (1.0 + t_strand / float(ea_eff[da]))) if model.strained_spool_storage else 1.0
+            rho_pull = r_pull * s_pull
+            l_d = safe_l[rows, da]
+            drive_corr = l_d * (rho_init[da] - 1.0) + np.maximum(-l_d, 0.0) * (rho_init[da] - rho_pull)
+            overrides.append((rows, da, drive_corr))
+        payout = float(entry["sensor_payout_mm"])
+        if 0 <= sa < num_axes and payout > 0.0:
+            l_raw = lengths[rows, sa]
+            s_finite = finite[rows, sa]
+            drho = rho_init[sa] - rho[rows, sa]
+            if bool(np.all(s_finite)):
+                if len(rows) == 1:
+                    acc = np.array([max(payout - float(l_raw[0]), 0.0) * float(drho[0])], dtype=float)
+                    overrides.append((rows, sa, l_raw * (rho_init[sa] - 1.0) + acc))
+                    continue
+                dl = l_raw[:-1] - l_raw[1:]
+                if bool(np.all(dl >= 0.0)):
+                    acc = np.empty(len(rows), dtype=float)
+                    acc[0] = max(payout - float(l_raw[0]), 0.0) * float(drho[0])
+                    acc[1:] = acc[0] + np.cumsum(dl * 0.5 * (drho[:-1] + drho[1:]))
+                    overrides.append((rows, sa, l_raw * (rho_init[sa] - 1.0) + acc))
+                    continue
+            # Sensor unwound pre-wound rope to `payout` at rho_init, then rewound to the first
+            # finite point and monotonically through the sweep pass, laying LIFO coils at each
+            # point's tension. Skip genuinely missing (non-finite) raw measurements cleanly.
+            sensor_corr = np.zeros(len(rows), dtype=float)
+            prev_l: Optional[float] = None
+            prev_drho = 0.0
+            acc_val = 0.0
+            for k in range(len(rows)):
+                if not s_finite[k]:
+                    sensor_corr[k] = 0.0
+                    continue
+                cur_l = float(l_raw[k])
+                cur_drho = float(drho[k])
+                if prev_l is None:
+                    acc_val = max(payout - cur_l, 0.0) * cur_drho
+                else:
+                    dl_k = prev_l - cur_l
+                    if dl_k >= 0.0:
+                        acc_val += dl_k * 0.5 * (prev_drho + cur_drho)
+                    else:
+                        acc_val = max(0.0, acc_val + dl_k * cur_drho)
+                sensor_corr[k] = cur_l * (rho_init[sa] - 1.0) + acc_val
+                prev_l = cur_l
+                prev_drho = cur_drho
+            overrides.append((rows, sa, sensor_corr))
+    return overrides
+
+
 def spool_rest_correction_mm(
     lengths_mm: np.ndarray,
     tensions_n: np.ndarray,
     model: Optional[FlexModel],
     history: Optional[Dict[str, object]] = None,
+    *,
+    pass_overrides: Optional[List[Tuple[np.ndarray, int, np.ndarray]]] = None,
 ) -> np.ndarray:
     """Compute material-length transfer delta `l_rest - l_enc` (mm) from spool flattening & strained storage.
 
@@ -313,19 +479,9 @@ def spool_rest_correction_mm(
 
     tensions = np.asarray(tensions_n, dtype=float)
     num_points, num_axes = lengths.shape
-    rho = np.column_stack([model.spool_rho(tensions[:, a], axis=a) for a in range(num_axes)])
-    rho_init = np.array(
-        [
-            float(
-                model.spool_rho(
-                    np.array([_axis_value(model.home_tension_n, a, 0.0) if model.home_tension_n else 0.0]),
-                    axis=a,
-                )[0]
-            )
-            for a in range(num_axes)
-        ],
-        dtype=float,
-    )
+    vec = model._arrays_for(num_axes)
+    rho = model.spool_rho_matrix(tensions)
+    rho_init = vec["rho_init"]
 
     finite = np.isfinite(lengths)
     safe_l = np.where(finite, lengths, 0.0)
@@ -333,45 +489,11 @@ def spool_rest_correction_mm(
     # release pre-wound rope at rho_init.
     corr = safe_l * (rho_init[None, :] - 1.0) + np.maximum(-safe_l, 0.0) * (rho_init[None, :] - rho)
 
-    if isinstance(history, dict) and history.get("num_points") == num_points:
-        for entry in history.get("passes", ()):
-            rows = entry["rows"]
-            if rows.size == 0:
-                continue
-            da = int(entry["drive_anchor"])
-            sa = int(entry["sensor_anchor"])
-            pullout_n = float(entry["pullout_force_n"])
-            if 0 <= da < num_axes and pullout_n > 0.0:
-                rho_pull = float(model.spool_rho(np.array([pullout_n]), axis=da)[0])
-                l_d = safe_l[rows, da]
-                corr[rows, da] = l_d * (rho_init[da] - 1.0) + np.maximum(-l_d, 0.0) * (rho_init[da] - rho_pull)
-            payout = float(entry["sensor_payout_mm"])
-            if 0 <= sa < num_axes and payout > 0.0:
-                l_raw = lengths[rows, sa]
-                s_finite = finite[rows, sa]
-                drho = rho_init[sa] - rho[rows, sa]
-                # Sensor unwound pre-wound rope to `payout` at rho_init, then rewound to the first
-                # finite point and monotonically through the sweep pass, laying LIFO coils at each
-                # point's tension. Skip genuinely missing (non-finite) raw measurements cleanly.
-                prev_l: Optional[float] = None
-                prev_drho = 0.0
-                acc = 0.0
-                for k in range(len(rows)):
-                    if not s_finite[k]:
-                        corr[rows[k], sa] = 0.0
-                        continue
-                    cur_l = float(l_raw[k])
-                    cur_drho = float(drho[k])
-                    if prev_l is None:
-                        acc = max(payout - cur_l, 0.0) * cur_drho
-                    else:
-                        dl = prev_l - cur_l
-                        if dl >= 0.0:
-                            acc += dl * 0.5 * (prev_drho + cur_drho)
-                        else:
-                            acc = max(0.0, acc + dl * cur_drho)
-                    corr[rows[k], sa] = cur_l * (rho_init[sa] - 1.0) + acc
-                    prev_l = cur_l
-                    prev_drho = cur_drho
+    if pass_overrides is not None:
+        for rows, axis_idx, values in pass_overrides:
+            corr[rows, axis_idx] = values
+    elif isinstance(history, dict) and history.get("num_points") == num_points:
+        for rows, axis_idx, values in _compute_pass_spool_overrides(lengths, finite, rho, model, history):
+            corr[rows, axis_idx] = values
 
     return np.where(finite, corr, 0.0)

@@ -23,7 +23,7 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from autocal.compliance import has_compliance_probes
-from autocal.flex import FlexModel, extract_spool_history, spool_rest_correction_mm
+from autocal.flex import FlexModel, _compute_pass_spool_overrides, extract_spool_history, spool_rest_correction_mm
 from autocal.swivel_pulley import home_line_lengths, line_geometry, swivel_geometry_from_m669
 
 from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix_to_opt_vec, get_anchor_opt_bounds
@@ -191,47 +191,85 @@ def dataset_stretch(dataset: dict, *, spring_k_multiplier: float = 1.0):
     )
 
 
+def _prepare_stretch_precomp(anchors_shape, measured, stretch, lengths_mm, history_lengths_mm):
+    num_points = len(measured)
+    num_anchors, dims = anchors_shape
+    known = np.where(measured, np.nan, stretch["passive"])
+    known = np.where(np.isfinite(stretch["known"]), stretch["known"], known)
+    known[np.arange(num_points), stretch["sensors"]] = stretch["forces"]
+    selectors = np.eye(num_anchors)[None, :, :] * np.isfinite(known)[:, :, None]
+    load = np.zeros((num_points, dims))
+    load[:, -1] = stretch["weight"]
+    rhs_known = np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
+    ridge = 1e-12 * np.eye(num_anchors)
+
+    model = stretch["model"]
+    spool_lengths = history_lengths_mm if history_lengths_mm is not None else lengths_mm
+    pass_overrides = None
+    history = stretch.get("spool_history")
+    if model.has_spool_physics and spool_lengths is not None and isinstance(history, dict) and history.get("num_points") == num_points:
+        # Drive pullout and sensor LIFO spool corrections depend only on recorded lengths and
+        # commanded sensor forces, not on effector poses or trial anchors.
+        t_cmd = np.zeros((num_points, num_anchors), dtype=float)
+        t_cmd[np.arange(num_points), stretch["sensors"]] = stretch["forces"]
+        rho_cmd = model.spool_rho_matrix(t_cmd)
+        s_len = np.asarray(spool_lengths, dtype=float)
+        pass_overrides = _compute_pass_spool_overrides(s_len, np.isfinite(s_len), rho_cmd, model, history)
+
+    return {
+        "selectors": selectors,
+        "rhs_known": rhs_known,
+        "ridge": ridge,
+        "pass_overrides": pass_overrides,
+    }
+
+
 def stretch_corrected_lengths(
-    anchors, positions, absolute, measured, stretch, *, lengths_mm=None, history_lengths_mm=None
+    anchors, positions, absolute, measured, stretch, *, lengths_mm=None, history_lengths_mm=None, _precomp=None
 ):
     swivel = stretch.get("swivel")
     _, directions = line_geometry(anchors, positions, swivel=swivel)
-    known = np.where(measured, np.nan, stretch["passive"])
-    known = np.where(np.isfinite(stretch["known"]), stretch["known"], known)
-    known[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
-    selectors = np.eye(anchors.shape[0])[None, :, :] * np.isfinite(known)[:, :, None]
+    if _precomp is None:
+        known = np.where(measured, np.nan, stretch["passive"])
+        known = np.where(np.isfinite(stretch["known"]), stretch["known"], known)
+        known[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
+        selectors = np.eye(anchors.shape[0])[None, :, :] * np.isfinite(known)[:, :, None]
+        load = np.zeros((len(positions), anchors.shape[1]))
+        load[:, -1] = stretch["weight"]
+        rhs_known = np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
+        ridge = 1e-12 * np.eye(anchors.shape[0])
+        pass_overrides = None
+    else:
+        selectors = _precomp["selectors"]
+        rhs_known = _precomp["rhs_known"]
+        ridge = _precomp["ridge"]
+        pass_overrides = _precomp["pass_overrides"]
     matrix = np.concatenate([directions.transpose(0, 2, 1), selectors], axis=1)
-    load = np.zeros((len(positions), anchors.shape[1]))
-    load[:, -1] = stretch["weight"]
     # Trial geometries can make the static system singular during fitting.
     # A tiny ridge keeps their residual finite without changing reachable loads.
     transpose = matrix.transpose(0, 2, 1)
-    normal = transpose @ matrix + 1e-12 * np.eye(matrix.shape[-1])
-    rhs = transpose @ np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
+    normal = transpose @ matrix + ridge
+    rhs = transpose @ rhs_known
     tensions = np.linalg.solve(normal, rhs)[:, :, 0]
     model = stretch["model"]
     material = absolute
     spool_lengths = history_lengths_mm if history_lengths_mm is not None else lengths_mm
     if model.has_spool_physics and spool_lengths is not None:
         spool_tensions = tensions
-        if history_lengths_mm is not None:
+        if history_lengths_mm is not None and pass_overrides is None:
             # Rejected rows are masked out of `measured`, so pin their exact recorded
             # sensor force to preserve physical LIFO spool winding history.
             spool_tensions = tensions.copy()
             spool_tensions[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
         material = absolute + spool_rest_correction_mm(
-            spool_lengths, spool_tensions, model, stretch.get("spool_history")
+            spool_lengths,
+            spool_tensions,
+            model,
+            stretch.get("spool_history"),
+            pass_overrides=pass_overrides,
         )
     home_dist = home_line_lengths(anchors, swivel=swivel) if model.has_home_tension else None
-    return np.column_stack([
-        model.corrected_distance_mm(
-            material[:, axis],
-            tensions[:, axis],
-            axis=axis,
-            home_distance_mm=None if home_dist is None else float(home_dist[axis]),
-        )
-        for axis in range(anchors.shape[0])
-    ])
+    return model.corrected_distance_matrix(material, tensions, home_distance_mm=home_dist)
 
 
 def consistency_residuals(
@@ -273,6 +311,11 @@ def fit_point_positions(
                 + np.where(measured, lengths_mm, 0.0))
     positions = np.zeros((lengths_mm.shape[0], dimensions))
     damping = 1e-9 * np.eye(dimensions)
+    precomp = (
+        _prepare_stretch_precomp(anchors.shape, measured, stretch, lengths_mm, history_lengths_mm)
+        if stretch is not None
+        else None
+    )
     for _ in range(_POSITION_ITERATIONS):
         distance, dir_to_anchor = line_geometry(anchors, positions, swivel=eff_swivel)
         direction = -dir_to_anchor * measured[:, :, None]
@@ -280,15 +323,20 @@ def fit_point_positions(
                      stretch_corrected_lengths(
                          anchors, positions, absolute, measured, stretch,
                          lengths_mm=lengths_mm, history_lengths_mm=history_lengths_mm,
+                         _precomp=precomp,
                      ))
         misfit = np.where(measured, distance - corrected, 0.0)
         normal = np.einsum("pni,pnj->pij", direction, direction) + damping
         gradient = np.einsum("pni,pn->pi", direction, misfit)
-        positions = positions - np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
+        step = np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
+        positions = positions - step
+        if step.size and float(np.max(np.abs(step))) < 1e-9:
+            break
     if stretch is not None:
         absolute = stretch_corrected_lengths(
             anchors, positions, absolute, measured, stretch,
             lengths_mm=lengths_mm, history_lengths_mm=history_lengths_mm,
+            _precomp=precomp,
         )
     return positions, absolute
 

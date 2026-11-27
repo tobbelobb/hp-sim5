@@ -3498,9 +3498,13 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
                         help="Use guarded Variable Projection (VarPro) to jointly eliminate stretch compliance, "
                              "ripple, hysteresis/creep, and friction nuisances in stretch-corrected point fits "
                              "(default: enabled).")
-    parser.add_argument("--compliance-probe", action=argparse.BooleanOptionalAction, default=True,
-                        help="Run fixed-pose force-step compliance probes during collection to measure axial line "
-                             "stiffness M666 S (default: enabled on Hangprinters).")
+    parser.add_argument(
+        "--compliance-probe",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Run fixed-pose force-step compliance probes during collection to measure axial line "
+             "stiffness M666 S (default: enabled in simulation for flex-enabled machines, opt-in on hardware).",
+    )
     parser.add_argument("--force-contrast", action=argparse.BooleanOptionalAction, default=False,
                         help="Let the Schur-complement Ds-optimal planner schedule sweeps at both low and high "
                              "sensor force levels to collapse the top-anchor height vs stretch-scale ridge.")
