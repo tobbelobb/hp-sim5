@@ -20,7 +20,9 @@ From the repository root, run `npx vite` and open
 <http://localhost:5173/hp-sim5/hp-sim-3d/>. The default is Hangprinter v4. Use
 **Print Logo** or **Print Squares** for a built-in print, **Upload File** for
 G-code/command logs or an authored USDA, and **Machines** to add/remove presets.
-Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view tools.
+**Controls** holds **Pause**, **Reset**, **Finish ASAP**, speed and view tools.
+**0.5x**/**2x** halve or double the target speed. When the machine cannot reach
+the target, the readout shows **Max** and the simulator runs as fast as it can.
 **Show Forces** is a rendering overlay; the recorder logs forces independently.
 **Line Layering** changes the winding model and rebuilds cable initialization.
 **Closed Loop Motors** changes position-drive behavior. Keep these settings the
@@ -53,7 +55,7 @@ an existing headless world; pass `null` to restore its defaults.
 
 To record a browser print, run
 `.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer
-URL, then click **Rerun** in the simulator before starting the print. This records
+URL, then switch on **Settings → Rerun Recorder** before starting the print. This records
 the browser's WebAssembly physics. For headless native Rust physics, use the
 research API below. Both read the same authored machine data, but the headless
 worker consumes timestep-scheduled motor JSON rather than G-code and has no
