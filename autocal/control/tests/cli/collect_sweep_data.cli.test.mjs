@@ -13,6 +13,7 @@ import {
   combinations,
   generateSweepConfigs,
   MACHINE_CONFIGS,
+  resolveComplianceProbeMultiples,
   resolveFixedTargets,
   resolveForcedBaseRadii,
   resolveForcedBuildupFactor,
@@ -245,17 +246,57 @@ m569_address: 43.0
     expect(buildM666AdjustmentCommand({ forcedBuildupFactor: 0 })).toBe('M666 Q0');
   });
 
-  test('parseBridgeArgs captures spool override flags', () => {
+  test('parseBridgeArgs captures spool override and compliance-probe flags', () => {
     const args = parseBridgeArgs([
       '--force-buildup-factor', '0.5',
       '--force-base-radii', '30,31,32',
       '--preserve-buildup-factor',
       '--sensor-collection-force', '7',
+      '--compliance-probe', '2,4,1',
     ]);
     expect(args.forceBuildupFactor).toBe('0.5');
     expect(args.forceBaseRadii).toBe('30,31,32');
     expect(args.preserveBuildupFactor).toBe(true);
     expect(args.sensorCollectionForce).toBe('7');
+    expect(args.complianceProbe).toBe('2,4,1');
+    expect(args.noComplianceProbe).toBe(false);
+
+    const disabled = parseBridgeArgs(['--no-compliance-probe']);
+    expect(disabled.noComplianceProbe).toBe(true);
+    expect(disabled.complianceProbe).toBeNull();
+  });
+
+  test('resolveComplianceProbeMultiples defaults on for flex-enabled machines and respects opt-out', () => {
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+    })).toEqual([2, 3, 1]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'cubecorners',
+      m666: { S: 118500 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+    })).toEqual([2, 3, 1]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 0 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+    })).toEqual([]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: true,
+    })).toEqual([]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: '1.5,3,1',
+      noComplianceProbe: false,
+    })).toEqual([1.5, 3, 1]);
   });
 });
 

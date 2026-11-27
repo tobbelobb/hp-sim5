@@ -134,6 +134,7 @@ def pose_information(
     sigma_mm: float,
     positions: Optional[np.ndarray] = None,
     stretch=None,
+    swivel=None,
 ) -> np.ndarray:
     """Information the given length changes carry about the anchors and the home length offsets."""
     anchors = np.asarray(anchors, dtype=float)
@@ -149,7 +150,7 @@ def pose_information(
                                          dimensions)
         offsets = np.zeros(num_anchors)
         offsets[num_anchors - num_offsets:] = step[anchor_vec.size:]
-        return consistency_residuals(moved, lengths_mm, offsets, stretch=stretch).ravel()
+        return consistency_residuals(moved, lengths_mm, offsets, stretch=stretch, swivel=swivel).ravel()
 
     size = anchor_vec.size + num_offsets
     jacobian = np.zeros((lengths_mm.size, size))
@@ -202,7 +203,9 @@ def _stretch_basis_from_stretch(stretch: dict, num_anchors: int) -> Optional[dic
         "ma": ma,
         "guy": guy,
         "strands": strands,
-        "ea_cfg": float(model.spring_k_per_unit_length),
+        "ea_cfg": float(model.effective_stiffness_n(0)),
+        "spool_history": stretch.get("spool_history"),
+        "swivel": stretch.get("swivel"),
     }
 
 

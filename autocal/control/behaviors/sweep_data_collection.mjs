@@ -622,6 +622,8 @@ function validateSweepCollectionInput(context) {
     sweepConfigFile: args.sweepConfigFile ?? null,
     sensorForceProfileFile: args.sensorForceProfile ?? null,
     extraSensors: config.numAnchors === 5 && config.dimensions === 3 && !args.noExtraSensors,
+    complianceProbe: args.complianceProbe ?? null,
+    noComplianceProbe: !!args.noComplianceProbe,
     completedSweeps: parseOptionalNumber(args.completedSweeps, 'completed-sweeps', { integer: true }) ?? 0,
     debugSweep: !!args.debugSweep,
     autoTuneForce: !!args.autoTuneForce,
@@ -1235,6 +1237,8 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     baseRadiusMm = null,
     sensorSpoolGearRatio = 1,
     probeSpoolReserve = false,
+    complianceProbeMultiples = null,
+    maxSensorForceN = null,
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
   const driveAxis = axes[driveAnchor];
@@ -1628,6 +1632,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
   const complianceProbe = await probeCompliance(sendFn, {
     motorIds, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
     measurementSensorForces, forceLow, lastPoint: dataPoints.at(-1),
+    multiples: complianceProbeMultiples, maxSensorForceN,
     noiseOptions: { sampleCount: noiseSampleCount, sampleIntervalMs: noiseSampleIntervalMs, speedup },
   });
   return { dataPoints, complianceProbe, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
@@ -1639,19 +1644,42 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
       coupling_probes: couplingProbes } };
 }
 
-// Research probe of line compliance: at the sweep's last pose, with every
-// other line held, step the sensor force and record all encoders at each level.
-// HP_SIM5_COMPLIANCE_PROBE lists the levels as multiples of the last point's force.
+const DEFAULT_COMPLIANCE_PROBE_MULTIPLES = [2, 3, 1];
+const DISABLED_COMPLIANCE_PROBE_TOKENS = new Set(['0', 'off', 'false', 'none', 'disabled']);
+
+export function resolveComplianceProbeMultiples({ machineType, m666, complianceProbe, noComplianceProbe }) {
+  if (noComplianceProbe) return [];
+  const envRaw = process.env.HP_SIM5_COMPLIANCE_PROBE;
+  const spec = complianceProbe ?? (envRaw !== undefined ? envRaw : null);
+  if (spec !== null) {
+    const trimmed = String(spec).trim().toLowerCase();
+    if (!trimmed || DISABLED_COMPLIANCE_PROBE_TOKENS.has(trimmed)) return [];
+    return trimmed.split(',').filter(Boolean).map(Number).filter(v => Number.isFinite(v) && v > 0);
+  }
+  const hasStiffness = Number.isFinite(Number(m666?.S)) && Number(m666.S) > 0;
+  const eligibleMachine = machineType.startsWith('hangprinter_') || machineType === 'cubecorners';
+  return (eligibleMachine && hasStiffness) ? DEFAULT_COMPLIANCE_PROBE_MULTIPLES : [];
+}
+
+// Fixed-pose probe of axial line compliance: at the sweep's last pose, with every
+// held line locked in position mode, step the sensor force and record all encoders.
 async function probeCompliance(sendFn, {
   motorIds, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
-  measurementSensorForces, forceLow, lastPoint, noiseOptions,
+  measurementSensorForces, forceLow, lastPoint, multiples = null, maxSensorForceN = null, noiseOptions,
 }) {
-  const multiples = (process.env.HP_SIM5_COMPLIANCE_PROBE ?? '').split(',').filter(Boolean).map(Number);
-  if (!multiples.length || !lastPoint) return null;
+  const resolved = Array.isArray(multiples)
+    ? multiples.filter(v => Number.isFinite(v) && v > 0)
+    : (process.env.HP_SIM5_COMPLIANCE_PROBE ?? '').split(',').filter(Boolean).map(Number).filter(v => Number.isFinite(v) && v > 0);
+  if (!resolved.length || !lastPoint) return null;
   const base = lastPoint.sensor_force_n;
+  if (!Number.isFinite(base) || base <= 0) return null;
+  const cap = Number.isFinite(maxSensorForceN) && maxSensorForceN > 0 ? 0.85 * maxSensorForceN : Infinity;
   const levels = [{ force_n: base, mu_deg: lastPoint.mu ?? lastPoint.raw_angles_deg, sigma_deg: lastPoint.sigma ?? null }];
-  for (const multiple of multiples) {
-    const force = base * multiple;
+  for (const multiple of resolved) {
+    const force = Math.min(base * multiple, cap);
+    if (!Number.isFinite(force) || force <= 0) continue;
+    const prevForce = levels.at(-1).force_n;
+    if (Math.abs(force - prevForce) < 0.05) continue;
     await applyForceModeState(sendFn, { motorIds, modes: motorIds.map((_, idx) => {
       if (idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
       return idx === sensorAnchor ? force : (measurementSensorForces[idx] ?? forceLow);
@@ -1661,6 +1689,7 @@ async function probeCompliance(sendFn, {
     levels.push({ force_n: force, mu_deg: sample.muByMotorDeg, sigma_deg: sample.sigmaByMotorDeg,
       clock_ms: sendFn.simulationClock?.now() ?? Date.now() });
   }
+  if (levels.length < 2) return null;
   console.log(`; compliance probe on sensor ${sensorAnchor}: ${levels.map(level => level.force_n.toFixed(2)).join(', ')} N`);
   return { drive_anchor: driveAnchor, sensor_anchor: sensorAnchor, levels };
 }
@@ -2012,6 +2041,15 @@ export async function collectSweepData(send, context) {
             sensorSpoolGearRatio: (Array.isArray(m666ForCollection?.H) ? m666ForCollection.H[subCfg.sensorAnchor] : m666ForCollection?.H ?? 1)
               / (Array.isArray(m666ForCollection?.L) ? m666ForCollection.L[subCfg.sensorAnchor] : m666ForCollection?.L ?? 1),
             probeSpoolReserve: options.completedSweeps >= 3,
+            complianceProbeMultiples: resolveComplianceProbeMultiples({
+              machineType,
+              m666: m666ForCollection,
+              complianceProbe: options.complianceProbe,
+              noComplianceProbe: options.noComplianceProbe,
+            }),
+            maxSensorForceN: Array.isArray(m666ForCollection?.X)
+              ? Number(m666ForCollection.X[subCfg.sensorAnchor])
+              : Number(m666ForCollection?.X),
           });
         }, {
           motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,

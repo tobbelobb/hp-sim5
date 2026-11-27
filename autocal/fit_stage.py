@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from autocal._autocal_common import *  # noqa: F401,F403
+from autocal.compliance import estimate_compliance_scale, has_compliance_probes, resolve_measured_stiffness
 from autocal.slideprinter_2d.filter_pass import estimate_effective_radii_with_spool_model
 from autocal.equal_strain import is_equal_strain
 from autocal.force_ripple import correct_hp3_force_ripple
@@ -11,6 +12,7 @@ from autocal.projection_mode import resolve_projection_mode
 from autocal.ellipse_fit import fit_ellipses
 from autocal.spool_fit import fit_spools
 from autocal.pose_planning import pose_information
+from autocal.swivel_pulley import swivel_geometry_from_m669
 
 
 def _uses_projected_angles(dataset: dict, collector_args: Sequence[str]) -> bool:
@@ -101,7 +103,9 @@ def fit_ellipse_dataset(
     # reference fit (ellipse_fit.py) can replace it for fixed-line circle sweeps; both
     # share the point model's information and cost. Spool searches and retired
     # projected-angle datasets keep the legacy ellipse calibration.
-    point_model = machine_type.startswith("hangprinter_") and not prefer_zero_tension_angles
+    point_model = (
+        machine_type.startswith("hangprinter_") or machine_type == "cubecorners"
+    ) and not prefer_zero_tension_angles
 
     est_buildup = _resolve_buildup_factor_seed(
         dataset,
@@ -150,6 +154,9 @@ def fit_ellipse_dataset(
     home_offsets_mm = np.zeros(int(num_anchors))
     force_ripple = None
     stretch_varpro = None
+    measured_stiffness: Optional[Dict[str, object]] = None
+    spring_k_multiplier = 1.0
+    swivel = swivel_geometry_from_m669((dataset.get("config") or {}).get("m669"), int(num_anchors))
     dataset_for_estimation = dataset
     sweep_configs_for_info = dataset_sweep_configs(dataset)
     _annotate_dataset_noise_model(
@@ -369,16 +376,36 @@ def fit_ellipse_dataset(
     else:
         anchor_initial_guess = _resolve_anchor_seed(None)
         if fit_home_offsets:
+            has_probes = bool(point_model and has_compliance_probes(dataset))
+            want_varpro = bool(fit_stretch_varpro and point_model and not ellipse_reference_fit)
             offset_fit = fit_pose_least_squares(
                 dataset,
                 anchor_initial_guess,
                 fit_home_offsets=True,
                 home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
                 use_noise_mean=bool(use_noise_mean),
-                fit_stretch_varpro=bool(fit_stretch_varpro and point_model and not ellipse_reference_fit),
+                fit_stretch_varpro=bool(want_varpro and not has_probes),
             )
             if not offset_fit["success"]:
                 raise ValueError("Home-offset fit did not converge: " + str(offset_fit["message"]))
+            if has_probes:
+                probe_est = estimate_compliance_scale(
+                    dataset, offset_fit["anchors"], offset_fit["home_offsets_mm"], swivel=swivel
+                )
+                if probe_est is not None:
+                    spring_k_multiplier = float(probe_est["spring_k_multiplier"])
+                if want_varpro or abs(spring_k_multiplier - 1.0) > 1e-4:
+                    refit = fit_pose_least_squares(
+                        dataset,
+                        offset_fit["anchors"],
+                        fit_home_offsets=True,
+                        home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+                        use_noise_mean=bool(use_noise_mean),
+                        fit_stretch_varpro=want_varpro,
+                        spring_k_multiplier=spring_k_multiplier,
+                    )
+                    if refit["success"]:
+                        offset_fit = refit
             home_offsets_mm = offset_fit["home_offsets_mm"]
             stretch_varpro = offset_fit.get("varpro")
             dataset_for_estimation = shift_dataset_home_offsets(dataset, home_offsets_mm)
@@ -394,9 +421,28 @@ def fit_ellipse_dataset(
                     home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
                     use_noise_mean=bool(use_noise_mean),
                     fit_stretch_varpro=bool(fit_stretch_varpro and not ellipse_reference_fit),
+                    spring_k_multiplier=spring_k_multiplier,
                 )
                 if not primary_pose_fit["success"]:
                     raise ValueError("Point fit did not converge: " + primary_pose_fit["message"])
+                if not fit_home_offsets and has_compliance_probes(dataset):
+                    probe_est = estimate_compliance_scale(
+                        dataset, primary_pose_fit["anchors"], home_offsets_mm, swivel=swivel
+                    )
+                    if probe_est is not None:
+                        spring_k_multiplier = float(probe_est["spring_k_multiplier"])
+                        if abs(spring_k_multiplier - 1.0) > 1e-4:
+                            refit = fit_pose_least_squares(
+                                dataset_for_estimation,
+                                primary_pose_fit["anchors"],
+                                fit_home_offsets=False,
+                                home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
+                                use_noise_mean=bool(use_noise_mean),
+                                fit_stretch_varpro=bool(fit_stretch_varpro and not ellipse_reference_fit),
+                                spring_k_multiplier=spring_k_multiplier,
+                            )
+                            if refit["success"]:
+                                primary_pose_fit = refit
                 if primary_pose_fit.get("varpro") is not None:
                     stretch_varpro = primary_pose_fit["varpro"]
             if (fit_force_ripple and fit_home_offsets and not ellipse_reference_fit
@@ -433,6 +479,9 @@ def fit_ellipse_dataset(
 
     anchors = np.asarray(cal["anchors"], dtype=float)
     cost = float(cal.get("cost", float("nan")))
+    measured_stiffness = resolve_measured_stiffness(
+        dataset, anchors, home_offsets_mm, varpro=stretch_varpro, swivel=swivel
+    )
     # Beside an ellipse fit, the point fit sees the same lengths, so the two answers
     # can always be compared.
     if point_model:
@@ -445,12 +494,19 @@ def fit_ellipse_dataset(
             home_offset_prior_sigma_mm=HOME_OFFSET_PRIOR_SIGMA_MM,
             use_noise_mean=bool(use_noise_mean),
             extra_initial_anchors=[anchors],
+            spring_k_multiplier=spring_k_multiplier,
         )
     if point_model:
         lengths = dataset_line_lengths(dataset_for_estimation, use_noise_mean=bool(use_noise_mean))["lengths_mm"]
         sigma = float(primary_fit["robust_scale_mm"])
-        info_obs = pose_information(anchors, lengths, machine_type=machine_type, sigma_mm=sigma,
-                                   stretch=dataset_stretch(dataset_for_estimation))
+        info_obs = pose_information(
+            anchors,
+            lengths,
+            machine_type=machine_type,
+            sigma_mm=sigma,
+            stretch=dataset_stretch(dataset_for_estimation, spring_k_multiplier=spring_k_multiplier),
+            swivel=swivel,
+        )
         offsets = num_anchors - dimensions
         if fit_home_offsets:
             info_obs[-offsets:, -offsets:] += np.eye(offsets) / HOME_OFFSET_PRIOR_SIGMA_MM**2
@@ -588,6 +644,8 @@ def fit_ellipse_dataset(
         "home_offsets_mm": home_offsets_mm,
         "force_ripple": force_ripple,
         "stretch_varpro": stretch_varpro,
+        "measured_stiffness": measured_stiffness,
+        "spring_k_multiplier": float(spring_k_multiplier),
         "home_offsets_fitted": bool(fit_home_offsets),
         "use_noise_mean": bool(use_noise_mean),
     }

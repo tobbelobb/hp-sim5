@@ -21,7 +21,8 @@ from typing import Dict, Optional, Sequence, Tuple
 import numpy as np
 from scipy.optimize import least_squares
 
-from autocal.flex import FlexModel
+from autocal.flex import FlexModel, extract_spool_history
+from autocal.swivel_pulley import home_line_lengths, line_geometry, swivel_geometry_from_m669
 from autocal.pose_fit import (
     HOME_OFFSET_PRIOR_SIGMA_MM,
     REJECT_SCALES,
@@ -56,12 +57,18 @@ _MAX_K_POSTERIOR_RATIO = 0.70
 _PERIODS = np.arange(1, 401)
 
 
-def dataset_stretch_basis(dataset: dict, lengths_mm: Optional[np.ndarray] = None, *, use_noise_mean: bool = True) -> Optional[Dict[str, object]]:
+def dataset_stretch_basis(
+    dataset: dict,
+    lengths_mm: Optional[np.ndarray] = None,
+    *,
+    use_noise_mean: bool = True,
+    spring_k_multiplier: float = 1.0,
+) -> Optional[Dict[str, object]]:
     """Extract static-equilibrium and nuisance inputs needed by VarPro and Ds-optimal planning."""
     n = int(dataset["num_anchors"])
     config = dataset.get("config") or {}
     m666 = config.get("m666_before_data_collection") or {}
-    model = FlexModel.from_m666(m666, num_axes=n)
+    model = FlexModel.from_m666(m666, num_axes=n, spring_k_multiplier=spring_k_multiplier)
     if model is None:
         return None
     points = [
@@ -118,7 +125,9 @@ def dataset_stretch_basis(dataset: dict, lengths_mm: Optional[np.ndarray] = None
         [float(model.lines_per_axis[a]) if a < len(model.lines_per_axis) else 1.0 for a in range(n)],
         dtype=float,
     )
-    ea_cfg = float(model.spring_k_per_unit_length)
+    ea_cfg = float(model.effective_stiffness_n(0))
+    swivel = swivel_geometry_from_m669(config.get("m669"), n)
+    spool_history = extract_spool_history(dataset) if model.has_spool_physics else None
     return {
         "model": model,
         "sensors": sensors,
@@ -133,6 +142,8 @@ def dataset_stretch_basis(dataset: dict, lengths_mm: Optional[np.ndarray] = None
         "guy": guy,
         "strands": strands,
         "ea_cfg": ea_cfg,
+        "spool_history": spool_history,
+        "swivel": swivel,
     }
 
 
@@ -158,9 +169,7 @@ def static_tension_superposition(
     num_points, n = measured.shape
     d = anchors.shape[1]
 
-    to_anchor = anchors[None, :, :] - positions[:, None, :]
-    dist = np.maximum(np.linalg.norm(to_anchor, axis=2), 1e-9)
-    dirs_to_anchor = to_anchor / dist[:, :, None]
+    dist, dirs_to_anchor = line_geometry(anchors, positions, swivel=basis.get("swivel"))
 
     known = np.where(measured, np.nan, basis["passive"])
     known = np.where(np.isfinite(basis["known"]), basis["known"] * force_scale, known)
@@ -200,23 +209,35 @@ def _geometric_jacobian(
     measured: np.ndarray,
     machine_type: str,
     num_offsets: int,
+    *,
+    swivel: Optional[dict] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Analytic pose-eliminated Jacobian of range residuals w.r.t. reduced anchors and home offsets."""
     n, d = anchors.shape
     anchor_vec = anchors_matrix_to_opt_vec(anchors, machine_type)
-    mapping = np.empty((n, d, anchor_vec.size))
-    for k in range(anchor_vec.size):
-        step = np.zeros(anchor_vec.size)
-        step[k] = 0.5
-        mapping[:, :, k] = (
-            anchor_opt_vec_to_matrix(anchor_vec + step, machine_type, n, d)
-            - anchor_opt_vec_to_matrix(anchor_vec - step, machine_type, n, d)
-        )
-    vec = positions[:, None, :] - anchors[None, :, :]
-    dist = np.maximum(np.linalg.norm(vec, axis=2), 1e-9)
-    direction = (vec / dist[:, :, None]) * measured[:, :, None]
-    home_dir = anchors / np.maximum(np.linalg.norm(anchors, axis=1), 1e-9)[:, None]
-    j_anchor = np.einsum("pnd,ndk->pnk", -direction - home_dir[None, :, :] * measured[:, :, None], mapping)
+    _, dir_to_anchor = line_geometry(anchors, positions, swivel=swivel)
+    direction = -dir_to_anchor * measured[:, :, None]
+    if swivel is None:
+        mapping = np.empty((n, d, anchor_vec.size))
+        for k in range(anchor_vec.size):
+            step = np.zeros(anchor_vec.size)
+            step[k] = 0.5
+            mapping[:, :, k] = (
+                anchor_opt_vec_to_matrix(anchor_vec + step, machine_type, n, d)
+                - anchor_opt_vec_to_matrix(anchor_vec - step, machine_type, n, d)
+            )
+        home_dir = anchors / np.maximum(np.linalg.norm(anchors, axis=1), 1e-9)[:, None]
+        j_anchor = np.einsum("pnd,ndk->pnk", -direction - home_dir[None, :, :] * measured[:, :, None], mapping)
+    else:
+        j_anchor = np.empty((len(positions), n, anchor_vec.size))
+        for k in range(anchor_vec.size):
+            step = np.zeros(anchor_vec.size)
+            step[k] = 0.5
+            ap = anchor_opt_vec_to_matrix(anchor_vec + step, machine_type, n, d)
+            am = anchor_opt_vec_to_matrix(anchor_vec - step, machine_type, n, d)
+            dp = line_geometry(ap, positions, swivel=swivel)[0] - home_line_lengths(ap, swivel=swivel)[None, :]
+            dm = line_geometry(am, positions, swivel=swivel)[0] - home_line_lengths(am, swivel=swivel)[None, :]
+            j_anchor[:, :, k] = (dp - dm) * measured
     if num_offsets:
         j_off = np.broadcast_to(-np.eye(n)[:, -num_offsets:], (len(positions), n, num_offsets)) * measured[:, :, None]
         j_geom = np.concatenate([j_anchor, j_off], axis=2)
@@ -360,7 +381,9 @@ def stretch_identifiability_diagnostics(
 
     _, dirs_to_a, t_grav, _, _, t_nom, g = static_tension_superposition(anchors, positions, measured, basis)
     direction = -dirs_to_a * measured[:, :, None]
-    j_geom, _ = _geometric_jacobian(anchors, positions, measured, machine_type, num_offsets)
+    j_geom, _ = _geometric_jacobian(
+        anchors, positions, measured, machine_type, num_offsets, swivel=basis.get("swivel")
+    )
     num_geom = j_geom.shape[2]
     num_anchor_params = num_geom - num_offsets
 
@@ -503,6 +526,7 @@ def fit_pose_varpro(
     fixed_ripple_period: Optional[int] = None,
     allow_real_world_nuisance: bool = True,
     home_offset_prior_sigma_mm: float = HOME_OFFSET_PRIOR_SIGMA_MM,
+    spring_k_multiplier: float = 1.0,
 ) -> Optional[Dict[str, object]]:
     """Refine a baseline point fit with guarded Golub-Pereyra VarPro over stretch & nuisances.
 
@@ -520,7 +544,9 @@ def fit_pose_varpro(
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
     measured = np.isfinite(lengths)
     num_points = len(lengths)
-    basis = dataset_stretch_basis(dataset, lengths, use_noise_mean=use_noise_mean)
+    basis = dataset_stretch_basis(
+        dataset, lengths, use_noise_mean=use_noise_mean, spring_k_multiplier=spring_k_multiplier
+    )
     if basis is None or num_points < n + d + 2:
         return None
 
@@ -549,13 +575,15 @@ def fit_pose_varpro(
         "forces": basis["forces"],
         "weight": basis["weight"],
         "passive": basis["passive"],
+        "spool_history": basis.get("spool_history"),
+        "swivel": basis.get("swivel"),
     }
     a0 = np.asarray(baseline["anchors"], dtype=float)
     o0 = np.asarray(baseline["home_offsets_mm"], dtype=float)
     pos0, abs0 = fit_point_positions(a0, lengths, o0, stretch=stretch_nom)
     dist0, dirs_to_a0, t_grav0, t_unit0, known0, t_nom0, g0 = static_tension_superposition(a0, pos0, measured, basis)
     r0_base = np.where(measured, dist0 - abs0, 0.0)
-    j_geom0, dir0 = _geometric_jacobian(a0, pos0, measured, machine_type, num_offsets)
+    j_geom0, dir0 = _geometric_jacobian(a0, pos0, measured, machine_type, num_offsets, swivel=basis.get("swivel"))
     has_gravity = bool(basis["weight"] > 0.0 and np.max(np.abs(t_grav0)) > 1e-6)
     pos_mask0 = (t_nom0 > 0.0).astype(float)
     if has_gravity:

@@ -692,35 +692,45 @@ def _format_m666_vector(values: np.ndarray, *, fmt: str = ".4g") -> Optional[str
     return ":".join(f"{float(v):{fmt}}" for v in arr.tolist())
 
 
-def _format_m666_from_length_model(length_model: object) -> Optional[str]:
-    if not isinstance(length_model, dict):
-        return None
-
-    radii = np.asarray(
-        length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm", [])),
-        dtype=float,
-    ).reshape(-1)
-    radii_spec = _format_m666_vector(radii, fmt=".4g")
-
-    buildup_vals = np.asarray(length_model.get("modeled_buildup_factor", []), dtype=float).reshape(-1)
-    if buildup_vals.size == 0 or not np.all(np.isfinite(buildup_vals)):
-        try:
-            k_scalar = float(length_model.get("buildup_factor_k"))
-        except (TypeError, ValueError):
-            k_scalar = float("nan")
-        if np.isfinite(k_scalar):
-            buildup_vals = np.asarray([k_scalar], dtype=float)
-        else:
-            buildup_vals = np.zeros(0, dtype=float)
-
+def _format_m666_from_length_model(
+    length_model: object,
+    *,
+    measured_stiffness: object = None,
+) -> Optional[str]:
+    radii_spec = None
     q_spec = None
-    if buildup_vals.size > 0 and np.all(np.isfinite(buildup_vals)):
-        if buildup_vals.size > 1 and np.max(np.abs(buildup_vals - float(buildup_vals[0]))) > 1e-9:
-            q_spec = _format_m666_vector(buildup_vals, fmt=".6g")
-        else:
-            q_spec = f"{float(buildup_vals[0]):.6g}"
+    buildup_vals = np.zeros(0, dtype=float)
+    if isinstance(length_model, dict):
+        radii = np.asarray(
+            length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm", [])),
+            dtype=float,
+        ).reshape(-1)
+        radii_spec = _format_m666_vector(radii, fmt=".4g")
 
-    if radii_spec is None and q_spec is None:
+        buildup_vals = np.asarray(length_model.get("modeled_buildup_factor", []), dtype=float).reshape(-1)
+        if buildup_vals.size == 0 or not np.all(np.isfinite(buildup_vals)):
+            try:
+                k_scalar = float(length_model.get("buildup_factor_k"))
+            except (TypeError, ValueError):
+                k_scalar = float("nan")
+            if np.isfinite(k_scalar):
+                buildup_vals = np.asarray([k_scalar], dtype=float)
+            else:
+                buildup_vals = np.zeros(0, dtype=float)
+
+        if buildup_vals.size > 0 and np.all(np.isfinite(buildup_vals)):
+            if buildup_vals.size > 1 and np.max(np.abs(buildup_vals - float(buildup_vals[0]))) > 1e-9:
+                q_spec = _format_m666_vector(buildup_vals, fmt=".6g")
+            else:
+                q_spec = f"{float(buildup_vals[0]):.6g}"
+
+    s_spec = None
+    if isinstance(measured_stiffness, dict):
+        s_val = _float_or_none(measured_stiffness.get("stiffness_n"))
+        if s_val is not None and s_val > 0.0:
+            s_spec = f"{s_val:.1f}"
+
+    if radii_spec is None and q_spec is None and s_spec is None:
         return None
 
     parts = ["M666"]
@@ -731,11 +741,16 @@ def _format_m666_from_length_model(length_model: object) -> Optional[str]:
         # Buildup replaces spool flattening and strained storage; RRF rejects them together.
         if np.any(buildup_vals != 0):
             parts.extend(("K0", "V0"))
+    if s_spec is not None:
+        parts.append(f"S{s_spec}")
     return " ".join(parts)
 
 
 def _m666_from_plan(plan: Dict[str, object]) -> Optional[str]:
-    return _format_m666_from_length_model(plan.get("length_model"))
+    return _format_m666_from_length_model(
+        plan.get("length_model"),
+        measured_stiffness=plan.get("measured_stiffness"),
+    )
 
 
 def _anchor_norms(anchors: np.ndarray) -> List[float]:
@@ -3386,6 +3401,9 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
                         help="Use guarded Variable Projection (VarPro) to jointly eliminate stretch compliance, "
                              "ripple, hysteresis/creep, and friction nuisances in stretch-corrected point fits "
                              "(default: enabled).")
+    parser.add_argument("--compliance-probe", action=argparse.BooleanOptionalAction, default=True,
+                        help="Run fixed-pose force-step compliance probes during collection to measure axial line "
+                             "stiffness M666 S (default: enabled on Hangprinters).")
     parser.add_argument("--force-contrast", action=argparse.BooleanOptionalAction, default=False,
                         help="Let the Schur-complement Ds-optimal planner schedule sweeps at both low and high "
                              "sensor force levels to collapse the top-anchor height vs stretch-scale ridge.")

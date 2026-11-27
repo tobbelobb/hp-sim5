@@ -185,7 +185,7 @@ def _fit(dataset, initial_anchors, fit_home_offsets, use_noise_mean, home_offset
     num_params = lower.size
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
-    home_strain = _home_strain(dataset) if fit_home_offsets else None
+    home_strain = _home_strain(dataset) if (fit_home_offsets and stretch is None) else None
     sigma = home_offset_prior_sigma_mm
 
     def unpack(x):

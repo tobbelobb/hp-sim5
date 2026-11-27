@@ -155,10 +155,11 @@ def plan_ellipse_sweep(
         estimation_dataset = fit["dataset_for_estimation"]
         placed = candidates if spool_params is None else sweep_configs_with_modeled_lengths(candidates, spool_params)
         commanded = {id(model): cfg for cfg, model in zip(candidates, placed)}
-        obs_stretch = dataset_stretch(estimation_dataset)
+        obs_k_mult = float(fit.get("spring_k_multiplier", 1.0))
+        obs_stretch = dataset_stretch(estimation_dataset, spring_k_multiplier=obs_k_mult)
         if force_contrast and obs_stretch is None:
             from autocal.stretch_varpro import dataset_stretch_basis
-            obs_stretch = dataset_stretch_basis(estimation_dataset)
+            obs_stretch = dataset_stretch_basis(estimation_dataset, spring_k_multiplier=obs_k_mult)
         if force_contrast:
             effective_scale_fn = None
             cand_scales: Sequence[float] = _FORCE_CONTRAST_SCALES

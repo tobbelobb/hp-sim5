@@ -224,6 +224,8 @@ export function parseBridgeArgs(argv) {
     sensorCollectionForce: null,
     sensorForceProfile: null,
     noExtraSensors: false,
+    complianceProbe: null,
+    noComplianceProbe: false,
     forceLow: null,
     forceMid: null,
     forceMax: null,
@@ -350,6 +352,12 @@ export function parseBridgeArgs(argv) {
       args.sensorForceProfile = argv[++i] || null;
     } else if (arg === '--no-extra-sensors') {
       args.noExtraSensors = true;
+    } else if (arg === '--compliance-probe') {
+      args.complianceProbe = argv[++i] || null;
+      args.noComplianceProbe = false;
+    } else if (arg === '--no-compliance-probe') {
+      args.noComplianceProbe = true;
+      args.complianceProbe = null;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
     } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
