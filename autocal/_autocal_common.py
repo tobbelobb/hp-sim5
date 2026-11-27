@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -692,35 +693,45 @@ def _format_m666_vector(values: np.ndarray, *, fmt: str = ".4g") -> Optional[str
     return ":".join(f"{float(v):{fmt}}" for v in arr.tolist())
 
 
-def _format_m666_from_length_model(length_model: object) -> Optional[str]:
-    if not isinstance(length_model, dict):
-        return None
-
-    radii = np.asarray(
-        length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm", [])),
-        dtype=float,
-    ).reshape(-1)
-    radii_spec = _format_m666_vector(radii, fmt=".4g")
-
-    buildup_vals = np.asarray(length_model.get("modeled_buildup_factor", []), dtype=float).reshape(-1)
-    if buildup_vals.size == 0 or not np.all(np.isfinite(buildup_vals)):
-        try:
-            k_scalar = float(length_model.get("buildup_factor_k"))
-        except (TypeError, ValueError):
-            k_scalar = float("nan")
-        if np.isfinite(k_scalar):
-            buildup_vals = np.asarray([k_scalar], dtype=float)
-        else:
-            buildup_vals = np.zeros(0, dtype=float)
-
+def _format_m666_from_length_model(
+    length_model: object,
+    *,
+    measured_stiffness: object = None,
+) -> Optional[str]:
+    radii_spec = None
     q_spec = None
-    if buildup_vals.size > 0 and np.all(np.isfinite(buildup_vals)):
-        if buildup_vals.size > 1 and np.max(np.abs(buildup_vals - float(buildup_vals[0]))) > 1e-9:
-            q_spec = _format_m666_vector(buildup_vals, fmt=".6g")
-        else:
-            q_spec = f"{float(buildup_vals[0]):.6g}"
+    buildup_vals = np.zeros(0, dtype=float)
+    if isinstance(length_model, dict):
+        radii = np.asarray(
+            length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm", [])),
+            dtype=float,
+        ).reshape(-1)
+        radii_spec = _format_m666_vector(radii, fmt=".4g")
 
-    if radii_spec is None and q_spec is None:
+        buildup_vals = np.asarray(length_model.get("modeled_buildup_factor", []), dtype=float).reshape(-1)
+        if buildup_vals.size == 0 or not np.all(np.isfinite(buildup_vals)):
+            try:
+                k_scalar = float(length_model.get("buildup_factor_k"))
+            except (TypeError, ValueError):
+                k_scalar = float("nan")
+            if np.isfinite(k_scalar):
+                buildup_vals = np.asarray([k_scalar], dtype=float)
+            else:
+                buildup_vals = np.zeros(0, dtype=float)
+
+        if buildup_vals.size > 0 and np.all(np.isfinite(buildup_vals)):
+            if buildup_vals.size > 1 and np.max(np.abs(buildup_vals - float(buildup_vals[0]))) > 1e-9:
+                q_spec = _format_m666_vector(buildup_vals, fmt=".6g")
+            else:
+                q_spec = f"{float(buildup_vals[0]):.6g}"
+
+    s_spec = None
+    if isinstance(measured_stiffness, dict):
+        s_val = _float_or_none(measured_stiffness.get("stiffness_n"))
+        if s_val is not None and s_val > 0.0:
+            s_spec = f"{s_val:.1f}"
+
+    if radii_spec is None and q_spec is None and s_spec is None:
         return None
 
     parts = ["M666"]
@@ -731,11 +742,112 @@ def _format_m666_from_length_model(length_model: object) -> Optional[str]:
         # Buildup replaces spool flattening and strained storage; RRF rejects them together.
         if np.any(buildup_vals != 0):
             parts.extend(("K0", "V0"))
+    if s_spec is not None:
+        parts.append(f"S{s_spec}")
     return " ".join(parts)
 
 
 def _m666_from_plan(plan: Dict[str, object]) -> Optional[str]:
-    return _format_m666_from_length_model(plan.get("length_model"))
+    return _format_m666_from_length_model(
+        plan.get("length_model"),
+        measured_stiffness=plan.get("measured_stiffness"),
+    )
+
+
+_GCODE_ERROR_RE = re.compile(r"\b(?:error|failed|cannot|unable)\b", re.IGNORECASE)
+_M669_CMD_ANCHOR_RE = re.compile(r"\b([A-Z])([-+\d.eE]+):([-+\d.eE]+):([-+\d.eE]+)")
+_M669_REPLY_ANCHOR_RE = re.compile(
+    r"(?:^|\s)([A-Z]):\s*([-+\d.eE]+),\s*([-+\d.eE]+),\s*([-+\d.eE]+)",
+    re.MULTILINE,
+)
+
+
+def _gcode_reply_error(reply: object) -> Optional[str]:
+    if not isinstance(reply, str):
+        return None
+    text = reply.strip()
+    if text and _GCODE_ERROR_RE.search(text):
+        return text
+    return None
+
+
+def _verify_applied_firmware_parameters(
+    applied_commands: Sequence[str],
+    *,
+    m669_reply: Optional[str] = None,
+    m666_reply: Optional[str] = None,
+) -> None:
+    """Verify via readback that firmware accepted every sent M669/M666 parameter."""
+    m669_text = (m669_reply or "").strip()
+    m666_text = (m666_reply or "").strip()
+    for raw_cmd in applied_commands:
+        command = str(raw_cmd or "").strip()
+        if not command:
+            continue
+        if command.startswith("M669"):
+            if _gcode_reply_error(m669_text):
+                raise RuntimeError(f"Firmware reported error reading M669 after {command}: {m669_text}")
+            wanted = {
+                m.group(1): (float(m.group(2)), float(m.group(3)), float(m.group(4)))
+                for m in _M669_CMD_ANCHOR_RE.finditer(command)
+            }
+            if not wanted:
+                continue
+            reported = {
+                m.group(1): (float(m.group(2)), float(m.group(3)), float(m.group(4)))
+                for m in _M669_REPLY_ANCHOR_RE.finditer(m669_text)
+            }
+            if not reported:
+                reported = {
+                    m.group(1): (float(m.group(2)), float(m.group(3)), float(m.group(4)))
+                    for m in _M669_CMD_ANCHOR_RE.finditer(m669_text)
+                }
+            for label, coords in wanted.items():
+                got = reported.get(label)
+                if got is None or any(abs(a - b) > 0.05 for a, b in zip(coords, got)):
+                    raise RuntimeError(f"Firmware did not accept {command}: {m669_text}")
+        elif command.startswith("M666"):
+            if _gcode_reply_error(m666_text):
+                raise RuntimeError(f"Firmware reported error reading M666 after {command}: {m666_text}")
+            wanted_q = re.search(r"^M666\b.*\bQ([-+\d.eE:]+)", command)
+            if wanted_q:
+                reported_q = re.search(r"\bQ([-+\d.eE:]+)", m666_text)
+                if not reported_q:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+                rep_q_vals = [float(v) for v in reported_q.group(1).split(":")]
+                want_q_vals = [float(v) for v in wanted_q.group(1).split(":")]
+                if len(rep_q_vals) == 1:
+                    ok_q = all(abs(rep_q_vals[0] - q) <= 1e-4 for q in want_q_vals)
+                else:
+                    ok_q = len(rep_q_vals) == len(want_q_vals) and all(
+                        abs(rq - wq) <= 1e-4 for rq, wq in zip(rep_q_vals, want_q_vals)
+                    )
+                if not ok_q:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+            wanted_r = re.search(r"^M666\b.*\bR([-+\d.eE:]+)", command)
+            if wanted_r:
+                reported_r = re.search(r"\bR([-+\d.eE:]+)", m666_text)
+                if not reported_r:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+                rep_r_vals = [float(v) for v in reported_r.group(1).split(":")]
+                want_r_vals = [float(v) for v in wanted_r.group(1).split(":")]
+                if len(rep_r_vals) == 1:
+                    ok_r = all(abs(rep_r_vals[0] - r) <= 0.05 for r in want_r_vals)
+                else:
+                    ok_r = len(rep_r_vals) >= len(want_r_vals) and all(
+                        abs(rr - wr) <= 0.05 for rr, wr in zip(rep_r_vals, want_r_vals)
+                    )
+                if not ok_r:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+            wanted_s = re.search(r"^M666\b.*\bS([-+\d.eE]+)", command)
+            if wanted_s:
+                reported_s = re.search(r"\bS([-+\d.eE]+)", m666_text)
+                if not (
+                    reported_s
+                    and abs(float(reported_s.group(1)) - float(wanted_s.group(1)))
+                    <= max(1.0, 1e-3 * abs(float(wanted_s.group(1))))
+                ):
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
 
 
 def _anchor_norms(anchors: np.ndarray) -> List[float]:
@@ -3386,6 +3498,13 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
                         help="Use guarded Variable Projection (VarPro) to jointly eliminate stretch compliance, "
                              "ripple, hysteresis/creep, and friction nuisances in stretch-corrected point fits "
                              "(default: enabled).")
+    parser.add_argument(
+        "--compliance-probe",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Run fixed-pose force-step compliance probes during collection to measure axial line "
+             "stiffness M666 S (default: enabled in simulation for flex-enabled machines, opt-in on hardware).",
+    )
     parser.add_argument("--force-contrast", action=argparse.BooleanOptionalAction, default=False,
                         help="Let the Schur-complement Ds-optimal planner schedule sweeps at both low and high "
                              "sensor force levels to collapse the top-anchor height vs stretch-scale ridge.")

@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from autocal._autocal_common import *  # noqa: F401,F403
+from autocal._autocal_common import _gcode_reply_error, _verify_applied_firmware_parameters
 from autocal.planning_pass import plan_next_ellipse_sweep, plan_ellipse_sweep
 from autocal.equal_strain import write_sensor_force_profile, profile_policy_error
 from autocal.rough_bootstrap import (
@@ -306,6 +307,7 @@ def _full_auto_loop(
                     sweep_ids.append(str(sweep["id"]))
         m669 = _m669_from_plan(best_plan)
         m666 = _m666_from_plan(best_plan)
+        measured_stiffness = best_plan.get("measured_stiffness")
         anchors = best_plan.get("anchors")
         anchor_str = ""
         if isinstance(anchors, np.ndarray):
@@ -317,6 +319,7 @@ def _full_auto_loop(
         _log_event({
             "timestamp": datetime.now().isoformat(), "dataset": str(work_path),
             "event": "summary", "m669": m669, "m666": m666,
+            "measured_stiffness": measured_stiffness if isinstance(measured_stiffness, dict) else None,
             "anchors": np.asarray(anchors, dtype=float).tolist(),
             "fitted_anchors": np.asarray(best_plan["anchors"], dtype=float).tolist(),
             "selection": meta_for_summary,
@@ -336,7 +339,15 @@ def _full_auto_loop(
         elif anchor_str:
             _log_console(f"Anchors: {anchor_str}")
         if m666:
-            _log_console(f"Spools (M666): {m666}")
+            has_spool_params = any(tok.startswith(("R", "Q")) for tok in m666.split()[1:])
+            label = "Spools (M666)" if has_spool_params else "Line model (M666)"
+            _log_console(f"{label}: {m666}")
+        if isinstance(measured_stiffness, dict) and measured_stiffness.get("stiffness_n") is not None:
+            _log_console(
+                f"Stiffness (M666 S): S{float(measured_stiffness['stiffness_n']):.1f} N "
+                f"(source={measured_stiffness.get('source', 'measured')}, "
+                f"k={float(measured_stiffness.get('k_hat', 1.0)):.4f})"
+            )
         if full_auto_runs:
             best_flags = str(meta_for_summary.get("flags", "")).strip()
             best_run = str(meta_for_summary.get("run_id", "")).strip()
@@ -352,22 +363,61 @@ def _full_auto_loop(
                 _log_console(f"; failed to apply parameters: {exc}")
                 return _finalize(1)
             return _finalize(0)
-        if m669:
+        commands_to_send = [
+            (name, cmd)
+            for name, cmd in (("M669", m669), ("M666", m666))
+            if isinstance(cmd, str) and cmd.strip()
+        ]
+        if commands_to_send:
             if skip_sim_send:
-                _log_console(f"; --sim + --no-collect set; skipping M669 send.")
+                _log_console("; --sim + --no-collect set; skipping M669/M666 send.")
             elif firmware == "klipper":
-                _log_console("; --firmware klipper set; skipping M669 send.")
+                _log_console("; --firmware klipper set; skipping M669/M666 send.")
             else:
-                _log_console(f"Sending {m669} to {rrf_server}")
                 applying_solution = True
+                for name, cmd in commands_to_send:
+                    _log_console(f"Sending {cmd} to {rrf_server}")
+                    try:
+                        reply = provider.send_gcode(rrf_server, cmd)
+                    except Exception as exc:
+                        _log_console(f"; failed to send {name}: {exc}")
+                        return _finalize(1)
+                    reply = reply.strip()
+                    if reply:
+                        _log_line(f"; {name} reply: {reply}")
+                    err = _gcode_reply_error(reply)
+                    if err:
+                        _log_console(f"; firmware rejected {name}: {err}")
+                        return _finalize(1)
+                readbacks: Dict[str, str] = {}
+                for query in [name for name, _ in commands_to_send]:
+                    try:
+                        readbacks[query] = provider.send_gcode(rrf_server, query).strip()
+                    except Exception as exc:
+                        _log_console(f"; failed to verify {query} readback: {exc}")
+                        return _finalize(1)
                 try:
-                    reply = provider.send_gcode(rrf_server, m669)
+                    _verify_applied_firmware_parameters(
+                        [cmd for _, cmd in commands_to_send],
+                        m669_reply=readbacks.get("M669"),
+                        m666_reply=readbacks.get("M666"),
+                    )
                 except Exception as exc:
-                    _log_console(f"; failed to send M669: {exc}")
+                    _log_console(f"; firmware verification failed before M500: {exc}")
                     return _finalize(1)
-                reply = reply.strip()
-                if reply:
-                    _log_line(f"; M669 reply: {reply}")
+                _log_console(f"Sending M500 to {rrf_server}")
+                try:
+                    save_reply = provider.send_gcode(rrf_server, "M500")
+                except Exception as exc:
+                    _log_console(f"; failed to send M500: {exc}")
+                    return _finalize(1)
+                save_reply = save_reply.strip()
+                if save_reply:
+                    _log_line(f"; M500 reply: {save_reply}")
+                save_err = _gcode_reply_error(save_reply)
+                if save_err:
+                    _log_console(f"; M500 failed: {save_err}")
+                    return _finalize(1)
         else:
             _log_console("Sending M669 skipped (no command available)")
         return _finalize(0)
@@ -638,6 +688,11 @@ def _full_auto_loop(
             argv_eff.append("--hp-sim-reset")
         if "--return-to-origin" not in argv_eff and "--returnToOrigin" not in argv_eff:
             argv_eff.append("--return-to-origin")
+        # Checked bootstrap replaces its rough sweeps with equal-strain sweeps, so skip
+        # compliance probing on the discarded rough passes.
+        bootstrap_argv = list(argv_eff)
+        if checked_bootstrap and not _arg_has_flag(bootstrap_argv, "--no-compliance-probe"):
+            bootstrap_argv.append("--no-compliance-probe")
 
         cmd = [
             "node",
@@ -648,7 +703,7 @@ def _full_auto_loop(
             str(bootstrap_cfg),
             "--output-file",
             str(dataset_path),
-            *argv_eff,
+            *bootstrap_argv,
         ]
         _log_line(f"; bootstrapping dataset ({bootstrap_sweep_count} sweeps, auto size-tune):")
         _log_line(";   " + " ".join(cmd))
@@ -675,14 +730,19 @@ def _full_auto_loop(
             # Tune once; every subsequent collection shares the encoder origin and forces.
             force_args, _, _ = _inject_force_args(rough, [arg for arg in argv_eff if arg != "--hp-sim-reset"])
 
-            def _collect_bootstrap_sweep(cfg, tag, *, profile=None):
+            def _collect_bootstrap_sweep(cfg, tag, *, profile=None, compliance_probe=True):
                 cfg_path = dataset_path.with_suffix(f".{tag}.cfg.txt")
                 output_path = dataset_path.with_suffix(f".{tag}.json")
                 _write_sweep_config_file(cfg_path, cfg)
+                extra_probe_args = (
+                    ["--no-compliance-probe"]
+                    if (not compliance_probe and not _arg_has_flag(force_args, "--no-compliance-probe"))
+                    else []
+                )
                 cmd = ["node", "autocal/control/cli/collect_sweep_data.mjs",
                        "--machineType", str(machine_type), "--sweep-config-file", str(cfg_path),
                        "--fixed-targets", _fixed_targets_spec(cfg), "--output-file", str(output_path),
-                       *force_args]
+                       *force_args, *extra_probe_args]
                 if profile is not None:
                     cmd.extend(["--sensor-force-profile", str(profile)])
                 _log_line(";   " + " ".join(cmd))
@@ -705,7 +765,7 @@ def _full_auto_loop(
                     if extra == MAX_EXTRA_ROUGH_SWEEPS:
                         raise ValueError(f"rough geometry is still unreliable after {len(rough['sweeps'])} sweeps")
                     cfg = next_rough_sweep(rough, rough_anchors)
-                    added = _collect_bootstrap_sweep(cfg, f"rough_extra_{extra + 1}")
+                    added = _collect_bootstrap_sweep(cfg, f"rough_extra_{extra + 1}", compliance_probe=False)
                     rough = _merge_sweep_datasets(rough, added)
                     _write_json(dataset_path, rough)
                 # Never mix rough constant-force observations with refined observations.
@@ -1623,6 +1683,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")
+    if args.compliance_probe is False and not _arg_has_flag(
+        collector_args, "--no-compliance-probe", "--compliance-probe"
+    ):
+        collector_args.append("--no-compliance-probe")
+    elif args.compliance_probe is True and not _arg_has_flag(
+        collector_args, "--no-compliance-probe", "--compliance-probe"
+    ):
+        collector_args.extend(["--compliance-probe", "2,3,1"])
     if args.no_collect and not (args.dataset or Path("autocal/data/default_dataset.json")).exists():
         parser.error("--no-collect needs an existing dataset; pass --dataset to one that exists")
     if args.dataset is not None:

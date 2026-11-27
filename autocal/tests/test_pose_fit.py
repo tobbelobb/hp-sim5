@@ -230,3 +230,84 @@ def test_equal_strain_home_reference_reaches_the_second_fit_once(machine_type):
     assert result["home_offsets_mm"] == pytest.approx(offsets, abs=0.01)
     refit = _fit(shift_dataset_home_offsets(data, result["home_offsets_mm"]), fit_home_offsets=False)
     assert np.max(np.abs(refit["anchors"] - ANCHORS)) < 0.05
+
+
+def test_rejected_point_preserves_physical_spool_winding_history_under_varying_tension():
+    from autocal.flex import FlexModel, extract_spool_history, spool_rest_correction_mm
+    from autocal.pose_fit import consistency_residuals, dataset_stretch, fit_point_positions
+
+    anchors = ANCHORS
+    m666 = {
+        "S": 20000.0,
+        "W": 0.081,
+        "U": [1.0, 1.0, 1.0, 1.0],
+        "N": [1.0, 1.0, 1.0, 1.0],
+        "Y": [500.0, 500.0, 500.0, 400.0],
+        "R": [30.0, 30.0, 30.0, 30.0],
+        "K": 0.015,
+        "V": 1,
+    }
+    home = np.linalg.norm(anchors, axis=1)
+    # Four sweep points with strongly nonlinearly varying sensor tension (2 -> 18 -> 3 -> 14 N).
+    # Rejecting point 1 from the geometric fit must NOT alter the LIFO spool winding integral
+    # for subsequent points 2 and 3 because point 1 still physically occurred on the machine.
+    sensor_forces = [2.0, 18.0, 3.0, 14.0]
+    positions = [
+        np.array([-200.0, 150.0, 100.0]),
+        np.array([-100.0, 120.0, 150.0]),
+        np.array([50.0, 90.0, 200.0]),
+        np.array([200.0, 60.0, 250.0]),
+    ]
+    raw_lengths = np.array([np.linalg.norm(anchors - p, axis=1) - home for p in positions], dtype=float)
+    points = []
+    for k, (row, force) in enumerate(zip(raw_lengths, sensor_forces)):
+        points.append({
+            "l_drive": float(row[1]),
+            "l_sensor": float(row[2]),
+            "sensor_force_n": float(force),
+        })
+    dataset = {
+        "machine_type": "hangprinter_3",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "config": {
+            "m666_before_data_collection": m666,
+            "force_tuning": {"force_low_n": 0.2, "pullout_force_n": 4.0},
+        },
+        "sweeps": [{
+            "id": "sweep_001",
+            "fixed_anchors": [0, 3],
+            "fixed_lengths": [float(raw_lengths[0, 0]), float(raw_lengths[0, 3])],
+            "drive_anchor": 1,
+            "sensor_anchor": 2,
+            "metadata": {
+                "spool_reserves": [{"sensor_payout_mm": float(np.max(raw_lengths[:, 2]) + 300.0)}],
+                "direction_forces": [{"pullout_force_n": 4.0}],
+            },
+            "data_points": points,
+        }],
+    }
+    stretch = dataset_stretch(dataset)
+    assert stretch is not None and stretch["model"].has_spool_physics
+    lengths = dataset_line_lengths(dataset)["lengths_mm"]
+    kept = np.array([True, False, True, True])
+    masked = np.where(kept[:, None], lengths, np.nan)
+
+    # First verify that naively skipping row 1 (without history_lengths_mm) DOES change rows 2..3
+    # because sensor tension varies nonlinearly across row 1.
+    _, abs_full = fit_point_positions(anchors, lengths, np.zeros(4), stretch=stretch)
+    _, abs_naive = fit_point_positions(anchors, masked, np.zeros(4), stretch=stretch)
+    assert not np.allclose(abs_naive[[2, 3], 2], abs_full[[2, 3], 2], atol=1e-6)
+
+    # With physical history preserved via history_lengths_mm, kept rows 0, 2, 3 are bit-for-bit identical.
+    _, abs_preserved = fit_point_positions(
+        anchors, masked, np.zeros(4), stretch=stretch, history_lengths_mm=lengths
+    )
+    np.testing.assert_allclose(abs_preserved[[0, 2, 3], :], abs_full[[0, 2, 3], :], atol=1e-12)
+
+    res_full = consistency_residuals(anchors, lengths, np.zeros(4), stretch=stretch)
+    res_preserved = consistency_residuals(
+        anchors, masked, np.zeros(4), stretch=stretch, history_lengths_mm=lengths
+    )
+    assert np.all(res_preserved[1] == 0.0)
+    np.testing.assert_allclose(res_preserved[[0, 2, 3], :], res_full[[0, 2, 3], :], atol=1e-12)

@@ -14,6 +14,7 @@ from autocal.json_schema import load_json_file
 
 from autocal.active_learning import dataset_sweep_configs, generate_candidate_sweeps
 from autocal.anchor_seed import build_anchor_initial_guess
+from autocal.flex import slice_spool_history
 from autocal.pose_fit import (
     HOME_OFFSET_PRIOR_SIGMA_MM, consistency_residuals, dataset_line_lengths,
     fit_pose_least_squares,
@@ -99,8 +100,14 @@ def assess_rough_geometry(dataset, *, use_noise_mean=True):
     inliers = fit["point_residuals_mm"] <= max(1.0, 6.0 * fit["robust_scale_mm"])
     lengths = lengths[inliers]
     if stretch is not None:
-        stretch = {key: value[inliers] if isinstance(value, np.ndarray) else value
-                   for key, value in stretch.items()}
+        stretch = {
+            key: (
+                slice_spool_history(value, inliers)
+                if key == "spool_history"
+                else (value[inliers] if isinstance(value, np.ndarray) else value)
+            )
+            for key, value in stretch.items()
+        }
 
     def residuals(x):
         moved = anchor_opt_vec_to_matrix(x, machine, n, d)

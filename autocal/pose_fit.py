@@ -22,7 +22,9 @@ from typing import Dict, List, Optional, Sequence
 import numpy as np
 from scipy.optimize import least_squares
 
-from autocal.flex import FlexModel
+from autocal.compliance import has_compliance_probes
+from autocal.flex import FlexModel, _compute_pass_spool_overrides, extract_spool_history, spool_rest_correction_mm
+from autocal.swivel_pulley import home_line_lengths, line_geometry, swivel_geometry_from_m669
 
 from autocal.theoretical_ellipse import anchor_opt_vec_to_matrix, anchors_matrix_to_opt_vec, get_anchor_opt_bounds
 
@@ -133,106 +135,217 @@ def has_force_contrast(dataset: dict) -> bool:
     return False
 
 
-def dataset_stretch(dataset: dict):
-    """Recorded sensor loads plus firmware compliance for per-pose range correction.
+def dataset_stretch(dataset: dict, *, spring_k_multiplier: float = 1.0):
+    """Recorded sensor loads plus firmware compliance/spool model for per-pose range correction.
 
     Static equilibrium and every commanded torque determine the line loads.
     A rejected extra range still contributes its commanded force.
-    Historical constant-force sweep records without extra load evidence retain the
-    rigid fit unless they span multiple force levels (force contrast). Sphere meshes
-    are always corrected unless collected at equal strain: the ellipsoid autocal's
-    constant-force meshes on HP3/HP4 rely on it.
+    Historical constant-force/equal-strain 4-anchor records without spool physics
+    (K/V), home tension (T), compliance probes, or force contrast retain the
+    rigid home-strain fit; modern machines with flex + spool storage or measured
+    compliance use the full per-pose model by default.
     """
     from autocal.dataset_roles import mesh_metadata
     from autocal.equal_strain import is_equal_strain
-    # Redundant machines and multi-force contrast sweeps use per-pose stretch correction.
-    # Single-target equal-strain collection otherwise turns stretch into rigid home offsets.
+    num_anchors = int(dataset["num_anchors"])
+    config = dataset.get("config") or {}
+    m666 = config.get("m666_before_data_collection") or {}
+    model = FlexModel.from_m666(m666, num_axes=num_anchors, spring_k_multiplier=spring_k_multiplier)
+    if model is None:
+        return None
+    has_new_physics = (
+        model.has_spool_physics
+        or model.has_home_tension
+        or has_compliance_probes(dataset)
+    )
     if any(mesh_metadata(sweep) is not None for sweep in dataset.get("sweeps", [])):
-        if is_equal_strain(dataset) and not has_force_contrast(dataset):
+        if is_equal_strain(dataset) and not has_force_contrast(dataset) and not has_new_physics:
             return None
-    elif not has_force_contrast(dataset) and (
-        int(dataset["num_anchors"]) <= int(dataset["dimensions"]) + 1
+    elif not has_force_contrast(dataset) and not has_new_physics and (
+        num_anchors <= int(dataset["dimensions"]) + 1
         or not (is_equal_strain(dataset) or has_extra_sensor_data(dataset))
     ):
         return None
-    config = dataset.get("config") or {}
-    m666 = config.get("m666_before_data_collection") or {}
-    model = FlexModel.from_m666(m666, num_axes=int(dataset["num_anchors"]))
     points = [(sweep, point) for sweep in dataset.get("sweeps", []) for point in sweep.get("data_points", [])]
-    if model is None or not points or not all(isinstance(point.get("sensor_force_n"), (int, float))
-                                              and np.isfinite(point["sensor_force_n"]) for _, point in points):
+    if not points or not all(isinstance(point.get("sensor_force_n"), (int, float))
+                             and np.isfinite(point["sensor_force_n"]) for _, point in points):
         return None
     sensors = np.array([int(point.get("source_sensor_anchor", sweep["sensor_anchor"])) for sweep, point in points])
-    known = np.full((len(points), int(dataset["num_anchors"])), np.nan)
+    known = np.full((len(points), num_anchors), np.nan)
     for index, (_, point) in enumerate(points):
         for extra in point.get("extra_sensor_ranges", []):
             force = float(extra["force_n"])
             if not np.isfinite(force) or force <= 0:
                 raise ValueError("Extra sensor requires a positive finite recorded force")
             known[index, int(extra["anchor"])] = force
-    return dict(model=model, sensors=sensors, known=known,
-                forces=np.array([point["sensor_force_n"] for _, point in points]),
-                weight=float(m666.get("W", 0.)) * 9.81,
-                passive=float((config.get("force_tuning") or {}).get("force_low_n", 0.)))
+    swivel = swivel_geometry_from_m669(config.get("m669"), num_anchors)
+    return dict(
+        model=model,
+        sensors=sensors,
+        known=known,
+        forces=np.array([point["sensor_force_n"] for _, point in points]),
+        weight=float(m666.get("W", 0.)) * 9.81,
+        passive=float((config.get("force_tuning") or {}).get("force_low_n", 0.)),
+        spool_history=extract_spool_history(dataset) if model.has_spool_physics else None,
+        swivel=swivel,
+    )
 
 
-def stretch_corrected_lengths(anchors, positions, absolute, measured, stretch):
-    directions = anchors[None, :, :] - positions[:, None, :]
-    directions /= np.maximum(np.linalg.norm(directions, axis=2), 1e-9)[:, :, None]
+def _prepare_stretch_precomp(anchors_shape, measured, stretch, lengths_mm, history_lengths_mm):
+    num_points = len(measured)
+    num_anchors, dims = anchors_shape
     known = np.where(measured, np.nan, stretch["passive"])
     known = np.where(np.isfinite(stretch["known"]), stretch["known"], known)
-    known[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
-    selectors = np.eye(anchors.shape[0])[None, :, :] * np.isfinite(known)[:, :, None]
-    matrix = np.concatenate([directions.transpose(0, 2, 1), selectors], axis=1)
-    load = np.zeros((len(positions), anchors.shape[1]))
+    known[np.arange(num_points), stretch["sensors"]] = stretch["forces"]
+    selectors = np.eye(num_anchors)[None, :, :] * np.isfinite(known)[:, :, None]
+    load = np.zeros((num_points, dims))
     load[:, -1] = stretch["weight"]
+    rhs_known = np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
+    ridge = 1e-12 * np.eye(num_anchors)
+
+    model = stretch["model"]
+    spool_lengths = history_lengths_mm if history_lengths_mm is not None else lengths_mm
+    pass_overrides = None
+    history = stretch.get("spool_history")
+    if model.has_spool_physics and spool_lengths is not None and isinstance(history, dict) and history.get("num_points") == num_points:
+        # Drive pullout and sensor LIFO spool corrections depend only on recorded lengths and
+        # commanded sensor forces, not on effector poses or trial anchors.
+        t_cmd = np.zeros((num_points, num_anchors), dtype=float)
+        t_cmd[np.arange(num_points), stretch["sensors"]] = stretch["forces"]
+        rho_cmd = model.spool_rho_matrix(t_cmd)
+        s_len = np.asarray(spool_lengths, dtype=float)
+        pass_overrides = _compute_pass_spool_overrides(s_len, np.isfinite(s_len), rho_cmd, model, history)
+
+    return {
+        "selectors": selectors,
+        "rhs_known": rhs_known,
+        "ridge": ridge,
+        "pass_overrides": pass_overrides,
+    }
+
+
+def stretch_corrected_lengths(
+    anchors, positions, absolute, measured, stretch, *, lengths_mm=None, history_lengths_mm=None, _precomp=None
+):
+    swivel = stretch.get("swivel")
+    _, directions = line_geometry(anchors, positions, swivel=swivel)
+    if _precomp is None:
+        known = np.where(measured, np.nan, stretch["passive"])
+        known = np.where(np.isfinite(stretch["known"]), stretch["known"], known)
+        known[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
+        selectors = np.eye(anchors.shape[0])[None, :, :] * np.isfinite(known)[:, :, None]
+        load = np.zeros((len(positions), anchors.shape[1]))
+        load[:, -1] = stretch["weight"]
+        rhs_known = np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
+        ridge = 1e-12 * np.eye(anchors.shape[0])
+        pass_overrides = None
+    else:
+        selectors = _precomp["selectors"]
+        rhs_known = _precomp["rhs_known"]
+        ridge = _precomp["ridge"]
+        pass_overrides = _precomp["pass_overrides"]
+    matrix = np.concatenate([directions.transpose(0, 2, 1), selectors], axis=1)
     # Trial geometries can make the static system singular during fitting.
     # A tiny ridge keeps their residual finite without changing reachable loads.
     transpose = matrix.transpose(0, 2, 1)
-    normal = transpose @ matrix + 1e-12 * np.eye(matrix.shape[-1])
-    rhs = transpose @ np.concatenate([load, np.nan_to_num(known)], axis=1)[:, :, None]
+    normal = transpose @ matrix + ridge
+    rhs = transpose @ rhs_known
     tensions = np.linalg.solve(normal, rhs)[:, :, 0]
-    return np.column_stack([stretch["model"].corrected_distance_mm(absolute[:, axis], tensions[:, axis], axis=axis)
-                            for axis in range(anchors.shape[0])])
+    model = stretch["model"]
+    material = absolute
+    spool_lengths = history_lengths_mm if history_lengths_mm is not None else lengths_mm
+    if model.has_spool_physics and spool_lengths is not None:
+        spool_tensions = tensions
+        if history_lengths_mm is not None and pass_overrides is None:
+            # Rejected rows are masked out of `measured`, so pin their exact recorded
+            # sensor force to preserve physical LIFO spool winding history.
+            spool_tensions = tensions.copy()
+            spool_tensions[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
+        material = absolute + spool_rest_correction_mm(
+            spool_lengths,
+            spool_tensions,
+            model,
+            stretch.get("spool_history"),
+            pass_overrides=pass_overrides,
+        )
+    home_dist = home_line_lengths(anchors, swivel=swivel) if model.has_home_tension else None
+    return model.corrected_distance_matrix(material, tensions, home_distance_mm=home_dist)
 
 
-def consistency_residuals(anchors: np.ndarray, lengths_mm: np.ndarray, home_offsets_mm: np.ndarray, *, stretch=None) -> np.ndarray:
+def consistency_residuals(
+    anchors: np.ndarray,
+    lengths_mm: np.ndarray,
+    home_offsets_mm: np.ndarray,
+    *,
+    stretch=None,
+    swivel=None,
+    history_lengths_mm: Optional[np.ndarray] = None,
+) -> np.ndarray:
     """Per-point, per-line length misfit at each point's best effector position, in mm."""
     anchors = np.asarray(anchors, dtype=float)
-    positions, absolute = fit_point_positions(anchors, lengths_mm, home_offsets_mm, stretch=stretch)
+    eff_swivel = swivel if swivel is not None else (stretch.get("swivel") if isinstance(stretch, dict) else None)
+    positions, absolute = fit_point_positions(
+        anchors, lengths_mm, home_offsets_mm, stretch=stretch, swivel=eff_swivel,
+        history_lengths_mm=history_lengths_mm,
+    )
     measured = np.isfinite(lengths_mm)
-    return np.where(measured, np.linalg.norm(positions[:, None, :] - anchors[None, :, :], axis=2) - absolute, 0.0)
+    dist, _ = line_geometry(anchors, positions, swivel=eff_swivel)
+    return np.where(measured, dist - absolute, 0.0)
 
 
-def fit_point_positions(anchors: np.ndarray, lengths_mm: np.ndarray, home_offsets_mm, *, stretch=None):
+def fit_point_positions(
+    anchors: np.ndarray,
+    lengths_mm: np.ndarray,
+    home_offsets_mm,
+    *,
+    stretch=None,
+    swivel=None,
+    history_lengths_mm: Optional[np.ndarray] = None,
+):
     """Each point's best effector position and its stretch-corrected absolute line lengths."""
     anchors = np.asarray(anchors, dtype=float)
     dimensions = anchors.shape[1]
+    eff_swivel = swivel if swivel is not None else (stretch.get("swivel") if isinstance(stretch, dict) else None)
     measured = np.isfinite(lengths_mm)
-    absolute = (np.linalg.norm(anchors, axis=1) + np.asarray(home_offsets_mm, dtype=float)
+    absolute = (home_line_lengths(anchors, swivel=eff_swivel) + np.asarray(home_offsets_mm, dtype=float)
                 + np.where(measured, lengths_mm, 0.0))
     positions = np.zeros((lengths_mm.shape[0], dimensions))
     damping = 1e-9 * np.eye(dimensions)
+    precomp = (
+        _prepare_stretch_precomp(anchors.shape, measured, stretch, lengths_mm, history_lengths_mm)
+        if stretch is not None
+        else None
+    )
     for _ in range(_POSITION_ITERATIONS):
-        to_effector = positions[:, None, :] - anchors[None, :, :]
-        distance = np.linalg.norm(to_effector, axis=2)
-        direction = to_effector / distance[:, :, None] * measured[:, :, None]
+        distance, dir_to_anchor = line_geometry(anchors, positions, swivel=eff_swivel)
+        direction = -dir_to_anchor * measured[:, :, None]
         corrected = (absolute if stretch is None else
-                     stretch_corrected_lengths(anchors, positions, absolute, measured, stretch))
+                     stretch_corrected_lengths(
+                         anchors, positions, absolute, measured, stretch,
+                         lengths_mm=lengths_mm, history_lengths_mm=history_lengths_mm,
+                         _precomp=precomp,
+                     ))
         misfit = np.where(measured, distance - corrected, 0.0)
         normal = np.einsum("pni,pnj->pij", direction, direction) + damping
         gradient = np.einsum("pni,pn->pi", direction, misfit)
-        positions = positions - np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
+        step = np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
+        positions = positions - step
+        if step.size and float(np.max(np.abs(step))) < 1e-9:
+            break
     if stretch is not None:
-        absolute = stretch_corrected_lengths(anchors, positions, absolute, measured, stretch)
+        absolute = stretch_corrected_lengths(
+            anchors, positions, absolute, measured, stretch,
+            lengths_mm=lengths_mm, history_lengths_mm=history_lengths_mm,
+            _precomp=precomp,
+        )
     return positions, absolute
 
 
-def _home_strain(dataset: dict) -> Optional[tuple[float, np.ndarray]]:
+def _home_strain(dataset: dict, *, spring_k_multiplier: float = 1.0) -> Optional[tuple[float, np.ndarray]]:
     """Low lines hang slack at encoder zero. Approximate their measurement strain by T/EA.
 
-    Applies to equal-strain sweeps on HP3/HP4, which have no per-point stretch model.
-    Redundant machines' per-point flex model already treats encoder zero as unstretched.
+    Applies only to equal-strain sweeps on HP3/HP4 that have no per-point stretch model.
+    Per-point flex models already treat encoder zero as unstretched.
     """
     from autocal.equal_strain import is_equal_strain
 
@@ -242,7 +355,7 @@ def _home_strain(dataset: dict) -> Optional[tuple[float, np.ndarray]]:
     targets = [(s.get("metadata") or {}).get("strand_tension_n") for s in dataset["sweeps"]]
     try:
         targets = np.asarray(targets, dtype=float)
-        stiffness = float(m666["S"])
+        stiffness = float(m666["S"]) * max(float(spring_k_multiplier), 1e-9)
         advantage = np.broadcast_to(np.asarray(m666["U"], dtype=float), (4,))
         guy = np.broadcast_to(np.asarray(m666["Y"], dtype=float), (4,))
     except (KeyError, TypeError, ValueError):
@@ -266,6 +379,7 @@ def fit_pose_least_squares(
     fit_stretch_varpro: bool = False,
     varpro_allow_ripple: bool = True,
     varpro_fixed_ripple_period: Optional[int] = None,
+    spring_k_multiplier: float = 1.0,
 ) -> Dict[str, object]:
     """Fit anchors, and home length offsets once the data determines them.
 
@@ -286,11 +400,13 @@ def fit_pose_least_squares(
             allow_ripple=varpro_allow_ripple,
             fixed_ripple_period=varpro_fixed_ripple_period,
             home_offset_prior_sigma_mm=home_offset_prior_sigma_mm,
+            spring_k_multiplier=spring_k_multiplier,
         )
         return result if refined is None else refined
 
     options = dict(use_noise_mean=use_noise_mean,
-                   home_offset_prior_sigma_mm=home_offset_prior_sigma_mm)
+                   home_offset_prior_sigma_mm=home_offset_prior_sigma_mm,
+                   spring_k_multiplier=spring_k_multiplier)
     rigid = _fit_points(dataset, initial_anchors, fit_home_offsets=False,
                         extra_initial_anchors=extra_initial_anchors, **options)
     if not fit_home_offsets:
@@ -298,8 +414,10 @@ def fit_pose_least_squares(
     from autocal.pose_planning import pose_information
     num_offsets = int(dataset["num_anchors"]) - int(dataset["dimensions"])
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
+    stretch = dataset_stretch(dataset, spring_k_multiplier=spring_k_multiplier)
+    swivel = swivel_geometry_from_m669((dataset.get("config") or {}).get("m669"), int(dataset["num_anchors"]))
     info = pose_information(rigid["anchors"], lengths, machine_type=str(dataset["machine_type"]), sigma_mm=rigid["robust_scale_mm"],
-                            stretch=dataset_stretch(dataset))
+                            stretch=stretch, swivel=swivel)
     info[-num_offsets:, -num_offsets:] += np.eye(num_offsets) / home_offset_prior_sigma_mm ** 2
     offset_std = np.sqrt(np.diag(np.linalg.pinv(info))[-num_offsets:])
     if np.any(offset_std > 0.5 * home_offset_prior_sigma_mm):
@@ -332,6 +450,7 @@ def _fit_points(
     use_noise_mean: bool,
     extra_initial_anchors: Sequence[np.ndarray],
     spool=None,
+    spring_k_multiplier: float = 1.0,
 ) -> Dict[str, object]:
     """Fit anchors, and optionally home length offsets, to all points of a sweep dataset.
 
@@ -350,13 +469,14 @@ def _fit_points(
     lengths = dataset_line_lengths(dataset, use_noise_mean=use_noise_mean)["lengths_mm"]
     if not lengths.size or not np.all(np.sum(np.isfinite(lengths), axis=1) >= dimensions + 1):
         raise ValueError("Point fit requires finite measurements on at least one point")
-    stretch = dataset_stretch(dataset)
+    stretch = dataset_stretch(dataset, spring_k_multiplier=spring_k_multiplier)
+    swivel = swivel_geometry_from_m669((dataset.get("config") or {}).get("m669"), num_anchors)
     num_offsets = num_anchors - dimensions if fit_home_offsets else 0
     offset_lines = list(range(num_anchors - num_offsets, num_anchors))
     num_spool = 0 if spool is None else spool.start.size
     num_prior = num_offsets + (0 if spool is None else spool.num_prior)
 
-    home_strain = _home_strain(dataset) if fit_home_offsets else None
+    home_strain = _home_strain(dataset, spring_k_multiplier=spring_k_multiplier) if (fit_home_offsets and stretch is None) else None
 
     num_anchor_params = get_anchor_opt_bounds(machine_type, num_anchors, dimensions)[0].size
 
@@ -365,17 +485,22 @@ def _fit_points(
         offsets = np.zeros(num_anchors)
         if home_strain is not None:
             strain, extra_length = home_strain
-            offsets[:3] = strain * (np.linalg.norm(anchors[:3], axis=1) + extra_length)
+            offsets[:3] = strain * (home_line_lengths(anchors[:3], swivel=None) + extra_length)
         offsets[offset_lines] = x[num_anchor_params:num_anchor_params + num_offsets]
         return anchors, offsets
 
     def residuals(x: np.ndarray, prior_weight: float, correct_stretch: bool = True, kept=None) -> np.ndarray:
         anchors, offsets = unpack(x)
         spool_x = x[num_anchor_params + num_offsets:]
-        used = lengths if spool is None else spool.lengths(spool_x)
-        used = used if kept is None else np.where(kept[:, None], used, np.nan)
+        raw_used = lengths if spool is None else spool.lengths(spool_x)
+        used = raw_used if kept is None else np.where(kept[:, None], raw_used, np.nan)
         return np.concatenate([
-            consistency_residuals(anchors, used, offsets, stretch=stretch if correct_stretch else None).ravel(),
+            consistency_residuals(
+                anchors, used, offsets,
+                stretch=stretch if correct_stretch else None,
+                swivel=swivel,
+                history_lengths_mm=raw_used,
+            ).ravel(),
             offsets[offset_lines] * prior_weight,
             *([] if spool is None else [spool.prior(spool_x)]),
         ])

@@ -58,6 +58,7 @@ class HeadlessSimulation:
         if self.recording_mode is None:
             self.recording_mode = 'full' if getattr(args, 'extended_reference', False) or self.reference_url else 'none'
         self.signal_handlers = {}
+        self.vsd_symlink = None
         self.started = time.monotonic()
         self.directory = Path(args.dataset).resolve().with_suffix(".headless")
         # Retain prior manifests/partial points when an existing dataset is continued.
@@ -161,7 +162,20 @@ class HeadlessSimulation:
             shutil.copyfile(cfg_path, self.directory / "firmware-config.g")
             owns_rrf = not explicit and not _arg_has_flag(self.collector_args, "--no-spawn-rrf-simulator")
             if owns_rrf:
-                self.spawn("rrf", [str(RRF_SIM_BINARY), "--vsd", RRF_SIM_VSD_PATH, "-c", self.config,
+                vsd_dir = self.directory / "vsd"
+                shutil.copytree(REPO_ROOT / RRF_SIM_VSD_PATH / "sys", vsd_dir / "sys", dirs_exist_ok=True)
+                (vsd_dir / "gcodes").mkdir(exist_ok=True)
+                (vsd_dir / "logs").mkdir(exist_ok=True)
+                vsd_arg = str(vsd_dir)
+                # RRF host simulator truncates long --vsd paths (~100 char buffer).
+                if len(vsd_arg) > 64:
+                    import tempfile
+                    import uuid
+                    link = Path(tempfile.gettempdir()) / f"hpvsd_{uuid.uuid4().hex[:10]}"
+                    link.symlink_to(vsd_dir)
+                    self.vsd_symlink = link
+                    vsd_arg = str(link)
+                self.spawn("rrf", [str(RRF_SIM_BINARY), "--vsd", vsd_arg, "-c", self.config,
                                    "--server", "-p", str(port)])
             _wait_for_rrf_server(rrf_url)
             buildup = getattr(self.args, 'buildup_factor', None)
@@ -278,6 +292,12 @@ class HeadlessSimulation:
                                  normal_completion=False)
         for sig, handler in self.signal_handlers.items():
             signal.signal(sig, handler)
+        if getattr(self, "vsd_symlink", None) is not None and not self.manifest.get("kept_alive"):
+            try:
+                self.vsd_symlink.unlink(missing_ok=True)
+            except OSError:
+                pass
+            self.vsd_symlink = None
         self.write_manifest()
         if capture_error and not error:
             raise RuntimeError(capture_error)
@@ -291,16 +311,39 @@ class HeadlessSimulation:
         raise KeyboardInterrupt(f"Signal {signum}")
 
     def apply_parameters(self, commands):
-        for command in commands:
-            if command:
-                self.request("gcode", line=command)
-        self.manifest["applied_parameters"] = [command for command in commands if command]
-        self.manifest["firmware_final"] = {command: self.request("gcode", line=command)["result"]["reply"]
+        from autocal._autocal_common import _gcode_reply_error, _verify_applied_firmware_parameters
+
+        applied = [command for command in commands if command]
+        apply_replies = {}
+        for command in applied:
+            reply = self.request("gcode", line=command)["result"].get("reply", "")
+            apply_replies[command] = reply
+            err = _gcode_reply_error(reply)
+            if err:
+                self.manifest["applied_parameters"] = applied
+                self.manifest["apply_parameter_replies"] = apply_replies
+                raise RuntimeError(f"Firmware rejected {command}: {err}")
+        self.manifest["applied_parameters"] = applied
+        self.manifest["apply_parameter_replies"] = apply_replies
+        self.manifest["firmware_final"] = {command: self.request("gcode", line=command)["result"].get("reply", "")
                                            for command in ("M669", "M666")}
-        # RRF keeps its old spool model when it rejects an M666, so check the Q it reports.
-        for command in commands:
-            wanted = re.search(r'^M666\b.*\bQ([-+\d.eE:]+)', command or '')
-            reported = re.search(r'\bQ([-+\d.eE]+)', self.manifest["firmware_final"]["M666"] or '')
-            if wanted and not (reported and all(abs(float(reported[1]) - float(q)) <= 1e-4
-                                                for q in wanted[1].split(':'))):
-                raise RuntimeError(f"Firmware did not accept {command}: {self.manifest['firmware_final']['M666']}")
+        # Verify firmware accepted every sent parameter BEFORE persisting with M500.
+        _verify_applied_firmware_parameters(
+            applied,
+            m669_reply=self.manifest["firmware_final"]["M669"],
+            m666_reply=self.manifest["firmware_final"]["M666"],
+        )
+        if applied:
+            save_reply = self.request("gcode", line="M500")["result"].get("reply", "")
+            self.manifest["save_parameters_reply"] = save_reply
+            save_err = _gcode_reply_error(save_reply)
+            override = getattr(self, "directory", None)
+            has_vsd_sys = override is not None and (override / "vsd" / "sys").is_dir()
+            override_written = override is not None and (override / "vsd" / "sys" / "config-override.g").is_file()
+            if override_written:
+                self.manifest["config_override_file"] = "vsd/sys/config-override.g"
+            saved_ok = save_err is None and (not has_vsd_sys or override_written)
+            self.manifest["saved_parameters_permanent"] = saved_ok
+            if not saved_ok:
+                reason = save_err or "vsd/sys/config-override.g was not written"
+                raise RuntimeError(f"Firmware failed to persist parameters with M500: {reason}")

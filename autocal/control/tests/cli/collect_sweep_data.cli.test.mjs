@@ -11,8 +11,13 @@ import {
   buildGlobalForceModes,
   buildSymmetricPulloutModes,
   combinations,
+  computeSafeProbeMaxForceN,
+  extractM669Anchors,
   generateSweepConfigs,
   MACHINE_CONFIGS,
+  probeCompliance,
+  probeComplianceWithAntiphase,
+  resolveComplianceProbeMultiples,
   resolveFixedTargets,
   resolveForcedBaseRadii,
   resolveForcedBuildupFactor,
@@ -245,17 +250,339 @@ m569_address: 43.0
     expect(buildM666AdjustmentCommand({ forcedBuildupFactor: 0 })).toBe('M666 Q0');
   });
 
-  test('parseBridgeArgs captures spool override flags', () => {
+  test('parseBridgeArgs captures spool override and compliance-probe flags', () => {
     const args = parseBridgeArgs([
       '--force-buildup-factor', '0.5',
       '--force-base-radii', '30,31,32',
       '--preserve-buildup-factor',
       '--sensor-collection-force', '7',
+      '--compliance-probe', '2,4,1',
     ]);
     expect(args.forceBuildupFactor).toBe('0.5');
     expect(args.forceBaseRadii).toBe('30,31,32');
     expect(args.preserveBuildupFactor).toBe(true);
     expect(args.sensorCollectionForce).toBe('7');
+    expect(args.complianceProbe).toBe('2,4,1');
+    expect(args.noComplianceProbe).toBe(false);
+
+    const disabled = parseBridgeArgs(['--no-compliance-probe']);
+    expect(disabled.noComplianceProbe).toBe(true);
+    expect(disabled.complianceProbe).toBeNull();
+  });
+
+  test('resolveComplianceProbeMultiples is opt-in on hardware, default-on in simulation, and rejects multipliers < 1', () => {
+    // Physical machines default to opt-in ([]).
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+    })).toEqual([]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+      isSimulation: false,
+    })).toEqual([]);
+    // Simulation enables [2, 3, 1] by default for flex-enabled machines.
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+      isSimulation: true,
+    })).toEqual([2, 3, 1]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'cubecorners',
+      m666: { S: 118500 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+      isSimulation: true,
+    })).toEqual([2, 3, 1]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 0 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+      isSimulation: true,
+    })).toEqual([]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: true,
+      isSimulation: true,
+    })).toEqual([]);
+    // Explicit opt-in works on both hardware and simulation when all multipliers >= 1.0.
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: '1.5,3,1',
+      noComplianceProbe: false,
+      isSimulation: false,
+    })).toEqual([1.5, 3, 1]);
+    // Disable tokens remain accepted.
+    for (const token of ['0', 'off', 'false', 'none', 'disabled']) {
+      expect(resolveComplianceProbeMultiples({
+        machineType: 'hangprinter_3',
+        m666: { S: 20000 },
+        complianceProbe: token,
+        noComplianceProbe: false,
+        isSimulation: true,
+      })).toEqual([]);
+    }
+    // Custom multipliers below 1.0 (which unload sensor tension below baseline) must be rejected.
+    for (const bad of ['0.2,2,1', '0.9', '2,-1', 'abc']) {
+      expect(() => resolveComplianceProbeMultiples({
+        machineType: 'hangprinter_3',
+        m666: { S: 20000 },
+        complianceProbe: bad,
+        noComplianceProbe: false,
+        isSimulation: true,
+      })).toThrow(/multipliers must be finite numbers >= 1\.0/i);
+    }
+  });
+
+  test('computeSafeProbeMaxForceN skips missing/non-finite limits and caps held-line overload', () => {
+    const anchors = [
+      [0, -1900, -280],
+      [1645.45, 950, -280],
+      [-1645.45, 950, -280],
+      [0, 0, 1900],
+    ];
+    // Missing or NaN M666 X must return null (never Infinity).
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [NaN, 40, 40, 40],
+      anchors,
+      lengthsMm: [0, 0, 0, 0],
+    })).toBeNull();
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: null,
+      maxSensorForceN: NaN,
+    })).toBeNull();
+
+    // When a held line (e.g. drive anchor 1) has a tighter limit than the sensor,
+    // full-machine static equilibrium must cap the sensor force below 0.85 * X_sensor.
+    const capTightHeld = computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 20, 40, 40],
+      forceLow: 0.5,
+      anchors,
+      lengthsMm: [0, 0, 0, 0],
+      weightN: 0.8,
+    });
+    expect(capTightHeld).not.toBeNull();
+    expect(capTightHeld).toBeLessThan(0.85 * 40);
+    expect(capTightHeld).toBeLessThanOrEqual(0.85 * 20 + 0.5);
+
+    // Fail closed when anchor geometry, lengths, conditioning, or tautness cannot be established.
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 40, 40, 40],
+      anchors: null,
+      lengthsMm: [0, 0, 0, 0],
+    })).toBeNull();
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 40, 40, 40],
+      anchors,
+      lengthsMm: null,
+    })).toBeNull();
+    // Coplanar (singular K_sys) anchors must fail closed.
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 40, 40, 40],
+      anchors: [
+        [0, -1900, 0],
+        [1645.45, 950, 0],
+        [-1645.45, 950, 0],
+        [0, 500, 0],
+      ],
+      lengthsMm: [0, 0, 0, 0],
+    })).toBeNull();
+
+    // Statically indeterminate held sets (more than dims locked cables, e.g. 4 held in 3D)
+    // have an unobservable baseline prestress nullspace ker(U_h) and MUST fail closed.
+    const hp5Anchors = [
+      [0, -1900, -280],
+      [1900, 0, -280],
+      [0, 1900, -280],
+      [-1900, 0, -280],
+      [0, 0, 1900],
+    ];
+    const hp5Pos = [0, 600, 0];
+    const hp5Lengths = hp5Anchors.map((a) => (
+      Math.hypot(a[0] - hp5Pos[0], a[1] - hp5Pos[1], a[2] - hp5Pos[2])
+      - Math.hypot(a[0], a[1], a[2])
+    ));
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3, 4],
+      maxForceByAnchor: [40, 60, 60, 60, 60],
+      forceLow: 0.1,
+      anchors: hp5Anchors,
+      lengthsMm: hp5Lengths,
+      weightN: 0.8,
+    })).toBeNull();
+
+    // Determinate HP5 sweep pose (3 held [0, 1, 4], 1 constant-force [2], 1 sensor [3])
+    // has a unique static equilibrium baseline and succeeds cleanly.
+    const hp5SweepPos = [0, -400, 200];
+    const hp5SweepLengths = hp5Anchors.map((a) => (
+      Math.hypot(a[0] - hp5SweepPos[0], a[1] - hp5SweepPos[1], a[2] - hp5SweepPos[2])
+      - Math.hypot(a[0], a[1], a[2])
+    ));
+    const capHp5Determinate = computeSafeProbeMaxForceN({
+      baseForce: 4,
+      sensorAnchor: 3,
+      heldAnchors: [0, 1, 4],
+      constantForceAnchors: [2],
+      constantForces: { 2: 0.05 },
+      maxForceByAnchor: [40, 40, 40, 40, 40],
+      forceLow: 0.05,
+      anchors: hp5Anchors,
+      lengthsMm: hp5SweepLengths,
+      mechanicalAdvantageByAnchor: [2, 2, 2, 2, 4],
+      strandsByAnchor: [2, 2, 2, 2, 4],
+      extraLengthByAnchor: [429.1, 429.1, 429.1, 429.1, 352.3],
+      weightN: 0.8,
+    });
+    expect(capHp5Determinate).not.toBeNull();
+    expect(capHp5Determinate).toBeGreaterThan(12);
+    expect(capHp5Determinate).toBeLessThanOrEqual(0.85 * 40);
+  });
+
+  test('extractM669Anchors maps canonical RRF anchor letters instead of G-code axis names', () => {
+    const m669Hp5 = {
+      A: [0, -1900, -280],
+      B: [1900, 0, -280],
+      C: [0, 1900, -280],
+      D: [-1900, 0, -280],
+      I: [0, 0, 1900],
+    };
+    expect(extractM669Anchors(m669Hp5, 5, 3)).toEqual([
+      [0, -1900, -280],
+      [1900, 0, -280],
+      [0, 1900, -280],
+      [-1900, 0, -280],
+      [0, 0, 1900],
+    ]);
+    expect(extractM669Anchors({ A: [0, -1900, -280] }, 4, 3)).toBeNull();
+  });
+
+  test('probeCompliance propagates force-restoration failures and probeComplianceWithAntiphase verifies phase', async () => {
+    const anchors = [
+      [0, -1900, -280],
+      [1645.45, 950, -280],
+      [-1645.45, 950, -280],
+      [0, 0, 1900],
+    ];
+    const makeSimClock = () => {
+      let nowMs = 0;
+      return {
+        now: () => nowMs,
+        sleep: async (ms) => { nowMs += Math.max(Number(ms) || 10, 10); },
+      };
+    };
+    const baseOpts = {
+      axes: ['X', 'Y', 'Z', 'U'],
+      motorIds: ['40.0', '41.0', '42.0', '43.0'],
+      mmPerDeg: [0.5, 0.5, 0.5, 0.5],
+      feed: 1400,
+      speedup: 1000,
+      settleOptions: { stableWindowMs: 20, pollIntervalMs: 10, timeoutMs: 2000 },
+      driveAnchor: 1,
+      sensorAnchor: 2,
+      fixedSet: new Set([0, 3]),
+      forbidden: new Set([3]),
+      measurementSensorForces: {},
+      forceLow: 0.5,
+      multiples: [2],
+      maxForceByAnchor: [40, 40, 40, 40],
+      m669Anchors: anchors,
+      weightN: 0.8,
+      stepsPerRev: 200,
+      lastPoint: { sensor_force_n: 5, l_drive: 100, mu: [0, 0, 0, 0], sigma: [0, 0, 0, 0] },
+      prevPoint: { sensor_force_n: 5, l_drive: 50, mu: [0, -100, -50, 0], sigma: [0, 0, 0, 0] },
+      noiseOptions: { sampleCount: 2, sampleIntervalMs: 1, speedup: 1000 },
+    };
+
+    // 1. Restoration failure inside finally must NOT be swallowed.
+    let failOnRestore = false;
+    const sendRestoreFail = async (cmd) => {
+      if (cmd.startsWith('M569.4') && cmd.includes('T0.0:0.0:5:0.0')) {
+        failOnRestore = true;
+        throw new Error('CAN bus lost during restore');
+      }
+      if (cmd.startsWith('M569.3')) return { reply: '0.0 0.0 -0.2 0.0' };
+      return { reply: 'ok' };
+    };
+    sendRestoreFail.simulationClock = makeSimClock();
+    await expect(probeCompliance(sendRestoreFail, baseOpts)).rejects.toThrow(/Failed to restore compliance probe base force/);
+    expect(failOnRestore).toBe(true);
+
+    // 2. Movement failure during antiphase nudge must propagate instead of being swallowed.
+    const sendMoveFail = async (cmd) => {
+      if (cmd.startsWith('G1 ')) throw new Error('motor stall on nudge');
+      if (cmd.startsWith('M569.3')) return { reply: '0.0 0.0 -0.2 0.0' };
+      return { reply: 'ok' };
+    };
+    sendMoveFail.simulationClock = makeSimClock();
+    await expect(probeComplianceWithAntiphase(sendMoveFail, { ...baseOpts, multiples: [2, 1] }))
+      .rejects.toThrow(/motor stall on nudge/);
+
+    // 3. When nudge achieves ~180 deg electrical shift (3.6 deg for J=200), both probes are paired & verified.
+    let nudged = false;
+    const sendAntiphaseOk = async (cmd) => {
+      if (cmd.startsWith('G1 ')) nudged = true;
+      if (cmd.startsWith('M569.3')) {
+        return { reply: nudged ? '0.0 -7.2 -3.6 0.0' : '0.0 0.0 -0.2 0.0' };
+      }
+      return { reply: 'ok' };
+    };
+    sendAntiphaseOk.simulationClock = makeSimClock();
+    const paired = await probeComplianceWithAntiphase(sendAntiphaseOk, { ...baseOpts, multiples: [2, 1] });
+    expect(paired).toHaveLength(2);
+    expect(paired[0].pair_id).toBe(paired[1].pair_id);
+    expect(paired[0].phase_role).toBe('primary');
+    expect(paired[1].phase_role).toBe('antiphase');
+    expect(paired[0].antiphase_verified).toBe(true);
+    expect(paired[1].antiphase_verified).toBe(true);
+    expect(paired[1].achieved_electrical_phase_deg).toBeCloseTo(180, 0);
+
+    // 4. When nudge fails to reach antiphase (only 0.4 deg = 20 deg electrical), skip second probe.
+    let shortNudged = false;
+    const sendShortNudge = async (cmd) => {
+      if (cmd.startsWith('G1 ')) shortNudged = true;
+      if (cmd.startsWith('M569.3')) {
+        return { reply: shortNudged ? '0.0 -1.0 -0.4 0.0' : '0.0 0.0 -0.2 0.0' };
+      }
+      return { reply: 'ok' };
+    };
+    sendShortNudge.simulationClock = makeSimClock();
+    const unpaired = await probeComplianceWithAntiphase(sendShortNudge, { ...baseOpts, multiples: [2, 1] });
+    expect(unpaired).toHaveLength(1);
+    expect(unpaired[0].antiphase_verified).toBe(false);
+
+    // 5. Direct probeCompliance calls must also reject multipliers below 1.0.
+    await expect(probeCompliance(sendAntiphaseOk, { ...baseOpts, multiples: [0.2, 2] }))
+      .rejects.toThrow(/multipliers must be finite numbers >= 1\.0/i);
   });
 });
 

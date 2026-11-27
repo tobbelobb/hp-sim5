@@ -58,6 +58,8 @@ def score_future_sweeps(
             dimensions = int(validation_data["dimensions"])
             if not lengths.size or not np.all(measured.sum(axis=1) > dimensions):
                 return float("inf"), len(held_out)
+            if not np.all(np.isfinite(anchors)) or np.linalg.matrix_rank(anchors) < dimensions:
+                return float("inf"), len(held_out)
             residuals = consistency_residuals(anchors, lengths, np.zeros(int(validation_data["num_anchors"])),
                                              stretch=dataset_stretch(validation_data))
             if not np.all(np.isfinite(residuals)):
