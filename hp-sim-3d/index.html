@@ -145,6 +145,12 @@
                     </select>
                     <span id="physicsSubstepsHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Splits each simulation timestep into smaller physics steps. More substeps improve stability but use more CPU.</span>
                   </label>
+                  <span class="sim-menu-section-title">Recording</span>
+                  <label class="sim-toggle sim-select" for="rerunBtn">
+                    <span>Rerun Recorder</span>
+                    <button id="rerunBtn" type="button" class="sim-tertiary sim-rerun" aria-pressed="false" aria-describedby="rerunHelp">Off</button>
+                    <span id="rerunHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Records every physics step for replay in Rerun. Start scripts/hangprinter_flight_recorder.py first, then switch this on before printing.</span>
+                  </label>
                 </div>
               </div>
               <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
@@ -195,7 +201,6 @@
               <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>
               <button id="resetBtn" type="button" class="sim-secondary">Reset</button>
               <button id="finishAsapBtn" type="button" class="sim-secondary">Finish ASAP</button>
-              <button id="rerunBtn" type="button" class="sim-secondary" aria-pressed="false" title="Record every simulation timestep with the local Rerun flight recorder">Rerun</button>
               <div class="sim-tool-button" role="group" aria-label="Trace controls">
                 <button id="positionTraceBtn" type="button" class="sim-secondary sim-tool-main" aria-pressed="false" title="Toggle position trace mode">Trace</button>
                 <button id="positionTraceClearBtn" type="button" class="sim-tool-clear sim-hidden" aria-label="Clear trace">Clear</button>

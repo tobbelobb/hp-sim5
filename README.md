@@ -133,7 +133,7 @@ configs and compiled commands. Choose a workflow for your experiment:
 | Goal | Workflow |
 | --- | --- |
 | Print a logo, load G-code or interact with machines | Open the 3D browser app and use **Print Logo**, **Print Squares**, **Upload File** or **Machines**. |
-| Inspect a browser print step by step | Run the Python flight-recorder receiver, then connect with the browser's **Rerun** button. The browser's Wasm core still runs the physics. |
+| Inspect a browser print step by step | Run the Python flight-recorder receiver, then connect with **Settings → Rerun Recorder** in the browser. The browser's Wasm core still runs the physics. |
 | Run machine physics without a browser or firmware | Use the native Rust headless worker with the same USDA and a JSON sequence of motor commands. |
 | Check numerical agreement between Wasm and native | Run the headless differential tests; visual inspection alone does not establish parity. |
 
@@ -144,9 +144,9 @@ after installing the [Python dependencies](#python-dependencies):
 .venv/bin/python scripts/hangprinter_flight_recorder.py
 ```
 
-Open the **viewer URL printed by that process**. In the simulator, open **Controls**,
-click **Reset**, click **Rerun**, wait for **● Recording**, then **Print Logo**.
-Click **Rerun** again to finish. The receiver prints the saved `.rrd` path.
+Open the **viewer URL printed by that process**. In the simulator, click **Reset**,
+then in **Settings** click **Rerun Recorder**'s **Off** button, wait for
+**● Recording**, then **Print Logo**. Click it again to finish. The receiver prints the saved `.rrd` path.
 Opening that file with `.venv/bin/rerun PATH.rrd` replays it; it does not start
 another simulation or recording.
 

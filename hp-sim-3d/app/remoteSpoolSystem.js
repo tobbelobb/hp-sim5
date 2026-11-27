@@ -406,8 +406,11 @@ export class RemoteSpoolSystem {
   update(world, dt) {
     this.syncPlaybackMode(world);
 
+    // Size the queue for at most twice the speed physics last reached: a target the
+    // machine cannot reach would otherwise flood the main thread with worker messages.
     const timeScale = Number(world.getResource('timeScale')) || 1;
-    const scaleFactor = Math.max(1, timeScale);
+    const achieved = Number(world.getResource('achievedTimeScale'));
+    const scaleFactor = Math.max(1, achieved > 0 ? Math.min(timeScale, 2 * achieved) : timeScale);
     const targetHigh = Math.max(this.baseHighWaterMark, Math.ceil(this.baseHighWaterMark * scaleFactor));
     const targetLow = Math.max(this.baseLowWaterMark, Math.ceil(this.baseLowWaterMark * scaleFactor * 0.75));
     if (targetHigh !== this.highWaterMark || targetLow !== this.lowWaterMark) {

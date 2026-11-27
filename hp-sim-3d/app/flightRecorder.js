@@ -5,7 +5,7 @@ const EVENT_BATCH_SIZE = 256;
 const EVENT_BATCH_BYTES = 1024 * 1024;
 const MAX_PENDING_EVENTS = 65536;
 const MAX_PENDING_EVENT_BYTES = 32 * 1024 * 1024;
-const RERUN_IDLE_TITLE = 'Record every simulation timestep with the local Rerun flight recorder';
+const RERUN_IDLE_TITLE = 'Click to start recording to the local Rerun flight recorder';
 
 export class FlightRecorder {
   constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket,
@@ -102,17 +102,23 @@ export class FlightRecorder {
     });
     socket.addEventListener('close', (event) => {
       if (this.socket !== socket) return;
-      this.error = event.reason ? `Flight recorder disconnected: ${event.reason}` : 'Flight recorder disconnected';
+      // A failed connection closes right after its error; keep that error visible.
+      const failed = Boolean(this.error);
+      this.error ||= event.reason ? `Flight recorder disconnected: ${event.reason}` : 'Flight recorder disconnected';
       clearTimeout(this.eventTimer);
       this.eventTimer = null;
       this.socket = null;
       this.pending = 0;
-      this.setStatus('Rerun', `Rerun flight recorder disconnected. Click to reconnect to ${this.url}`, false);
+      if (failed) {
+        this.setStatus('Failed', `Could not reach the Rerun flight recorder at ${this.url}. Is the receiver running?`, false);
+      } else {
+        this.setStatus('Disconnected', `Rerun flight recorder disconnected. Click to reconnect to ${this.url}`, false);
+      }
     });
     socket.addEventListener('error', () => {
       if (this.socket === socket) {
         this.error = 'Flight recorder connection error';
-        this.setStatus('Rerun failed', `Could not reach the Rerun flight recorder at ${this.url}. Is the receiver running?`);
+        this.setStatus('Failed', `Could not reach the Rerun flight recorder at ${this.url}. Is the receiver running?`);
       }
     });
   }
@@ -125,7 +131,7 @@ export class FlightRecorder {
     this.socket = null;
     this.pending = 0;
     this.error = null;
-    this.setStatus('Rerun', RERUN_IDLE_TITLE, false);
+    this.setStatus('Off', RERUN_IDLE_TITLE, false);
   }
 
   fail(error) {
@@ -134,7 +140,7 @@ export class FlightRecorder {
     this.eventTimer = null;
     this.socket?.close();
     this.socket = null;
-    this.setStatus('Rerun failed', `Rerun recording failed: ${this.error}`, false);
+    this.setStatus('Failed', `Rerun recording failed: ${this.error}`, false);
   }
 
   async ensureConnected(url, timeoutMs = 5000) {

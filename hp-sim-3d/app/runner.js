@@ -12,6 +12,8 @@ const ASAP_INPUT_CHECK_MASK = 0x3f;
 const ASAP_PAUSED_DELAY_MS = 12;
 const PAUSED_POLL_DELAY_MS = 100;
 const SPEED_UPDATE_PERIOD = 10;
+// Below this fraction of the target, the target is out of reach and the UI shows "Max".
+const MAX_SPEED_RATIO = 0.7;
 const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
 
 export function runGame(world, internalSetupScene, options = {}) {
@@ -191,7 +193,14 @@ export function runGame(world, internalSetupScene, options = {}) {
 
   // Achieved speed next to the target speed it is trying to reach.
   const showSpeed = (achieved) => {
-    if (speedEl) speedEl.textContent = `${achieved} / ${+targetTimeScale.toPrecision(3)}x`;
+    const target = atMaxSpeed ? 'Max' : `${+targetTimeScale.toPrecision(3)}x`;
+    if (speedEl) speedEl.textContent = `${achieved} / ${target}`;
+  };
+
+  const setAtMaxSpeed = (value) => {
+    if (atMaxSpeed === value) return;
+    atMaxSpeed = value;
+    onTimeScaleChange?.(targetTimeScale);
   };
 
   const updateSpeedMeter = () => {
@@ -206,7 +215,11 @@ export function runGame(world, internalSetupScene, options = {}) {
     const now = performance.now();
     const elapsed = (now - startTime) / 1000;
     if (elapsed >= 1) {
-      showSpeed(`${(totalSim / elapsed).toFixed(1)}x`);
+      achievedTimeScale = totalSim / elapsed;
+      // Command queues are sized from this, so an unreachable target cannot flood them.
+      world.setResource('achievedTimeScale', achievedTimeScale);
+      setAtMaxSpeed(achievedTimeScale < MAX_SPEED_RATIO * targetTimeScale);
+      showSpeed(`${achievedTimeScale.toFixed(1)}x`);
       startTime = now;
       totalSim = 0;
     }
@@ -296,7 +309,7 @@ export function runGame(world, internalSetupScene, options = {}) {
         if (!recorderReady()) {
           break;
         }
-        if ((++steps & 0x1f) === 0 && performance.now() >= deadline) {
+        if (steps++ > 0 && performance.now() >= deadline) {
           break;
         }
         if (!pauseState.paused || doStep) {
@@ -510,6 +523,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     accumulator = 0;
     frameCounter = 0;
     renderCounter = 0;
+    setAtMaxSpeed(false);
     showSpeed('–');
     totalSim = 0;
     const pauseState = getPauseState();
@@ -553,6 +567,7 @@ export function runGame(world, internalSetupScene, options = {}) {
       return;
     }
     targetTimeScale = clamped;
+    atMaxSpeed = false;
     world.setResource('timeScale', targetTimeScale);
     lastTime = 0;
     accumulator = 0;
@@ -582,6 +597,8 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const getTimeScale = () => targetTimeScale;
+  const isAtMaxSpeed = () => atMaxSpeed;
+  const getAchievedTimeScale = () => achievedTimeScale;
 
   const resumeSimulation = () => {
     const pauseState = getPauseState();
@@ -660,6 +677,8 @@ export function runGame(world, internalSetupScene, options = {}) {
   let renderCounter = 0;
   let startTime = 0;
   let totalSim = 0;
+  let achievedTimeScale = null;
+  let atMaxSpeed = false;
   let hasStarted = false;
   let playbackMode = 'linear';
   let renderStrideBase = 1;
@@ -686,6 +705,8 @@ export function runGame(world, internalSetupScene, options = {}) {
     reset: resetGame,
     setTimeScale,
     getTimeScale,
+    isAtMaxSpeed,
+    getAchievedTimeScale,
     setRenderEveryNth,
     setAsapPlayback,
     takeAsapError,

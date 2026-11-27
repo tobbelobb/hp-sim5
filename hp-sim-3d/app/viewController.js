@@ -16,9 +16,7 @@ export function clampViewScale(value, min = MIN_VIEW_SCALE, max = MAX_VIEW_SCALE
   return Math.min(Math.max(value, min), max);
 }
 
-const MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS = 3000;
 const WELCOME_DISMISSED_KEY = 'hp-sim-3d.welcomeDismissed';
-const MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS = 150;
 const DOUBLE_TAP_MAX_DELAY_MS = 320;
 const DOUBLE_TAP_MAX_DURATION_MS = 280;
 const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
@@ -40,8 +38,9 @@ export function createViewController({
   const mobileLayoutQuery = supportsMatchMedia ? window.matchMedia('(max-width: 600px)') : null;
   const initialTouchAction = dom.canvas ? dom.canvas.style.touchAction || '' : '';
   const isMobileLayout = () => (mobileLayoutQuery ? mobileLayoutQuery.matches : window.innerWidth <= 600);
-  let secondaryControlsHideTimeout = null;
-  let secondaryControlsInteractionEnableTimeout = null;
+  // On small screens the controls would cover most of the view, so they start collapsed.
+  const smallScreenQuery = supportsMatchMedia ? window.matchMedia('(max-width: 600px), (max-height: 500px)') : null;
+  const isSmallScreen = () => (smallScreenQuery ? smallScreenQuery.matches : isMobileLayout());
   let secondaryControlsUserPreference = null;
   let secondaryControlsAutoActive = false;
   let secondaryControlsPreferenceBeforeSuppression;
@@ -70,84 +69,8 @@ export function createViewController({
     }
   }
 
-  function clearSecondaryControlsInteractionDelay() {
-    if (secondaryControlsInteractionEnableTimeout != null) {
-      window.clearTimeout(secondaryControlsInteractionEnableTimeout);
-      secondaryControlsInteractionEnableTimeout = null;
-    }
-  }
-
-  function setSecondaryControlsInteractive(enabled) {
-    if (dom.secondaryControls) {
-      dom.secondaryControls.dataset.interactive = enabled ? 'true' : 'false';
-    }
-  }
-
-  function scheduleSecondaryControlsInteractionEnable() {
-    if (!dom.secondaryControls) {
-      return;
-    }
-    clearSecondaryControlsInteractionDelay();
-    secondaryControlsInteractionEnableTimeout = window.setTimeout(() => {
-      secondaryControlsInteractionEnableTimeout = null;
-      setSecondaryControlsInteractive(true);
-    }, MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS);
-  }
-
-  function hideSecondaryControlsForMobile({ force = false } = {}) {
-    if (!dom.secondaryControls) {
-      return;
-    }
-    if (!force && secondaryControlsUserPreference === true) {
-      return;
-    }
-    dom.secondaryControls.classList.add('sim-hidden');
-    clearSecondaryControlsInteractionDelay();
-    setSecondaryControlsInteractive(false);
-    if (secondaryControlsHideTimeout) {
-      clearTimeout(secondaryControlsHideTimeout);
-      secondaryControlsHideTimeout = null;
-    }
-  }
-
-  function showSecondaryControlsForMobile({ persist = false } = {}) {
-    if (!dom.secondaryControls || !isMobileLayout()) {
-      return;
-    }
-    if (!persist && secondaryControlsUserPreference === false) {
-      return;
-    }
-    const wasHidden = dom.secondaryControls.classList.contains('sim-hidden');
-    if (wasHidden) {
-      setSecondaryControlsInteractive(false);
-    }
-    dom.secondaryControls.classList.remove('sim-hidden');
-    if (secondaryControlsHideTimeout) {
-      clearTimeout(secondaryControlsHideTimeout);
-    }
-    if (persist || secondaryControlsUserPreference === true) {
-      secondaryControlsHideTimeout = null;
-      setSecondaryControlsInteractive(true);
-      return;
-    }
-    secondaryControlsHideTimeout = window.setTimeout(() => {
-      hideSecondaryControlsForMobile();
-    }, MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS);
-    if (wasHidden) {
-      scheduleSecondaryControlsInteractionEnable();
-    } else {
-      setSecondaryControlsInteractive(true);
-    }
-  }
-
   function computeSecondaryControlsDesired() {
-    if (secondaryControlsUserPreference === true) {
-      return true;
-    }
-    if (secondaryControlsUserPreference === false) {
-      return false;
-    }
-    return secondaryControlsAutoActive;
+    return secondaryControlsUserPreference ?? secondaryControlsAutoActive;
   }
 
   function updateSecondaryToggleButton() {
@@ -162,32 +85,7 @@ export function createViewController({
   }
 
   function applySecondaryControlsVisibility() {
-    const shouldShow = computeSecondaryControlsDesired();
-    if (!dom.secondaryControls) {
-      updateSecondaryToggleButton();
-      return;
-    }
-    if (isMobileLayout()) {
-      if (shouldShow) {
-        showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
-      } else {
-        hideSecondaryControlsForMobile({ force: true });
-      }
-      updateSecondaryToggleButton();
-      return;
-    }
-    if (secondaryControlsHideTimeout) {
-      clearTimeout(secondaryControlsHideTimeout);
-      secondaryControlsHideTimeout = null;
-    }
-    if (shouldShow) {
-      dom.secondaryControls.classList.remove('sim-hidden');
-      clearSecondaryControlsInteractionDelay();
-      setSecondaryControlsInteractive(true);
-    } else {
-      dom.secondaryControls.classList.add('sim-hidden');
-      setSecondaryControlsInteractive(false);
-    }
+    dom.secondaryControls?.classList.toggle('sim-hidden', !computeSecondaryControlsDesired());
     updateSecondaryToggleButton();
   }
 
@@ -217,10 +115,10 @@ export function createViewController({
     applySecondaryControlsVisibility();
   }
 
-  // Controls stay reachable whenever a machine is loaded, so Rerun can be armed before a print.
+  // Controls start open on big screens whenever a machine is loaded, printing or not.
   function updatePrintingState() {
     dom.simButtons?.classList.toggle('is-printing', Boolean(state.printActive));
-    setSecondaryControlsVisible(machines.getMachines().length > 0);
+    setSecondaryControlsVisible(machines.getMachines().length > 0 && !isSmallScreen());
     if (state.printActive) {
       dismissWelcomeHint();
     }
@@ -430,16 +328,11 @@ export function createViewController({
   }
 
   function handleLayoutChange() {
-    const mobile = isMobileLayout();
     syncSecondaryControlsSuppression();
     updateQualityToggleLabel();
     inspectionTools?.updateReferenceToggleUI?.();
     setPanMode(state.panModeActive);
-    if (!mobile && secondaryControlsHideTimeout) {
-      clearTimeout(secondaryControlsHideTimeout);
-      secondaryControlsHideTimeout = null;
-    }
-    applySecondaryControlsVisibility();
+    updatePrintingState();
     machineMenu?.syncPlacement?.();
   }
 
@@ -787,7 +680,8 @@ export function createViewController({
     if (!dom.speedStatusEl) {
       return;
     }
-    dom.speedStatusEl.textContent = `target speed: ${formatTimeScale(scale)}x realtime`;
+    const atMax = runtime.getGameControls?.()?.isAtMaxSpeed?.();
+    dom.speedStatusEl.textContent = atMax ? 'target speed: Max' : `target speed: ${formatTimeScale(scale)}x realtime`;
     dom.speedStatusEl.classList.remove('sim-hidden');
   }
 
@@ -812,9 +706,6 @@ export function createViewController({
   }
 
   function bindUi() {
-    if (dom.secondaryControls) {
-      setSecondaryControlsInteractive(false);
-    }
     showWelcomeHintUnlessDismissed();
     dom.welcomeHintDismissBtn?.addEventListener('click', dismissWelcomeHint);
     dom.zoomInBtn?.addEventListener('click', (event) => {
@@ -838,17 +729,13 @@ export function createViewController({
       if (event.altKey || event.metaKey) {
         secondaryControlsUserPreference = null;
       } else {
-        const isVisible = dom.secondaryControls ? !dom.secondaryControls.classList.contains('sim-hidden') : computeSecondaryControlsDesired();
-        secondaryControlsUserPreference = isVisible ? false : true;
+        secondaryControlsUserPreference = !computeSecondaryControlsDesired();
       }
       applySecondaryControlsVisibility();
     });
     dom.canvas?.addEventListener('pointerdown', (event) => {
       // Canvas input handlers preventDefault, which also blocks the browser from clearing text selections.
       window.getSelection()?.removeAllRanges();
-      if (isMobileLayout() && secondaryControlsUserPreference !== false) {
-        showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
-      }
       inspectionTools?.handleMeasurePointerDown?.(event);
       handleCanvasTouchPointerDown(event);
     });
@@ -871,11 +758,6 @@ export function createViewController({
     });
     dom.canvas?.addEventListener('pointerleave', () => {
       inspectionTools?.clearMeasurePointer?.();
-    });
-    dom.secondaryControls?.addEventListener('pointerdown', () => {
-      if (isMobileLayout() && secondaryControlsUserPreference !== false) {
-        showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
-      }
     });
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
@@ -930,7 +812,6 @@ export function createViewController({
     setQualityDetailsExpanded,
     setButtonDisabled,
     updatePrintingState,
-    setSecondaryControlsVisible,
     setSpeedButtonsEnabled,
     setSceneControlsEnabled,
     updateZoomButtonState,

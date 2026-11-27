@@ -21,7 +21,7 @@ There are two recording workflows:
 
 | Workflow | Physics runs in | Start recording with | Output |
 | --- | --- | --- | --- |
-| Browser print | Rust/Wasm in hp-sim-3d, with JS application systems | Receiver process, then the **Rerun** button | A new `.rrd` for each connection/scene generation |
+| Browser print | Rust/Wasm in hp-sim-3d, with JS application systems | Receiver process, then **Settings → Rerun Recorder** | A new `.rrd` for each connection/scene generation |
 | Headless machine | Native Rust hosted in Node; Python records observations, without Vite | `run_experiment(..., record=True)` or the research MCP tools | One `.rrd`, plus a final JSON snapshot |
 
 Running `.venv/bin/rerun FILE.rrd` **opens an existing recording**. It does not
@@ -79,13 +79,13 @@ series identities.
 3. Open the **Rerun viewer URL printed by the receiver**. The URL includes the
    connection to the local data server; opening port 9090 without that query opens
    Rerun's welcome screen.
-4. In hp-sim-3d, open **Controls** if it is collapsed. Click **Reset**, then **Rerun**;
+4. In hp-sim-3d, click **Reset**, then switch on **Settings → Rerun Recorder**;
    wait for **● Recording**, then click **Print Logo**. Connecting alone
    does not start a print. Watch the receiver's `Recording: output/rerun/...rrd`
    line: it identifies the file being written.
 5. Try **Pause** and resume, or **Finish ASAP**. The recorder captures every
    completed physics step, so playback speed changes wall time rather than
-   sample spacing. Click **Rerun** again to finish this connection. Ctrl-C stops
+   sample spacing. Click the recorder button again to finish this connection. Ctrl-C stops
    the receiver and flushes its recordings.
 
 Replay the **exact path printed by the receiver** with `.venv/bin/rerun PATH.rrd`.

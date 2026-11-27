@@ -635,7 +635,13 @@ export function createCommandJobController({
         return;
       }
       state.speedStatusArmed = true;
-      applyTimeScaleChange(runtime.getTimeScale() / 2, { show: true });
+      // From Max, drop to the fastest power of two the machine actually reached.
+      const controls = runtime.getGameControls();
+      const achieved = controls.getAchievedTimeScale?.();
+      const next = controls.isAtMaxSpeed?.() && achieved > 0
+        ? 2 ** Math.floor(Math.log2(achieved))
+        : runtime.getTimeScale() / 2;
+      applyTimeScaleChange(next, { show: true });
     });
     dom.speedFasterBtn?.addEventListener('click', (event) => {
       event.preventDefault();
@@ -643,7 +649,8 @@ export function createCommandJobController({
         return;
       }
       state.speedStatusArmed = true;
-      applyTimeScaleChange(Math.min(MAX_UI_TIME_SCALE, runtime.getTimeScale() * 2), { show: true });
+      const atMax = runtime.getGameControls().isAtMaxSpeed?.();
+      applyTimeScaleChange(atMax ? runtime.getTimeScale() : Math.min(MAX_UI_TIME_SCALE, runtime.getTimeScale() * 2), { show: true });
     });
     setPrintActive(false);
     updateFinishAsapButtonState();

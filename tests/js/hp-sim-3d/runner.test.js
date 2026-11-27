@@ -264,6 +264,24 @@ test('the speed readout shows achieved over the last second next to the target, 
   expect(speed.textContent).toMatch(/^(3\.\d|4\.0)x \/ 4x$/);
 });
 
+test('an unreachable target shows Max and limits command queues to the achieved speed', () => {
+  const clock = wallClock();
+  const { world, clocks, speed, resources } = setup();
+  const queue = new RemoteSpoolSystem();
+  queue.worker = { postMessage: jest.fn() };
+  // Each 2 ms step costs 1 ms of wall time: at most about 2x is reachable.
+  world.update.mockImplementation(() => { clock.now += 1; });
+  controls.setTimeScale(1000);
+  while (!controls.isAtMaxSpeed()) { clock.now += 16; clocks.at(-1).tick(clock.now); }
+  expect(speed.textContent).toMatch(/^1\.\dx \/ Max$/);
+  queue.update({ getResource: (key) => resources.get(key), query: () => [] }, 0.002);
+  expect(queue.highWaterMark).toBeLessThanOrEqual(320 * 4);
+
+  controls.setTimeScale(1);
+  expect(controls.isAtMaxSpeed()).toBe(false);
+  expect(speed.textContent).toBe('– / 1x');
+});
+
 async function setupWorkerPrint(segments, fileName = 'print.gcode') {
   jest.spyOn(console, 'log').mockImplementation(() => {});
   const clock = wallClock();
