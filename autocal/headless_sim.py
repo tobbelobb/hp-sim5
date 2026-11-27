@@ -311,28 +311,39 @@ class HeadlessSimulation:
         raise KeyboardInterrupt(f"Signal {signum}")
 
     def apply_parameters(self, commands):
+        from autocal._autocal_common import _gcode_reply_error, _verify_applied_firmware_parameters
+
         applied = [command for command in commands if command]
+        apply_replies = {}
         for command in applied:
-            self.request("gcode", line=command)
+            reply = self.request("gcode", line=command)["result"].get("reply", "")
+            apply_replies[command] = reply
+            err = _gcode_reply_error(reply)
+            if err:
+                self.manifest["applied_parameters"] = applied
+                self.manifest["apply_parameter_replies"] = apply_replies
+                raise RuntimeError(f"Firmware rejected {command}: {err}")
+        self.manifest["applied_parameters"] = applied
+        self.manifest["apply_parameter_replies"] = apply_replies
+        self.manifest["firmware_final"] = {command: self.request("gcode", line=command)["result"].get("reply", "")
+                                           for command in ("M669", "M666")}
+        # Verify firmware accepted every sent parameter BEFORE persisting with M500.
+        _verify_applied_firmware_parameters(
+            applied,
+            m669_reply=self.manifest["firmware_final"]["M669"],
+            m666_reply=self.manifest["firmware_final"]["M666"],
+        )
         if applied:
             save_reply = self.request("gcode", line="M500")["result"].get("reply", "")
             self.manifest["save_parameters_reply"] = save_reply
-            self.manifest["saved_parameters_permanent"] = "error" not in save_reply.lower()
+            save_err = _gcode_reply_error(save_reply)
             override = getattr(self, "directory", None)
-            if override is not None and (override / "vsd" / "sys" / "config-override.g").is_file():
+            has_vsd_sys = override is not None and (override / "vsd" / "sys").is_dir()
+            override_written = override is not None and (override / "vsd" / "sys" / "config-override.g").is_file()
+            if override_written:
                 self.manifest["config_override_file"] = "vsd/sys/config-override.g"
-        self.manifest["applied_parameters"] = applied
-        self.manifest["firmware_final"] = {command: self.request("gcode", line=command)["result"]["reply"]
-                                           for command in ("M669", "M666")}
-        # RRF keeps its old spool/flex parameters when it rejects an M666, so check what it reports.
-        m666_final = self.manifest["firmware_final"]["M666"] or ""
-        for command in applied:
-            wanted_q = re.search(r'^M666\b.*\bQ([-+\d.eE:]+)', command)
-            reported_q = re.search(r'\bQ([-+\d.eE]+)', m666_final)
-            if wanted_q and not (reported_q and all(abs(float(reported_q[1]) - float(q)) <= 1e-4
-                                                    for q in wanted_q[1].split(':'))):
-                raise RuntimeError(f"Firmware did not accept {command}: {m666_final}")
-            wanted_s = re.search(r'^M666\b.*\bS([-+\d.eE]+)', command)
-            reported_s = re.search(r'\bS([-+\d.eE]+)', m666_final)
-            if wanted_s and not (reported_s and abs(float(reported_s[1]) - float(wanted_s[1])) <= max(1.0, 1e-3 * abs(float(wanted_s[1])))):
-                raise RuntimeError(f"Firmware did not accept {command}: {m666_final}")
+            saved_ok = save_err is None and (not has_vsd_sys or override_written)
+            self.manifest["saved_parameters_permanent"] = saved_ok
+            if not saved_ok:
+                reason = save_err or "vsd/sys/config-override.g was not written"
+                raise RuntimeError(f"Firmware failed to persist parameters with M500: {reason}")

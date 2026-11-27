@@ -347,18 +347,31 @@ def spool_rest_correction_mm(
                 corr[rows, da] = l_d * (rho_init[da] - 1.0) + np.maximum(-l_d, 0.0) * (rho_init[da] - rho_pull)
             payout = float(entry["sensor_payout_mm"])
             if 0 <= sa < num_axes and payout > 0.0:
-                l_seq = safe_l[rows, sa]
+                l_raw = lengths[rows, sa]
+                s_finite = finite[rows, sa]
                 drho = rho_init[sa] - rho[rows, sa]
-                # Sensor unwound pre-wound rope to `payout` at rho_init, then rewound to l_seq[0]
-                # and monotonically through the sweep pass, laying LIFO coils at each point's tension.
-                acc = max(payout - l_seq[0], 0.0) * drho[0]
-                corr[rows[0], sa] = l_seq[0] * (rho_init[sa] - 1.0) + acc
-                for k in range(1, len(rows)):
-                    dl = l_seq[k - 1] - l_seq[k]
-                    if dl >= 0.0:
-                        acc += dl * 0.5 * (drho[k - 1] + drho[k])
+                # Sensor unwound pre-wound rope to `payout` at rho_init, then rewound to the first
+                # finite point and monotonically through the sweep pass, laying LIFO coils at each
+                # point's tension. Skip non-finite/rejected points cleanly without zeroing them.
+                prev_l: Optional[float] = None
+                prev_drho = 0.0
+                acc = 0.0
+                for k in range(len(rows)):
+                    if not s_finite[k]:
+                        corr[rows[k], sa] = 0.0
+                        continue
+                    cur_l = float(l_raw[k])
+                    cur_drho = float(drho[k])
+                    if prev_l is None:
+                        acc = max(payout - cur_l, 0.0) * cur_drho
                     else:
-                        acc = max(0.0, acc + dl * drho[k])
-                    corr[rows[k], sa] = l_seq[k] * (rho_init[sa] - 1.0) + acc
+                        dl = prev_l - cur_l
+                        if dl >= 0.0:
+                            acc += dl * 0.5 * (prev_drho + cur_drho)
+                        else:
+                            acc = max(0.0, acc + dl * cur_drho)
+                    corr[rows[k], sa] = cur_l * (rho_init[sa] - 1.0) + acc
+                    prev_l = cur_l
+                    prev_drho = cur_drho
 
     return np.where(finite, corr, 0.0)

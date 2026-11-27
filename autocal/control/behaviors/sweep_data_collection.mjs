@@ -1239,6 +1239,10 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     probeSpoolReserve = false,
     complianceProbeMultiples = null,
     maxSensorForceN = null,
+    maxForceByAnchor = null,
+    m669Anchors = null,
+    weightN = 0,
+    stepsPerRevByAnchor = null,
   } = options;
   const { driveAnchor, sensorAnchor } = sweepConfig;
   const driveAxis = axes[driveAnchor];
@@ -1629,13 +1633,15 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     throw new UnmeasurableSweepError('Insufficient coupled measurement points in the observed sweep interval',
       { rawDriveInterval, retained_points: dataPoints.length, coupling_probes: couplingProbes });
   }
-  const complianceProbe = await probeCompliance(sendFn, {
-    motorIds, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
-    measurementSensorForces, forceLow, lastPoint: dataPoints.at(-1),
-    multiples: complianceProbeMultiples, maxSensorForceN,
+  const complianceProbes = await probeComplianceWithAntiphase(sendFn, {
+    axes, motorIds, mmPerDeg, feed, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
+    measurementSensorForces, forceLow, lastPoint: dataPoints.at(-1), prevPoint: dataPoints.at(-2) ?? null,
+    multiples: complianceProbeMultiples, maxSensorForceN, maxForceByAnchor, m669Anchors, weightN,
+    stepsPerRev: Array.isArray(stepsPerRevByAnchor) ? stepsPerRevByAnchor[sensorAnchor] : stepsPerRevByAnchor,
     noiseOptions: { sampleCount: noiseSampleCount, sampleIntervalMs: noiseSampleIntervalMs, speedup },
   });
-  return { dataPoints, complianceProbe, driveRange: { start: driveEndPointMm, end: driveStartPointMm },
+  return { dataPoints, complianceProbe: complianceProbes[0] ?? null, complianceProbes,
+    driveRange: { start: driveEndPointMm, end: driveStartPointMm },
     spoolReserve: { sensor_payout_mm: sensorPayoutMm, required_sensor_rewind_mm: sensorReserveMm,
       raw_measured_drive_interval_mm: rawDriveInterval,
       guarded_sensor_rewind_mm: reserved ? sensorPayoutMm - reserved.muByMotorDeg[sensorAnchor] * mmPerDeg[sensorAnchor] : null,
@@ -1646,6 +1652,7 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
 
 const DEFAULT_COMPLIANCE_PROBE_MULTIPLES = [2, 3, 1];
 const DISABLED_COMPLIANCE_PROBE_TOKENS = new Set(['0', 'off', 'false', 'none', 'disabled']);
+const COMPLIANCE_PROBE_FORCE_LIMIT_FRACTION = 0.85;
 
 export function resolveComplianceProbeMultiples({ machineType, m666, complianceProbe, noComplianceProbe }) {
   if (noComplianceProbe) return [];
@@ -1661,37 +1668,299 @@ export function resolveComplianceProbeMultiples({ machineType, m666, complianceP
   return (eligibleMachine && hasStiffness) ? DEFAULT_COMPLIANCE_PROBE_MULTIPLES : [];
 }
 
-// Fixed-pose probe of axial line compliance: at the sweep's last pose, with every
-// held line locked in position mode, step the sensor force and record all encoders.
+function solveLinearSystem(A, b) {
+  const n = b.length;
+  const M = A.map((row, i) => [...row, b[i]]);
+  for (let col = 0; col < n; col += 1) {
+    let pivot = col;
+    for (let row = col + 1; row < n; row += 1) {
+      if (Math.abs(M[row][col]) > Math.abs(M[pivot][col])) pivot = row;
+    }
+    if (Math.abs(M[pivot][col]) < 1e-12) return null;
+    if (pivot !== col) [M[col], M[pivot]] = [M[pivot], M[col]];
+    const diag = M[col][col];
+    for (let j = col; j <= n; j += 1) M[col][j] /= diag;
+    for (let row = 0; row < n; row += 1) {
+      if (row === col) continue;
+      const factor = M[row][col];
+      for (let j = col; j <= n; j += 1) M[row][j] -= factor * M[col][j];
+    }
+  }
+  return M.map(row => row[n]);
+}
+
+function solveMinNormHeldTensions(unitHeld, rhs) {
+  // Minimum-norm solution to U * t = rhs where U is (dims x m) with m >= dims:
+  // t = U^T * (U * U^T)^-1 * rhs.
+  const dims = rhs.length;
+  const m = unitHeld.length;
+  if (m < dims) return null;
+  const G = Array.from({ length: dims }, (_, i) =>
+    Array.from({ length: dims }, (_, j) =>
+      unitHeld.reduce((acc, u) => acc + u[i] * u[j], 0) + (i === j ? 1e-12 : 0)));
+  const y = solveLinearSystem(G, rhs);
+  if (!y) return null;
+  return unitHeld.map(u => u.reduce((acc, val, d) => acc + val * y[d], 0));
+}
+
+function estimatePoseFromLengths(anchors, lengthsMm) {
+  const dims = anchors[0].length;
+  const valid = [];
+  for (let i = 0; i < anchors.length; i += 1) {
+    if (Array.isArray(anchors[i]) && anchors[i].length === dims
+        && anchors[i].every(Number.isFinite) && Number.isFinite(lengthsMm[i])) {
+      const homeDist = Math.hypot(...anchors[i]);
+      if (homeDist > 1e-6) valid.push({ anchor: anchors[i], target: homeDist + lengthsMm[i] });
+    }
+  }
+  if (valid.length < dims) return null;
+  const pos = new Array(dims).fill(0);
+  for (let iter = 0; iter < 15; iter += 1) {
+    const H = Array.from({ length: dims }, (_, i) =>
+      Array.from({ length: dims }, (_, j) => (i === j ? 1e-6 : 0)));
+    const g = new Array(dims).fill(0);
+    for (const { anchor, target } of valid) {
+      const diff = pos.map((v, d) => v - anchor[d]);
+      const dist = Math.hypot(...diff);
+      if (dist < 1e-6) continue;
+      const dir = diff.map(v => v / dist);
+      const err = dist - target;
+      for (let i = 0; i < dims; i += 1) {
+        g[i] += dir[i] * err;
+        for (let j = 0; j < dims; j += 1) H[i][j] += dir[i] * dir[j];
+      }
+    }
+    const step = solveLinearSystem(H, g);
+    if (!step) return null;
+    for (let d = 0; d < dims; d += 1) pos[d] -= step[d];
+    if (Math.hypot(...step) < 1e-4) break;
+  }
+  return pos;
+}
+
+// Compute safe probe force cap respecting finite per-anchor M666 X limits and full-machine
+// static tension bounds (held lines stay within 0.85 * M666 X and remain taut).
+export function computeSafeProbeMaxForceN({
+  baseForce, sensorAnchor, heldAnchors, constantForceAnchors = [], constantForces = {},
+  maxForceByAnchor = null, maxSensorForceN = null, forceLow = 0, anchors = null, lengthsMm = null, weightN = 0,
+}) {
+  if (!Number.isFinite(baseForce) || baseForce <= 0) return null;
+  const limitOf = idx => {
+    const raw = Array.isArray(maxForceByAnchor) ? Number(maxForceByAnchor[idx])
+      : (idx === sensorAnchor ? Number(maxSensorForceN) : Number(maxForceByAnchor));
+    return (Number.isFinite(raw) && raw > 0) ? raw : null;
+  };
+  const sensorLimit = limitOf(sensorAnchor);
+  if (sensorLimit === null) return null;
+  const heldLimits = heldAnchors.map(limitOf);
+  if (heldLimits.some(lim => lim === null)) return null;
+
+  let safeCap = COMPLIANCE_PROBE_FORCE_LIMIT_FRACTION * sensorLimit;
+  const conservativeCap = Math.min(
+    safeCap,
+    ...heldLimits.map(lim => COMPLIANCE_PROBE_FORCE_LIMIT_FRACTION * lim),
+  );
+
+  if (Array.isArray(anchors) && Array.isArray(lengthsMm) && anchors.length > Math.max(sensorAnchor, ...heldAnchors)) {
+    const dims = Array.isArray(anchors[0]) ? anchors[0].length : 0;
+    const allFiniteAnchors = dims >= 2 && [sensorAnchor, ...heldAnchors, ...constantForceAnchors].every(
+      idx => Array.isArray(anchors[idx]) && anchors[idx].length === dims
+        && anchors[idx].every(Number.isFinite) && Math.hypot(...anchors[idx]) > 1e-3,
+    );
+    if (allFiniteAnchors) {
+      const pos = estimatePoseFromLengths(anchors, lengthsMm);
+      if (pos) {
+        const unitOf = idx => {
+          const v = anchors[idx].map((a, d) => a - pos[d]);
+          const norm = Math.hypot(...v);
+          return norm > 1e-6 ? v.map(x => x / norm) : null;
+        };
+        const uSensor = unitOf(sensorAnchor);
+        const uHeld = heldAnchors.map(unitOf);
+        const uConst = constantForceAnchors.map(unitOf);
+        if (uSensor && uHeld.every(Boolean) && uConst.every(Boolean)) {
+          const rhsBase = new Array(dims).fill(0);
+          if (dims >= 3 && Number.isFinite(weightN) && weightN > 0) rhsBase[dims - 1] += weightN;
+          for (let d = 0; d < dims; d += 1) {
+            rhsBase[d] -= baseForce * uSensor[d];
+            constantForceAnchors.forEach((idx, k) => {
+              const fc = Number(constantForces[idx] ?? forceLow);
+              if (Number.isFinite(fc) && fc > 0) rhsBase[d] -= fc * uConst[k][d];
+            });
+          }
+          const tBase = solveMinNormHeldTensions(uHeld, rhsBase);
+          const slope = solveMinNormHeldTensions(uHeld, uSensor.map(v => -v));
+          const minTaut = Math.max(0.5 * (Number.isFinite(forceLow) && forceLow > 0 ? forceLow : 0), 0.05);
+          if (tBase && slope && tBase.every(t => Number.isFinite(t) && t > minTaut)) {
+            for (let k = 0; k < heldAnchors.length; k += 1) {
+              const maxHeld = COMPLIANCE_PROBE_FORCE_LIMIT_FRACTION * heldLimits[k];
+              if (tBase[k] >= maxHeld) return null;
+              if (slope[k] > 1e-6) {
+                safeCap = Math.min(safeCap, baseForce + (maxHeld - tBase[k]) / slope[k]);
+              } else if (slope[k] < -1e-6) {
+                // Held tension decreases as sensor force grows; keep the held line taut.
+                safeCap = Math.min(safeCap, baseForce + (minTaut - tBase[k]) / slope[k]);
+              }
+            }
+            return Number.isFinite(safeCap) && safeCap > baseForce ? safeCap : null;
+          }
+        }
+      }
+    }
+  }
+  return Number.isFinite(conservativeCap) && conservativeCap > baseForce ? conservativeCap : null;
+}
+
+// Fixed-pose probe of axial line compliance: at a sweep pose, with every held line
+// locked in position mode, step the sensor force and record all encoders.
 async function probeCompliance(sendFn, {
-  motorIds, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
-  measurementSensorForces, forceLow, lastPoint, multiples = null, maxSensorForceN = null, noiseOptions,
+  motorIds, mmPerDeg, speedup, settleOptions, driveAnchor, sensorAnchor, fixedSet, forbidden,
+  measurementSensorForces, forceLow, lastPoint, multiples = null, maxSensorForceN = null,
+  maxForceByAnchor = null, m669Anchors = null, weightN = 0, noiseOptions,
 }) {
   const resolved = Array.isArray(multiples)
     ? multiples.filter(v => Number.isFinite(v) && v > 0)
     : (process.env.HP_SIM5_COMPLIANCE_PROBE ?? '').split(',').filter(Boolean).map(Number).filter(v => Number.isFinite(v) && v > 0);
   if (!resolved.length || !lastPoint) return null;
   const base = lastPoint.sensor_force_n;
-  if (!Number.isFinite(base) || base <= 0) return null;
-  const cap = Number.isFinite(maxSensorForceN) && maxSensorForceN > 0 ? 0.85 * maxSensorForceN : Infinity;
-  const levels = [{ force_n: base, mu_deg: lastPoint.mu ?? lastPoint.raw_angles_deg, sigma_deg: lastPoint.sigma ?? null }];
-  for (const multiple of resolved) {
-    const force = Math.min(base * multiple, cap);
-    if (!Number.isFinite(force) || force <= 0) continue;
-    const prevForce = levels.at(-1).force_n;
-    if (Math.abs(force - prevForce) < 0.05) continue;
-    await applyForceModeState(sendFn, { motorIds, modes: motorIds.map((_, idx) => {
-      if (idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx)) return 'position';
-      return idx === sensorAnchor ? force : (measurementSensorForces[idx] ?? forceLow);
-    }) });
-    await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-    const sample = await sampleEncoderNoise(sendFn, motorIds, noiseOptions);
-    levels.push({ force_n: force, mu_deg: sample.muByMotorDeg, sigma_deg: sample.sigmaByMotorDeg,
-      clock_ms: sendFn.simulationClock?.now() ?? Date.now() });
+  const baseAngles = lastPoint.mu ?? lastPoint.raw_angles_deg;
+  if (!Number.isFinite(base) || base <= 0 || !Array.isArray(baseAngles) || baseAngles.length !== motorIds.length) return null;
+
+  const heldAnchors = motorIds.map((_, idx) => idx).filter(
+    idx => idx === driveAnchor || fixedSet.has(idx) || forbidden.has(idx),
+  );
+  const heldSet = new Set(heldAnchors);
+  const constantForceAnchors = motorIds.map((_, idx) => idx).filter(
+    idx => idx !== sensorAnchor && !heldSet.has(idx),
+  );
+  const constantForces = Object.fromEntries(
+    constantForceAnchors.map(idx => [idx, measurementSensorForces[idx] ?? forceLow]),
+  );
+  const baseLengthsMm = Array.isArray(mmPerDeg)
+    ? baseAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg))
+    : null;
+  const cap = computeSafeProbeMaxForceN({
+    baseForce: base,
+    sensorAnchor,
+    heldAnchors,
+    constantForceAnchors,
+    constantForces,
+    maxForceByAnchor,
+    maxSensorForceN,
+    forceLow,
+    anchors: m669Anchors,
+    lengthsMm: baseLengthsMm,
+    weightN,
+  });
+  if (!Number.isFinite(cap) || cap <= base + 0.05) {
+    console.log(`; compliance probe on sensor ${sensorAnchor} skipped (no safe finite force headroom above ${base.toFixed(2)} N)`);
+    return null;
   }
-  if (levels.length < 2) return null;
+
+  const probeModesFor = sensorForce => motorIds.map((_, idx) => {
+    if (heldSet.has(idx)) return 'position';
+    return idx === sensorAnchor ? sensorForce : (constantForces[idx] ?? forceLow);
+  });
+  const checkHeldDrift = angles => {
+    if (!Array.isArray(mmPerDeg) || !Array.isArray(angles)) return null;
+    for (const h of heldAnchors) {
+      const mmPer = mmPerDeg[h];
+      if (!Number.isFinite(mmPer) || !Number.isFinite(angles[h]) || !Number.isFinite(baseAngles[h])) continue;
+      const driftMm = Math.abs((angles[h] - baseAngles[h]) * mmPer);
+      if (driftMm > DEFAULT_FIXED_TOLERANCE_MM) {
+        return { anchor: h, driftMm };
+      }
+    }
+    return null;
+  };
+
+  const levels = [{ force_n: base, mu_deg: baseAngles, sigma_deg: lastPoint.sigma ?? null }];
+  let currentForce = base;
+  let aborted = false;
+  try {
+    for (const multiple of resolved) {
+      const force = Math.min(base * multiple, cap);
+      if (!Number.isFinite(force) || force <= 0) continue;
+      const prevForce = levels.at(-1).force_n;
+      if (Math.abs(force - prevForce) < 0.05) continue;
+      await applyForceModeState(sendFn, { motorIds, modes: probeModesFor(force) });
+      currentForce = force;
+      await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+      const sample = await sampleEncoderNoise(sendFn, motorIds, noiseOptions);
+      const drift = checkHeldDrift(sample.muByMotorDeg);
+      if (drift) {
+        console.log(`; compliance probe on sensor ${sensorAnchor} aborted: held anchor ${drift.anchor} drifted ${drift.driftMm.toFixed(2)} mm`);
+        aborted = true;
+        break;
+      }
+      levels.push({ force_n: force, mu_deg: sample.muByMotorDeg, sigma_deg: sample.sigmaByMotorDeg,
+        clock_ms: sendFn.simulationClock?.now() ?? Date.now() });
+    }
+  } finally {
+    if (Math.abs(currentForce - base) >= 0.05) {
+      try {
+        await applyForceModeState(sendFn, { motorIds, modes: probeModesFor(base) });
+        await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+      } catch (_restoreErr) {
+        // Best-effort restore on abort/error.
+      }
+    }
+  }
+  if (aborted || levels.length < 2) return null;
   console.log(`; compliance probe on sensor ${sensorAnchor}: ${levels.map(level => level.force_n.toFixed(2)).join(', ')} N`);
-  return { drive_anchor: driveAnchor, sensor_anchor: sensorAnchor, levels };
+  return {
+    drive_anchor: driveAnchor,
+    sensor_anchor: sensorAnchor,
+    held_anchors: heldAnchors,
+    constant_force_anchors: constantForceAnchors,
+    constant_forces_n: constantForces,
+    levels,
+  };
+}
+
+// Run a compliance probe at the sweep's last pose and, when motor step geometry is known,
+// a second antiphase probe nudged by half a stepper electrical cycle back into the already-verified
+// sweep interval so periodic motor cogging torque cancels across the pair.
+async function probeComplianceWithAntiphase(sendFn, options) {
+  const {
+    axes, motorIds, mmPerDeg, feed, speedup, settleOptions, driveAnchor, sensorAnchor,
+    lastPoint, prevPoint, stepsPerRev = 200, noiseOptions,
+  } = options;
+  const probes = [];
+  const first = await probeCompliance(sendFn, options);
+  if (!first) return probes;
+  probes.push(first);
+
+  const steps = Number.isFinite(Number(stepsPerRev)) && Number(stepsPerRev) >= 8 ? Number(stepsPerRev) : 200;
+  const halfCoggingDeg = 720 / steps; // 2 full steps = half of a 4-full-step electrical cycle (3.6 deg for J=200)
+  const lastAngles = lastPoint?.mu ?? lastPoint?.raw_angles_deg;
+  const prevAngles = prevPoint?.mu ?? prevPoint?.raw_angles_deg;
+  if (Array.isArray(axes) && axes[driveAnchor] && Array.isArray(lastAngles) && Array.isArray(prevAngles)
+      && Number.isFinite(lastPoint?.l_drive) && Number.isFinite(prevPoint?.l_drive)) {
+    const dDriveMm = lastPoint.l_drive - prevPoint.l_drive;
+    const dSensorDeg = lastAngles[sensorAnchor] - prevAngles[sensorAnchor];
+    if (Math.abs(dDriveMm) > 1.0 && Math.abs(dSensorDeg) > 0.2) {
+      const neededDriveMm = halfCoggingDeg * Math.abs(dDriveMm / dSensorDeg);
+      const stepMag = Math.min(Math.max(neededDriveMm, 0.5), 0.45 * Math.abs(dDriveMm));
+      const nudgeMm = -Math.sign(dDriveMm) * stepMag;
+      try {
+        await runMoveWithWait(sendFn, `G1 H2 ${axes[driveAnchor]}${nudgeMm.toFixed(3)} F${feed}`, speedup, { axes });
+        await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+        const baseSample = await sampleEncoderNoise(sendFn, motorIds, noiseOptions);
+        const nudgedPoint = {
+          sensor_force_n: lastPoint.sensor_force_n,
+          mu: baseSample.muByMotorDeg,
+          raw_angles_deg: baseSample.muByMotorDeg,
+          sigma: baseSample.sigmaByMotorDeg,
+        };
+        const second = await probeCompliance(sendFn, { ...options, lastPoint: nudgedPoint });
+        if (second) probes.push(second);
+      } catch (err) {
+        console.log(`; antiphase compliance probe skipped: ${err?.message ?? err}`);
+      }
+    }
+  }
+  return probes;
 }
 
 export async function collectSweepData(send, context) {
@@ -2050,6 +2319,20 @@ export async function collectSweepData(send, context) {
             maxSensorForceN: Array.isArray(m666ForCollection?.X)
               ? Number(m666ForCollection.X[subCfg.sensorAnchor])
               : Number(m666ForCollection?.X),
+            maxForceByAnchor: machineConfig.axes.map((_, idx) => (
+              Array.isArray(m666ForCollection?.X)
+                ? Number(m666ForCollection.X[idx])
+                : Number(m666ForCollection?.X)
+            )),
+            m669Anchors: machineConfig.axes.map(axis => (
+              Array.isArray(m669Values?.[axis]) ? m669Values[axis].slice(0, machineConfig.dimensions) : null
+            )),
+            weightN: Number.isFinite(Number(m666ForCollection?.W)) ? Number(m666ForCollection.W) * 9.81 : 0,
+            stepsPerRevByAnchor: machineConfig.axes.map((_, idx) => (
+              Array.isArray(m666ForCollection?.J)
+                ? Number(m666ForCollection.J[idx])
+                : Number(m666ForCollection?.J)
+            )),
           });
         }, {
           motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
@@ -2075,7 +2358,13 @@ export async function collectSweepData(send, context) {
       sensorCollectionForce = sweepResult.forces.sensorCollectionForce;
       recoveryEvents.push(...sweepResult.recoveries.map(event => ({ ...event, direction: i })));
       spoolReserves.push({ direction: i, ...sweepResult.spoolReserve });
-      if (sweepResult.complianceProbe) complianceProbes.push({ direction: i, ...sweepResult.complianceProbe });
+      if (Array.isArray(sweepResult.complianceProbes) && sweepResult.complianceProbes.length) {
+        for (const probe of sweepResult.complianceProbes) {
+          complianceProbes.push({ direction: i, ...probe });
+        }
+      } else if (sweepResult.complianceProbe) {
+        complianceProbes.push({ direction: i, ...sweepResult.complianceProbe });
+      }
       directionForces.push({ drive_anchor: subCfg.driveAnchor, sensor_anchor: subCfg.sensorAnchor,
         sensor_force_n: resolveCollectionForce(sweepResult.forces),
         pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }) });

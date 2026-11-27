@@ -11,6 +11,7 @@ import {
   buildGlobalForceModes,
   buildSymmetricPulloutModes,
   combinations,
+  computeSafeProbeMaxForceN,
   generateSweepConfigs,
   MACHINE_CONFIGS,
   resolveComplianceProbeMultiples,
@@ -297,6 +298,47 @@ m569_address: 43.0
       complianceProbe: '1.5,3,1',
       noComplianceProbe: false,
     })).toEqual([1.5, 3, 1]);
+  });
+
+  test('computeSafeProbeMaxForceN skips missing/non-finite limits and caps held-line overload', () => {
+    const anchors = [
+      [0, -1900, -280],
+      [1645.45, 950, -280],
+      [-1645.45, 950, -280],
+      [0, 0, 1900],
+    ];
+    // Missing or NaN M666 X must return null (never Infinity).
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [NaN, 40, 40, 40],
+      anchors,
+      lengthsMm: [0, 0, 0, 0],
+    })).toBeNull();
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: null,
+      maxSensorForceN: NaN,
+    })).toBeNull();
+
+    // When a held line (e.g. drive anchor 1) has a tighter limit than the sensor,
+    // full-machine static equilibrium must cap the sensor force below 0.85 * X_sensor.
+    const capTightHeld = computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 20, 40, 40],
+      forceLow: 0.5,
+      anchors,
+      lengthsMm: [0, 0, 0, 0],
+      weightN: 0.8,
+    });
+    expect(capTightHeld).not.toBeNull();
+    expect(capTightHeld).toBeLessThan(0.85 * 40);
+    expect(capTightHeld).toBeLessThanOrEqual(0.85 * 20 + 0.5);
   });
 });
 

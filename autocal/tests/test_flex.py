@@ -120,3 +120,45 @@ def test_spool_rest_correction_tracks_lifo_sensor_rewind_and_drive_pullout():
     sliced = slice_spool_history(history, np.array([True, False, True]))
     assert sliced is not None and sliced["num_points"] == 2
     assert sliced["passes"][0]["rows"].tolist() == [0, 1]
+
+
+def test_spool_rest_correction_skips_nan_rejected_points_without_corrupting_subsequent_coils():
+    m666 = {"S": 20000.0, "U": [1.0, 1.0], "N": [1.0, 1.0], "R": [30.0, 30.0], "K": 0.015, "V": 1}
+    model = FlexModel.from_m666(m666, num_axes=2)
+    dataset = {
+        "config": {"force_tuning": {"pullout_force_n": 4.0}},
+        "sweeps": [
+            {
+                "drive_anchor": 0,
+                "sensor_anchor": 1,
+                "metadata": {
+                    "spool_reserves": [{"sensor_payout_mm": 500.0}],
+                    "direction_forces": [{"pullout_force_n": 4.0}],
+                },
+                "data_points": [
+                    {"l_drive": -300.0, "l_sensor": 400.0},
+                    {"l_drive": -200.0, "l_sensor": 300.0},
+                    {"l_drive": -100.0, "l_sensor": 200.0},
+                    {"l_drive": 0.0, "l_sensor": 100.0},
+                ],
+            }
+        ],
+    }
+    history = extract_spool_history(dataset)
+    lengths_clean = np.array([[-300.0, 400.0], [-200.0, 300.0], [-100.0, 200.0], [0.0, 100.0]])
+    tensions = np.array([[10.0, 8.0], [10.0, 8.0], [10.0, 8.0], [10.0, 8.0]])
+    corr_clean = spool_rest_correction_mm(lengths_clean, tensions, model, history)
+
+    # Rejecting a mid-sweep point (masking row 1 to NaN) must not inject a fake jump to 0 mm.
+    lengths_masked = lengths_clean.copy()
+    lengths_masked[1, :] = np.nan
+    corr_masked = spool_rest_correction_mm(lengths_masked, tensions, model, history)
+    assert corr_masked[1, 1] == 0.0
+    np.testing.assert_allclose(corr_masked[[0, 2, 3], 1], corr_clean[[0, 2, 3], 1], atol=1e-12)
+
+    # Rejecting the very first point of a pass must also initialize cleanly from payout to row 1.
+    lengths_first_nan = lengths_clean.copy()
+    lengths_first_nan[0, :] = np.nan
+    corr_first_nan = spool_rest_correction_mm(lengths_first_nan, tensions, model, history)
+    assert corr_first_nan[0, 1] == 0.0
+    np.testing.assert_allclose(corr_first_nan[[1, 2, 3], 1], corr_clean[[1, 2, 3], 1], atol=1e-12)

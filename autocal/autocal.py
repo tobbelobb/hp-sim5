@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from autocal._autocal_common import *  # noqa: F401,F403
+from autocal._autocal_common import _gcode_reply_error, _verify_applied_firmware_parameters
 from autocal.planning_pass import plan_next_ellipse_sweep, plan_ellipse_sweep
 from autocal.equal_strain import write_sensor_force_profile, profile_policy_error
 from autocal.rough_bootstrap import (
@@ -384,6 +385,26 @@ def _full_auto_loop(
                     reply = reply.strip()
                     if reply:
                         _log_line(f"; {name} reply: {reply}")
+                    err = _gcode_reply_error(reply)
+                    if err:
+                        _log_console(f"; firmware rejected {name}: {err}")
+                        return _finalize(1)
+                readbacks: Dict[str, str] = {}
+                for query in [name for name, _ in commands_to_send]:
+                    try:
+                        readbacks[query] = provider.send_gcode(rrf_server, query).strip()
+                    except Exception as exc:
+                        _log_console(f"; failed to verify {query} readback: {exc}")
+                        return _finalize(1)
+                try:
+                    _verify_applied_firmware_parameters(
+                        [cmd for _, cmd in commands_to_send],
+                        m669_reply=readbacks.get("M669"),
+                        m666_reply=readbacks.get("M666"),
+                    )
+                except Exception as exc:
+                    _log_console(f"; firmware verification failed before M500: {exc}")
+                    return _finalize(1)
                 _log_console(f"Sending M500 to {rrf_server}")
                 try:
                     save_reply = provider.send_gcode(rrf_server, "M500")
@@ -393,6 +414,10 @@ def _full_auto_loop(
                 save_reply = save_reply.strip()
                 if save_reply:
                     _log_line(f"; M500 reply: {save_reply}")
+                save_err = _gcode_reply_error(save_reply)
+                if save_err:
+                    _log_console(f"; M500 failed: {save_err}")
+                    return _finalize(1)
         else:
             _log_console("Sending M669 skipped (no command available)")
         return _finalize(0)

@@ -110,7 +110,13 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
     monkeypatch.setattr(ac, '_plan_hits_underconstrained_penalty', lambda *a: False)
     monkeypatch.setattr(ac.StoppingPolicy, 'update', lambda *a, **kw: StopDecision(1, True, False, None, 'accept' if 4 in fits else 'collect'))
     monkeypatch.setattr(ac.BrowserCollector, 'collect', collect)
-    monkeypatch.setattr(ac.RRFFirmwareProvider, 'send_gcode', lambda *a: sent.append(a) or '')
+    def fake_send_gcode(self, server, cmd):
+        sent.append((self, server, cmd))
+        if cmd == "M669":
+            return "A:0.00, 0.00, 0.00\nB:1.00, 0.00, 0.00\nC:0.00, 1.00, 0.00"
+        return ""
+
+    monkeypatch.setattr(ac.RRFFirmwareProvider, 'send_gcode', fake_send_gcode)
     code = ac.main(['--sim', '--machine-type', 'slideprinter', '--dataset', str(path), '--max-steps', '4',
                     '--collector-args', '--server', 'http://127.0.0.1:12345'])
     data = ac._load_json(path)
@@ -120,6 +126,7 @@ def test_resolved_boundary_replans_without_refitting_but_transport_failure_abort
     else:
         assert code == 0 and [call[2] for call in sent] == [
             'M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00',
+            'M669',
             'M500',
         ] and len(collects) == 2 and len(replans) == 1
         assert len(collectors) == 1
@@ -145,6 +152,8 @@ def test_final_application_does_not_retry_and_preserves_stop_reason(tmp_path, mo
         sent.append(gcode)
         if mode == "apply_interrupt":
             raise KeyboardInterrupt
+        if gcode == "M669":
+            return "A:0.00, 0.00, 0.00\nB:1.00, 0.00, 0.00\nC:0.00, 1.00, 0.00"
         return ""
 
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fit)
@@ -162,7 +171,7 @@ def test_final_application_does_not_retry_and_preserves_stop_reason(tmp_path, mo
         assert code == 130
         assert "stopping without retry" in output
     else:
-        assert sent == ["M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00", "M500"]
+        assert sent == ["M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00", "M669", "M500"]
         output = capsys.readouterr().out
         assert code == 0
         assert "stop requested (stop-file)" in output

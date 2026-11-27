@@ -172,12 +172,12 @@ def test_m666_from_plan_emits_measured_stiffness_standalone_and_combined():
     assert combined == "M666 R30.12:30.12:30.12 Q0 S16123.5"
 
 
-def test_headless_apply_parameters_verifies_m666_stiffness_and_runs_m500():
+def test_headless_apply_parameters_verifies_before_m500_and_fails_on_m500_error():
     service = HeadlessSimulation.__new__(HeadlessSimulation)
     service.manifest = {}
     sent = []
     replies = {
-        "M669": "A:0, -1900, -280",
+        "M669": "A:0.00, -1900.00, -280.00",
         "M666": "M666 A1 S16000.0 Q0.0000 K0.0150 V1",
         "M500": "Parameters saved",
     }
@@ -188,13 +188,31 @@ def test_headless_apply_parameters_verifies_m666_stiffness_and_runs_m500():
 
     service.request = fake_request
     service.apply_parameters(["M669 A0:-1900:-280", "M666 S16000.0"])
-    assert ("gcode", "M666 S16000.0") in sent
-    assert ("gcode", "M500") in sent
+    lines = [line for _, line in sent]
+    assert lines.index("M666") < lines.index("M500")
+    assert lines.index("M669") < lines.index("M500")
     assert service.manifest["saved_parameters_permanent"] is True
 
-    # If firmware ignores M666 S..., apply_parameters must fail loudly.
+    # If firmware ignores M666 S..., apply_parameters must fail loudly BEFORE calling M500.
+    sent.clear()
     with pytest.raises(RuntimeError, match="did not accept M666 S24000.0"):
         service.apply_parameters(["M666 S24000.0"])
+    assert ("gcode", "M500") not in sent
+
+    # If firmware rejects M669 directly with an error reply, fail loudly BEFORE M500.
+    sent.clear()
+    replies["M669 A0:-1900:-280"] = "Error: invalid anchor"
+    with pytest.raises(RuntimeError, match="Firmware rejected M669"):
+        service.apply_parameters(["M669 A0:-1900:-280"])
+    assert ("gcode", "M500") not in sent
+    replies.pop("M669 A0:-1900:-280")
+
+    # If M500 returns an error reply, apply_parameters must raise.
+    sent.clear()
+    replies["M500"] = "Error: failed to write config-override.g"
+    with pytest.raises(RuntimeError, match="failed to persist parameters with M500"):
+        service.apply_parameters(["M666 S16000.0"])
+    assert service.manifest["saved_parameters_permanent"] is False
 
 
 def test_full_auto_prints_and_persists_measured_stiffness_with_m500(tmp_path, monkeypatch, capsys):
@@ -222,12 +240,22 @@ def test_full_auto_prints_and_persists_measured_stiffness_with_m500(tmp_path, mo
             },
         }
 
+    replies = {
+        "M669": "A:0.00, 0.00, 0.00\nB:1.00, 0.00, 0.00\nC:0.00, 1.00, 0.00",
+        "M666": "M666 S16250.00 Q0.0000",
+        "M500": "Parameters saved",
+    }
+
+    def fake_send(self, srv, cmd):
+        sent.append(cmd)
+        return replies.get(cmd, "")
+
     from autocal.stopping import StopDecision
     monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *a, **kw: None)
     monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *a: False)
     monkeypatch.setattr(ac.StoppingPolicy, "update", lambda *a, **kw: StopDecision(1, True, False, None, "accept"))
-    monkeypatch.setattr(ac.RRFFirmwareProvider, "send_gcode", lambda self, srv, cmd: sent.append(cmd) or "")
+    monkeypatch.setattr(ac.RRFFirmwareProvider, "send_gcode", fake_send)
 
     rc = ac.main([
         "--sim", "--no-collect", "--machine-type", "slideprinter", "--dataset", str(dataset),
@@ -237,8 +265,120 @@ def test_full_auto_prints_and_persists_measured_stiffness_with_m500(tmp_path, mo
     assert sent == [
         "M669 A0.00:0.00:0.00 B1.00:0.00:0.00 C0.00:1.00:0.00",
         "M666 S16250.0",
+        "M669",
+        "M666",
         "M500",
     ]
     out = capsys.readouterr().out
     assert "Line model (M666): M666 S16250.0" in out
     assert "Stiffness (M666 S): S16250.0 N (source=compliance_probe" in out
+
+    # Live RRF path must fail non-zero and skip M500 when firmware ignores M666 S...
+    sent.clear()
+    replies["M666"] = "M666 S20000.00 Q0.0000"
+    rc_bad_m666 = ac.main([
+        "--sim", "--no-collect", "--machine-type", "slideprinter", "--dataset", str(dataset),
+        "--max-steps", "2", "--collector-args", "--server", "http://127.0.0.1:12345",
+    ])
+    assert rc_bad_m666 == 1
+    assert "M500" not in sent
+
+    # Live RRF path must fail non-zero when M500 returns an error.
+    sent.clear()
+    replies["M666"] = "M666 S16250.00 Q0.0000"
+    replies["M500"] = "Error: SD card not mounted"
+    rc_bad_m500 = ac.main([
+        "--sim", "--no-collect", "--machine-type", "slideprinter", "--dataset", str(dataset),
+        "--max-steps", "2", "--collector-args", "--server", "http://127.0.0.1:12345",
+    ])
+    assert rc_bad_m500 == 1
+    assert "M500" in sent
+
+
+def test_estimate_compliance_scale_uses_exact_elastic_compatibility_for_redundant_held_lines():
+    # 5-anchor 3D machine with 4 held lines (redundant: len(held)=4 > dims=3) and unequal compliances.
+    anchors = np.array([
+        [0.0, -1900.0, -280.0],
+        [1900.0, 0.0, -280.0],
+        [0.0, 1900.0, -280.0],
+        [-1900.0, 0.0, -280.0],
+        [0.0, 0.0, 1900.0],
+    ])
+    ea_cfg, ea_true = 20000.0, 15000.0
+    ma = np.array([1.0, 2.0, 1.0, 2.0, 4.0])
+    strands = np.array([1.0, 2.0, 1.0, 2.0, 4.0])
+    guy = np.array([500.0, 500.0, 500.0, 500.0, 350.0])
+    mm_per_deg = np.full(5, 0.5)
+    home = home_line_lengths(anchors)
+
+    # Exact elastic physics for 4 held lines [0, 1, 3, 4] and sensor 2 at two poses.
+    sweeps = []
+    for k, pos in enumerate([np.array([150.0, -200.0, 250.0]), np.array([-180.0, 120.0, 400.0])]):
+        dist0, dir0 = line_geometry(anchors, pos[None, :])
+        dist0, unit = dist0[0], dir0[0]
+        c_true = (ma * dist0 + guy) / (ea_true * (ma ** 2) * strands)
+        l0 = dist0 - home
+        held = [0, 1, 3, 4]
+        sensor = 2
+        k_sys = (unit[held].T * (1.0 / c_true[held])[None, :]) @ unit[held]
+        levels = []
+        for f in (2.0, 4.0, 6.0):
+            df = f - 2.0
+            dp = np.linalg.solve(k_sys, df * unit[sensor])
+            dl = np.zeros(5)
+            dl[sensor] = float(-unit[sensor] @ dp - c_true[sensor] * df)
+            levels.append({"force_n": f, "mu_deg": ((l0 + dl) / mm_per_deg).tolist()})
+        sweeps.append({
+            "id": f"sweep_{k + 1:03d}",
+            "fixed_anchors": [0, 4],
+            "fixed_lengths": [0.0, 0.0],
+            "drive_anchor": 1,
+            "sensor_anchor": sensor,
+            "metadata": {
+                "compliance_probes": [{
+                    "direction": 0,
+                    "drive_anchor": 1,
+                    "sensor_anchor": sensor,
+                    "held_anchors": held,
+                    "levels": levels,
+                }]
+            },
+            "data_points": [],
+        })
+    ds = {
+        "machine_type": "hangprinter_5",
+        "num_anchors": 5,
+        "dimensions": 3,
+        "config": {
+            "mm_per_degree": mm_per_deg.tolist(),
+            "m666_before_data_collection": {"S": ea_cfg, "U": ma.tolist(), "N": strands.tolist(), "Y": guy.tolist()},
+        },
+        "sweeps": sweeps,
+    }
+    est = estimate_compliance_scale(ds, anchors)
+    assert est is not None
+    assert est["stiffness_n"] == pytest.approx(ea_true, rel=1e-3)
+
+
+def test_estimate_compliance_scale_rejects_ill_conditioned_and_noisy_probes():
+    # Coplanar held anchors make K_sys singular/ill-conditioned -> must return None.
+    coplanar = np.array([
+        [0.0, -1900.0, 0.0],
+        [1645.45, 950.0, 0.0],
+        [-1645.45, 950.0, 0.0],
+        [0.0, 500.0, 0.0],
+    ])
+    ds_singular = _synthetic_probe_dataset(coplanar, ea_cfg=20000.0, ea_true=16000.0)
+    assert estimate_compliance_scale(ds_singular, coplanar) is None
+
+    # Wildly inconsistent step estimates (no consensus across probes) -> must return None.
+    ds_noisy = _synthetic_probe_dataset(HP3_ANCHORS, ea_cfg=20000.0, ea_true=16000.0)
+    scales = (0.3, 1.4, 3.8)
+    for idx, sw in enumerate(ds_noisy["sweeps"]):
+        probe = sw["metadata"]["compliance_probes"][0]
+        s = probe["sensor_anchor"]
+        scale = scales[idx % len(scales)]
+        base = probe["levels"][0]["mu_deg"][s]
+        for lvl in probe["levels"][1:]:
+            lvl["mu_deg"][s] = base + (lvl["mu_deg"][s] - base) * scale
+    assert estimate_compliance_scale(ds_noisy, HP3_ANCHORS) is None

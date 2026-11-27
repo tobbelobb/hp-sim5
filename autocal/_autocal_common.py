@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -751,6 +752,102 @@ def _m666_from_plan(plan: Dict[str, object]) -> Optional[str]:
         plan.get("length_model"),
         measured_stiffness=plan.get("measured_stiffness"),
     )
+
+
+_GCODE_ERROR_RE = re.compile(r"\b(?:error|failed|cannot|unable)\b", re.IGNORECASE)
+_M669_CMD_ANCHOR_RE = re.compile(r"\b([A-Z])([-+\d.eE]+):([-+\d.eE]+):([-+\d.eE]+)")
+_M669_REPLY_ANCHOR_RE = re.compile(
+    r"(?:^|\s)([A-Z]):\s*([-+\d.eE]+),\s*([-+\d.eE]+),\s*([-+\d.eE]+)",
+    re.MULTILINE,
+)
+
+
+def _gcode_reply_error(reply: object) -> Optional[str]:
+    if not isinstance(reply, str):
+        return None
+    text = reply.strip()
+    if text and _GCODE_ERROR_RE.search(text):
+        return text
+    return None
+
+
+def _verify_applied_firmware_parameters(
+    applied_commands: Sequence[str],
+    *,
+    m669_reply: Optional[str] = None,
+    m666_reply: Optional[str] = None,
+) -> None:
+    """Verify via readback that firmware accepted every sent M669/M666 parameter."""
+    m669_text = (m669_reply or "").strip()
+    m666_text = (m666_reply or "").strip()
+    for raw_cmd in applied_commands:
+        command = str(raw_cmd or "").strip()
+        if not command:
+            continue
+        if command.startswith("M669"):
+            if _gcode_reply_error(m669_text):
+                raise RuntimeError(f"Firmware reported error reading M669 after {command}: {m669_text}")
+            wanted = {
+                m.group(1): (float(m.group(2)), float(m.group(3)), float(m.group(4)))
+                for m in _M669_CMD_ANCHOR_RE.finditer(command)
+            }
+            if not wanted:
+                continue
+            reported = {
+                m.group(1): (float(m.group(2)), float(m.group(3)), float(m.group(4)))
+                for m in _M669_REPLY_ANCHOR_RE.finditer(m669_text)
+            }
+            if not reported:
+                reported = {
+                    m.group(1): (float(m.group(2)), float(m.group(3)), float(m.group(4)))
+                    for m in _M669_CMD_ANCHOR_RE.finditer(m669_text)
+                }
+            for label, coords in wanted.items():
+                got = reported.get(label)
+                if got is None or any(abs(a - b) > 0.05 for a, b in zip(coords, got)):
+                    raise RuntimeError(f"Firmware did not accept {command}: {m669_text}")
+        elif command.startswith("M666"):
+            if _gcode_reply_error(m666_text):
+                raise RuntimeError(f"Firmware reported error reading M666 after {command}: {m666_text}")
+            wanted_q = re.search(r"^M666\b.*\bQ([-+\d.eE:]+)", command)
+            if wanted_q:
+                reported_q = re.search(r"\bQ([-+\d.eE:]+)", m666_text)
+                if not reported_q:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+                rep_q_vals = [float(v) for v in reported_q.group(1).split(":")]
+                want_q_vals = [float(v) for v in wanted_q.group(1).split(":")]
+                if len(rep_q_vals) == 1:
+                    ok_q = all(abs(rep_q_vals[0] - q) <= 1e-4 for q in want_q_vals)
+                else:
+                    ok_q = len(rep_q_vals) == len(want_q_vals) and all(
+                        abs(rq - wq) <= 1e-4 for rq, wq in zip(rep_q_vals, want_q_vals)
+                    )
+                if not ok_q:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+            wanted_r = re.search(r"^M666\b.*\bR([-+\d.eE:]+)", command)
+            if wanted_r:
+                reported_r = re.search(r"\bR([-+\d.eE:]+)", m666_text)
+                if not reported_r:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+                rep_r_vals = [float(v) for v in reported_r.group(1).split(":")]
+                want_r_vals = [float(v) for v in wanted_r.group(1).split(":")]
+                if len(rep_r_vals) == 1:
+                    ok_r = all(abs(rep_r_vals[0] - r) <= 0.05 for r in want_r_vals)
+                else:
+                    ok_r = len(rep_r_vals) >= len(want_r_vals) and all(
+                        abs(rr - wr) <= 0.05 for rr, wr in zip(rep_r_vals, want_r_vals)
+                    )
+                if not ok_r:
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
+            wanted_s = re.search(r"^M666\b.*\bS([-+\d.eE]+)", command)
+            if wanted_s:
+                reported_s = re.search(r"\bS([-+\d.eE]+)", m666_text)
+                if not (
+                    reported_s
+                    and abs(float(reported_s.group(1)) - float(wanted_s.group(1)))
+                    <= max(1.0, 1e-3 * abs(float(wanted_s.group(1))))
+                ):
+                    raise RuntimeError(f"Firmware did not accept {command}: {m666_text}")
 
 
 def _anchor_norms(anchors: np.ndarray) -> List[float]:

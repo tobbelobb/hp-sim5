@@ -1,17 +1,21 @@
 """Line stiffness / compliance estimation from fixed-pose force-step probes.
 
-At the end of a sweep pass, all held lines (fixed + drive) stay in position mode
-while the sensor motor steps its commanded force by dF (and any other force-mode
-lines keep constant force, dT = 0). Static equilibrium fixes the held lines' tension
-changes dT independently of stiffness. With per-axis compliance
+At the end of a sweep pass, all held lines (fixed + drive + forbidden-force) stay
+in position mode while the sensor motor steps its commanded force by dF (and any
+other force-mode lines keep constant force, dT = 0). With per-axis compliance
     c_i = (U_i * d_i + Y_i) / (EA_cfg * U_i^2 * N_i),
-the scaled compliance factor k = EA_cfg / EA_true obeys
-    u_i . dp = -dm_i - k * c_i * dT_i     (held lines)
-    u_e . dp = -dm_e                       (constant-force lines)
-so dp = P + k * Q is affine in k, and the sensor's measured encoder change satisfies
-    dm_s = -u_s . dp - k * c_s * dF = a + k * b.
-Collecting (a, b, dm_s) across all probe steps gives a clean least-squares estimate
-of k and the measured axial stiffness EA_meas = EA_cfg / k.
+and scaled compliance factor k = EA_cfg / EA_true, each held line obeys
+    u_h . dp = -dm_h - k * c_h * dT_h  =>  dT_h = -(1 / (k * c_h)) * (u_h . dp + dm_h).
+Substituting into static equilibrium (sum_h u_h * dT_h + u_s * dF = 0) yields the
+exact d x d elastic compatibility system (valid for both determinate and redundant
+held lines):
+    K_sys @ dp = k * dF * u_s - sum_h (1 / c_h) * dm_h * u_h,
+    K_sys = sum_h (1 / c_h) * (u_h u_h^T),
+so dp = P + k * Q is strictly affine in k, and the sensor's unstretched material
+length change satisfies
+    dm_s_rest = -u_s . dp - k * c_s * dF = a + k * b.
+Collecting (a, b, dm_s_rest) across well-conditioned probe steps gives a robust
+least-squares estimate of k and the measured axial stiffness EA_meas = EA_cfg / k.
 """
 from __future__ import annotations
 
@@ -19,11 +23,16 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
+from autocal.flex import FlexModel
 from autocal.swivel_pulley import home_line_lengths, line_geometry, swivel_geometry_from_m669
 
 _MIN_PLAUSIBLE_K = 0.2
 _MAX_PLAUSIBLE_K = 5.0
 _MIN_FORCE_STEP_N = 0.05
+_MAX_STIFFNESS_COND = 1e4
+_MIN_STEP_SENSITIVITY_MM = 1e-3
+_MIN_SINGLE_STEP_SENSITIVITY_MM = 0.05
+_MAX_RELATIVE_K_STD = 0.35
 
 
 def has_compliance_probes(dataset: dict) -> bool:
@@ -62,15 +71,23 @@ def _line_description(dataset: dict) -> Optional[Tuple[float, np.ndarray, np.nda
     return stiffness, strands, advantage, extra
 
 
+def _default_forbidden_anchors(machine_type: str, num_anchors: int) -> List[int]:
+    if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5", "hangprinter_5_pulley_reduced") and num_anchors >= 4:
+        return [num_anchors - 1]
+    return []
+
+
 def _probe_rows(dataset: dict):
     config = dataset.get("config") or {}
     mm_raw = config.get("mm_per_degree")
     num_anchors = int(dataset.get("num_anchors", 0))
+    machine_type = str(dataset.get("machine_type", ""))
     if mm_raw is None or len(mm_raw) != num_anchors:
         return
     mm_per_deg = np.asarray(mm_raw, dtype=float)
     if not np.all(np.isfinite(mm_per_deg) & (mm_per_deg != 0.0)):
         return
+    default_forbidden = _default_forbidden_anchors(machine_type, num_anchors)
     for sweep in dataset.get("sweeps", []):
         probes = (sweep.get("metadata") or {}).get("compliance_probes") or []
         for probe in probes:
@@ -92,7 +109,18 @@ def _probe_rows(dataset: dict):
             if not (np.all(np.isfinite(lengths)) and np.all(np.isfinite(forces))):
                 continue
             sensor = int(probe["sensor_anchor"])
-            held = sorted({int(a) for a in sweep["fixed_anchors"]} | {int(probe["drive_anchor"])})
+            recorded_held = probe.get("held_anchors")
+            if isinstance(recorded_held, list) and recorded_held:
+                held = sorted({int(a) for a in recorded_held if 0 <= int(a) < num_anchors and int(a) != sensor})
+            else:
+                held = sorted(
+                    a for a in (
+                        {int(a) for a in sweep["fixed_anchors"]}
+                        | {int(probe["drive_anchor"])}
+                        | set(default_forbidden)
+                    )
+                    if 0 <= a < num_anchors and a != sensor
+                )
             yield sensor, held, forces, lengths
 
 
@@ -132,31 +160,55 @@ def _step_terms(
     extra: np.ndarray,
     *,
     swivel: Optional[dict] = None,
+    flex_model: Optional[FlexModel] = None,
+    force_high: Optional[float] = None,
 ) -> Optional[Tuple[float, float]]:
-    """Compute `(a, b)` in `dm_s = a + k * b` for one force step at one pose."""
+    """Compute `(a, b)` in `dm_s_rest = a + k * b` for one force step at one pose.
+
+    Uses exact elastic compatibility across all held lines (`K_sys = sum_h (1/c_h) u_h u_h^T`),
+    rejects poorly conditioned geometries, and accounts for spool flattening / strained storage
+    material transfer on moving lines when `flex_model` has spool physics enabled.
+    """
     dims = anchors.shape[1]
-    if len(held) < dims:
+    held_idx = list(held)
+    if len(held_idx) < dims or sensor in held_idx:
         return None
     dist, dir_to_anchor = line_geometry(anchors, position[None, :], swivel=swivel)
     distance = dist[0]
     unit = dir_to_anchor[0]  # (N, D) unit vectors from effector toward anchor/exit
-    constant = [i for i in range(len(anchors)) if i != sensor and i not in held]
-    d_tension = np.zeros(len(anchors), dtype=float)
+    compliance = (advantage * distance + extra) / (stiffness * (advantage ** 2) * strands)
+    if not np.all(np.isfinite(compliance) & (compliance > 0.0)):
+        return None
+
+    # Exact elastic compatibility:
+    #   K_sys @ dp = k * dF * u_s - sum_h (1 / c_h) * dm_h * u_h
+    inv_c_held = 1.0 / compliance[held_idx]
+    u_held = unit[held_idx]  # (H, D)
+    k_sys = (u_held.T * inv_c_held[None, :]) @ u_held
+    eigs = np.linalg.eigvalsh(k_sys)
+    if not np.all(np.isfinite(eigs)) or eigs[0] <= 0.0 or (eigs[-1] / eigs[0]) > _MAX_STIFFNESS_COND:
+        return None
+
+    dm_held = np.asarray(d_lengths[held_idx], dtype=float)
+    if flex_model is not None and flex_model.has_spool_physics and force_high is not None:
+        # Scale any tiny held-line winding motion by nominal spool storage ratio.
+        rho_h = np.array(
+            [float(flex_model.spool_rho(np.array([max(force_high, 0.0)]), axis=h)[0]) for h in held_idx],
+            dtype=float,
+        )
+        dm_held = np.where(dm_held < 0.0, dm_held * rho_h, dm_held)
+
+    rhs_p = -(u_held.T @ (inv_c_held * dm_held))
+    rhs_q = d_force * unit[sensor]
     try:
-        if len(held) == dims:
-            d_tension[list(held)] = np.linalg.solve(unit[list(held)].T, -d_force * unit[sensor])
-        else:
-            d_tension[list(held)] = np.linalg.lstsq(unit[list(held)].T, -d_force * unit[sensor], rcond=None)[0]
+        p_vec = np.linalg.solve(k_sys, rhs_p)
+        q_vec = np.linalg.solve(k_sys, rhs_q)
     except np.linalg.LinAlgError:
         return None
-    compliance = (advantage * distance + extra) / (stiffness * (advantage ** 2) * strands)
-    rows = list(held) + constant
-    basis = unit[rows]
-    p_vec = np.linalg.lstsq(basis, -d_lengths[rows], rcond=None)[0]
-    q_vec = np.linalg.lstsq(basis, -compliance[rows] * d_tension[rows], rcond=None)[0]
+
     a = float(-unit[sensor] @ p_vec)
     b = float(-unit[sensor] @ q_vec - compliance[sensor] * d_force)
-    if not (np.isfinite(a) and np.isfinite(b)) or abs(b) < 1e-12:
+    if not (np.isfinite(a) and np.isfinite(b)) or abs(b) < _MIN_STEP_SENSITIVITY_MM:
         return None
     return a, b
 
@@ -197,6 +249,8 @@ def estimate_compliance_scale(
     if swivel is None:
         m669 = (dataset.get("config") or {}).get("m669")
         swivel = swivel_geometry_from_m669(m669, num_anchors)
+    m666_cfg = (dataset.get("config") or {}).get("m666_before_data_collection") or {}
+    flex_model = FlexModel.from_m666(m666_cfg, num_axes=num_anchors)
 
     a_vals: List[float] = []
     b_vals: List[float] = []
@@ -223,11 +277,20 @@ def estimate_compliance_scale(
                 advantage,
                 extra,
                 swivel=swivel,
+                flex_model=flex_model,
+                force_high=max(float(forces[i]), float(forces[j])),
             )
             if terms is None:
                 continue
             a, b = terms
-            measured = float(lengths[j, sensor] - lengths[i, sensor])
+            raw_dm_s = float(lengths[j, sensor] - lengths[i, sensor])
+            if flex_model is not None and flex_model.has_spool_physics and raw_dm_s < 0.0:
+                # Winding onto the drum under tension stores rho(T_avg) rest cable per mm of drum arc.
+                f_wind = 0.5 * (float(forces[i]) + float(forces[j]))
+                rho_s = float(flex_model.spool_rho(np.array([f_wind]), axis=sensor)[0])
+                measured = raw_dm_s * rho_s
+            else:
+                measured = raw_dm_s
             a_vals.append(a)
             b_vals.append(b)
             m_vals.append(measured)
@@ -246,7 +309,10 @@ def estimate_compliance_scale(
     denom = float(np.sum(b_arr * b_arr))
     if denom <= 1e-18:
         return None
+    if len(b_arr) == 1 and abs(float(b_arr[0])) < _MIN_SINGLE_STEP_SENSITIVITY_MM:
+        return None
     k_ols = float(np.sum(b_arr * y_arr) / denom)
+    weights = np.ones_like(b_arr, dtype=float)
     if len(b_arr) >= 4:
         k_hat = float(np.median(y_arr / b_arr))
         for _ in range(3):
@@ -264,8 +330,16 @@ def estimate_compliance_scale(
         return None
 
     resid = y_arr - k_hat * b_arr
-    dof = max(len(b_arr) - 1, 1)
-    k_std = float(np.sqrt(np.sum(resid ** 2) / (dof * denom))) if len(b_arr) >= 2 else float("nan")
+    w_denom = float(np.sum(weights * b_arr * b_arr))
+    eff_n = float(np.sum(weights))
+    if len(b_arr) >= 4 and eff_n < 0.6 * len(b_arr):
+        return None
+    if len(b_arr) >= 2 and w_denom > 1e-18 and eff_n > 1.0:
+        k_std = float(np.sqrt(float(np.sum(weights * resid ** 2)) / ((eff_n - 1.0) * w_denom)))
+        if not np.isfinite(k_std) or (k_std / k_hat) > _MAX_RELATIVE_K_STD:
+            return None
+    else:
+        k_std = float("nan")
     ea_measured = float(stiffness / k_hat)
     return {
         "source": "compliance_probe",
