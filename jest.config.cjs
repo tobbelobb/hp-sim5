@@ -1,5 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
+  modulePathIgnorePatterns: ['<rootDir>/output/'],
   testMatch: [
     '<rootDir>/tests/**/*.test.js',
     '<rootDir>/autocal/control/tests/behaviors/**/*.test.mjs',
