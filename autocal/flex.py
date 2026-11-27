@@ -352,7 +352,7 @@ def spool_rest_correction_mm(
                 drho = rho_init[sa] - rho[rows, sa]
                 # Sensor unwound pre-wound rope to `payout` at rho_init, then rewound to the first
                 # finite point and monotonically through the sweep pass, laying LIFO coils at each
-                # point's tension. Skip non-finite/rejected points cleanly without zeroing them.
+                # point's tension. Skip genuinely missing (non-finite) raw measurements cleanly.
                 prev_l: Optional[float] = None
                 prev_drho = 0.0
                 acc = 0.0

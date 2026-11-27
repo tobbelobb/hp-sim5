@@ -191,7 +191,9 @@ def dataset_stretch(dataset: dict, *, spring_k_multiplier: float = 1.0):
     )
 
 
-def stretch_corrected_lengths(anchors, positions, absolute, measured, stretch, *, lengths_mm=None):
+def stretch_corrected_lengths(
+    anchors, positions, absolute, measured, stretch, *, lengths_mm=None, history_lengths_mm=None
+):
     swivel = stretch.get("swivel")
     _, directions = line_geometry(anchors, positions, swivel=swivel)
     known = np.where(measured, np.nan, stretch["passive"])
@@ -209,9 +211,16 @@ def stretch_corrected_lengths(anchors, positions, absolute, measured, stretch, *
     tensions = np.linalg.solve(normal, rhs)[:, :, 0]
     model = stretch["model"]
     material = absolute
-    if model.has_spool_physics and lengths_mm is not None:
+    spool_lengths = history_lengths_mm if history_lengths_mm is not None else lengths_mm
+    if model.has_spool_physics and spool_lengths is not None:
+        spool_tensions = tensions
+        if history_lengths_mm is not None:
+            # Rejected rows are masked out of `measured`, so pin their exact recorded
+            # sensor force to preserve physical LIFO spool winding history.
+            spool_tensions = tensions.copy()
+            spool_tensions[np.arange(len(positions)), stretch["sensors"]] = stretch["forces"]
         material = absolute + spool_rest_correction_mm(
-            lengths_mm, tensions, model, stretch.get("spool_history")
+            spool_lengths, spool_tensions, model, stretch.get("spool_history")
         )
     home_dist = home_line_lengths(anchors, swivel=swivel) if model.has_home_tension else None
     return np.column_stack([
@@ -232,12 +241,14 @@ def consistency_residuals(
     *,
     stretch=None,
     swivel=None,
+    history_lengths_mm: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Per-point, per-line length misfit at each point's best effector position, in mm."""
     anchors = np.asarray(anchors, dtype=float)
     eff_swivel = swivel if swivel is not None else (stretch.get("swivel") if isinstance(stretch, dict) else None)
     positions, absolute = fit_point_positions(
-        anchors, lengths_mm, home_offsets_mm, stretch=stretch, swivel=eff_swivel
+        anchors, lengths_mm, home_offsets_mm, stretch=stretch, swivel=eff_swivel,
+        history_lengths_mm=history_lengths_mm,
     )
     measured = np.isfinite(lengths_mm)
     dist, _ = line_geometry(anchors, positions, swivel=eff_swivel)
@@ -251,6 +262,7 @@ def fit_point_positions(
     *,
     stretch=None,
     swivel=None,
+    history_lengths_mm: Optional[np.ndarray] = None,
 ):
     """Each point's best effector position and its stretch-corrected absolute line lengths."""
     anchors = np.asarray(anchors, dtype=float)
@@ -265,13 +277,19 @@ def fit_point_positions(
         distance, dir_to_anchor = line_geometry(anchors, positions, swivel=eff_swivel)
         direction = -dir_to_anchor * measured[:, :, None]
         corrected = (absolute if stretch is None else
-                     stretch_corrected_lengths(anchors, positions, absolute, measured, stretch, lengths_mm=lengths_mm))
+                     stretch_corrected_lengths(
+                         anchors, positions, absolute, measured, stretch,
+                         lengths_mm=lengths_mm, history_lengths_mm=history_lengths_mm,
+                     ))
         misfit = np.where(measured, distance - corrected, 0.0)
         normal = np.einsum("pni,pnj->pij", direction, direction) + damping
         gradient = np.einsum("pni,pn->pi", direction, misfit)
         positions = positions - np.linalg.solve(normal, gradient[:, :, None])[:, :, 0]
     if stretch is not None:
-        absolute = stretch_corrected_lengths(anchors, positions, absolute, measured, stretch, lengths_mm=lengths_mm)
+        absolute = stretch_corrected_lengths(
+            anchors, positions, absolute, measured, stretch,
+            lengths_mm=lengths_mm, history_lengths_mm=history_lengths_mm,
+        )
     return positions, absolute
 
 
@@ -426,13 +444,14 @@ def _fit_points(
     def residuals(x: np.ndarray, prior_weight: float, correct_stretch: bool = True, kept=None) -> np.ndarray:
         anchors, offsets = unpack(x)
         spool_x = x[num_anchor_params + num_offsets:]
-        used = lengths if spool is None else spool.lengths(spool_x)
-        used = used if kept is None else np.where(kept[:, None], used, np.nan)
+        raw_used = lengths if spool is None else spool.lengths(spool_x)
+        used = raw_used if kept is None else np.where(kept[:, None], raw_used, np.nan)
         return np.concatenate([
             consistency_residuals(
                 anchors, used, offsets,
                 stretch=stretch if correct_stretch else None,
                 swivel=swivel,
+                history_lengths_mm=raw_used,
             ).ravel(),
             offsets[offset_lines] * prior_weight,
             *([] if spool is None else [spool.prior(spool_x)]),

@@ -88,9 +88,9 @@ def _probe_rows(dataset: dict):
     if not np.all(np.isfinite(mm_per_deg) & (mm_per_deg != 0.0)):
         return
     default_forbidden = _default_forbidden_anchors(machine_type, num_anchors)
-    for sweep in dataset.get("sweeps", []):
+    for sweep_idx, sweep in enumerate(dataset.get("sweeps", [])):
         probes = (sweep.get("metadata") or {}).get("compliance_probes") or []
-        for probe in probes:
+        for probe_idx, probe in enumerate(probes):
             if not isinstance(probe, dict):
                 continue
             levels = probe.get("levels") or []
@@ -121,7 +121,18 @@ def _probe_rows(dataset: dict):
                     )
                     if 0 <= a < num_anchors and a != sensor
                 )
-            yield sensor, held, forces, lengths
+            yield (
+                sweep_idx,
+                probe_idx,
+                int(probe.get("direction", 0)),
+                probe.get("pair_id"),
+                probe.get("phase_role"),
+                bool(probe.get("antiphase_verified", False)),
+                sensor,
+                held,
+                forces,
+                lengths,
+            )
 
 
 def _position_at_lengths(
@@ -252,12 +263,24 @@ def estimate_compliance_scale(
     m666_cfg = (dataset.get("config") or {}).get("m666_before_data_collection") or {}
     flex_model = FlexModel.from_m666(m666_cfg, num_axes=num_anchors)
 
-    a_vals: List[float] = []
-    b_vals: List[float] = []
-    m_vals: List[float] = []
-    step_k: List[float] = []
-    for sensor, held, forces, lengths in _probe_rows(dataset):
+    observations: List[Tuple[float, float, float]] = []
+    # Verified antiphase pairs are combined into a single cogging-cancelled observation
+    # before Cauchy IRLS so IRLS weights matched pairs jointly rather than splitting them.
+    pair_buckets: Dict[Tuple[int, int, str, int, Tuple[int, ...]], Dict[str, List[Tuple[float, float, float, float]]]] = {}
+    for (
+        sweep_idx,
+        probe_idx,
+        direction,
+        pair_id,
+        phase_role,
+        antiphase_verified,
+        sensor,
+        held,
+        forces,
+        lengths,
+    ) in _probe_rows(dataset):
         level_pairs = list(pairs) if pairs is not None else _default_level_pairs(forces)
+        probe_steps: List[Tuple[float, float, float, float]] = []
         for i, j in level_pairs:
             if i >= len(forces) or j >= len(forces):
                 continue
@@ -291,18 +314,57 @@ def estimate_compliance_scale(
                 measured = raw_dm_s * rho_s
             else:
                 measured = raw_dm_s
-            a_vals.append(a)
-            b_vals.append(b)
-            m_vals.append(measured)
-            step_k.append((measured - a) / b)
+            probe_steps.append((a, b, measured, d_force))
+        if not probe_steps:
+            continue
+        if pair_id is not None and antiphase_verified:
+            bucket_key = (sweep_idx, direction, str(pair_id), sensor, tuple(held))
+            role = str(phase_role) if phase_role in ("primary", "antiphase") else f"probe_{probe_idx}"
+            pair_buckets.setdefault(bucket_key, {}).setdefault(role, []).extend(probe_steps)
+        else:
+            observations.extend((a, b, m) for a, b, m, _ in probe_steps)
 
-    if not b_vals:
+    num_antiphase_pairs = 0
+    for bucket in pair_buckets.values():
+        if "primary" in bucket and "antiphase" in bucket:
+            first_steps = bucket["primary"]
+            second_steps = bucket["antiphase"]
+        elif len(bucket) == 2:
+            first_steps, second_steps = list(bucket.values())
+        else:
+            for steps in bucket.values():
+                observations.extend((a, b, m) for a, b, m, _ in steps)
+            continue
+        used_second = set()
+        matched_any = False
+        for a1, b1, m1, df1 in first_steps:
+            best_idx = None
+            best_diff = float("inf")
+            for idx2, (_, _, _, df2) in enumerate(second_steps):
+                if idx2 in used_second:
+                    continue
+                diff = abs(df1 - df2)
+                tol = max(0.1, 0.05 * max(abs(df1), abs(df2)))
+                if diff <= tol and diff < best_diff:
+                    best_diff = diff
+                    best_idx = idx2
+            if best_idx is not None:
+                used_second.add(best_idx)
+                a2, b2, m2, _ = second_steps[best_idx]
+                observations.append((0.5 * (a1 + a2), 0.5 * (b1 + b2), 0.5 * (m1 + m2)))
+                num_antiphase_pairs += 1
+                matched_any = True
+        if not matched_any:
+            observations.extend((a, b, m) for a, b, m, _ in first_steps)
+
+    if not observations:
         return None
 
-    a_arr = np.asarray(a_vals, dtype=float)
-    b_arr = np.asarray(b_vals, dtype=float)
-    m_arr = np.asarray(m_vals, dtype=float)
+    a_arr = np.asarray([obs[0] for obs in observations], dtype=float)
+    b_arr = np.asarray([obs[1] for obs in observations], dtype=float)
+    m_arr = np.asarray([obs[2] for obs in observations], dtype=float)
     y_arr = m_arr - a_arr
+    step_k = (y_arr / b_arr).tolist()
 
     # Robust Cauchy IRLS initialized at the step-wise median protects the slope against
     # slipped or noisy probe steps while staying accurate on clean data.
@@ -349,6 +411,7 @@ def estimate_compliance_scale(
         "stiffness_n": ea_measured,
         "spring_k_multiplier": float(1.0 / k_hat),
         "num_steps": int(len(b_arr)),
+        "num_antiphase_pairs": int(num_antiphase_pairs),
         "step_k_median": float(np.median(step_k)),
     }
 

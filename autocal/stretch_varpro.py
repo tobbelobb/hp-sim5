@@ -606,7 +606,9 @@ def fit_pose_varpro(
     def build_blocks(anchors: np.ndarray, offsets: np.ndarray, kept_mask: Optional[np.ndarray], active_blocks: Tuple[str, ...]):
         used = lengths if kept_mask is None else np.where(kept_mask[:, None], lengths, np.nan)
         meas = np.isfinite(used)
-        positions, abs_corr = fit_point_positions(anchors, used, offsets, stretch=stretch_nom)
+        positions, abs_corr = fit_point_positions(
+            anchors, used, offsets, stretch=stretch_nom, history_lengths_mm=lengths
+        )
         dist, dirs_to_a, t_grav, t_unit, known, t_nom, g = static_tension_superposition(anchors, positions, meas, basis)
         direction = -dirs_to_a * meas[:, :, None]
         r0 = np.where(meas, dist - abs_corr, 0.0)

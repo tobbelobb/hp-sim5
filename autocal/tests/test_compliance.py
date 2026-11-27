@@ -382,3 +382,60 @@ def test_estimate_compliance_scale_rejects_ill_conditioned_and_noisy_probes():
         for lvl in probe["levels"][1:]:
             lvl["mu_deg"][s] = base + (lvl["mu_deg"][s] - base) * scale
     assert estimate_compliance_scale(ds_noisy, HP3_ANCHORS) is None
+
+
+def test_estimate_compliance_scale_explicitly_pairs_verified_antiphase_probes_before_irls():
+    # Construct paired primary/antiphase probes where strong opposite-signed cogging bias
+    # (+45% on primary, -45% on antiphase) would otherwise distort or get split by Cauchy IRLS,
+    # PLUS one corrupted antiphase pair that IRLS should downweight cleanly as a unit.
+    ds = _synthetic_probe_dataset(HP3_ANCHORS, ea_cfg=20000.0, ea_true=16000.0)
+    # Duplicate sweeps so we have 4 clean verified pairs + 1 corrupted pair (5 pairs, 10 paired steps).
+    base_sweeps = list(ds["sweeps"])
+    paired_sweeps = []
+    for k in range(5):
+        src = base_sweeps[k % len(base_sweeps)]
+        p0 = src["metadata"]["compliance_probes"][0]
+        s = p0["sensor_anchor"]
+        base_mu = p0["levels"][0]["mu_deg"][s]
+
+        def _make_half(role, cog_bias, corrupt=False):
+            levels = []
+            for lvl_idx, lvl in enumerate(p0["levels"]):
+                mu = list(lvl["mu_deg"])
+                if lvl_idx > 0 and abs(lvl["force_n"] - p0["levels"][0]["force_n"]) > 0.1:
+                    dm = mu[s] - base_mu
+                    mu[s] = base_mu + dm * (1.0 + cog_bias) + (25.0 if corrupt and lvl_idx == 2 else 0.0)
+                levels.append({"force_n": lvl["force_n"], "mu_deg": mu})
+            return {
+                "direction": 0,
+                "drive_anchor": p0["drive_anchor"],
+                "sensor_anchor": s,
+                "pair_id": f"pair_{k}",
+                "phase_role": role,
+                "antiphase_verified": True,
+                "levels": levels,
+            }
+
+        paired_sweeps.append({
+            **src,
+            "id": f"sweep_{k + 1:03d}",
+            "metadata": {
+                "compliance_probes": [
+                    _make_half("primary", +0.45, corrupt=(k == 4)),
+                    _make_half("antiphase", -0.45, corrupt=False),
+                ]
+            },
+        })
+    ds_paired = {**ds, "sweeps": paired_sweeps}
+    est = estimate_compliance_scale(ds_paired, HP3_ANCHORS)
+    assert est is not None
+    assert est["num_antiphase_pairs"] == 10
+    assert est["num_steps"] == 10
+    assert est["stiffness_n"] == pytest.approx(16000.0, rel=1e-2)
+
+    # If antiphase_verified is False, probes must NOT be reported as verified antiphase pairs.
+    for sw in ds_paired["sweeps"]:
+        for pr in sw["metadata"]["compliance_probes"]:
+            pr["antiphase_verified"] = False
+    est_unverified = estimate_compliance_scale(ds_paired, HP3_ANCHORS)
+    assert est_unverified is None or est_unverified["num_antiphase_pairs"] == 0

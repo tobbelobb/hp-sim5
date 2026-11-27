@@ -12,8 +12,11 @@ import {
   buildSymmetricPulloutModes,
   combinations,
   computeSafeProbeMaxForceN,
+  extractM669Anchors,
   generateSweepConfigs,
   MACHINE_CONFIGS,
+  probeCompliance,
+  probeComplianceWithAntiphase,
   resolveComplianceProbeMultiples,
   resolveFixedTargets,
   resolveForcedBaseRadii,
@@ -339,6 +342,206 @@ m569_address: 43.0
     expect(capTightHeld).not.toBeNull();
     expect(capTightHeld).toBeLessThan(0.85 * 40);
     expect(capTightHeld).toBeLessThanOrEqual(0.85 * 20 + 0.5);
+
+    // Fail closed when anchor geometry, lengths, conditioning, or tautness cannot be established.
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 40, 40, 40],
+      anchors: null,
+      lengthsMm: [0, 0, 0, 0],
+    })).toBeNull();
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 40, 40, 40],
+      anchors,
+      lengthsMm: null,
+    })).toBeNull();
+    // Coplanar (singular K_sys) anchors must fail closed.
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3],
+      maxForceByAnchor: [40, 40, 40, 40],
+      anchors: [
+        [0, -1900, 0],
+        [1645.45, 950, 0],
+        [-1645.45, 950, 0],
+        [0, 500, 0],
+      ],
+      lengthsMm: [0, 0, 0, 0],
+    })).toBeNull();
+
+    // Redundant held lines (4 held in 3D) must split incremental tension by elastic compatibility:
+    // at pos = [0, 400, 0] all four held lines [0, 1, 3, 4] pull in -Y against sensor 2 (+Y),
+    // and stiffening held line 0 (higher U/N) increases its load share, lowering the safe cap
+    // when line 0 has a tight M666 X limit.
+    const redundantAnchors = [
+      [0, -1900, -280],
+      [1900, 0, -280],
+      [0, 1900, -280],
+      [-1900, 0, -280],
+      [0, 0, 1900],
+    ];
+    const redundantPos = [0, 600, 0];
+    const redundantLengths = redundantAnchors.map((a) => (
+      Math.hypot(a[0] - redundantPos[0], a[1] - redundantPos[1], a[2] - redundantPos[2])
+      - Math.hypot(a[0], a[1], a[2])
+    ));
+    const capEqualCompliance = computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3, 4],
+      maxForceByAnchor: [12, 60, 60, 60, 60],
+      forceLow: 0.1,
+      anchors: redundantAnchors,
+      lengthsMm: redundantLengths,
+      mechanicalAdvantageByAnchor: [1, 1, 1, 1, 1],
+      strandsByAnchor: [1, 1, 1, 1, 1],
+      weightN: 0.8,
+    });
+    const capStiffLine0 = computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3, 4],
+      maxForceByAnchor: [12, 60, 60, 60, 60],
+      forceLow: 0.1,
+      anchors: redundantAnchors,
+      lengthsMm: redundantLengths,
+      mechanicalAdvantageByAnchor: [1, 1, 1, 1, 1],
+      strandsByAnchor: [2, 1, 1, 1, 1],
+      weightN: 0.8,
+    });
+    expect(capEqualCompliance).not.toBeNull();
+    expect(capStiffLine0).not.toBeNull();
+    expect(capStiffLine0).toBeLessThan(capEqualCompliance);
+    // At pos = [0, 0, 0], perpendicular held lines 1 & 3 are not loaded against sensor 2 -> fail closed.
+    expect(computeSafeProbeMaxForceN({
+      baseForce: 5,
+      sensorAnchor: 2,
+      heldAnchors: [0, 1, 3, 4],
+      maxForceByAnchor: [12, 60, 60, 60, 60],
+      forceLow: 0.1,
+      anchors: redundantAnchors,
+      lengthsMm: [0, 0, 0, 0, 0],
+      weightN: 0.8,
+    })).toBeNull();
+  });
+
+  test('extractM669Anchors maps canonical RRF anchor letters instead of G-code axis names', () => {
+    const m669Hp5 = {
+      A: [0, -1900, -280],
+      B: [1900, 0, -280],
+      C: [0, 1900, -280],
+      D: [-1900, 0, -280],
+      I: [0, 0, 1900],
+    };
+    expect(extractM669Anchors(m669Hp5, 5, 3)).toEqual([
+      [0, -1900, -280],
+      [1900, 0, -280],
+      [0, 1900, -280],
+      [-1900, 0, -280],
+      [0, 0, 1900],
+    ]);
+    expect(extractM669Anchors({ A: [0, -1900, -280] }, 4, 3)).toBeNull();
+  });
+
+  test('probeCompliance propagates force-restoration failures and probeComplianceWithAntiphase verifies phase', async () => {
+    const anchors = [
+      [0, -1900, -280],
+      [1645.45, 950, -280],
+      [-1645.45, 950, -280],
+      [0, 0, 1900],
+    ];
+    const makeSimClock = () => {
+      let nowMs = 0;
+      return {
+        now: () => nowMs,
+        sleep: async (ms) => { nowMs += Math.max(Number(ms) || 10, 10); },
+      };
+    };
+    const baseOpts = {
+      axes: ['X', 'Y', 'Z', 'U'],
+      motorIds: ['40.0', '41.0', '42.0', '43.0'],
+      mmPerDeg: [0.5, 0.5, 0.5, 0.5],
+      feed: 1400,
+      speedup: 1000,
+      settleOptions: { stableWindowMs: 20, pollIntervalMs: 10, timeoutMs: 2000 },
+      driveAnchor: 1,
+      sensorAnchor: 2,
+      fixedSet: new Set([0, 3]),
+      forbidden: new Set([3]),
+      measurementSensorForces: {},
+      forceLow: 0.5,
+      multiples: [2],
+      maxForceByAnchor: [40, 40, 40, 40],
+      m669Anchors: anchors,
+      weightN: 0.8,
+      stepsPerRev: 200,
+      lastPoint: { sensor_force_n: 5, l_drive: 100, mu: [0, 0, 0, 0], sigma: [0, 0, 0, 0] },
+      prevPoint: { sensor_force_n: 5, l_drive: 50, mu: [0, -100, -50, 0], sigma: [0, 0, 0, 0] },
+      noiseOptions: { sampleCount: 2, sampleIntervalMs: 1, speedup: 1000 },
+    };
+
+    // 1. Restoration failure inside finally must NOT be swallowed.
+    let failOnRestore = false;
+    const sendRestoreFail = async (cmd) => {
+      if (cmd.startsWith('M569.4') && cmd.includes('T0.0:0.0:5:0.0')) {
+        failOnRestore = true;
+        throw new Error('CAN bus lost during restore');
+      }
+      if (cmd.startsWith('M569.3')) return { reply: '0.0 0.0 -0.2 0.0' };
+      return { reply: 'ok' };
+    };
+    sendRestoreFail.simulationClock = makeSimClock();
+    await expect(probeCompliance(sendRestoreFail, baseOpts)).rejects.toThrow(/Failed to restore compliance probe base force/);
+    expect(failOnRestore).toBe(true);
+
+    // 2. Movement failure during antiphase nudge must propagate instead of being swallowed.
+    const sendMoveFail = async (cmd) => {
+      if (cmd.startsWith('G1 ')) throw new Error('motor stall on nudge');
+      if (cmd.startsWith('M569.3')) return { reply: '0.0 0.0 -0.2 0.0' };
+      return { reply: 'ok' };
+    };
+    sendMoveFail.simulationClock = makeSimClock();
+    await expect(probeComplianceWithAntiphase(sendMoveFail, { ...baseOpts, multiples: [2, 1] }))
+      .rejects.toThrow(/motor stall on nudge/);
+
+    // 3. When nudge achieves ~180 deg electrical shift (3.6 deg for J=200), both probes are paired & verified.
+    let nudged = false;
+    const sendAntiphaseOk = async (cmd) => {
+      if (cmd.startsWith('G1 ')) nudged = true;
+      if (cmd.startsWith('M569.3')) {
+        return { reply: nudged ? '0.0 -7.2 -3.6 0.0' : '0.0 0.0 -0.2 0.0' };
+      }
+      return { reply: 'ok' };
+    };
+    sendAntiphaseOk.simulationClock = makeSimClock();
+    const paired = await probeComplianceWithAntiphase(sendAntiphaseOk, { ...baseOpts, multiples: [2, 1] });
+    expect(paired).toHaveLength(2);
+    expect(paired[0].pair_id).toBe(paired[1].pair_id);
+    expect(paired[0].phase_role).toBe('primary');
+    expect(paired[1].phase_role).toBe('antiphase');
+    expect(paired[0].antiphase_verified).toBe(true);
+    expect(paired[1].antiphase_verified).toBe(true);
+    expect(paired[1].achieved_electrical_phase_deg).toBeCloseTo(180, 0);
+
+    // 4. When nudge fails to reach antiphase (only 0.4 deg = 20 deg electrical), skip second probe.
+    let shortNudged = false;
+    const sendShortNudge = async (cmd) => {
+      if (cmd.startsWith('G1 ')) shortNudged = true;
+      if (cmd.startsWith('M569.3')) {
+        return { reply: shortNudged ? '0.0 -1.0 -0.4 0.0' : '0.0 0.0 -0.2 0.0' };
+      }
+      return { reply: 'ok' };
+    };
+    sendShortNudge.simulationClock = makeSimClock();
+    const unpaired = await probeComplianceWithAntiphase(sendShortNudge, { ...baseOpts, multiples: [2, 1] });
+    expect(unpaired).toHaveLength(1);
+    expect(unpaired[0].antiphase_verified).toBe(false);
   });
 });
 
