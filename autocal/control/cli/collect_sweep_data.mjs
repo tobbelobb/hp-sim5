@@ -455,6 +455,8 @@ Options:
   --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
   --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
   --no-extra-sensors        Keep unused HP5 lines compliant (legacy collection)
+  --compliance-probe <csv>   Enable fixed-pose compliance probe force multipliers >= 1.0 (opt-in on hardware; default 2,3,1 in --sim for flex machines)
+  --no-compliance-probe      Disable fixed-pose compliance probes even in simulation
   --no-auto-tune-force       skip auto-tuning and use provided/default forces
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor [fixed=lengths] per line)
   --debug-sweep              Print planned sweep permutations before collecting

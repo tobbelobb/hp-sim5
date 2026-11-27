@@ -270,37 +270,78 @@ m569_address: 43.0
     expect(disabled.complianceProbe).toBeNull();
   });
 
-  test('resolveComplianceProbeMultiples defaults on for flex-enabled machines and respects opt-out', () => {
+  test('resolveComplianceProbeMultiples is opt-in on hardware, default-on in simulation, and rejects multipliers < 1', () => {
+    // Physical machines default to opt-in ([]).
     expect(resolveComplianceProbeMultiples({
       machineType: 'hangprinter_3',
       m666: { S: 20000 },
       complianceProbe: null,
       noComplianceProbe: false,
+    })).toEqual([]);
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+      isSimulation: false,
+    })).toEqual([]);
+    // Simulation enables [2, 3, 1] by default for flex-enabled machines.
+    expect(resolveComplianceProbeMultiples({
+      machineType: 'hangprinter_3',
+      m666: { S: 20000 },
+      complianceProbe: null,
+      noComplianceProbe: false,
+      isSimulation: true,
     })).toEqual([2, 3, 1]);
     expect(resolveComplianceProbeMultiples({
       machineType: 'cubecorners',
       m666: { S: 118500 },
       complianceProbe: null,
       noComplianceProbe: false,
+      isSimulation: true,
     })).toEqual([2, 3, 1]);
     expect(resolveComplianceProbeMultiples({
       machineType: 'hangprinter_3',
       m666: { S: 0 },
       complianceProbe: null,
       noComplianceProbe: false,
+      isSimulation: true,
     })).toEqual([]);
     expect(resolveComplianceProbeMultiples({
       machineType: 'hangprinter_3',
       m666: { S: 20000 },
       complianceProbe: null,
       noComplianceProbe: true,
+      isSimulation: true,
     })).toEqual([]);
+    // Explicit opt-in works on both hardware and simulation when all multipliers >= 1.0.
     expect(resolveComplianceProbeMultiples({
       machineType: 'hangprinter_3',
       m666: { S: 20000 },
       complianceProbe: '1.5,3,1',
       noComplianceProbe: false,
+      isSimulation: false,
     })).toEqual([1.5, 3, 1]);
+    // Disable tokens remain accepted.
+    for (const token of ['0', 'off', 'false', 'none', 'disabled']) {
+      expect(resolveComplianceProbeMultiples({
+        machineType: 'hangprinter_3',
+        m666: { S: 20000 },
+        complianceProbe: token,
+        noComplianceProbe: false,
+        isSimulation: true,
+      })).toEqual([]);
+    }
+    // Custom multipliers below 1.0 (which unload sensor tension below baseline) must be rejected.
+    for (const bad of ['0.2,2,1', '0.9', '2,-1', 'abc']) {
+      expect(() => resolveComplianceProbeMultiples({
+        machineType: 'hangprinter_3',
+        m666: { S: 20000 },
+        complianceProbe: bad,
+        noComplianceProbe: false,
+        isSimulation: true,
+      })).toThrow(/multipliers must be finite numbers >= 1\.0/i);
+    }
   });
 
   test('computeSafeProbeMaxForceN skips missing/non-finite limits and caps held-line overload', () => {
@@ -375,60 +416,56 @@ m569_address: 43.0
       lengthsMm: [0, 0, 0, 0],
     })).toBeNull();
 
-    // Redundant held lines (4 held in 3D) must split incremental tension by elastic compatibility:
-    // at pos = [0, 400, 0] all four held lines [0, 1, 3, 4] pull in -Y against sensor 2 (+Y),
-    // and stiffening held line 0 (higher U/N) increases its load share, lowering the safe cap
-    // when line 0 has a tight M666 X limit.
-    const redundantAnchors = [
+    // Statically indeterminate held sets (more than dims locked cables, e.g. 4 held in 3D)
+    // have an unobservable baseline prestress nullspace ker(U_h) and MUST fail closed.
+    const hp5Anchors = [
       [0, -1900, -280],
       [1900, 0, -280],
       [0, 1900, -280],
       [-1900, 0, -280],
       [0, 0, 1900],
     ];
-    const redundantPos = [0, 600, 0];
-    const redundantLengths = redundantAnchors.map((a) => (
-      Math.hypot(a[0] - redundantPos[0], a[1] - redundantPos[1], a[2] - redundantPos[2])
+    const hp5Pos = [0, 600, 0];
+    const hp5Lengths = hp5Anchors.map((a) => (
+      Math.hypot(a[0] - hp5Pos[0], a[1] - hp5Pos[1], a[2] - hp5Pos[2])
       - Math.hypot(a[0], a[1], a[2])
     ));
-    const capEqualCompliance = computeSafeProbeMaxForceN({
-      baseForce: 5,
-      sensorAnchor: 2,
-      heldAnchors: [0, 1, 3, 4],
-      maxForceByAnchor: [12, 60, 60, 60, 60],
-      forceLow: 0.1,
-      anchors: redundantAnchors,
-      lengthsMm: redundantLengths,
-      mechanicalAdvantageByAnchor: [1, 1, 1, 1, 1],
-      strandsByAnchor: [1, 1, 1, 1, 1],
-      weightN: 0.8,
-    });
-    const capStiffLine0 = computeSafeProbeMaxForceN({
-      baseForce: 5,
-      sensorAnchor: 2,
-      heldAnchors: [0, 1, 3, 4],
-      maxForceByAnchor: [12, 60, 60, 60, 60],
-      forceLow: 0.1,
-      anchors: redundantAnchors,
-      lengthsMm: redundantLengths,
-      mechanicalAdvantageByAnchor: [1, 1, 1, 1, 1],
-      strandsByAnchor: [2, 1, 1, 1, 1],
-      weightN: 0.8,
-    });
-    expect(capEqualCompliance).not.toBeNull();
-    expect(capStiffLine0).not.toBeNull();
-    expect(capStiffLine0).toBeLessThan(capEqualCompliance);
-    // At pos = [0, 0, 0], perpendicular held lines 1 & 3 are not loaded against sensor 2 -> fail closed.
     expect(computeSafeProbeMaxForceN({
       baseForce: 5,
       sensorAnchor: 2,
       heldAnchors: [0, 1, 3, 4],
-      maxForceByAnchor: [12, 60, 60, 60, 60],
+      maxForceByAnchor: [40, 60, 60, 60, 60],
       forceLow: 0.1,
-      anchors: redundantAnchors,
-      lengthsMm: [0, 0, 0, 0, 0],
+      anchors: hp5Anchors,
+      lengthsMm: hp5Lengths,
       weightN: 0.8,
     })).toBeNull();
+
+    // Determinate HP5 sweep pose (3 held [0, 1, 4], 1 constant-force [2], 1 sensor [3])
+    // has a unique static equilibrium baseline and succeeds cleanly.
+    const hp5SweepPos = [0, -400, 200];
+    const hp5SweepLengths = hp5Anchors.map((a) => (
+      Math.hypot(a[0] - hp5SweepPos[0], a[1] - hp5SweepPos[1], a[2] - hp5SweepPos[2])
+      - Math.hypot(a[0], a[1], a[2])
+    ));
+    const capHp5Determinate = computeSafeProbeMaxForceN({
+      baseForce: 4,
+      sensorAnchor: 3,
+      heldAnchors: [0, 1, 4],
+      constantForceAnchors: [2],
+      constantForces: { 2: 0.05 },
+      maxForceByAnchor: [40, 40, 40, 40, 40],
+      forceLow: 0.05,
+      anchors: hp5Anchors,
+      lengthsMm: hp5SweepLengths,
+      mechanicalAdvantageByAnchor: [2, 2, 2, 2, 4],
+      strandsByAnchor: [2, 2, 2, 2, 4],
+      extraLengthByAnchor: [429.1, 429.1, 429.1, 429.1, 352.3],
+      weightN: 0.8,
+    });
+    expect(capHp5Determinate).not.toBeNull();
+    expect(capHp5Determinate).toBeGreaterThan(12);
+    expect(capHp5Determinate).toBeLessThanOrEqual(0.85 * 40);
   });
 
   test('extractM669Anchors maps canonical RRF anchor letters instead of G-code axis names', () => {
@@ -542,6 +579,10 @@ m569_address: 43.0
     const unpaired = await probeComplianceWithAntiphase(sendShortNudge, { ...baseOpts, multiples: [2, 1] });
     expect(unpaired).toHaveLength(1);
     expect(unpaired[0].antiphase_verified).toBe(false);
+
+    // 5. Direct probeCompliance calls must also reject multipliers below 1.0.
+    await expect(probeCompliance(sendAntiphaseOk, { ...baseOpts, multiples: [0.2, 2] }))
+      .rejects.toThrow(/multipliers must be finite numbers >= 1\.0/i);
   });
 });
 

@@ -622,6 +622,8 @@ function validateSweepCollectionInput(context) {
     sweepConfigFile: args.sweepConfigFile ?? null,
     sensorForceProfileFile: args.sensorForceProfile ?? null,
     extraSensors: config.numAnchors === 5 && config.dimensions === 3 && !args.noExtraSensors,
+    sim: !!args.sim,
+    headlessUrl: args.headlessUrl ?? null,
     complianceProbe: args.complianceProbe ?? null,
     noComplianceProbe: !!args.noComplianceProbe,
     completedSweeps: parseOptionalNumber(args.completedSweeps, 'completed-sweeps', { integer: true }) ?? 0,
@@ -1676,15 +1678,25 @@ export function extractM669Anchors(m669Values, numAnchors, dimensions) {
   return out;
 }
 
-export function resolveComplianceProbeMultiples({ machineType, m666, complianceProbe, noComplianceProbe }) {
+export function resolveComplianceProbeMultiples({
+  machineType, m666, complianceProbe, noComplianceProbe, isSimulation = false,
+}) {
   if (noComplianceProbe) return [];
   const envRaw = process.env.HP_SIM5_COMPLIANCE_PROBE;
   const spec = complianceProbe ?? (envRaw !== undefined ? envRaw : null);
   if (spec !== null) {
     const trimmed = String(spec).trim().toLowerCase();
     if (!trimmed || DISABLED_COMPLIANCE_PROBE_TOKENS.has(trimmed)) return [];
-    return trimmed.split(',').filter(Boolean).map(Number).filter(v => Number.isFinite(v) && v > 0);
+    const values = trimmed.split(',').filter(Boolean).map(Number);
+    if (!values.length || values.some(v => !Number.isFinite(v) || v < 1.0)) {
+      throw new Error(
+        `Compliance probe multipliers must be finite numbers >= 1.0 (got "${spec}"); `
+        + 'multipliers below 1.0 drop sensor tension below the verified sweep baseline.',
+      );
+    }
+    return values;
   }
+  if (!isSimulation) return [];
   const hasStiffness = Number.isFinite(Number(m666?.S)) && Number(m666.S) > 0;
   const eligibleMachine = machineType.startsWith('hangprinter_') || machineType === 'cubecorners';
   return (eligibleMachine && hasStiffness) ? DEFAULT_COMPLIANCE_PROBE_MULTIPLES : [];
@@ -1823,7 +1835,10 @@ export function computeSafeProbeMaxForceN({
     return null;
   }
   const dims = Array.isArray(anchors[0]) ? anchors[0].length : 0;
-  if (dims < 2 || heldAnchors.length < dims) return null;
+  // Require a statically determinate held set (heldAnchors.length === dims):
+  // with more than dims locked cables, baseline tensions have an unobservable prestress
+  // nullspace ker(U_h), so absolute initial line tensions cannot be verified from equilibrium alone.
+  if (dims < 2 || heldAnchors.length !== dims) return null;
   const allFiniteAnchors = [sensorAnchor, ...heldAnchors, ...constantForceAnchors].every(
     idx => Array.isArray(anchors[idx]) && anchors[idx].length === dims
       && anchors[idx].every(Number.isFinite) && Math.hypot(...anchors[idx]) > 1e-3,
@@ -1912,9 +1927,13 @@ export async function probeCompliance(sendFn, {
   maxForceByAnchor = null, m669Anchors = null, mechanicalAdvantageByAnchor = null,
   strandsByAnchor = null, extraLengthByAnchor = null, weightN = 0, noiseOptions,
 }) {
-  const resolved = Array.isArray(multiples)
-    ? multiples.filter(v => Number.isFinite(v) && v > 0)
-    : (process.env.HP_SIM5_COMPLIANCE_PROBE ?? '').split(',').filter(Boolean).map(Number).filter(v => Number.isFinite(v) && v > 0);
+  const rawMultiples = Array.isArray(multiples)
+    ? multiples
+    : (process.env.HP_SIM5_COMPLIANCE_PROBE ?? '').split(',').filter(Boolean).map(Number);
+  if (rawMultiples.some(v => !Number.isFinite(v) || v < 1.0)) {
+    throw new Error('Compliance probe multipliers must be finite numbers >= 1.0');
+  }
+  const resolved = rawMultiples;
   if (!resolved.length || !lastPoint) return null;
   const base = lastPoint.sensor_force_n;
   const baseAngles = lastPoint.mu ?? lastPoint.raw_angles_deg;
@@ -1977,7 +1996,7 @@ export async function probeCompliance(sendFn, {
   let probeError = null;
   try {
     for (const multiple of resolved) {
-      const force = Math.min(base * multiple, cap);
+      const force = Math.min(Math.max(base * multiple, base), cap);
       if (!Number.isFinite(force) || force <= 0) continue;
       const prevForce = levels.at(-1).force_n;
       if (Math.abs(force - prevForce) < 0.05) continue;
@@ -2194,6 +2213,14 @@ export async function collectSweepData(send, context) {
   }
 
   const m666ForCollection = (m666Adjusted && typeof m666Adjusted === 'object') ? m666Adjusted : m666Before;
+  const isSimulation = Boolean(options.sim || options.headlessUrl || send.simulationClock);
+  const complianceProbeMultiples = resolveComplianceProbeMultiples({
+    machineType,
+    m666: m666ForCollection,
+    complianceProbe: options.complianceProbe,
+    noComplianceProbe: options.noComplianceProbe,
+    isSimulation,
+  });
   await context.configureSimulator?.({
     lineLayeringEnabled: Boolean(context.args?.lineLayering || (Number.isFinite(Number(m666ForCollection?.Q)) && Number(m666ForCollection.Q) !== 0)),
   });
@@ -2444,12 +2471,7 @@ export async function collectSweepData(send, context) {
             sensorSpoolGearRatio: (Array.isArray(m666ForCollection?.H) ? m666ForCollection.H[subCfg.sensorAnchor] : m666ForCollection?.H ?? 1)
               / (Array.isArray(m666ForCollection?.L) ? m666ForCollection.L[subCfg.sensorAnchor] : m666ForCollection?.L ?? 1),
             probeSpoolReserve: options.completedSweeps >= 3,
-            complianceProbeMultiples: resolveComplianceProbeMultiples({
-              machineType,
-              m666: m666ForCollection,
-              complianceProbe: options.complianceProbe,
-              noComplianceProbe: options.noComplianceProbe,
-            }),
+            complianceProbeMultiples,
             maxSensorForceN: Array.isArray(m666ForCollection?.X)
               ? Number(m666ForCollection.X[subCfg.sensorAnchor])
               : Number(m666ForCollection?.X),
