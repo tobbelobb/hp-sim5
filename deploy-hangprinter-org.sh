@@ -6,6 +6,7 @@
 
 set -euo pipefail
 
+npm run build:wasm
 npx vite build --config vite.hangprinter-org.config.js
 
 rsync -av --delete \

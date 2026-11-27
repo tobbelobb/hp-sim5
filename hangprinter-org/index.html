@@ -103,47 +103,11 @@
     <div class="sim-inner">
       <div class="sim-text">
         <span class="eyebrow">Try it in your browser</span>
-        <h2>Interactive Slideprinter Simulation</h2>
-        <p>Watch the virtual tool head follow Hangprinter moves. Run a built-in print or upload your own G-code to explore the cable-driven motion system.</p>
+        <h2>Interactive Hangprinter Simulation</h2>
+        <p>Watch a simulated Hangprinter print. Run a built-in print or upload your own G-code to explore the cable-driven motion system.</p>
       </div>
 
-      <div class="sim-app" aria-live="polite">
-        <div id="controls" class="sim-controls">
-          <div class="sim-buttons">
-            <div class="sim-start-buttons">
-              <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
-              <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
-              <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
-            </div>
-            <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
-          </div>
-          <input type="file" id="gcodeFile" accept=".gcode,.txt,.serial,.usda" hidden>
-        </div>
-
-        <div class="canvas-frame">
-          <canvas id="myCanvas" role="img" aria-label="Hangprinter Slideprinter simulation"></canvas>
-          <div id="simSecondaryControls" class="sim-secondary-group sim-hidden" aria-label="Simulation controls">
-            <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>
-            <button id="resetBtn" type="button" class="sim-secondary">Reset</button>
-            <div id="viewTools" class="sim-zoom" role="group" aria-label="View controls">
-              <button id="zoomInBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom in">+</button>
-              <button id="zoomOutBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom out">−</button>
-              <button id="panModeBtn" type="button" class="sim-secondary sim-zoom-btn" aria-pressed="false">Pan</button>
-            </div>
-            <div id="speedControls" class="sim-speed" role="group" aria-label="Playback speed">
-              <button id="speedSlowerBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Set playback to half speed">
-                <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
-                <span class="sim-speed-text">0.5x</span>
-              </button>
-              <button id="speedFasterBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Double the playback speed">
-                <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
-                <span class="sim-speed-text">2x</span>
-              </button>
-            </div>
-          </div>
-          <div id="speedStatus" class="sim-speed-status sim-hidden" role="status" aria-live="polite"></div>
-        </div>
-      </div>
+      <iframe class="sim-frame" src="/hp-sim-3d/" title="Hangprinter simulator" allow="fullscreen" loading="lazy"></iframe>
     </div>
   </section>
 
