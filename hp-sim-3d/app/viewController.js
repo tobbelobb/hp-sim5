@@ -17,6 +17,7 @@ export function clampViewScale(value, min = MIN_VIEW_SCALE, max = MAX_VIEW_SCALE
 }
 
 const MOBILE_SECONDARY_CONTROLS_TIMEOUT_MS = 3000;
+const WELCOME_DISMISSED_KEY = 'hp-sim-3d.welcomeDismissed';
 const MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS = 150;
 const DOUBLE_TAP_MAX_DELAY_MS = 320;
 const DOUBLE_TAP_MAX_DURATION_MS = 280;
@@ -41,7 +42,6 @@ export function createViewController({
   const isMobileLayout = () => (mobileLayoutQuery ? mobileLayoutQuery.matches : window.innerWidth <= 600);
   let secondaryControlsHideTimeout = null;
   let secondaryControlsInteractionEnableTimeout = null;
-  let secondaryControlsEverShown = false;
   let secondaryControlsUserPreference = null;
   let secondaryControlsAutoActive = false;
   let secondaryControlsPreferenceBeforeSuppression;
@@ -122,7 +122,6 @@ export function createViewController({
       setSecondaryControlsInteractive(false);
     }
     dom.secondaryControls.classList.remove('sim-hidden');
-    secondaryControlsEverShown = true;
     if (secondaryControlsHideTimeout) {
       clearTimeout(secondaryControlsHideTimeout);
     }
@@ -158,7 +157,7 @@ export function createViewController({
     const shouldShow = computeSecondaryControlsDesired();
     const hasPreference = secondaryControlsUserPreference !== null;
     dom.secondaryToggleBtn.setAttribute('aria-expanded', shouldShow ? 'true' : 'false');
-    const baseTitle = shouldShow ? 'Collapse secondary controls' : 'Expand secondary controls';
+    const baseTitle = shouldShow ? 'Hide simulation controls' : 'Show simulation controls';
     dom.secondaryToggleBtn.title = hasPreference ? `${baseTitle} (Alt-click to reset)` : baseTitle;
   }
 
@@ -183,15 +182,11 @@ export function createViewController({
     }
     if (shouldShow) {
       dom.secondaryControls.classList.remove('sim-hidden');
-      secondaryControlsEverShown = true;
       clearSecondaryControlsInteractionDelay();
       setSecondaryControlsInteractive(true);
-    } else if (secondaryControlsUserPreference === false || !secondaryControlsEverShown) {
+    } else {
       dom.secondaryControls.classList.add('sim-hidden');
       setSecondaryControlsInteractive(false);
-    } else {
-      clearSecondaryControlsInteractionDelay();
-      setSecondaryControlsInteractive(true);
     }
     updateSecondaryToggleButton();
   }
@@ -222,9 +217,28 @@ export function createViewController({
     applySecondaryControlsVisibility();
   }
 
+  // Controls stay reachable whenever a machine is loaded, so Rerun can be armed before a print.
   function updatePrintingState() {
     dom.simButtons?.classList.toggle('is-printing', Boolean(state.printActive));
-    setSecondaryControlsVisible(state.printActive && machines.getMachines().length > 0);
+    setSecondaryControlsVisible(machines.getMachines().length > 0);
+    if (state.printActive) {
+      dismissWelcomeHint();
+    }
+  }
+
+  function dismissWelcomeHint() {
+    dom.welcomeHint?.classList.add('sim-hidden');
+    try {
+      window.localStorage.setItem(WELCOME_DISMISSED_KEY, '1');
+    } catch {}
+  }
+
+  function showWelcomeHintUnlessDismissed() {
+    let dismissed = false;
+    try {
+      dismissed = window.localStorage.getItem(WELCOME_DISMISSED_KEY) === '1';
+    } catch {}
+    dom.welcomeHint?.classList.toggle('sim-hidden', dismissed);
   }
 
   function updateQualityToggleLabel() {
@@ -794,12 +808,15 @@ export function createViewController({
     setSpeedButtonsEnabled(enabled);
     setButtonDisabled(dom.panModeBtn, !enabled);
     updateZoomButtonState();
+    updatePrintingState();
   }
 
   function bindUi() {
     if (dom.secondaryControls) {
       setSecondaryControlsInteractive(false);
     }
+    showWelcomeHintUnlessDismissed();
+    dom.welcomeHintDismissBtn?.addEventListener('click', dismissWelcomeHint);
     dom.zoomInBtn?.addEventListener('click', (event) => {
       event.preventDefault();
       adjustZoom(ZOOM_FACTOR);

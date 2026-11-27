@@ -20,7 +20,7 @@ From the repository root, run `npx vite` and open
 <http://localhost:5173/hp-sim5/hp-sim-3d/>. The default is Hangprinter v4. Use
 **Print Logo** or **Print Squares** for a built-in print, **Upload File** for
 G-code/command logs or an authored USDA, and **Machines** to add/remove presets.
-Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view tools.
+**Controls** holds **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view tools.
 **Show Forces** is a rendering overlay; the recorder logs forces independently.
 **Line Layering** changes the winding model and rebuilds cable initialization.
 **Closed Loop Motors** changes position-drive behavior. Keep these settings the

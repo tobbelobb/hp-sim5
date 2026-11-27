@@ -14,6 +14,9 @@ import { setKinematicMotorMode } from './hangprinter_runtime.js';
 import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { KLIPPER_UPLOAD_PIPELINE, shouldUseRawKlipperUploadPipeline } from './workerController.js';
 
+// Highest target speed reachable with the 2x button (and its '>' shortcut).
+const MAX_UI_TIME_SCALE = 10000;
+
 function getJobLabel(descriptor) {
   if (!descriptor) {
     return 'Unknown Job';
@@ -640,7 +643,7 @@ export function createCommandJobController({
         return;
       }
       state.speedStatusArmed = true;
-      applyTimeScaleChange(runtime.getTimeScale() * 2, { show: true });
+      applyTimeScaleChange(Math.min(MAX_UI_TIME_SCALE, runtime.getTimeScale() * 2), { show: true });
     });
     setPrintActive(false);
     updateFinishAsapButtonState();

@@ -5,6 +5,7 @@ const EVENT_BATCH_SIZE = 256;
 const EVENT_BATCH_BYTES = 1024 * 1024;
 const MAX_PENDING_EVENTS = 65536;
 const MAX_PENDING_EVENT_BYTES = 32 * 1024 * 1024;
+const RERUN_IDLE_TITLE = 'Record every simulation timestep with the local Rerun flight recorder';
 
 export class FlightRecorder {
   constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket,
@@ -37,9 +38,11 @@ export class FlightRecorder {
     button?.addEventListener('click', () => this.socket ? this.disconnect() : this.connect());
   }
 
-  setStatus(label, active = Boolean(this.socket)) {
+  // Short labels fit the narrow button; the title keeps the full status.
+  setStatus(label, title, active = Boolean(this.socket)) {
     if (!this.button) return;
     this.button.textContent = label;
+    this.button.title = title;
     this.button.setAttribute('aria-pressed', String(active));
   }
 
@@ -58,10 +61,10 @@ export class FlightRecorder {
     this.error = null;
     this.stopping = false;
     this.acknowledged = false;
-    this.setStatus('Rerun: connecting');
+    this.setStatus('Connecting…', `Connecting to the Rerun flight recorder at ${this.url}`);
     socket.addEventListener('open', () => {
       if (this.socket !== socket) return;
-      this.setStatus('Rerun: recording');
+      this.setStatus('● Recording', 'Recording to Rerun. Click to stop.');
       if (!this.recordPhysics) {
         // Register an event source without constructing even a step-zero snapshot.
         socket.send(JSON.stringify({ version: 1, type: 'event_source', source: this.source, session: this.session }));
@@ -104,12 +107,12 @@ export class FlightRecorder {
       this.eventTimer = null;
       this.socket = null;
       this.pending = 0;
-      this.setStatus('Rerun: disconnected', false);
+      this.setStatus('Rerun', `Rerun flight recorder disconnected. Click to reconnect to ${this.url}`, false);
     });
     socket.addEventListener('error', () => {
       if (this.socket === socket) {
         this.error = 'Flight recorder connection error';
-        this.setStatus('Rerun: connection error');
+        this.setStatus('Rerun failed', `Could not reach the Rerun flight recorder at ${this.url}. Is the receiver running?`);
       }
     });
   }
@@ -122,7 +125,7 @@ export class FlightRecorder {
     this.socket = null;
     this.pending = 0;
     this.error = null;
-    this.setStatus('Rerun', false);
+    this.setStatus('Rerun', RERUN_IDLE_TITLE, false);
   }
 
   fail(error) {
@@ -131,7 +134,7 @@ export class FlightRecorder {
     this.eventTimer = null;
     this.socket?.close();
     this.socket = null;
-    this.setStatus('Rerun: failed', false);
+    this.setStatus('Rerun failed', `Rerun recording failed: ${this.error}`, false);
   }
 
   async ensureConnected(url, timeoutMs = 5000) {

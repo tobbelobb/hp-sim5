@@ -47,7 +47,7 @@
                   aria-expanded="false"
                   aria-controls="machinesMenu"
                 >
-                  Machines
+                  Machines<span id="machinesCurrent" class="sim-machines-current"></span>
                 </button>
                 <div id="machinesMenu" class="sim-machines-menu sim-hidden" aria-labelledby="machinesToggle">
                   <div class="sim-machines-section">
@@ -99,6 +99,7 @@
                     <span id="highlightSlackToggleHelp" class="sim-setting-help" role="tooltip" aria-hidden="true">Uses a contrasting color to make it easier to spot slack cables.</span>
                   </label>
                   <span class="sim-menu-section-title">Simulation</span>
+                  <p class="sim-menu-note">These change the physics. Keep them the same when comparing runs.</p>
                   <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
                     <input id="lineLayeringToggle" aria-describedby="lineLayeringToggleHelp" type="checkbox" checked>
                     <span>Line Layering</span>
@@ -160,6 +161,14 @@
 
           <div class="canvas-frame">
             <canvas id="myCanvas" role="img" aria-label="Hangprinter simulation"></canvas>
+            <div id="welcomeHint" class="sim-welcome sim-hidden" role="note">
+              <p>
+                <strong>Watch a simulated Hangprinter print.</strong>
+                Press <b>Logo</b> or <b>Squares</b> for a test print, or <b>Upload</b> your own G-code.
+                <b>Machines</b> picks the printer; <b>Controls</b> pauses, changes speed and measures.
+              </p>
+              <button id="welcomeHintDismiss" type="button" class="sim-welcome-dismiss" aria-label="Dismiss hint">×</button>
+            </div>
             <div id="qualityHud" class="quality-hud sim-hidden" role="status" aria-live="polite"></div>
             <div id="qualityHistoryHud" class="quality-history sim-hidden" role="status" aria-live="polite">
               <button
@@ -180,7 +189,7 @@
               aria-expanded="false"
               aria-controls="simSecondaryControls"
             >
-              ▼
+              Controls<span class="sim-secondary-toggle-arrow" aria-hidden="true">▼</span>
             </button>
             <div id="simSecondaryControls" class="sim-secondary-group sim-hidden" aria-label="Simulation controls">
               <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>

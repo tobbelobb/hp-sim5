@@ -144,8 +144,8 @@ after installing the [Python dependencies](#python-dependencies):
 .venv/bin/python scripts/hangprinter_flight_recorder.py
 ```
 
-Open the **viewer URL printed by that process**. In the simulator, expand **▼**,
-click **Reset**, click **Rerun**, wait for **Rerun: recording**, then **Print Logo**.
+Open the **viewer URL printed by that process**. In the simulator, open **Controls**,
+click **Reset**, click **Rerun**, wait for **● Recording**, then **Print Logo**.
 Click **Rerun** again to finish. The receiver prints the saved `.rrd` path.
 Opening that file with `.venv/bin/rerun PATH.rrd` replays it; it does not start
 another simulation or recording.

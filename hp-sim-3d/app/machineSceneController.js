@@ -482,12 +482,12 @@ export function createMachineSceneController({
     updatePresetMachineSelections();
     updateCustomMachineList();
     updateRemoveAllButtonState();
+    const names = state.machines.map((machine) => machine.name || catalog.get(machine.sourceKey)?.label || 'Uploaded scene');
+    if (dom.machinesCurrent) {
+      dom.machinesCurrent.textContent = `: ${names.length === 1 ? names[0] : names.length === 0 ? 'none' : `${names.length} loaded`}`;
+    }
     if (dom.machinesToggle) {
-      const count = state.machines.length;
-      dom.machinesToggle.setAttribute(
-        'aria-label',
-        count === 0 ? 'Machines (no scenes loaded)' : `Machines (${count} scenes loaded)`
-      );
+      dom.machinesToggle.title = names.length === 0 ? 'No machine loaded' : `Loaded: ${names.join(', ')}`;
     }
   }
 

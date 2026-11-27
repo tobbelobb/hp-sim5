@@ -79,8 +79,8 @@ series identities.
 3. Open the **Rerun viewer URL printed by the receiver**. The URL includes the
    connection to the local data server; opening port 9090 without that query opens
    Rerun's welcome screen.
-4. In hp-sim-3d, expand the controls with **▼**. Click **Reset**, then **Rerun**;
-   wait for **Rerun: recording**, then click **Print Logo**. Connecting alone
+4. In hp-sim-3d, open **Controls** if it is collapsed. Click **Reset**, then **Rerun**;
+   wait for **● Recording**, then click **Print Logo**. Connecting alone
    does not start a print. Watch the receiver's `Recording: output/rerun/...rrd`
    line: it identifies the file being written.
 5. Try **Pause** and resume, or **Finish ASAP**. The recorder captures every
