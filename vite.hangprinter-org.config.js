@@ -44,6 +44,16 @@ export default defineConfig(async () => {
       await fs.copyFile(join(sharedSrc, 'fileFormatUtils.js'), join(slideprinterDist, 'fileFormatUtils.js'));
       await fs.copyFile(join(sharedSrc, 'motionUtils.js'), join(slideprinterDist, 'motionUtils.js'));
 
+      // hp-sim-3d fetches the Wasm solver plus the public/ files the machine catalogue
+      // names (scenes, preset command streams). Copying all of public/ would push the
+      // site past GitLab Pages' 1 GB limit.
+      const catalogText = await fs.readFile(resolve(__dirname, 'machines/catalog.json'), 'utf8');
+      const publicFiles = new Set(catalogText.match(/public\/[^"]+/g));
+      publicFiles.add('public/wasm/cable_solver.wasm');
+      await Promise.all([...publicFiles].map((file) => (
+        fs.cp(resolve(__dirname, file), join(distRoot, file.slice('public/'.length)))
+      )));
+
       // hp-sim-3d fetches these config files at runtime to map RRF drivers to axes.
       const rrfConfigSrc = resolve(__dirname, 'RRF/run/vsd/sys');
       const rrfConfigDist = resolve(distRoot, 'RRF/run/vsd/sys');
@@ -59,7 +69,7 @@ export default defineConfig(async () => {
     // Important bits for a standalone site at a custom domain:
     root: __dirname,
     base: '/',                   // no '/hp-sim5/' — serve from the domain root
-    publicDir: resolve(__dirname, 'public'), // reuse shared static assets (usd scenes etc.)
+    publicDir: false, // copied selectively in closeBundle
     build: {
       outDir: resolve(__dirname, 'dist-hangprinter-org'), // separate output
       emptyOutDir: true,
