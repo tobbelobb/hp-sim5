@@ -7,7 +7,7 @@ function setup() {
   const clock = { step: 20, time: .04 };
   const resources = new Map([['researchClock', clock], ['sceneGeneration', 3], ['pauseState', { paused: true }]]);
   const world = { getResource: (name) => resources.get(name) };
-  const remote = { _ensureAxisMapping: jest.fn(), axisToEntity: { A: [1] }, getQueueLength: () => 0, addCommand: jest.fn(), streams: [] };
+  const remote = { _ensureAxisMapping: jest.fn(), axisToEntity: { A: [1] }, getQueueLength: () => 0, addCommand: jest.fn(), streams: [{ worker: null }] };
   const machines = { getActiveSourceKeys: () => ['hp4'], addCatalogMachine: jest.fn(), getMachines: () => [] };
   const commands = { getRemoteSystem: () => remote, handleUserReset: jest.fn() };
   const recorder = { socket: null };

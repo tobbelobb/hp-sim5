@@ -21,6 +21,7 @@ export class RemoteSpoolSystem {
     this.commandCompactThreshold = 1024;
     this.onWorkerDrained = null;
     this.commandStepPending = false;
+    this.receivedCommand = false;
     Object.defineProperty(this, 'commands', {
       configurable: true,
       enumerable: true,
@@ -129,6 +130,7 @@ export class RemoteSpoolSystem {
   }
 
   addCommand(command) {
+    this.receivedCommand = true;
     this._commands.push(command);
   }
 
@@ -170,6 +172,7 @@ export class RemoteSpoolSystem {
   }
 
   clearCommandQueue() {
+    this.receivedCommand = false;
     this.cancelWorkerDrain();
     this._commands.length = 0;
     this.commandHead = 0;
@@ -448,12 +451,14 @@ export class RemoteSpoolSystem {
   }
 
   update(world) {
+    // Streams start on the same step: once each has its first command or has no worker.
+    const started = this.streams.every((stream) => stream.receivedCommand || !stream.worker);
     for (const stream of this.streams) {
-      stream._updateStream(world);
+      stream._updateStream(world, started);
     }
   }
 
-  _updateStream(world) {
+  _updateStream(world, started) {
     this._syncStreamPlaybackMode(world);
 
     // Size the queue for at most twice the speed physics last reached: a target the
@@ -494,6 +499,9 @@ export class RemoteSpoolSystem {
     }
 
     this._ensureAxisMapping(world);
+    if (!started) {
+      return;
+    }
 
     const command = this._commands[this.commandHead];
     if (command === undefined) {

@@ -147,7 +147,9 @@ export function createCommandJobController({
     workers.stopAndClearWorkers();
   }
 
+  // A failed worker fails the whole job, so no machine keeps printing a partial job.
   function handleWorkerError() {
+    stopAndClearWorkers();
     setPrintActive(false);
     resetJobTracking();
   }
@@ -574,6 +576,10 @@ export function createCommandJobController({
     if (!remoteSystem) {
       return null;
     }
+    if (remoteSystem.extraStreams.length > 0) {
+      console.warn('hp-sim-3d: external commands rejected while a preset plays separate streams.');
+      return null;
+    }
     const bridge = workers.getKlipperRawUploadBridge() || workers.createKlipperRawUploadBridge();
     if (remoteSystem.worker !== bridge) {
       remoteSystem.worker = bridge;
@@ -586,6 +592,11 @@ export function createCommandJobController({
   function pushExternalCommands(commands) {
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem || !Array.isArray(commands) || commands.length === 0) {
+      return false;
+    }
+    // The first stream drives only some machines while a preset plays separate streams.
+    if (remoteSystem.extraStreams.length > 0) {
+      console.warn('hp-sim-3d: external commands rejected while a preset plays separate streams.');
       return false;
     }
     for (const command of commands) {
