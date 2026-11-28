@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { resolvePresetStreams } from '../../../hp-sim-3d/app/commandPresetResolver.js';
 import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
 import { createWorkerController } from '../../../hp-sim-3d/app/workerController.js';
 import { createCommandJobController } from '../../../hp-sim-3d/app/commandJobController.js';
+import { createExternalCommandController } from '../../../hp-sim-3d/app/externalCommandSocket.js';
 import { SpoolStateComponent, SpoolTagComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { MachineTagComponent, World } from '../../../src/js/cable_joints_3d/ecs.js';
@@ -29,7 +31,7 @@ test('machines share a preset stream only when they play the same file and confi
   expect(streams[1].rrfConfig).toBe('RRF/run/vsd/sys/config_hp3.g');
 });
 
-function setupTwoStreams() {
+function setupTwoStreams(machines = {}) {
   const world = new World();
   const steppers = {};
   for (const machineId of ['m1', 'm2']) {
@@ -51,18 +53,20 @@ function setupTwoStreams() {
     onWorkerDrained,
     onWorkerError: () => commands.handleWorkerError(),
     WorkerCtor: class {
-      postMessage() {}
+      messages = [];
+      postMessage(message) { this.messages.push(message); }
       terminate() { this.terminated = true; }
       receive(data) { this.onmessage({ data }); }
     },
   });
   const state = { jobSequenceCounter: 0, printActive: true };
-  commands = createCommandJobController({ world, state, dom: {}, machines: {}, workers, runtime: { resume() {} } });
+  commands = createCommandJobController({ world, state, dom: {}, machines, workers,
+    runtime: { resume() {}, isStageReady: () => true, getGameControls: () => null } });
   const [w1, w2] = workers.ensureRrfWorkers(2);
   workers.resetRemoteQueue([{ worker: w1, machineIds: ['m1'] }, { worker: w2, machineIds: ['m2'] }]);
   const step = () => { remote.update(world); remote.afterPhysicsStep(); };
   const angles = () => [steppers.m1.commandedAngle, steppers.m2.commandedAngle];
-  return { remote, commands, state, onWorkerDrained, w1, w2, step, angles };
+  return { world, remote, commands, state, onWorkerDrained, w1, w2, step, angles };
 }
 
 test('each stream drives only its own machines and the job ends when all have drained', () => {
@@ -108,11 +112,34 @@ test('a failed worker fails the whole job and restores one stream for all machin
   expect(onWorkerDrained).not.toHaveBeenCalled();
 });
 
-test('external commands are rejected while machines play separate streams', () => {
+test('dropped external commands are not replayed once the split ends', () => {
   jest.spyOn(console, 'warn').mockImplementation(() => {});
-  const { remote, commands } = setupTwoStreams();
-  expect(commands.pushExternalCommands([{ type: 'Move', A: 1 }])).toBe(false);
+  const { world, remote, commands } = setupTwoStreams();
+  const socket = createExternalCommandController({ world, commands, logger: { info() {}, log() {}, warn() {} } });
+  socket.handlePayload({ type: 'command', command: { type: 'Move', A: 1 } });
   expect(commands.ensureExternalKlipperApiBridge()).toBeNull();
   remote.setStreams();
-  expect(commands.pushExternalCommands([{ type: 'Move', A: 1 }])).toBe(true);
+  socket.flushQueue();
+  expect(remote.getQueueLength()).toBe(0);
+  socket.handlePayload({ type: 'command', command: { type: 'Move', A: 1 } });
+  expect(remote.getQueueLength()).toBe(1);
+});
+
+test('a preset whose firmware config cannot be loaded stops before playing', async () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'info').mockImplementation(() => {});
+  global.fetch = jest.fn(async (path) => (path.includes('hp3')
+    ? { ok: false, status: 404 }
+    : { ok: true, text: async () => readFileSync(path, 'utf8') }));
+  try {
+    const { remote, commands, state, w2 } = setupTwoStreams({
+      getMachines: () => [{ id: 'm1', sourceKey: 'hp4.usda' }, { id: 'm2', sourceKey: 'hp3.usda' }],
+    });
+    await commands.runPreset('straightMoves');
+    expect(state.printActive).toBe(false);
+    expect(remote.streams).toHaveLength(1);
+    expect(w2.messages.map((message) => message.type)).not.toContain('filename_fetch');
+  } finally {
+    delete global.fetch;
+  }
 });

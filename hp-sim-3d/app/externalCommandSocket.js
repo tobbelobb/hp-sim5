@@ -161,6 +161,7 @@ export function createExternalCommandController({
     return commands?.getRemoteSystem?.() || null;
   }
 
+  // Buffers only batches the simulator cannot take yet; dropped batches count as handled.
   function pushCommands(batch) {
     if (!Array.isArray(batch) || batch.length === 0) {
       return;

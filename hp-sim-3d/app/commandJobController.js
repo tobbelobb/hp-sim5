@@ -234,12 +234,11 @@ export function createCommandJobController({
     return null;
   }
 
+  // Returns false when the machine's firmware config could not be loaded: a reused
+  // worker would otherwise keep the previous machine's axis mapping.
   async function configureWorker(worker, format, configPath) {
-    if (!worker || typeof worker.postMessage !== 'function') {
-      return;
-    }
     if (!configPath) {
-      return;
+      return true;
     }
     try {
       const response = await fetch(buildRepositoryFileUrl(configPath));
@@ -249,18 +248,20 @@ export function createCommandJobController({
       const configText = await response.text();
       if (format === FileFormat.GCODE) {
         worker.postMessage({ type: 'set_kinematics_config', configText });
-        return;
+        return true;
       }
       const driverToAxis = parseRrfMotorAxisMapFromConfigText(configText);
       if (driverToAxis.size === 0) {
-        return;
+        throw new Error('config maps no motor drivers');
       }
       worker.postMessage({
         type: 'set_driver_to_axis',
         driverToAxis: Array.from(driverToAxis.entries()),
       });
+      return true;
     } catch (error) {
-      console.warn(`hp-sim-3d: unable to load RRF motor map from ${configPath}.`, error);
+      console.error(`hp-sim-3d: unable to load firmware config ${configPath}; stopping the job.`, error);
+      return false;
     }
   }
 
@@ -309,7 +310,10 @@ export function createCommandJobController({
       if (state.simDtSec != null) {
         worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
       }
-      await configureWorker(worker, FileFormat.RRF_CAN_BINARY, rrfConfig);
+      if (!(await configureWorker(worker, FileFormat.RRF_CAN_BINARY, rrfConfig))) {
+        handleWorkerError();
+        return;
+      }
       worker.postMessage({ type: 'filename_fetch', filename: presetUrl, preserveTiming });
     }));
   }
@@ -354,8 +358,10 @@ export function createCommandJobController({
     if (state.simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
     }
-    if (isRrfFormat(format) || format === FileFormat.GCODE) {
-      await configureWorker(worker, format, resolveActiveRrfConfigPath());
+    if ((isRrfFormat(format) || format === FileFormat.GCODE)
+      && !(await configureWorker(worker, format, resolveActiveRrfConfigPath()))) {
+      handleWorkerError();
+      return;
     }
     worker.postMessage({ type: 'filename_upload', filename: file, format });
   }
@@ -577,7 +583,7 @@ export function createCommandJobController({
       return null;
     }
     if (remoteSystem.extraStreams.length > 0) {
-      console.warn('hp-sim-3d: external commands rejected while a preset plays separate streams.');
+      console.warn('hp-sim-3d: external commands dropped while a preset plays separate streams.');
       return null;
     }
     const bridge = workers.getKlipperRawUploadBridge() || workers.createKlipperRawUploadBridge();
@@ -595,9 +601,10 @@ export function createCommandJobController({
       return false;
     }
     // The first stream drives only some machines while a preset plays separate streams.
+    // Dropped commands still count as handled, so callers do not retry them later.
     if (remoteSystem.extraStreams.length > 0) {
-      console.warn('hp-sim-3d: external commands rejected while a preset plays separate streams.');
-      return false;
+      console.warn('hp-sim-3d: external commands dropped while a preset plays separate streams.');
+      return true;
     }
     for (const command of commands) {
       remoteSystem.addCommand(command);
