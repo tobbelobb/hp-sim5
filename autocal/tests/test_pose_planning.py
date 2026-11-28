@@ -69,7 +69,9 @@ def test_data_on_one_d_sphere_makes_a_shortened_d_line_the_best_next_sweep():
         candidates=candidates, points_per_sweep=20, sigma_mm=0.05, regularization=1e-6, top_k=3,
     )
     assert len(ranked) == 3
-    assert ranked[0][0] >= ranked[1][0] >= ranked[2][0]
+    # Ranking treats scores equal to 6 decimals as ties and breaks them by another key.
+    scores = [round(score, 6) for score, _ in ranked]
+    assert scores == sorted(scores, reverse=True)
     assert all(cfg.fixed_deltas_mm[cfg.fixed_anchors.index(3)] < 0.0 for _, cfg in ranked)
 
 

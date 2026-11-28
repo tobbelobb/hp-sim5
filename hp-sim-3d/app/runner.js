@@ -249,7 +249,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   const advanceFixedSteps = async (steps) => {
     if (!Number.isInteger(steps) || steps < 1 || steps > 10000) throw new Error('steps must be in [1, 10000]');
     if (!getPauseState()?.paused) throw new Error('Pause before bounded stepping');
-    if (getRemoteSystem()?.worker) throw new Error('Finish the active worker before bounded stepping');
+    if (getRemoteSystem()?.streams.some((stream) => stream.worker)) throw new Error('Finish the active worker before bounded stepping');
     stopLoops();
     doStep = false;
     let executed = 0;
@@ -264,7 +264,7 @@ export function runGame(world, internalSetupScene, options = {}) {
           }
         }
         const pauseState = getPauseState();
-        if (!pauseState?.paused || getRemoteSystem()?.worker) throw new Error(`Human intervention stopped bounded stepping after ${executed} steps`);
+        if (!pauseState?.paused || getRemoteSystem()?.streams.some((stream) => stream.worker)) throw new Error(`Human intervention stopped bounded stepping after ${executed} steps`);
         pauseState.paused = false;
         try { advancePhysics(world.getResource('dt')); } finally { pauseState.paused = true; }
         executed += 1;
@@ -511,7 +511,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const resetGame = ({ autoPause = true } = {}) => {
-    getRemoteSystem()?.cancelWorkerDrain();
+    getRemoteSystem()?.streams.forEach((stream) => stream.cancelWorkerDrain());
     internalSetupScene();
     world.setResource('researchClock', { generation: world.getResource('sceneGeneration'), step: 0, time: 0 });
     for (const system of world.systems) {
