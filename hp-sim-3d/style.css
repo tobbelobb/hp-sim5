@@ -1054,10 +1054,12 @@ body {
   }
 }
 
-/* Narrow windows: short labels keep the bar on one row. */
+/* Narrow windows: short labels keep the bar on one row, and the speed meter
+   in Controls already shows the target speed. */
 @media (max-width: 760px) {
   .sim-label-long,
-  .sim-machines-current {
+  .sim-machines-current,
+  .sim-speed-status {
     display: none;
   }
 }
