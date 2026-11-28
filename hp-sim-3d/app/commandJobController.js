@@ -7,7 +7,7 @@ import {
   describeSelectedPresetFile,
   getPresetActionLabel,
   machineForSourceKey,
-  resolvePresetCommand,
+  resolvePresetStreams,
 } from './commandPresetResolver.js';
 import { buildRepositoryFileUrl } from './machineCatalog.js';
 import { setKinematicMotorMode } from './hangprinter_runtime.js';
@@ -138,6 +138,7 @@ export function createCommandJobController({
   }
 
   function finishJob() {
+    getRemoteSystem()?.setStreams();
     setPrintActive(false);
     recordFinalQualityAndResetJob();
   }
@@ -189,14 +190,16 @@ export function createCommandJobController({
     }
   }
 
-  function startSimulationWithWorker(worker, jobDescriptor = null) {
+  // streams: [{ worker, machineIds }], machineIds null drives every machine.
+  function startSimulation(streams, jobDescriptor = null) {
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem) {
       return false;
     }
-    workers.stopInactiveWorkers(worker);
-    workers.resetRemoteQueue(worker);
-    if (worker) {
+    const activeWorkers = streams.map((stream) => stream.worker);
+    workers.stopInactiveWorkers(activeWorkers);
+    workers.resetRemoteQueue(streams);
+    for (const worker of activeWorkers) {
       try {
         worker.postMessage({ type: 'resume' });
       } catch (err) {
@@ -229,11 +232,10 @@ export function createCommandJobController({
     return null;
   }
 
-  async function configureWorkerForActiveMachine(worker, format) {
+  async function configureWorker(worker, format, configPath) {
     if (!worker || typeof worker.postMessage !== 'function') {
       return;
     }
-    const configPath = resolveActiveRrfConfigPath();
     if (!configPath) {
       return;
     }
@@ -265,26 +267,16 @@ export function createCommandJobController({
     if (!runtime.isStageReady()) {
       return;
     }
-    const preset = resolvePresetCommand(presetKey, state.lineLayeringEnabled, machines.getActiveSourceKeys());
-    if (!preset) {
+    // Presets are RRF CAN compilations; machines needing different files get separate streams.
+    const presets = resolvePresetStreams(presetKey, state.lineLayeringEnabled, machines.getMachines());
+    if (presets.length === 0) {
       console.warn('hp-sim-3d: unknown preset', presetKey);
       return;
     }
-    const presetUrl = buildRepositoryFileUrl(preset.path);
-    console.info(`hp-sim-3d: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(presetUrl));
+    const [preset] = presets;
+    const rrfWorkers = workers.ensureRrfWorkers(presets.length);
+    const streams = presets.map((entry, index) => ({ ...entry, worker: rrfWorkers[index] }));
     const { referencePresetKey } = preset;
-    const format = preset.format;
-    let worker = null;
-    if (format === FileFormat.GCODE) {
-      worker = workers.ensureMoveWorker();
-    } else if (isKlipperFormat(format)) {
-      worker = workers.ensureKlipperMcuCommandPlayerWorker();
-    } else if (isRrfFormat(format)) {
-      worker = workers.ensureRrfWorker();
-    } else {
-      console.warn('hp-sim-3d: unsupported preset format', format);
-      return;
-    }
     state.currentPresetKey = referencePresetKey;
     const jobDescriptor = {
       type: 'preset',
@@ -292,7 +284,7 @@ export function createCommandJobController({
       label: PRESET_GCODE_MAP[referencePresetKey]?.label || presetKey,
       kinematicMotors: Boolean(preset.kinematicMotors),
     };
-    if (!startSimulationWithWorker(worker, jobDescriptor)) {
+    if (!startSimulation(streams, jobDescriptor)) {
       return;
     }
     inspectionTools?.loadForPreset?.(referencePresetKey, { setActive: true, makeVisible: preset.preserveTiming }).catch((error) => {
@@ -309,13 +301,15 @@ export function createCommandJobController({
         inspectionTools?.updatePositionTraceToggleUI?.();
       }
     }
-    if (state.simDtSec != null) {
-      worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
-    }
-    if (isRrfFormat(format) || format === FileFormat.GCODE) {
-      await configureWorkerForActiveMachine(worker, format);
-    }
-    worker.postMessage({ type: 'filename_fetch', filename: presetUrl, preserveTiming: preset.preserveTiming });
+    await Promise.all(streams.map(async ({ worker, path, rrfConfig, preserveTiming }) => {
+      const presetUrl = buildRepositoryFileUrl(path);
+      console.info(`hp-sim-3d: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(presetUrl));
+      if (state.simDtSec != null) {
+        worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
+      }
+      await configureWorker(worker, FileFormat.RRF_CAN_BINARY, rrfConfig);
+      worker.postMessage({ type: 'filename_fetch', filename: presetUrl, preserveTiming });
+    }));
   }
 
   async function queueCommandFile(file, detectedFormat = null) {
@@ -341,7 +335,7 @@ export function createCommandJobController({
         ? workers.createKlipperRawUploadBridge()
         : workers.ensureKlipperMcuCommandPlayerWorker();
     } else if (isRrfFormat(format)) {
-      worker = workers.ensureRrfWorker();
+      [worker] = workers.ensureRrfWorkers(1);
     } else {
       console.warn('hp-sim-3d: unsupported upload format', file?.name || 'unknown');
       return;
@@ -352,14 +346,14 @@ export function createCommandJobController({
       label: file?.name || 'Uploaded File',
       format,
     };
-    if (!startSimulationWithWorker(worker, jobDescriptor)) {
+    if (!startSimulation([{ worker, machineIds: null }], jobDescriptor)) {
       return;
     }
     if (state.simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: state.simDtSec });
     }
     if (isRrfFormat(format) || format === FileFormat.GCODE) {
-      await configureWorkerForActiveMachine(worker, format);
+      await configureWorker(worker, format, resolveActiveRrfConfigPath());
     }
     worker.postMessage({ type: 'filename_upload', filename: file, format });
   }
@@ -452,7 +446,7 @@ export function createCommandJobController({
         continue;
       }
       nextCheck = performance.now() + checkIntervalMs;
-      if (getRemoteSystem() !== remoteSystem || (!remoteSystem.worker && remoteSystem.getQueueLength() === 0)) {
+      if (getRemoteSystem() !== remoteSystem || remoteSystem.isDrained()) {
         break;
       }
       if (performance.now() - startTime > maxDurationMs) {

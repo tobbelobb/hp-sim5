@@ -38,6 +38,11 @@ export class RemoteSpoolSystem {
       },
     });
     this.axisToEntity = {};
+    // Machines this stream drives; null drives every machine.
+    this.machineIds = null;
+    // Machines playing different command files get one stream each. This system
+    // plays the first stream and steps the others alongside it.
+    this.extraStreams = [];
     // Axes whose next Move only sets a new command origin (see 'Rebase reference').
     this.rebaseAxes = null;
     this.wasPaused = false;
@@ -74,9 +79,33 @@ export class RemoteSpoolSystem {
     });
   }
 
+  get streams() {
+    return [this, ...this.extraStreams];
+  }
+
+  // One stream per group of machine ids; no groups gives one stream for all machines.
+  setStreams(machineIdGroups = [null]) {
+    this.machineIds = machineIdGroups[0] ?? null;
+    this.extraStreams = machineIdGroups.slice(1).map((machineIds) => {
+      const stream = new RemoteSpoolSystem();
+      stream.machineIds = machineIds;
+      stream.onCommandExecuted = this.onCommandExecuted;
+      stream.onExtrusion = this.onExtrusion;
+      return stream;
+    });
+    this.resetAxisMapping();
+  }
+
+  // True once every stream's worker has finished and its commands have run.
+  isDrained() {
+    return this.streams.every((stream) => !stream.worker && !stream.onWorkerDrained && stream.getQueueLength() === 0);
+  }
+
   resetAxisMapping() {
-    this.rebaseAxes = null;
-    this.axisToEntity = {};
+    for (const stream of this.streams) {
+      stream.rebaseAxes = null;
+      stream.axisToEntity = {};
+    }
   }
 
   _ensureAxisMapping(world) {
@@ -87,6 +116,9 @@ export class RemoteSpoolSystem {
     for (const e of spoolEntities) {
       const state = world.getComponent(e, SpoolStateComponent);
       if (!state?.axis) {
+        continue;
+      }
+      if (this.machineIds && !this.machineIds.includes(world.getComponent(e, MachineTagComponent)?.id)) {
         continue;
       }
       if (!this.axisToEntity[state.axis]) {
@@ -121,11 +153,15 @@ export class RemoteSpoolSystem {
   }
 
   setCommandExecutedListener(listener) {
-    this.onCommandExecuted = typeof listener === 'function' ? listener : null;
+    for (const stream of this.streams) {
+      stream.onCommandExecuted = typeof listener === 'function' ? listener : null;
+    }
   }
 
   setExtrusionListener(listener) {
-    this.onExtrusion = typeof listener === 'function' ? listener : null;
+    for (const stream of this.streams) {
+      stream.onExtrusion = typeof listener === 'function' ? listener : null;
+    }
   }
 
   getQueueLength() {
@@ -151,8 +187,10 @@ export class RemoteSpoolSystem {
   }
 
   afterPhysicsStep() {
-    this.commandStepPending = false;
-    this._notifyWorkerDrained();
+    for (const stream of this.streams) {
+      stream.commandStepPending = false;
+      stream._notifyWorkerDrained();
+    }
   }
 
   _notifyWorkerDrained() {
@@ -385,8 +423,14 @@ export class RemoteSpoolSystem {
   }
 
   // Called on every update, and by the runner when the mode changes, so a
-  // paused simulation still switches its worker's pacing.
+  // paused simulation still switches its workers' pacing.
   syncPlaybackMode(world) {
+    for (const stream of this.streams) {
+      stream._syncStreamPlaybackMode(world);
+    }
+  }
+
+  _syncStreamPlaybackMode(world) {
     const playbackState = world.getResource(SIMULATION_PLAYBACK_RESOURCE) || null;
     const desiredPlaybackMode = playbackState?.mode === 'asap' ? 'asap' : 'linear';
     if (desiredPlaybackMode === this.playbackMode) {
@@ -403,8 +447,14 @@ export class RemoteSpoolSystem {
     }
   }
 
-  update(world, dt) {
-    this.syncPlaybackMode(world);
+  update(world) {
+    for (const stream of this.streams) {
+      stream._updateStream(world);
+    }
+  }
+
+  _updateStream(world) {
+    this._syncStreamPlaybackMode(world);
 
     // Size the queue for at most twice the speed physics last reached: a target the
     // machine cannot reach would otherwise flood the main thread with worker messages.

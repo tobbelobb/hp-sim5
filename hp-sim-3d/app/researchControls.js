@@ -54,7 +54,7 @@ export function createResearchControls({ world, runtime, machines, commands, rec
     } else if (action === 'commands') {
       const remote = commands.getRemoteSystem();
       if (!remote) throw new Error('Scene has no remote motor controller');
-      if (!world.getResource('pauseState')?.paused || remote.worker) throw new Error('Pause and finish the active worker before submitting commands');
+      if (!world.getResource('pauseState')?.paused || remote.streams.some((stream) => stream.worker)) throw new Error('Pause and finish the active worker before submitting commands');
       remote._ensureAxisMapping(world);
       const records = args.commands;
       if (!Array.isArray(records) || records.length + remote.getQueueLength() > 10000) throw new Error('Supply up to 10000 commands');

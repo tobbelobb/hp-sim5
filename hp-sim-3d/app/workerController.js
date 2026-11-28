@@ -49,7 +49,8 @@ export function createWorkerController({
 } = {}) {
   let klipperMcuCommandPlayerWorker = null;
   let klipperRawUploadBridge = null;
-  let rrfCanPlayerWorker = null;
+  // One RRF worker per command stream, so machines can play different files.
+  let rrfCanPlayerWorkers = [];
   let moveCommanderWorker = null;
 
   function getSimDtSec() {
@@ -66,34 +67,34 @@ export function createWorkerController({
     worker.postMessage({ type: 'set_speed_scale', value: state.currentTimeScale });
   }
 
+  function streamFor(worker) {
+    return getRemoteSystem()?.streams.find((stream) => stream.worker === worker) ?? null;
+  }
+
   function handleWorkerMessage(worker, label, event) {
     if (!event?.data) {
       return;
     }
+    const stream = streamFor(worker);
     if (event.data.type === 'done') {
-      const remoteSystem = getRemoteSystem();
-      if (remoteSystem && remoteSystem.worker === worker) {
-        remoteSystem.finishWorker(() => {
-          console.log(`hp-sim-3d: ${label} playback finished.`);
+      stream?.finishWorker(() => {
+        console.log(`hp-sim-3d: ${label} playback finished.`);
+        if (getRemoteSystem()?.isDrained()) {
           onWorkerDrained(worker);
-        });
-      }
+        }
+      });
       return;
     }
     if (event.data.type === 'error') {
       console.error('hp-sim-3d: Worker reported an error:', event.data.message);
-      const remoteSystem = getRemoteSystem();
-      if (remoteSystem && remoteSystem.worker === worker) {
-        remoteSystem.worker = null;
+      if (stream) {
+        stream.worker = null;
         onWorkerError(worker, event.data.message);
       }
       return;
     }
     if (event.data.action === 'gcode') {
-      const remoteSystem = getRemoteSystem();
-      if (remoteSystem && remoteSystem.worker === worker) {
-        remoteSystem.addCommand(event.data.command);
-      }
+      stream?.addCommand(event.data.command);
     }
   }
 
@@ -101,9 +102,9 @@ export function createWorkerController({
     const worker = new WorkerCtor(url, { type: 'module' });
     worker.onerror = (event) => {
       console.error(`hp-sim-3d: ${label} worker failed.`, event);
-      const remoteSystem = getRemoteSystem();
-      if (remoteSystem && remoteSystem.worker === worker) {
-        remoteSystem.worker = null;
+      const stream = streamFor(worker);
+      if (stream) {
+        stream.worker = null;
         onWorkerError(worker, event);
       }
     };
@@ -169,11 +170,11 @@ export function createWorkerController({
     return bridge;
   }
 
-  function ensureRrfWorker() {
-    if (!rrfCanPlayerWorker) {
-      rrfCanPlayerWorker = createModuleWorker(rrfCanPlayerWorkerUrl, 'RRF');
+  function ensureRrfWorkers(count) {
+    while (rrfCanPlayerWorkers.length < count) {
+      rrfCanPlayerWorkers.push(createModuleWorker(rrfCanPlayerWorkerUrl, 'RRF'));
     }
-    return rrfCanPlayerWorker;
+    return rrfCanPlayerWorkers.slice(0, count);
   }
 
   function ensureMoveWorker() {
@@ -183,64 +184,54 @@ export function createWorkerController({
     return moveCommanderWorker;
   }
 
-  function stopInactiveWorkers(activeWorker) {
-    if (moveCommanderWorker && moveCommanderWorker !== activeWorker) {
-      moveCommanderWorker.postMessage({ type: 'pause' });
+  function stopInactiveWorkers(activeWorkers = []) {
+    for (const worker of [moveCommanderWorker, klipperMcuCommandPlayerWorker, ...rrfCanPlayerWorkers]) {
+      if (worker && !activeWorkers.includes(worker)) {
+        worker.postMessage({ type: 'pause' });
+      }
     }
-    if (klipperMcuCommandPlayerWorker && klipperMcuCommandPlayerWorker !== activeWorker) {
-      klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
-    }
-    if (klipperRawUploadBridge && klipperRawUploadBridge !== activeWorker) {
+    if (klipperRawUploadBridge && !activeWorkers.includes(klipperRawUploadBridge)) {
       terminateKlipperRawUploadBridge();
-    }
-    if (rrfCanPlayerWorker && rrfCanPlayerWorker !== activeWorker) {
-      rrfCanPlayerWorker.postMessage({ type: 'pause' });
     }
   }
 
-  function resetRemoteQueue(activeWorker) {
+  // Each { worker, machineIds } entry becomes one command stream; machineIds null drives every machine.
+  function resetRemoteQueue(streams = []) {
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem) {
       return;
     }
-    if (typeof remoteSystem.clearPlaybackState === 'function') {
-      remoteSystem.clearPlaybackState();
-    } else {
-      if (typeof remoteSystem.clearCommandQueue === 'function') {
-        remoteSystem.clearCommandQueue();
-      } else if (Array.isArray(remoteSystem.commands)) {
-        remoteSystem.commands.length = 0;
-      }
-      remoteSystem.history = [];
-    }
-    remoteSystem.worker = activeWorker;
-    remoteSystem.wasPaused = false;
+    remoteSystem.setStreams(streams.length > 0 ? streams.map((stream) => stream.machineIds) : [null]);
+    remoteSystem.streams.forEach((stream, index) => {
+      stream.clearPlaybackState();
+      stream.worker = streams[index]?.worker ?? null;
+      stream.wasPaused = false;
+    });
   }
 
   function stopAndClearWorkers() {
-    stopInactiveWorkers(null);
-    resetRemoteQueue(null);
-    for (const [label, worker, clear] of [
-      ['G-code', moveCommanderWorker, () => { moveCommanderWorker = null; }],
-      ['Klipper', klipperMcuCommandPlayerWorker, () => { klipperMcuCommandPlayerWorker = null; }],
-      ['RRF', rrfCanPlayerWorker, () => { rrfCanPlayerWorker = null; }],
+    stopInactiveWorkers();
+    resetRemoteQueue();
+    for (const [label, worker] of [
+      ['G-code', moveCommanderWorker],
+      ['Klipper', klipperMcuCommandPlayerWorker],
+      ...rrfCanPlayerWorkers.map((rrfWorker) => ['RRF', rrfWorker]),
     ]) {
-      if (!worker) {
-        continue;
-      }
       try {
-        worker.terminate();
+        worker?.terminate();
       } catch (err) {
         console.warn(`hp-sim-3d: unable to terminate ${label} worker cleanly.`, err);
       }
-      clear();
     }
+    moveCommanderWorker = null;
+    klipperMcuCommandPlayerWorker = null;
+    rrfCanPlayerWorkers = [];
     terminateKlipperRawUploadBridge();
   }
 
   function applyTimeScale(scale) {
     const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1.0;
-    for (const worker of [klipperMcuCommandPlayerWorker, klipperRawUploadBridge, moveCommanderWorker, rrfCanPlayerWorker]) {
+    for (const worker of [klipperMcuCommandPlayerWorker, klipperRawUploadBridge, moveCommanderWorker, ...rrfCanPlayerWorkers]) {
       worker?.postMessage?.({ type: 'set_speed_scale', value: safeScale });
     }
   }
@@ -248,7 +239,7 @@ export function createWorkerController({
   return {
     ensureKlipperMcuCommandPlayerWorker,
     createKlipperRawUploadBridge,
-    ensureRrfWorker,
+    ensureRrfWorkers,
     ensureMoveWorker,
     stopInactiveWorkers,
     resetRemoteQueue,

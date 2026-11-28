@@ -42,9 +42,10 @@ export const PRESET_GCODE_MAP = Object.freeze({
 export function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourceKeys = []) {
   if (!COMMAND_PRESETS[presetKey]) {
     if (activeSourceKeys.length !== 1) return null;
-    const replay = machineForSourceKey(activeSourceKeys[0], lineLayeringEnabled)?.reference_replay;
+    const machine = machineForSourceKey(activeSourceKeys[0], lineLayeringEnabled);
+    const replay = machine?.reference_replay;
     const path = replay?.streams[presetKey];
-    return path ? { path, referencePresetKey: replay.referencePresetKey, traceEntity: replay.traceEntity,
+    return path ? { path, rrfConfig: machine.rrf_config, referencePresetKey: replay.referencePresetKey, traceEntity: replay.traceEntity,
       preserveTiming: true, kinematicMotors: Boolean(replay.kinematicStreams?.includes(presetKey)),
       format: FileFormat.RRF_CAN_BINARY } : null;
   }
@@ -54,9 +55,31 @@ export function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourc
     .find(Boolean);
   return {
     path: machine.compiled_commands[preset.gcode].rrf,
+    rrfConfig: machine.rrf_config,
     format: FileFormat.RRF_CAN_BINARY,
     referencePresetKey: preset.referencePresetKey,
   };
+}
+
+// Machines that play the same command file with the same firmware config share one stream.
+export function resolvePresetStreams(presetKey, lineLayeringEnabled, machines) {
+  const sourceKeys = machines.map((machine) => machine.sourceKey).filter(Boolean);
+  if (!resolvePresetCommand(presetKey, lineLayeringEnabled, sourceKeys)) {
+    return [];
+  }
+  const streams = new Map();
+  for (const machine of machines) {
+    const preset = resolvePresetCommand(presetKey, lineLayeringEnabled, machine.sourceKey ? [machine.sourceKey] : []);
+    if (!preset) {
+      continue;
+    }
+    const key = `${preset.path}\n${preset.rrfConfig}`;
+    if (!streams.has(key)) {
+      streams.set(key, { ...preset, machineIds: [] });
+    }
+    streams.get(key).machineIds.push(machine.id);
+  }
+  return [...streams.values()];
 }
 
 export function getPresetActionLabel(presetKey) {
